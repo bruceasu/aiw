@@ -4,11 +4,15 @@ import (
 	czcmd "aiw/cmd/cz"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	gitcmd "aiw/cmd/git"
 	taskcmd "aiw/cmd/task"
-	wtcmd "aiw/cmd/wt"
 	tcccmd "aiw/cmd/tcc"
+	wtcmd "aiw/cmd/wt"
+
+	plug "aiw/internal/plugin"
 )
 
 const (
@@ -65,7 +69,37 @@ func main() {
 	case "cz":
 		err = czcmd.Dispatch(os.Args[2:])
 	default:
-		usage()
+		// try plugin fallback: aiw-<subcommand>
+		pluginName := os.Args[1]
+		bin, err := plug.DiscoverPlugin(pluginName)
+		if err != nil {
+			usage()
+		} else {
+			// prepare env
+			env := map[string]string{
+				"AIW_PLUGIN_NAME": pluginName,
+				"AIW_PLUGIN_PATH": bin,
+				"AIW_CMDLINE":     strings.Join(os.Args[1:], " "),
+			}
+			if home := os.Getenv("HOME"); home != "" {
+				env["AIW_HOME"] = home
+			} else if uhome := os.Getenv("USERPROFILE"); uhome != "" {
+				env["AIW_HOME"] = uhome
+			}
+			// pass through additional aiw-related roots
+			if exe, err := os.Executable(); err == nil {
+				env["AIW_ROOT"] = filepath.Dir(exe)
+			}
+
+			code, err := plug.ExecPlugin(bin, os.Args[2:], env)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "plugin execution error:", err)
+				os.Exit(1)
+			}
+			if code != 0 {
+				os.Exit(code)
+			}
+		}
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)

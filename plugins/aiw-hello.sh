@@ -1,0 +1,6 @@
+#!/bin/sh
+echo "AIW_PLUGIN_NAME=$AIW_PLUGIN_NAME"
+echo "AIW_PLUGIN_PATH=$AIW_PLUGIN_PATH"
+echo "AIW_CMDLINE=$AIW_CMDLINE"
+echo "ARGS=$@"
+exit 0

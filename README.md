@@ -82,6 +82,49 @@ aiw tcc [args...]           # TCC wrapper with auto include/lib defaults
 aiw git <subcommand>           # run: aiw git help
 ```
 
+## 插件扩展（Plugins）
+
+`aiw` 支持通过外部可执行程序/脚本扩展子命令。若调用的子命令不是内置命令，`aiw` 会按约定位置搜索并尝试执行名为 `aiw-<plugin-name>` 的可执行文件或脚本。
+
+- 搜索路径（优先级顺序）：
+  1. 程序目录下的 `plugins` 子目录（即与 `aiw` 可执行同目录的 `plugins/`）
+  2. `$HOME/.config/aiw/plugins`
+  3. 系统 `PATH`（仅匹配路径下的可执行文件）
+
+- 命名规则：
+  - 文件基础名须为 `aiw-<plugin-name>`，允许扩展名：`.exe`, `.py`, `.sh`, `.bat`, `.cmd`, `.ps1`, `.js` 或无扩展（Linux ELF 或带 shebang 的脚本）。
+  - `plugins` 目录内若存在子目录，`aiw` 会向下一层递归查找符合命名规则的文件。
+
+- 执行优先级（同名多文件时）：
+  1. `.bat` / `.cmd` / `.sh`
+  2. `.py`
+  3. 无扩展（带 shebang 的脚本）
+  4. 原生二进制（ELF / .exe）
+
+- 解释器与 shebang：
+  - 对无扩展或脚本文件，若第一行为 `#!`（shebang），`aiw` 会使用 shebang 指定的解释器运行。
+  - 对 `.js` 文件，优先尝试 `bun`（若可用），否则使用 `node`。
+
+- 环境变量（`aiw` 会注入到插件进程）：
+  - `AIW_PLUGIN_NAME`：插件名称（不含 `aiw-` 前缀）
+  - `AIW_PLUGIN_PATH`：被执行插件的绝对路径
+  - `AIW_CMDLINE`：从子命令开始的原始命令行（示例：`hello one two`）
+  - `AIW_HOME` / `AIW_ROOT`：`aiw` 的配置或可执行所在根目录
+
+- 使用示例：
+
+  将 `plugins/aiw-hello.sh` 放入仓库根目录的 `plugins/`，运行：
+
+  ```bash
+  aiw hello arg1 arg2
+  ```
+
+  插件应把参数作为常规 argv 处理，并将输出写到 stdout/stderr；`aiw` 会把插件退出码作为自身的退出码返回。
+
+- 安全提示：
+  - 插件由外部代码执行，存在安全风险。仅放置受信任脚本或可执行文件；必要时在运维流程中引入签名或白名单策略。
+
+
 ### 命令行为细节
 
 1. `aiw init`
