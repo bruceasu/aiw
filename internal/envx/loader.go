@@ -178,3 +178,63 @@ func (l *Loader) SetSystemEnv() error {
 	}
 	return nil
 }
+
+// 使用方式：
+// package main
+// import (
+// 	"fmt"
+// "yourapp/dotenv"
+// )
+// func main() {
+// 	loader := dotenv.New()
+// err := loader.Load(".", "dev")
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// fmt.Println(loader.Get("DB_URL"))
+// err = loader.SetSystemEnv()
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// }
+// 示例 .env：
+// export HOST=localhost
+// PORT=3306
+// DB_NAME=mydb
+// DB_URL=mysql://${HOST}:${PORT}/${DB_NAME}
+// REDIS_URL=redis://${REDIS_HOST:-127.0.0.1}:6379
+// LITERAL='${NOT_EXPAND}'
+// ESCAPED=\${NOT_EXPAND}
+// NESTED=${DB_URL}
+// MULTI_LINE="
+// hello
+// world
+// "
+// 最终结果：
+// DB_URL=mysql://localhost:3306/mydb
+// REDIS_URL=redis://127.0.0.1:6379
+// LITERAL=${NOT_EXPAND}
+// ESCAPED=${NOT_EXPAND}
+// NESTED=mysql://localhost:3306/mydb
+// MULTI_LINE=hello
+// world
+// "
+// 最终结果：
+// DB_URL=mysql://localhost:3306/mydb
+// REDIS_URL=redis://127.0.0.1:6379
+// LITERAL=${NOT_EXPAND}
+// ESCAPED=${NOT_EXPAND}
+// NESTED=mysql://localhost:3306/mydb
+// MULTI_LINE=hello
+// world
+// 这里还有两个生产环境建议：
+// 	1. 不要 panic
+// 当前 expand 内部用了 panic 来快速中断递归。
+// 生产中建议改成：
+// func (...) (string, error)
+// 完整 error return。
+// 	1. Scanner 默认 64K 限制
+// 如果 multiline 很大：
+// scanner.Buffer(make([]byte, 1024), 1024*1024)
+// 否则大 value 会报：
+// bufio.Scanner: token too long

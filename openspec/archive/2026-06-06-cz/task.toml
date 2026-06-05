@@ -1,0 +1,7 @@
+id = "cz"
+type = "task"
+status = "DONE"
+created = "2026-06-06"
+updated = "2026-06-06"
+branch = "feature/cz"
+worktree = ".wt/cz"
