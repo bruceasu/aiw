@@ -58,20 +58,21 @@ aiw show <task-id>
 aiw status <task-id> <status>
 aiw done <task-id>
 aiw archive <task-id> [--push] [--cleanup-wt] [--delete-branch] [--finalize]
-aiw wt <task-id> [base-branch]
-aiw wt-rm <task-id> [--delete-branch] [--force]
-aiw wt-list [--porcelain]
-aiw wt-prune [--dry-run]
-aiw wt-lock <task-id> [reason]
-aiw wt-unlock <task-id>
-aiw wt-repair
+aiw wt add <task-id> [base-branch]
+aiw wt rm  <task-id> [--delete-branch] [--force]
+aiw wt list [--porcelain]
+aiw wt prune [--dry-run]
+aiw wt lock <task-id> [reason]
+aiw wt unlock <task-id>
+aiw wt repair
+aiw wt ignore
 aiw context <task-id>
 aiw decision <task-id>
 aiw spec <spec-id>
 aiw registry
 aiw prompts list
 aiw prompts [template] [--merge] [--force]
-aiw ignore-wt
+aiw git <subcommand>           # run: aiw git help
 ```
 
 ### 命令行为细节
@@ -124,44 +125,28 @@ aiw ignore-wt
   - `--delete-branch`：尝试执行 `git branch -d feature/<task-id>`
   - `--finalize`：等价于同时开启 `--push --cleanup-wt --delete-branch`
 
-8. `aiw wt <task-id> [base-branch]`
-- 默认基线分支：`origin/main`
-- 实际执行：
-  - `git fetch origin`
-  - `git worktree add .wt/<task-id> -b feature/<task-id> <base-branch>`
-- 同步更新 `task.toml` 中的 `branch/worktree/updated`。
+8. `aiw wt <subcommand>` — worktree 管理（`aiw wt help` 查看完整列表）
 
-9. `aiw wt-rm <task-id> [--delete-branch]`
-- 默认执行 `git worktree remove .wt/<task-id>`（安全模式，不强制）。
-- 带 `--force` 时执行强制删除。
-- 会清空 `task.toml` 中的 `worktree` 字段并更新时间。
-- 带 `--delete-branch` 时还会执行 `git branch -d feature/<task-id>`，并清空 `branch` 字段。
+| 子命令 | 说明 |
+|--------|------|
+| `add <task-id> [base]` | 创建 worktree，分支 `feature/<task-id>`，默认基线 `origin/main` |
+| `rm  <task-id> [--delete-branch] [--force]` | 移除 worktree；`--delete-branch` 同时删除本地分支 |
+| `list [--porcelain]` | 列出所有 worktree（对应 `git worktree list`）|
+| `prune [--dry-run]` | 清理失效 worktree 元数据（`--dry-run` 预演）|
+| `lock <task-id> [reason]` | 锁定 worktree，防止误删（适合 hotfix）|
+| `unlock <task-id>` | 解锁 worktree |
+| `repair` | 修复路径移动后的 worktree 链接 |
+| `ignore` | 在 `.gitignore` 中添加 `.wt/` 规则 |
 
-10. `aiw wt-list [--porcelain]`
-- 对应 `git worktree list`。
-- 带 `--porcelain` 时输出脚本友好格式。
+`add` 执行步骤：`git fetch origin` → `git worktree add .wt/<task-id> -b feature/<task-id> <base>`，并同步更新 `task.toml` 中的 `branch/worktree/updated`。
 
-11. `aiw wt-prune [--dry-run]`
-- 对应 `git worktree prune`。
-- 带 `--dry-run` 时执行预演（`-n -v`）。
-
-12. `aiw wt-lock <task-id> [reason]`
-- 对应 `git worktree lock`。
-- 可附原因，适合保护 hotfix 工作区。
-
-13. `aiw wt-unlock <task-id>`
-- 对应 `git worktree unlock`。
-
-14. `aiw wt-repair`
-- 对应 `git worktree repair`。
-
-15. `aiw context <task-id>`
+9. `aiw context <task-id>`
 - 打印该任务建议优先阅读的文件列表和执行约束提示。
 
-16. `aiw registry`
+10. `aiw registry`
 - 重新生成 `openspec/registry.json`。
 
-17. `aiw prompts [template] [--merge] [--force]`
+11. `aiw prompts [template] [--merge] [--force]`
 - `aiw prompts list` 可列出 `docs/agent-templates/` 下当前可用模板目录。
 - 从 `docs/agent-templates/` 生成或合并仓库级 AI 提示文件。
 - 支持的模板目录按当前仓库内容自动识别：
@@ -179,9 +164,109 @@ aiw ignore-wt
   - `--force`：直接覆盖目标文件
 - 执行完成后会输出统一摘要，说明哪些文件被 `created` / `merged` / `wrote` / `skipped existing`
 
-18. `aiw ignore-wt`
+12. `aiw ignore-wt`（已合并为 `aiw wt ignore`）
 - 创建 `.gitignore`，或在现有 `.gitignore` 中追加 `.wt/`。
 - 如果已经存在 `.wt` 或 `.wt/` 规则，则不会重复追加。
+
+13. `aiw git <subcommand>` — Git 快捷命令（`aiw git help` 查看完整列表）
+
+命令按 9 个类别分组：
+
+| 分组 | 包含命令 |
+|------|----------|
+| **Snapshot & Commit** | `save`, `undo`, `ca`, `caf`, `change-author` ⚠, `rm-from-commit` ⚠, `revert` ⚠ |
+| **History & Status** | `st`, `log`, `whatchanged`, `unpushed`, `unpulled` |
+| **Sync & Remote** | `sync`, `update`, `outstanding`, `get`, `set-remote-branch`, `set-remote`, `add-remote`, `add-mirror` |
+| **Branch** | `delete-branch` ⚠, `rename-branch`, `track`, `mv-to-branch` ⚠, `change-branch-base` ⚠ |
+| **File** | `un-add`, `rm-keep`, `restore-file`, `get-file-from`, `rename` |
+| **Conflicts** | `conflicts` |
+| **Tags & Export** | `delete-tag` ⚠, `export` |
+| **Recovery** | `rollback`, `find-commit-back`, `gc` ⚠, `detach` ⚠⚠, `clean-all-histories` ⚠⚠, `subdir-to-root` ⚠⚠ |
+| **Guides** | `how-to-split`, `help` |
+
+⚠ = 需要确认，可用 `--force` 跳过。⚠⚠ = 重写全部历史，协作者需重新 clone。
+
+### 危险命令说明
+
+#### `change-author <Name> <email> [--all --filter-name <old> ...] [--force]`
+
+```bash
+# 修改最后一个 commit 的作者
+aiw git change-author "Bob" bob@example.com
+
+# 重写全部历史，替换匹配旧名字的所有提交
+aiw git change-author "Bob" bob@example.com --all \
+  --filter-name "oldname" --filter-name "old.name"
+```
+
+- 无 `--all`：只 amend 最后一个 commit。
+- 有 `--all`：使用 `git filter-branch --env-filter` 重写全部历史，同时替换 author 和 committer。
+
+#### `rm-from-commit <file> [--history] [--from <commit>] [--force]`
+
+```bash
+# 只从最后一个 commit 删除文件
+aiw git rm-from-commit passwords.txt
+
+# 从整个历史删除
+aiw git rm-from-commit passwords.txt --history
+
+# 只从某个 commit 之后删除（之前的提交不受影响）
+aiw git rm-from-commit passwords.txt --history --from abc1234
+```
+
+底层使用 `git filter-branch --tree-filter 'git rm -f --ignore-unmatch <file>'`。
+
+#### `detach <ref> [--branch <name>] [--message <msg>] [--force]`
+
+```bash
+# 删除 abc1234 之前的所有历史，保留 abc1234..HEAD
+aiw git detach abc1234
+```
+
+等价于：`checkout --orphan` → `commit` → `rebase --onto` → 删除临时分支。
+
+#### `clean-all-histories [--branch <name>] [--remote <name>] [--message <msg>] [--force]`
+
+```bash
+# 将整个仓库历史压缩为单个 commit，并 force-push 到远程
+aiw git clean-all-histories
+aiw git clean-all-histories --branch main --remote origin
+```
+
+#### `subdir-to-root <subdir> [--force]`
+
+```bash
+# 将 trunk 子目录变为新的仓库根目录（适合 SVN 迁移后清理）
+aiw git subdir-to-root trunk
+```
+
+底层使用 `git filter-branch --subdirectory-filter`。不包含该目录的 commit 会被丢弃。
+
+常用示例：
+
+```bash
+aiw git save                          # stage all + commit "wip"
+aiw git save "fix typo"               # commit with message
+aiw git st                            # short status
+aiw git log                           # graph log (last 20)
+aiw git sync                          # fetch origin, rebase, push
+aiw git sync main upstream            # sync branch main against upstream
+aiw git update main                   # update local main without checkout
+aiw git delete-branch old-feat --remote  # delete local + remote branch
+aiw git rename-branch new-name        # rename current branch
+aiw git restore-file src/main.go      # discard working-tree changes
+aiw git rollback                      # show reflog + recovery guide
+aiw git export v2.0.0                 # archive tag to zip
+aiw git change-author "Bob" b@x.com   # amend last commit's author ⚠
+aiw git change-author "Bob" b@x.com --all --filter-name "old"  # rewrite all history ⚠⚠
+aiw git rm-from-commit secret.txt --history  # scrub file from all history ⚠⚠
+aiw git detach abc123                 # drop history before abc123 ⚠⚠
+aiw git clean-all-histories           # squash all history + force-push ⚠⚠
+aiw git subdir-to-root trunk          # make trunk/ the new repo root ⚠⚠
+aiw git help                          # grouped help
+aiw git help --alphabet               # alphabetical listing
+```
 
 ## task.toml 格式（当前实现）
 
@@ -210,16 +295,35 @@ worktree = ".wt/payment-retry"
 ## 快速上手
 
 ```bash
+# 初始化仓库
 aiw init
 aiw init --prompts --merge
 aiw init --prompts --template go
+
+# 任务工作流
 aiw new payment-retry
-aiw wt payment-retry
+aiw wt add payment-retry
 aiw context payment-retry
 aiw status payment-retry IN_PROGRESS
 aiw done payment-retry
 aiw archive payment-retry --finalize
+
+# Worktree
+aiw wt list
+aiw wt prune --dry-run
+aiw wt lock payment-retry "in review"
+aiw wt rm payment-retry --delete-branch
+aiw wt ignore
+
+# Git 快捷命令
+aiw git st
+aiw git save "feat: add retry"
+aiw git sync
+aiw git update main
+aiw git log
+aiw git help
+
+# Prompts
 aiw prompts list
 aiw prompts go --merge
-aiw ignore-wt
 ```

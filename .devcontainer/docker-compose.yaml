@@ -3,7 +3,6 @@ version: "3.9"
 services:
   app:
     image: victor/java25:latest
-    #image: mt5-db-sync:latest
     container_name: agent
     working_dir: /workspace
 
@@ -11,22 +10,32 @@ services:
     volumes:
       - /mnt/libs:/mnt/libs
       - /mnt/temp:/mnt/temp
-      - $PWD:/workspace
-      - $PWD/ai.sh:/usr/bin/ai.sh
-       - $HOME/.tmux.conf:/root/.tmux.conf
-      - $HOME/.m2:/root/.m2
-      - $HOME/.codex:/root/.codex
-      - $HOME/.gitconfig:/root/.gitconfig:ro
-      - $HOME/.aws:/root/.aws:ro
-      - $HOME/bin:/root/bin:ro
+      - ${PWD}:/workspace
+      - ${PWD}/ai.sh:/usr/bin/ai.sh
+      - ${HOME}/.tmux.conf:/root/.tmux.conf
+      - ${HOME}/.m2:/root/.m2
+      - ${HOME}/.codex:/root/.codex
+      - ${HOME}/.gitconfig:/root/.gitconfig:ro
+      - ${HOME}/.aws:/root/.aws:ro
+      - ${HOME}/bin/start-agents.sh:/usr/bin/start-agents.sh:ro
+      - ${HOME}/bin/start-agents-session.sh:/usr/bin/start-agents-session.sh:ro
+      - ${HOME}/bin/tt:/usr/bin/tt:ro
+      - ${HOME}/bin/ts:/usr/bin/ts:ro
     # 指定 JVM 参数 → 从外部 logback.xml 读取
-    # bash -c "/app/run.sh"
-    # ai.sh "$PROFILE" "$SRC_DIR/task.txt"
-    # codex --profile "$PROFILE" "$@"
+    # command: bash -c "/app/run.sh"
+    # command: ai.sh "$PROFILE" "$SRC_DIR/task.txt"
+    # command: codex --profile "$PROFILE" "$@"
+    # command: bash /usr/bin/start-agents.sh
+    # command: ["/bin/bash", "/usr/bin/start-agents.sh"]
     command: >
       bash
+
+    # 保持容器运行，方便调试和交互
+    stdin_open: true
+    tty: true
+
     env_file:
-      - .env.container
+      - .env
     environment:
       APP_ENV: local
 

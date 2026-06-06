@@ -84,5 +84,5 @@ docker run -it --rm \
   victor/java25 \
   ai.sh "$PROFILE" "$SRC_DIR/task.txt"
 #  codex --profile "$PROFILE" "$@"
-  bash
+#  bash
 cd $CWD

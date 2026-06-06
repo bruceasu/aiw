@@ -26,8 +26,10 @@ MD5SUM=$(echo -n "$TASK" | md5sum | awk '{print $1}')
 DATE=$(date +%Y-%m-%d)
 git checkout -b ai/task-$DATE-$MD5SUM
 
+counter=0
 while true
 do
+  counter=$((counter+1))
   codex exec \
     --dangerously-auto-approve \
     --profile "$PROFILE" \
@@ -39,6 +41,10 @@ do
       git add .
       git commit -m "auto implementation"
       # send notification
+      break
+  fi
+  if [ $counter -ge 5 ]; then
+      echo "Failed after 5 attempts. Please check the implementation."
       break
   fi
 done
