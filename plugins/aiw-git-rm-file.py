@@ -113,7 +113,7 @@ def main(argv):
         print('aborted', file=sys.stderr)
         return 1
 
-    tree_filter = f'git rm -f --ignore-unmatch {file}'
+    tree_filter = f'git rm -fr --ignore-unmatch {file}'
 
     cmd = [
         'git',
