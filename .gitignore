@@ -3,4 +3,4 @@ bin
 .env
 .env.*
 .wt/
-__pycache__
+__pycache__/

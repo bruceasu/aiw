@@ -7,6 +7,7 @@ Remove a file from the last commit or scrub it from history.
 import sys
 import os
 import importlib.util
+import shutil
 
 HERE = os.path.dirname(__file__)
 CORE_PATH = os.path.join(HERE, 'aiw-git-core.py')
@@ -23,7 +24,8 @@ META = {
     'short': 'Remove a file from commit or full history.',
     'long': (
         'Removes a file from the last commit, or rewrites history '
-        'to remove it from all commits using filter-branch.'
+        'to remove it from commits using git-filter-repo (if available) '
+        'or filter-branch.'
     ),
     'usage': (
         'aiw-git-rm-file <file> '
@@ -31,9 +33,9 @@ META = {
     ),
     'args': [
         {'flag': '<file>', 'description': 'The file to remove.'},
-        {'flag': '--history', 'description': 'Remove the file from all commits in history.'},
-        {'flag': '--from <commit>', 'description': 'When used with --history, only remove the file from commits after the specified commit.'},
-        {'flag': '--force', 'description': 'Skip confirmation prompt when using --history.'}
+        {'flag': '--history', 'description': 'Remove the file from commits in history.'},
+        {'flag': '--from <commit>', 'description': 'Only remove the file from commits after the specified commit.'},
+        {'flag': '--force', 'description': 'Skip confirmation prompt and pass --force to the rewrite tool.'}
     ],
     'examples': [
         'aiw-git-rm-file secrets.txt',
@@ -89,13 +91,24 @@ def main(argv):
     # History mode
     # ------------------------------------------------------------
     from_commit = None
-
     i = 0
     while i < len(rest):
         if rest[i] == '--from' and i + 1 < len(rest):
             from_commit = rest[i + 1]
             i += 1
         i += 1
+
+    # Check for git-filter-repo
+    filter_repo_script = os.path.join(HERE, 'git-filter-repo.py')
+    filter_repo_exe = shutil.which('git-filter-repo')
+    
+    use_filter_repo = None
+    if os.path.exists(filter_repo_script):
+        use_filter_repo = [sys.executable, filter_repo_script]
+    elif filter_repo_exe:
+        use_filter_repo = [filter_repo_exe]
+
+    tool_name = "git-filter-repo" if use_filter_repo else "git filter-branch"
 
     if from_commit:
         range_desc = f'commits after "{from_commit}" up to HEAD'
@@ -105,7 +118,7 @@ def main(argv):
     warning = (
         f'rm-file --history will permanently delete "{file}" from '
         f'{range_desc}\n'
-        'using git filter-branch. This rewrites history.\n'
+        f'using {tool_name}. This rewrites history.\n'
         'Collaborators must re-clone or reset after a force-push.'
     )
 
@@ -113,23 +126,28 @@ def main(argv):
         print('aborted', file=sys.stderr)
         return 1
 
-    tree_filter = f'git rm -fr --ignore-unmatch {file}'
-
-    cmd = [
-        'git',
-        'filter-branch',
-        '-f',
-        '--tree-filter',
-        tree_filter,
-    ]
-
-    if from_commit:
-        cmd.append('--')
-        cmd.append(f'{from_commit}..HEAD')
+    if use_filter_repo:
+        # Use git-filter-repo
+        cmd = use_filter_repo + ['--path', file, '--invert-paths', '--force']
+        if from_commit:
+            cmd.extend(['--refs', f'{from_commit}..HEAD'])
+        core.run_cmd(cmd)
     else:
-        cmd.append('HEAD')
-
-    core.run_cmd(cmd)
+        # Fallback to filter-branch
+        tree_filter = f'git rm -fr --ignore-unmatch {file}'
+        cmd = [
+            'git',
+            'filter-branch',
+            '-f',
+            '--tree-filter',
+            tree_filter,
+        ]
+        if from_commit:
+            cmd.append('--')
+            cmd.append(f'{from_commit}..HEAD')
+        else:
+            cmd.append('HEAD')
+        core.run_cmd(cmd)
 
     return 0
 
