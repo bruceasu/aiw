@@ -15,12 +15,12 @@ core = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(core)
 
 META = {
-	'name': 'aiw git save',
+	'name': 'aiw git-save',
 	'short': 'Stage all changes and commit (default message: wip).',
 	'long': 'Stages all working-tree changes and commits them. If a message is provided, it is used as the commit message; otherwise the message "wip" is used.',
-	'usage': 'aiw git save [message]',
+	'usage': 'aiw git-save [message]',
 	'args': [],
-	'examples': ['aiw git save', 'aiw git save "fix tests"']
+	'examples': ['aiw git-save', 'aiw git-save "fix tests"']
 }
 
 

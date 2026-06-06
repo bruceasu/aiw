@@ -15,12 +15,12 @@ core = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(core)
 
 META = {
-	'name': 'aiw git st',
+	'name': 'aiw git-st',
 	'short': 'Show concise working-tree status.',
 	'long': 'Shortcut for a concise git status display (git status -sb).',
-	'usage': 'aiw git st',
+	'usage': 'aiw git-st',
 	'args': [],
-	'examples': ['aiw git st']
+	'examples': ['aiw git-st']
 }
 
 

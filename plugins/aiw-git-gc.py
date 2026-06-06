@@ -14,12 +14,14 @@ core = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(core)
 
 META = {
-	'name': 'aiw git gc',
+	'name': 'aiw git-gc',
 	'short': 'Run git gc aggressively (destructive).',
 	'long': 'Runs git gc --aggressive --prune=now. This rewrites history objects and may prevent reflog recovery; confirm before running.',
-	'usage': 'aiw git gc [--force]',
-	'args': [{'flag': '--force', 'desc': 'Skip confirmation prompt.'}],
-	'examples': ['aiw git gc', 'aiw git gc --force']
+	'usage': 'aiw git-gc [--force]',
+	'args': [
+		{'flag': '--force', 'description': 'Skip confirmation prompt.'}
+	],
+	'examples': ['aiw git-gc', '--force']
 }
 
 

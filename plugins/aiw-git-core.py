@@ -64,11 +64,13 @@ def git_confirm(prompt, args):
     if has_flag(args, "--force"):
         return True
     print(f"warning: {prompt}\nProceed? [y/N] ", end="", file=sys.stderr)
-    resp = sys.stdin.readline().strip()
-    return resp.lower() == 'y'
+    answer = sys.stdin.readline().strip()
+    return answer.lower() in ("y", "yes")
+
 
 
 def current_branch():
+    """Return the current checked-out branch."""
     out = git_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
     return out.strip()
 
@@ -98,7 +100,7 @@ def print_help_meta(meta):
     if meta.get('args'):
         print('Arguments:')
         for a in meta['args']:
-            print(f"  {a.get('flag', ''):12}  {a.get('desc','')}")
+            print(f"  {a.get('flag', ''):12}  {a.get('description','')}")
         print()
     if meta.get('examples'):
         print('Examples:')
@@ -124,7 +126,7 @@ def generate_md_from_meta(meta, outpath):
     if meta.get('args'):
         lines.append("Arguments:")
         for a in meta['args']:
-            lines.append(f"- {a.get('flag','')} — {a.get('desc','')}")
+            lines.append(f"- {a.get('flag','')} — {a.get('description','')}")
         lines.append("")
     if meta.get('examples'):
         lines.append("Examples:")
@@ -136,6 +138,63 @@ def generate_md_from_meta(meta, outpath):
     with open(outpath, 'w', encoding='utf-8') as f:
         f.write('\n'.join(lines))
 
+def detect_default_branch(remote):
+    """
+    Detect the default branch for a remote.
+
+    Tries:
+        refs/remotes/<remote>/HEAD
+
+    Falls back to:
+        main
+        master
+    """
+
+    try:
+        ref = git_output(
+            "git",
+            "symbolic-ref",
+            f"refs/remotes/{remote}/HEAD",
+            "--short",
+        )
+
+        prefix = f"{remote}/"
+
+        if ref.startswith(prefix):
+            return ref[len(prefix):]
+
+    except RuntimeError:
+        pass
+
+    # Fallback candidates.
+    for candidate in ("main", "master"):
+        if ref_exists(f"refs/heads/{candidate}"):
+            return candidate
+
+    raise RuntimeError(
+        "cannot detect default branch; "
+        "pass one explicitly, e.g.: aiw git update main"
+    )
+
+
+
+def ref_exists(ref):
+    """Check whether a git ref exists."""
+    result = subprocess.run(
+        ["git", "show-ref", "--verify", "--quiet", ref]
+    )
+    return result.returncode == 0
+
+
+def git_confirm(message, args):
+    """
+    Ask for confirmation unless --force is present.
+    """
+    if "--force" in args:
+        return True
+
+    answer = input(f"{message} [y/N]: ").strip().lower()
+    return answer in ("y", "yes")
 
 if __name__ == '__main__':
     print('aiw-git-core is a library; run one of the aiw-git-<sub> wrappers')
@@ -151,105 +210,12 @@ if __name__ == '__main__':
     if 'args' in info:
         print("Arguments:")
         for a in info['args']:
-            print(f"  {a['flag']:12}  {a['desc']}")
+            print(f"  {a['flag']:12}  {a['description']}")
         print()
     if 'examples' in info:
         print("Examples:")
         for ex in info['examples']:
             print(f"  {ex}")
-
-
-# Help metadata for subcommands
-HELP = {
-    'save': {
-        'name': 'aiw git save',
-        'short': 'Stage all changes and commit (default message: wip).',
-        'long': 'Stages all working-tree changes and commits them. If a message is provided, it is used as the commit message; otherwise the message "wip" is used.',
-        'usage': 'aiw git save [message]',
-        'args': [],
-        'examples': ['aiw git save', 'aiw git save "fix tests"']
-    },
-    'undo': {
-        'name': 'aiw git undo',
-        'short': 'Undo last commit while keeping changes (or discard with --hard).',
-        'long': 'Resets HEAD to the previous commit. By default changes are kept in the working tree. Use --hard to discard changes (dangerous).',
-        'usage': 'aiw git undo [--hard] [--force]',
-        'args': [
-            {'flag': '--hard', 'desc': 'Also discard working-tree changes.'},
-            {'flag': '--force', 'desc': 'Skip confirmation prompts.'},
-        ],
-        'examples': ['aiw git undo', 'aiw git undo --hard --force']
-    },
-    'st': {
-        'name': 'aiw git st',
-        'short': 'Show concise working-tree status.',
-        'long': 'Shortcut for a concise git status display.',
-        'usage': 'aiw git st',
-        'args': [],
-        'examples': ['aiw git st']
-    },
-    'status': {
-        'name': 'aiw git status',
-        'short': 'Show concise working-tree status.',
-        'long': 'Alias of `aiw git st`.',
-        'usage': 'aiw git status',
-        'args': [],
-        'examples': ['aiw git status']
-    },
-    'log': {
-        'name': 'aiw git log',
-        'short': 'Show a formatted commit log with several styles.',
-        'long': 'Displays the commit history. Supports styles: lg (default), l (one-line), hist (absolute dates).',
-        'usage': 'aiw git log [lg|l|hist] [-n <count>]',
-        'args': [
-            {'flag': 'lg|l|hist', 'desc': 'Choose log style.'},
-            {'flag': '-n <count>', 'desc': 'Number of commits to show.'},
-        ],
-        'examples': ['aiw git log lg', 'aiw git log -n 50']
-    },
-    'gc': {
-        'name': 'aiw git gc',
-        'short': 'Run git gc aggressively (destructive).',
-        'long': 'Runs `git gc --aggressive --prune=now`. This rewrites history objects and may prevent reflog recovery; confirm before running.',
-        'usage': 'aiw git gc [--force]',
-        'args': [
-            {'flag': '--force', 'desc': 'Skip the confirmation prompt.'},
-        ],
-        'examples': ['aiw git gc', 'aiw git gc --force']
-    },
-    'unpushed': {
-        'name': 'aiw git unpushed',
-        'short': 'Show commits not yet pushed to the upstream.',
-        'long': 'Lists commits that are present locally but not on the upstream branch.',
-        'usage': 'aiw git unpushed',
-        'args': [],
-        'examples': ['aiw git unpushed']
-    },
-    'unpulled': {
-        'name': 'aiw git unpulled',
-        'short': 'Show commits on remote not yet pulled locally.',
-        'long': 'Lists commits on the upstream branch that are not present locally.',
-        'usage': 'aiw git unpulled',
-        'args': [],
-        'examples': ['aiw git unpulled']
-    },
-    'outstanding': {
-        'name': 'aiw git outstanding',
-        'short': 'Interactive rebase against upstream.',
-        'long': 'Runs an interactive rebase against the upstream branch (@{u}).',
-        'usage': 'aiw git outstanding',
-        'args': [],
-        'examples': ['aiw git outstanding']
-    },
-    'whatchanged': {
-        'name': 'aiw git whatchanged',
-        'short': 'Show what changed (alias).',
-        'long': 'Convenience wrapper to view changes (delegates to git).',
-        'usage': 'aiw git whatchanged [args]',
-        'args': [],
-        'examples': ['aiw git whatchanged']
-    },
-}
 
 
 def main():
