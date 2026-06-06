@@ -1,0 +1,24 @@
+{
+  "name": "springboot-codex",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "workspaceFolder": "/workspace",
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspace,type=bind",
+    "source=${env:HOME}/.m2,target=/root/.m2,type=bind",
+    "source=${env:HOME}/.codex,target=/root/.codex,type=bind"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vmware.vscode-spring-boot",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  },
+  "remoteEnv": {
+    "MAVEN_OPTS": "-Xmx4g"
+  }
+}
