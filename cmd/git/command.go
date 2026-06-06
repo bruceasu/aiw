@@ -1,15 +1,18 @@
-package main
+package git
 
 import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"sort"
 	"strings"
 )
 
-// dispatchGit routes `aiw git <subcommand> [args]`.
-func dispatchGit(args []string) error {
+var dryRun bool
+
+// Dispatch routes `aiw git <subcommand> [args]`.
+func Dispatch(args []string) error {
 	// Strip --dry-run before any dispatch.
 	filtered := args[:0]
 	for _, a := range args {
@@ -33,8 +36,6 @@ func dispatchGit(args []string) error {
 	switch sub {
 	case "save":
 		return gitSave(rest)
-	case "cz":
-		return gitCz(rest)
 	case "undo":
 		return gitUndo(rest)
 	case "sync":
@@ -1454,7 +1455,6 @@ func gitUsage(args []string) {
 	groups := []grp{
 		{"Snapshot & Commit", []cmd{
 			{"save [message]", `Stage all and commit (default: "wip").`},
-			{"cz [--llm|--no-llm] [-N N] [--emoji]", "Wizard commit generator; LLM is opt-in and disabled by default."},
 			{"undo [--hard]", "Undo last commit; keeps changes unless --hard. \u26a0"},
 			{"ca", "Amend last commit interactively (all changes)."},
 			{"caf", "Amend last commit silently (all changes)."},
@@ -1555,9 +1555,6 @@ func gitUsage(args []string) {
 	fmt.Printf("\u2500\u2500 Examples %s\n", sep)
 	examples := [][2]string{
 		{"aiw git save", `commit everything with message "wip"`},
-		{"aiw git cz", "interactive wizard commit (default: no LLM)"},
-		{"aiw git cz --llm -N 5", "generate 5 LLM candidates and choose one"},
-		{"aiw git cz --emoji", "wizard commit with emoji-prefixed header"},
 		{"aiw git save \"fix typo\"", "commit with custom message"},
 		{"aiw git undo", "soft-reset last commit (keeps edits)"},
 		{"aiw git undo --hard", "discard last commit AND edits"},
@@ -1599,4 +1596,47 @@ func gitUsage(args []string) {
 	fmt.Println()
 
 	fmt.Print(footer)
+}
+
+func run(name string, args ...string) error {
+	fmt.Fprintf(os.Stderr, "+ %s %s\n", name, strings.Join(args, " "))
+	if dryRun {
+		fmt.Fprintln(os.Stderr, "  (dry-run: skipped)")
+		return nil
+	}
+	cmd := exec.Command(name, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	return cmd.Run()
+}
+
+func gitOutput(name string, args ...string) (string, error) {
+	cmd := exec.Command(name, args...)
+	cmd.Stderr = os.Stderr
+	out, err := cmd.Output()
+	return strings.TrimSpace(string(out)), err
+}
+
+func hasFlag(args []string, flag string) bool {
+	for _, a := range args {
+		if a == flag {
+			return true
+		}
+	}
+	return false
+}
+
+func hasRemote(name string) bool {
+	cmd := exec.Command("git", "remote", "get-url", name)
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	return cmd.Run() == nil
+}
+
+func refExists(ref string) bool {
+	cmd := exec.Command("git", "rev-parse", "--verify", ref)
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	return cmd.Run() == nil
 }

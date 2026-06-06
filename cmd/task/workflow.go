@@ -1,34 +1,16 @@
-package main
+package task
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"aiw/internal/fsx"
+	"aiw/internal/gitx"
+	"aiw/internal/taskx"
 )
-
-type TaskMeta struct {
-	ID       string
-	Type     string
-	Status   string
-	Created  string
-	Updated  string
-	Branch   string
-	Worktree string
-	Specs    []string
-	Tags     []string
-}
-
-type RegistryEntry struct {
-	ID        string `json:"id"`
-	Status    string `json:"status"`
-	Branch    string `json:"branch"`
-	Worktree  string `json:"worktree"`
-	Path      string `json:"path"`
-	UpdatedAt string `json:"updated_at"`
-}
 
 type ArchiveOptions struct {
 	Push         bool
@@ -40,21 +22,21 @@ func newTask(id string) error {
 	if !safeID(id) {
 		return errors.New("invalid task id")
 	}
-	dir := filepath.Join(changesDir, id)
-	if exists(dir) {
+	dir := taskx.TaskDir(id)
+	if fsx.Exists(dir) {
 		return fmt.Errorf("task already exists: %s", dir)
 	}
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	meta := TaskMeta{
+	meta := taskx.TaskMeta{
 		ID:       id,
 		Type:     "task",
 		Status:   "TODO",
-		Created:  today(),
-		Updated:  today(),
+		Created:  taskx.Today(),
+		Updated:  taskx.Today(),
 		Branch:   "feature/" + id,
-		Worktree: filepath.ToSlash(filepath.Join(worktreeDir, id)),
+		Worktree: filepath.ToSlash(filepath.Join(taskx.WorktreeDir, id)),
 	}
 	taskMD := `# Goal
 Describe the goal.
@@ -82,25 +64,25 @@ Relevant modules:
 	notesMD := `# Notes
 Temporary findings, debugging notes, experiments.
 `
-	if err := writeTaskMeta(filepath.Join(dir, "task.toml"), meta); err != nil {
+	if err := taskx.WriteTaskMeta(filepath.Join(dir, "task.toml"), meta); err != nil {
 		return err
 	}
-	if err := os.WriteFile(filepath.Join(dir, "task.md"), []byte(taskMD), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "task.md"), []byte(taskMD), 0o644); err != nil {
 		return err
 	}
-	if err := os.WriteFile(filepath.Join(dir, "notes.md"), []byte(notesMD), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "notes.md"), []byte(notesMD), 0o644); err != nil {
 		return err
 	}
 	return writeRegistry()
 }
 
 func createDecision(id string) error {
-	dir := filepath.Join(changesDir, id)
-	if !exists(dir) {
+	dir := taskx.TaskDir(id)
+	if !fsx.Exists(dir) {
 		return fmt.Errorf("task not found: %s", id)
 	}
 	design := filepath.Join(dir, "design.md")
-	if exists(design) {
+	if fsx.Exists(design) {
 		fmt.Println("design.md already exists")
 		return nil
 	}
@@ -114,22 +96,22 @@ func createDecision(id string) error {
 ## Future Notes
 ...
 `, id)
-	return os.WriteFile(design, []byte(content), 0644)
+	return os.WriteFile(design, []byte(content), 0o644)
 }
 
 func createSpec(id string) error {
-	dir := filepath.Join(specsDir, id)
-	if exists(dir) {
+	dir := filepath.Join(taskx.SpecsDir, id)
+	if fsx.Exists(dir) {
 		return fmt.Errorf("spec already exists: %s", id)
 	}
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
 	meta := `id = "` + id + `"
 type = "spec"
 status = "active"
-created = "` + today() + `"
-updated = "` + today() + `"
+created = "` + taskx.Today() + `"
+updated = "` + taskx.Today() + `"
 `
 	spec := fmt.Sprintf(`# %s Spec
 ## Purpose
@@ -141,14 +123,14 @@ updated = "` + today() + `"
 ## Notes
 ...
 `, strings.Title(id))
-	if err := os.WriteFile(filepath.Join(dir, "spec.toml"), []byte(meta), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "spec.toml"), []byte(meta), 0o644); err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dir, "spec.md"), []byte(spec), 0644)
+	return os.WriteFile(filepath.Join(dir, "spec.md"), []byte(spec), 0o644)
 }
 
 func listTasks() error {
-	entries, err := os.ReadDir(changesDir)
+	entries, err := os.ReadDir(taskx.ChangesDir)
 	if err != nil {
 		return err
 	}
@@ -156,21 +138,21 @@ func listTasks() error {
 		if !e.IsDir() {
 			continue
 		}
-		meta, err := readTaskMeta(filepath.Join(changesDir, e.Name(), "task.toml"))
+		meta, err := taskx.ReadTaskMeta(filepath.Join(taskx.ChangesDir, e.Name(), "task.toml"))
 		if err != nil {
 			continue
 		}
 		fmt.Printf("%-24s %-12s %s\n",
 			meta.ID,
 			meta.Status,
-			filepath.ToSlash(filepath.Join(changesDir, e.Name())),
+			filepath.ToSlash(filepath.Join(taskx.ChangesDir, e.Name())),
 		)
 	}
 	return nil
 }
 
 func showTask(id string) error {
-	path := filepath.Join(changesDir, id, "task.md")
+	path := filepath.Join(taskx.ChangesDir, id, "task.md")
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -180,27 +162,27 @@ func showTask(id string) error {
 }
 
 func updateStatus(id, status string) error {
-	metaPath := filepath.Join(changesDir, id, "task.toml")
-	meta, err := readTaskMeta(metaPath)
+	metaPath := taskx.TaskMetaPath(id)
+	meta, err := taskx.ReadTaskMeta(metaPath)
 	if err != nil {
 		return err
 	}
 	meta.Status = strings.ToUpper(status)
-	meta.Updated = today()
-	if err := writeTaskMeta(metaPath, meta); err != nil {
+	meta.Updated = taskx.Today()
+	if err := taskx.WriteTaskMeta(metaPath, meta); err != nil {
 		return err
 	}
 	return writeRegistry()
 }
 
 func archiveTask(id string, opts ArchiveOptions) error {
-	src := filepath.Join(changesDir, id)
-	if !exists(src) {
+	src := taskx.TaskDir(id)
+	if !fsx.Exists(src) {
 		return fmt.Errorf("task not found: %s", id)
 	}
 
-	metaPath := filepath.Join(src, "task.toml")
-	meta, err := readTaskMeta(metaPath)
+	metaPath := taskx.TaskMetaPath(id)
+	meta, err := taskx.ReadTaskMeta(metaPath)
 	if err != nil {
 		return err
 	}
@@ -209,31 +191,28 @@ func archiveTask(id string, opts ArchiveOptions) error {
 	if branch == "" {
 		branch = "feature/" + id
 	}
-
 	wt := strings.TrimSpace(meta.Worktree)
 	if wt == "" {
-		wt = filepath.ToSlash(filepath.Join(worktreeDir, id))
+		wt = filepath.ToSlash(filepath.Join(taskx.WorktreeDir, id))
 	}
 
 	if opts.Push {
-		if err := run("git", "push", "-u", "origin", branch); err != nil {
+		if err := gitx.Run("git", "push", "-u", "origin", branch); err != nil {
 			return err
 		}
 	}
-
 	if opts.CleanupWT {
-		if err := run("git", "worktree", "remove", wt); err != nil {
+		if err := gitx.Run("git", "worktree", "remove", wt); err != nil {
 			return err
 		}
 	}
-
 	if opts.DeleteBranch {
-		if err := run("git", "branch", "-d", branch); err != nil {
+		if err := gitx.Run("git", "branch", "-d", branch); err != nil {
 			return err
 		}
 	}
 
-	dst := filepath.Join(archiveDir, today()+"-"+id)
+	dst := filepath.Join(taskx.ArchiveDir, taskx.Today()+"-"+id)
 	if err := os.Rename(src, dst); err != nil {
 		return err
 	}
@@ -241,8 +220,8 @@ func archiveTask(id string, opts ArchiveOptions) error {
 }
 
 func printContext(id string) error {
-	changeDir := filepath.Join(changesDir, id)
-	if !exists(changeDir) {
+	changeDir := taskx.TaskDir(id)
+	if !fsx.Exists(changeDir) {
 		return fmt.Errorf("task not found: %s", id)
 	}
 	fmt.Print("Read these files first:\n\n")
@@ -253,14 +232,14 @@ func printContext(id string) error {
 		filepath.Join(changeDir, "notes.md"),
 	}
 	for _, f := range files {
-		if exists(f) {
+		if fsx.Exists(f) {
 			fmt.Println("-", filepath.ToSlash(f))
 		}
 	}
-	meta, err := readTaskMeta(filepath.Join(changeDir, "task.toml"))
+	meta, err := taskx.ReadTaskMeta(filepath.Join(changeDir, "task.toml"))
 	if err == nil {
 		for _, spec := range meta.Specs {
-			fmt.Println("-", filepath.ToSlash(filepath.Join(specsDir, spec, "spec.md")))
+			fmt.Println("-", filepath.ToSlash(filepath.Join(taskx.SpecsDir, spec, "spec.md")))
 		}
 	}
 	fmt.Print(`
@@ -272,66 +251,6 @@ Instruction:
 - use %% notes instead of guessing
 `)
 	return nil
-}
-
-func readTaskMeta(path string) (TaskMeta, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return TaskMeta{}, err
-	}
-	defer file.Close()
-	meta := TaskMeta{}
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		key := strings.TrimSpace(parts[0])
-		value := strings.TrimSpace(parts[1])
-		value = strings.Trim(value, `"`)
-		switch key {
-		case "id":
-			meta.ID = value
-		case "type":
-			meta.Type = value
-		case "status":
-			meta.Status = value
-		case "created":
-			meta.Created = value
-		case "updated":
-			meta.Updated = value
-		case "branch":
-			meta.Branch = value
-		case "worktree":
-			meta.Worktree = value
-		}
-	}
-	return meta, scanner.Err()
-}
-
-func writeTaskMeta(path string, meta TaskMeta) error {
-	content := fmt.Sprintf(`id = "%s"
-type = "%s"
-status = "%s"
-created = "%s"
-updated = "%s"
-branch = "%s"
-worktree = "%s"
-`,
-		meta.ID,
-		meta.Type,
-		meta.Status,
-		meta.Created,
-		meta.Updated,
-		meta.Branch,
-		meta.Worktree,
-	)
-	return os.WriteFile(path, []byte(content), 0644)
 }
 
 func parseArchiveOptions(args []string) (ArchiveOptions, error) {
@@ -357,4 +276,39 @@ func parseArchiveOptions(args []string) (ArchiveOptions, error) {
 		opts.DeleteBranch = true
 	}
 	return opts, nil
+}
+
+func hasFlag(args []string, flag string) bool {
+	for _, a := range args {
+		if a == flag {
+			return true
+		}
+	}
+	return false
+}
+
+func safeID(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		if r >= 'a' && r <= 'z' {
+			continue
+		}
+		if r >= 'A' && r <= 'Z' {
+			continue
+		}
+		if r >= '0' && r <= '9' {
+			continue
+		}
+		if r == '-' || r == '_' || r == '.' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func writeRegistry() error {
+	return taskx.WriteRegistry()
 }

@@ -39,6 +39,12 @@ repo/
 ## 安装与构建
 
 ```bash
+
+# TCC 包装器
+aiw tcc hello.c -o hello.exe
+aiw tcc dll hello.c -o hello.dll
+aiw tcc x86_64 hello.c -o hello.exe
+aiw tcc run hello.c
 go build -o aiw .
 ```
 
@@ -72,6 +78,7 @@ aiw spec <spec-id>
 aiw registry
 aiw prompts list
 aiw prompts [template] [--merge] [--force]
+aiw tcc [args...]           # TCC wrapper with auto include/lib defaults
 aiw git <subcommand>           # run: aiw git help
 ```
 
@@ -174,7 +181,7 @@ aiw git <subcommand>           # run: aiw git help
 
 | 分组 | 包含命令 |
 |------|----------|
-| **Snapshot & Commit** | `save`, `undo`, `ca`, `caf`, `change-author` ⚠, `rm-from-commit` ⚠, `revert` ⚠ |
+| **Snapshot & Commit** | `save`, `cz`, `undo`, `ca`, `caf`, `change-author` ⚠, `rm-from-commit` ⚠, `revert` ⚠ |
 | **History & Status** | `st`, `log`, `whatchanged`, `unpushed`, `unpulled` |
 | **Sync & Remote** | `sync`, `update`, `outstanding`, `get`, `set-remote-branch`, `set-remote`, `add-remote`, `add-mirror` |
 | **Branch** | `delete-branch` ⚠, `rename-branch`, `track`, `mv-to-branch` ⚠, `change-branch-base` ⚠ |
@@ -247,6 +254,9 @@ aiw git subdir-to-root trunk
 
 ```bash
 aiw git save                          # stage all + commit "wip"
+aiw git cz                            # 向导式提交（默认不启用 LLM）
+aiw git cz --llm -N 5                # 启用 LLM，生成 5 条候选供选择
+aiw git cz --emoji                   # 启用 emoji 提升可辨识度
 aiw git save "fix typo"               # commit with message
 aiw git st                            # short status
 aiw git log                           # graph log (last 20)
@@ -266,6 +276,52 @@ aiw git clean-all-histories           # squash all history + force-push ⚠⚠
 aiw git subdir-to-root trunk          # make trunk/ the new repo root ⚠⚠
 aiw git help                          # grouped help
 aiw git help --alphabet               # alphabetical listing
+```
+
+### `aiw git cz`（Conventional Commit 向导）
+
+- 默认行为：不启用 LLM，进入双语向导填写 type/scope/subject/body/breaking/footer。
+- 长文本编辑：在 body/breaking/footer 输入 `/edit` 或 `^e`（Ctrl+E 文本快捷）可启动外部编辑器。
+- 可选 LLM：仅在 `--llm` 时启用，直连 OpenAI Chat Completions API（不再依赖 `codex exec` 输出解析）。
+
+```bash
+set OPENAI_API_KEY=your_api_key
+# optional
+set OPENAI_MODEL=gpt-4o-mini
+set OPENAI_BASE_URL=https://api.openai.com/v1
+```
+
+- 配置优先级：`CLI` > `项目根目录配置` > `程序目录配置`。
+- 配置文件：`aiw.toml` 或 `.aiw.toml`（TOML）。
+- `EDITOR`：可选，配置后优先于环境变量编辑器（`GIT_EDITOR`/`VISUAL`/`EDITOR`）。
+- OpenAI 配置读取优先级：`配置文件 [cz]` > `外部环境变量` > `当前目录 .env` > `程序目录 .env` > 默认值。
+- 可配置项：`model` / `base_url` / `api_key`（分别对应 `OPENAI_MODEL` / `OPENAI_BASE_URL` / `OPENAI_API_KEY`）。
+
+示例配置：
+
+```toml
+[cz]
+llm = false
+candidates = 3
+emoji = false
+EDITOR = "code --wait"
+model = "gpt-4o-mini"
+base_url = "https://api.openai.com/v1"
+api_key = ""
+
+[cz.messages]
+type = "选择你要提交的类型 / Select commit type:"
+scope = "选择一个提交范围（可选）/ Scope (optional):"
+subject = "填写简短精炼的变更描述 / Subject:"
+confirmCommit = "是否提交或修改 commit? / Commit or modify?"
+
+[[cz.types]]
+value = "feat"
+name = "feat:     新增功能 | A new feature"
+
+[[cz.types]]
+value = "fix"
+name = "fix:      修复缺陷 | A bug fix"
 ```
 
 ## task.toml 格式（当前实现）
@@ -322,6 +378,12 @@ aiw git sync
 aiw git update main
 aiw git log
 aiw git help
+
+# TCC 包装器
+aiw tcc hello.c -o hello.exe
+aiw tcc dll hello.c -o hello.dll
+aiw tcc x86_64 hello.c -o hello.exe
+aiw tcc run hello.c
 
 # Prompts
 aiw prompts list

@@ -1,0 +1,99 @@
+# aiw git cz configuration template
+# Priority: CLI > project-root config > program-directory config
+# Supported file names: aiw.toml or .aiw.toml
+
+[cz]
+# Default is no-llm wizard. Set true to enable LLM by default.
+llm = false
+
+# Candidate count used in LLM mode.
+candidates = 3
+
+# LLM model used by direct OpenAI API call.
+# You can also set OPENAI_MODEL environment variable.
+model = "gpt-4o-mini"
+
+# OpenAI API base URL.
+# You can also set OPENAI_BASE_URL environment variable.
+base_url = "https://api.openai.com/v1"
+
+# OpenAI API key.
+# You can also set OPENAI_API_KEY environment variable.
+api_key = ""
+
+# Print resolved source for OPENAI_MODEL/OPENAI_BASE_URL/OPENAI_API_KEY
+# during `aiw git cz --llm` runs.
+# Also can be enabled by environment variable: AIW_CZ_DEBUG=1
+debug_source = false
+
+# Fallback source when process env is not set:
+# 1) ./.env (current working directory)
+# 2) <program-dir>/.env
+
+# Add emoji prefix in commit header.
+emoji = false
+
+# Preferred editor command for long-form editing in cz flow.
+# If configured, this takes precedence over GIT_EDITOR/VISUAL/EDITOR.
+# Examples:
+# editor = "code --wait"
+# editor = "notepad"
+EDITOR = ""
+# In wizard prompts, input /edit or ^e to launch this editor for long text.
+
+[cz.messages]
+type = "选择你要提交的类型 / Select commit type:"
+scope = "选择一个提交范围（可选）/ Scope (optional):"
+customScope = "请输入自定义的提交范围 / Input custom scope:"
+subject = "填写简短精炼的变更描述 / Subject:\n"
+body = "填写更加详细的变更描述（可选） / Body (optional), use | for new line:\n"
+breaking = "列举非兼容性重大的变更（可选） / Breaking changes (optional), use | for new line:\n"
+footerPrefixesSelect = "选择关联 issue 前缀（可选） / Select issue prefix (optional):"
+customFooterPrefix = "输入自定义 issue 前缀 / Input custom issue prefix:"
+footer = "列举关联 issue（可选），例如: #31, #I3244 / Footer (optional):\n"
+confirmCommit = "是否提交或修改 commit? / Commit or modify?"
+
+# You can override type list entirely by defining your own [[cz.types]] entries.
+[[cz.types]]
+value = "feat"
+name = "feat:     新增功能 | A new feature"
+
+[[cz.types]]
+value = "fix"
+name = "fix:      修复缺陷 | A bug fix"
+
+[[cz.types]]
+value = "docs"
+name = "docs:     文档更新 | Documentation only changes"
+
+[[cz.types]]
+value = "style"
+name = "style:    代码格式 | Changes that do not affect the meaning of the code"
+
+[[cz.types]]
+value = "refactor"
+name = "refactor: 代码重构 | A code change that neither fixes a bug nor adds a feature"
+
+[[cz.types]]
+value = "perf"
+name = "perf:     性能提升 | A code change that improves performance"
+
+[[cz.types]]
+value = "test"
+name = "test:     测试相关 | Adding missing tests or correcting existing tests"
+
+[[cz.types]]
+value = "build"
+name = "build:    构建相关 | Changes that affect the build system or external dependencies"
+
+[[cz.types]]
+value = "ci"
+name = "ci:       持续集成 | Changes to our CI configuration files and scripts"
+
+[[cz.types]]
+value = "revert"
+name = "revert:   回退代码 | Revert to a commit"
+
+[[cz.types]]
+value = "chore"
+name = "chore:    其他修改 | Other changes that do not modify src or test files"

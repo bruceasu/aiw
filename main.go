@@ -1,8 +1,14 @@
 package main
 
 import (
+	czcmd "aiw/cmd/cz"
 	"fmt"
 	"os"
+
+	gitcmd "aiw/cmd/git"
+	taskcmd "aiw/cmd/task"
+	wtcmd "aiw/cmd/wt"
+	tcccmd "aiw/cmd/tcc"
 )
 
 const (
@@ -27,56 +33,37 @@ func main() {
 	var err error
 	switch os.Args[1] {
 	case "init":
-		opts, parseErr := parseInitOptions(os.Args[2:])
-		if parseErr != nil {
-			err = parseErr
-			break
-		}
-		err = initWorkspace(opts)
+		err = taskcmd.DispatchTopLevel("init", os.Args[2:])
 	case "new":
-		requireArgs(3, "new <task-id>")
-		err = newTask(os.Args[2])
+		err = taskcmd.DispatchTopLevel("new", os.Args[2:])
 	case "list":
-		err = listTasks()
+		err = taskcmd.DispatchTopLevel("list", os.Args[2:])
 	case "show":
-		requireArgs(3, "show <task-id>")
-		err = showTask(os.Args[2])
+		err = taskcmd.DispatchTopLevel("show", os.Args[2:])
 	case "status":
-		requireArgs(4, "status <task-id> <status>")
-		err = updateStatus(os.Args[2], os.Args[3])
+		err = taskcmd.DispatchTopLevel("status", os.Args[2:])
 	case "done":
-		requireArgs(3, "done <task-id>")
-		err = updateStatus(os.Args[2], "DONE")
+		err = taskcmd.DispatchTopLevel("done", os.Args[2:])
 	case "archive":
-		requireArgs(3, "archive <task-id> [--push] [--cleanup-wt] [--delete-branch]")
-		opts, parseErr := parseArchiveOptions(os.Args[3:])
-		if parseErr != nil {
-			err = parseErr
-			break
-		}
-		err = archiveTask(os.Args[2], opts)
+		err = taskcmd.DispatchTopLevel("archive", os.Args[2:])
 	case "wt":
-		err = dispatchWt(os.Args[2:])
+		err = wtcmd.Dispatch(os.Args[2:])
 	case "context":
-		requireArgs(3, "context <task-id>")
-		err = printContext(os.Args[2])
+		err = taskcmd.DispatchTopLevel("context", os.Args[2:])
 	case "decision":
-		requireArgs(3, "decision <task-id>")
-		err = createDecision(os.Args[2])
+		err = taskcmd.DispatchTopLevel("decision", os.Args[2:])
 	case "spec":
-		requireArgs(3, "spec <spec-id>")
-		err = createSpec(os.Args[2])
+		err = taskcmd.DispatchTopLevel("spec", os.Args[2:])
 	case "registry":
-		err = writeRegistry()
+		err = taskcmd.DispatchTopLevel("registry", os.Args[2:])
 	case "prompts":
-		opts, parseErr := parsePromptOptions(os.Args[2:])
-		if parseErr != nil {
-			err = parseErr
-			break
-		}
-		err = syncPrompts(opts)
+		err = taskcmd.DispatchTopLevel("prompts", os.Args[2:])
+	case "tcc":
+		err = tcccmd.Dispatch(os.Args[2:])
 	case "git":
-		err = dispatchGit(os.Args[2:])
+		err = gitcmd.Dispatch(os.Args[2:])
+	case "cz":
+		err = czcmd.Dispatch(os.Args[2:])
 	default:
 		usage()
 	}
@@ -112,6 +99,13 @@ Git shortcuts  (run: aiw git help)
                             Snapshot & Commit · History & Status · Sync & Remote
                             Branch · File · Conflicts · Tags & Export · Recovery · Guides
 
+TCC wrapper  (run: aiw tcc help)
+	tcc [args...]              Forward to tcc with auto -I/-L from the TCC root.
+	tcc dll [args...]          Shortcut for shared library builds (-shared).
+	tcc static [args...]       Shortcut for static linking (-static).
+	tcc run [args...]          Shortcut for compile-and-run (-run).
+	tcc help                   Show wrapper help and detected default paths.
+
 Examples:
   aiw init --prompts --template go
   aiw new payment-retry
@@ -123,6 +117,10 @@ Examples:
   aiw git save "fix typo"
   aiw git sync
   aiw git help
+	aiw tcc hello.c -o hello.exe
+	aiw tcc dll hello.c -o hello.dll
+	aiw tcc static hello.c -o hello.exe
+	aiw tcc run hello.c
 `)
 }
 func requireArgs(n int, syntax string) {
