@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"aiw/internal/fsx"
+	plug "aiw/internal/plugin"
 )
 
 // Dispatch implements a flexible help command:
@@ -91,7 +92,10 @@ Task management:
 // getPluginShort attempts to read the plugin source and extract META['short'].
 // If not found, returns empty string.
 func getPluginShort(name string) string {
-	path := filepath.Join("plugins", fmt.Sprintf("aiw-%s.py", name))
+	path := pluginScriptPath(name)
+	if path == "" {
+		return ""
+	}
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return ""
@@ -145,7 +149,7 @@ func listBuiltins() ([]string, error) {
 	builtinCommands := []string{
 		"init", "new", "list", "show", "status", "done",
 		"archive", "context", "decision", "spec", "registry",
-		"prompts", "wt", "git", "tcc", "task", "cz",
+		"prompts", "wt", "git", "tcc", "task",
 	}
 
 	out := []string{}
@@ -163,7 +167,7 @@ func listBuiltins() ([]string, error) {
 				continue
 			}
 			name := e.Name()
-			if name == "help" {
+			if name == "help" || name == "cz" {
 				continue
 			}
 			if !seen[name] {
@@ -182,21 +186,32 @@ func listPlugins() ([]string, error) {
 		return nil, err
 	}
 	out := []string{}
+	seen := map[string]bool{}
 	for _, f := range files {
 		if f.IsDir() {
+			subEntries, err := os.ReadDir(filepath.Join(pluginsDir, f.Name()))
+			if err != nil {
+				continue
+			}
+			for _, sub := range subEntries {
+				name, ok := pluginNameFromFile(sub.Name())
+				if ok && !seen[name] {
+					out = append(out, name)
+					seen[name] = true
+				}
+			}
 			continue
 		}
-		n := f.Name()
-		if strings.HasPrefix(n, "aiw-") && strings.HasSuffix(n, ".py") {
-			out = append(out, strings.TrimSuffix(strings.TrimPrefix(n, "aiw-"), ".py"))
+		if name, ok := pluginNameFromFile(f.Name()); ok && !seen[name] {
+			out = append(out, name)
+			seen[name] = true
 		}
 	}
 	return out, nil
 }
 
 func pluginExists(name string) (bool, string) {
-	p := filepath.Join("plugins", fmt.Sprintf("aiw-%s.py", name))
-	if fsx.Exists(p) {
+	if p := pluginScriptPath(name); p != "" {
 		return true, p
 	}
 	return false, ""
@@ -208,26 +223,20 @@ func builtinExists(name string) bool {
 }
 
 func showPluginHelp(name string) error {
-	ok, path := pluginExists(name)
-	if !ok {
+	path, err := plug.DiscoverPlugin(name)
+	if err != nil {
 		return errors.New("plugin not found")
 	}
-	// run plugin with -h
-	cmd := exec.Command("python", path, "-h")
-	cmd.Stdin = nil
-	var outb, errb bytes.Buffer
-	cmd.Stdout = &outb
-	cmd.Stderr = &errb
-	if err := cmd.Run(); err != nil {
-		// still print stderr if any
-		if errb.Len() > 0 {
-			fmt.Fprintln(os.Stderr, errb.String())
-		}
+	code, err := plug.ExecPlugin(path, []string{"-h"}, map[string]string{
+		"AIW_PLUGIN_NAME": name,
+		"AIW_PLUGIN_PATH": path,
+		"AIW_CMDLINE":     "help " + name,
+	})
+	if err != nil {
 		return fmt.Errorf("running plugin help: %w", err)
 	}
-	fmt.Print(outb.String())
-	if errb.Len() > 0 {
-		fmt.Fprintln(os.Stderr, errb.String())
+	if code != 0 {
+		return fmt.Errorf("plugin help exited with code %d", code)
 	}
 	return nil
 }
@@ -303,7 +312,10 @@ func searchDocs(query string) []string {
 	// search plugin META (quick scan)
 	pls, _ := listPlugins()
 	for _, p := range pls {
-		path := filepath.Join("plugins", fmt.Sprintf("aiw-%s.py", p))
+		path := pluginScriptPath(p)
+		if path == "" {
+			continue
+		}
 		b, err := os.ReadFile(path)
 		if err != nil {
 			continue
@@ -373,4 +385,24 @@ func askLLM(url, query string, docs []string) (string, error) {
 		return "", err
 	}
 	return string(b), nil
+}
+
+func pluginNameFromFile(filename string) (string, bool) {
+	if strings.HasPrefix(filename, "aiw-") && strings.HasSuffix(filename, ".py") {
+		return strings.TrimSuffix(strings.TrimPrefix(filename, "aiw-"), ".py"), true
+	}
+	return "", false
+}
+
+func pluginScriptPath(name string) string {
+	candidates := []string{
+		filepath.Join("plugins", fmt.Sprintf("aiw-%s.py", name)),
+		filepath.Join("plugins", fmt.Sprintf("aiw-%s", name), fmt.Sprintf("aiw-%s.py", name)),
+	}
+	for _, candidate := range candidates {
+		if fsx.Exists(candidate) {
+			return candidate
+		}
+	}
+	return ""
 }

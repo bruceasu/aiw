@@ -1,7 +1,6 @@
 package main
 
 import (
-	czcmd "aiw/internal/commands/cz"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -62,8 +61,6 @@ func main() {
 		err = taskcmd.DispatchTopLevel("registry", os.Args[2:])
 	case "prompts":
 		err = taskcmd.DispatchTopLevel("prompts", os.Args[2:])
-	case "cz":
-		err = czcmd.Dispatch(os.Args[2:])
 	default:
 		// try plugin fallback: aiw-<subcommand>
 		pluginName := os.Args[1]
