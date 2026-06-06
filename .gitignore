@@ -4,3 +4,4 @@ bin
 .env.*
 .wt/
 __pycache__/
+/test/

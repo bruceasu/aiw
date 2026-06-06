@@ -1,0 +1,404 @@
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Windows 的可靠文件复制                              
+-------------------------------------------------------------------------------
+
+  开始时间: 2026年6月7日 1:58:40
+        源: D:\03_projects\suk\aiw\plugins\
+      目标: c:\green\aiw\plugins\
+
+      文件: *.*
+	    
+      选项: *.* /S /E /DCOPY:DA /COPY:DAT /PURGE /MIR /Z /MT:32 /R:1000000 /W:30 
+
+------------------------------------------------------------------------------
+
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\
+	  *多余文件   		     884	c:\green\aiw\plugins\aiw-corps\.env
+	  *多余文件   		      65	c:\green\aiw\plugins\aiw-corps\.gitignore
+	  *多余文件   		       6	c:\green\aiw\plugins\aiw-corps\.python-version
+	  *多余文件   		    4475	c:\green\aiw\plugins\aiw-corps\AGENTS.md
+	  *多余文件   		     703	c:\green\aiw\plugins\aiw-corps\AI_WORKFLOW.md
+	  *多余文件   		    3162	c:\green\aiw\plugins\aiw-corps\CODEX.md
+	  *多余文件   		     617	c:\green\aiw\plugins\aiw-corps\corps.properties
+	  *多余文件   		     786	c:\green\aiw\plugins\aiw-corps\crops.properties.example
+	  *多余文件   		     838	c:\green\aiw\plugins\aiw-corps\env.example
+	  *多余文件   		     339	c:\green\aiw\plugins\aiw-corps\pyproject.toml
+	  *多余文件   		    7664	c:\green\aiw\plugins\aiw-corps\README.md
+	  *多余文件   		     142	c:\green\aiw\plugins\aiw-corps\requirements.txt
+	  *多余文件   		   53749	c:\green\aiw\plugins\aiw-corps\uv.lock
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\.github\
+	  *多余文件   		    2269	c:\green\aiw\plugins\aiw-corps\.github\copilot-instructions-for-go.md
+	  *多余文件   		    2300	c:\green\aiw\plugins\aiw-corps\.github\copilot-instructions-for-java.md
+	  *多余文件   		    2252	c:\green\aiw\plugins\aiw-corps\.github\copilot-instructions-for-python.md
+	  *多余文件   		    2252	c:\green\aiw\plugins\aiw-corps\.github\copilot-instructions.md
+	  *多余文件   		     566	c:\green\aiw\plugins\aiw-corps\.github\pull_request_template.md
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\.github\java-upgrade\
+	  *多余文件   		       6	c:\green\aiw\plugins\aiw-corps\.github\java-upgrade\.gitignore
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\.github\java-upgrade\hooks\
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\.github\java-upgrade\hooks\scripts\
+	  *多余文件   		     685	c:\green\aiw\plugins\aiw-corps\.github\java-upgrade\hooks\scripts\recordToolUse.ps1
+	  *多余文件   		     598	c:\green\aiw\plugins\aiw-corps\.github\java-upgrade\hooks\scripts\recordToolUse.sh
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\.github\spec\
+	  *多余文件   		    2418	c:\green\aiw\plugins\aiw-corps\.github\spec\SKILL_TEMPLATE.md
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\docs\
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\docs\superpowers\
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\docs\superpowers\plans\
+	  *多余文件   		    8377	c:\green\aiw\plugins\aiw-corps\docs\superpowers\plans\2026-05-25-skill-tool-markdown-yaml-separation.md
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\
+	  *多余文件   		    5454	c:\green\aiw\plugins\aiw-corps\src\chat_agent_bridge.py
+	  *多余文件   		   12301	c:\green\aiw\plugins\aiw-corps\src\chat_cli.py
+	  *多余文件   		    2077	c:\green\aiw\plugins\aiw-corps\src\env_loader.py
+	  *多余文件   		    5556	c:\green\aiw\plugins\aiw-corps\src\knowledge_cli.py
+	  *多余文件   		    9535	c:\green\aiw\plugins\aiw-corps\src\magic.py
+	  *多余文件   		    1288	c:\green\aiw\plugins\aiw-corps\src\main.py
+	  *多余文件   		   33700	c:\green\aiw\plugins\aiw-corps\src\tool_dispatcher.py
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\skills\
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\skills\autonomous-fixer\
+	  *多余文件   		     608	c:\green\aiw\plugins\aiw-corps\src\builtin\skills\autonomous-fixer\SKILL.md
+	  *多余文件   		     479	c:\green\aiw\plugins\aiw-corps\src\builtin\skills\autonomous-fixer\skill.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\skills\generate-import-control-and-run\
+	  *多余文件   		     496	c:\green\aiw\plugins\aiw-corps\src\builtin\skills\generate-import-control-and-run\README.md
+	  *多余文件   		    3145	c:\green\aiw\plugins\aiw-corps\src\builtin\skills\generate-import-control-and-run\SKILL.md
+	  *多余文件   		    2155	c:\green\aiw\plugins\aiw-corps\src\builtin\skills\generate-import-control-and-run\skill.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\skills\playwright-ui-smoke-test\
+	  *多余文件   		    1341	c:\green\aiw\plugins\aiw-corps\src\builtin\skills\playwright-ui-smoke-test\README.md
+	  *多余文件   		    3272	c:\green\aiw\plugins\aiw-corps\src\builtin\skills\playwright-ui-smoke-test\skill.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\skills\sql-assistant\
+	  *多余文件   		     938	c:\green\aiw\plugins\aiw-corps\src\builtin\skills\sql-assistant\SKILL.md
+	  *多余文件   		     923	c:\green\aiw\plugins\aiw-corps\src\builtin\skills\sql-assistant\skill.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\skills\youtube-transcript-and-summarize\
+	  *多余文件   		     920	c:\green\aiw\plugins\aiw-corps\src\builtin\skills\youtube-transcript-and-summarize\README.md
+	  *多余文件   		    4576	c:\green\aiw\plugins\aiw-corps\src\builtin\skills\youtube-transcript-and-summarize\SKILL.md
+	  *多余文件   		    3454	c:\green\aiw\plugins\aiw-corps\src\builtin\skills\youtube-transcript-and-summarize\skill.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\echo-tool\
+	  *多余文件   		     990	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\echo-tool\run.py
+	  *多余文件   		     470	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\echo-tool\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\edit-file\
+	  *多余文件   		    1739	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\edit-file\run.py
+	  *多余文件   		     598	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\edit-file\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\fzf\
+	  *多余文件   		     338	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\fzf\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-control-file-generator\
+	  *多余文件   		     680	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-control-file-generator\README.md
+	  *多余文件   		     872	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-control-file-generator\run.py
+	  *多余文件   		    2440	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-control-file-generator\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\
+	  *多余文件   		    3137	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\config.yaml
+	  *多余文件   		    8500	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\generate_control_file.py
+	  *多余文件   		   29040	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\import_tool.py
+	  *多余文件   		    1196	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\README.md
+	  *多余文件   		    3519	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\run.py
+	  *多余文件   		     996	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\bin\
+	  *多余文件   		   4.7 m	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\bin\mysql-go
+	  *多余文件   		   4.9 m	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\bin\mysql-go.exe
+	  *多余文件   		   5.1 m	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\bin\psql-go
+	  *多余文件   		   5.3 m	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\bin\psql-go.exe
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\config\
+	  *多余文件   		     130	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\config\mysql.cnf
+	  *多余文件   		      46	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\config\pgpass.conf
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\sql\
+	  *多余文件   		    3137	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\sql\trades_statistics_snapshot_merge.sql
+	  *多余文件   		    3490	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\sql\trade_snapshot_merge.sql
+	  *多余文件   		    2206	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\import-tool\sql\trade_snapshot_no_tick_merge.sql
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\list-files\
+	  *多余文件   		    3199	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\list-files\run.py
+	  *多余文件   		     786	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\list-files\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\llm\
+	  *多余文件   		    1968	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\llm\README.md
+	  *多余文件   		   15085	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\llm\run.py
+	  *多余文件   		    1254	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\llm\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\llm\schema\
+	  *多余文件   		     558	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\llm\schema\example_response.json
+	  *多余文件   		    1780	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\llm\schema\README.schema.md
+	  *多余文件   		    3444	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\llm\schema\tool_response.schema.json
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\llm\tests\
+	  *多余文件   		    1819	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\llm\tests\test_schema_validation.py
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\mysql-client\
+	  *多余文件   		     246	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\mysql-client\.my.cnf.example
+	  *多余文件   		     125	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\mysql-client\my.cnf
+	  *多余文件   		     940	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\mysql-client\README.md
+	  *多余文件   		    3351	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\mysql-client\run.py
+	  *多余文件   		    1319	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\mysql-client\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\mysql-client\bin\
+	  *多余文件   		   4.7 m	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\mysql-client\bin\mysql-go
+	  *多余文件   		   4.9 m	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\mysql-client\bin\mysql-go.exe
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\pgsql-client\
+	  *多余文件   		      46	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\pgsql-client\pgpass.conf
+	  *多余文件   		     908	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\pgsql-client\README.md
+	  *多余文件   		    3312	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\pgsql-client\run.py
+	  *多余文件   		    1345	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\pgsql-client\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\pgsql-client\bin\
+	  *多余文件   		   5.1 m	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\pgsql-client\bin\psql-go
+	  *多余文件   		   5.3 m	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\pgsql-client\bin\psql-go.exe
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\playwright-cli\
+	  *多余文件   		    1105	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\playwright-cli\README.md
+	  *多余文件   		    4848	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\playwright-cli\run.py
+	  *多余文件   		    1835	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\playwright-cli\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\read-file\
+	  *多余文件   		    1387	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\read-file\run.py
+	  *多余文件   		     515	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\read-file\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\rg\
+	  *多余文件   		     339	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\rg\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\run-command\
+	  *多余文件   		    2954	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\run-command\run.py
+	  *多余文件   		     337	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\run-command\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\skill-detail-loader\
+	  *多余文件   		    3626	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\skill-detail-loader\run.py
+	  *多余文件   		     466	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\skill-detail-loader\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\skill-exporter\
+	  *多余文件   		   15747	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\skill-exporter\run.py
+	  *多余文件   		     700	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\skill-exporter\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\skill-exporter\temp_agent_test\
+	  *多余文件   		    4665	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\skill-exporter\temp_agent_test\main.py
+	  *多余文件   		      71	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\skill-exporter\temp_agent_test\README.md
+	  *多余文件   		    1105	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\skill-exporter\temp_agent_test\workflow.json
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\skill-exporter\temp_agent_test\tools\
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\sql-schema-loader\
+	  *多余文件   		    2469	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\sql-schema-loader\run.py
+	  *多余文件   		     463	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\sql-schema-loader\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\web-fetch\
+	  *多余文件   		    1644	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\web-fetch\run.py
+	  *多余文件   		     522	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\web-fetch\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\web-search\
+	  *多余文件   		    3142	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\web-search\run.py
+	  *多余文件   		     710	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\web-search\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\write-file\
+	  *多余文件   		    1435	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\write-file\run.py
+	  *多余文件   		     466	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\write-file\tool.yaml
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\youtube-transcript\
+	  *多余文件   		      57	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\youtube-transcript\cache.json
+	  *多余文件   		    1695	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\youtube-transcript\get-transcript.py
+	  *多余文件   		    2362	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\youtube-transcript\README.md
+	  *多余文件   		      32	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\youtube-transcript\requirements.txt
+	  *多余文件   		    3345	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\youtube-transcript\run.py
+	  *多余文件   		    3051	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\youtube-transcript\tool.yaml
+	  *多余文件   		   11703	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\youtube-transcript\youtube_transcript_lib.py
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\youtube-transcript\output\
+	  *多余文件   		    2949	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\youtube-transcript\output\dQw4w9WgXcQ.txt
+	  *多余文件   		    9772	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\youtube-transcript\output\Dv1lpwrkfVc.txt
+	  *多余文件   		    2523	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\youtube-transcript\output\FmiNOySigPc.txt
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\youtube-transcript\__pycache__\
+	  *多余文件   		   18357	c:\green\aiw\plugins\aiw-corps\src\builtin\tools\youtube-transcript\__pycache__\youtube_transcript_lib.cpython-311.pyc
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\chat\
+	  *多余文件   		    8427	c:\green\aiw\plugins\aiw-corps\src\chat\orchestrator.py
+	  *多余文件   		     799	c:\green\aiw\plugins\aiw-corps\src\chat\session.py
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\chat\__pycache__\
+	  *多余文件   		   12132	c:\green\aiw\plugins\aiw-corps\src\chat\__pycache__\orchestrator.cpython-311.pyc
+	  *多余文件   		    2478	c:\green\aiw\plugins\aiw-corps\src\chat\__pycache__\session.cpython-311.pyc
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\get-youtube-transcript\
+	  *多余文件   		    5783	c:\green\aiw\plugins\aiw-corps\src\get-youtube-transcript\get-transcript.py
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\import-tools\
+	  *多余文件   		    3137	c:\green\aiw\plugins\aiw-corps\src\import-tools\config.yaml
+	  *多余文件   		    8500	c:\green\aiw\plugins\aiw-corps\src\import-tools\generate_control_file.py
+	  *多余文件   		   29040	c:\green\aiw\plugins\aiw-corps\src\import-tools\import_tool.py
+	  *多余文件   		   15629	c:\green\aiw\plugins\aiw-corps\src\import-tools\README.md
+	  *多余文件   		    5673	c:\green\aiw\plugins\aiw-corps\src\import-tools\test_generate_control_file.py
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\import-tools\sql\
+	  *多余文件   		    3137	c:\green\aiw\plugins\aiw-corps\src\import-tools\sql\trades_statistics_snapshot_merge.sql
+	  *多余文件   		    3490	c:\green\aiw\plugins\aiw-corps\src\import-tools\sql\trade_snapshot_merge.sql
+	  *多余文件   		    2206	c:\green\aiw\plugins\aiw-corps\src\import-tools\sql\trade_snapshot_no_tick_merge.sql
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\knowledge\
+	  *多余文件   		    5561	c:\green\aiw\plugins\aiw-corps\src\knowledge\store.py
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\knowledge\__pycache__\
+	  *多余文件   		   11780	c:\green\aiw\plugins\aiw-corps\src\knowledge\__pycache__\store.cpython-311.pyc
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\tests\
+	  *多余文件   		    4288	c:\green\aiw\plugins\aiw-corps\src\tests\test_chat_cli.py
+	  *多余文件   		    2755	c:\green\aiw\plugins\aiw-corps\src\tests\test_chat_orchestrator.py
+	  *多余文件   		    1830	c:\green\aiw\plugins\aiw-corps\src\tests\test_engine.py
+	  *多余文件   		     993	c:\green\aiw\plugins\aiw-corps\src\tests\test_env_loader.py
+	  *多余文件   		    6188	c:\green\aiw\plugins\aiw-corps\src\tests\test_tool_dispatcher.py
+	  *多余文件   		     805	c:\green\aiw\plugins\aiw-corps\src\tests\test_tool_runtime.py
+	  *多余文件   		    1560	c:\green\aiw\plugins\aiw-corps\src\tests\test_youtube_transcript_lib.py
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\tests\__pycache__\
+	  *多余文件   		    9210	c:\green\aiw\plugins\aiw-corps\src\tests\__pycache__\test_chat_cli.cpython-311.pyc
+	  *多余文件   		    3967	c:\green\aiw\plugins\aiw-corps\src\tests\__pycache__\test_chat_orchestrator.cpython-311.pyc
+	  *多余文件   		    1974	c:\green\aiw\plugins\aiw-corps\src\tests\__pycache__\test_env_loader.cpython-311.pyc
+	  *多余文件   		    7962	c:\green\aiw\plugins\aiw-corps\src\tests\__pycache__\test_tool_dispatcher.cpython-311.pyc
+	  *多余文件   		    1831	c:\green\aiw\plugins\aiw-corps\src\tests\__pycache__\test_tool_runtime.cpython-311.pyc
+	  *多余文件   		    2430	c:\green\aiw\plugins\aiw-corps\src\tests\__pycache__\test_youtube_transcript_lib.cpython-311.pyc
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\_runtime\
+	  *多余文件   		    2698	c:\green\aiw\plugins\aiw-corps\src\_runtime\llm_runtime.py
+	  *多余文件   		    3341	c:\green\aiw\plugins\aiw-corps\src\_runtime\tool_runtime.py
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\_runtime\engine\
+	  *多余文件   		    7815	c:\green\aiw\plugins\aiw-corps\src\_runtime\engine\executor.py
+	  *多余文件   		     513	c:\green\aiw\plugins\aiw-corps\src\_runtime\engine\model.py
+	  *多余文件   		    3846	c:\green\aiw\plugins\aiw-corps\src\_runtime\engine\parser.py
+	  *多余文件   		    1676	c:\green\aiw\plugins\aiw-corps\src\_runtime\engine\workflow_engine.py
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\src\_runtime\engine\__pycache__\
+	  *多余文件   		   11475	c:\green\aiw\plugins\aiw-corps\src\_runtime\engine\__pycache__\executor.cpython-311.pyc
+	  *多余文件   		    1723	c:\green\aiw\plugins\aiw-corps\src\_runtime\engine\__pycache__\model.cpython-311.pyc
+	  *多余文件   		    6727	c:\green\aiw\plugins\aiw-corps\src\_runtime\engine\__pycache__\parser.cpython-311.pyc
+	  *多余文件   		    2887	c:\green\aiw\plugins\aiw-corps\src\_runtime\engine\__pycache__\workflow_engine.cpython-311.pyc
+	*多余目录         -1	c:\green\aiw\plugins\aiw-corps\tasks\
+	  *多余文件   		     421	c:\green\aiw\plugins\aiw-corps\tasks\TASK_TEMPLATE.md
+	  *多余文件   		     937	c:\green\aiw\plugins\aiw-git-ca.py
+	  *多余文件   		     968	c:\green\aiw\plugins\aiw-git-caf.py
+	  *多余文件   		    1244	c:\green\aiw\plugins\aiw-git-change-author.py
+	  *多余文件   		     961	c:\green\aiw\plugins\aiw-git-conflicts.py
+	  *多余文件   		    1171	c:\green\aiw\plugins\aiw-git-delete-branch.py
+	  *多余文件   		    1129	c:\green\aiw\plugins\aiw-git-delete-tag.py
+	  *多余文件   		    1003	c:\green\aiw\plugins\aiw-git-find-commit-back.py
+	  *多余文件   		    1183	c:\green\aiw\plugins\aiw-git-get-file-from.py
+	  *多余文件   		    1210	c:\green\aiw\plugins\aiw-git-get.py
+	  *多余文件   		    1045	c:\green\aiw\plugins\aiw-git-how-to-split.py
+	  *多余文件   		    1007	c:\green\aiw\plugins\aiw-git-log.py
+	  *多余文件   		    1215	c:\green\aiw\plugins\aiw-git-mv-to-branch.py
+	  *多余文件   		     925	c:\green\aiw\plugins\aiw-git-outstanding.py
+	  *多余文件   		    1077	c:\green\aiw\plugins\aiw-git-rename.py
+	  *多余文件   		    1204	c:\green\aiw\plugins\aiw-git-rm-from-commit.py
+	  *多余文件   		    1094	c:\green\aiw\plugins\aiw-git-rm-keep.py
+	  *多余文件   		    1126	c:\green\aiw\plugins\aiw-git-set-remote-branch.py
+	  *多余文件   		     878	c:\green\aiw\plugins\aiw-git-status.py
+	  *多余文件   		    1485	c:\green\aiw\plugins\aiw-git-sync.py
+	  *多余文件   		    1143	c:\green\aiw\plugins\aiw-git-unpulled.py
+	  *多余文件   		    1110	c:\green\aiw\plugins\aiw-git-unpushed.py
+	  *多余文件   		    1011	c:\green\aiw\plugins\aiw-git-whatchanged.py
+	    较新的    		    4812	D:\03_projects\suk\aiw\plugins\aiw-bcc.py100%  
+	    较旧的    		    2916	D:\03_projects\suk\aiw\plugins\aiw-gcc.py  0%  100%  
+	    较新的    		    1248	D:\03_projects\suk\aiw\plugins\aiw-git-save.py100%  
+	    较新的    		   11711	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-core.cpython-311.pyc100%  
+
+------------------------------------------------------------------------------
+
+                  总数        复制        跳过       不匹配        失败        其他
+       目录:         4         4         4         0         0        62
+       文件:        47         4        43         0         0       182
+       字节:   15.10 m    20.2 k   15.08 m         0         0   40.99 m
+       时间:   0:00:00   0:00:00                       0:00:00   0:00:00
+
+
+       速度:           6,895,666 字节/秒。
+       速度:             394.573 MB/分钟。
+   已结束: 2026年6月7日 1:58:40
+
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Windows 的可靠文件复制                              
+-------------------------------------------------------------------------------
+
+  开始时间: 2026年6月7日 1:58:40
+        源: D:\03_projects\suk\aiw\docs\usage\
+      目标: c:\green\aiw\docs\usage\
+
+      文件: *.*
+	    
+      选项: *.* /S /E /DCOPY:DA /COPY:DAT /PURGE /MIR /Z /MT:32 /R:1000000 /W:30 
+
+------------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------------
+
+                  总数        复制        跳过       不匹配        失败        其他
+       目录:         1         1         1         0         0         0
+       文件:        31         0        31         0         0         0
+       字节:    16.0 k         0    16.0 k         0         0         0
+       时间:   0:00:00   0:00:00                       0:00:00   0:00:00
+   已结束: 2026年6月7日 1:58:40
+
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Windows 的可靠文件复制                              
+-------------------------------------------------------------------------------
+
+  开始时间: 2026年6月7日 2:18:54
+        源: D:\03_projects\suk\aiw\plugins\
+      目标: c:\green\aiw\plugins\
+
+      文件: *.*
+	    
+      选项: *.* /S /E /DCOPY:DA /COPY:DAT /PURGE /MIR /Z /MT:32 /R:1000000 /W:30 
+
+------------------------------------------------------------------------------
+
+	  *多余文件   		    2912	c:\green\aiw\plugins\aiw-g++.py
+	  *多余文件   		    2916	c:\green\aiw\plugins\aiw-gcc.py
+	    较新的    		    6750	D:\03_projects\suk\aiw\plugins\aiw-bcc.py100%  
+	    较新的    		    5082	D:\03_projects\suk\aiw\plugins\aiw-tcc.py100%  
+	    较新的    		    4834	D:\03_projects\suk\aiw\plugins\aiw-vc.py100%  
+	    新文件    		   11086	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-bcc.cpython-311.pyc100%  
+	    新文件    		    3423	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-add-mirror.cpython-311.pyc100%  
+	    新文件    		    2557	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-add-remote.cpython-311.pyc100%  
+	    新文件    		    5463	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-amend-author.cpython-311.pyc100%  
+	    新文件    		    2016	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-amend.cpython-311.pyc100%  
+	    新文件    		    2588	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-change-remote.cpython-311.pyc100%  
+	    新文件    		    4651	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-del-branch.cpython-311.pyc100%  
+	    新文件    		    5981	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-del-histories-all.cpython-311.pyc100%  
+	    新文件    		    5393	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-del-histories-from.cpython-311.pyc100%  
+	    新文件    		    4512	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-del-tag.cpython-311.pyc100%  
+	    新文件    		    2477	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-export.cpython-311.pyc100%  
+	    新文件    		    2485	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-gc.cpython-311.pyc100%  
+	    新文件    		    2587	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-get-file.cpython-311.pyc100%  
+	    新文件    		    3959	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-get-repo.cpython-311.pyc100%  
+	    新文件    		    6532	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-guide.cpython-311.pyc100%  
+	    新文件    		    4724	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-mv-branch.cpython-311.pyc100%  
+	    新文件    		    2328	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-mv.cpython-311.pyc100%  
+	    新文件    		    3139	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-rebase-onto.cpython-311.pyc100%  
+	    新文件    		    1988	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-rebase-origin.cpython-311.pyc100%  
+	    新文件    		    3378	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-restore.cpython-311.pyc100%  
+	    新文件    		    2798	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-revert.cpython-311.pyc100%  
+	    新文件    		    3167	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-rewrite-subdir.cpython-311.pyc100%  
+	    新文件    		    5370	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-rm-file.cpython-311.pyc100%  
+	    新文件    		    2452	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-save.cpython-311.pyc100%  
+	    新文件    		   10758	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-show.cpython-311.pyc100%  
+	    新文件    		    3370	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-split-branch.cpython-311.pyc100%  
+	    新文件    		    2022	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-st.cpython-311.pyc100%  
+	    新文件    		    3880	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-track.cpython-311.pyc100%  
+	    新文件    		    2226	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-un-add.cpython-311.pyc100%  
+	    新文件    		    2748	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-undo.cpython-311.pyc100%  
+	    新文件    		    2346	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-untrack.cpython-311.pyc100%  
+	    新文件    		    4445	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-git-update.cpython-311.pyc100%  
+	    新文件    		     754	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-hello.cpython-311.pyc100%  
+	    新文件    		    9253	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-tcc.cpython-311.pyc100%  
+	    新文件    		    8479	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-vc.cpython-311.pyc100%  
+	    新文件    		   14466	D:\03_projects\suk\aiw\plugins\__pycache__\aiw-wt.cpython-311.pyc100%  
+
+------------------------------------------------------------------------------
+
+                  总数        复制        跳过       不匹配        失败        其他
+       目录:         4         4         4         0         0         0
+       文件:        81        39        42         0         0         2
+       字节:   15.25 m   172.3 k   15.08 m         0         0     5.6 k
+       时间:   0:00:00   0:00:00                       0:00:00   0:00:00
+
+
+       速度:           10,380,411 字节/秒。
+       速度:              593.972 MB/分钟。
+   已结束: 2026年6月7日 2:18:54
+
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Windows 的可靠文件复制                              
+-------------------------------------------------------------------------------
+
+  开始时间: 2026年6月7日 2:18:54
+        源: D:\03_projects\suk\aiw\docs\usage\
+      目标: c:\green\aiw\docs\usage\
+
+      文件: *.*
+	    
+      选项: *.* /S /E /DCOPY:DA /COPY:DAT /PURGE /MIR /Z /MT:32 /R:1000000 /W:30 
+
+------------------------------------------------------------------------------
+
+	    新文件    		     789	D:\03_projects\suk\aiw\docs\usage\aiw-bcc.md100%  
+	    新文件    		     742	D:\03_projects\suk\aiw\docs\usage\aiw-tcc.md100%  
+	    新文件    		     704	D:\03_projects\suk\aiw\docs\usage\aiw-vc.md100%  
+
+------------------------------------------------------------------------------
+
+                  总数        复制        跳过       不匹配        失败        其他
+       目录:         1         1         1         0         0         0
+       文件:        34         3        31         0         0         0
+       字节:    18.2 k     2.1 k    16.0 k         0         0         0
+       时间:   0:00:00   0:00:00                       0:00:00   0:00:00
+
+
+       速度:           2,235,000 字节/秒。
+       速度:             127.888 MB/分钟。
+   已结束: 2026年6月7日 2:18:54
+
