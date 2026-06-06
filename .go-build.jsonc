@@ -9,7 +9,7 @@
   "outputDir": "bin",
 
   // Default install target directory for "install".
-  "installDir": "c:\\green",
+  "installDir": "c:\\green\\aiw",
 
   // Used by "build all". Non-available platforms in current toolchain are skipped.
   "allPlatforms": [

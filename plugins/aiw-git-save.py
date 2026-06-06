@@ -33,8 +33,9 @@ def main(argv):
 
 	msg = 'wip' if not argv else ' '.join(argv)
 	core.run_cmd(['git', 'add', '-A'])
-	return core.run_cmd(['git', 'commit', '-m', msg])
-
+	# core.run_cmd(['git', 'commit', '-m', msg])
+	core.run_cmd(['aiw', 'cz', '--llm'])
+	return 0
 
 if __name__ == '__main__':
 	try:

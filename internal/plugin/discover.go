@@ -24,10 +24,11 @@ var extPriority = map[string]int{
 func DiscoverPlugin(name string) (string, error) {
 	var paths []string
 	if exePath, err := os.Executable(); err == nil {
+		// println("exePath:",exePath)
 		exeDir := filepath.Dir(exePath)
 		paths = append(paths, filepath.Join(exeDir, "plugins"))
 	}
-	println("searching plugins in paths:", paths[0])
+	// println("searching plugins in paths:", paths[0])
 	// Pass plugin directories; PATH entries are handled inside DiscoverPluginIn
 	return DiscoverPluginIn(paths, name)
 }
