@@ -17,6 +17,8 @@ import (
 	plug "aiw/internal/plugin"
 )
 
+var executablePathFn = os.Executable
+
 // Dispatch implements a flexible help command:
 //   - no args: list builtins and plugins
 //   - help <name>: show help for built-in or plugin
@@ -180,7 +182,10 @@ func listBuiltins() ([]string, error) {
 }
 
 func listPlugins() ([]string, error) {
-	pluginsDir := filepath.Join("plugins")
+	pluginsDir, err := resolvePluginsDir()
+	if err != nil {
+		return nil, err
+	}
 	files, err := os.ReadDir(pluginsDir)
 	if err != nil {
 		return nil, err
@@ -395,9 +400,13 @@ func pluginNameFromFile(filename string) (string, bool) {
 }
 
 func pluginScriptPath(name string) string {
+	pluginsDir, err := resolvePluginsDir()
+	if err != nil {
+		return ""
+	}
 	candidates := []string{
-		filepath.Join("plugins", fmt.Sprintf("aiw-%s.py", name)),
-		filepath.Join("plugins", fmt.Sprintf("aiw-%s", name), fmt.Sprintf("aiw-%s.py", name)),
+		filepath.Join(pluginsDir, fmt.Sprintf("aiw-%s.py", name)),
+		filepath.Join(pluginsDir, fmt.Sprintf("aiw-%s", name), fmt.Sprintf("aiw-%s.py", name)),
 	}
 	for _, candidate := range candidates {
 		if fsx.Exists(candidate) {
@@ -405,4 +414,16 @@ func pluginScriptPath(name string) string {
 		}
 	}
 	return ""
+}
+
+func resolvePluginsDir() (string, error) {
+	exePath, err := executablePathFn()
+	if err != nil {
+		return "", fmt.Errorf("resolve executable path: %w", err)
+	}
+	resolvedPath, err := filepath.EvalSymlinks(exePath)
+	if err == nil {
+		exePath = resolvedPath
+	}
+	return filepath.Join(filepath.Dir(exePath), "plugins"), nil
 }

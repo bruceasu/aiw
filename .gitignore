@@ -5,3 +5,4 @@ bin
 .wt/
 __pycache__/
 /test/
+backup.log
