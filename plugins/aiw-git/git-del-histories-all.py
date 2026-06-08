@@ -79,12 +79,12 @@ def main(argv):
     # ------------------------------------------------------------
     if not branch:
         try:
-            out = core.git_output(
+            out = core.git_output([
                 "git",
                 "rev-parse",
                 "--abbrev-ref",
                 "HEAD",
-            )
+            ])
             branch = out.strip()
         except Exception:
             branch = "master"
