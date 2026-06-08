@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   app:
-    image: victor/java25:latest
+    image: ba/java25:latest
     container_name: agent
     working_dir: /workspace
 

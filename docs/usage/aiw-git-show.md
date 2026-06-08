@@ -1,4 +1,4 @@
-# aiw git-show
+﻿# aiw git show
 
 Short: Consolidates conflicts, log, status, unpulled, unpushed, and whatchanged.
 
@@ -8,7 +8,7 @@ Consolidates conflicts, log, status, unpulled, unpushed, and whatchanged, etc.
 
 
 Usage:
-aiw git-track <sub-cmd> [options]
+aiw git track <sub-cmd> [options]
 
 
 Sub Commands:
@@ -30,7 +30,7 @@ Arguments:
    - examples:
      - conflicts
      - confiicts --diff
-- <log> — Show a formatted commit log with several styles. Displays the commit history. Styles: lg (default), l (one-line), hist (absolute dates)
+- <log> 鈥?Show a formatted commit log with several styles. Displays the commit history. Styles: lg (default), l (one-line), hist (absolute dates)
    - usage: log [lg|l|hists] [-n <count>]
    - args:
      - [lg]   Style with graph, relative dates, and decorations.
@@ -44,4 +44,5 @@ Arguments:
 - <unpulled> Show commits present on upstream but not pulled locally.
 - <unpushed> Show commits not pushed to upstream.
 - <whatchanged> Show changes between commits (git whatchanged).
+
 

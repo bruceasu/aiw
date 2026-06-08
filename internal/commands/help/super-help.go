@@ -69,13 +69,6 @@ Task management:
   aiw new payment-retry
 `)
 
-	// Print builtins
-	fmt.Println("\nBuilt-in commands:")
-	bins, _ := listBuiltins()
-	for _, b := range bins {
-		fmt.Printf("  %s\n", b)
-	}
-
 	// Print plugins with short descriptions (if available)
 	fmt.Println("\nPlugins:")
 	pls, _ := listPlugins()

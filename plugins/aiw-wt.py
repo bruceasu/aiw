@@ -18,6 +18,35 @@ CHANGES_DIR = ROOT / "openspec" / "changes"
 WORKTREE_DIR = Path(".wt")
 REGISTRY_FILE = ROOT / "openspec" / "registry.json"
 
+META = {
+    'name': 'aiw wt',
+    'short': 'Worktree management for aiw.',
+    'long': (
+        'Worktree management for aiw. '
+        'Supports adding, removing, listing, and pruning worktrees.'
+    ),
+    'usage': 'aiw wt [command] [args...]',
+    'args': [
+        {'flag': 'add', 'description': 'Add a new worktree, you can optionally specify a base branch.'},
+        {'flag': 'rm', 'description': 'Remove a worktree with the task ID, you can delete the branch associated with it.--force can be used to force remove a worktree.'},
+        {'flag': 'list', 'description': 'List all worktrees.'},
+        {'flag': 'prune', 'description': 'Prune unused worktrees.'},
+        {'flag': 'lock', 'description': 'Lock a worktree.'},
+        {'flag': 'unlock', 'description': 'Unlock a worktree.'},
+        {'flag': 'repair', 'description': 'Repair a worktree.'},
+        {'flag': 'ignore', 'description': 'Ignore a worktree.'},
+    ],
+    'examples': [
+        'aiw wt add task1',
+        'aiw wt rm task1',
+        'aiw wt list',
+        'aiw wt prune',
+        'aiw wt lock task1 "reason for locking"',
+        'aiw wt unlock task1',
+        'aiw wt repair',
+        'aiw wt ignore',
+    ],
+}
 
 def run_cmd(cmd):
     print(f"> {' '.join(cmd)}", file=sys.stderr)

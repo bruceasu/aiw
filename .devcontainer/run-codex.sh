@@ -81,7 +81,7 @@ docker run -it --rm \
   -v "/mnt/libs:/mnt/libs" \
   -v "/mnt/temp:/mnt/temp" \
   -w /workspace \
-  victor/java25 \
+  ba/java25 \
   ai.sh "$PROFILE" "$SRC_DIR/task.txt"
 #  codex --profile "$PROFILE" "$@"
 #  bash

@@ -1,84 +1,60 @@
-### 命令行为细节
-
-1. `aiw init`
-   - 创建 `openspec/`、`.wt/` 等目录�?
-   - 写入默认模板文件（仅缺失时）�?
-   - 创建或追�?`.wt/` �?`.gitignore`�?
-   - 生成/刷新 `openspec/registry.json`�?
-   - 默认不会自动合并 `docs/agent-templates/` 下的实践模板�?
-   - 可选参数：
-     - `--prompts`：初始化完成后立即执�?prompts 同步
-     - `--merge`：仅在与 `--prompts` 一起使用时有效，合并到现有 prompts 文件
-     - `--force`：仅在与 `--prompts` 一起使用时有效，覆盖现�?prompts 文件
-     - `--template <name>`：仅在与 `--prompts` 一起使用时有效，显式指定模板目录，�?`go` / `java` / `python`
-
-### `aiw cz`（Conventional Commit 向导�?
- - 配置优先级：`CLI` > `项目根目录配置` > `程序目录配置`�?
- 
- ```toml
- [[cz.types]]
- value = "feat"
- name = "feat:     新增功能 | A new feature"
- ```
- 
-新特性：支持 `--retry`（或 `-r`）参数，从最近一次提交恢复为草稿以便重新提交或修改；交互�?issue-prefix 选择现在提供列表选择与自定义项�?
 # aiw
 
-轻量�?OpenSpec 风格任务工作�?CLI（Go 实现）�?
+A lightweight OpenSpec-inspired task workflow CLI implemented in Go.
 
-## 功能概览
+## Feature Overview
 
-- 初始化OpenSpec-lite 目录和默认指令文件
-- 自动创建或追加`.wt/` 和 `.gitignore`
-- 在`docs/agent-templates/` 创建或合并 AI prompts
-- 创建/查看/更新任务
-- 为任务创建独立 git worktree
-- 按任务输出上下文提示
-- 创建长期 spec 文档
-- 归档完成任务
-- 生成任务注册�?`openspec/registry.json`
+* Initialize the OpenSpec-lite directory structure and default instruction files
+* Automatically create or append `.wt/` entries to `.gitignore`
+* Generate or merge AI prompt files from `docs/agent-templates/`
+* Create, view, and update tasks
+* Create dedicated Git worktrees for tasks
+* Output task-specific context prompts
+* Create long-lived specification documents
+* Archive completed tasks
+* Generate the task registry file `openspec/registry.json`
 
-## 目录结构
+## Directory Structure
 
-执行 `aiw init` 后会创建以下结构（如果不存在）：
+After running `aiw init`, the following structure will be created (if missing):
 
 ```text
 repo/
 ├── openspec/
-│  ├── changes/
-│  ├── specs/
-│  ├── archive/
-│  └── registry.json
+│   ├── changes/
+│   ├── specs/
+│   ├── archive/
+│   └── registry.json
 ├── .wt/
 ├── AGENTS.md
 └── .github/
     └── copilot-instructions.md
 ```
 
-说明文件：
+Notes:
 
-- `AGENTS.md` 和 `.github/copilot-instructions.md` 仅在文件不存在时创建。
-- `registry.json` 来自 `openspec/changes/*/task.toml` 的汇总。
+* `AGENTS.md` and `.github/copilot-instructions.md` are created only if they do not already exist.
+* `registry.json` is generated from all `openspec/changes/*/task.toml` files.
 
-## 安装与构见
+## Build and Installation
 
 ```bash
-
-# TCC 包装
+# TCC wrapper
 aiw tcc hello.c -o hello.exe
 aiw tcc dll hello.c -o hello.dll
 aiw tcc x86_64 hello.c -o hello.exe
 aiw tcc run hello.c
+
 go build -o aiw .
 ```
 
-Windows 可执行：
+Windows executable:
 
 ```powershell
 .\aiw.exe init
 ```
 
-## 命令
+## Commands
 
 ```text
 aiw init [--prompts] [--merge] [--force] [--template <name>]
@@ -88,283 +64,392 @@ aiw show <task-id>
 aiw status <task-id> <status>
 aiw done <task-id>
 aiw archive <task-id> [--push] [--cleanup-wt] [--delete-branch] [--finalize]
+
 aiw wt add <task-id> [base-branch]
-aiw wt rm  <task-id> [--delete-branch] [--force]
+aiw wt rm <task-id> [--delete-branch] [--force]
 aiw wt list [--porcelain]
 aiw wt prune [--dry-run]
 aiw wt lock <task-id> [reason]
 aiw wt unlock <task-id>
 aiw wt repair
 aiw wt ignore
+
 aiw context <task-id>
 aiw decision <task-id>
 aiw spec <spec-id>
 aiw registry
+
 aiw prompts list
 aiw prompts [template] [--merge] [--force]
-aiw tcc [args...]           # TCC wrapper with auto include/lib defaults
-aiw git <subcommand>           # run: aiw git help
+
+aiw tcc [args...]       # TCC wrapper with automatic include/lib defaults
+aiw git <subcommand>    # run: aiw git help
 ```
 
-## 插件扩展（Plugins�?
+# Plugin System
 
-`aiw` 支持通过外部可执行程�?脚本扩展子命令。若调用的子命令不是内置命令，`aiw` 会按约定位置搜索并尝试执行名�?`aiw-<plugin-name>` 的可执行文件或脚本�?
+`aiw` supports extending subcommands through external executable plugins.
 
-- 搜索路径（优先级顺序）：
-  1. 程序目录下的 `plugins` 子目录（即与 `aiw` 可执行同目录�?`plugins/`�?
-  2. `$HOME/.config/aiw/plugins`
-  3. 系统 `PATH`（仅匹配路径下的可执行文件）
+When an unknown subcommand is invoked, `aiw` searches for an executable named `aiw-<plugin-name>` and executes it.
 
-- 命名规则�?
-  - 文件基础名须�?`aiw-<plugin-name>`，允许扩展名：`.exe`, `.py`, `.sh`, `.bat`, `.cmd`, `.ps1`, `.js` 或无扩展（Linux ELF 或带 shebang 的脚本）�?
-  - `plugins` 目录内若存在子目录，`aiw` 会向下一层递归查找符合命名规则的文件�?
+## Plugin Search Paths
 
-- 执行优先级（同名多文件时）：
-  1. `.bat` / `.cmd` / `.sh`
-  2. `.py`
-  3. 无扩展（�?shebang 的脚本）
-  4. 原生二进制（ELF / .exe�?
+Search order:
 
-- 解释器与 shebang�?
-  - 对无扩展或脚本文件，若第一行为 `#!`（shebang），`aiw` 会使�?shebang 指定的解释器运行�?
-  - �?`.js` 文件，优先尝�?`bun`（若可用），否则使用 `node`�?
+1. `plugins/` directory next to the `aiw` executable
+2. `$HOME/.config/aiw/plugins`
+3. System `PATH`
 
-- 环境变量（`aiw` 会注入到插件进程）：
-  - `AIW_PLUGIN_NAME`：插件名称（不含 `aiw-` 前缀�?
-  - `AIW_PLUGIN_PATH`：被执行插件的绝对路�?
-  - `AIW_CMDLINE`：从子命令开始的原始命令行（示例：`hello one two`�?
-  - `AIW_HOME` / `AIW_ROOT`：`aiw` 的配置或可执行所在根目录
+## Naming Convention
 
-- 使用示例�?
+Plugin filenames must follow:
 
-  �?`plugins/aiw-hello.sh` 放入仓库根目录的 `plugins/`，运行：
+```text
+aiw-<plugin-name>
+```
+
+Supported extensions:
+
+```text
+.exe
+.py
+.sh
+.bat
+.cmd
+.ps1
+.js
+.jar
+(no extension)
+```
+
+If subdirectories exist under `plugins/`, `aiw` recursively searches one level deeper.
+
+## Execution Priority
+
+When multiple matching plugins exist:
+
+1. `.bat` / `.cmd` / `.sh`
+2. `.py`
+3. Extensionless scripts (shebang)
+4. Native binaries (`.exe` / ELF)
+
+## Interpreters and Shebang
+
+* Extensionless scripts with a `#!` shebang are executed using the specified interpreter.
+* For `.js` files, `bun` is preferred when available; otherwise `node` is used.
+
+## Environment Variables
+
+The following variables are injected into plugin processes:
+
+| Variable                | Description                                |
+| ----------------------- | ------------------------------------------ |
+| `AIW_PLUGIN_NAME`       | Plugin name without the `aiw-` prefix      |
+| `AIW_PLUGIN_PATH`       | Absolute path to the executed plugin       |
+| `AIW_CMDLINE`           | Original command line after the subcommand |
+| `AIW_HOME` / `AIW_ROOT` | AIW configuration or installation root     |
+
+## Example
+
+Place `plugins/aiw-hello.sh` in the repository's `plugins/` directory:
+
+```bash
+aiw hello arg1 arg2
+```
+
+The plugin should process arguments via standard `argv` and write output to stdout/stderr. Its exit code becomes the exit code of `aiw`.
+
+## Security Notice
+
+Plugins execute arbitrary external code and may pose security risks. Only install trusted plugins. Consider signature verification or allowlists in production environments.
+
+# Command Behavior Details
+
+## 1. `aiw init`
+
+* Creates directories such as `openspec/` and `.wt/`
+* Writes default template files only when missing
+* Creates or appends `.wt/` to `.gitignore`
+* Generates or refreshes `openspec/registry.json`
+* Does not automatically merge templates from `docs/agent-templates/`
+
+Options:
+
+* `--prompts`
+  Run prompt synchronization immediately after initialization.
+
+* `--merge`
+  Valid only with `--prompts`. Merge content into existing prompt files.
+
+* `--force`
+  Valid only with `--prompts`. Overwrite existing prompt files.
+
+* `--template <name>`
+  Valid only with `--prompts`. Explicitly specify the template directory (`go`, `java`, or `python`).
+
+## 2. `aiw new <task-id>`
+
+Creates:
+
+```text
+openspec/changes/<task-id>/
+├── task.toml
+├── task.md
+└── notes.md
+```
+
+Default metadata:
+
+```toml
+type = "task"
+status = "TODO"
+branch = "feature/<task-id>"
+worktree = ".wt/<task-id>"
+```
+
+## 3. `aiw decision <task-id>`
+
+Creates `design.md` for the task if it does not already exist.
+
+## 4. `aiw spec <spec-id>`
+
+Creates:
+
+```text
+openspec/specs/<spec-id>/
+├── spec.toml
+└── spec.md
+```
+
+## 5. `aiw status <task-id> <status>`
+
+Updates:
+
+* `task.toml`
+* `status` (converted to uppercase)
+* `updated`
+
+## 6. `aiw done <task-id>`
+
+Equivalent to:
+
+```bash
+aiw status <task-id> DONE
+```
+
+Does not archive the task automatically.
+
+## 7. `aiw archive <task-id>`
+
+Moves:
+
+```text
+openspec/changes/<task-id>
+```
+
+to:
+
+```text
+openspec/archive/<YYYY-MM-DD>-<task-id>
+```
+
+Options:
+
+* `--push`
+  Execute:
 
   ```bash
-  aiw hello arg1 arg2
+  git push -u origin feature/<task-id>
   ```
 
-  插件应把参数作为常规 argv 处理，并将输出写�?stdout/stderr；`aiw` 会把插件退出码作为自身的退出码返回�?
+* `--cleanup-wt`
+  Remove the task worktree.
 
-- 安全提示�?
-  - 插件由外部代码执行，存在安全风险。仅放置受信任脚本或可执行文件；必要时在运维流程中引入签名或白名单策略�?
+* `--delete-branch`
+  Delete the local feature branch.
 
+* `--finalize`
+  Equivalent to:
 
-### 命令行为细节
+  ```text
+  --push --cleanup-wt --delete-branch
+  ```
 
-1. `aiw init`
-- 创建 `openspec/`、`.wt/` 等目录�?
-- 写入默认模板文件（仅缺失时）�?
-- 创建或追�?`.wt/` �?`.gitignore`�?
-- 生成/刷新 `openspec/registry.json`�?
-- 默认不会自动合并 `docs/agent-templates/` 下的实践模板�?
-- 可选参数：
-  - `--prompts`：初始化完成后立即执�?prompts 同步
-  - `--merge`：仅在与 `--prompts` 一起使用时有效，合并到现有 prompts 文件
-  - `--force`：仅在与 `--prompts` 一起使用时有效，覆盖现�?prompts 文件
-  - `--template <name>`：仅在与 `--prompts` 一起使用时有效，显式指定模板目录，�?`go` / `java` / `python`
+## 8. `aiw wt <subcommand>`
 
-2. `aiw new <task-id>`
-- �?`openspec/changes/<task-id>/` 创建�?
-  - `task.toml`
-  - `task.md`
-  - `notes.md`
-- 默认元数据：
-  - `type = "task"`
-  - `status = "TODO"`
-  - `branch = "feature/<task-id>"`
-  - `worktree = ".wt/<task-id>"`
+Worktree management commands (`aiw wt help` for details).
 
-3. `aiw decision <task-id>`
-- 为任务创�?`design.md`（若已存在则不覆盖）�?
+| Subcommand             | Description                                                                 |
+| ---------------------- | --------------------------------------------------------------------------- |
+| `add <task-id> [base]` | Create a worktree on branch `feature/<task-id>`, default base `origin/main` |
+| `rm <task-id>`         | Remove a worktree                                                           |
+| `list`                 | List all worktrees                                                          |
+| `prune`                | Remove stale worktree metadata                                              |
+| `lock`                 | Protect a worktree from accidental removal                                  |
+| `unlock`               | Unlock a worktree                                                           |
+| `repair`               | Repair worktree links after path relocation                                 |
+| `ignore`               | Add `.wt/` to `.gitignore`                                                  |
 
-4. `aiw spec <spec-id>`
-- �?`openspec/specs/<spec-id>/` 创建�?
-  - `spec.toml`
-  - `spec.md`
-
-5. `aiw status <task-id> <status>`
-- 更新 `task.toml` �?`status`（会转成大写）和 `updated`�?
-
-6. `aiw done <task-id>`
-- 等价�?`aiw status <task-id> DONE`�?
-- 不会自动归档�?
-
-7. `aiw archive <task-id>`
-- 移动目录�?
-  - `openspec/changes/<task-id>`
-  - -> `openspec/archive/<YYYY-MM-DD>-<task-id>`
-- 可选参数：
-  - `--push`：先执行 `git push -u origin feature/<task-id>`
-  - `--cleanup-wt`：先执行 `git worktree remove .wt/<task-id>`
-  - `--delete-branch`：尝试执�?`git branch -d feature/<task-id>`
-  - `--finalize`：等价于同时开�?`--push --cleanup-wt --delete-branch`
-
-8. `aiw wt <subcommand>` �?worktree 管理（`aiw wt help` 查看完整列表�?
-
-| 子命�?| 说明 |
-|--------|------|
-| `add <task-id> [base]` | 创建 worktree，分�?`feature/<task-id>`，默认基�?`origin/main` |
-| `rm  <task-id> [--delete-branch] [--force]` | 移除 worktree；`--delete-branch` 同时删除本地分支 |
-| `list [--porcelain]` | 列出所�?worktree（对�?`git worktree list`）|
-| `prune [--dry-run]` | 清理失效 worktree 元数据（`--dry-run` 预演）|
-| `lock <task-id> [reason]` | 锁定 worktree，防止误删（适合 hotfix）|
-| `unlock <task-id>` | 解锁 worktree |
-| `repair` | 修复路径移动后的 worktree 链接 |
-| `ignore` | �?`.gitignore` 中添�?`.wt/` 规则 |
-
-`add` 执行步骤：`git fetch origin` �?`git worktree add .wt/<task-id> -b feature/<task-id> <base>`，并同步更新 `task.toml` 中的 `branch/worktree/updated`�?
-
-9. `aiw context <task-id>`
-- 打印该任务建议优先阅读的文件列表和执行约束提示�?
-
-10. `aiw registry`
-- 重新生成 `openspec/registry.json`�?
-
-11. `aiw prompts [template] [--merge] [--force]`
-- `aiw prompts list` 可列�?`docs/agent-templates/` 下当前可用模板目录�?
-- �?`docs/agent-templates/` 生成或合并仓库级 AI 提示文件�?
-- 支持的模板目录按当前仓库内容自动识别�?
-  - `go`：检测到 `go.mod`
-  - `java`：检测到 `pom.xml` / `build.gradle` / `build.gradle.kts`
-  - `python`：检测到 `pyproject.toml` / `requirements.txt` / `setup.py`
-- 也可以显式指定模板，例如：`aiw prompts go --merge`
-- 文件落点�?
-  - `AGENTS.md`
-  - `.github/copilot-instructions.md`
-  - `CODEX.md`
-- 行为规则�?
-  - 默认：仅创建缺失文件，已存在则跳�?
-  - `--merge`：把模板内容追加/更新到现有文件中�?AIW 标记区块
-  - `--force`：直接覆盖目标文�?
-- 执行完成后会输出统一摘要，说明哪些文件被 `created` / `merged` / `wrote` / `skipped existing`
-
-12. `aiw ignore-wt`（已合并�?`aiw wt ignore`�?
-- 创建 `.gitignore`，或在现�?`.gitignore` 中追�?`.wt/`�?
-- 如果已经存在 `.wt` �?`.wt/` 规则，则不会重复追加�?
-
-13. `aiw git <subcommand>` �?Git 快捷命令（`aiw git help` 查看完整列表�?
-
-命令�?9 个类别分组：
-
-| 分组 | 包含命令 |
-|------|----------|
-| **Snapshot & Commit** | `save`, `cz`, `undo`, `ca`, `caf`, `change-author` �? `rm-from-commit` �? `revert` �?|
-| **History & Status** | `st`, `log`, `whatchanged`, `unpushed`, `unpulled` |
-| **Sync & Remote** | `sync`, `update`, `outstanding`, `get`, `set-remote-branch`, `set-remote`, `add-remote`, `add-mirror` |
-| **Branch** | `delete-branch` �? `rename-branch`, `track`, `mv-to-branch` �? `change-branch-base` �?|
-| **File** | `un-add`, `rm-keep`, `restore-file`, `get-file-from`, `rename` |
-| **Conflicts** | `conflicts` |
-| **Tags & Export** | `delete-tag` �? `export` |
-| **Recovery** | `rollback`, `find-commit-back`, `gc` �? `detach` ⚠⚠, `clean-all-histories` ⚠⚠, `subdir-to-root` ⚠⚠ |
-| **Guides** | `how-to-split`, `help` |
-
-�?= 需要确认，可用 `--force` 跳过。⚠�?= 重写全部历史，协作者需重新 clone�?
-
-### 危险命令说明
-
-#### `change-author <Name> <email> [--all --filter-name <old> ...] [--force]`
+`add` executes:
 
 ```bash
-# 修改最后一�?commit 的作�?
-aiw git change-author "Bob" bob@example.com
-
-# 重写全部历史，替换匹配旧名字的所有提�?
-aiw git change-author "Bob" bob@example.com --all \
-  --filter-name "oldname" --filter-name "old.name"
+git fetch origin &&
+git worktree add .wt/<task-id> -b feature/<task-id> <base>
 ```
 
-- �?`--all`：只 amend 最后一�?commit�?
-- �?`--all`：使�?`git filter-branch --env-filter` 重写全部历史，同时替�?author �?committer�?
+and updates:
 
-#### `rm-from-commit <file> [--history] [--from <commit>] [--force]`
-
-```bash
-# 只从最后一�?commit 删除文件
-aiw git rm-from-commit passwords.txt
-
-# 从整个历史删�?
-aiw git rm-from-commit passwords.txt --history
-
-# 只从某个 commit 之后删除（之前的提交不受影响�?
-aiw git rm-from-commit passwords.txt --history --from abc1234
+```text
+branch
+worktree
+updated
 ```
 
-底层使用 `git filter-branch --tree-filter 'git rm -f --ignore-unmatch <file>'`�?
+in `task.toml`.
 
-#### `detach <ref> [--branch <name>] [--message <msg>] [--force]`
+## 9. `aiw context <task-id>`
 
-```bash
-# 删除 abc1234 之前的所有历史，保留 abc1234..HEAD
-aiw git detach abc1234
+Prints recommended files to review and execution constraints for the task.
+
+## 10. `aiw registry`
+
+Regenerates:
+
+```text
+openspec/registry.json
 ```
 
-等价于：`checkout --orphan` �?`commit` �?`rebase --onto` �?删除临时分支�?
+## 11. `aiw prompts [template] [--merge] [--force]`
 
-#### `clean-all-histories [--branch <name>] [--remote <name>] [--message <msg>] [--force]`
+Features:
 
-```bash
-# 将整个仓库历史压缩为单个 commit，并 force-push 到远�?
-aiw git clean-all-histories
-aiw git clean-all-histories --branch main --remote origin
+* `aiw prompts list` lists available templates under `docs/agent-templates/`
+* Generates or merges repository-level AI prompt files
+
+Auto-detected templates:
+
+| Template | Detection                                        |
+| -------- | ------------------------------------------------ |
+| `go`     | `go.mod`                                         |
+| `java`   | `pom.xml`, `build.gradle`, `build.gradle.kts`    |
+| `python` | `pyproject.toml`, `requirements.txt`, `setup.py` |
+
+Output files:
+
+```text
+AGENTS.md
+.github/copilot-instructions.md
+CODEX.md
 ```
 
-#### `subdir-to-root <subdir> [--force]`
+Behavior:
 
-```bash
-# �?trunk 子目录变为新的仓库根目录（适合 SVN 迁移后清理）
-aiw git subdir-to-root trunk
+* Default: create missing files only
+* `--merge`: merge into AIW-managed sections
+* `--force`: overwrite target files
+
+Summary output reports:
+
+```text
+created
+merged
+wrote
+skipped existing
 ```
 
-底层使用 `git filter-branch --subdirectory-filter`。不包含该目录的 commit 会被丢弃�?
+## 12. `aiw wt ignore`
 
-常用示例�?
+Creates `.gitignore` or appends:
 
-```bash
-aiw git save                          # stage all + commit "wip"
-aiw git cz                            # 向导式提交（默认不启�?LLM�?
-aiw git cz --llm -N 5                # 启用 LLM，生�?5 条候选供选择
-aiw git cz --emoji                   # 启用 emoji 提升可辨识度
-aiw git save "fix typo"               # commit with message
-aiw git st                            # short status
-aiw git log                           # graph log (last 20)
-aiw git sync                          # fetch origin, rebase, push
-aiw git sync main upstream            # sync branch main against upstream
-aiw git update main                   # update local main without checkout
-aiw git delete-branch old-feat --remote  # delete local + remote branch
-aiw git rename-branch new-name        # rename current branch
-aiw git restore-file src/main.go      # discard working-tree changes
-aiw git rollback                      # show reflog + recovery guide
-aiw git export v2.0.0                 # archive tag to zip
-aiw git change-author "Bob" b@x.com   # amend last commit's author �?
-aiw git change-author "Bob" b@x.com --all --filter-name "old"  # rewrite all history ⚠⚠
-aiw git rm-from-commit secret.txt --history  # scrub file from all history ⚠⚠
-aiw git detach abc123                 # drop history before abc123 ⚠⚠
-aiw git clean-all-histories           # squash all history + force-push ⚠⚠
-aiw git subdir-to-root trunk          # make trunk/ the new repo root ⚠⚠
-aiw git help                          # grouped help
-aiw git help --alphabet               # alphabetical listing
+```text
+.wt/
 ```
 
-### `aiw git cz`（Conventional Commit 向导�?
+If the rule already exists, no duplicate entry is added.
 
-- 默认行为：不启用 LLM，进入双语向导填�?type/scope/subject/body/breaking/footer�?
-- 长文本编辑：�?body/breaking/footer 输入 `/edit` �?`^e`（Ctrl+E 文本快捷）可启动外部编辑器�?
-- 可�?LLM：仅�?`--llm` 时启用，直连 OpenAI Chat Completions API（不再依�?`codex exec` 输出解析）�?
+# Git Utilities
+
+## `aiw git cz` (Conventional Commit Wizard)
+
+### Default Behavior
+
+* LLM disabled by default
+* Interactive bilingual wizard for:
+
+  * type
+  * scope
+  * subject
+  * body
+  * breaking changes
+  * footer
+
+### Long-Text Editing
+
+For body/breaking/footer fields:
+
+```text
+/edit
+Ctrl+E
+```
+
+launches an external editor.
+
+### LLM Support
+
+Enabled only with `--llm`.
+
+Uses the OpenAI Chat Completions API directly.
 
 ```bash
 set OPENAI_API_KEY=your_api_key
+
 # optional
 set OPENAI_MODEL=gpt-4o-mini
 set OPENAI_BASE_URL=https://api.openai.com/v1
 ```
 
-- 配置优先级：`CLI` > `项目根目录配置` > `程序目录配置`�?
-- 配置文件：`aiw.toml` �?`.aiw.toml`（TOML）�?
-- `EDITOR`：可选，配置后优先于环境变量编辑器（`GIT_EDITOR`/`VISUAL`/`EDITOR`）�?
-- OpenAI 配置读取优先级：`配置文件 [cz]` > `外部环境变量` > `当前目录 .env` > `程序目录 .env` > 默认值�?
-- 可配置项：`model` / `base_url` / `api_key`（分别对�?`OPENAI_MODEL` / `OPENAI_BASE_URL` / `OPENAI_API_KEY`）�?
+### Configuration Priority
 
-示例配置�?
+```text
+CLI
+→ Project Root Configuration
+→ Program Directory Configuration
+```
+
+Supported configuration files:
+
+```text
+aiw.toml
+.aiw.toml
+```
+
+### OpenAI Configuration Priority
+
+```text
+[cz] section in config
+→ environment variables
+→ .env in current directory
+→ .env in program directory
+→ defaults
+```
+
+Supported options:
+
+```toml
+model
+base_url
+api_key
+```
+
+Mapping:
+
+```text
+OPENAI_MODEL
+OPENAI_BASE_URL
+OPENAI_API_KEY
+```
+
+Example:
 
 ```toml
 [cz]
@@ -376,24 +461,21 @@ model = "gpt-4o-mini"
 base_url = "https://api.openai.com/v1"
 api_key = ""
 
-[cz.messages]
-type = "选择你要提交的类�?/ Select commit type:"
-scope = "选择一个提交范围（可选）/ Scope (optional):"
-subject = "填写简短精炼的变更描述 / Subject:"
-confirmCommit = "是否提交或修�?commit? / Commit or modify?"
-
 [[cz.types]]
 value = "feat"
-name = "feat:     新增功能 | A new feature"
+name = "feat:     New Feature | A new feature"
 
 [[cz.types]]
 value = "fix"
-name = "fix:      修复缺陷 | A bug fix"
+name = "fix:      Bug Fix | A bug fix"
 ```
 
-## task.toml 格式（当前实现）
+### New Features
 
-`task.toml` 为简化的键值格式（非完�?TOML 解析器），当前程序会读写以下字段�?
+* Supports `--retry` (`-r`) to restore the most recent commit as a draft for amendment or resubmission.
+* Interactive `issue-prefix` selection now supports both predefined options and custom input.
+
+## task.toml Format
 
 ```toml
 id = "payment-retry"
@@ -405,25 +487,30 @@ branch = "feature/payment-retry"
 worktree = ".wt/payment-retry"
 ```
 
-## task-id / spec-id 规则
+## task-id / spec-id Rules
 
-允许字符�?
+Allowed characters:
 
-- 英文字母 `a-z` `A-Z`
-- 数字 `0-9`
-- `-` `_` `.`
+```text
+a-z
+A-Z
+0-9
+-
+_
+.
+```
 
-其他字符会被判定为非�?ID�?
+Any other character is considered invalid.
 
-## 快速上�?
+## Quick Start
 
 ```bash
-# 初始化仓�?
+# Initialize repository
 aiw init
 aiw init --prompts --merge
 aiw init --prompts --template go
 
-# 任务工作�?
+# Task workflow
 aiw new payment-retry
 aiw wt add payment-retry
 aiw context payment-retry
@@ -431,14 +518,14 @@ aiw status payment-retry IN_PROGRESS
 aiw done payment-retry
 aiw archive payment-retry --finalize
 
-# Worktree
+# Worktrees
 aiw wt list
 aiw wt prune --dry-run
 aiw wt lock payment-retry "in review"
 aiw wt rm payment-retry --delete-branch
 aiw wt ignore
 
-# Git 快捷命令
+# Git utilities
 aiw git st
 aiw git save "feat: add retry"
 aiw git sync
@@ -446,7 +533,7 @@ aiw git update main
 aiw git log
 aiw git help
 
-# TCC 包装�?
+# TCC wrapper
 aiw tcc hello.c -o hello.exe
 aiw tcc dll hello.c -o hello.dll
 aiw tcc x86_64 hello.c -o hello.exe

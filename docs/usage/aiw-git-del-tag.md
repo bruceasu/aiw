@@ -1,4 +1,4 @@
-# aiw git-delete-tag
+﻿# aiw git delete-tag
 
 Short: Delete a local tag and optionally remove it from a remote.
 
@@ -9,10 +9,10 @@ Usage:
 aiw git delete-tag <tag> [--remote] [--remote-name <name>] [--force]
 
 Arguments:
-- <tag> — The name of the tag to delete.
-- --remote — Also delete the tag from the remote (default: origin).
-- --remote-name <name> — Remote name to use (default: origin).
-- --force — Skip confirmation prompt.
+- <tag> 鈥?The name of the tag to delete.
+- --remote 鈥?Also delete the tag from the remote (default: origin).
+- --remote-name <name> 鈥?Remote name to use (default: origin).
+- --force 鈥?Skip confirmation prompt.
 
 Examples:
 - aiw git delete-tag v1.2.3 --remote

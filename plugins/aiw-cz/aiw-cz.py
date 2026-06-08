@@ -6,6 +6,24 @@ import subprocess
 import sys
 from pathlib import Path
 
+META = {
+    'name': 'aiw cz',
+    'short': 'Commitizen plugin for aiw.',
+    'long': (
+        'Commitizen plugin for aiw. '
+        'Provides a standardized way to write commit messages.'
+    ),
+    'usage': 'aiw cz [args...]',
+    'args': [
+        {'flag': '--help', 'description': 'Show this help message and exit.'},
+        {'flag': '--version', 'description': 'Show version information and exit.'},
+    ],
+    'examples': [
+        'aiw cz',
+        'aiw cz --help',
+        'aiw cz --version'
+    ],
+}
 
 def target_binary(base: Path) -> Path:
     system = platform.system().lower()
