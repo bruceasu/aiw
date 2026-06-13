@@ -6,20 +6,36 @@
 # Default is no-llm wizard. Set true to enable LLM by default.
 llm = false
 
+
+#gemini ollama openai
+llm_provider=ollama
+#llm_model=
+
+
 # Candidate count used in LLM mode.
-candidates = 3
+candidates = 5
 
 # LLM model used by direct OpenAI API call.
 # You can also set OPENAI_MODEL environment variable.
-model = "gpt-4o-mini"
+#openai_model = "gpt-5.4-mini"
 
 # OpenAI API base URL.
 # You can also set OPENAI_BASE_URL environment variable.
-base_url = "https://api.openai.com/v1"
+#openai_base_url = "https://api.openai.com/v1"
 
 # OpenAI API key.
 # You can also set OPENAI_API_KEY environment variable.
-api_key = ""
+#openai_api_key = ""
+
+#gemini_model=
+#gemini_base_url
+#gemini_api_key=
+
+#ollama_model=llama3
+#ollama_base_url=http://localhost:11434
+#ollama_api_key=
+
+
 
 # Print resolved source for OPENAI_MODEL/OPENAI_BASE_URL/OPENAI_API_KEY
 # during `aiw git cz --llm` runs.

@@ -193,8 +193,8 @@ Creates:
 
 ```text
 openspec/changes/<task-id>/
-├── task.toml
-├── task.md
+├── tasks.toml
+├── tasks.md
 └── notes.md
 ```
 

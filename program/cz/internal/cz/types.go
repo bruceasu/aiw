@@ -31,7 +31,16 @@ type Config struct {
 	UseLLM               bool
 	Candidates           int
 	Editor               string
+	LLMProvider          string
 	LLMModel             string
+	OpenAIModel          string
+	OpenAIBaseURL        string
+	OpenAIKey            string
+	GeminiModel          string
+	GeminiBaseURL        string
+	GeminiKey            string
+	OllamaModel          string
+	OllamaBaseURL        string
 	APIBaseURL           string
 	APIKey               string
 	DebugSource          bool

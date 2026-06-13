@@ -1,8 +1,11 @@
 # AGENTS.md
 Always respond in Chinese.
-默认假设�?  - 主要�?Java + Maven / Gradle
-  - 常见场景�?Spring Boot / 后端服务 / 企业应用
-强调分层、接口稳定性、测试、数据库和事务边�?## Purpose
+Default assumptions: 
+- Mainly develop Java + Maven/Gradle 
+- Common scenarios: Spring Boot / back-end services / enterprise applications
+Emphasis on layering, interface stability, testing, database and transaction boundaries
+
+## Purpose
 This Java repository is maintained with human oversight and AI coding agents.
 Optimize for correctness, explicitness, backward compatibility, and reviewability.
 ---

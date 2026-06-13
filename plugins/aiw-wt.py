@@ -18,35 +18,6 @@ CHANGES_DIR = ROOT / "openspec" / "changes"
 WORKTREE_DIR = Path(".wt")
 REGISTRY_FILE = ROOT / "openspec" / "registry.json"
 
-META = {
-    'name': 'aiw wt',
-    'short': 'Worktree management for aiw.',
-    'long': (
-        'Worktree management for aiw. '
-        'Supports adding, removing, listing, and pruning worktrees.'
-    ),
-    'usage': 'aiw wt [command] [args...]',
-    'args': [
-        {'flag': 'add', 'description': 'Add a new worktree, you can optionally specify a base branch.'},
-        {'flag': 'rm', 'description': 'Remove a worktree with the task ID, you can delete the branch associated with it.--force can be used to force remove a worktree.'},
-        {'flag': 'list', 'description': 'List all worktrees.'},
-        {'flag': 'prune', 'description': 'Prune unused worktrees.'},
-        {'flag': 'lock', 'description': 'Lock a worktree.'},
-        {'flag': 'unlock', 'description': 'Unlock a worktree.'},
-        {'flag': 'repair', 'description': 'Repair a worktree.'},
-        {'flag': 'ignore', 'description': 'Ignore a worktree.'},
-    ],
-    'examples': [
-        'aiw wt add task1',
-        'aiw wt rm task1',
-        'aiw wt list',
-        'aiw wt prune',
-        'aiw wt lock task1 "reason for locking"',
-        'aiw wt unlock task1',
-        'aiw wt repair',
-        'aiw wt ignore',
-    ],
-}
 
 def run_cmd(cmd):
     print(f"> {' '.join(cmd)}", file=sys.stderr)
@@ -202,6 +173,34 @@ def list_cmd(porcelain=False):
     return run_cmd(cmd)
 
 
+def push(task_id):
+    td = task_dir(task_id)
+    if not td.exists():
+        print(f"task not found: {task_id}", file=sys.stderr)
+        return 2
+    meta_path = task_meta_path(task_id)
+    meta = read_task_meta(meta_path)
+    branch = meta.get("branch", "").strip() or f"feature/{task_id}"
+    wt = meta.get("worktree", "").strip() or str((WORKTREE_DIR / task_id).as_posix())
+    cmd = ["git", "worktree", "-C", wt,  "push", "origin", branch]
+    if run_cmd(cmd) != 0:
+        return 2
+    meta["status"] = "PUSHED"
+    from datetime import datetime
+    meta["updated"] = datetime.now().strftime("%Y-%m-%d")
+    write_task_meta(meta_path, meta)
+    write_registry()
+    print(f"You can run `aiw wt rm $task_id --delete-branch`, and then `aiw wt prune` to clean up.")
+    return 0
+
+
+def list_cmd(porcelain=False):
+    cmd = ["git", "worktree", "list"]
+    if porcelain:
+        cmd.append("--porcelain")
+    return run_cmd(cmd)
+
+
 def prune(dry_run=False):
     cmd = ["git", "worktree", "prune"]
     if dry_run:
@@ -237,6 +236,7 @@ def usage():
     print("  unlock <task-id]")
     print("  repair")
     print("  ignore")
+    print("  push <task-id>")
 
 
 def main():

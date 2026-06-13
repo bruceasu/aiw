@@ -5,7 +5,7 @@ Before coding, ALWAYS read:
    - openspec/changes/<task>/
    - openspec/specs/
 2. especially:
-   - task.md
+   - tasks.md
    - design.md (if exists)
    - spec.md
 Rules:
@@ -31,7 +31,7 @@ Before coding, ALWAYS read:
    - openspec/changes/<task>/
    - openspec/specs/
 2. especially:
-   - task.md
+   - tasks.md
    - design.md (if exists)
    - spec.md
 Rules:
@@ -52,8 +52,8 @@ Git worktree convention:
 ---
 
 # AGENTS.md
-默认假设�?- 主要�?**Go 服务 / CLI / 微服�?/ 基础设施工具**
-- 强调包边界、接口最小化、context 传播、错误处理、测试、构建可重复�?
+默认假设 - 主要开发 **Go 服务 / CLI / 微服务/ 基础设施工具**
+- 强调包边界、接口最小化、context 传播、错误处理、测试、构建可重复执行
 Always respond in Chinese.
 
 ## Purpose

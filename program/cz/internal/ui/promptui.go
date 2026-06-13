@@ -18,7 +18,10 @@ type PromptUI struct {
 	PromptMultilineFn func(string, cz.Config, string) (string, error)
 }
 
-func NewPromptUI(draftFromLLM func(cz.Config, func(cz.Config, []cz.Draft) (cz.Draft, error)) (cz.Draft, error), promptLine func(string) string, promptMultiline func(string, cz.Config, string) (string, error)) cz.UI {
+func NewPromptUI(
+	draftFromLLM func(cz.Config, func(cz.Config, []cz.Draft) (cz.Draft, error)) (cz.Draft, error),
+	promptLine func(string) string,
+	promptMultiline func(string, cz.Config, string) (string, error)) cz.UI {
 	return PromptUI{
 		DraftFromLLMFn:    draftFromLLM,
 		PromptLineFn:      promptLine,

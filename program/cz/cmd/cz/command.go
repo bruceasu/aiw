@@ -125,18 +125,7 @@ func parseCzOptions(args []string) (czOptions, error) {
 func loadCzConfig(opts czOptions) (czdata.Config, error) {
 	cfg := czdata.DefaultConfig()
 
-	progCfgPath := ""
-	exePath, err := os.Executable()
-	if err == nil {
-		exeDir := filepath.Dir(exePath)
-		progCfgPath = firstExistingFile(filepath.Join(exeDir, "aiw.toml"), filepath.Join(exeDir, ".aiw.toml"))
-	}
-	if progCfgPath != "" {
-		if err := mergeCzConfigFromTomlFile(&cfg, progCfgPath); err != nil {
-			return cfg, fmt.Errorf("load program config %s: %w", progCfgPath, err)
-		}
-	}
-
+	// 1. Project root config (highest priority)
 	projectCfgPath := ""
 	if root, rootErr := detectProjectRoot(); rootErr == nil {
 		projectCfgPath = firstExistingFile(filepath.Join(root, "aiw.toml"), filepath.Join(root, ".aiw.toml"))
@@ -147,13 +136,79 @@ func loadCzConfig(opts czOptions) (czdata.Config, error) {
 		}
 	}
 
+	// 2. AIW_ROOT config
+	if aiwRoot := os.Getenv("AIW_ROOT"); aiwRoot != "" {
+		aiwCfgPath := firstExistingFile(filepath.Join(aiwRoot, "aiw.toml"), filepath.Join(aiwRoot, ".aiw.toml"))
+		if aiwCfgPath != "" {
+			if err := mergeCzConfigFromTomlFile(&cfg, aiwCfgPath); err != nil {
+				return cfg, fmt.Errorf("load aiw_root config %s: %w", aiwCfgPath, err)
+			}
+		}
+	}
+
+	// 3. Executable directory config
+	progCfgPath := ""
+	exePath, err := os.Executable()
+	if err == nil {
+		exeDir := filepath.Dir(exePath)
+		progCfgPath = firstExistingFile(filepath.Join(exeDir, "cz.toml"), filepath.Join(exeDir, ".cz.toml"))
+	}
+	if progCfgPath != "" {
+		if err := mergeCzConfigFromTomlFile(&cfg, progCfgPath); err != nil {
+			return cfg, fmt.Errorf("load program config %s: %w", progCfgPath, err)
+		}
+	}
+
 	if opts.UseLLM != nil {
 		cfg.UseLLM = *opts.UseLLM
 	}
 	if opts.Candidates != nil {
 		cfg.Candidates = *opts.Candidates
 	}
+
+	finalizeConfig(&cfg)
 	return cfg, nil
+}
+
+func finalizeConfig(cfg *czdata.Config) {
+	provider := strings.ToLower(strings.TrimSpace(cfg.LLMProvider))
+	switch provider {
+	case "openai":
+		if cfg.OpenAIModel != "" {
+			cfg.LLMModel = cfg.OpenAIModel
+		}
+		if cfg.OpenAIBaseURL != "" {
+			cfg.APIBaseURL = cfg.OpenAIBaseURL
+		}
+		if cfg.OpenAIKey != "" {
+			cfg.APIKey = cfg.OpenAIKey
+		}
+	case "gemini":
+		if cfg.GeminiModel != "" {
+			cfg.LLMModel = cfg.GeminiModel
+		}
+		if cfg.GeminiBaseURL != "" {
+			cfg.APIBaseURL = cfg.GeminiBaseURL
+		}
+		if cfg.GeminiKey != "" {
+			cfg.APIKey = cfg.GeminiKey
+		}
+	case "ollama":
+		if cfg.OllamaModel != "" {
+			cfg.LLMModel = cfg.OllamaModel
+		}
+		if cfg.OllamaBaseURL != "" {
+			cfg.APIBaseURL = cfg.OllamaBaseURL
+		}
+	default:
+		// Default to ollama specific settings if provider is not set but they are present
+		if cfg.OllamaModel != "" {
+			cfg.LLMModel = cfg.OllamaModel
+		}
+		if cfg.OllamaBaseURL != "" {
+			cfg.APIBaseURL = cfg.OllamaBaseURL
+		}
+	}
 }
 
 func detectProjectRoot() (string, error) {
@@ -270,12 +325,30 @@ func mergeCzConfigFromTomlFile(cfg *czdata.Config, path string) error {
 				if b, ok := parseTomlBool(valRaw); ok {
 					cfg.UseLLM = b
 				}
-			case "model", "llm_model", "openai_model":
+			case "provider", "llm_provider":
+				cfg.LLMProvider = val
+			case "model", "llm_model":
 				cfg.LLMModel = val
-			case "base_url", "openai_base_url":
+			case "openai_model":
+				cfg.OpenAIModel = val
+			case "gemini_model":
+				cfg.GeminiModel = val
+			case "ollama_model":
+				cfg.OllamaModel = val
+			case "base_url", "llm_base_url":
 				cfg.APIBaseURL = val
-			case "api_key", "openai_api_key":
+			case "openai_base_url":
+				cfg.OpenAIBaseURL = val
+			case "gemini_base_url":
+				cfg.GeminiBaseURL = val
+			case "ollama_base_url":
+				cfg.OllamaBaseURL = val
+			case "api_key", "llm_api_key":
 				cfg.APIKey = val
+			case "openai_api_key":
+				cfg.OpenAIKey = val
+			case "gemini_api_key":
+				cfg.GeminiKey = val
 			case "debug_source", "debug":
 				if b, ok := parseTomlBool(valRaw); ok {
 					cfg.DebugSource = b
@@ -390,8 +463,8 @@ func DraftFromLLMWithSelector(cfg czdata.Config, selector func(czdata.Config, []
 		}
 		hist, _ := util.RunAndWaitForOuput("git", "log", "--oneline", "-n", "5")
 
-		if len(diff) > 12000 {
-			diff = diff[:12000] + "\n... (truncated)"
+		if len(diff) > 4000 {
+			diff = diff[:4000] + "\n... (truncated)"
 		}
 		typeList := make([]string, 0, len(cfg.Types))
 		for _, t := range cfg.Types {

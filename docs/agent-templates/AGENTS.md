@@ -5,7 +5,7 @@ Before coding, ALWAYS read:
    - openspec/changes/<task>/
    - openspec/specs/
 2. especially:
-   - task.md
+   - tasks.md
    - design.md (if exists)
    - spec.md
 Rules:

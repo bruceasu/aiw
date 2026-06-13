@@ -1,9 +1,12 @@
 # AGENTS.md
 Always respond in Chinese.
 
-默认假设�?- 主要�?**Python 应用 / 服务 / 脚本 / AI 工具 / 后端**
-- 常见框架包括 **FastAPI / Flask / Django / CLI tools**
-- 强调虚拟环境、依赖控制、类型、测试和脚本可维护�?## Purpose
+Default assumptions:
+- Mainly develop **Python applications/services/scripts/AI tools/backend**
+- Common frameworks include **FastAPI/Flask/Django/CLI tools**
+- Emphasis on virtual environments, dependency control, types, testing and script maintainability
+
+## Purpose
 This Python repository is maintained with human oversight and AI coding agents.
 Optimize for correctness, readability, explicit behavior, and safe incremental changes.
 ---

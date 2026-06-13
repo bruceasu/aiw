@@ -64,10 +64,10 @@ Relevant modules:
 	notesMD := `# Notes
 Temporary findings, debugging notes, experiments.
 `
-	if err := taskx.WriteTaskMeta(filepath.Join(dir, "task.toml"), meta); err != nil {
+	if err := taskx.WriteTaskMeta(filepath.Join(dir, "tasks.toml"), meta); err != nil {
 		return err
 	}
-	if err := os.WriteFile(filepath.Join(dir, "task.md"), []byte(taskMD), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "tasks.md"), []byte(taskMD), 0o644); err != nil {
 		return err
 	}
 	if err := os.WriteFile(filepath.Join(dir, "notes.md"), []byte(notesMD), 0o644); err != nil {
@@ -152,7 +152,7 @@ func listTasks() error {
 }
 
 func showTask(id string) error {
-	path := filepath.Join(taskx.ChangesDir, id, "task.md")
+	path := filepath.Join(taskx.ChangesDir, id, "tasks.md")
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -226,8 +226,8 @@ func printContext(id string) error {
 	}
 	fmt.Print("Read these files first:\n\n")
 	files := []string{
-		filepath.Join(changeDir, "task.toml"),
-		filepath.Join(changeDir, "task.md"),
+		filepath.Join(changeDir, "tasks.toml"),
+		filepath.Join(changeDir, "tasks.md"),
 		filepath.Join(changeDir, "design.md"),
 		filepath.Join(changeDir, "notes.md"),
 	}

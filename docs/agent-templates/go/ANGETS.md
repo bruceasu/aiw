@@ -1,7 +1,9 @@
 # AGENTS.md
-默认假设�?- 主要�?**Go 服务 / CLI / 微服�?/ 基础设施工具**
-- 强调包边界、接口最小化、context 传播、错误处理、测试、构建可重复�?
 Always respond in Chinese.
+
+default assumption
+- Mainly develop **Go services / CLI / microservices / infrastructure tools**
+- Emphasis on package boundaries, interface minimization, context propagation, error handling, testing, and building repeatable execution
 
 ## Purpose
 This Go repository is maintained with human oversight and AI coding agents.

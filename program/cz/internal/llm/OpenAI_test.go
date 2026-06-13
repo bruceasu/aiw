@@ -29,23 +29,23 @@ func TestResolveOpenAIValuePrecedence(t *testing.T) {
 	cwdEnv := map[string]string{"OPENAI_MODEL": "cwd-model"}
 	exeEnv := map[string]string{"OPENAI_MODEL": "exe-model"}
 
-	v, src := resolveOpenAIValue("cfg-model", "OPENAI_MODEL", cwdEnv, exeEnv, "default-model")
+	v, src := resolveLLMValue("cfg-model", "OPENAI_MODEL", cwdEnv, exeEnv, "default-model")
 	if v != "cfg-model" || src != "config" {
 		t.Fatalf("expected config to win, got value=%q source=%q", v, src)
 	}
 
-	v, src = resolveOpenAIValue("", "OPENAI_MODEL", cwdEnv, exeEnv, "default-model")
+	v, src = resolveLLMValue("", "OPENAI_MODEL", cwdEnv, exeEnv, "default-model")
 	if v != "env-model" || src != "env" {
 		t.Fatalf("expected env to win, got value=%q source=%q", v, src)
 	}
 
 	t.Setenv("OPENAI_MODEL", "")
-	v, src = resolveOpenAIValue("", "OPENAI_MODEL", cwdEnv, exeEnv, "default-model")
+	v, src = resolveLLMValue("", "OPENAI_MODEL", cwdEnv, exeEnv, "default-model")
 	if v != "cwd-model" || src != "cwd .env" {
 		t.Fatalf("expected cwd .env to win, got value=%q source=%q", v, src)
 	}
 
-	v, src = resolveOpenAIValue("", "OPENAI_BASE_URL", map[string]string{}, map[string]string{}, "https://api.openai.com/v1")
+	v, src = resolveLLMValue("", "OPENAI_BASE_URL", map[string]string{}, map[string]string{}, "https://api.openai.com/v1")
 	if src != "default" {
 		t.Fatalf("expected default source, got %q", src)
 	}
@@ -65,7 +65,7 @@ func TestMaskSecret(t *testing.T) {
 
 func TestParseLLMCandidatesFallback(t *testing.T) {
 	out := "feat: add cz command\nfix: handle empty staged"
-	cands, err := parseLLMCandidates(out)
+	cands, err := ParseLLMCandidates(out)
 	if err != nil {
 		t.Fatalf("parse fallback candidates: %v", err)
 	}
@@ -86,7 +86,7 @@ func TestParseLLMCandidatesRejectsNoisyLogs(t *testing.T) {
 		"Get-Content: path not found",
 	}, "\n")
 
-	_, err := parseLLMCandidates(out)
+	_, err := ParseLLMCandidates(out)
 	if err == nil {
 		t.Fatal("expected parse to fail for noisy logs")
 	}
@@ -98,7 +98,7 @@ func TestParseLLMCandidatesParsesConventionalListWithNumbering(t *testing.T) {
 		"2) fix(parser): reject noisy llm output",
 	}, "\n")
 
-	cands, err := parseLLMCandidates(out)
+	cands, err := ParseLLMCandidates(out)
 	if err != nil {
 		t.Fatalf("parse fallback candidates: %v", err)
 	}

@@ -52,9 +52,9 @@ func listAll() error {
 
 Task management:
   init [--prompts] [--merge] [--force] [--template <name>]
-  new <task-id>             Create task folder (task.toml / task.md / notes.md).
+  new <task-id>             Create task folder (tasks.toml / tasks.md / notes.md).
   list                      List tasks from openspec/changes.
-  show <task-id>            Print task.md.
+  show <task-id>            Print tasks.md.
   status <task-id> <s>      Update task status (auto upper-cased).
   done <task-id>            Shortcut for: status <task-id> DONE.
   archive <task-id> [opts]  Move task to openspec/archive; supports --push / --cleanup-wt.
