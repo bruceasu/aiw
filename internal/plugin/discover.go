@@ -28,6 +28,10 @@ func DiscoverPlugin(name string) (string, error) {
 		exeDir := filepath.Dir(exePath)
 		paths = append(paths, filepath.Join(exeDir, "plugins"))
 	}
+	// also check current working directory's plugins (useful in development)
+	if wd, err := os.Getwd(); err == nil {
+		paths = append(paths, filepath.Join(wd, "plugins"))
+	}
 	// println("searching plugins in paths:", paths[0])
 	// Pass plugin directories; PATH entries are handled inside DiscoverPluginIn
 	return DiscoverPluginIn(paths, name)

@@ -1,48 +1,75 @@
-# aiw CLI 重构�?`cz` 重建实施计划
+# AIW CLI Refactoring and `cz` Rebuild Implementation Plan
 
-## 目标
+## Objective
 
-把当�?CLI 重构�?`main -> internal/commands/* -> internal/*` 结构，并在新结构下完成顶�?`aiw cz` 的能力重建�?
-当前实现目标分两层：
+Refactor the current CLI into the structure:
 
-1. 完成命令结构迁移
-2. �?`internal/commands/cz` 中逐步重建接近参考项目的 TUI �?AI 体验
+```text
+main -> internal/commands/* -> internal/*
+```
 
-## 已确认约�?
-- `cz` 放到 `internal/commands/cz`
-- `git`、`wt`、`tcc` 分别放到 `internal/commands/git`、`internal/commands/wt`、`internal/commands/tcc`
-- openspec-like 命令放到 `internal/commands/task`
-- 公共代码放到 `internal/*`
-- 不保�?`aiw git cz`
-- `cz` 只支持本项目自己的配置格�?- TUI 是卖点，优先做得接近参考项目当前交�?- 依赖变更属于高风险，修改 `go.mod` / `go.sum` 前必须先获批
+and rebuild the top-level `aiw cz` capability within the new architecture.
 
-## 当前进度
+The implementation is divided into two phases:
 
-以下结构迁移已完成：
+1. Complete command structure migration.
+2. Gradually rebuild a TUI + AI experience inside `internal/commands/cz` that approaches the reference project's UX.
 
-- `main.go` 已分发到新的 `internal/commands/*`
-- `internal/commands/task` 已接�?task-like 顶级命令
-- `internal/commands/wt` 已接�?worktree 命令
-- `internal/commands/tcc` 已接�?tcc 命令
-- `internal/commands/git` 已接�?git 快捷命令
-- `internal/commands/cz` 已完成线性版迁移
-- `internal/envx`、`internal/gitx`、`internal/taskx`、`internal/fsx` 已有第一批公共能�?
-当前重点只剩�?
-1. 继续拆分 `internal/commands/cz` 内部结构
-2. 引入真正的搜索式 TUI
-3. 补齐 `cz` 的高级能力和文档
+---
 
-## 目录目标
+## Confirmed Constraints
+
+* `cz` resides in `internal/commands/cz`
+* `git`, `wt`, and `tcc` reside in:
+
+  * `internal/commands/git`
+  * `internal/commands/wt`
+  * `internal/commands/tcc`
+* OpenSpec-like commands reside in `internal/commands/task`
+* Shared functionality resides under `internal/*`
+* `aiw git cz` will not be retained
+* `cz` only supports this project's own configuration format
+* TUI is a key selling point and should closely resemble the current interaction model of the reference project
+* Dependency changes are considered high-risk; modifications to `go.mod` or `go.sum` require explicit approval before implementation
+
+---
+
+## Current Progress
+
+The following structural migration has already been completed:
+
+* `main.go` has been delegated to the new `internal/commands/*` hierarchy
+* `internal/commands/task` now handles task-like top-level commands
+* `internal/commands/wt` now handles worktree commands
+* `internal/commands/tcc` now handles tcc commands
+* `internal/commands/git` now handles git shortcut commands
+* `internal/commands/cz` has completed the initial linear-version migration
+* Initial shared utilities have been extracted into:
+
+  * `internal/envx`
+  * `internal/gitx`
+  * `internal/taskx`
+  * `internal/fsx`
+
+The current focus is now limited to:
+
+1. Further splitting the internal structure of `internal/commands/cz`
+2. Introducing a real searchable TUI
+3. Completing advanced `cz` functionality and documentation
+
+---
+
+## Target Directory Structure
 
 ```text
 aiw/
 ├─ main.go
 ├─ internal/commands/
-�? ├─ cz/
-�? ├─ git/
-�? ├─ wt/
-�? ├─ tcc/
-�? └─ task/
+│  ├─ cz/
+│  ├─ git/
+│  ├─ wt/
+│  ├─ tcc/
+│  └─ task/
 └─ internal/
    ├─ envx/
    ├─ fsx/
@@ -52,166 +79,312 @@ aiw/
    └─ cmdx/
 ```
 
-## 后续任务
+---
 
-### Task 9: `internal/commands/cz` TUI 第一阶段
+# Remaining Tasks
 
-#### 目标
+## Task 9: `internal/commands/cz` TUI Phase 1
 
-在不破坏现有线性版 `cz` 的前提下，引入第一批真正的交互�?TUI 能力�?
-#### 决策门槛
+### Objective
 
-这一任务会修改：
+Introduce the first batch of genuine interactive TUI capabilities without breaking the existing linear `cz` implementation.
 
-- `go.mod`
-- 可能新增 `go.sum`
+### Approval Gate
 
-因此它是高风险变更，实施前必须先获得用户批准�?
-#### 推荐依赖
+This task will modify:
 
-推荐优先选：
+* `go.mod`
+* potentially `go.sum`
 
-- `bubbletea`
+Therefore it is considered a high-risk change and must receive user approval before implementation.
 
-备选但不推荐：
+### Recommended Dependency
 
-- `tview`
-- `tcell` 直接自研
+Preferred:
 
-推荐 `bubbletea` 的原因：
+* `bubbletea`
 
-- 更适合做自定义搜索式流�?- 更容易贴�?`cz-git` 风格，而不是被现成组件交互限制
-- 风险低于直接从底层事件系统自�?
-#### 第一阶段范围
+Alternative (not recommended):
 
-第一阶段故意做小，只交付一条最小闭环：
+* `tview`
+* Direct implementation on top of `tcell`
 
-1. 保留现有 `lineUI`
-2. 新增 `teaUI`
-3. 只实�?`SearchList`
-4. 只接�?`type` 选择这一�?5. 非交互终端继续自动回退�?`lineUI`
+Reasons for choosing `bubbletea`:
 
-#### 计划改动文件
+* Better suited for custom searchable workflows
+* Easier to emulate the `cz-git` style UX
+* Lower risk than building directly on top of a low-level event system
 
-- Modify: `go.mod`
-- Create or Modify: `internal/commands/cz/tui.go`
-- Modify: `internal/commands/cz/command.go`
-- Modify: `internal/commands/cz/flow.go`
-- Modify: `internal/commands/cz/command_test.go`
-- Create: `internal/commands/cz/tui_test.go`
+---
 
-#### 实施步骤
+### Phase 1 Scope
 
-- [ ] Step 1: �?`internal/commands/cz` 中定义统一 UI 能力�?  - 目标：让 `lineUI` 和未来的 `teaUI` 走同一套抽�?  - 最小接口先覆盖 `SearchList`
+The first phase is intentionally small and delivers only a minimal end-to-end workflow.
 
-- [ ] Step 2: 引入 TUI 依赖
-  - 修改 `go.mod`
-  - 只引入实�?`SearchList` 所必需的最小依�?
-- [ ] Step 3: 实现 `SearchList`
-  - 支持输入过滤
-  - 支持上下移动
-  - 支持回车确认
-  - 支持无结果提�?  - 支持默认项高�?
-- [ ] Step 4: �?`type` 选择切到 `SearchList`
-  - 只替换这一�?  - 其它步骤仍沿用现有线性逻辑
+1. Keep the existing `lineUI`
+2. Add a new `teaUI`
+3. Implement only `SearchList`
+4. Use it only for the `type` selection step
+5. Continue automatically falling back to `lineUI` in non-interactive terminals
 
-- [ ] Step 5: 补测�?  - 过滤逻辑测试
-  - 流程测试
-  - 降级路径测试
+---
 
-- [ ] Step 6: 全量验证
-  - `go test ./internal/commands/cz`
-  - `go test ./...`
-  - `go build ./...`
-  - `go vet ./...`
+### Planned File Changes
 
-#### 完成标准
+* Modify: `go.mod`
+* Create or Modify: `internal/commands/cz/tui.go`
+* Modify: `internal/commands/cz/command.go`
+* Modify: `internal/commands/cz/flow.go`
+* Modify: `internal/commands/cz/command_test.go`
+* Create: `internal/commands/cz/tui_test.go`
 
-只有同时满足下面条件，Task 9 第一阶段才算完成�?
-1. 交互终端�?`aiw cz` �?`type` 选择已经变成可搜索列�?2. 非交互终端仍可使�?3. 现有 `internal/commands/cz` 测试不回�?4. 全仓构建、测试、vet 通过
+---
 
-### Task 10: `internal/commands/cz` TUI 第二阶段
+### Implementation Steps
 
-#### 目标
+#### Step 1: Define a Unified UI Abstraction
 
-�?TUI 从“第一步可用”扩展到“明显接近参考项目体验”�?
-#### 范围
+Inside `internal/commands/cz`:
 
-- `SearchCheckbox`
-- 自定�?scope / �?scope
-- AI 候选选择
-- `subject` 长度反馈
-- preview / edit / cancel 闭环
+* Create a common UI abstraction
+* Allow both `lineUI` and future `teaUI` to share the same interface
+* Initially cover only `SearchList`
 
-#### 计划改动文件
+---
 
-- Modify: `internal/commands/cz/tui.go`
-- Modify: `internal/commands/cz/flow.go`
-- Modify: `internal/commands/cz/session.go`
-- Modify: `internal/commands/cz/message.go`
-- Create or Modify: `internal/commands/cz/flow_test.go`
-- Create or Modify: `internal/commands/cz/tui_test.go`
+#### Step 2: Introduce TUI Dependencies
 
-#### 实施步骤
+* Update `go.mod`
+* Add only the minimal dependencies required to implement `SearchList`
 
-- [ ] Step 1: 实现 `SearchCheckbox`
-- [ ] Step 2: �?`scope` 选择切到搜索式单选或多�?- [ ] Step 3: 实现 AI 候选列表选择
-- [ ] Step 4: �?`subject` 输入增加长度反馈
-- [ ] Step 5: 实现 preview / edit / cancel 交互
-- [ ] Step 6: 补流程测试和边界测试
-- [ ] Step 7: 跑全量验�?
-### Task 11: `internal/commands/cz` 高级能力补齐
+---
 
-#### 目标
+#### Step 3: Implement `SearchList`
 
-补齐 `cz` 的高级行为和配置能力�?
-#### 范围
+Requirements:
 
-- issue prefix 流程
-- breaking mode
-- retry
-- 更完整的 `aiw.toml` 配置
-- 帮助文案�?README 更新
+* Input-based filtering
+* Up/down navigation
+* Enter-to-confirm
+* Empty-result feedback
+* Default-item highlighting
 
-#### 计划改动文件
+---
 
-- Modify: `internal/commands/cz/config.go`
-- Modify: `internal/commands/cz/flow.go`
-- Modify: `internal/commands/cz/help.go`
-- Modify: `README.md`
-- Modify: `docs/design.md`
+#### Step 4: Switch Type Selection to `SearchList`
 
-#### 实施步骤
+Only replace:
 
-- [ ] Step 1: 补齐 issue prefix �?breaking mode
-- [ ] Step 2: 实现 retry
-- [ ] Step 3: 扩展 `aiw.toml`
-- [ ] Step 4: 更新帮助�?README
-- [ ] Step 5: 跑全量验�?
-## 验证矩阵
+```text
+type selection
+```
 
-### 仓库级验�?
-- [ ] `go test ./...`
-- [ ] `go build ./...`
-- [ ] `go vet ./...`
+All remaining steps continue to use the current linear workflow.
 
-### `cz` 专项验证
+---
 
-- [ ] �?staged changes 时给出清晰提�?- [ ] `type` 搜索选择可用
-- [ ] `scope` 搜索选择可用
-- [ ] checkbox 多选可�?- [ ] AI 候选选择可用
-- [ ] `subject` 长度提示可用
-- [ ] 外部编辑器仍可用
-- [ ] preview 支持提交、编辑、取�?- [ ] 非交互终端能自动降级
+#### Step 5: Add Tests
 
-## 风险控制
+Cover:
 
-- 结构迁移已经基本完成，后续避免顺手改 unrelated 模块
-- TUI 一次只替换一小步，先 `SearchList`，再扩到完整流程
-- `lineUI` 必须保留�?`teaUI` 成熟为止
-- 未获批前不修�?`go.mod`
-- Windows 终端兼容性必须纳入验�?
-## OpenSpec 备注
+* Filtering logic
+* Workflow behavior
+* Fallback behavior
 
-当前仓库没有可用�?`openspec/changes/<task>/` �?`openspec/specs/` 任务内容可供继续对齐�? 
-如果后续要严格补�?OpenSpec-lite 轨迹，建议补一个针�?`cz` 重建的任务目录，再把 TODO �?Verification 一起落进去�?
+---
+
+#### Step 6: Full Validation
+
+```bash
+go test ./internal/commands/cz
+go test ./...
+go build ./...
+go vet ./...
+```
+
+---
+
+### Definition of Done
+
+Task 9 Phase 1 is complete only when all of the following are true:
+
+1. `aiw cz` uses a searchable list for `type` selection in interactive terminals
+2. Non-interactive terminals continue to work
+3. Existing `internal/commands/cz` tests do not regress
+4. Repository-wide build, test, and vet all pass
+
+---
+
+## Task 10: `internal/commands/cz` TUI Phase 2
+
+### Objective
+
+Evolve the TUI from "usable" to "visibly close to the reference project's experience."
+
+---
+
+### Scope
+
+* `SearchCheckbox`
+* Custom scope / predefined scope selection
+* AI candidate selection
+* Subject length feedback
+* Preview / edit / cancel workflow
+
+---
+
+### Planned File Changes
+
+* Modify: `internal/commands/cz/tui.go`
+* Modify: `internal/commands/cz/flow.go`
+* Modify: `internal/commands/cz/session.go`
+* Modify: `internal/commands/cz/message.go`
+* Create or Modify: `internal/commands/cz/flow_test.go`
+* Create or Modify: `internal/commands/cz/tui_test.go`
+
+---
+
+### Implementation Steps
+
+#### Step 1
+
+Implement `SearchCheckbox`.
+
+#### Step 2
+
+Switch `scope` selection to searchable single-select or multi-select.
+
+#### Step 3
+
+Implement AI candidate list selection.
+
+#### Step 4
+
+Add subject length feedback during input.
+
+#### Step 5
+
+Implement preview / edit / cancel interaction flow.
+
+#### Step 6
+
+Add workflow and edge-case tests.
+
+#### Step 7
+
+Run full validation.
+
+---
+
+## Task 11: Advanced `cz` Features
+
+### Objective
+
+Complete advanced behaviors and configuration capabilities.
+
+---
+
+### Scope
+
+* Issue-prefix workflow
+* Breaking-change mode
+* Retry support
+* More complete `aiw.toml` configuration
+* Help text and README updates
+
+---
+
+### Planned File Changes
+
+* Modify: `internal/commands/cz/config.go`
+* Modify: `internal/commands/cz/flow.go`
+* Modify: `internal/commands/cz/help.go`
+* Modify: `README.md`
+* Modify: `docs/design.md`
+
+---
+
+### Implementation Steps
+
+#### Step 1
+
+Implement:
+
+* Issue prefix support
+* Breaking-change mode
+
+#### Step 2
+
+Implement retry support.
+
+#### Step 3
+
+Extend `aiw.toml`.
+
+#### Step 4
+
+Update help documentation and README.
+
+#### Step 5
+
+Run full validation.
+
+---
+
+# Validation Matrix
+
+## Repository-Level Validation
+
+```bash
+go test ./...
+go build ./...
+go vet ./...
+```
+
+Checklist:
+
+* [ ] `go test ./...`
+* [ ] `go build ./...`
+* [ ] `go vet ./...`
+
+---
+
+## `cz`-Specific Validation
+
+* [ ] Clear message when no staged changes exist
+* [ ] Searchable `type` selection works
+* [ ] Searchable `scope` selection works
+* [ ] Multi-select checkbox works
+* [ ] AI candidate selection works
+* [ ] Subject length feedback works
+* [ ] External editor integration still works
+* [ ] Preview supports commit, edit, and cancel
+* [ ] Automatic fallback in non-interactive terminals works
+
+---
+
+# Risk Control
+
+* Structural migration is largely complete; avoid incidental changes to unrelated modules
+* Replace TUI functionality incrementally:
+
+  * Start with `SearchList`
+  * Expand gradually to the full workflow
+* Keep `lineUI` until `teaUI` is fully mature
+* Do not modify `go.mod` before approval is granted
+* Windows terminal compatibility must be included in validation
+
+---
+
+# OpenSpec Notes
+
+The current repository does not contain usable content under:
+
+```text
+openspec/changes/<task>/
+openspec/specs/
+```
+
+for further alignment.
+
+If strict OpenSpec-lite traceability is desired later, it is recommended to create a dedicated task directory for the `cz` rebuild and move the TODO items and verification checklist into that structure.

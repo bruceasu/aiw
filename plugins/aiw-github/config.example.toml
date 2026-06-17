@@ -1,0 +1,6 @@
+# Example configuration for aiw-github plugin
+# Token can be provided via env var GITHUB_TOKEN or in this config (env preferred)
+
+[github]
+token = ""
+api = "https://api.github.com"
