@@ -4,7 +4,7 @@ aiw-wt plugin: Python implementation of worktree commands mirroring Go `wt`.
 Supports: add, rm, list, prune, lock, unlock, repair, ignore
 
 This plugin uses the same conventions as the Go code: task metadata under
-openspec/changes/<id>/task.toml and registry at openspec/registry.json.
+openspec/changes/<id>/tasks.toml and registry at openspec/registry.json.
 """
 import os
 import sys
@@ -31,7 +31,7 @@ def task_dir(task_id):
 
 
 def task_meta_path(task_id):
-    return task_dir(task_id) / "task.toml"
+    return task_dir(task_id) / "tasks.toml"
 
 
 def read_task_meta(path):
@@ -72,7 +72,7 @@ def write_registry():
         if not d.is_dir():
             continue
         try:
-            meta = read_task_meta(d / "task.toml")
+            meta = read_task_meta(d / "tasks.toml")
         except Exception:
             continue
         entries.append({

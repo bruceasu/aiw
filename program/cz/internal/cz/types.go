@@ -41,6 +41,8 @@ type Config struct {
 	GeminiKey            string
 	OllamaModel          string
 	OllamaBaseURL        string
+	CodexCommand         string
+	CopilotCommand       string
 	APIBaseURL           string
 	APIKey               string
 	DebugSource          bool

@@ -29,23 +29,23 @@ func TestResolveOpenAIValuePrecedence(t *testing.T) {
 	cwdEnv := map[string]string{"OPENAI_MODEL": "cwd-model"}
 	exeEnv := map[string]string{"OPENAI_MODEL": "exe-model"}
 
-	v, src := resolveLLMValue("cfg-model", "OPENAI_MODEL", cwdEnv, exeEnv, "default-model")
+	v, src := resolveLLMValue("cfg-model", "OPENAI_MODEL", cwdEnv, map[string]string{}, exeEnv, "default-model")
 	if v != "cfg-model" || src != "config" {
 		t.Fatalf("expected config to win, got value=%q source=%q", v, src)
 	}
 
-	v, src = resolveLLMValue("", "OPENAI_MODEL", cwdEnv, exeEnv, "default-model")
+	v, src = resolveLLMValue("", "OPENAI_MODEL", cwdEnv, map[string]string{}, exeEnv, "default-model")
 	if v != "env-model" || src != "env" {
 		t.Fatalf("expected env to win, got value=%q source=%q", v, src)
 	}
 
 	t.Setenv("OPENAI_MODEL", "")
-	v, src = resolveLLMValue("", "OPENAI_MODEL", cwdEnv, exeEnv, "default-model")
+	v, src = resolveLLMValue("", "OPENAI_MODEL", cwdEnv, map[string]string{}, exeEnv, "default-model")
 	if v != "cwd-model" || src != "cwd .env" {
 		t.Fatalf("expected cwd .env to win, got value=%q source=%q", v, src)
 	}
 
-	v, src = resolveLLMValue("", "OPENAI_BASE_URL", map[string]string{}, map[string]string{}, "https://api.openai.com/v1")
+	v, src = resolveLLMValue("", "OPENAI_BASE_URL", map[string]string{}, map[string]string{}, map[string]string{}, "https://api.openai.com/v1")
 	if src != "default" {
 		t.Fatalf("expected default source, got %q", src)
 	}

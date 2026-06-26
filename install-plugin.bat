@@ -16,7 +16,7 @@ if not exist "%INSTALL_DIR%\docs\usage" (
 )
 
 @if "%~1"=="" (
-    #echo Usage: %~nx0 [plugin-name] [, plugin-name2, ...]
+    echo Usage: %~nx0 [plugin-name] [, plugin-name2, ...]
     call cp-mirror.bat plugins  "%INSTALL_DIR%\plugins" >nul 2>&1
     call cp-mirror.bat docs\usage  "%INSTALL_DIR%\docs\usage" >nul 2>&1
     exit /b 0

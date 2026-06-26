@@ -10,6 +10,7 @@ Features:
   - Preview/show/tail a session in readable text
   - Bind a business task name to a Codex session id
   - Resume a session by id or alias through `codex exec resume`
+    - Run `codex exec` directly, or target a session via `--session`
   - Attach notes/context files to a session resume prompt
 
 No third-party dependencies.
@@ -272,6 +273,16 @@ def resolve_session(ref: str, root: Path, workspace: Path) -> SessionMeta:
     return sorted(matches, key=lambda s: s.mtime, reverse=True)[0]
 
 
+def resolve_session_id_or_ref(ref: str, root: Path, workspace: Path) -> str:
+    try:
+        return resolve_session(ref, root, workspace).session_id
+    except SystemExit:
+        # Allow explicit UUID (or UUID prefix) passthrough even if local session logs are missing.
+        if UUID_RE.fullmatch(ref) or UUID_RE.match(ref):
+            return ref
+        raise
+
+
 def list_cmd(args: argparse.Namespace) -> None:
     sessions = scan_sessions(args.sessions_dir)
     if not sessions:
@@ -377,11 +388,36 @@ def build_resume_prompt(args: argparse.Namespace) -> str:
     return "\n\n---\n\n".join(parts)
 
 
-def resume_cmd(args: argparse.Namespace) -> None:
-    s = resolve_session(args.ref, args.sessions_dir, args.workspace)
-    prompt = build_resume_prompt(args)
-    cmd = ["codex", "exec", "resume", s.session_id, prompt]
-    if args.dry_run:
+def build_codex_exec_command(
+    prompt: str,
+    sessions_dir: Path,
+    workspace: Path,
+    session_ref: Optional[str] = None,
+    use_last: bool = False,
+    output_last_message: Optional[str] = None,
+) -> List[str]:
+    if session_ref and use_last:
+        raise SystemExit("--session and --last cannot be used together")
+
+    if session_ref or use_last:
+        cmd = ["codex", "exec", "resume"]
+        if use_last:
+            cmd.append("--last")
+        else:
+            cmd.append(resolve_session_id_or_ref(session_ref, sessions_dir, workspace))
+        if output_last_message:
+            cmd.extend(["-o", output_last_message])
+        cmd.append(prompt)
+        return cmd
+    cmd = ["codex", "exec"]
+    if output_last_message:
+        cmd.extend(["-o", output_last_message])
+    cmd.append(prompt)
+    return cmd
+
+
+def run_or_print_codex_command(cmd: List[str], dry_run: bool) -> None:
+    if dry_run:
         print(" ".join(shlex.quote(x) for x in cmd))
         return
     try:
@@ -390,9 +426,34 @@ def resume_cmd(args: argparse.Namespace) -> None:
         raise SystemExit("codex command not found in PATH")
 
 
+def resume_cmd(args: argparse.Namespace) -> None:
+    prompt = build_resume_prompt(args)
+    cmd = build_codex_exec_command(
+        prompt=prompt,
+        sessions_dir=args.sessions_dir,
+        workspace=args.workspace,
+        session_ref=args.ref,
+        output_last_message=args.output_last_message,
+    )
+    run_or_print_codex_command(cmd, args.dry_run)
+
+
 def open_cmd(args: argparse.Namespace) -> None:
     s = resolve_session(args.ref, args.sessions_dir, args.workspace)
     print(str(s.path))
+
+
+def exec_cmd(args: argparse.Namespace) -> None:
+    prompt = build_resume_prompt(args)
+    cmd = build_codex_exec_command(
+        prompt=prompt,
+        sessions_dir=args.sessions_dir,
+        workspace=args.workspace,
+        session_ref=args.session,
+        use_last=args.last,
+        output_last_message=args.output_last_message,
+    )
+    run_or_print_codex_command(cmd, args.dry_run)
 
 
 def make_parser() -> argparse.ArgumentParser:
@@ -428,12 +489,44 @@ def make_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("aliases", help="List aliases")
     sp.set_defaults(func=aliases_cmd)
 
-    sp = sub.add_parser("resume", help="Run codex exec resume by alias or id")
+    sp = sub.add_parser(
+        "resume",
+        help="Run codex exec resume by alias or id",
+        description=(
+            "Resume a Codex session and send a new prompt.\n\n"
+            "Examples:\n"
+            "  aiw cxs resume payment-retry \"continue with tests\"\n"
+            "  aiw cxs resume 123e4567-e89b-12d3-a456-426614174000 --dry-run"
+        ),
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
     sp.add_argument("ref", help="session id/prefix or alias")
     sp.add_argument("message", nargs="?", help="new prompt/context to append")
     sp.add_argument("-a", "--attach", action="append", help="attach context file; can repeat")
+    sp.add_argument("-o", "--output-last-message", help="write final model message to file")
     sp.add_argument("--dry-run", action="store_true", help="print the codex command only")
     sp.set_defaults(func=resume_cmd)
+
+    sp = sub.add_parser(
+        "exec",
+        help="Run codex exec; optionally target a session",
+        description=(
+            "Run codex exec directly, or target a specific session.\n\n"
+            "Examples:\n"
+            "  aiw cxs exec \"summarize current diff\"\n"
+            "  aiw cxs exec --session payment-retry \"continue implementation\"\n"
+            "  aiw cxs exec --last \"continue the latest session\"\n"
+            "  aiw cxs exec --session 123e4567-e89b-12d3-a456-426614174000 --dry-run"
+        ),
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    sp.add_argument("message", nargs="?", help="initial prompt/context")
+    sp.add_argument("-a", "--attach", action="append", help="attach context file; can repeat")
+    sp.add_argument("--session", help="session id/prefix or alias; uses codex exec resume")
+    sp.add_argument("--last", action="store_true", help="resume the newest recorded session")
+    sp.add_argument("-o", "--output-last-message", help="write final model message to file")
+    sp.add_argument("--dry-run", action="store_true", help="print the codex command only")
+    sp.set_defaults(func=exec_cmd)
 
     sp = sub.add_parser("path", help="Print the jsonl path for a session")
     sp.add_argument("ref", help="session id/prefix or alias")

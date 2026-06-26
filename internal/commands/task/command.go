@@ -71,6 +71,8 @@ func DispatchTopLevel(name string, args []string) error {
 			return err
 		}
 		return syncPrompts(opts)
+	case "ai":
+		return runAIWorkflow(args)
 	default:
 		return fmt.Errorf("unknown task command: %s", name)
 	}

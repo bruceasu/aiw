@@ -9,12 +9,57 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 )
 
 func RunLLM(prompt string, cfg czdata.Config) (string, error) {
-	provider := strings.ToLower(strings.TrimSpace(cfg.LLMProvider))
+	provider := normalizeProviderName(cfg.LLMProvider)
+	if provider != "" {
+		return runProvider(provider, prompt, cfg)
+	}
+
+	providers, err := detectAvailableProviders(cfg)
+	if err != nil {
+		return "", err
+	}
+	if len(providers) == 0 {
+		return "", errors.New("no available LLM provider detected; configure provider=openai|gemini|ollama|codex-cli|copilot-cli or set corresponding credentials/CLI")
+	}
+
+	var errs []string
+	for _, p := range providers {
+		out, runErr := runProvider(p, prompt, cfg)
+		if runErr == nil {
+			return out, nil
+		}
+		errSummary := runErr.Error()
+		if len(errSummary) > 200 {
+			errSummary = errSummary[:200] + "..."
+		}
+		errs = append(errs, fmt.Sprintf("%s: %s", p, errSummary))
+	}
+	return "", fmt.Errorf("all auto-detected providers failed (%s)", strings.Join(errs, " | "))
+}
+
+func normalizeProviderName(provider string) string {
+	p := strings.ToLower(strings.TrimSpace(provider))
+	switch p {
+	case "", "auto":
+		return ""
+	case "openai", "gemini", "ollama", "codex", "copilot":
+		return p
+	case "codex-cli", "codex_cli", "codexcli":
+		return "codex"
+	case "copilot-cli", "copilot_cli", "copilotcli":
+		return "copilot"
+	default:
+		return p
+	}
+}
+
+func runProvider(provider, prompt string, cfg czdata.Config) (string, error) {
 	switch provider {
 	case "gemini":
 		return RunGemini(prompt, cfg)
@@ -22,10 +67,71 @@ func RunLLM(prompt string, cfg czdata.Config) (string, error) {
 		return RunOpenAI(prompt, cfg)
 	case "ollama":
 		return RunOllama(prompt, cfg)
+	case "codex":
+		return RunCodexCLI(prompt, cfg)
+	case "copilot":
+		return RunCopilotCLI(prompt, cfg)
 	default:
-		// Default to ollama if not specified
-		return RunOllama(prompt, cfg)
+		return "", fmt.Errorf("unknown llm provider: %s", provider)
 	}
+}
+
+func detectAvailableProviders(cfg czdata.Config) ([]string, error) {
+	cwdEnv, aiwEnv, exeEnv, err := loadLLMEnvFromDotEnv()
+	if err != nil {
+		return nil, err
+	}
+
+	providers := []string{}
+	seen := map[string]struct{}{}
+	add := func(p string) {
+		if _, ok := seen[p]; ok {
+			return
+		}
+		seen[p] = struct{}{}
+		providers = append(providers, p)
+	}
+
+	if codexCLIAvailable(cfg) {
+		add("codex")
+	}
+	if copilotCLIAvailable(cfg) {
+		add("copilot")
+	}
+	if openAIConfigured(cfg, cwdEnv, aiwEnv, exeEnv) {
+		add("openai")
+	}
+	if geminiConfigured(cfg, cwdEnv, aiwEnv, exeEnv) {
+		add("gemini")
+	}
+	// Keep ollama as a final fallback for local environments.
+	add("ollama")
+
+	return providers, nil
+}
+
+func openAIConfigured(cfg czdata.Config, cwdEnv, aiwEnv, exeEnv map[string]string) bool {
+	v, _ := resolveLLMValue(cfg.OpenAIKey, "OPENAI_API_KEY", cwdEnv, aiwEnv, exeEnv, "")
+	if strings.TrimSpace(v) != "" {
+		return true
+	}
+	v, _ = resolveLLMValue(cfg.APIKey, "OPENAI_API_KEY", cwdEnv, aiwEnv, exeEnv, "")
+	return strings.TrimSpace(v) != ""
+}
+
+func geminiConfigured(cfg czdata.Config, cwdEnv, aiwEnv, exeEnv map[string]string) bool {
+	v, _ := resolveLLMValue(cfg.GeminiKey, "GEMINI_API_KEY", cwdEnv, aiwEnv, exeEnv, "")
+	if strings.TrimSpace(v) != "" {
+		return true
+	}
+	v, _ = resolveLLMValue(cfg.APIKey, "GEMINI_API_KEY", cwdEnv, aiwEnv, exeEnv, "")
+	return strings.TrimSpace(v) != ""
+}
+
+func supportedProviderNames() string {
+	providers := []string{"openai", "gemini", "ollama", "codex-cli", "copilot-cli"}
+	sort.Strings(providers)
+	return strings.Join(providers, ", ")
 }
 
 func resolveLLMValue(configValue, envKey string, cwdEnv, aiwEnv, exeEnv map[string]string, defaultValue string) (string, string) {

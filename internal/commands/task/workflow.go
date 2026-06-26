@@ -64,7 +64,7 @@ Relevant modules:
 	notesMD := `# Notes
 Temporary findings, debugging notes, experiments.
 `
-	if err := taskx.WriteTaskMeta(filepath.Join(dir, "tasks.toml"), meta); err != nil {
+	if err := taskx.WriteTaskMeta(taskx.TaskMetaPath(id), meta); err != nil {
 		return err
 	}
 	if err := os.WriteFile(filepath.Join(dir, "tasks.md"), []byte(taskMD), 0o644); err != nil {
@@ -138,8 +138,12 @@ func listTasks() error {
 		if !e.IsDir() {
 			continue
 		}
-		meta, err := taskx.ReadTaskMeta(filepath.Join(taskx.ChangesDir, e.Name(), "task.toml"))
+		if e.Name() == "archive" {
+			continue
+		}
+		meta, err := taskx.ReadTaskMeta(taskx.ResolveTaskMetaPathInDir(filepath.Join(taskx.ChangesDir, e.Name())))
 		if err != nil {
+			fmt.Printf("%-24s %-12s %s\n", e.Name(), "UNKNOWN", filepath.ToSlash(filepath.Join(taskx.ChangesDir, e.Name())))
 			continue
 		}
 		fmt.Printf("%-24s %-12s %s\n",
@@ -162,7 +166,7 @@ func showTask(id string) error {
 }
 
 func updateStatus(id, status string) error {
-	metaPath := taskx.TaskMetaPath(id)
+	metaPath := taskx.ResolveTaskMetaPath(id)
 	meta, err := taskx.ReadTaskMeta(metaPath)
 	if err != nil {
 		return err
@@ -181,7 +185,7 @@ func archiveTask(id string, opts ArchiveOptions) error {
 		return fmt.Errorf("task not found: %s", id)
 	}
 
-	metaPath := taskx.TaskMetaPath(id)
+	metaPath := taskx.ResolveTaskMetaPath(id)
 	meta, err := taskx.ReadTaskMeta(metaPath)
 	if err != nil {
 		return err
@@ -226,7 +230,9 @@ func printContext(id string) error {
 	}
 	fmt.Print("Read these files first:\n\n")
 	files := []string{
-		filepath.Join(changeDir, "tasks.toml"),
+		filepath.Join(changeDir, taskx.TaskMetaFile),
+		filepath.Join(changeDir, taskx.LegacyTaskMetaFile),
+		filepath.Join(changeDir, "proposal.md"),
 		filepath.Join(changeDir, "tasks.md"),
 		filepath.Join(changeDir, "design.md"),
 		filepath.Join(changeDir, "notes.md"),
@@ -236,7 +242,7 @@ func printContext(id string) error {
 			fmt.Println("-", filepath.ToSlash(f))
 		}
 	}
-	meta, err := taskx.ReadTaskMeta(filepath.Join(changeDir, "task.toml"))
+	meta, err := taskx.ReadTaskMeta(taskx.ResolveTaskMetaPathInDir(changeDir))
 	if err == nil {
 		for _, spec := range meta.Specs {
 			fmt.Println("-", filepath.ToSlash(filepath.Join(taskx.SpecsDir, spec, "spec.md")))

@@ -18,6 +18,7 @@ import (
 )
 
 var executablePathFn = os.Executable
+var execCommandFn = exec.Command
 
 // Dispatch implements a flexible help command:
 //   - no args: list builtins and plugins
@@ -48,26 +49,29 @@ func Dispatch(args []string) error {
 }
 
 func listAll() error {
-	fmt.Print(`aiw — Private workspace CLI
-
-Task management:
-  init [--prompts] [--merge] [--force] [--template <name>]
-  new <task-id>             Create task folder (tasks.toml / tasks.md / notes.md).
-  list                      List tasks from openspec/changes.
-  show <task-id>            Print tasks.md.
-  status <task-id> <s>      Update task status (auto upper-cased).
-  done <task-id>            Shortcut for: status <task-id> DONE.
-  archive <task-id> [opts]  Move task to openspec/archive; supports --push / --cleanup-wt.
-  context <task-id>         Show files to read before implementing.
-  decision <task-id>        Create design.md when design is needed.
-  spec <spec-id>            Create long-lived spec under openspec/specs.
-  registry                  Rebuild openspec/registry.json.
-  prompts [template] [opts] Create or merge AGENTS/CODEX/Copilot prompts.
-`)
-	fmt.Print(`Examples:
-  aiw init --prompts --template go
-  aiw new payment-retry
-`)
+	fmt.Print("aiw — Private workspace CLI\n\n" +
+		"Task management:\n" +
+		"  init [--prompts] [--merge] [--force] [--template <name>]\n" +
+		"  new <task-id>             Create task folder (task.toml / tasks.md / notes.md).\n" +
+		"  list                      List tasks from openspec/changes.\n" +
+		"  show <task-id>            Print tasks.md.\n" +
+		"  status <task-id> <s>      Update task status (auto upper-cased).\n" +
+		"  done <task-id>            Shortcut for: status <task-id> DONE.\n" +
+		"  archive <task-id> [opts]  Move task to openspec/archive; supports --push / --cleanup-wt.\n" +
+		"  context <task-id>         Show files to read before implementing.\n" +
+		"  decision <task-id>        Create design.md when design is needed.\n" +
+		"  spec <spec-id>            Create long-lived spec under openspec/specs.\n" +
+		"  ai <action> <id>          AI workflow for new/decision/spec/archive drafts.\n" +
+		"                           Common flags: --session/--last, --prompt, --apply, --dry-run.\n" +
+		"                           Note: --apply and --dry-run are mutually exclusive.\n" +
+		"  registry                  Rebuild openspec/registry.json.\n" +
+		"  prompts [template] [opts] Create or merge AGENTS/CODEX/Copilot prompts.\n")
+	fmt.Print("Examples:\n" +
+		"  aiw init --prompts --template go\n" +
+		"  aiw new payment-retry\n" +
+		"  aiw ai new payment-retry --dry-run --prompt \"draft TODOs\"\n" +
+		"  aiw ai decision payment-retry --apply\n" +
+		"  aiw cxs exec --last \"continue latest session\"\n")
 
 	// Print plugins with short descriptions (if available)
 	fmt.Println("\nPlugins:")
@@ -141,11 +145,7 @@ func extractShortFromSource(src string) string {
 
 func listBuiltins() ([]string, error) {
 	// Static list embedded in code — used when source tree is not present
-	builtinCommands := []string{
-		"init", "new", "list", "show", "status", "done",
-		"archive", "context", "decision", "spec", "registry",
-		"prompts", "wt", "git", "tcc", "task",
-	}
+	builtinCommands := staticBuiltinCommands()
 
 	out := []string{}
 	seen := map[string]bool{}
@@ -172,6 +172,14 @@ func listBuiltins() ([]string, error) {
 		}
 	}
 	return out, nil
+}
+
+func staticBuiltinCommands() []string {
+	return []string{
+		"init", "new", "list", "show", "status", "done",
+		"archive", "context", "decision", "spec", "registry",
+		"prompts", "wt", "git", "tcc", "task", "ai",
+	}
 }
 
 func listPlugins() ([]string, error) {
@@ -217,7 +225,15 @@ func pluginExists(name string) (bool, string) {
 
 func builtinExists(name string) bool {
 	path := filepath.Join("internal", "commands", name)
-	return fsx.Exists(path)
+	if fsx.Exists(path) {
+		return true
+	}
+	for _, b := range staticBuiltinCommands() {
+		if b == name {
+			return true
+		}
+	}
+	return false
 }
 
 func showPluginHelp(name string) error {
@@ -240,12 +256,17 @@ func showPluginHelp(name string) error {
 }
 
 func showBuiltinHelp(name string) error {
+	if usage, ok := builtinUsageText(name); ok {
+		fmt.Print(usage)
+		return nil
+	}
+
 	// attempt to execute the current binary with <name> -h to get help output
-	exe, err := os.Executable()
+	exe, err := executablePathFn()
 	if err != nil {
 		return fmt.Errorf("cannot locate executable: %w", err)
 	}
-	cmd := exec.Command(exe, name, "-h")
+	cmd := execCommandFn(exe, name, "-h")
 	var outb, errb bytes.Buffer
 	cmd.Stdout = &outb
 	cmd.Stderr = &errb
@@ -263,6 +284,39 @@ func showBuiltinHelp(name string) error {
 		fmt.Fprintln(os.Stderr, errb.String())
 	}
 	return nil
+}
+
+func builtinUsageText(name string) (string, bool) {
+	switch name {
+	case "init":
+		return "usage: aiw init [--prompts] [--merge] [--force] [--template <name>]\n", true
+	case "new":
+		return "usage: aiw new <task-id>\n", true
+	case "list":
+		return "usage: aiw list\n", true
+	case "show":
+		return "usage: aiw show <task-id>\n", true
+	case "status":
+		return "usage: aiw status <task-id> <status>\n", true
+	case "done":
+		return "usage: aiw done <task-id>\n", true
+	case "archive":
+		return "usage: aiw archive <task-id> [--push] [--cleanup-wt] [--delete-branch] [--finalize]\n", true
+	case "context":
+		return "usage: aiw context <task-id>\n", true
+	case "decision":
+		return "usage: aiw decision <task-id>\n", true
+	case "spec":
+		return "usage: aiw spec <spec-id>\n", true
+	case "ai":
+		return "usage: aiw ai <action> <id> [--session <ref>] [--last] [--prompt <text>] [--apply] [--dry-run]\n", true
+	case "registry":
+		return "usage: aiw registry\n", true
+	case "prompts":
+		return "usage: aiw prompts [list|<template>] [--merge] [--force]\n", true
+	default:
+		return "", false
+	}
 }
 
 func searchAndAnswer(query string) error {

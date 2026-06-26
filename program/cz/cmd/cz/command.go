@@ -200,14 +200,8 @@ func finalizeConfig(cfg *czdata.Config) {
 		if cfg.OllamaBaseURL != "" {
 			cfg.APIBaseURL = cfg.OllamaBaseURL
 		}
-	default:
-		// Default to ollama specific settings if provider is not set but they are present
-		if cfg.OllamaModel != "" {
-			cfg.LLMModel = cfg.OllamaModel
-		}
-		if cfg.OllamaBaseURL != "" {
-			cfg.APIBaseURL = cfg.OllamaBaseURL
-		}
+	case "codex", "codex-cli", "copilot", "copilot-cli", "":
+		// Keep generic values unchanged; provider selection/fallback is handled in llm.RunLLM.
 	}
 }
 
@@ -335,6 +329,10 @@ func mergeCzConfigFromTomlFile(cfg *czdata.Config, path string) error {
 				cfg.GeminiModel = val
 			case "ollama_model":
 				cfg.OllamaModel = val
+			case "codex_command", "codex_cli_command":
+				cfg.CodexCommand = val
+			case "copilot_command", "copilot_cli_command":
+				cfg.CopilotCommand = val
 			case "base_url", "llm_base_url":
 				cfg.APIBaseURL = val
 			case "openai_base_url":

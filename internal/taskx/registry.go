@@ -19,8 +19,18 @@ func WriteRegistry() error {
 		if !e.IsDir() {
 			continue
 		}
-		meta, err := ReadTaskMeta(filepath.Join(ChangesDir, e.Name(), "task.toml"))
+		if e.Name() == "archive" {
+			continue
+		}
+		dir := filepath.Join(ChangesDir, e.Name())
+		meta, err := ReadTaskMeta(ResolveTaskMetaPathInDir(dir))
 		if err != nil {
+			changes = append(changes, RegistryEntry{
+				ID:        e.Name(),
+				Status:    "UNKNOWN",
+				Path:      filepath.ToSlash(dir),
+				UpdatedAt: time.Now().Format("2006-01-02"),
+			})
 			continue
 		}
 		changes = append(changes, RegistryEntry{
@@ -28,7 +38,7 @@ func WriteRegistry() error {
 			Status:    meta.Status,
 			Branch:    meta.Branch,
 			Worktree:  meta.Worktree,
-			Path:      filepath.ToSlash(filepath.Join(ChangesDir, e.Name())),
+			Path:      filepath.ToSlash(dir),
 			UpdatedAt: meta.Updated,
 		})
 	}

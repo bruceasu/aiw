@@ -34,7 +34,8 @@ repo/
 Notes:
 
 * `AGENTS.md` and `.github/copilot-instructions.md` are created only if they do not already exist.
-* `registry.json` is generated from all `openspec/changes/*/task.toml` files.
+* `registry.json` is generated from all `openspec/changes/*` task folders.
+  Metadata discovery prefers `task.toml` and falls back to legacy `tasks.toml`.
 
 ## Build and Installation
 
@@ -77,6 +78,7 @@ aiw wt ignore
 aiw context <task-id>
 aiw decision <task-id>
 aiw spec <spec-id>
+aiw ai <new|decision|spec|archive> <id> [--session <ref>] [--last] [--prompt <text>] [--apply] [--dry-run]
 aiw registry
 
 aiw prompts list
@@ -193,7 +195,7 @@ Creates:
 
 ```text
 openspec/changes/<task-id>/
-├── tasks.toml
+├── task.toml
 ├── tasks.md
 └── notes.md
 ```
@@ -225,7 +227,7 @@ openspec/specs/<spec-id>/
 
 Updates:
 
-* `task.toml`
+* `task.toml` (or legacy `tasks.toml` if present)
 * `status` (converted to uppercase)
 * `updated`
 
@@ -319,7 +321,42 @@ Regenerates:
 openspec/registry.json
 ```
 
-## 11. `aiw prompts [template] [--merge] [--force]`
+## 11. `aiw ai <action> <id>`
+
+Generates task/spec/archive drafts through the `cxs` plugin workflow.
+
+Actions:
+
+* `new <task-id>`: draft or apply `openspec/changes/<task-id>/tasks.md`
+* `decision <task-id>`: draft or apply `openspec/changes/<task-id>/design.md`
+* `spec <spec-id>`: draft or apply `openspec/specs/<spec-id>/spec.md`
+* `archive <task-id>`: draft or apply `openspec/changes/<task-id>/archive-note.md`, then archive task when `--apply` is set
+
+Flags:
+
+* `--session <ref>`: resume a specific Codex session alias/id
+* `--last`: resume latest Codex session
+* `--prompt <text>`: append additional user intent to generated prompt
+* `--apply`: write target file directly (and execute archive for `archive` action)
+* `--dry-run`: print Codex execution command only, strictly no file writes
+
+Rules:
+
+* `--session` and `--last` are mutually exclusive
+* `--apply` and `--dry-run` are mutually exclusive
+* `aiw ai -h` shows workflow help
+* `aiw ai <action> -h` shows action-specific help
+
+Examples:
+
+```bash
+aiw ai new payment-retry --dry-run --prompt "draft TODOs"
+aiw ai decision payment-retry --session payment-retry --apply
+aiw ai spec retry-policy --last
+aiw ai archive payment-retry --finalize --apply
+```
+
+## 12. `aiw prompts [template] [--merge] [--force]`
 
 Features:
 
@@ -357,7 +394,7 @@ wrote
 skipped existing
 ```
 
-## 12. `aiw wt ignore`
+## 13. `aiw wt ignore`
 
 Creates `.gitignore` or appends:
 
@@ -487,6 +524,10 @@ branch = "feature/payment-retry"
 worktree = ".wt/payment-retry"
 ```
 
+Compatibility note:
+
+* Existing repositories that still use `tasks.toml` are supported.
+
 ## task-id / spec-id Rules
 
 Allowed characters:
@@ -542,4 +583,16 @@ aiw tcc run hello.c
 # Prompts
 aiw prompts list
 aiw prompts go --merge
+
+# Codex sessions (plugin)
+aiw cxs list -n 20
+aiw cxs exec "summarize current diff"
+aiw cxs exec --session payment-retry "continue implementation"
+
+# Task AI workflow
+aiw ai -h
+aiw ai new payment-retry --dry-run --prompt "draft TODOs"
+aiw ai decision payment-retry -h
 ```
+
+For full `aiw cxs` usage, see `docs/usage/aiw-cxs.md`.

@@ -6,8 +6,7 @@ setlocal
 set INSTALL_DIR=c:\green\aiw
 
 if not exist "bin" (
-    echo Build directory not found. Please run build.ps1 first.
-    exit /b 1
+    md bin
 )
 
 if not exist "%INSTALL_DIR%" (

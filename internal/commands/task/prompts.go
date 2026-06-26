@@ -1,14 +1,26 @@
 package task
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"aiw/internal/fsx"
+)
+
+const syncedPromptLibraryDir = "prompts"
+
+type conflictAction string
+
+const (
+	conflictActionSkip      conflictAction = "skip"
+	conflictActionMerge     conflictAction = "merge"
+	conflictActionOverwrite conflictAction = "overwrite"
 )
 
 type PromptOptions struct {
@@ -48,7 +60,7 @@ func syncPrompts(opts PromptOptions) error {
 	if err != nil {
 		return err
 	}
-	langCopilot, err := readOptionalTemplate(filepath.Join(templatesRoot, template, filepath.Base(copilotFile)))
+	langCopilot, err := readLanguageCopilotTemplate(templatesRoot, template)
 	if err != nil {
 		return err
 	}
@@ -93,6 +105,12 @@ func syncPrompts(opts PromptOptions) error {
 		}
 	}
 
+	libraryActions, err := syncPromptLibrary(templatesRoot, opts)
+	if err != nil {
+		return err
+	}
+	actions = append(actions, libraryActions...)
+
 	fmt.Println("prompts template:", template)
 	if len(actions) == 0 {
 		fmt.Println("prompts result: no files changed")
@@ -120,6 +138,9 @@ func listPromptTemplates() error {
 		if !entry.IsDir() {
 			continue
 		}
+		if !isTemplateDirectory(templatesRoot, entry.Name()) {
+			continue
+		}
 		templates = append(templates, entry.Name())
 	}
 	sort.Strings(templates)
@@ -132,6 +153,71 @@ func listPromptTemplates() error {
 		fmt.Println("-", template)
 	}
 	return nil
+}
+
+func readLanguageCopilotTemplate(templatesRoot, template string) (string, error) {
+	fileName := fmt.Sprintf("copilot-instructions-for-%s.md", template)
+	return readOptionalTemplate(
+		filepath.Join(templatesRoot, template, filepath.Base(copilotFile)),
+		filepath.Join(templatesRoot, "dot.github", fileName),
+		filepath.Join(templatesRoot, ".github", fileName),
+	)
+}
+
+func isTemplateDirectory(templatesRoot, name string) bool {
+	if fsx.Exists(filepath.Join(templatesRoot, name, agentsFile)) {
+		return true
+	}
+	if fsx.Exists(filepath.Join(templatesRoot, name, "ANGETS.md")) {
+		return true
+	}
+	return false
+}
+
+func syncPromptLibrary(templatesRoot string, opts PromptOptions) ([]string, error) {
+	sourceRoot := filepath.Join(templatesRoot, syncedPromptLibraryDir)
+	if !fsx.Exists(sourceRoot) {
+		return nil, nil
+	}
+
+	var actions []string
+	err := filepath.WalkDir(sourceRoot, func(sourcePath string, d os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.IsDir() {
+			return nil
+		}
+
+		relPath, err := filepath.Rel(sourceRoot, sourcePath)
+		if err != nil {
+			return err
+		}
+		targetPath := filepath.Join(syncedPromptLibraryDir, relPath)
+		if err := os.MkdirAll(filepath.Dir(targetPath), 0o755); err != nil {
+			return err
+		}
+
+		contentBytes, err := os.ReadFile(sourcePath)
+		if err != nil {
+			return err
+		}
+
+		libraryOpts := PromptOptions{Force: opts.Force}
+		action, err := applyPromptTarget(targetPath, string(contentBytes), libraryOpts, "")
+		if err != nil {
+			return err
+		}
+		if action != "" {
+			actions = append(actions, fmt.Sprintf("%s %s", action, filepath.ToSlash(targetPath)))
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return actions, nil
 }
 
 func resolvePromptTemplatesDir() (string, error) {
@@ -206,8 +292,18 @@ func applyPromptTarget(path, content string, opts PromptOptions, marker string) 
 		}
 		return "created", nil
 	}
-	if !opts.Merge {
+	action, err := resolveConflictAction(path, marker != "", opts, os.Stdin, os.Stdout)
+	if err != nil {
+		return "", err
+	}
+	if action == conflictActionSkip {
 		return "skipped existing", nil
+	}
+	if action == conflictActionOverwrite {
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			return "", err
+		}
+		return "wrote", nil
 	}
 	existingBytes, err := os.ReadFile(path)
 	if err != nil {
@@ -274,4 +370,55 @@ func parsePromptOptions(args []string) (PromptOptions, error) {
 		return PromptOptions{}, errors.New("--merge and --force cannot be used together")
 	}
 	return opts, nil
+}
+
+func resolveConflictAction(path string, canMerge bool, opts PromptOptions, in io.Reader, out io.Writer) (conflictAction, error) {
+	if opts.Force {
+		return conflictActionOverwrite, nil
+	}
+	if opts.Merge && canMerge {
+		return conflictActionMerge, nil
+	}
+	if !isInteractiveInput() {
+		return conflictActionSkip, nil
+	}
+	return promptConflictAction(path, canMerge, in, out)
+}
+
+func promptConflictAction(path string, canMerge bool, in io.Reader, out io.Writer) (conflictAction, error) {
+	reader := bufio.NewReader(in)
+	for {
+		if canMerge {
+			fmt.Fprintf(out, "%s already exists. Choose [m]erge/[o]verwrite/[s]kip: ", filepath.ToSlash(path))
+		} else {
+			fmt.Fprintf(out, "%s already exists. Choose [o]verwrite/[s]kip: ", filepath.ToSlash(path))
+		}
+		line, err := reader.ReadString('\n')
+		if err != nil && !errors.Is(err, io.EOF) {
+			return "", err
+		}
+		answer := strings.ToLower(strings.TrimSpace(line))
+		switch answer {
+		case "m", "merge":
+			if canMerge {
+				return conflictActionMerge, nil
+			}
+		case "o", "overwrite":
+			return conflictActionOverwrite, nil
+		case "s", "skip", "", "n", "no":
+			return conflictActionSkip, nil
+		}
+		if errors.Is(err, io.EOF) {
+			return conflictActionSkip, nil
+		}
+		fmt.Fprintln(out, "invalid choice; please enter m/o/s")
+	}
+}
+
+func isInteractiveInput() bool {
+	info, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	return (info.Mode() & os.ModeCharDevice) != 0
 }

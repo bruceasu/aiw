@@ -1,8 +1,11 @@
 package help
 
 import (
+	"bytes"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -76,5 +79,71 @@ func TestPluginScriptPathUsesExecutableDir(t *testing.T) {
 
 	if got := pluginScriptPath("sample"); got != want {
 		t.Fatalf("pluginScriptPath() = %q, want %q", got, want)
+	}
+}
+
+func TestStaticBuiltinCommandsIncludesAI(t *testing.T) {
+	builtins := staticBuiltinCommands()
+	if !slices.Contains(builtins, "ai") {
+		t.Fatalf("staticBuiltinCommands() = %v, expected ai to be present", builtins)
+	}
+}
+
+func TestBuiltinExistsRecognizesTopLevelAI(t *testing.T) {
+	if !builtinExists("ai") {
+		t.Fatal("expected builtinExists(ai) to be true")
+	}
+}
+
+func TestBuiltinUsageTextForNew(t *testing.T) {
+	usage, ok := builtinUsageText("new")
+	if !ok {
+		t.Fatal("expected usage text for new")
+	}
+	if usage == "" {
+		t.Fatal("expected non-empty usage text for new")
+	}
+}
+
+func TestShowBuiltinHelpUsesInlineUsageWithoutExecution(t *testing.T) {
+	oldExecPathFn := executablePathFn
+	oldExecCmdFn := execCommandFn
+	defer func() {
+		executablePathFn = oldExecPathFn
+		execCommandFn = oldExecCmdFn
+	}()
+
+	executablePathFn = func() (string, error) {
+		return "", nil
+	}
+
+	called := false
+	execCommandFn = func(name string, arg ...string) *exec.Cmd {
+		called = true
+		return exec.Command("cmd", "/C", "echo should-not-run")
+	}
+
+	oldStdout := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("pipe: %v", err)
+	}
+	os.Stdout = w
+
+	err = showBuiltinHelp("new")
+	_ = w.Close()
+	os.Stdout = oldStdout
+	if err != nil {
+		t.Fatalf("showBuiltinHelp(new): %v", err)
+	}
+	if called {
+		t.Fatal("expected showBuiltinHelp(new) to avoid external command execution")
+	}
+
+	var out bytes.Buffer
+	_, _ = out.ReadFrom(r)
+	_ = r.Close()
+	if out.String() == "" {
+		t.Fatal("expected usage output")
 	}
 }
