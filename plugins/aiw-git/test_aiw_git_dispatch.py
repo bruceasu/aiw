@@ -42,6 +42,24 @@ class DispatcherTests(unittest.TestCase):
         dispatcher = load_dispatcher()
         commands = dispatcher.discover_subcommands(os.path.dirname(__file__))
         self.assertIn("show", commands)
+        self.assertIn("guide", commands)
+
+        guide = commands["guide"]["module"]
+        match = guide.SearchMatch(
+            path=guide.Path("guide.md"),
+            score=1,
+            filename_score=1,
+            content_score=0,
+            excerpt="example",
+        )
+        answer = guide.CodexAnswer(
+            title="Example",
+            slug="example",
+            content="Example content",
+        )
+
+        self.assertFalse(match.extracted)
+        self.assertTrue(answer.save)
 
     def test_discover_subcommands_scans_git_star_python_files(self):
         dispatcher = load_dispatcher()

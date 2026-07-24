@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aiw-flow"
+version = "0.1.0"
+description = "Codex workflow manager using the exec backend."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "OpenAI Codex" }]
+dependencies = []
+
+[project.scripts]
+aiw-flow = "codex_flow.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

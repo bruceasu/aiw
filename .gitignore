@@ -1,4 +1,6 @@
 *.exe
+*.7z
+*.backup
 bin
 .env
 .env.*
@@ -8,3 +10,4 @@ __pycache__/
 backup.log
 release/
 ref/
+plugins/aiw-cz/cz

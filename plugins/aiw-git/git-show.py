@@ -2,7 +2,7 @@
 """aiw git show
 
 Unified wrapper for git inspection commands.
-Consolidates conflicts, log, status, unpulled, unpushed, and whatchanged.
+Consolidates repository and file history inspection commands.
 """
 import sys
 import os
@@ -16,15 +16,24 @@ spec.loader.exec_module(core)
 
 META = {
     'name': 'show',
-    'short': 'Inspect repository state, history, and conflict views.',
-    'long': 'Collection of read-only git inspection helpers including status, log, unpulled, unpushed, conflicts, and whatchanged.',
+    'short': 'Inspect repository state, history, files, and conflicts.',
+    'long': 'Collection of read-only git inspection helpers including repository status, commit logs, file evolution, blame, historical file content, upstream differences, and conflicts.',
     'usage': 'aiw git show <view> [args]',
     'args': [
-        {'flag': '<view>', 'description': 'One of: conflicts, log, status, unpulled, unpushed, whatchanged.'},
+        {'flag': 'file', 'description': 'Show one file history, following renames by default.'},
+        {'flag': 'blame', 'description': 'Show line-by-line attribution for one file.'},
+        {'flag': 'file-at', 'description': 'Show one file as it existed at a revision.'},
+        {'flag': 'lines', 'description': 'Track a line range or function with git log -L.'},
+        {'flag': '<view>', 'description': 'Other views: conflicts, log, status, unpulled, unpushed, whatchanged.'},
     ],
     'examples': [
         'aiw git show status',
         'aiw git show log -n 20',
+        'aiw git show file --full src/App.java',
+        'aiw git show blame src/App.java',
+        'aiw git show file-at HEAD~3 README.md',
+        'aiw git show lines 10,30 src/App.java',
+        'aiw git show lines :main src/main.py',
         'aiw git show conflicts --check',
     ],
 }
@@ -101,6 +110,152 @@ def cmd_log(argv):
     if style == "lg":
         return core.run_cmd(["git", "log", "--all", "--color", "--graph", "--pretty=format:%Cred%h%Creset - %C(yellow)%d%Creset %s %Cgreen[%cr] %C(bold blue)<%an>%Creset", "--abbrev-commit", "--date=relative", "-n", n])
     return core.run_cmd(['git', 'log', '-n', n] + remain)
+
+# --- Subcommand: file ---
+META_FILE = {
+    'name': 'file',
+    'short': 'Show the commit history for one file.',
+    'long': 'Follows renames by default and supports concise, patch, statistics, graph, and full-evolution output.',
+    'usage': 'file [--oneline|--patch|--stat|--graph|--full] [--no-follow] <path>',
+    'args': [
+        {'flag': '--oneline', 'description': 'Show compact one-line commits.'},
+        {'flag': '--patch', 'description': 'Show the diff from every commit.'},
+        {'flag': '--stat', 'description': 'Show file change statistics.'},
+        {'flag': '--graph', 'description': 'Show a decorated one-line commit graph.'},
+        {'flag': '--full', 'description': 'Show the recommended patch and statistics view.'},
+        {'flag': '--no-follow', 'description': 'Do not follow history across renames.'},
+        {'flag': '<path>', 'description': 'Repository-relative file path.'},
+    ],
+    'examples': [
+        'file README.md',
+        'file --oneline src/App.java',
+        'file --full src/App.java',
+    ],
+}
+
+FILE_MODES = {
+    '--oneline': ['--oneline'],
+    '--patch': ['-p'],
+    '--stat': ['--stat'],
+    '--graph': ['--graph', '--decorate', '--oneline'],
+    '--full': ['-p', '--stat'],
+}
+
+
+def usage_error(meta, message):
+    print(f"error: {message}", file=sys.stderr)
+    core.print_help_meta(meta)
+    return 2
+
+
+def cmd_file(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_FILE)
+        return 0
+
+    modes, paths = [], []
+    follow, paths_only = True, False
+    for arg in argv:
+        if paths_only:
+            paths.append(arg)
+        elif arg == '--':
+            paths_only = True
+        elif arg == '--no-follow':
+            follow = False
+        elif arg in FILE_MODES:
+            modes.append(arg)
+        elif arg.startswith('-'):
+            return usage_error(META_FILE, f"unknown option: {arg}")
+        else:
+            paths.append(arg)
+
+    if len(modes) > 1:
+        return usage_error(META_FILE, 'choose only one output mode')
+    if len(paths) != 1:
+        return usage_error(META_FILE, 'file requires exactly one path')
+
+    cmd = ['git', 'log']
+    if follow:
+        cmd.append('--follow')
+    if modes:
+        cmd.extend(FILE_MODES[modes[0]])
+    cmd.extend(['--', paths[0]])
+    return core.run_cmd(cmd)
+
+
+# --- Subcommand: blame ---
+META_BLAME = {
+    'name': 'blame',
+    'short': 'Show who last changed each line of a file.',
+    'usage': 'blame <path>',
+    'args': [
+        {'flag': '<path>', 'description': 'Repository-relative file path.'},
+    ],
+    'examples': ['blame src/App.java'],
+}
+
+
+def cmd_blame(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_BLAME)
+        return 0
+    paths = argv[1:] if argv[:1] == ['--'] else argv
+    if len(paths) != 1:
+        return usage_error(META_BLAME, 'blame requires exactly one path')
+    return core.run_cmd(['git', 'blame', '--', paths[0]])
+
+
+# --- Subcommand: file-at ---
+META_FILE_AT = {
+    'name': 'file-at',
+    'short': 'Show a file as it existed at a revision.',
+    'usage': 'file-at <revision> <path>',
+    'args': [
+        {'flag': '<revision>', 'description': 'Commit, tag, branch, or other Git revision.'},
+        {'flag': '<path>', 'description': 'Repository-relative file path at that revision.'},
+    ],
+    'examples': [
+        'file-at HEAD~3 README.md',
+        'file-at a17b2f3 src/App.java',
+    ],
+}
+
+
+def cmd_file_at(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_FILE_AT)
+        return 0
+    if len(argv) != 2:
+        return usage_error(META_FILE_AT, 'file-at requires a revision and path')
+    revision, path = argv
+    return core.run_cmd(['git', 'show', f'{revision}:{path}'])
+
+
+# --- Subcommand: lines ---
+META_LINES = {
+    'name': 'lines',
+    'short': 'Track the history of a line range or function.',
+    'long': 'Passes a selector and file path to git log -L. Use start,end for lines or :name for a function.',
+    'usage': 'lines <selector> <path>',
+    'args': [
+        {'flag': '<selector>', 'description': 'Line range such as 10,30 or function such as :main.'},
+        {'flag': '<path>', 'description': 'Repository-relative file path.'},
+    ],
+    'examples': [
+        'lines 10,30 src/App.java',
+        'lines :main src/main.py',
+    ],
+}
+
+
+def cmd_lines(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_LINES)
+        return 0
+    if len(argv) != 2:
+        return usage_error(META_LINES, 'lines requires a selector and path')
+    selector, path = argv
+    return core.run_cmd(['git', 'log', '-L', f'{selector}:{path}'])
 
 # --- Subcommand: status ---
 META_STATUS = {
@@ -180,7 +335,11 @@ def cmd_whatchanged(argv):
     return core.run_cmd(["git", "show", "--stat", sha])
 
 SUBCOMMANDS = {
+    'blame': cmd_blame,
     'conflicts': cmd_conflicts,
+    'file': cmd_file,
+    'file-at': cmd_file_at,
+    'lines': cmd_lines,
     'log': cmd_log,
     'status': cmd_status,
     'unpulled': cmd_unpulled,

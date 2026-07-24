@@ -37,7 +37,17 @@ def module_name_for_path(path):
 def load_python_module(path):
     spec = importlib.util.spec_from_file_location(module_name_for_path(path), path)
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    missing = object()
+    previous = sys.modules.get(spec.name, missing)
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+    except BaseException:
+        if previous is missing:
+            sys.modules.pop(spec.name, None)
+        else:
+            sys.modules[spec.name] = previous
+        raise
     return module
 
 

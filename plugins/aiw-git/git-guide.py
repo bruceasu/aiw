@@ -185,7 +185,7 @@ META = {
 # Models
 # ---------------------------------------------------------------------------
 
-@dataclass(slots=True)
+@dataclass
 class SearchMatch:
     path: Path
     score: int
@@ -195,7 +195,7 @@ class SearchMatch:
     extracted: bool = False
 
 
-@dataclass(slots=True)
+@dataclass
 class CodexAnswer:
     title: str
     slug: str
