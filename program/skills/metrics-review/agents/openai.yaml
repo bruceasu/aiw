@@ -1,0 +1,3 @@
+interface:
+  display_name: "Metrics Review"
+  short_description: "Read-only financial metrics governance reviewer. Emits a structured METRICS_SPEC.md covering business definition, formula, source mapping, currency / precision / cut-off, consistency with finance / risk / regulatory definitions, and ownership. Does not write code."

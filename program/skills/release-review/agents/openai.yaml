@@ -1,0 +1,3 @@
+interface:
+  display_name: "Release Review"
+  short_description: "Read-only release gate for financial admin platforms, operations systems, dashboards, reports, risk indicators, and data pipelines. Emits a structured RELEASE_REVIEW.md gating scope, schema, data, metrics, permissions, audit, rollback, and monitoring, and returns GO / GO WITH RISK / NO GO. Does not write code."
