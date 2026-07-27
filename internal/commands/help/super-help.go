@@ -50,18 +50,23 @@ func Dispatch(args []string) error {
 
 func listAll() error {
 	fmt.Print("aiw — Private workspace CLI\n\n" +
+		"Usage:\n" +
+		"  aiw <command> [args...]\n" +
+		"  aiw --help\n" +
+		"  aiw help <command>\n\n" +
 		"Task management:\n" +
 		"  init [--prompts] [--merge] [--force] [--template <name>]\n" +
-		"  new <task-id>             Create task folder (task.toml / tasks.md / notes.md).\n" +
+		"  new <task-id>             Create a task/change (use --backend auto|openspec|native).\n" +
 		"  list                      List tasks from openspec/changes.\n" +
 		"  show <task-id>            Print tasks.md.\n" +
 		"  status <task-id> <s>      Update task status (auto upper-cased).\n" +
 		"  done <task-id>            Shortcut for: status <task-id> DONE.\n" +
-		"  archive <task-id> [opts]  Move task to openspec/archive; supports --push / --cleanup-wt.\n" +
+		"  archive <task-id> [opts]  Archive task/change; supports --backend auto|openspec|native.\n" +
 		"  context <task-id>         Show files to read before implementing.\n" +
 		"  decision <task-id>        Create design.md when design is needed.\n" +
 		"  spec <spec-id>            Create long-lived spec under openspec/specs.\n" +
-		"  ai <action> <id>          AI workflow for new/decision/spec/archive drafts.\n" +
+		"  task agent next <id>      Create a handoff and start a fresh agent Thread.\n" +
+		"  task agent status <id>    Show parent/child Thread lineage.\n" +
 		"                           Common flags: --session/--last, --prompt, --apply, --dry-run.\n" +
 		"                           Note: --apply and --dry-run are mutually exclusive.\n" +
 		"  registry                  Rebuild openspec/registry.json.\n" +
@@ -69,13 +74,21 @@ func listAll() error {
 	fmt.Print("Examples:\n" +
 		"  aiw init --prompts --template go\n" +
 		"  aiw new payment-retry\n" +
-		"  aiw ai new payment-retry --dry-run --prompt \"draft TODOs\"\n" +
-		"  aiw ai decision payment-retry --apply\n" +
 		"  aiw cxs exec --last \"continue latest session\"\n")
 
 	// Print plugins with short descriptions (if available)
 	fmt.Println("\nPlugins:")
-	pls, _ := listPlugins()
+	pls, err := listPlugins()
+	if err != nil {
+		fmt.Println("  (No executable plugins discovered beside this aiw binary.)")
+		fmt.Println("  Install or place plugins next to aiw, then run: aiw <plugin> --help")
+		return nil
+	}
+	if len(pls) == 0 {
+		fmt.Println("  (No executable plugins discovered beside this aiw binary.)")
+		fmt.Println("  Install or place plugins next to aiw, then run: aiw <plugin> --help")
+		return nil
+	}
 	for _, p := range pls {
 		desc := getPluginShort(p)
 		if desc == "" {
@@ -308,8 +321,6 @@ func builtinUsageText(name string) (string, bool) {
 		return "usage: aiw decision <task-id>\n", true
 	case "spec":
 		return "usage: aiw spec <spec-id>\n", true
-	case "ai":
-		return "usage: aiw ai <action> <id> [--session <ref>] [--last] [--prompt <text>] [--apply] [--dry-run]\n", true
 	case "registry":
 		return "usage: aiw registry\n", true
 	case "prompts":

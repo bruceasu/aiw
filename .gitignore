@@ -11,3 +11,6 @@ backup.log
 release/
 ref/
 plugins/aiw-cz/cz
+.ai
+.agents
+.codex

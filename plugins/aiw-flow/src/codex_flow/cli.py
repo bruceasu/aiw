@@ -591,6 +591,26 @@ async def cmd_loop(args: argparse.Namespace, store: SessionStore) -> int:
                 store,
             )
             continue
+        if loop_input.kind == LoopInputKind.FORK:
+            cmd_handoff(
+                argparse.Namespace(
+                    session_id=args.session_id,
+                    handoff_command="create",
+                    focus=None,
+                ),
+                store,
+            )
+            handoff = store.read_artifact_text(args.session_id, "handoff.md")
+            turn_args = argparse.Namespace(
+                session_id=args.session_id,
+                phase=phase,
+                prompt=handoff,
+                prompt_file=None,
+                timeout=args.timeout,
+            )
+            result = await _execute_turn(turn_args, store, allow_missing_thread=True, reset_thread=True)
+            print("Forked a fresh Thread from the handoff and exited the loop.")
+            return result
         if loop_input.kind == LoopInputKind.SKILLS:
             _print_skill_catalog(_discover_session_skills(store.load_status(args.session_id)))
             continue

@@ -21,9 +21,12 @@ if "%~1"=="linux" (
     gbuild linux
     xcopy /D /Y bin\aiw-linux-amd64 %INSTALL_DIR%\aiw >nul
 ) else if "%~1"=="plugins" (
-   call cp-mirror.bat plugins  %INSTALL_DIR%\plugins
+    call cp-mirror.bat plugins  %INSTALL_DIR%\plugins || exit /b 1
+    call cp-mirror.bat skills  %INSTALL_DIR%\skills || exit /b 1
 ) else if "%~1"=="docs" (
     call cp-mirror.bat docs\usage  %INSTALL_DIR%\docs\usage
+) else if "%~1"=="skills" (
+    call cp-mirror.bat skills  %INSTALL_DIR%\skills || exit /b 1
 )
 
 echo Installation complete. aiw is now available in %INSTALL_DIR%.

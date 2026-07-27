@@ -31,12 +31,17 @@ DEFAULT_API = "https://api.github.com"
 HELP_EPILOG = """Examples:
 
   # auto-detect repo from current git remote
-  aiw-github list-issue
+  aiw-github --json list-issue
   aiw-github repo-info
 
   # explicit repo
   aiw-github create-issue owner/repo --title "Bug report" --body "..."
+  aiw-github create-issue owner/repo --title "Bug report" --body-file issue.md
+  aiw-github update-issue owner/repo 123 --body-file issue.md
   aiw-github issue-comment owner/repo 123 --body "Looks good"
+
+Use `--json` before COMMAND for machine-readable output.
+Use `--body-file -` to read a Markdown body from stdin.
 """
 
 
@@ -300,11 +305,44 @@ def emit_value(data, title=None):
     emit_json(data)
 
 
+def read_body(args):
+    if getattr(args, "body_file", None) is not None:
+        source = args.body_file
+        if source == "-":
+            return sys.stdin.read()
+        try:
+            with open(source, "r", encoding="utf-8") as handle:
+                return handle.read()
+        except OSError as exc:
+            raise SystemExit(f"无法读取 Issue body 文件: {source}: {exc}")
+    return getattr(args, "body", None) or ""
+
+
+def issue_identity(owner_repo, data):
+    result = dict(data)
+    result["repository"] = owner_repo
+    result.setdefault("url", result.get("html_url", ""))
+    return result
+
+
 def create_issue(args, token):
     owner_repo = resolve_repo(args.repo)
-    payload = {"title": args.title, "body": args.body or ""}
+    payload = {"title": args.title, "body": read_body(args)}
     data = request("POST", f"/repos/{owner_repo}/issues", token, json_body=payload)
-    emit_issue_panel(data, "Issue created")
+    emit_issue_panel(issue_identity(owner_repo, data), "Issue created")
+
+
+def update_issue(args, token):
+    owner_repo = resolve_repo(args.repo)
+    payload = {}
+    if args.title is not None:
+        payload["title"] = args.title
+    if args.body is not None or args.body_file is not None:
+        payload["body"] = read_body(args)
+    if not payload:
+        raise SystemExit("update-issue 至少需要 --title、--body 或 --body-file")
+    data = request("PATCH", f"/repos/{owner_repo}/issues/{args.number}", token, json_body=payload)
+    emit_issue_panel(issue_identity(owner_repo, data), f"Issue #{args.number} updated")
 
 
 def create_pr(args, token):
@@ -338,7 +376,7 @@ def merge_pr(args, token):
 def get_issue(args, token):
     owner_repo = resolve_repo(args.repo)
     data = request("GET", f"/repos/{owner_repo}/issues/{args.number}", token)
-    emit_issue_panel(data, f"Issue #{args.number}")
+    emit_issue_panel(issue_identity(owner_repo, data), f"Issue #{args.number}")
 
 
 def get_pr(args, token):
@@ -365,7 +403,7 @@ def close_issue(args, token):
     owner_repo = resolve_repo(args.repo)
     payload = {"state": "closed"}
     data = request("PATCH", f"/repos/{owner_repo}/issues/{args.number}", token, json_body=payload)
-    emit_kv_panel(data, f"Issue #{args.number} closed")
+    emit_issue_panel(issue_identity(owner_repo, data), f"Issue #{args.number} closed")
 
 
 def repo_info(args, token):
@@ -387,7 +425,7 @@ def add_cmd_parser(subparsers, name, help_text):
     )
 
 
-def main():
+def build_parser():
     parser = argparse.ArgumentParser(
         prog="aiw-github",
         description="GitHub CLI helpers for issues and pull requests.",
@@ -400,7 +438,17 @@ def main():
     p_issue = add_cmd_parser(sub, "create-issue", "Create a GitHub issue.")
     add_repo_arg(p_issue)
     p_issue.add_argument("--title", required=True, help="issue title")
-    p_issue.add_argument("--body", help="issue body")
+    issue_body = p_issue.add_mutually_exclusive_group()
+    issue_body.add_argument("--body", help="issue body")
+    issue_body.add_argument("--body-file", help="read issue body from a UTF-8 file, or - for stdin")
+
+    p_update = add_cmd_parser(sub, "update-issue", "Update an existing GitHub issue.")
+    add_repo_arg(p_update)
+    p_update.add_argument("number", type=int, help="issue number")
+    p_update.add_argument("--title", help="replacement issue title")
+    update_body = p_update.add_mutually_exclusive_group()
+    update_body.add_argument("--body", help="replacement issue body")
+    update_body.add_argument("--body-file", help="read replacement body from a UTF-8 file, or - for stdin")
 
     p_pr = add_cmd_parser(sub, "create-pr", "Create a pull request.")
     add_repo_arg(p_pr)
@@ -449,6 +497,12 @@ def main():
     p_repo = add_cmd_parser(sub, "repo-info", "Show repository metadata.")
     add_repo_arg(p_repo)
 
+    return parser
+
+
+def main():
+    parser = build_parser()
+
     args = parser.parse_args()
     if not args.cmd:
         parser.print_help()
@@ -463,6 +517,8 @@ def main():
 
     if args.cmd == "create-issue":
         create_issue(args, token)
+    elif args.cmd == "update-issue":
+        update_issue(args, token)
     elif args.cmd == "create-pr":
         create_pr(args, token)
     elif args.cmd == "merge-pr":

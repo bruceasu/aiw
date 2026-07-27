@@ -71,7 +71,7 @@ class AiwCxsError(RuntimeError):
     """Expected user-facing failure."""
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class SessionMeta:
     session_id: str
     path: Path
@@ -821,8 +821,16 @@ def add_execution_options(parser: argparse.ArgumentParser) -> None:
 
 def make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="aiw-codex-session",
-        description="View and manage Codex CLI session records.",
+        prog="aiw cxs",
+        description="View and manage Codex CLI session records and resume Codex work.",
+        epilog=(
+            "Examples:\n"
+            "  aiw cxs list -n 20\n"
+            "  aiw cxs exec --last \"continue the latest task\"\n"
+            "  aiw cxs show payment-retry\n"
+            "\nRun `aiw cxs COMMAND --help` for command details."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         "--sessions-dir", type=Path, default=DEFAULT_CODEX_SESSIONS

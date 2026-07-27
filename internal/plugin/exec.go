@@ -17,49 +17,7 @@ var lookPathFn = exec.LookPath
 // ExecPlugin starts the plugin executable/script at path with provided args and env overrides.
 // Returns the exit code (or -1 if execution failed before process start) and error.
 func ExecPlugin(path string, args []string, env map[string]string) (int, error) {
-	var cmd *exec.Cmd
-	var err error
-	ext := strings.ToLower(filepath.Ext(path))
-
-	// helper to read shebang interpreter
-	shebang := getShebangInterpreter(path)
-
-	switch ext {
-	case ".py":
-		cmd, err = buildCommand(path, args, ext, shebang)
-	case ".pl":
-		cmd, err = buildCommand(path, args, ext, shebang)
-	case ".jar":
-		cmd, err = buildCommand(path, args, ext, shebang)
-	case ".sh":
-		cmd, err = buildCommand(path, args, ext, shebang)
-	case ".bat", ".cmd":
-		if runtime.GOOS == "windows" {
-			cmd = exec.Command("cmd", append([]string{"/C", path}, args...)...)
-		} else {
-			cmd = exec.Command(path, args...)
-		}
-	case ".ps1":
-		if runtime.GOOS == "windows" {
-			cmd = exec.Command("powershell", append([]string{"-File", path}, args...)...)
-		} else {
-			cmd = exec.Command("pwsh", append([]string{"-File", path}, args...)...)
-		}
-	case ".js":
-		// prefer bun then node if available
-		if exePath, _ := lookPathFn("bun"); exePath != "" {
-			cmd = exec.Command("bun", append([]string{path}, args...)...)
-		} else {
-			cmd = exec.Command("node", append([]string{path}, args...)...)
-		}
-	default:
-		// no ext: if shebang present, use it; otherwise try to execute directly
-		if shebang != "" {
-			cmd, err = buildCommand(path, args, ext, shebang)
-		} else {
-			cmd = exec.Command(path, args...)
-		}
-	}
+	cmd, err := buildPluginCommand(path, args)
 	if err != nil {
 		return -1, err
 	}
@@ -89,6 +47,36 @@ func ExecPlugin(path string, args []string, env map[string]string) (int, error) 
 		return -1, nil
 	}
 	return -1, err
+}
+
+func buildPluginCommand(path string, args []string) (*exec.Cmd, error) {
+	ext := strings.ToLower(filepath.Ext(path))
+	shebang := getShebangInterpreter(path)
+
+	switch ext {
+	case ".py", ".pl", ".jar", ".sh":
+		return buildCommand(path, args, ext, shebang)
+	case ".bat", ".cmd":
+		if runtime.GOOS == "windows" {
+			return exec.Command("cmd", append([]string{"/C", path}, args...)...), nil
+		}
+		return exec.Command(path, args...), nil
+	case ".ps1":
+		if runtime.GOOS == "windows" {
+			return exec.Command("powershell", append([]string{"-File", path}, args...)...), nil
+		}
+		return exec.Command("pwsh", append([]string{"-File", path}, args...)...), nil
+	case ".js":
+		if exePath, _ := lookPathFn("bun"); exePath != "" {
+			return exec.Command("bun", append([]string{path}, args...)...), nil
+		}
+		return exec.Command("node", append([]string{path}, args...)...), nil
+	default:
+		if shebang != "" {
+			return buildCommand(path, args, ext, shebang)
+		}
+		return exec.Command(path, args...), nil
+	}
 }
 
 func buildCommand(path string, args []string, ext, shebang string) (*exec.Cmd, error) {
@@ -135,6 +123,15 @@ func resolveInterpreterCommand(ext, shebang string) ([]string, error) {
 	}
 
 	localBaseDir, localSubDir := interpreterLocalDir(family)
+	if family == "python" {
+		configured, err := configuredPythonInterpreter(localBaseDir)
+		if err != nil {
+			return nil, err
+		}
+		if configured.path != "" {
+			return []string{configured.path}, nil
+		}
+	}
 	if localBaseDir != "" {
 		if resolved := findLocalInterpreter(localBaseDir, localSubDir, commands); resolved != "" {
 			if family == "java" && ext == ".jar" {

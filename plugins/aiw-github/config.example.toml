@@ -1,6 +1,6 @@
-# Example configuration for aiw-github plugin
-# Token can be provided via env var GITHUB_TOKEN or in this config (env preferred)
-
-[github]
-token = ""
-api = "https://api.github.com"
+# aiw-github currently reads authentication from the environment.
+#
+# GITHUB_TOKEN=your-token
+#
+# The plugin does not read this file automatically. Keep credentials out of
+# repository files and use GITHUB_TOKEN for local or CI execution.

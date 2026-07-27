@@ -245,6 +245,7 @@ Loop 支持以下本地控制和 Skill 命令。除 `/skill` 与 `/done` 外，�
 | `/status` | 显示 Session 状态。 |
 | `/memory` | 显示 Session Memory。 |
 | `/handoff` | 生成 `artifacts/handoff.md`。 |
+| `/fork` | 生成 handoff，以 handoff 作为新 Thread 的业务上下文，执行一次新 Thread 后退出 Loop。 |
 | `/skills` | 按项目和用户作用域列出可发现的 Codex Skills，不执行 Turn。 |
 | `/skill NAME MESSAGE` | 使用 Codex 原生 `$NAME` 语法调用一个已发现的 Skill，并执行一个普通 Turn。 |
 | `/done` | 仅在 `grill` 阶段发送 `Grill Done`，显示最终响应后退出。 |

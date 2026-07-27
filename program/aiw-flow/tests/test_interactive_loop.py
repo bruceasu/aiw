@@ -14,6 +14,7 @@ class InteractiveLoopParserTests(unittest.TestCase):
             "/status": LoopInputKind.STATUS,
             "/memory": LoopInputKind.MEMORY,
             "/handoff": LoopInputKind.HANDOFF,
+            "/fork": LoopInputKind.FORK,
             "/skills": LoopInputKind.SKILLS,
             "/done": LoopInputKind.DONE,
             "/exit": LoopInputKind.EXIT,

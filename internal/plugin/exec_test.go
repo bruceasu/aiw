@@ -6,6 +6,76 @@ import (
 	"testing"
 )
 
+func TestResolveInterpreterCommandUsesAIWPython(t *testing.T) {
+	python := filepath.Join(t.TempDir(), executableName("configured-python"))
+	if err := os.WriteFile(python, []byte(""), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("AIW_PYTHON", python)
+
+	oldLookPathFn := lookPathFn
+	lookPathFn = func(file string) (string, error) {
+		t.Fatalf("lookPathFn should not be called when AIW_PYTHON is set, got %q", file)
+		return "", nil
+	}
+	defer func() {
+		lookPathFn = oldLookPathFn
+	}()
+
+	got, err := resolveInterpreterCommand(".py", "")
+	if err != nil {
+		t.Fatalf("resolveInterpreterCommand returned error: %v", err)
+	}
+	if len(got) != 1 || got[0] != python {
+		t.Fatalf("resolveInterpreterCommand() = %v, want [%q]", got, python)
+	}
+}
+
+func TestResolveInterpreterCommandUserConfigOverridesProgramDefault(t *testing.T) {
+	td := t.TempDir()
+	exeDir := filepath.Join(td, "bin")
+	userConfigRoot := filepath.Join(td, "user-config")
+	userPython := writeTestFile(t, filepath.Join(td, "python", executableName("user-python")), "")
+	programPython := writeTestFile(t, filepath.Join(td, "python", executableName("program-python")), "")
+	writeTestFile(t, filepath.Join(exeDir, "aiw.toml"),
+		"[runtime]\npython = \""+filepath.ToSlash(programPython)+"\"\n")
+	writeTestFile(t, filepath.Join(userConfigRoot, "aiw", "aiw.toml"),
+		"[runtime]\npython = \""+filepath.ToSlash(userPython)+"\"\n")
+	t.Setenv("AIW_PYTHON", "")
+
+	oldExecutablePathFn := pluginExecutablePathFn
+	oldUserConfigDirFn := userConfigDirFn
+	oldUserHomeDirFn := userHomeDirFn
+	oldLookPathFn := lookPathFn
+	pluginExecutablePathFn = func() (string, error) {
+		return filepath.Join(exeDir, "aiw.exe"), nil
+	}
+	userConfigDirFn = func() (string, error) {
+		return userConfigRoot, nil
+	}
+	userHomeDirFn = func() (string, error) {
+		return filepath.Join(td, "home"), nil
+	}
+	lookPathFn = func(file string) (string, error) {
+		t.Fatalf("lookPathFn should not be called when user config is set, got %q", file)
+		return "", nil
+	}
+	defer func() {
+		pluginExecutablePathFn = oldExecutablePathFn
+		userConfigDirFn = oldUserConfigDirFn
+		userHomeDirFn = oldUserHomeDirFn
+		lookPathFn = oldLookPathFn
+	}()
+
+	got, err := resolveInterpreterCommand(".py", "")
+	if err != nil {
+		t.Fatalf("resolveInterpreterCommand returned error: %v", err)
+	}
+	if len(got) != 1 || got[0] != userPython {
+		t.Fatalf("resolveInterpreterCommand() = %v, want [%q]", got, userPython)
+	}
+}
+
 func TestResolveInterpreterCommandPrefersProgramDir(t *testing.T) {
 	td := t.TempDir()
 	exeDir := filepath.Join(td, "bin")
@@ -40,6 +110,17 @@ func TestResolveInterpreterCommandPrefersProgramDir(t *testing.T) {
 	if len(got) != 1 || got[0] != localPython {
 		t.Fatalf("resolveInterpreterCommand() = %v, want [%q]", got, localPython)
 	}
+}
+
+func writeTestFile(t *testing.T, path, content string) string {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return path
 }
 
 func TestResolveInterpreterCommandFallsBackToSystem(t *testing.T) {

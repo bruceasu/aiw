@@ -132,6 +132,22 @@ class LoopCliTests(unittest.TestCase):
             self.assertTrue((root / "sessions" / "ABC-123-loop" / "artifacts" / "handoff.md").exists())
             self.assertIn("/done is only available in phase grill.", stdout.getvalue())
 
+    def test_fork_uses_handoff_as_new_thread_prompt_and_exits(self):
+        with TemporaryDirectory() as temp_dir:
+            root, _ = self._create_session(Path(temp_dir))
+            execute_turn = AsyncMock(return_value=0)
+            with (
+                patch("builtins.input", side_effect=["/fork"]),
+                patch("codex_flow.cli._execute_turn", execute_turn),
+            ):
+                result = main(["--root", str(root), "loop", "ABC-123-loop"])
+
+            self.assertEqual(result, 0)
+            execute_turn.assert_awaited_once()
+            request = execute_turn.await_args.args[0]
+            self.assertIn("# Agent Handoff", request.prompt)
+            self.assertTrue(execute_turn.await_args.kwargs["reset_thread"])
+
     def test_skills_lists_scopes_warnings_and_ambiguity_without_turn(self):
         with TemporaryDirectory() as temp_dir:
             root, workspace = self._create_session(Path(temp_dir))

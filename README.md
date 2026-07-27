@@ -58,13 +58,16 @@ Windows executable:
 ## Commands
 
 ```text
+aiw --help
+aiw help [command|topic]
+
 aiw init [--prompts] [--merge] [--force] [--template <name>]
-aiw new <task-id>
+aiw new <task-id> [--backend auto|openspec|native]
 aiw list
 aiw show <task-id>
 aiw status <task-id> <status>
 aiw done <task-id>
-aiw archive <task-id> [--push] [--cleanup-wt] [--delete-branch] [--finalize]
+aiw archive <task-id> [--push] [--cleanup-wt] [--delete-branch] [--finalize] [--backend auto|openspec|native]
 
 aiw wt add <task-id> [base-branch]
 aiw wt rm <task-id> [--delete-branch] [--force]
@@ -78,7 +81,7 @@ aiw wt ignore
 aiw context <task-id>
 aiw decision <task-id>
 aiw spec <spec-id>
-aiw ai <new|decision|spec|archive> <id> [--session <ref>] [--last] [--prompt <text>] [--apply] [--dry-run]
+aiw task agent next <task-id>
 aiw registry
 
 aiw prompts list
@@ -88,9 +91,68 @@ aiw tcc [args...]       # TCC wrapper with automatic include/lib defaults
 aiw git <subcommand>    # run: aiw git help
 ```
 
+Every built-in command accepts `-h`/`--help` where detailed command help is
+available. Use `aiw help <command>` for the same overview from the top-level
+help router. Unknown commands are resolved as plugins and use the same
+`aiw <plugin> --help` convention.
+
+## Workflow backend selection
+
+Task workflow commands use `auto` by default. When a verified OpenSpec CLI is
+available, `new` and `archive` delegate to it; otherwise AIW uses its native
+implementation. `decision` and `spec` currently have no direct OpenSpec CLI
+mapping and use native fallback in `auto` mode.
+
+Use `--backend native` to force the built-in behavior, or
+`--backend openspec` to require OpenSpec and fail if delegation is unavailable.
+Configure a specific executable with `AIW_OPENSPEC_BIN`.
+
+## Sequential agent handoff
+
+`aiw task agent next <task-id>` is the explicit fresh-agent workflow for a
+task. The task metadata must bind an aiw-flow Session and worktree:
+
+```toml
+session = "TASK-123"
+worktree = ".wt/TASK-123"
+```
+
+The command acquires a per-task lease, creates `artifacts/handoff.md`, and
+starts a new Codex Thread in the same worktree. Lineage is recorded in
+`openspec/changes/<task-id>/agent-lineage.json`.
+Use `aiw task agent status <task-id>` to inspect the recorded parent/child
+Thread transition.
+
+This workflow is sequential. Use `aiw-wt` to give parallel agents separate
+worktrees and Sessions. Existing `aiw-flow continue` remains the same-Thread
+continuation path. `task.toml` is canonical; `tasks.toml` is a legacy fallback.
+
 # Plugin System
 
 `aiw` supports extending subcommands through external executable plugins.
+
+## Managed Skills
+
+Use `aiw skills` to list and safely install canonical Portable Skills or
+path-based Skill bundles into the current project's `.agents/skills`
+directory:
+
+```text
+aiw skills list
+aiw skills install tdd --dry-run
+aiw skills install ./bundle.zip
+aiw skills install tdd
+```
+
+The installer protects unmanaged same-name directories and records verified
+AIW-managed copies in `.agents/skills/.aiw-skills.json`. Path-based installs
+use the same managed pipeline as canonical Skill installs. Run
+`aiw skills --help` for constraints and JSON automation options.
+
+Canonical Skill packages are maintained in the repository-root `skills/`
+directory. Release layouts keep `skills/` beside `program/` and `plugins/`.
+`aiw-install-skill` is deprecated; use `aiw skills install` for both canonical
+names and local bundle sources.
 
 When an unknown subcommand is invoked, `aiw` searches for an executable named `aiw-<plugin-name>` and executes it.
 
@@ -139,6 +201,44 @@ When multiple matching plugins exist:
 
 * Extensionless scripts with a `#!` shebang are executed using the specified interpreter.
 * For `.js` files, `bun` is preferred when available; otherwise `node` is used.
+
+### Python Interpreter Configuration
+
+Python plugins use the first available interpreter in this order:
+
+1. The absolute path in `AIW_PYTHON`
+2. `[runtime].python` in the user `aiw.toml`
+3. `[runtime].python` in `aiw.toml` beside the AIW executable
+4. `python/python.exe` on Windows, or `python/python` on other platforms, beside
+   the AIW executable
+5. `python`, then `python3`, from `PATH`
+
+The program-directory configuration provides defaults. User configuration
+overrides those defaults, and `AIW_PYTHON` provides a temporary environment
+override.
+
+```toml
+[runtime]
+python = "C:/Python312/python.exe"
+```
+
+Configured interpreter paths must be absolute paths to existing files. An
+invalid explicit path produces an error instead of silently selecting another
+Python runtime. An empty value is treated as unset.
+
+The canonical user configuration locations are:
+
+* Windows: `%APPDATA%\aiw\aiw.toml`
+* Linux and other XDG platforms:
+  `$XDG_CONFIG_HOME/aiw/aiw.toml`, or `$HOME/.config/aiw/aiw.toml` when
+  `XDG_CONFIG_HOME` is unset
+* macOS: `$HOME/Library/Application Support/aiw/aiw.toml`
+
+If the canonical file does not exist, AIW also checks
+`$HOME/.config/aiw/aiw.toml` as a compatibility fallback. AIW reads only the
+first existing user configuration file and does not merge user files. It does
+not read project-root configuration for interpreter selection, and it does not
+create a missing user configuration file or directory.
 
 ## Environment Variables
 
@@ -321,42 +421,7 @@ Regenerates:
 openspec/registry.json
 ```
 
-## 11. `aiw ai <action> <id>`
-
-Generates task/spec/archive drafts through the `cxs` plugin workflow.
-
-Actions:
-
-* `new <task-id>`: draft or apply `openspec/changes/<task-id>/tasks.md`
-* `decision <task-id>`: draft or apply `openspec/changes/<task-id>/design.md`
-* `spec <spec-id>`: draft or apply `openspec/specs/<spec-id>/spec.md`
-* `archive <task-id>`: draft or apply `openspec/changes/<task-id>/archive-note.md`, then archive task when `--apply` is set
-
-Flags:
-
-* `--session <ref>`: resume a specific Codex session alias/id
-* `--last`: resume latest Codex session
-* `--prompt <text>`: append additional user intent to generated prompt
-* `--apply`: write target file directly (and execute archive for `archive` action)
-* `--dry-run`: print Codex execution command only, strictly no file writes
-
-Rules:
-
-* `--session` and `--last` are mutually exclusive
-* `--apply` and `--dry-run` are mutually exclusive
-* `aiw ai -h` shows workflow help
-* `aiw ai <action> -h` shows action-specific help
-
-Examples:
-
-```bash
-aiw ai new payment-retry --dry-run --prompt "draft TODOs"
-aiw ai decision payment-retry --session payment-retry --apply
-aiw ai spec retry-policy --last
-aiw ai archive payment-retry --finalize --apply
-```
-
-## 12. `aiw prompts [template] [--merge] [--force]`
+## 11. `aiw prompts [template] [--merge] [--force]`
 
 Features:
 
@@ -589,10 +654,32 @@ aiw cxs list -n 20
 aiw cxs exec "summarize current diff"
 aiw cxs exec --session payment-retry "continue implementation"
 
-# Task AI workflow
-aiw ai -h
-aiw ai new payment-retry --dry-run --prompt "draft TODOs"
-aiw ai decision payment-retry -h
+# Help
+aiw --help
+aiw help git
+aiw flow --help
+aiw github --help
+aiw skills --help
 ```
 
 For full `aiw cxs` usage, see `docs/usage/aiw-cxs.md`.
+
+## Available Plugins
+
+Plugins are discovered beside the `aiw` executable. The repository currently
+ships these common entry points as external plugins:
+
+| Command | Purpose | Detailed help |
+| --- | --- | --- |
+| `aiw wt` | Create and maintain task worktrees | `aiw wt --help` |
+| `aiw git` | Git helpers and discoverable Git subcommands | `aiw git help` |
+| `aiw flow` | Manage Codex Sessions, loops, handoffs, and archives | `aiw flow --help` |
+| `aiw cxs` | Inspect and resume Codex CLI sessions | `aiw cxs --help` |
+| `aiw skills` | List and install canonical Skills | `aiw skills --help` |
+| `aiw github` | Read and publish GitHub Issues and PRs | `aiw github --help` |
+| `aiw cz` | Run the Conventional Commit wizard | `aiw cz --help` |
+| `aiw tcc` | Compile or run Tiny C Compiler programs | `aiw tcc --help` |
+
+Plugin HELP is intentionally generated by each plugin so its examples stay
+next to the parser. If a plugin is not installed, the top-level help reports
+the missing discovery location instead of showing stale commands.

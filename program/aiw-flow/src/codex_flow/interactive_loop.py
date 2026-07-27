@@ -9,6 +9,7 @@ LOOP_HELP = """Interactive commands:
   /status                Show the current Session status.
   /memory                Show the current Session Memory.
   /handoff               Create artifacts/handoff.md.
+  /fork                  Create a handoff, start a fresh Thread, and exit.
   /skills                List discoverable Codex Skills.
   /skill NAME MESSAGE    Invoke a discovered Skill for one turn.
   /done                  Finish Grill discovery and exit after the final response.
@@ -24,6 +25,7 @@ class LoopInputKind(str, Enum):
     STATUS = "status"
     MEMORY = "memory"
     HANDOFF = "handoff"
+    FORK = "fork"
     SKILLS = "skills"
     SKILL = "skill"
     DONE = "done"
@@ -42,6 +44,7 @@ _COMMANDS = {
     "/status": LoopInputKind.STATUS,
     "/memory": LoopInputKind.MEMORY,
     "/handoff": LoopInputKind.HANDOFF,
+    "/fork": LoopInputKind.FORK,
     "/skills": LoopInputKind.SKILLS,
     "/done": LoopInputKind.DONE,
     "/exit": LoopInputKind.EXIT,

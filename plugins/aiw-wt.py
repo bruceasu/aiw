@@ -4,7 +4,8 @@ aiw-wt plugin: Python implementation of worktree commands mirroring Go `wt`.
 Supports: add, rm, list, prune, lock, unlock, repair, ignore
 
 This plugin uses the same conventions as the Go code: task metadata under
-openspec/changes/<id>/tasks.toml and registry at openspec/registry.json.
+openspec/changes/<id>/task.toml (with legacy tasks.toml fallback) and registry
+at openspec/registry.json.
 """
 import os
 import sys
@@ -31,7 +32,14 @@ def task_dir(task_id):
 
 
 def task_meta_path(task_id):
-    return task_dir(task_id) / "tasks.toml"
+    primary = task_dir(task_id) / "task.toml"
+    legacy = task_dir(task_id) / "tasks.toml"
+    if primary.exists():
+        return primary
+    if legacy.exists():
+        print(f"warning: using legacy task metadata {legacy}; rename it to task.toml", file=sys.stderr)
+        return legacy
+    return primary
 
 
 def read_task_meta(path):
@@ -59,6 +67,7 @@ def write_task_meta(path, meta):
         f'updated = "{meta.get("updated", "")}"\n'
         f'branch = "{meta.get("branch", "")}"\n'
         f'worktree = "{meta.get("worktree", "")}"\n'
+        f'session = "{meta.get("session", "")}"\n'
     )
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
@@ -72,7 +81,7 @@ def write_registry():
         if not d.is_dir():
             continue
         try:
-            meta = read_task_meta(d / "tasks.toml")
+            meta = read_task_meta(task_meta_path(d.name))
         except Exception:
             continue
         entries.append({
@@ -226,17 +235,22 @@ def repair():
 
 
 def usage():
-    print("aiw wt - worktree management")
+    print("Usage: aiw wt <command> [args...]")
     print()
-    print("  add <task-id> [base]")
-    print("  rm  <task-id> [--delete-branch] [--force]")
-    print("  list [--porcelain]")
-    print("  prune [--dry-run]")
-    print("  lock <task-id> [reason]")
-    print("  unlock <task-id]")
-    print("  repair")
-    print("  ignore")
-    print("  push <task-id>")
+    print("Commands:")
+    print("  add <task-id> [base]                 Create a task worktree.")
+    print("  rm <task-id> [--delete-branch] [--force]  Remove a worktree.")
+    print("  list [--porcelain]                   List worktrees.")
+    print("  prune [--dry-run]                    Remove stale metadata.")
+    print("  lock <task-id> [reason]              Lock a worktree.")
+    print("  unlock <task-id>                     Unlock a worktree.")
+    print("  repair                               Repair worktree links.")
+    print("  ignore                               Add .wt/ to .gitignore.")
+    print()
+    print("Examples:")
+    print("  aiw wt add payment-retry")
+    print("  aiw wt list")
+    print("  aiw wt prune --dry-run")
 
 
 def main():

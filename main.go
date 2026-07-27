@@ -33,6 +33,8 @@ func main() {
 	}
 	var err error
 	switch os.Args[1] {
+	case "-h", "--help":
+		err = help.Dispatch([]string{})
 	case "help":
 		err = help.Dispatch(os.Args[2:])
 	case "init":
@@ -61,8 +63,12 @@ func main() {
 		err = taskcmd.DispatchTopLevel("registry", os.Args[2:])
 	case "prompts":
 		err = taskcmd.DispatchTopLevel("prompts", os.Args[2:])
-	case "ai":
-		err = taskcmd.DispatchTopLevel("ai", os.Args[2:])
+	case "task":
+		if len(os.Args) < 3 {
+			err = fmt.Errorf("usage: aiw task agent <next|status> <task-id>")
+		} else {
+			err = taskcmd.DispatchTopLevel(os.Args[2], os.Args[3:])
+		}
 	default:
 		// try plugin fallback: aiw-<subcommand>
 		pluginName := os.Args[1]

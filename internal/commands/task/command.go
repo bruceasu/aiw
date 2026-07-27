@@ -10,6 +10,16 @@ const (
 )
 
 func DispatchTopLevel(name string, args []string) error {
+	if name == "new" || name == "decision" || name == "spec" || name == "archive" {
+		mode, routedArgs, err := selectBackend(name, args)
+		if err != nil {
+			return err
+		}
+		if mode == backendOpenSpec {
+			return runOpenSpec(routedArgs[0], name, routedArgs[1:])
+		}
+		args = routedArgs
+	}
 	switch name {
 	case "init":
 		opts, err := parseInitOptions(args)
@@ -71,8 +81,8 @@ func DispatchTopLevel(name string, args []string) error {
 			return err
 		}
 		return syncPrompts(opts)
-	case "ai":
-		return runAIWorkflow(args)
+	case "agent":
+		return runTaskAgent(args)
 	default:
 		return fmt.Errorf("unknown task command: %s", name)
 	}
