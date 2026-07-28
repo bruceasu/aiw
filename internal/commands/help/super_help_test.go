@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"testing"
 )
 
@@ -79,19 +78,6 @@ func TestPluginScriptPathUsesExecutableDir(t *testing.T) {
 
 	if got := pluginScriptPath("sample"); got != want {
 		t.Fatalf("pluginScriptPath() = %q, want %q", got, want)
-	}
-}
-
-func TestStaticBuiltinCommandsIncludesAI(t *testing.T) {
-	builtins := staticBuiltinCommands()
-	if !slices.Contains(builtins, "ai") {
-		t.Fatalf("staticBuiltinCommands() = %v, expected ai to be present", builtins)
-	}
-}
-
-func TestBuiltinExistsRecognizesTopLevelAI(t *testing.T) {
-	if !builtinExists("ai") {
-		t.Fatal("expected builtinExists(ai) to be true")
 	}
 }
 

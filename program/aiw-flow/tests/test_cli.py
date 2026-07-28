@@ -15,7 +15,7 @@ class CliTests(unittest.TestCase):
             tmp_path = Path(temp_dir)
             workspace = tmp_path / "workspace"
             workspace.mkdir()
-            instructions = tmp_path / "instructions.md"
+            instructions = tmp_path / "AGENTS.md"
             instructions.write_text("rules", encoding="utf-8")
             root = tmp_path / ".aiw-flow"
             stdout = io.StringIO()
@@ -28,12 +28,8 @@ class CliTests(unittest.TestCase):
                             "new",
                             "--id",
                             "ABC-123-demo",
-                            "--title",
-                            "Demo",
                             "--workspace",
                             str(workspace),
-                            "--instructions",
-                            str(instructions),
                         ]
                     ),
                     0,
@@ -46,7 +42,7 @@ class CliTests(unittest.TestCase):
             tmp_path = Path(temp_dir)
             workspace = tmp_path / "workspace"
             workspace.mkdir()
-            instructions = tmp_path / "instructions.md"
+            instructions = tmp_path / "AGENTS.md"
             instructions.write_text("rules", encoding="utf-8")
             root = tmp_path / ".aiw-flow"
             main(
@@ -56,12 +52,8 @@ class CliTests(unittest.TestCase):
                     "new",
                     "--id",
                     "ABC-123-demo",
-                    "--title",
-                    "Demo",
                     "--workspace",
                     str(workspace),
-                    "--instructions",
-                    str(instructions),
                 ]
             )
             stdout = io.StringIO()
@@ -87,8 +79,6 @@ class CliTests(unittest.TestCase):
                             "grill",
                             "--id",
                             "ABC-123-grill",
-                            "--title",
-                            "Clarify demo",
                             "--workspace",
                             str(workspace),
                             "--requirement",
@@ -126,8 +116,6 @@ class CliTests(unittest.TestCase):
                         "grill",
                         "--id",
                         "ABC-123-grill",
-                        "--title",
-                        "Clarify demo",
                         "--workspace",
                         str(workspace),
                         "--requirement-file",
@@ -142,7 +130,7 @@ class CliTests(unittest.TestCase):
             tmp_path = Path(temp_dir)
             workspace = tmp_path / "workspace"
             workspace.mkdir()
-            instructions = tmp_path / "instructions.md"
+            instructions = tmp_path / "AGENTS.md"
             instructions.write_text("rules", encoding="utf-8")
             root = tmp_path / ".ai"
             main(
@@ -152,12 +140,8 @@ class CliTests(unittest.TestCase):
                     "new",
                     "--id",
                     "ABC-123-demo",
-                    "--title",
-                    "Demo",
                     "--workspace",
                     str(workspace),
-                    "--instructions",
-                    str(instructions),
                 ]
             )
             stdout = io.StringIO()
@@ -181,7 +165,7 @@ class CliTests(unittest.TestCase):
 
             output = stdout.getvalue()
             self.assertIn("Handoff saved to", output)
-            self.assertIn("# Agent Handoff: Demo", output)
+            self.assertIn("# Agent Handoff: ABC-123-demo", output)
             self.assertIn("Continue tests.", output)
 
     def test_cli_handoff_show_reports_missing_artifact(self):
@@ -189,7 +173,7 @@ class CliTests(unittest.TestCase):
             tmp_path = Path(temp_dir)
             workspace = tmp_path / "workspace"
             workspace.mkdir()
-            instructions = tmp_path / "instructions.md"
+            instructions = tmp_path / "AGENTS.md"
             instructions.write_text("rules", encoding="utf-8")
             root = tmp_path / ".ai"
             main(
@@ -199,12 +183,8 @@ class CliTests(unittest.TestCase):
                     "new",
                     "--id",
                     "ABC-123-demo",
-                    "--title",
-                    "Demo",
                     "--workspace",
                     str(workspace),
-                    "--instructions",
-                    str(instructions),
                 ]
             )
 

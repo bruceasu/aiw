@@ -89,6 +89,10 @@ class GitShowFileHistoryTests(unittest.TestCase):
             ["git", "log", "-L", ":main:src/main.py"],
         )
 
+    def test_commit_files_lists_status_and_paths(self):
+        self.assert_command(["commit-files", "HEAD~1"], ["git", "diff-tree", "--no-commit-id", "--name-status", "-r", "HEAD~1"])
+        self.assert_command(["commit-files", "--names", "HEAD"], ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"])
+        self.assert_command(["commit-files", "--root", "HEAD"], ["git", "diff-tree", "--no-commit-id", "--name-status", "-r", "--root", "HEAD"])
     def test_usage_errors_do_not_run_git(self):
         invalid_commands = [
             ["file"],
@@ -97,6 +101,8 @@ class GitShowFileHistoryTests(unittest.TestCase):
             ["blame"],
             ["file-at", "HEAD"],
             ["lines", "10,30"],
+            ["commit-files", "HEAD", "HEAD~1"],
+            ["commit-files", "--unknown"],
         ]
 
         for argv in invalid_commands:

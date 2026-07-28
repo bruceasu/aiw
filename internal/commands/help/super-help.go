@@ -20,11 +20,27 @@ import (
 var executablePathFn = os.Executable
 var execCommandFn = exec.Command
 
+type helpJSON struct {
+	Command  string      `json:"command"`
+	Builtins []helpEntry `json:"builtins"`
+	Plugins  []helpEntry `json:"plugins"`
+}
+
+type helpEntry struct {
+	Name        string `json:"name"`
+	Short       string `json:"short,omitempty"`
+	Description string `json:"description,omitempty"`
+	Source      string `json:"source,omitempty"`
+}
+
 // Dispatch implements a flexible help command:
 //   - no args: list builtins and plugins
 //   - help <name>: show help for built-in or plugin
 //   - help <free text>: search docs and plugin META/help, optionally ask an LLM
 func Dispatch(args []string) error {
+	if len(args) > 0 && args[0] == "--json" {
+		return listAllJSON()
+	}
 	if len(args) == 0 {
 		return listAll()
 	}
@@ -48,54 +64,89 @@ func Dispatch(args []string) error {
 	return searchAndAnswer(strings.Join(args, " "))
 }
 
+func listAllJSON() error {
+	builtins, err := listBuiltins()
+	if err != nil {
+		return err
+	}
+	plugins, err := listPlugins()
+	if err != nil {
+		return err
+	}
+	doc := helpJSON{Command: "help"}
+	for _, name := range builtins {
+		doc.Builtins = append(doc.Builtins, helpEntry{Name: name, Short: builtinHelpShort(name), Description: builtinHelpShort(name), Source: "builtin"})
+	}
+	for _, name := range plugins {
+		doc.Plugins = append(doc.Plugins, helpEntry{Name: name, Short: getPluginShort(name), Description: getPluginShort(name), Source: "plugin"})
+	}
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	return enc.Encode(doc)
+}
+
 func listAll() error {
-	fmt.Print("aiw — Private workspace CLI\n\n" +
+	fmt.Print("aiw - workflow-first task and AI tooling\n\n" +
 		"Usage:\n" +
 		"  aiw <command> [args...]\n" +
 		"  aiw --help\n" +
-		"  aiw help <command>\n\n" +
-		"Task management:\n" +
+		"  aiw help <command>\n\n")
+
+	fmt.Print("Core workflow:\n" +
 		"  init [--prompts] [--merge] [--force] [--template <name>]\n" +
-		"  new <task-id>             Create a task/change (use --backend auto|openspec|native).\n" +
-		"  list                      List tasks from openspec/changes.\n" +
+		"  new <task-id>             Create a task/change.\n" +
+		"  list                      List tasks under openspec/changes.\n" +
 		"  show <task-id>            Print tasks.md.\n" +
-		"  status <task-id> <s>      Update task status (auto upper-cased).\n" +
+		"  status <task-id> <s>      Update task status.\n" +
 		"  done <task-id>            Shortcut for: status <task-id> DONE.\n" +
-		"  archive <task-id> [opts]  Archive task/change; supports --backend auto|openspec|native.\n" +
+		"  archive <task-id> [opts]  Archive a completed task/change.\n" +
 		"  context <task-id>         Show files to read before implementing.\n" +
-		"  decision <task-id>        Create design.md when design is needed.\n" +
-		"  spec <spec-id>            Create long-lived spec under openspec/specs.\n" +
-		"  task agent next <id>      Create a handoff and start a fresh agent Thread.\n" +
-		"  task agent status <id>    Show parent/child Thread lineage.\n" +
-		"                           Common flags: --session/--last, --prompt, --apply, --dry-run.\n" +
-		"                           Note: --apply and --dry-run are mutually exclusive.\n" +
-		"  registry                  Rebuild openspec/registry.json.\n" +
-		"  prompts [template] [opts] Create or merge AGENTS/CODEX/Copilot prompts.\n")
+		"  decision <task-id>        Create design.md for a task.\n" +
+		"  spec <spec-id>            Create a long-lived spec under openspec/specs.\n" +
+		"  registry                  Rebuild openspec/registry.json.\n\n")
+
+	fmt.Print("Worktree:\n" +
+		"  wt add <task-id> [base]   Create or attach a task worktree.\n" +
+		"  wt rm <task-id>           Remove a task worktree.\n" +
+		"  wt list                   List known worktrees.\n" +
+		"  wt prune [--dry-run]      Remove stale worktree metadata.\n" +
+		"  wt lock <task-id> [r]     Protect a worktree from removal.\n" +
+		"  wt unlock <task-id>       Remove a worktree lock.\n" +
+		"  wt repair                 Repair worktree links after relocation.\n" +
+		"  wt ignore                 Add .wt/ to .gitignore.\n\n")
+
+	fmt.Print("Auxiliary:\n" +
+		"  prompts <...>             Generate or merge prompt files.\n" +
+		"  task agent <...>          Fresh-agent handoff and lineage tools.\n" +
+		"  cxs <...>                 Inspect and resume Codex CLI sessions.\n" +
+		"  flow <...>                Automate repeatable AI processing flows.\n\n")
+
+	fmt.Print("Plugins:\n" +
+		"  git <subcommand>         Git helpers and discoverable Git subcommands.\n" +
+		"  github <subcommand>      Read and publish GitHub Issues and PRs.\n" +
+		"  cz <subcommand>          Conventional Commit wizard.\n" +
+		"  tcc <args...>            Tiny C Compiler wrapper.\n\n")
+
 	fmt.Print("Examples:\n" +
 		"  aiw init --prompts --template go\n" +
 		"  aiw new payment-retry\n" +
-		"  aiw cxs exec --last \"continue latest session\"\n")
+		"  aiw cxs exec --last \"continue latest session\"\n\n")
 
-	// Print plugins with short descriptions (if available)
-	fmt.Println("\nPlugins:")
 	pls, err := listPlugins()
-	if err != nil {
-		fmt.Println("  (No executable plugins discovered beside this aiw binary.)")
-		fmt.Println("  Install or place plugins next to aiw, then run: aiw <plugin> --help")
+	if err != nil || len(pls) == 0 {
+		fmt.Println("Plugins: none discovered beside this aiw binary.")
+		fmt.Println("Place executable plugins next to aiw, then run: aiw <plugin> --help")
 		return nil
 	}
-	if len(pls) == 0 {
-		fmt.Println("  (No executable plugins discovered beside this aiw binary.)")
-		fmt.Println("  Install or place plugins next to aiw, then run: aiw <plugin> --help")
-		return nil
-	}
+
+	fmt.Println("Plugins:")
 	for _, p := range pls {
 		desc := getPluginShort(p)
 		if desc == "" {
 			fmt.Printf("  %s\n", p)
-		} else {
-			fmt.Printf("  %s - %s\n", p, desc)
+			continue
 		}
+		fmt.Printf("  %s - %s\n", p, desc)
 	}
 
 	return nil
@@ -157,7 +208,7 @@ func extractShortFromSource(src string) string {
 }
 
 func listBuiltins() ([]string, error) {
-	// Static list embedded in code — used when source tree is not present
+	// Static list embedded in code 閳?used when source tree is not present
 	builtinCommands := staticBuiltinCommands()
 
 	out := []string{}
@@ -191,7 +242,7 @@ func staticBuiltinCommands() []string {
 	return []string{
 		"init", "new", "list", "show", "status", "done",
 		"archive", "context", "decision", "spec", "registry",
-		"prompts", "wt", "git", "tcc", "task", "ai",
+		"prompts", "wt", "task",
 	}
 }
 
@@ -299,6 +350,39 @@ func showBuiltinHelp(name string) error {
 	return nil
 }
 
+func builtinHelpShort(name string) string {
+	switch name {
+	case "init":
+		return "initialize prompts and worktree scaffolding"
+	case "new":
+		return "create a new change"
+	case "list":
+		return "list changes"
+	case "show":
+		return "show change tasks"
+	case "status":
+		return "update change status"
+	case "done":
+		return "mark change done"
+	case "archive":
+		return "archive a completed change"
+	case "context":
+		return "show implementation context"
+	case "decision":
+		return "create or show a design decision"
+	case "spec":
+		return "create a long-lived spec"
+	case "registry":
+		return "rebuild the registry"
+	case "prompts":
+		return "generate or merge prompt files"
+	case "task":
+		return "manage fresh-agent handoff and lineage"
+	default:
+		return ""
+	}
+}
+
 func builtinUsageText(name string) (string, bool) {
 	switch name {
 	case "init":
@@ -325,11 +409,12 @@ func builtinUsageText(name string) (string, bool) {
 		return "usage: aiw registry\n", true
 	case "prompts":
 		return "usage: aiw prompts [list|<template>] [--merge] [--force]\n", true
+	case "task":
+		return "usage: aiw task agent <next|status> <task-id>\n", true
 	default:
 		return "", false
 	}
 }
-
 func searchAndAnswer(query string) error {
 	fmt.Fprintf(os.Stderr, "Searching docs for: %s\n", query)
 	matches := searchDocs(query)

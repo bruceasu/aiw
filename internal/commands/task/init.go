@@ -56,6 +56,8 @@ Before coding:
 - read openspec/changes/<task>/tasks.md if exists
 - read design.md if exists
 - read related specs under openspec/specs/
+- archived changes live under openspec/changes/archive/
+
 Rules:
 - one task at a time
 - avoid unrelated refactors
@@ -64,13 +66,13 @@ Rules:
 - use %% notes for uncertainties
 `
 }
-
 func copilotTemplate() string {
 	return `# Copilot Instructions
 Use OpenSpec-lite TOML workflow.
 Always check:
 - openspec/changes/
 - openspec/specs/
+- openspec/changes/archive/
 Keep changes scoped.
 Avoid broad refactors.
 `

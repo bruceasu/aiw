@@ -15,7 +15,8 @@ const (
 	OpenspecDir        = "openspec"
 	ChangesDir         = "openspec/changes"
 	SpecsDir           = "openspec/specs"
-	ArchiveDir         = "openspec/archive"
+	ArchiveDir         = "openspec/changes/archive"
+	LegacyArchiveDir   = "openspec/archive"
 	RegistryFile       = "openspec/registry.json"
 	WorktreeDir        = ".wt"
 	GitignoreFile      = ".gitignore"
@@ -51,6 +52,10 @@ func Today() string {
 
 func TaskDir(id string) string {
 	return filepath.Join(ChangesDir, id)
+}
+
+func ArchiveTaskDir(name string) string {
+	return filepath.Join(ArchiveDir, name)
 }
 
 func TaskMetaPath(id string) string {

@@ -16,6 +16,7 @@ workspace matches it before changing implementation files. Do not silently
 switch workspaces or infer a target from `.scratch`.
 
 Use /tdd where possible, at pre-agreed seams.
+When the implementation produces a file change patch, use aiw patch as the default application path. This applies to AI-generated *** Begin Patch input and standard unified diff input. The patch command SHALL normalize supported encodings, convert AI patch syntax when needed, run Git preflight validation, and return its failure to the workflow. Do not report a change as applied when the patch command fails. Use a direct file-edit fallback only when the patch tool cannot represent the change or is unavailable, and record the reason.
 
 Run typechecking regularly, single test files regularly, and the full test suite once at the end.
 

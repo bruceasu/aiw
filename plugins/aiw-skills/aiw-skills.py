@@ -24,6 +24,7 @@ FRONTMATTER_RE = re.compile(
     re.DOTALL,
 )
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+WORK_MANAGEMENT_REFERENCE = "skills/work-management.md"
 
 
 @dataclass(frozen=True)
@@ -170,6 +171,28 @@ def validate_copyable_tree(root: Path) -> None:
                     raise SkillError(
                         "Unsupported filesystem entry in Skill: {}".format(path)
                     )
+
+
+def skill_mentions_work_management(skill_dir: Path) -> bool:
+    text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+    return WORK_MANAGEMENT_REFERENCE in text
+
+
+def repository_work_management_path() -> Path:
+    return Path(__file__).resolve().parents[2] / "skills" / "work-management.md"
+
+
+def materialize_skill_source(skill: Skill, temp_root: Path) -> Path:
+    materialized = temp_root / skill.name
+    shutil.copytree(str(skill.source), str(materialized), symlinks=True)
+    if skill_mentions_work_management(skill.source):
+        shared_source = repository_work_management_path()
+        if not shared_source.is_file():
+            raise SkillError("Shared work-management reference is missing: {}".format(shared_source))
+        shared_target = materialized / WORK_MANAGEMENT_REFERENCE
+        shared_target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(str(shared_source), str(shared_target))
+    return materialized
 
 
 def is_zip(path: Path) -> bool:
@@ -487,8 +510,10 @@ def install_skills_from_sources(
                     )
                 )
             validate_copyable_tree(destination)
-            source_digest = directory_digest(skill.source)
+            source_root = materialize_skill_source(skill, Path(tempfile.mkdtemp(prefix=".aiw-source-") ))
+            source_digest = directory_digest(source_root)
             installed_digest = directory_digest(destination)
+            shutil.rmtree(str(source_root.parent), ignore_errors=True)
             if (
                 managed.get("mode") == "copy"
                 and managed.get("sha256") == source_digest == installed_digest
@@ -516,14 +541,15 @@ def install_skills_from_sources(
         for skill, destination in zip(skill_entries, destinations):
             if skill.name in already_installed and destination.exists():
                 continue
-            source_digest_before = directory_digest(skill.source)
+            source_root = materialize_skill_source(skill, tmp_root)
+            source_digest_before = directory_digest(source_root)
             stage_root = Path(tempfile.mkdtemp(prefix=".aiw-stage-", dir=str(destination_root)))
             staged_skill = stage_root / skill.name
             try:
-                shutil.copytree(str(skill.source), str(staged_skill), symlinks=True)
+                shutil.copytree(str(source_root), str(staged_skill), symlinks=True)
                 validate_copyable_tree(staged_skill)
                 staged_digest = directory_digest(staged_skill)
-                source_digest_after = directory_digest(skill.source)
+                source_digest_after = directory_digest(source_root)
                 if not (
                     source_digest_before == staged_digest == source_digest_after
                 ):

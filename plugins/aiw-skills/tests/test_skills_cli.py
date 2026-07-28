@@ -45,6 +45,7 @@ def make_windows_release_fixture(base: Path) -> tuple[Path, Path, dict[str, str]
     skills_root.mkdir()
     write_skill(skills_root, "packaged-skill", "Installed by release script.")
     (source_root / "docs" / "usage").mkdir(parents=True)
+    (source_root / "docs" / "agent-templates").mkdir(parents=True)
     binary_dir = source_root / "bin"
     binary_dir.mkdir()
     (binary_dir / "aiw-windows-amd64.exe").write_bytes(b"test binary")
@@ -405,6 +406,32 @@ class SkillsCliTests(unittest.TestCase):
                 [],
             )
 
+    def test_install_copies_shared_work_management_reference_when_declared(self):
+        with TemporaryDirectory() as temp_dir:
+            _, source, project = make_workspace(temp_dir)
+            skill = write_skill(source, "shared-contract", "Use the shared contract.")
+            skill_md = skill / "SKILL.md"
+            skill_md.write_text(
+                skill_md.read_text(encoding="utf-8") + "\nRead `skills/work-management.md`.\n",
+                encoding="utf-8",
+            )
+
+            result = self.run_cli(project, source, "install", "shared-contract")
+
+            installed = project / ".agents" / "skills" / "shared-contract"
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue((installed / "skills" / "work-management.md").is_file())
+            self.assertEqual(
+                (installed / "skills" / "work-management.md").read_text(
+                    encoding="utf-8"
+                ),
+                (Path(__file__).resolve().parents[3] / "skills" / "work-management.md").read_text(
+                    encoding="utf-8"
+                ),
+            )
+            self.assertIn("Installed shared-contract", result.stdout)
+            self.assertEqual(result.stderr, "")
+
     def test_install_rejects_invalid_metadata_before_writing(self):
         with TemporaryDirectory() as temp_dir:
             _, source, project = make_workspace(temp_dir)
@@ -680,7 +707,7 @@ class SkillsCliTests(unittest.TestCase):
     def test_list_json_is_one_machine_readable_result(self):
         with TemporaryDirectory() as temp_dir:
             _, source, project = make_workspace(temp_dir)
-            skill = write_skill(source, "json-skill", "List — as JSON.")
+            skill = write_skill(source, "json-skill", "List 鈥?as JSON.")
 
             result = self.run_cli(project, source, "list", "--json")
 
@@ -694,7 +721,7 @@ class SkillsCliTests(unittest.TestCase):
                     "ok": True,
                     "skills": [
                         {
-                            "description": "List — as JSON.",
+                            "description": "List 鈥?as JSON.",
                             "name": "json-skill",
                             "source": str(skill.resolve()),
                         }

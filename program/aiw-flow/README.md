@@ -1,104 +1,108 @@
 # aiw-flow
 
-`aiw-flow` 是一个专注于执行 AI 编程任务的 Python CLI。它负责管理 Codex Session、Prompt、Memory、Thread 和执行结果，不负责任务分支、Git Worktree 或仓库生命周期。
+`aiw-flow` is a Python CLI for running AI coding tasks. It manages Codex sessions, prompts, memory, threads, and execution results. It does not manage task branches, Git worktrees, or repository lifecycle.
 
-Git 任务和 Worktree 应由 aiw / aiw-wt 管理；aiw-flow 只接收一个已经存在的 `--workspace` 作为 Codex 的执行目录。
+Git tasks and worktrees should be managed by `aiw` / `aiw-wt`. `aiw-flow` only accepts an existing `--workspace` as the Codex working directory.
 
-## 安装与前置条件
+## Installation and Prerequisites
 
 ```bash
 python -m pip install -e .
 ```
 
-需要 Python 3.9+ 和可用的 `codex exec` CLI。通过 aiw 插件运行时，下面的 `aiw-flow` 可以替换为 `aiw flow`。
+You need Python 3.9+ and a working `codex exec` CLI. When running through the aiw plugin, the commands below may be invoked as `aiw flow` instead of `aiw-flow`.
 
-## 状态目录
+## State Directory
 
-默认状态目录是当前工作目录下的 `.ai/`，也可以通过全局参数 `--root` 指定：
+The default state directory is `.ai/` under the current working directory. You can also set a custom root with the global `--root` option:
 
 ```text
 .ai/
-├── sessions/<session-id>/
-│   ├── status.json
-│   ├── instructions.md
-│   ├── memory.md
-│   ├── events.jsonl
-│   ├── prompts/
-│   ├── outputs/
-│   └── artifacts/
-├── locks/
-├── logs/
-└── archive/
+??? sessions/<session-id>/
+?   ??? status.json
+?   ??? instructions.md
+?   ??? memory.md
+?   ??? events.jsonl
+?   ??? prompts/
+?   ??? outputs/
+?   ??? artifacts/
+??? locks/
+??? logs/
+??? archive/
 ```
 
 ```bash
-aiw-flow --root D:/aiw-state new \
-  --id BUG-1001-login \
-  --title "Fix login timeout" \
-  --workspace D:/repos/web \
-  --instructions examples/coding-agent-instructions.md
+aiw-flow --root D:/aiw-state new   --id BUG-1001-login   --title "Fix login timeout"   --workspace D:/repos/web   --instructions examples/coding-agent-instructions.md
 ```
 
-`--root` 必须放在子命令之前。`.ai/` 也可能被 aiw 的其他功能使用，团队应统一约定状态文件布局，或为 aiw-flow 指定独立的 `--root`。
+`--root` must appear before the subcommand. The `.ai/` directory may also be used by other aiw features, so the team should standardize the state layout or give `aiw-flow` its own dedicated `--root`.
 
-## Session 生命周期
+## Session Lifecycle
 
 ```text
-new → run → continue（可多次）→ finish → archive
-  └→ loop（可多次交互）
-grill → loop（可选）
-                                      └→ delete
+new -> run -> continue (repeat) -> finish -> archive
+  ?-> loop (interactive, repeatable)
+grill -> loop (optional)
+                                      ?-> delete
 ```
 
-- `new`：登记一个 AI 任务并保存持久化 Instructions。
-- `grill`：创建需求澄清 Session，采集受限的 Workspace 摘要并立即开始第一轮访谈。
-- `run`：执行第一轮 Codex Prompt，创建并记录 Thread ID。
-- `continue`：复用已有 Thread 执行下一阶段。
-- `finish`：将 Session 标记为完成，可生成执行产物。
-- `archive`：归档已完成的 Session。
-- `delete`：删除 aiw-flow 自己保存的 Session 状态。
+- `new`: register a task and save persistent instructions.
+- `grill`: create a requirement-clarification session, collect a limited workspace summary, and start the first interview turn immediately.
+- `run`: execute the first Codex prompt and record the thread ID.
+- `continue`: reuse the existing thread for the next stage.
+- `finish`: mark the session complete and optionally create execution artifacts.
+- `archive`: archive a completed session.
+- `delete`: delete only the session state saved by `aiw-flow`.
 
-## 创建任务：`new`
+## Creating a Task: `new`
 
 ```text
 aiw-flow new --id ID --title TITLE --workspace PATH --instructions FILE
   [--ephemeral] [--loop] [--phase PHASE] [--timeout SECONDS]
 ```
 
-| 参数 | 必填 | 说明 |
+| Parameter | Required | Description |
 | --- | --- | --- |
-| `--id SESSION_ID` | 是 | Session 唯一 ID，例如 `GWJ-1234-order-slip`。只用于标识 AI 任务和状态目录。 |
-| `--title TITLE` | 是 | 任务标题。 |
-| `--workspace PATH` | 是 | 已存在的 AI 执行目录。aiw-flow 不创建、删除、修复或切换 Worktree。 |
-| `--instructions FILE` | 是 | UTF-8 持久化执行规则文件，会保存为 Session 的 `instructions.md`。 |
-| `--ephemeral` | 否 | 标记为临时 AI 任务。 |
-| `--loop` | 否 | 创建 Session 后立即进入交互式 Loop，第一条输入会创建并绑定 Codex Thread。 |
-| `--phase PHASE` | 否 | `--loop` 使用的阶段；未指定时为 `interactive`。 |
-| `--timeout SECONDS` | 否 | Loop 中每一轮 Codex 执行的超时时间。 |
+| `--id SESSION_ID` | Yes | Unique session ID, for example `GWJ-1234-order-slip`. Used only to identify the task and its state directory. |
+| `--title TITLE` | No | Task title. Defaults to the session ID. |
+| `--workspace PATH` | No | Existing AI execution directory. Defaults to the current directory. `aiw-flow` does not create, delete, repair, or switch worktrees. |
+| `--instructions FILE` | No | UTF-8 persistent execution rules file. Defaults to `AGENTS.md`, `instructions.md`, or `README.md` in the workspace or current directory. |
+| `--ephemeral` | No | Mark the task as temporary. |
+| `--loop` | No | Enter the interactive loop immediately after creating the session. The first input will create and bind the Codex thread. |
+| `--phase PHASE` | No | Phase used by `--loop`. Defaults to `interactive`. |
+| `--timeout SECONDS` | No | Timeout for each Codex turn in the loop. |
 
-示例：先由 aiw-wt 准备工作区，再交给 aiw-flow：
+Example: prepare the worktree first, then hand it to `aiw-flow`:
 
 ```bash
 aiw wt add FEAT-204-export main
 
-aiw-flow new \
-  --id FEAT-204-export \
-  --title "Add CSV export" \
-  --workspace .wt/FEAT-204-export \
-  --instructions examples/coding-agent-instructions.md
+aiw-flow new   --id FEAT-204-export   --workspace .wt/FEAT-204-export
 ```
 
-如果不使用 Worktree，也可以直接把已有仓库目录作为工作区：
+If you are not using a worktree, you can point `--workspace` directly at an existing repository:
 
 ```bash
-aiw-flow new \
-  --id BUG-1001-login \
-  --title "Fix login timeout" \
-  --workspace D:/repos/web \
-  --instructions examples/coding-agent-instructions.md
+aiw-flow new   --id BUG-1001-login   --workspace D:/repos/web
 ```
 
-## 需求澄清：`grill`
+Real-world example: if I want to build a generic OAuth2.0 authentication and authorization service, I can organize the task like this:
+
+```bash
+aiw wt add AUTH-200-oauth2 main
+
+aiw-flow new --id AUTH-200-oauth2 --workspace .wt/AUTH-200-oauth2
+
+aiw-flow run AUTH-200-oauth2 --prompt "Design a reusable OAuth2.0 authentication and authorization service. The service should support client registration, authorization code flow, token issuance and refresh, token revocation, scope-based access control, and audit logging. Identify the minimal module boundaries, data model, and API endpoints before implementation."
+```
+
+If you want to clarify the scope before implementation, you can first use `grill` and then move into `run`:
+
+```bash
+aiw-flow grill --id AUTH-200-oauth2 --workspace .wt/AUTH-200-oauth2 --requirement "Build a generic OAuth2.0 authentication and authorization service for multiple client applications."
+```
+
+## Requirement Clarification: `grill`
 
 ```text
 aiw-flow grill --id ID --title TITLE --workspace PATH
@@ -106,127 +110,99 @@ aiw-flow grill --id ID --title TITLE --workspace PATH
   [--timeout SECONDS] [--ephemeral]
 ```
 
-`grill` 使用内置的 Easy English 访谈规则创建普通 aiw-flow Session，并立即启动第一轮 Codex 执行。规则要求 Codex：
+`grill` uses built-in Easy English interview rules to create a normal `aiw-flow` session and immediately start the first Codex turn. The rules ask Codex to:
 
-- 先检查 Workspace，不询问可以从本地文件确认的事实。
-- 每轮最多提出一个需要用户决策的问题。
-- 每个问题同时给出推荐答案和理由。
-- 只有用户明确结束 Grill 时，才输出 `SUCCESS: Ready to execute.` 和最终规格。
-- Grill 阶段只澄清需求，不实现代码。
-
-```bash
-aiw-flow grill \
-  --id FEAT-204-export \
-  --title "Clarify export requirement" \
-  --workspace .wt/FEAT-204-export \
-  --requirement "Add an export workflow for operations users." \
-  --loop
-```
-
-带 `--loop` 时，首轮问题完成后会直接等待回答。不带 `--loop` 时保持单发行为，回答上一轮问题可以继续使用 `continue`：
+- inspect the workspace first and avoid asking about facts that local files already confirm,
+- ask at most one user decision question per turn,
+- provide a recommended answer and a reason for each question,
+- emit `SUCCESS: Ready to execute.` and the final spec only when the user explicitly ends the grill,
+- stay in clarification mode and not implement code.
 
 ```bash
-aiw-flow continue FEAT-204-export \
-  --phase grill \
-  --prompt "CSV is sufficient for the first release."
+aiw-flow grill   --id FEAT-204-export   --workspace .wt/FEAT-204-export   --requirement "Add an export workflow for operations users."   --loop
 ```
 
-首次启动时会生成 `artifacts/workspace-context.md`。该摘要：
+When `--loop` is present, the first question will wait for a reply immediately after it is completed. Without `--loop`, the command remains single-shot, and you can continue the next question with `continue`:
 
-- 只读取明确允许的项目元数据文件，例如 `README.md`、`AGENTS.md`、`go.mod` 和 `pyproject.toml`。
-- 跳过隐藏目录、版本控制目录、依赖目录、缓存和构建目录。
-- 限制目录深度、条目数量、单文件字节数和总字节数。
-- 在保存和发送给 Codex 前，替换常见的密码、Token、Secret 和 API Key 赋值。
-- 不读取 `.env`、私钥或任意业务文件内容。
+```bash
+aiw-flow continue FEAT-204-export   --phase grill   --prompt "CSV is sufficient for the first release."
+```
 
-这些限制用于减少意外暴露，但不是完整的秘密扫描器。不要在允许读取的元数据文件中保存真实凭证。
+The first run creates `artifacts/workspace-context.md`. That summary:
 
-## 执行第一轮：`run`
+- reads only explicitly allowed project metadata files, such as `README.md`, `AGENTS.md`, `go.mod`, and `pyproject.toml`,
+- skips hidden directories, version control directories, dependency directories, caches, and build directories,
+- limits directory depth, entry count, single-file byte count, and total byte count,
+- replaces common passwords, tokens, secrets, and API key assignments before saving and sending to Codex,
+- does not read `.env`, private keys, or arbitrary business files.
+
+These limits reduce accidental exposure, but they are not a full secret scanner. Do not store real credentials in metadata files that are allowed to be read.
+
+## First Turn: `run`
 
 ```text
 aiw-flow run SESSION_ID --phase PHASE [--prompt TEXT] [--prompt-file FILE] [--timeout SECONDS] [--force-new-thread]
 ```
 
-| 参数 | 必填 | 说明 |
+| Parameter | Required | Description |
 | --- | --- | --- |
-| `SESSION_ID` | 是 | `new` 创建的 Session ID。 |
-| `--phase PHASE` | 是 | 阶段名称，例如 `analyze`、`implement`、`fix-tests`。 |
-| `--prompt TEXT` | 否 | 直接提供 Prompt。 |
-| `--prompt-file FILE` | 否 | 从 UTF-8 文件读取 Prompt。 |
-| `--timeout SECONDS` | 否 | 本轮 Codex 执行的超时时间。 |
-| `--force-new-thread` | 否 | 忽略已有 Thread ID，重新创建上下文。仅在原 Thread 不可用时使用。 |
+| `SESSION_ID` | Yes | Session ID created by `new`. |
+| `--phase PHASE` | No | Stage name, such as `analyze`, `implement`, or `fix-tests`. Defaults to the current session phase, or `analyze` if none exists. |
+| `--prompt TEXT` | No | Provide the prompt directly. |
+| `--prompt-file FILE` | No | Read the prompt from a UTF-8 file. |
+| `--timeout SECONDS` | No | Timeout for this Codex turn. |
+| `--force-new-thread` | No | Ignore any existing thread ID and recreate the context. Use only when the original thread is unavailable. |
 
-Prompt 至少需要来自 `--prompt`、`--prompt-file` 或 stdin 之一。多个来源会按命令行、文件、stdin 的顺序拼接：
+The prompt must come from at least one of `--prompt`, `--prompt-file`, or stdin. Multiple sources are concatenated in command-line, file, stdin order:
 
 ```bash
-aiw-flow run BUG-1001-login \
-  --phase analyze \
-  --prompt "Find the root cause and propose a minimal fix."
+aiw-flow run BUG-1001-login   --phase analyze   --prompt "Find the root cause and propose a minimal fix."
 
-aiw-flow run BUG-1001-login \
-  --phase analyze \
-  --prompt-file examples/analyze.md
+aiw-flow run BUG-1001-login   --phase analyze   --prompt-file examples/analyze.md
 
-Get-Content .\task.md | aiw-flow run BUG-1001-login --phase analyze
+Get-Content .	ask.md | aiw-flow run BUG-1001-login --phase analyze
 ```
 
-## 继续任务：`continue`
+## Continuing a Task: `continue`
 
 ```text
 aiw-flow continue SESSION_ID --phase PHASE [--prompt TEXT] [--prompt-file FILE] [--timeout SECONDS]
 ```
 
-`continue` 要求 Session 已经有 Thread ID，不支持重新指定 Thread。推荐按阶段推进：
+`continue` requires a session that already has a thread ID and does not support selecting a different thread. A staged progression looks like this:
 
 ```bash
-aiw-flow run GWJ-1234-order-slip \
-  --phase analyze \
-  --prompt-file examples/analyze.md
+aiw-flow run GWJ-1234-order-slip   --phase analyze   --prompt-file examples/analyze.md
 
-aiw-flow continue GWJ-1234-order-slip \
-  --phase implement \
-  --prompt-file examples/implement.md
+aiw-flow continue GWJ-1234-order-slip   --phase implement   --prompt-file examples/implement.md
 
-aiw-flow continue GWJ-1234-order-slip \
-  --phase fix-tests \
-  --prompt-file examples/fix-tests.md
+aiw-flow continue GWJ-1234-order-slip   --phase fix-tests   --prompt-file examples/fix-tests.md
 ```
 
-每轮发送给 Codex 的内容由四部分组成：持久化 Instructions、Session Memory、阶段名称和当前 Prompt。每轮 Prompt 会保存到 `prompts/`，最终输出保存到 `outputs/`，事件保存到 `events.jsonl`。
+Each turn sent to Codex is composed from four parts: persistent instructions, session memory, the phase name, and the current prompt. Every prompt is saved under `prompts/`, the final output is saved under `outputs/`, and events are saved under `events.jsonl`.
 
-## 交互式 Session：`loop`
+## Interactive Session: `loop`
 
-Loop 是单发命令之外的可选交互外壳：
+Loop is an optional interactive shell on top of single-shot commands:
 
 ```text
 aiw-flow loop SESSION_ID [--phase PHASE] [--timeout SECONDS]
 ```
 
-可以从三种位置进入：
+You can enter it from three places:
 
 ```bash
-# 1. 创建普通 Session 后立即交互；第一条输入执行首轮
-aiw-flow new \
-  --id FEAT-300-refactor \
-  --title "Interactive refactor" \
-  --workspace .wt/FEAT-300-refactor \
-  --instructions examples/coding-agent-instructions.md \
-  --loop \
-  --phase analyze
+# 1. Create a normal session and immediately interact; the first input executes the first turn
+aiw-flow new   --id FEAT-300-refactor   --title "Interactive refactor"   --workspace .wt/FEAT-300-refactor   --instructions examples/coding-agent-instructions.md   --loop   --phase analyze
 
-# 2. 创建 Grill，执行首轮问题后持续交互
-aiw-flow grill \
-  --id FEAT-301-export \
-  --title "Clarify export" \
-  --workspace .wt/FEAT-301-export \
-  --requirement "Add export support." \
-  --loop
+# 2. Create a grill session and keep interacting after the first question
+aiw-flow grill   --id FEAT-301-export   --title "Clarify export"   --workspace .wt/FEAT-301-export   --requirement "Add export support."   --loop
 
-# 3. 恢复已有 Session
+# 3. Resume an existing session
 aiw-flow loop FEAT-301-export --phase grill
 ```
 
-如果 `loop` 没有显式 `--phase`，它会使用 Session 当前阶段；Session 也没有当前阶段时使用 `interactive`。
+If `loop` does not specify `--phase`, it uses the session's current phase. If the session does not have a current phase, it uses `interactive`.
 
 ```text
 Interactive loop for FEAT-301-export (phase: grill). Type /help for commands.
@@ -237,46 +213,46 @@ SUCCESS: Ready to execute.
 ...
 ```
 
-Loop 支持以下本地控制和 Skill 命令。除 `/skill` 与 `/done` 外，本地命令不会执行 Codex Turn：
+Loop supports the following local controls and Skill commands. Except for `/skill` and `/done`, local commands do not execute a Codex turn:
 
-| 命令 | 行为 |
+| Command | Behavior |
 | --- | --- |
-| `/help` | 显示 Loop 帮助。 |
-| `/status` | 显示 Session 状态。 |
-| `/memory` | 显示 Session Memory。 |
-| `/handoff` | 生成 `artifacts/handoff.md`。 |
-| `/fork` | 生成 handoff，以 handoff 作为新 Thread 的业务上下文，执行一次新 Thread 后退出 Loop。 |
-| `/skills` | 按项目和用户作用域列出可发现的 Codex Skills，不执行 Turn。 |
-| `/skill NAME MESSAGE` | 使用 Codex 原生 `$NAME` 语法调用一个已发现的 Skill，并执行一个普通 Turn。 |
-| `/done` | 仅在 `grill` 阶段发送 `Grill Done`，显示最终响应后退出。 |
-| `/exit` | 不发送新 Turn，直接退出。 |
-| `//text` | 发送以 `/` 开头的普通消息，例如 `//review` 会发送 `/review`。 |
+| `/help` | Show loop help. |
+| `/status` | Show session status. |
+| `/memory` | Show session memory. |
+| `/handoff` | Generate `artifacts/handoff.md`. |
+| `/fork` | Generate a handoff, use it as the business context for a new thread, run one new thread, then exit the loop. |
+| `/skills` | List discoverable Codex Skills for the project and user scopes without executing a turn. |
+| `/skill NAME MESSAGE` | Use Codex's native `$NAME` syntax to call a discovered skill and execute one normal turn. |
+| `/done` | Only available in the `grill` phase; sends `Grill Done`, shows the final response, and exits. |
+| `/exit` | Exit immediately without sending a new turn. |
+| `//text` | Send a normal message that starts with `/`, for example `//review` sends `/review`. |
 
-Skill 发现不需要额外配置，候选目录为：
+Skill discovery does not need extra configuration. Candidate directories are:
 
-- 从 Session workspace 到 Git 仓库根目录的各级 `.agents/skills`。
-- Git 仓库根目录的 `.codex/skills`；非 Git workspace 使用 workspace 自身。
-- 用户目录的 `~/.agents/skills`。
-- 有效 Codex Home 下的 `skills`；默认是 `~/.codex/skills`。
+- `.agents/skills` at each level from the session workspace up to the Git repository root,
+- `.codex/skills` at the Git repository root; non-Git workspaces use the workspace itself,
+- `~/.agents/skills` under the user home directory,
+- `skills` under the active Codex home, which defaults to `~/.codex/skills`.
 
-每个候选 Skill 必须是包含 `SKILL.md` 的直接子目录，且 frontmatter 必须提供有效的 `name` 和 `description`。`/skills` 会显示作用域、来源路径、无效候选警告和重名标记。同名 Skill 出现在多个位置时，`/skill` 会报告所有冲突路径并拒绝猜测优先级。
+Every candidate Skill must be a direct child directory containing `SKILL.md`, and its frontmatter must provide valid `name` and `description` fields. `/skills` shows scope, source path, invalid candidate warnings, and duplicate-name markers. When the same skill name appears in multiple locations, `/skill` reports all conflicting paths and refuses to guess priority.
 
 ```text
 You> /skills
 Project Skills:
   metrics-review - Review financial metric definitions.
-    D:\repos\demo\.agents\skills\metrics-review
+    D:epos\demo\.agents\skills\metrics-review
 
 You> /skill metrics-review Review the revenue metrics
 ```
 
-也可以直接输入 Codex 原生调用，例如 `$metrics-review Review the revenue metrics`；aiw-flow 会把它当作普通消息原样发送。`/skill` 不复制、安装或持久激活 Skill，完整 `SKILL.md` 及关联资源仍由 Codex 按需加载。
+You can also enter a Codex-native invocation directly, for example `$metrics-review Review the revenue metrics`; `aiw-flow` treats it as a normal message. `/skill` does not copy, install, or permanently activate a skill; the full `SKILL.md` and linked resources are still loaded on demand by Codex.
 
-空输入会被忽略。EOF、输入等待期间的 `Ctrl+C` 和 `/exit` 都会正常退出，不改变 Session 状态。`running`、`completed`、`archived` 或 `deleted` Session 不能进入 Loop。
+Empty input is ignored. EOF, `Ctrl+C` while waiting for input, and `/exit` all exit normally without changing session state. `running`, `completed`, `archived`, and `deleted` sessions cannot enter the loop.
 
-Loop 保持一个 aiw-flow 进程，但每条普通输入仍通过现有执行路径启动一次 `codex exec`，因此 Thread、Prompt、Output、Event、超时和错误行为与 `run/continue` 一致。当前版本采用单行输入；长 Prompt 仍建议使用单发命令的 `--prompt-file` 或 stdin。
+Loop keeps one `aiw-flow` process alive, but each normal input still goes through the existing execution path and launches a single `codex exec`. Thread, prompt, output, event, timeout, and error behavior therefore match `run` and `continue`. The current version uses single-line input; for long prompts, prefer `--prompt-file` or stdin on the single-shot commands.
 
-## 查看任务状态
+## Inspecting Task State
 
 ### `status`
 
@@ -284,7 +260,7 @@ Loop 保持一个 aiw-flow 进程，但每条普通输入仍通过现有执行�
 aiw-flow status SESSION_ID [--json]
 ```
 
-查看状态、Thread ID、执行阶段、最近退出码、最后输出和错误信息。`--json` 适合脚本或 CI：
+Show status, thread ID, current phase, recent exit code, last output, and error information. `--json` is suitable for scripts or CI.
 
 ```bash
 aiw-flow status GWJ-1234-order-slip
@@ -297,7 +273,7 @@ aiw-flow status GWJ-1234-order-slip --json
 aiw-flow list [--state STATE]
 ```
 
-列出 AI Session，可按状态过滤：
+List AI sessions, optionally filtered by state:
 
 ```bash
 aiw-flow list
@@ -310,11 +286,11 @@ aiw-flow list --state active
 aiw-flow inspect SESSION_ID
 ```
 
-输出完整状态、最近事件和 Memory 摘要，适合排查某轮执行失败或 Thread 未绑定。
+Print the full state, recent events, and a Memory summary. This is useful when investigating a failed turn or an unbound thread.
 
-## Memory 管理
+## Memory Management
 
-Memory 只记录 AI 任务上下文，不管理仓库或分支：
+Memory records only AI task context; it does not manage the repository or branches.
 
 ```text
 aiw-flow memory show SESSION_ID
@@ -323,34 +299,32 @@ aiw-flow memory replace SESSION_ID --file FILE
 ```
 
 ```bash
-aiw-flow memory append BUG-1001-login \
-  --text "Confirmed: timeout occurs only when the refresh token is expired."
+aiw-flow memory append BUG-1001-login   --text "Confirmed: timeout occurs only when the refresh token is expired."
 
 aiw-flow memory show BUG-1001-login
 aiw-flow memory replace BUG-1001-login --file notes/confirmed-findings.md
 ```
 
-## 跨 Session 交接：`handoff`
+## Session Handoff: `handoff`
 
 ```text
 aiw-flow handoff create SESSION_ID [--focus TEXT]
 aiw-flow handoff show SESSION_ID
 ```
 
-`handoff create` 不调用模型。它从 Session 的状态、Memory、最近输出和已有 Artifact 路径生成确定性的 `artifacts/handoff.md`：
+`handoff create` does not call a model. It produces a deterministic `artifacts/handoff.md` from the session state, memory, recent output, and existing artifact paths.
 
 ```bash
-aiw-flow handoff create FEAT-204-export \
-  --focus "Continue from validation and resolve the encoding decision."
+aiw-flow handoff create FEAT-204-export   --focus "Continue from validation and resolve the encoding decision."
 
 aiw-flow handoff show FEAT-204-export
 ```
 
-交接文档包含 Goal、Current State、Confirmed Findings、Decisions、Modified Files、Validation State、Open Issues、Recommended Next Action、Suggested Skills 和 Artifact References。最近输出只保存受限长度的摘录，完整内容仍通过 `outputs/` 路径引用。
+The handoff document includes Goal, Current State, Confirmed Findings, Decisions, Modified Files, Validation State, Open Issues, Recommended Next Action, Suggested Skills, and Artifact References. Only a limited excerpt of the latest output is saved; the full content is still referenced through the `outputs/` path.
 
-Handoff 写入使用 Session 锁和原子替换，因此不需要依赖系统临时目录或 `next-agent` shell 函数，也不会误读其他 Workspace 的“最新文件”。
+Handoff writes use session locks and atomic replacement, so they do not depend on a system temp directory or a `next-agent` shell function, and they do not accidentally read another workspace's "latest file".
 
-## 完成与归档
+## Completion and Archiving
 
 ```text
 aiw-flow finish SESSION_ID [--create-patch]
@@ -358,21 +332,21 @@ aiw-flow archive SESSION_ID
 aiw-flow delete SESSION_ID --yes
 ```
 
-`finish` 标记 AI 任务完成；`--create-patch` 只生成当前工作区的审查产物，不创建或清理 Worktree。Git 分支和 Worktree 的清理由 aiw-wt 负责：
+`finish` marks the task complete. `--create-patch` only generates review artifacts from the current workspace; it does not create or clean worktrees. Git branch and worktree cleanup is handled by `aiw-wt`:
 
 ```bash
 aiw-flow finish FEAT-204-export --create-patch
 aiw archive FEAT-204-export --cleanup-wt --delete-branch
 ```
 
-`delete` 只删除 aiw-flow 的 Session 状态，不删除 Workspace、分支或 Worktree。
+`delete` removes only `aiw-flow` session state; it does not delete the workspace, branch, or worktree.
 
-## 配置文件
+## Configuration File
 
-全局配置文件位于：
+The global configuration file is located at:
 
-- Windows：`%APPDATA%\aiw-flow\config.toml`
-- Linux/macOS：`$XDG_CONFIG_HOME/aiw-flow/config.toml`，未设置时为 `~/.config/aiw-flow/config.toml`
+- Windows: `%APPDATA%iw-flow\config.toml`
+- Linux/macOS: `$XDG_CONFIG_HOME/aiw-flow/config.toml`, or `~/.config/aiw-flow/config.toml` when unset.
 
 ```toml
 model = "gpt-5-codex"
@@ -382,17 +356,17 @@ codex_home = "D:/codex-home"
 additional_codex_args = ["--color", "never"]
 ```
 
-## 安全约束
+## Security Constraints
 
-- aiw-flow 不执行 `commit`、`push`、`git reset --hard` 或 `git clean -fd`。
-- 不使用 `shell=True`，Codex 命令参数以参数数组传递。
-- 不要把 API Key、密码等秘密写入 Instructions、Prompt、Memory 或事件日志。
-- 并行 AI 任务应由 aiw-wt 提供独立 Workspace，然后为每个 Workspace 创建独立 Session。
+- `aiw-flow` does not run `commit`, `push`, `git reset --hard`, or `git clean -fd`.
+- It does not use `shell=True`; Codex command arguments are passed as arrays.
+- Do not write API keys, passwords, or other secrets into instructions, prompts, memory, or event logs.
+- Parallel AI tasks should use `aiw-wt` to create independent workspaces and then create one session per workspace.
 
-## 测试
+## Testing
 
 ```bash
 python -m pytest
 ```
 
-测试不要求真实 Codex 安装，后端执行会使用 fake backend 或 mock process。
+The tests do not require a real Codex installation. The backend uses a fake backend or a mock process.

@@ -24,7 +24,7 @@ META = {
         {'flag': 'blame', 'description': 'Show line-by-line attribution for one file.'},
         {'flag': 'file-at', 'description': 'Show one file as it existed at a revision.'},
         {'flag': 'lines', 'description': 'Track a line range or function with git log -L.'},
-        {'flag': '<view>', 'description': 'Other views: conflicts, log, status, unpulled, unpushed, whatchanged.'},
+        {'flag': '<view>', 'description': 'Other views: commit-files, conflicts, log, status, unpulled, unpushed, whatchanged.'},
     ],
     'examples': [
         'aiw git show status',
@@ -34,6 +34,7 @@ META = {
         'aiw git show file-at HEAD~3 README.md',
         'aiw git show lines 10,30 src/App.java',
         'aiw git show lines :main src/main.py',
+        'aiw git show commit-files HEAD~1',
         'aiw git show conflicts --check',
     ],
 }
@@ -248,6 +249,33 @@ META_LINES = {
 }
 
 
+# --- Subcommand: commit-files ---
+META_COMMIT_FILES = {
+    'name': 'commit-files',
+    'short': 'List files changed by one commit.',
+    'usage': 'commit-files [--names] [--root] [<revision>]',
+    'args': [
+        {'flag': '--names', 'description': 'Show paths only, without change status.'},
+        {'flag': '--root', 'description': 'Include files introduced by an initial commit.'},
+        {'flag': '<revision>', 'description': 'Commit to inspect; defaults to HEAD.'},
+    ],
+    'examples': ['commit-files', 'commit-files HEAD~1', 'commit-files --names HEAD'],
+}
+
+def cmd_commit_files(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_COMMIT_FILES)
+        return 0
+    names_only = '--names' in argv
+    include_root = '--root' in argv
+    positional = [arg for arg in argv if not arg.startswith('-')]
+    if len(positional) > 1 or any(arg.startswith('-') and arg not in {'--names', '--root'} for arg in argv):
+        return usage_error(META_COMMIT_FILES, 'invalid commit-files arguments')
+    command = ['git', 'diff-tree', '--no-commit-id', '--name-only' if names_only else '--name-status', '-r']
+    if include_root:
+        command.append('--root')
+    command.append(positional[0] if positional else 'HEAD')
+    return core.run_cmd(command)
 def cmd_lines(argv):
     if any(f in argv for f in {'-h', '--help'}):
         core.print_help_meta(META_LINES)
@@ -336,6 +364,7 @@ def cmd_whatchanged(argv):
 
 SUBCOMMANDS = {
     'blame': cmd_blame,
+    'commit-files': cmd_commit_files,
     'conflicts': cmd_conflicts,
     'file': cmd_file,
     'file-at': cmd_file_at,

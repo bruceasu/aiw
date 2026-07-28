@@ -216,7 +216,14 @@ func archiveTask(id string, opts ArchiveOptions) error {
 		}
 	}
 
-	dst := filepath.Join(taskx.ArchiveDir, taskx.Today()+"-"+id)
+	if err := syncSpecSnapshots(src, meta.Specs); err != nil {
+		return err
+	}
+
+	dst := taskx.ArchiveTaskDir(taskx.Today() + "-" + id)
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return err
+	}
 	if err := os.Rename(src, dst); err != nil {
 		return err
 	}
@@ -317,4 +324,111 @@ func safeID(s string) bool {
 
 func writeRegistry() error {
 	return taskx.WriteRegistry()
+}
+
+func syncSpecSnapshots(taskDir string, specIDs []string) error {
+	if len(specIDs) == 0 {
+		return nil
+	}
+
+	for _, specID := range specIDs {
+		sourceRoot := filepath.Join(taskDir, "specs", specID)
+		if !fsx.Exists(sourceRoot) {
+			continue
+		}
+		targetPath, err := resolveSpecTargetPath(specID, sourceRoot)
+		if err != nil {
+			return err
+		}
+		if targetPath == "" {
+			continue
+		}
+		if err := mergeSpecFile(targetPath, filepath.Join(sourceRoot, "spec.md"), specID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func resolveSpecTargetPath(specID, sourceRoot string) (string, error) {
+	category, ok := specCategoryForID(specID, sourceRoot)
+	if !ok {
+		return "", nil
+	}
+	targetDir := filepath.Join(taskx.SpecsDir, category)
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
+		return "", err
+	}
+	return filepath.Join(targetDir, "spec.md"), nil
+}
+
+func specCategoryForID(specID, sourceRoot string) (string, bool) {
+	lowered := strings.ToLower(specID)
+	switch {
+	case strings.Contains(lowered, "file-operation"), strings.Contains(lowered, "file-operations"):
+		return "ai-support", true
+	case strings.Contains(lowered, "workflow"), strings.Contains(lowered, "session"), strings.Contains(lowered, "grill"), strings.Contains(lowered, "task-agent"), strings.Contains(lowered, "handoff"):
+		return "ai-support", true
+	case strings.Contains(lowered, "plugin"), strings.Contains(lowered, "github"), strings.Contains(lowered, "patch"):
+		return "plugins", true
+	case strings.Contains(lowered, "skill"), strings.Contains(lowered, "capability"):
+		return "capabilities", true
+	}
+
+	specPath := filepath.Join(sourceRoot, "spec.md")
+	b, err := os.ReadFile(specPath)
+	if err != nil {
+		return "", false
+	}
+	text := strings.ToLower(string(b))
+	switch {
+	case strings.Contains(text, "github"), strings.Contains(text, "plugin"), strings.Contains(text, "python"):
+		return "plugins", true
+	case strings.Contains(text, "skill"), strings.Contains(text, "capabilit"):
+		return "capabilities", true
+	case strings.Contains(text, "session"), strings.Contains(text, "workflow"), strings.Contains(text, "handoff"), strings.Contains(text, "grill"):
+		return "ai-support", true
+	default:
+		return "workflow", true
+	}
+}
+
+func mergeSpecFile(targetPath, sourcePath, specID string) error {
+	source, err := os.ReadFile(sourcePath)
+	if err != nil {
+		return err
+	}
+	sourceText := strings.TrimSpace(string(source))
+	if sourceText == "" {
+		return nil
+	}
+	var targetText string
+	if fsx.Exists(targetPath) {
+		b, err := os.ReadFile(targetPath)
+		if err != nil {
+			return err
+		}
+		targetText = string(b)
+	}
+	merged := mergeSpecContent(targetText, sourceText, specID)
+	if merged == targetText {
+		return nil
+	}
+	return os.WriteFile(targetPath, []byte(merged), 0o644)
+}
+
+func mergeSpecContent(existing, incoming, specID string) string {
+	marker := "<!-- archived spec: " + specID + " -->"
+	if strings.Contains(existing, marker) {
+		return existing
+	}
+	block := marker + "\n\n" + strings.TrimSpace(incoming) + "\n"
+	trimmed := strings.TrimSpace(existing)
+	if trimmed == "" {
+		return block
+	}
+	if !strings.HasSuffix(trimmed, "\n") {
+		trimmed += "\n"
+	}
+	return trimmed + "\n" + block
 }

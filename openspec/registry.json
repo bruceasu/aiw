@@ -1,14 +1,14 @@
 {
   "changes": [
     {
-      "id": "-h",
-      "status": "TODO",
-      "branch": "feature/-h",
-      "worktree": ".wt/-h",
-      "path": "openspec/changes/-h",
-      "updated_at": "2026-06-26"
+      "id": "patch",
+      "status": "UNKNOWN",
+      "branch": "",
+      "worktree": "",
+      "path": "openspec/changes/patch",
+      "updated_at": "2026-07-29"
     }
   ],
-  "updated": "2026-06-26T15:30:27+09:00",
+  "updated": "2026-07-29T02:17:58+09:00",
   "version": "1"
 }

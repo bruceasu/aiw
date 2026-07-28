@@ -26,10 +26,40 @@ from codex_flow.workspace_manager import WorkspaceManager
 
 
 HELP_FORMATTER = argparse.RawDescriptionHelpFormatter
+DEFAULT_INSTRUCTION_FILENAMES = ("AGENTS.md", "instructions.md", "README.md")
 
 
 def _examples(*commands: str) -> str:
     return "Examples:\n{}".format("\n".join("  {}".format(command) for command in commands))
+
+
+def _resolve_workspace(workspace: Optional[Path]) -> Path:
+    return (workspace or Path.cwd()).resolve()
+
+
+def _resolve_title(session_id: str, title: Optional[str]) -> str:
+    normalized = (title or "").strip()
+    return normalized if normalized else session_id
+
+
+def _resolve_instructions_path(instructions: Optional[Path], workspace: Path) -> Path:
+    if instructions is not None:
+        return instructions
+    candidates = [workspace / name for name in DEFAULT_INSTRUCTION_FILENAMES]
+    candidates.extend(Path.cwd() / name for name in DEFAULT_INSTRUCTION_FILENAMES)
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    raise SystemExit(
+        "Instructions file is required. Provide --instructions or create one of: {} in the workspace or current directory.".format(
+            ", ".join(DEFAULT_INSTRUCTION_FILENAMES)
+        )
+    )
+
+
+def _resolve_phase(phase: Optional[str], *, default: str) -> str:
+    normalized = (phase or "").strip()
+    return normalized if normalized else default
 
 
 def _add_command(
@@ -106,20 +136,18 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     new_parser.add_argument("--id", required=True, metavar="SESSION_ID", help="Unique Session ID, such as TASK-123.")
-    new_parser.add_argument("--title", required=True, metavar="TEXT", help="Short human-readable task title.")
+    new_parser.add_argument("--title", metavar="TEXT", help="Short human-readable task title. Defaults to the Session ID.")
     new_parser.add_argument(
         "--workspace",
         type=Path,
-        required=True,
         metavar="PATH",
-        help="Existing directory where Codex will work. aiw-flow does not create a worktree.",
+        help="Existing directory where Codex will work. Defaults to the current directory.",
     )
     new_parser.add_argument(
         "--instructions",
         type=Path,
-        required=True,
         metavar="FILE",
-        help="UTF-8 file with persistent rules for every turn.",
+        help="UTF-8 file with persistent rules for every turn. Defaults to AGENTS.md, instructions.md, or README.md in the workspace or current directory.",
     )
     new_parser.add_argument("--ephemeral", action="store_true", help="Ask Codex to use an ephemeral execution mode.")
     new_parser.add_argument("--loop", action="store_true", help="Enter the interactive loop after creating the Session.")
@@ -152,13 +180,12 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     grill_parser.add_argument("--id", required=True, metavar="SESSION_ID", help="Unique Session ID for the interview.")
-    grill_parser.add_argument("--title", required=True, metavar="TEXT", help="Short title for the requirement.")
+    grill_parser.add_argument("--title", metavar="TEXT", help="Short title for the requirement. Defaults to the Session ID.")
     grill_parser.add_argument(
         "--workspace",
         type=Path,
-        required=True,
         metavar="PATH",
-        help="Existing workspace to inspect for project context.",
+        help="Existing workspace to inspect for project context. Defaults to the current directory.",
     )
     requirement_group = grill_parser.add_mutually_exclusive_group(required=True)
     requirement_group.add_argument("--requirement", metavar="TEXT", help="Requirement text written on the command line.")
@@ -491,11 +518,12 @@ def cmd_new(
     config: AppConfig,
 ) -> int:
     validate_session_id(args.id)
-    instructions_text = args.instructions.read_text(encoding="utf-8")
-    workspace = WorkspaceManager().ensure_existing_directory(args.workspace.resolve())
+    workspace = WorkspaceManager().ensure_existing_directory(_resolve_workspace(args.workspace))
+    instructions_path = _resolve_instructions_path(args.instructions, workspace)
+    instructions_text = instructions_path.read_text(encoding="utf-8")
     request = CreateSessionRequest(
         session_id=args.id,
-        title=args.title,
+        title=_resolve_title(args.id, args.title),
         instructions_text=instructions_text,
         workspace_path=workspace,
         codex_config=config,
@@ -509,11 +537,11 @@ def cmd_new(
 async def cmd_grill(args: argparse.Namespace, store: SessionStore, config: AppConfig) -> int:
     validate_session_id(args.id)
     requirement = _load_grill_requirement(args.requirement, args.requirement_file)
-    workspace = WorkspaceManager().ensure_existing_directory(args.workspace.resolve())
+    workspace = WorkspaceManager().ensure_existing_directory(_resolve_workspace(args.workspace))
     workspace_context = collect_workspace_context(workspace)
     request = CreateSessionRequest(
         session_id=args.id,
-        title=args.title,
+        title=_resolve_title(args.id, args.title),
         instructions_text=GRILL_INSTRUCTIONS,
         workspace_path=workspace,
         codex_config=config,
@@ -710,6 +738,7 @@ async def cmd_run(args: argparse.Namespace, store: SessionStore, *, force_new_th
     status = store.load_status(args.session_id)
     if status.codex.thread_id and not force_new_thread:
         raise SystemExit("Session already has thread_id. Use continue or --force-new-thread.")
+    args.phase = _resolve_phase(args.phase, default=status.execution.current_phase or "analyze")
     return await _execute_turn(args, store, allow_missing_thread=True, reset_thread=force_new_thread)
 
 
@@ -717,6 +746,7 @@ async def cmd_continue(args: argparse.Namespace, store: SessionStore) -> int:
     status = store.load_status(args.session_id)
     if not status.codex.thread_id:
         raise SystemExit("Session has no thread_id. Run the first turn with `run`.")
+    args.phase = _resolve_phase(args.phase, default=status.execution.current_phase or "interactive")
     return await _execute_turn(args, store, allow_missing_thread=False, reset_thread=False)
 
 

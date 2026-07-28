@@ -74,3 +74,12 @@ A task is not done until:
 - relevant tests or checks are updated when needed
 - validation has been run, or limits are stated clearly
 - prompt and doc changes stay aligned
+
+## AIW Capability Discovery
+
+Before using an unfamiliar or mutating AIW tool, inspect docs/agents/aiw-tools.md and runtime discovery:
+
+- aiw help --json
+- aiw plugin list --json
+
+Prefer aiw file for text file operations and aiw patch for AI-generated code changes. Runtime metadata is authoritative; do not depend on absolute plugin paths.
