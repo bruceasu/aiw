@@ -410,7 +410,7 @@ func builtinUsageText(name string) (string, bool) {
 	case "prompts":
 		return "usage: aiw prompts [list|<template>] [--merge] [--force]\n", true
 	case "task":
-		return "usage: aiw task agent <next|status> <task-id>\n", true
+		return "usage: aiw task agent <next|status> <task-id> [--handoff PATH] [--takeover] [--yes]\n", true
 	default:
 		return "", false
 	}
