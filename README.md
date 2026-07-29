@@ -110,17 +110,33 @@ Configure a specific executable with `AIW_OPENSPEC_BIN`.
 
 ## Sequential agent handoff
 
-`aiw task agent next <task-id>` is an auxiliary orchestration command for a
-task. The task metadata must bind an AIW-managed session and worktree:
+`aiw task agent next <task-id>` consumes a handoff and starts the next agent.
+If the Task already exists, its Session, branch, and worktree are reused. If it
+does not exist, AIW creates them from a handoff:
+
+```text
+handoff -> Task -> Session -> branch/worktree -> fresh Thread
+```
+
+Usage:
+
+```text
+aiw task agent next <task-id> [--handoff PATH] [--takeover] [--yes]
+```
+
+An existing Task normally needs metadata like:
 
 ```toml
 session = "TASK-123"
 worktree = ".wt/TASK-123"
 ```
 
-The command acquires a per-task lease, creates `artifacts/handoff.md`, and
-starts a new Codex Thread in the same worktree. Lineage is recorded in
-`openspec/changes/<task-id>/agent-lineage.json`.
+The command acquires a per-task lease, resolves handoff sources in the order
+`--handoff`, Task artifact, and Session artifact, and starts a fresh Codex
+Thread. New Tasks copy the handoff into their own `artifacts/handoff.md`.
+Lineage is recorded in `openspec/changes/<task-id>/agent-lineage.json`.
+Running Sessions are refused unless `--takeover` is explicit. Invalid Task IDs
+require confirmation with `--yes` and an interactive `y` response.
 Use `aiw task agent status <task-id>` to inspect the recorded parent/child
 Thread transition.
 
