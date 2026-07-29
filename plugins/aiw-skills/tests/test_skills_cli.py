@@ -631,6 +631,77 @@ class SkillsCliTests(unittest.TestCase):
                 (project / ".agents" / "skills" / ".aiw-skills.json").exists()
             )
 
+    def test_discover_reports_managed_and_unmanaged_skills(self):
+        with TemporaryDirectory() as temp_dir:
+            _, source, project = make_workspace(temp_dir)
+            write_skill(source, "managed-skill", "Install first.")
+            write_skill(source, "unmanaged-skill", "Leave unmanaged.")
+
+            managed_result = self.run_cli(project, source, "install", "managed-skill")
+            self.assertEqual(managed_result.returncode, 0, managed_result.stderr)
+
+            unmanaged_dir = project / ".agents" / "skills" / "unmanaged-skill"
+            unmanaged_dir.mkdir(parents=True)
+            (unmanaged_dir / "SKILL.md").write_text(
+                "---\nname: unmanaged-skill\ndescription: \"Leave unmanaged.\"\n---\n",
+                encoding="utf-8",
+            )
+
+            result = self.run_cli(project, source, "discover", "--json")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["action"], "discover")
+            self.assertEqual(
+                {skill["name"]: skill["status"] for skill in payload["skills"]},
+                {
+                    "managed-skill": "managed",
+                    "unmanaged-skill": "unmanaged",
+                },
+            )
+
+    def test_discover_json_is_one_machine_readable_result(self):
+        with TemporaryDirectory() as temp_dir:
+            _, source, project = make_workspace(temp_dir)
+            write_skill(source, "discover-json", "Discover as JSON.")
+
+            install = self.run_cli(project, source, "install", "discover-json")
+            self.assertEqual(install.returncode, 0, install.stderr)
+
+            result = self.run_cli(project, source, "discover", "--json")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stderr, "")
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["action"], "discover")
+            self.assertEqual(payload["root"], str(project / ".agents" / "skills"))
+            self.assertEqual(payload["issues"], [])
+            self.assertEqual(len(payload["skills"]), 1)
+            self.assertEqual(payload["skills"][0]["name"], "discover-json")
+            self.assertEqual(payload["skills"][0]["status"], "managed")
+            self.assertRegex(payload["skills"][0]["sha256"], r"^[0-9a-f]{64}$")
+
+    def test_adopt_records_existing_unmanaged_skill(self):
+        with TemporaryDirectory() as temp_dir:
+            _, source, project = make_workspace(temp_dir)
+            write_skill(source, "ask-matt", "Adopt this Skill.")
+            destination = project / ".agents" / "skills" / "ask-matt"
+            destination.mkdir(parents=True)
+            (destination / "SKILL.md").write_text(
+                "---\nname: ask-matt\ndescription: \"Adopt this Skill.\"\n---\n",
+                encoding="utf-8",
+            )
+
+            adopt = self.run_cli(project, source, "adopt", "--json")
+            self.assertEqual(adopt.returncode, 0, adopt.stderr)
+            adopt_payload = json.loads(adopt.stdout)
+            self.assertEqual(adopt_payload["adopted"], ["ask-matt"])
+            self.assertTrue((project / ".agents" / "skills" / ".aiw-skills.json").exists())
+
+            reinstall = self.run_cli(project, source, "install", "ask-matt")
+            self.assertEqual(reinstall.returncode, 0, reinstall.stderr)
+            self.assertIn("Installed ask-matt", reinstall.stdout)
+
     def test_install_preserves_unmanaged_dangling_destination_symlink(self):
         with TemporaryDirectory() as temp_dir:
             base, source, project = make_workspace(temp_dir)
@@ -687,7 +758,7 @@ class SkillsCliTests(unittest.TestCase):
             self.assertEqual(manifest_path.read_bytes(), manifest_bytes)
             self.assertEqual(manifest_path.stat().st_mtime_ns, manifest_mtime)
 
-    def test_changed_managed_install_is_not_overwritten(self):
+    def test_changed_managed_install_can_be_reinstalled(self):
         with TemporaryDirectory() as temp_dir:
             _, source, project = make_workspace(temp_dir)
             write_skill(source, "changed-skill", "Protect local changes.")
@@ -700,9 +771,40 @@ class SkillsCliTests(unittest.TestCase):
 
             second = self.run_cli(project, source, "install", "changed-skill")
 
-            self.assertEqual(second.returncode, 1)
-            self.assertIn("differs from its managed record", second.stderr)
-            self.assertEqual(installed.read_text(encoding="utf-8"), "local change")
+            self.assertEqual(second.returncode, 0, second.stderr)
+            self.assertIn("Installed changed-skill", second.stdout)
+            self.assertFalse(installed.exists())
+
+    def test_sync_requires_managed_destination_and_republishes_content(self):
+        with TemporaryDirectory() as temp_dir:
+            _, source, project = make_workspace(temp_dir)
+            skill = write_skill(source, "sync-skill", "Republish me.")
+
+            install = self.run_cli(project, source, "install", "sync-skill")
+            self.assertEqual(install.returncode, 0, install.stderr)
+
+            changed = project / ".agents" / "skills" / "sync-skill" / "local.txt"
+            changed.write_text("local change", encoding="utf-8")
+
+            sync = self.run_cli(project, source, "sync", "sync-skill")
+            self.assertEqual(sync.returncode, 0, sync.stderr)
+            self.assertIn("Installed sync-skill", sync.stdout)
+            self.assertFalse(changed.exists())
+            self.assertEqual(
+                (project / ".agents" / "skills" / "sync-skill" / "SKILL.md").read_text(
+                    encoding="utf-8"
+                ),
+                (skill / "SKILL.md").read_text(encoding="utf-8"),
+            )
+
+            sync_json = self.run_cli(project, source, "sync", "sync-skill", "--json")
+            self.assertEqual(sync_json.returncode, 0, sync_json.stderr)
+            self.assertEqual(sync_json.stderr, "")
+            payload = json.loads(sync_json.stdout)
+            self.assertEqual(payload["action"], "install")
+            self.assertEqual(payload["status"], "installed")
+            self.assertEqual(payload["name"], "sync-skill")
+            self.assertRegex(payload["sha256"], r"^[0-9a-f]{64}$")
 
     def test_list_json_is_one_machine_readable_result(self):
         with TemporaryDirectory() as temp_dir:

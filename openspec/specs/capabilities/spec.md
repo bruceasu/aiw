@@ -317,6 +317,12 @@ project's `.agents/skills` directory when no scope or target is specified.
 - **WHEN** the user names a Skill that is not in the valid canonical catalog
 - **THEN** the command fails without creating the destination root or manifest
 
+#### Scenario: Reinstall a managed Skill
+- **WHEN** the destination already exists and has a matching managed manifest
+  entry
+- **THEN** the command republishes the selected canonical source to the managed
+  destination and refreshes the manifest entry
+
 ### Requirement: Validate before writing
 The system MUST validate required Skill metadata and all copyable source
 entries before it changes the destination.
@@ -380,6 +386,39 @@ matching managed manifest entry.
 - **WHEN** the destination, source, and managed manifest all have the same
   digest
 - **THEN** the command succeeds as an idempotent no-op without rewriting files
+
+### Requirement: Adopt existing installed Skills
+The system SHALL record a valid existing Skill directory under
+`.agents/skills` as AIW-managed without changing the directory content.
+
+#### Scenario: Adopt a valid installed Skill
+- **WHEN** the user adopts an installed Skill directory that contains valid
+  Skill metadata and copyable filesystem entries
+- **THEN** the system writes a managed manifest entry for that Skill and leaves
+  the directory content unchanged
+
+### Requirement: Discover installed Skills
+The system SHALL provide a discovery command that reports installed Skills and
+their managed status without modifying the filesystem.
+
+#### Scenario: Report installed status
+- **WHEN** the user runs the discovery command
+- **THEN** the system reports each installed Skill as managed or unmanaged
+
+### Requirement: Synchronize a managed Skill
+The system SHALL provide a sync behavior that republishes the canonical source
+for a managed Skill into its destination and updates the managed digest.
+
+#### Scenario: Sync a managed Skill after source changes
+- **WHEN** the canonical source for a managed Skill has changed since the last
+  installation
+- **THEN** the sync operation replaces the managed destination with the new
+  source content and records the new digest
+
+#### Scenario: Reject sync for unmanaged destinations
+- **WHEN** a same-name destination exists without a matching managed manifest
+  entry
+- **THEN** the sync operation fails without modifying the destination
 
 ### Requirement: Provide script-stable command results
 The system SHALL provide human-readable results by default, one structured JSON

@@ -1,22 +1,14 @@
 {
+  "version": "1",
+  "updated": "2026-07-30T01:54:32.026707+09:00",
   "changes": [
     {
-      "id": "openspec-backend-routing",
-      "status": "UNKNOWN",
-      "branch": "",
-      "worktree": "",
-      "path": "openspec/changes/openspec-backend-routing",
-      "updated_at": "2026-07-29"
-    },
-    {
-      "id": "task-agent-next",
-      "status": "UNKNOWN",
-      "branch": "",
-      "worktree": "",
-      "path": "openspec/changes/task-agent-next",
-      "updated_at": "2026-07-29"
+      "id": "2026-07-30-task-agent-next-autocreate",
+      "status": "TODO",
+      "branch": "feature/2026-07-30-task-agent-next-autocreate",
+      "worktree": ".wt/2026-07-30-task-agent-next-autocreate",
+      "path": "D:/03_projects/aiw/openspec/changes/2026-07-30-task-agent-next-autocreate",
+      "updated_at": "2026-07-30"
     }
-  ],
-  "updated": "2026-07-29T19:20:49+09:00",
-  "version": "1"
+  ]
 }

@@ -1,16 +1,17 @@
 # aiw skills
 
-Use `aiw skills` to list and safely install canonical AIW Skills.
+Use `aiw skills` to list, discover, adopt, and safely install canonical AIW Skills.
 
-This first release installs one Portable Skill at a time. It always uses the
-current project and the standard `.agents/skills` target. User scope,
-Codex-specific targets, bundles, updates, removal, and links are separate
-follow-up features.
+This release installs one Portable Skill at a time. It always uses the current
+project and the standard `.agents/skills` target. Managed reinstall, adoption,
+and discovery are supported; user scope, Codex-specific targets, removal, and
+links are separate follow-up features.
 
 ## Quick start
 
 ```text
 aiw skills list
+aiw skills discover
 aiw skills install tdd --dry-run
 aiw skills install tdd
 ```
@@ -20,6 +21,7 @@ aiw skills install tdd
 ```text
 aiw skills --help
 aiw skills list --help
+aiw skills discover --help
 aiw skills install --help
 ```
 
@@ -35,6 +37,26 @@ aiw skills list --json
 
 `list` reads canonical Skill metadata and does not change the project. Invalid
 candidates are reported but are not listed as installable.
+
+## Discover installed Skills
+
+```text
+aiw skills discover
+aiw skills discover --json
+```
+
+`discover` inspects `.agents/skills` and reports which installed Skills are
+already managed by AIW and which are unmanaged.
+
+## Adopt existing Skills
+
+```text
+aiw skills adopt
+```
+
+`adopt` writes a managed manifest for valid existing Skill directories under
+`.agents/skills`. Use this before reinstalling Skills that already exist but
+are currently unmanaged.
 
 ## Preview an installation
 
@@ -64,9 +86,10 @@ The managed manifest is `.agents/skills/.aiw-skills.json`. It records schema
 version, source identity, source revision when available, copy mode, and the
 SHA-256 content digest.
 
-An existing same-name directory is never replaced unless it is already an
-identical AIW-managed copy. Reinstalling an identical managed Skill is a
-successful no-op.
+An unmanaged same-name directory is protected and will not be replaced by
+default. An already managed Skill may be republished from canonical source,
+which makes reinstall and upgrade flows possible. Reinstalling an identical
+managed Skill is a successful no-op.
 
 ## Canonical source
 
@@ -80,7 +103,8 @@ instructions and executable scripts.
 
 ## Exit behavior
 
-- `0`: the command succeeded, including dry-run and idempotent reinstall.
+- `0`: the command succeeded, including dry-run, adoption, sync, and
+  idempotent reinstall.
 - `1`: an operational error occurred, such as an unknown Skill or protected
   destination.
 - `2`: command syntax was invalid.

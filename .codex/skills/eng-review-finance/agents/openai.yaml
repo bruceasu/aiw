@@ -1,0 +1,3 @@
+interface:
+  display_name: "Engineering Review Finance"
+  short_description: "Read-only architecture and engineering review for financial admin platforms, operations systems, analytics dashboards, reporting systems, and data pipelines. Emits a structured ENG_REVIEW.md covering boundaries, data flow, permissions, audit, failure modes, observability, and testing. Does not write code."

@@ -25,6 +25,7 @@ FRONTMATTER_RE = re.compile(
 )
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 WORK_MANAGEMENT_REFERENCE = "skills/work-management.md"
+MANAGED_SOURCE_IDENTITY = "<adopted-from-installed>"
 
 
 @dataclass(frozen=True)
@@ -180,6 +181,15 @@ def skill_mentions_work_management(skill_dir: Path) -> bool:
 
 def repository_work_management_path() -> Path:
     return Path(__file__).resolve().parents[2] / "skills" / "work-management.md"
+
+
+def destination_root() -> Path:
+    return Path.cwd() / ".agents" / "skills"
+
+
+def manifest_path(root: Optional[Path] = None) -> Path:
+    base = root if root is not None else destination_root()
+    return base / ".aiw-skills.json"
 
 
 def materialize_skill_source(skill: Skill, temp_root: Path) -> Path:
@@ -375,6 +385,55 @@ def load_manifest(path: Path) -> Dict[str, object]:
     return cast(Dict[str, object], data)
 
 
+def is_managed_record(record: object) -> bool:
+    return isinstance(record, dict) and record.get("mode") == "copy" and isinstance(record.get("sha256"), str)
+
+
+def discover_installed_skill_dirs(root: Path) -> List[Path]:
+    if not root.is_dir():
+        return []
+    candidates: List[Path] = []
+    for child in sorted(root.iterdir(), key=lambda entry: entry.name.lower()):
+        if child.name == ".aiw-skills.json":
+            continue
+        if child.is_dir() and find_skill_md(child):
+            candidates.append(child)
+    return candidates
+
+
+def manifest_entry_for_directory(skill_dir: Path) -> Dict[str, object]:
+    validate_skill_dir(skill_dir)
+    return {
+        "mode": "copy",
+        "sha256": directory_digest(skill_dir),
+        "source_identity": MANAGED_SOURCE_IDENTITY,
+        "source_revision": None,
+    }
+
+
+def load_skill_statuses(root: Path) -> Tuple[List[Dict[str, object]], List[str]]:
+    manifest = load_manifest(manifest_path(root))
+    managed_skills = cast(Dict[str, object], manifest["skills"])
+    statuses: List[Dict[str, object]] = []
+    issues: List[str] = []
+    for skill_dir in discover_installed_skill_dirs(root):
+        try:
+            skill = validate_skill_dir(skill_dir)
+            record = managed_skills.get(skill.name)
+            statuses.append(
+                {
+                    "name": skill.name,
+                    "path": str(skill_dir),
+                    "sha256": directory_digest(skill_dir),
+                    "status": "managed" if is_managed_record(record) else "unmanaged",
+                }
+            )
+        except (OSError, UnicodeError, SkillError) as exc:
+            issues.append("{}: {}".format(skill_dir, exc))
+    statuses.sort(key=lambda item: cast(str, item["name"]))
+    return statuses, issues
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="aiw skills",
@@ -409,6 +468,71 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     list_command.add_argument(
+        "--json",
+        action="store_true",
+        help="Write one machine-readable JSON result.",
+    )
+
+    discover = commands.add_parser(
+        "discover",
+        help="Inspect installed Skills under ./.agents/skills without changing them.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Inspect installed Skills under ./.agents/skills without changing them.\n\n"
+            "Use this when you want to see which local Skills are already managed, "
+            "which are unmanaged, and which ones can be adopted."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  aiw skills discover\n"
+            "  aiw skills discover --json"
+        ),
+    )
+    discover.add_argument(
+        "--json",
+        action="store_true",
+        help="Write one machine-readable JSON result.",
+    )
+
+    adopt = commands.add_parser(
+        "adopt",
+        help="Record existing installed Skills as AIW-managed copies.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Record existing installed Skills as AIW-managed copies.\n\n"
+            "Use this when a same-name Skill already exists under ./.agents/skills "
+            "and you want aiw skills install to treat it as managed."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  aiw skills adopt\n"
+            "  aiw skills adopt --json"
+        ),
+    )
+    adopt.add_argument(
+        "--json",
+        action="store_true",
+        help="Write one machine-readable JSON result.",
+    )
+
+    sync = commands.add_parser(
+        "sync",
+        help="Republish a canonical Skill into an already managed destination.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Republish a canonical Skill into an already managed destination.\n\n"
+            "Use this when you want to refresh a managed Skill from canonical "
+            "source content."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  aiw skills sync tdd\n"
+            "  aiw skills sync ./skills/tdd\n"
+            "  aiw skills sync tdd --json"
+        ),
+    )
+    sync.add_argument("source", help="Canonical Skill name or local source path.")
+    sync.add_argument(
         "--json",
         action="store_true",
         help="Write one machine-readable JSON result.",
@@ -456,21 +580,21 @@ def install_skills_from_sources(
     dry_run: bool,
     json_output: bool,
     source_label: str,
+    require_managed_destination: bool = False,
 ) -> int:
-    destination_root = Path.cwd() / ".agents" / "skills"
-    manifest_path = destination_root / ".aiw-skills.json"
-    manifest = load_manifest(manifest_path)
+    root = destination_root()
+    manifest = load_manifest(manifest_path(root))
     managed_skills = cast(Dict[str, object], manifest["skills"])
 
     skill_entries = [validate_skill_dir(skill_dir) for skill_dir in skill_dirs]
-    destinations = [destination_root / skill.name for skill in skill_entries]
+    destinations = [root / skill.name for skill in skill_entries]
 
     if dry_run:
         if json_output:
             print_json(
                 {
                     "action": "install",
-                    "destination": str(destinations[0]) if len(destinations) == 1 else str(destination_root),
+                    "destination": str(destinations[0]) if len(destinations) == 1 else str(root),
                     "name": skill_entries[0].name if len(skill_entries) == 1 else source_label,
                     "ok": True,
                     "source": source_label,
@@ -491,7 +615,7 @@ def install_skills_from_sources(
                     "Would install {} from {} to {}".format(
                         ", ".join(skill.name for skill in skill_entries),
                         source_label,
-                        destination_root,
+                        root,
                     )
                 )
         return 0
@@ -499,6 +623,7 @@ def install_skills_from_sources(
     installed: List[str] = []
     already_installed: List[str] = []
     last_digest: Optional[str] = None
+    managed_overwrite: Dict[str, bool] = {}
 
     for skill, destination in zip(skill_entries, destinations):
         if os.path.lexists(str(destination)):
@@ -521,20 +646,13 @@ def install_skills_from_sources(
                 already_installed.append(skill.name)
                 last_digest = source_digest
                 continue
+            managed_overwrite[skill.name] = True
+        elif require_managed_destination:
             raise SkillError(
-                "Installed Skill differs from its managed record: {}".format(
-                    destination
-                )
+                "Managed destination missing for Skill: {}".format(skill.name)
             )
 
-        if skill.name in managed_skills:
-            raise SkillError(
-                "Managed manifest entry has no installed Skill: {}".format(
-                    skill.name
-                )
-            )
-
-    destination_root.mkdir(parents=True, exist_ok=True)
+    root.mkdir(parents=True, exist_ok=True)
 
     with tempfile.TemporaryDirectory(prefix=".aiw-install-") as tmp:
         tmp_root = Path(tmp)
@@ -543,7 +661,7 @@ def install_skills_from_sources(
                 continue
             source_root = materialize_skill_source(skill, tmp_root)
             source_digest_before = directory_digest(source_root)
-            stage_root = Path(tempfile.mkdtemp(prefix=".aiw-stage-", dir=str(destination_root)))
+            stage_root = Path(tempfile.mkdtemp(prefix=".aiw-stage-", dir=str(root)))
             staged_skill = stage_root / skill.name
             try:
                 shutil.copytree(str(source_root), str(staged_skill), symlinks=True)
@@ -554,9 +672,24 @@ def install_skills_from_sources(
                     source_digest_before == staged_digest == source_digest_after
                 ):
                     raise SkillError("Canonical Skill changed during installation.")
-                if os.path.lexists(str(destination)):
+                if os.path.lexists(str(destination)) and not managed_overwrite.get(skill.name):
                     raise SkillError("Target already exists: {}".format(destination))
-                os.replace(str(staged_skill), str(destination))
+                if os.path.lexists(str(destination)) and managed_overwrite.get(skill.name):
+                    backup_root = Path(tempfile.mkdtemp(prefix=".aiw-backup-", dir=str(root)))
+                    backup_destination = backup_root / skill.name
+                    try:
+                        os.replace(str(destination), str(backup_destination))
+                        os.replace(str(staged_skill), str(destination))
+                    except Exception:
+                        if os.path.lexists(str(destination)):
+                            shutil.rmtree(str(destination), ignore_errors=True)
+                        if backup_destination.exists():
+                            os.replace(str(backup_destination), str(destination))
+                        raise
+                    finally:
+                        shutil.rmtree(str(backup_root), ignore_errors=True)
+                else:
+                    os.replace(str(staged_skill), str(destination))
                 last_digest = staged_digest
             finally:
                 shutil.rmtree(str(stage_root), ignore_errors=True)
@@ -571,17 +704,17 @@ def install_skills_from_sources(
 
     if installed:
         try:
-            write_manifest(manifest_path, manifest)
+            write_manifest(manifest_path(root), manifest)
         except (OSError, TypeError, ValueError) as exc:
             for skill_name in installed:
-                shutil.rmtree(str(destination_root / skill_name), ignore_errors=True)
+                shutil.rmtree(str(root / skill_name), ignore_errors=True)
             raise SkillError("Unable to write managed manifest: {}".format(exc))
 
     if json_output:
         if installed:
             payload = {
                 "action": "install",
-                "destination": str(destinations[0]) if len(installed) == 1 else str(destination_root),
+                "destination": str(destinations[0]) if len(installed) == 1 else str(root),
                 "name": installed[0] if len(installed) == 1 else source_label,
                 "ok": True,
                 "sha256": last_digest,
@@ -611,7 +744,7 @@ def install_skills_from_sources(
                 print(
                     "Installed {} skills to {}".format(
                         len(installed),
-                        destination_root,
+                        root,
                     )
                 )
         else:
@@ -621,6 +754,102 @@ def install_skills_from_sources(
                     destinations[0],
                 )
             )
+    return 0
+
+
+def command_sync(source_text: str, *, json_output: bool) -> int:
+    source = Path(source_text)
+    if source.exists():
+        with tempfile.TemporaryDirectory(prefix=".aiw-install-") as tmp:
+            skill_dirs = collect_skill_dirs_from_path(source, Path(tmp))
+            return install_skills_from_sources(
+                skill_dirs,
+                dry_run=False,
+                json_output=json_output,
+                source_label=str(source.resolve()),
+                require_managed_destination=True,
+            )
+
+    if not NAME_RE.fullmatch(source_text):
+        raise SkillError("Invalid canonical Skill name: {}".format(source_text))
+    root = source_root()
+    candidate = root / source_text
+    if candidate.is_symlink():
+        raise SkillError("Unsupported symlink in Skill: {}".format(candidate))
+    if not candidate.is_dir() or not (candidate / "SKILL.md").is_file():
+        raise SkillError("Canonical Skill not found: {}".format(source_text))
+
+    return install_skills_from_sources(
+        [candidate],
+        dry_run=False,
+        json_output=json_output,
+        source_label=str(candidate),
+        require_managed_destination=True,
+    )
+
+
+def command_discover(*, json_output: bool) -> int:
+    root = destination_root()
+    statuses, issues = load_skill_statuses(root)
+    if json_output:
+        print_json(
+            {
+                "action": "discover",
+                "issues": issues,
+                "ok": True,
+                "root": str(root),
+                "skills": statuses,
+            }
+        )
+        return 0
+    print("Installed Skills:")
+    for status in statuses:
+        print("  {} [{}]".format(status["name"], status["status"]))
+    for issue in issues:
+        print("Warning: {}".format(issue), file=sys.stderr)
+    return 0
+
+
+def command_adopt(*, json_output: bool) -> int:
+    root = destination_root()
+    manifest = load_manifest(manifest_path(root))
+    managed_skills = cast(Dict[str, object], manifest["skills"])
+    statuses, issues = load_skill_statuses(root)
+    adopted: List[str] = []
+    skipped: List[str] = []
+
+    for status in statuses:
+        name = cast(str, status["name"])
+        skill_dir = root / name
+        if status["status"] == "managed":
+            skipped.append(name)
+            continue
+        managed_skills[name] = manifest_entry_for_directory(skill_dir)
+        adopted.append(name)
+
+    if adopted:
+        write_manifest(manifest_path(root), manifest)
+
+    if json_output:
+        print_json(
+            {
+                "action": "adopt",
+                "adopted": adopted,
+                "issues": issues,
+                "ok": True,
+                "root": str(root),
+                "skipped": skipped,
+            }
+        )
+    else:
+        if adopted:
+            print("Adopted {} Skills under {}".format(len(adopted), root))
+        else:
+            print("No unmanaged Skills found under {}".format(root))
+        if skipped:
+            print("Already managed: {}".format(", ".join(skipped)))
+        for issue in issues:
+            print("Warning: {}".format(issue), file=sys.stderr)
     return 0
 
 def command_install(source_text: str, *, dry_run: bool, json_output: bool) -> int:
@@ -684,6 +913,12 @@ def main(argv: Sequence[str]) -> int:
     try:
         if args.command == "list":
             return command_list(json_output=args.json)
+        if args.command == "discover":
+            return command_discover(json_output=args.json)
+        if args.command == "adopt":
+            return command_adopt(json_output=args.json)
+        if args.command == "sync":
+            return command_sync(args.source, json_output=args.json)
         if args.command == "install":
             return command_install(
                 args.source,

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Business Review"
+  short_description: "Read-only business value gate for financial admin, operations, reporting, risk, and analytics requests. Emits a structured BUSINESS_REVIEW.md across six value dimensions with strong/weak evidence rating, cost vs benefit, smaller alternatives, and validation path, and returns APPROVE / REDUCE / HOLD. Does not write code."
