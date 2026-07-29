@@ -24,4 +24,6 @@ For non-trivial work, provide:
 - Risks
 
 Inspect tests, configs, and public contracts before broad exploration.
-Prefer the nearest `./scripts/verify.sh`.
+Follow the shared resource budget. Use static review by default; do not run
+tests, vet, builds, or verification scripts automatically. When authorized,
+run one package-focused command and ask before widening scope.

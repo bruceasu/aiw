@@ -11,8 +11,11 @@
 - avoid speculative rewrites
 
 ## Validate
-- add or update a regression test when practical
-- run the nearest checks that prove the bug is fixed
+- add or update a regression test when it materially protects the fix
+- statically trace the corrected path first
+- run one focused reproduction or test only when the resource budget authorizes
+  it
+- rerun only after a relevant change; ask before widening scope
 - note nearby behavior that still was not verified
 
 ## Report

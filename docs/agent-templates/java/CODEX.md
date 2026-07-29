@@ -22,4 +22,6 @@ For non-trivial work, provide:
 - Risks
 
 Inspect contracts, tests, and configuration before broad exploration.
-Prefer the nearest `./scripts/verify.sh`.
+Follow the shared resource budget. Use static review by default; do not run
+Maven, Gradle, tests, builds, or verification scripts automatically. When
+authorized, run one module-focused command and ask before widening scope.

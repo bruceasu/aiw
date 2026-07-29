@@ -1,1 +1,26 @@
-# .github/copilot-instructions.md## Repository onboarding for CopilotThis is a Go codebase maintained with human review and AI assistance.Prioritize correctness, small diffs, explicit behavior, and verification.Read `AGENTS.md` first.This file adds Copilot/GitHub workflow guidance.---## Default Behavior### Plan before codingFor non-trivial tasks, first provide:- understanding of the task- affected packages / files- assumptions- missing information- implementation plan- risks- validation stepsDo not jump directly into implementation for medium or large changes.### Keep changes reviewable- prefer small diffs- avoid unrelated cleanup- make behavior changes explicit- explain non-obvious technical decisions---## Go Repository Expectations- preserve package boundaries- avoid unnecessary interfaces- keep context propagation intact- preserve explicit error handling- treat concurrency-sensitive changes carefully- treat exported API changes as compatibility-sensitiveDependency changes in `go.mod` or `go.sum` are high-risk and should be called out clearly.---## Testing and ValidationEvery non-trivial change should be validated.Preferred order:1. format2. vet/static checks3. unit tests4. integration tests5. buildIf available, prefer:```bash./scripts/verify.sh```Otherwise use repository-standard commands such as:```bashgo test ./...go build ./...go vet ./...```Include in final summaries and PR descriptions:  - validation commands run  - pass/fail status  - anything not verified## High-Risk AreasBefore making changes, explicitly call out risk when touching:  - exported APIs  - concurrency  - context propagation  - auth/security  - persistence/migrations  - deployment or CI configThese changes should include stronger validation and clearer explanation.## PR / Issue AlignmentWhen implementing from a task or issue:  - align to the stated goal  - respect non-goals  - do not silently expand scope  - identify follow-up work separatelyRecommended final summary structure:  - summary  - affected packages  - tests / validation  - risks  - follow-ups  - harness improvements suggested---
+# .github/copilot-instructions.md
+
+Read `AGENTS.md` first.
+
+## Default Behavior
+
+- use static analysis and minimal edits by default
+- plan before non-trivial changes
+- inspect only nearby code, tests, config, and contracts
+- stop broad discovery after three targeted batches unless blocked
+- preserve package boundaries and explicit error handling
+
+## Resource Guard
+
+Do not automatically run tests, builds, formatters, linters, vet, verification
+scripts, network calls, permission probes, privilege escalation,
+`codex-auto-review`, or sub-agents.
+
+After editing, use at most one static/read-only validation command by default.
+Do not repeat equivalent commands. If runtime validation is authorized, run one
+focused command and ask before widening.
+
+## Final Summary
+
+Include the change, static evidence, exact commands run, runtime checks not run,
+risks, and optional checks requiring authorization.

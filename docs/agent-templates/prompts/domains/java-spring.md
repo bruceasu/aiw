@@ -15,6 +15,9 @@
 - serialization and validation behavior
 
 ## Validate
-- prefer the nearest verification script
-- otherwise use project-standard Maven or Gradle checks
+- use static controller, service, transaction, schema, and config review by
+  default
 - add unit, slice, or integration tests that match the changed boundary
+- when authorized, run one smallest relevant Maven or Gradle command for the
+  changed module or boundary
+- ask before widening beyond that module

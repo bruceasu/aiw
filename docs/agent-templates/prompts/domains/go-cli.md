@@ -14,6 +14,8 @@
 - explicit error handling
 
 ## Validate
-- prefer the nearest verification script
-- otherwise use the project-standard `go test`, `go vet`, and `go build` commands
+- use static command wiring, exit code, output, and error-flow review by default
 - add tests for behavior and failure paths when CLI behavior changes
+- when authorized, run one smallest relevant `go test`, `go vet`, or `go build`
+  command for the changed command package
+- ask before widening beyond that package

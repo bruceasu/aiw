@@ -10,11 +10,14 @@
 - avoid conflicting rules
 - avoid very broad files with weak routing
 - avoid stale examples and stale validation commands
+- avoid instructions that make tests, builds, permission probes, or repeated
+  review passes automatic
 
 ## For Every Prompt File
 - say when it should load
 - say what should stay stable
 - say how to validate
+- keep runtime validation behind the shared resource budget
 - keep one main concern per file
 
 ## Maintenance

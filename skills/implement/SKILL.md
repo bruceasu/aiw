@@ -1,27 +1,53 @@
 ---
 name: implement
-description: "Implement one selected work item from an OpenSpec change."
+description: "Implement one selected work item from an AIW Task and its matching OpenSpec change."
 disable-model-invocation: true
 ---
 
-Implement one selected work item from the resolved OpenSpec change. Read
-`skills/work-management.md` and resolve the change before modifying files.
+# Implement
 
-Read the applicable `task.toml`, `proposal.md`, `design.md`, capability specs,
-`tasks.md`, and `notes.md` before starting. If no unique change can be resolved,
-stop and ask for its identifier.
+Read `skills/work-management.md` and
+`docs/agents/work-management.md` when present.
 
-When the change declares an AIW branch or worktree, verify that the current
-workspace matches it before changing implementation files. Do not silently
-switch workspaces or infer a target from `.scratch`.
+## Resolve Work
 
-Use /tdd where possible, at pre-agreed seams.
-When the implementation produces a file change patch, use aiw patch as the default application path. This applies to AI-generated *** Begin Patch input and standard unified diff input. The patch command SHALL normalize supported encodings, convert AI patch syntax when needed, run Git preflight validation, and return its failure to the workflow. Do not report a change as applied when the patch command fails. Use a direct file-edit fallback only when the patch tool cannot represent the change or is unavailable, and record the reason.
+1. Resolve one AIW Task.
+2. Resolve its matching OpenSpec change and selected `tasks.md` item.
+3. Read only the applicable `task.toml`, proposal, design, capability specs,
+   checklist, and notes.
+4. Stop and ask for the Task ID when several Tasks match.
 
-Run typechecking regularly, single test files regularly, and the full test suite once at the end.
+## Prepare The Workspace
 
-Once done, use /code-review to review the work.
+Create or resolve the Task worktree through `aiw wt`. Verify that its branch and
+path match AIW Task metadata before modifying implementation files.
+
+Do not use raw `git worktree` when AIW is available. Do not silently implement
+in another workspace. If the active agent cannot safely continue in the
+resolved worktree, report its path and stop.
+
+## Implement
+
+- Apply the smallest complete change for the selected checklist item.
+- Use at most two bounded sub-agents under the shared contract.
+- Use `aiw patch` as the preferred path for AI-generated patches when
+  available. Use direct editing only when the patch command cannot represent
+  the change or is unavailable, and report the fallback.
+- Writing or updating tests is allowed, but do not run them automatically.
+- Do not invoke `/tdd` or `/code-review` automatically.
+- Do not run type checks, formatters, linters, vet, builds, or verification
+  scripts without explicit execution instructions from the user.
+
+## Complete Development
 
 Update the selected checklist item, TODO, Verification, and remaining `%%`
-risks or questions. Commit according to the repository's task workflow after
-verification; do not create or publish an external Issue automatically.
+risks or questions. Synchronize the coarse AIW Task status without overwriting
+OpenSpec-owned content.
+
+Perform one static review of the changed paths. Do not commit, archive, remove
+the worktree, or delete the branch unless the user asks.
+
+After development is complete, ask once whether the user wants one focused test
+command run. Show the exact command, scope, and expected duration. Default to no
+test when the user declines or does not respond. Ask again before broader tests
+or builds.

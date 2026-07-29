@@ -27,9 +27,16 @@ Use it when the task is mostly Java or the current directory contains Java marke
 - transaction changes
 - public API or event contract changes
 
-## Validation
-Prefer the nearest `./scripts/verify.sh`.
-Otherwise use project-standard Maven or Gradle commands.
+## Validation Options
+Use static review by default. Do not automatically run `scripts/verify.sh`,
+Maven, Gradle, tests, or builds.
+
+When the shared resource budget authorizes runtime validation, choose one
+smallest relevant command:
+- `mvn -pl module -am test`
+- `./gradlew :module:test`
+
+Ask before repository-wide commands. Rerun only after a relevant change.
 
 ## Escalation
 If a deeper subtree has its own `AGENTS.md` or `CODEX.md`, prefer that local file.

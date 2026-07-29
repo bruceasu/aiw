@@ -8,8 +8,8 @@ disable-model-invocation: true
 
 Break a plan, spec, or conversation into a set of **tickets** — tracer-bullet vertical slices, each declaring the tickets that **block** it.
 
-Read `skills/work-management.md` and resolve one OpenSpec change before
-writing. Do not create a parallel `.scratch` ticket hierarchy.
+Read `skills/work-management.md`. Resolve one AIW Task and its matching OpenSpec
+change before writing. Do not create a parallel `.scratch` ticket hierarchy.
 
 ## Process
 
@@ -22,7 +22,9 @@ external projection.
 
 ### 2. Explore the codebase (optional)
 
-If you have not already explored the codebase, do so to understand the current state of the code. Ticket titles and descriptions should use the project's domain glossary vocabulary, and respect ADRs in the area you're touching.
+If needed, inspect only the relevant codebase area. Ticket titles and
+descriptions should use the project's domain glossary vocabulary and respect
+ADRs in the area being changed.
 
 Look for opportunities to prefactor the code to make the implementation easier. "Make the change easy, then make the easy change."
 
@@ -64,10 +66,17 @@ Iterate until the user approves the breakdown.
 ### 5. Write the approved task breakdown
 
 Write the approved items as numbered checklist entries in the current change's
-`tasks.md`, ordered by prerequisite. If a slice requires an independent
-worktree, status, archive lifecycle, or delivery boundary, propose a separate
-OpenSpec change instead of creating a local ticket file. External publication is
-a separate explicit workflow.
+`tasks.md`, ordered by prerequisite. Keep them under the current AIW Task when
+they share its worktree and lifecycle.
+
+If a slice requires an independent worktree, status, archive lifecycle, or
+delivery boundary, propose a separate AIW Task and matching OpenSpec change.
+Create them through AIW only after the user approves the split. External
+publication is a separate explicit workflow.
+
+Synchronize the AIW Task's progress summary after writing, without replacing
+the detailed OpenSpec checklist. This Skill does not create a worktree or run
+tests.
 
 <task-item-template>
 

@@ -1,77 +1,92 @@
 # Good and Bad Tests
 
-## Good Tests
+## Good tests
 
-**Integration-style**: Test through real interfaces, not mocks of internal parts.
-
-```typescript
-// GOOD: Tests observable behavior
-test("user can checkout with valid cart", async () => {
-  const cart = createCart();
-  cart.add(product);
-  const result = await checkout(cart, paymentMethod);
-  expect(result.status).toBe("confirmed");
-});
-```
+Test through public interfaces with the project's native test style.
 
 Characteristics:
 
-- Tests behavior users/callers care about
-- Uses public API only
-- Survives internal refactors
-- Describes WHAT, not HOW
-- One logical assertion per test
+- Verify behavior callers care about
+- Use public APIs only
+- Survive internal refactors
+- Describe WHAT, not HOW
+- Keep each test focused on one behavior
 
-## Bad Tests
+Examples:
 
-**Implementation-detail tests**: Coupled to internal structure.
+```java
+@Test
+void userCanCheckoutWithValidCart() {
+  Cart cart = createCart();
+  cart.add(product);
 
-```typescript
-// BAD: Tests implementation details
-test("checkout calls paymentService.process", async () => {
-  const mockPayment = jest.mock(paymentService);
-  await checkout(cart, payment);
-  expect(mockPayment.process).toHaveBeenCalledWith(cart.total);
-});
+  Receipt receipt = checkout(cart, paymentMethod);
+  assertEquals("confirmed", receipt.status());
+}
 ```
+
+```go
+func TestCheckout(t *testing.T) {
+  cart := NewCart()
+  cart.Add(product)
+
+  got, err := Checkout(cart, paymentMethod)
+  if err != nil {
+    t.Fatal(err)
+  }
+  if got.Status != "confirmed" {
+    t.Fatalf("status = %q, want confirmed", got.Status)
+  }
+}
+```
+
+```python
+def test_user_can_checkout_with_valid_cart():
+    cart = create_cart()
+    cart.add(product)
+
+    receipt = checkout(cart, payment_method)
+    assert receipt.status == "confirmed"
+```
+
+## Bad tests
+
+Implementation-detail tests are coupled to internal structure.
 
 Red flags:
 
 - Mocking internal collaborators
 - Testing private methods
-- Asserting on call counts/order
+- Asserting on call counts or call order
 - Test breaks when refactoring without behavior change
-- Test name describes HOW not WHAT
-- Verifying through external means instead of interface
+- Test name describes HOW, not WHAT
+- Verifying through external side effects instead of the interface
 
-```typescript
-// BAD: Bypasses interface to verify
-test("createUser saves to database", async () => {
-  await createUser({ name: "Alice" });
-  const row = await db.query("SELECT * FROM users WHERE name = ?", ["Alice"]);
-  expect(row).toBeDefined();
-});
-
-// GOOD: Verifies through interface
-test("createUser makes user retrievable", async () => {
-  const user = await createUser({ name: "Alice" });
-  const retrieved = await getUser(user.id);
-  expect(retrieved.name).toBe("Alice");
-});
+```python
+def test_create_user_saves_to_database():
+    create_user({"name": "Alice"})
+    row = db.query("SELECT * FROM users WHERE name = ?", ["Alice"])
+    assert row is not None
 ```
 
-**Tautological tests**: Expected value restates the implementation, so the test passes by construction.
+Good:
 
-```typescript
-// BAD: Expected value is recomputed the way the code computes it
-test("calculateTotal sums line items", () => {
-  const items = [{ price: 10 }, { price: 5 }];
-  const expected = items.reduce((sum, i) => sum + i.price, 0);
-  expect(calculateTotal(items)).toBe(expected);
-});
+```python
+def test_create_user_makes_user_retrievable():
+    user = create_user({"name": "Alice"})
+    retrieved = get_user(user.id)
+    assert retrieved.name == "Alice"
+```
 
-// GOOD: Expected value is an independent, known literal
-test("calculateTotal sums line items", () => {
-  expect(calculateTotal([{ price: 10 }, { price: 5 }])).toBe(15);
-});
+Tautological tests restate the implementation, so they pass by construction.
+
+```go
+func TestCalculateTotal(t *testing.T) {
+  items := []Item{{Price: 10}, {Price: 5}}
+  expected := sumPrices(items) // same logic as production code
+
+  if got := CalculateTotal(items); got != expected {
+    t.Fatalf("got %d, want %d", got, expected)
+  }
+}
 ```

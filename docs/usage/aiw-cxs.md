@@ -8,8 +8,8 @@ aiw cxs [global-options] <subcommand> [args...]
 
 ## Description
 
-`aiw cxs` helps you inspect local Codex session logs, bind business aliases to sessions,
-and run `codex exec` with optional session targeting.
+`aiw cxs` helps you inspect local Codex session logs, bind business aliases to
+sessions, browse workspace sessions in a desktop GUI, and continue Codex work.
 
 Default paths:
 
@@ -19,6 +19,7 @@ Default paths:
 ## Subcommands
 
 - `list`: list recent sessions
+- `gui`: browse current-workspace sessions in a desktop window
 - `show <ref>`: show a readable session preview
 - `tail <ref>`: show the latest events
 - `bind <alias> [ref]`: bind alias to a session
@@ -26,6 +27,28 @@ Default paths:
 - `path <ref>`: print session jsonl path
 - `resume <ref> [message]`: run `codex exec resume`
 - `exec [message]`: run `codex exec`, optionally target a session
+
+## Desktop GUI
+
+Run:
+
+```text
+aiw cxs gui
+```
+
+The GUI shows only sessions from the current workspace by default. Enable
+`Show all workspaces` to include global sessions. Select a session to preview
+user and assistant messages, edit its alias, or resume interactive Codex.
+
+Interactive resume uses:
+
+```text
+codex resume <session-id>
+```
+
+Codex starts in the session's original working directory. If the directory is
+unknown, missing, or no interactive terminal is available, the GUI shows a
+copyable command instead of launching Codex.
 
 ## Session Reference
 
@@ -41,6 +64,8 @@ even when local session logs are missing.
 ## Examples
 
 - `aiw cxs list -n 30`
+- `aiw cxs list --current-workspace --json -n 20`
+- `aiw cxs gui`
 - `aiw cxs bind payment-retry`
 - `aiw cxs aliases`
 - `aiw cxs show payment-retry`
@@ -56,3 +81,7 @@ even when local session logs are missing.
 - `--dry-run` prints the exact `codex` command without executing it.
 - `--session` and `--last` are mutually exclusive for `exec`.
 - `resume` always uses `codex exec resume`.
+- Existing `list` behavior remains global by default; use
+  `--current-workspace` for workspace-only output.
+- Invoke `$resume-ext` to get a compact numbered selection workflow inside
+  Codex. The skill prepares a command and never starts nested Codex.

@@ -16,7 +16,9 @@ Runtime discovery is authoritative for the current installation. Prefer it over 
 
 ### Core Workflow
 
-Use AIW core commands for project structure and task lifecycle.
+Use AIW core commands as the authority for project structure, Task lifecycle,
+branch, worktree, Session, and handoff state. Use OpenSpec for requirement and
+implementation artifacts.
 
 ### Capability Layer
 
@@ -54,9 +56,9 @@ For repository search, use `rg`. For repository inspection, use Git and native c
 
 When working in AIW, the usual order is:
 
-1. Read the task or spec.
-2. Check runtime discovery.
-3. Use core workflow commands for structure.
-4. Use skills for method support.
-5. Use AI support commands for session or automation needs.
-6. Use plugins only when the task needs an external extension.
+1. Resolve or create the AIW Task.
+2. Read its OpenSpec artifacts.
+3. Check runtime discovery once before unfamiliar mutations.
+4. Create or resolve its worktree with `aiw wt` before implementation.
+5. Use Skills for method support.
+6. Use AI support or plugins only when the task needs them.

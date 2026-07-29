@@ -1,14 +1,22 @@
 {
   "changes": [
     {
-      "id": "patch",
+      "id": "openspec-backend-routing",
       "status": "UNKNOWN",
       "branch": "",
       "worktree": "",
-      "path": "openspec/changes/patch",
+      "path": "openspec/changes/openspec-backend-routing",
+      "updated_at": "2026-07-29"
+    },
+    {
+      "id": "task-agent-next",
+      "status": "UNKNOWN",
+      "branch": "",
+      "worktree": "",
+      "path": "openspec/changes/task-agent-next",
       "updated_at": "2026-07-29"
     }
   ],
-  "updated": "2026-07-29T02:17:58+09:00",
+  "updated": "2026-07-29T19:20:49+09:00",
   "version": "1"
 }

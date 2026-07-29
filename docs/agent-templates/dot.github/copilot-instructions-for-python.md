@@ -16,6 +16,8 @@ Read `AGENTS.md` first, then `python/AGENTS.md`.
 - inspect local tests, schemas, and config first
 - keep typing and config patterns consistent
 - keep framework glue thin
-- prefer the nearest `./scripts/verify.sh`
-- otherwise use standard checks such as:
-  `ruff check .`, `ruff format --check .`, `mypy .`, `pytest`
+- use static review by default
+- do not run formatters, linters, type checks, tests, builds, verification
+  scripts, network calls, or permission probes without resource-budget
+  authorization
+- when authorized, run one path-focused command and ask before widening

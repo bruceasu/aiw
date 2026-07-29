@@ -13,5 +13,7 @@ Read `AGENTS.md` first, then `java/AGENTS.md`.
 - inspect contracts, tests, and config first
 - respect controller, service, and repository boundaries
 - treat DTO, schema, and transaction changes as risk-sensitive
-- prefer the nearest `./scripts/verify.sh`
-- otherwise use project-standard Maven or Gradle checks
+- use static review by default
+- do not run Maven, Gradle, tests, builds, verification scripts, network calls,
+  or permission probes without resource-budget authorization
+- when authorized, run one module-focused command and ask before widening

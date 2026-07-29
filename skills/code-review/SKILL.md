@@ -8,7 +8,9 @@ Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
 - **Standards** — does the code conform to this repo's documented coding standards?
 - **Spec** — does the code faithfully implement the originating issue / PRD / spec?
 
-Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings.
+Explicit invocation of this Skill authorizes at most two parallel static-review
+sub-agents, one per axis. It does not authorize tests, builds, network calls, or
+permission escalation. This Skill aggregates their findings.
 
 Read `skills/work-management.md` and `docs/agents/work-management.md` when
 present. Resolve the originating OpenSpec change before reviewing. External
@@ -59,9 +61,12 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 - **Middle Man** — a class or function that mostly just delegates onward. → cut it, call the real target direct.
 - **Refused Bequest** — a subclass or implementer that ignores or overrides most of what it inherits. → drop the inheritance, use composition.
 
-### 4. Spawn both sub-agents in parallel
+### 4. Spawn up to two sub-agents in parallel
 
-Send a single message with two `Agent` tool calls. Use the `general-purpose` subagent for both.
+Send one message with at most two `Agent` tool calls. Use one bounded sub-agent
+per available axis. Each sub-agent may read the fixed diff and cited local
+artifacts, but must not run tests, builds, network calls, commits, archive
+operations, or worktree operations. Run one review pass only.
 
 **Standards sub-agent prompt** — include:
 

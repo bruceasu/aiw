@@ -11,6 +11,8 @@
 - call out follow-up work instead of silently expanding scope
 
 ## Validate
-- add or update tests for the new behavior
+- add or update tests when they materially protect the new behavior
+- use static contract and call-path review by default
+- run one narrow check only when the resource budget authorizes it
 - update nearby docs when behavior or workflow changes
-- run the nearest checks that prove the feature works
+- ask before widening to cross-boundary or repository checks

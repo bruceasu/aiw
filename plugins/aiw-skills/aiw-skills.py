@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Manage canonical AIW Skills and managed Skill imports."""
 
 from __future__ import annotations

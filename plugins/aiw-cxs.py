@@ -9,6 +9,8 @@ Features:
   - Cache session metadata to speed up repeated listing
   - List, show, and tail sessions in readable form
   - Bind human-friendly aliases to Codex session IDs
+  - Browse workspace sessions in a desktop GUI
+  - Resume interactive Codex in a session's original directory
   - Run `codex exec` or `codex exec resume`
   - Attach UTF-8 text files to a prompt
   - Atomically update local index/cache files
@@ -27,6 +29,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -42,7 +45,7 @@ DEFAULT_WORKSPACE = Path.cwd() / ".ai"
 INDEX_RELATIVE = Path("sessions") / "index.json"
 CACHE_RELATIVE = Path("sessions") / "cache.json"
 INDEX_SCHEMA_VERSION = 2
-CACHE_SCHEMA_VERSION = 1
+CACHE_SCHEMA_VERSION = 2
 DEFAULT_SCAN_EVENTS = 300
 MAX_ATTACH_BYTES = 8 * 1024 * 1024
 
@@ -65,10 +68,20 @@ SESSION_ID_KEYS = (
     "id",
 )
 NESTED_KEYS = ("message", "item", "event", "delta", "payload", "data")
+WORKING_DIRECTORY_KEYS = (
+    "cwd",
+    "working_directory",
+    "workingDirectory",
+    "workdir",
+)
 
 
 class AiwCxsError(RuntimeError):
     """Expected user-facing failure."""
+
+
+class AliasConflictError(AiwCxsError):
+    """An alias mutation would overwrite an existing binding."""
 
 
 @dataclass(frozen=True)
@@ -80,6 +93,7 @@ class SessionMeta:
     title: str
     first_user: str
     turns: int
+    original_cwd: Optional[Path] = None
 
     @property
     def mtime(self) -> float:
@@ -92,10 +106,16 @@ class SessionMeta:
     def to_cache(self) -> dict[str, Any]:
         data = asdict(self)
         data["path"] = str(self.path)
+        data["original_cwd"] = (
+            str(self.original_cwd) if self.original_cwd is not None else None
+        )
         return data
 
     @classmethod
     def from_cache(cls, data: Mapping[str, Any]) -> "SessionMeta":
+        if "original_cwd" not in data:
+            raise KeyError("original_cwd")
+        original_cwd = data.get("original_cwd")
         return cls(
             session_id=str(data["session_id"]),
             path=Path(str(data["path"])),
@@ -104,7 +124,20 @@ class SessionMeta:
             title=str(data.get("title", "")),
             first_user=str(data.get("first_user", "")),
             turns=int(data.get("turns", 0)),
+            original_cwd=(
+                Path(str(original_cwd)).expanduser().resolve()
+                if original_cwd
+                else None
+            ),
         )
+
+
+@dataclass(frozen=True)
+class InteractiveResumePlan:
+    command: tuple[str, ...]
+    cwd: Optional[Path]
+    can_launch: bool
+    reason: str = ""
 
 
 def eprint(*args: object) -> None:
@@ -317,6 +350,44 @@ def get_time(obj: Mapping[str, Any]) -> str:
     return ""
 
 
+def normalize_original_cwd(value: Any) -> Optional[Path]:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        path = Path(value).expanduser()
+    except (OSError, ValueError):
+        return None
+    if not path.is_absolute():
+        return None
+    try:
+        return path.resolve()
+    except OSError:
+        return path.absolute()
+
+
+def extract_original_cwd(
+    obj: Mapping[str, Any], depth: int = 0
+) -> Optional[Path]:
+    if depth > 6:
+        return None
+    for key in WORKING_DIRECTORY_KEYS:
+        path = normalize_original_cwd(obj.get(key))
+        if path is not None:
+            return path
+    for key in NESTED_KEYS:
+        value = obj.get(key)
+        if isinstance(value, dict):
+            path = extract_original_cwd(value, depth + 1)
+            if path is not None:
+                return path
+    return None
+
+
+def is_session_metadata_record(obj: Mapping[str, Any]) -> bool:
+    record_type = str(obj.get("type", "")).strip().lower()
+    return record_type in {"session_meta", "session_metadata"}
+
+
 def extract_session_id_from_obj(
     obj: Mapping[str, Any], depth: int = 0
 ) -> Optional[str]:
@@ -367,7 +438,10 @@ def inspect_session_file(path: Path, scan_events: int) -> SessionMeta:
     first_user = ""
     title = ""
     turns = 0
+    original_cwd: Optional[Path] = None
     for obj in iter_jsonl(path, limit=scan_events):
+        if original_cwd is None and is_session_metadata_record(obj):
+            original_cwd = extract_original_cwd(obj)
         role = get_role(obj)
         text = get_text(obj)
         if role in {"user", "assistant"} and text:
@@ -390,6 +464,7 @@ def inspect_session_file(path: Path, scan_events: int) -> SessionMeta:
         title=title,
         first_user=first_user,
         turns=turns,
+        original_cwd=original_cwd,
     )
 
 
@@ -451,6 +526,37 @@ def scan_sessions(
     return metas
 
 
+def normalized_path_key(path: Path) -> str:
+    return os.path.normcase(os.path.abspath(str(path.expanduser())))
+
+
+def session_belongs_to_workspace(session: SessionMeta, workspace: Path) -> bool:
+    if session.original_cwd is None:
+        return False
+    session_key = normalized_path_key(session.original_cwd)
+    workspace_key = normalized_path_key(workspace)
+    try:
+        return os.path.commonpath([session_key, workspace_key]) == workspace_key
+    except ValueError:
+        return False
+
+
+def filter_sessions_for_workspace(
+    sessions: Iterable[SessionMeta],
+    workspace: Path,
+    *,
+    include_all: bool = False,
+) -> list[SessionMeta]:
+    items = list(sessions)
+    if include_all:
+        return items
+    return [
+        session
+        for session in items
+        if session_belongs_to_workspace(session, workspace)
+    ]
+
+
 def alias_session_id(value: Any) -> Optional[str]:
     if isinstance(value, dict):
         session_id = value.get("session_id")
@@ -459,7 +565,7 @@ def alias_session_id(value: Any) -> Optional[str]:
 
 
 def resolve_alias(ref: str, workspace: Path) -> str:
-    aliases = load_index(workspace).get("aliases", {})
+    aliases = load_index(workspace, create=False).get("aliases", {})
     if isinstance(aliases, dict) and ref in aliases:
         session_id = alias_session_id(aliases[ref])
         if session_id:
@@ -514,7 +620,7 @@ def resolve_session_id_or_ref(ref: str, root: Path, workspace: Path) -> str:
 
 
 def reverse_aliases(workspace: Path) -> dict[str, list[str]]:
-    aliases = load_index(workspace).get("aliases", {})
+    aliases = load_index(workspace, create=False).get("aliases", {})
     result: dict[str, list[str]] = {}
     if not isinstance(aliases, dict):
         return result
@@ -534,6 +640,8 @@ def list_cmd(args: argparse.Namespace) -> int:
         refresh=args.refresh,
         scan_events=args.scan_events,
     )
+    if args.current_workspace:
+        sessions = filter_sessions_for_workspace(sessions, args.workspace.parent)
     sessions = sessions[: args.limit] if args.limit is not None else sessions
     aliases = reverse_aliases(args.workspace)
 
@@ -580,6 +688,14 @@ def render_objects(objects: Iterable[Mapping[str, Any]]) -> str:
     return "\n\n".join(blocks)
 
 
+def render_conversation(objects: Iterable[Mapping[str, Any]]) -> str:
+    return render_objects(
+        obj
+        for obj in objects
+        if get_role(obj).lower() in {"user", "assistant"}
+    )
+
+
 def show_cmd(args: argparse.Namespace) -> int:
     session = resolve_session(
         args.ref, args.sessions_dir, args.workspace, refresh=args.refresh
@@ -609,6 +725,63 @@ def validate_alias(name: str) -> str:
     return name
 
 
+def bind_alias(
+    workspace: Path,
+    name: str,
+    session: SessionMeta,
+    *,
+    note: str = "",
+    replace: bool = False,
+) -> None:
+    name = validate_alias(name)
+    index = load_index(workspace, create=False)
+    aliases = index.setdefault("aliases", {})
+    assert isinstance(aliases, dict)
+    if name in aliases and not replace:
+        old_id = alias_session_id(aliases[name]) or "unknown"
+        raise AliasConflictError(
+            f"Alias already exists: {name} -> {old_id}. Confirm replacement first."
+        )
+    aliases[name] = {
+        "session_id": session.session_id,
+        "path": str(session.path),
+        "updated_at": now_iso(),
+        "note": note,
+    }
+    save_index(workspace, index)
+
+
+def rename_alias(
+    workspace: Path,
+    old_name: str,
+    new_name: str,
+    *,
+    replace: bool = False,
+) -> None:
+    new_name = validate_alias(new_name)
+    index = load_index(workspace, create=False)
+    aliases = index.get("aliases", {})
+    if not isinstance(aliases, dict) or old_name not in aliases:
+        raise AiwCxsError(f"Alias not found: {old_name}")
+    if new_name != old_name and new_name in aliases and not replace:
+        raise AliasConflictError(f"Alias already exists: {new_name}")
+    value = aliases[old_name]
+    aliases[new_name] = value
+    if new_name != old_name:
+        del aliases[old_name]
+    save_index(workspace, index)
+
+
+def remove_alias(workspace: Path, name: str) -> str:
+    index = load_index(workspace, create=False)
+    aliases = index.get("aliases", {})
+    if not isinstance(aliases, dict) or name not in aliases:
+        raise AiwCxsError(f"Alias not found: {name}")
+    old_id = alias_session_id(aliases.pop(name)) or "unknown"
+    save_index(workspace, index)
+    return old_id
+
+
 def bind_cmd(args: argparse.Namespace) -> int:
     name = validate_alias(args.name)
     if args.ref:
@@ -619,38 +792,25 @@ def bind_cmd(args: argparse.Namespace) -> int:
             raise AiwCxsError("No sessions found to bind")
         session = sessions[0]
 
-    index = load_index(args.workspace)
-    aliases = index.setdefault("aliases", {})
-    assert isinstance(aliases, dict)
-    if name in aliases and not args.force:
-        old_id = alias_session_id(aliases[name]) or "unknown"
-        raise AiwCxsError(
-            f"Alias already exists: {name} -> {old_id}. Use --force to replace it."
-        )
-    aliases[name] = {
-        "session_id": session.session_id,
-        "path": str(session.path),
-        "updated_at": now_iso(),
-        "note": args.note or "",
-    }
-    save_index(args.workspace, index)
+    bind_alias(
+        args.workspace,
+        name,
+        session,
+        note=args.note or "",
+        replace=args.force,
+    )
     print(f"Bound {name} -> {session.session_id}")
     return 0
 
 
 def unbind_cmd(args: argparse.Namespace) -> int:
-    index = load_index(args.workspace)
-    aliases = index.get("aliases", {})
-    if not isinstance(aliases, dict) or args.name not in aliases:
-        raise AiwCxsError(f"Alias not found: {args.name}")
-    old_id = alias_session_id(aliases.pop(args.name)) or "unknown"
-    save_index(args.workspace, index)
+    old_id = remove_alias(args.workspace, args.name)
     print(f"Removed {args.name} -> {old_id}")
     return 0
 
 
 def aliases_cmd(args: argparse.Namespace) -> int:
-    aliases = load_index(args.workspace).get("aliases", {})
+    aliases = load_index(args.workspace, create=False).get("aliases", {})
     if not isinstance(aliases, dict) or not aliases:
         print("No aliases found")
         return 0
@@ -739,6 +899,94 @@ def display_command(command: Sequence[str]) -> str:
     return shlex.join(command)
 
 
+def build_interactive_resume_command(session_id: str) -> tuple[str, ...]:
+    return ("codex", "resume", session_id)
+
+
+def validate_interactive_resume_capability() -> str:
+    executable = shutil.which("codex")
+    if executable is None:
+        raise AiwCxsError("codex command not found in PATH")
+    try:
+        completed = subprocess.run(
+            [executable, "resume", "--help"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError as exc:
+        raise AiwCxsError(f"Cannot inspect the codex command: {exc}") from exc
+    output = f"{completed.stdout}\n{completed.stderr}".lower()
+    if completed.returncode != 0 or not re.search(
+        r"usage:\s*codex(?:\.exe|\.cmd)?\s+resume\b", output
+    ):
+        raise AiwCxsError(
+            "The installed codex command does not advertise interactive "
+            "`codex resume` support."
+        )
+    return executable
+
+
+def plan_interactive_resume(
+    session: SessionMeta,
+    *,
+    terminal_available: Optional[bool] = None,
+) -> InteractiveResumePlan:
+    command = build_interactive_resume_command(session.session_id)
+    if session.original_cwd is None:
+        return InteractiveResumePlan(
+            command=command,
+            cwd=None,
+            can_launch=False,
+            reason="The session working directory is unknown.",
+        )
+    cwd = session.original_cwd.expanduser().resolve()
+    if not cwd.is_dir():
+        return InteractiveResumePlan(
+            command=command,
+            cwd=cwd,
+            can_launch=False,
+            reason=f"The session working directory does not exist: {cwd}",
+        )
+    if terminal_available is None:
+        terminal_available = sys.stdin.isatty() and sys.stdout.isatty()
+    if not terminal_available:
+        return InteractiveResumePlan(
+            command=command,
+            cwd=cwd,
+            can_launch=False,
+            reason="No interactive terminal is available.",
+        )
+    return InteractiveResumePlan(command=command, cwd=cwd, can_launch=True)
+
+
+def run_interactive_resume(
+    plan: InteractiveResumePlan, *, executable: Optional[str] = None
+) -> int:
+    if not plan.can_launch or plan.cwd is None:
+        raise AiwCxsError(plan.reason or "Interactive resume is unavailable")
+    executable = executable or validate_interactive_resume_capability()
+    command = [executable, *plan.command[1:]]
+    try:
+        completed = subprocess.run(command, cwd=plan.cwd, check=False)
+    except OSError as exc:
+        raise AiwCxsError(f"Cannot start interactive Codex: {exc}") from exc
+    return completed.returncode
+
+
+def session_table_values(
+    session: SessionMeta, aliases: Sequence[str]
+) -> tuple[object, ...]:
+    return (
+        session.session_id,
+        ", ".join(aliases),
+        session.title,
+        session.mtime_text,
+        session.turns,
+        str(session.original_cwd or "unknown"),
+    )
+
+
 def run_or_print_codex_command(
     command: Sequence[str], *, dry_run: bool, cwd: Optional[Path]
 ) -> int:
@@ -804,6 +1052,280 @@ def path_cmd(args: argparse.Namespace) -> int:
     return 0
 
 
+def gui_cmd(args: argparse.Namespace) -> int:
+    try:
+        import tkinter as tk
+        from tkinter import messagebox, simpledialog, ttk
+    except ImportError as exc:
+        raise AiwCxsError(
+            "Tkinter is unavailable in the configured Python runtime. "
+            "Use `aiw cxs list`, `show`, and `bind` instead."
+        ) from exc
+
+    try:
+        root = tk.Tk()
+    except tk.TclError as exc:
+        raise AiwCxsError(
+            "Cannot open the session GUI. Start it from a desktop environment "
+            "with an available display."
+        ) from exc
+
+    root.title("AIW Codex Sessions")
+    root.geometry("1180x720")
+    root.minsize(820, 500)
+
+    session_by_id: dict[str, SessionMeta] = {}
+    alias_by_id: dict[str, list[str]] = {}
+    resume_holder: dict[str, Any] = {}
+    show_all = tk.BooleanVar(value=False)
+
+    toolbar = ttk.Frame(root, padding=(8, 8, 8, 4))
+    toolbar.pack(fill=tk.X)
+    ttk.Label(toolbar, text=f"Workspace: {args.workspace.parent}").pack(side=tk.LEFT)
+
+    body = ttk.Panedwindow(root, orient=tk.HORIZONTAL)
+    body.pack(fill=tk.BOTH, expand=True, padx=8, pady=(4, 8))
+
+    left = ttk.Frame(body)
+    right = ttk.Frame(body)
+    body.add(left, weight=3)
+    body.add(right, weight=4)
+
+    columns = ("session_id", "alias", "title", "updated", "turns", "cwd")
+    tree = ttk.Treeview(left, columns=columns, show="headings", selectmode="browse")
+    headings = {
+        "session_id": ("Session ID", 250),
+        "alias": ("Alias", 130),
+        "title": ("Title", 260),
+        "updated": ("Updated", 145),
+        "turns": ("Turns", 55),
+        "cwd": ("Original directory", 280),
+    }
+    for column, (label, width) in headings.items():
+        tree.heading(column, text=label)
+        tree.column(column, width=width, minwidth=50, stretch=column in {"title", "cwd"})
+    tree_scroll = ttk.Scrollbar(left, orient=tk.VERTICAL, command=tree.yview)
+    tree.configure(yscrollcommand=tree_scroll.set)
+    tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+    tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+    preview = tk.Text(right, wrap=tk.WORD, state=tk.DISABLED, padx=10, pady=10)
+    preview_scroll = ttk.Scrollbar(right, orient=tk.VERTICAL, command=preview.yview)
+    preview.configure(yscrollcommand=preview_scroll.set)
+    preview.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+    preview_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+    def selected_session() -> Optional[SessionMeta]:
+        selected = tree.selection()
+        if not selected:
+            return None
+        return session_by_id.get(selected[0])
+
+    def set_preview(text: str) -> None:
+        preview.configure(state=tk.NORMAL)
+        preview.delete("1.0", tk.END)
+        preview.insert("1.0", text)
+        preview.configure(state=tk.DISABLED)
+
+    def refresh_sessions() -> None:
+        sessions = scan_sessions(
+            args.sessions_dir,
+            args.workspace,
+            refresh=True,
+            scan_events=DEFAULT_SCAN_EVENTS,
+        )
+        visible = filter_sessions_for_workspace(
+            sessions,
+            args.workspace.parent,
+            include_all=bool(show_all.get()),
+        )
+        aliases = reverse_aliases(args.workspace)
+        session_by_id.clear()
+        alias_by_id.clear()
+        for item in tree.get_children():
+            tree.delete(item)
+        for session in visible:
+            session_by_id[session.session_id] = session
+            names = aliases.get(session.session_id, [])
+            alias_by_id[session.session_id] = names
+            tree.insert(
+                "",
+                tk.END,
+                iid=session.session_id,
+                values=session_table_values(session, names),
+            )
+        set_preview(
+            "Select a session to preview it."
+            if visible
+            else "No sessions found for this workspace."
+        )
+
+    def preview_selected(_event: object = None) -> None:
+        session = selected_session()
+        if session is None:
+            return
+        text = render_conversation(iter_jsonl(session.path, limit=args.events))
+        set_preview(text or "No user or assistant messages found.")
+
+    def edit_alias() -> None:
+        session = selected_session()
+        if session is None:
+            messagebox.showinfo("Alias", "Select a session first.", parent=root)
+            return
+        names = alias_by_id.get(session.session_id, [])
+        old_name = names[0] if names else ""
+        new_name = simpledialog.askstring(
+            "Set alias",
+            "Enter an alias:",
+            initialvalue=old_name,
+            parent=root,
+        )
+        if new_name is None or new_name == old_name:
+            return
+        def apply_change(change: Any) -> bool:
+            try:
+                change(False)
+                return True
+            except AliasConflictError as exc:
+                if not messagebox.askyesno(
+                    "Replace alias",
+                    f"{exc}\n\nReplace the existing alias?",
+                    parent=root,
+                ):
+                    return False
+                change(True)
+                return True
+
+        try:
+            if old_name:
+                changed = apply_change(
+                    lambda replace: rename_alias(
+                        args.workspace,
+                        old_name,
+                        new_name,
+                        replace=replace,
+                    )
+                )
+            else:
+                changed = apply_change(
+                    lambda replace: bind_alias(
+                        args.workspace,
+                        new_name,
+                        session,
+                        replace=replace,
+                    )
+                )
+        except AiwCxsError as exc:
+            messagebox.showerror("Alias error", str(exc), parent=root)
+            return
+        if not changed:
+            return
+        refresh_sessions()
+
+    def delete_alias() -> None:
+        session = selected_session()
+        if session is None:
+            messagebox.showinfo("Alias", "Select a session first.", parent=root)
+            return
+        names = alias_by_id.get(session.session_id, [])
+        if not names:
+            messagebox.showinfo("Alias", "This session has no alias.", parent=root)
+            return
+        name = names[0]
+        if len(names) > 1:
+            selected_name = simpledialog.askstring(
+                "Remove alias",
+                "Enter the alias to remove:",
+                initialvalue=name,
+                parent=root,
+            )
+            if selected_name is None:
+                return
+            name = selected_name
+        if not messagebox.askyesno(
+            "Remove alias",
+            f"Remove alias {name!r}?",
+            parent=root,
+        ):
+            return
+        try:
+            remove_alias(args.workspace, name)
+        except AiwCxsError as exc:
+            messagebox.showerror("Alias error", str(exc), parent=root)
+            return
+        refresh_sessions()
+
+    def resume_selected() -> None:
+        session = selected_session()
+        if session is None:
+            messagebox.showinfo("Resume", "Select a session first.", parent=root)
+            return
+        plan = plan_interactive_resume(session)
+        if not plan.can_launch:
+            command = display_command(plan.command)
+            cwd_text = str(plan.cwd) if plan.cwd is not None else "unknown"
+            copied = False
+            try:
+                root.clipboard_clear()
+                root.clipboard_append(command)
+                root.update()
+                copied = True
+            except tk.TclError:
+                copied = False
+            copy_note = "\nThe command was copied to the clipboard." if copied else ""
+            messagebox.showwarning(
+                "Cannot resume here",
+                (
+                    f"{plan.reason}\n\nDirectory: {cwd_text}\n"
+                    f"Command: {command}{copy_note}"
+                ),
+                parent=root,
+            )
+            return
+        try:
+            executable = validate_interactive_resume_capability()
+        except AiwCxsError as exc:
+            messagebox.showerror("Cannot resume", str(exc), parent=root)
+            return
+        resume_holder["plan"] = plan
+        resume_holder["executable"] = executable
+        root.destroy()
+
+    ttk.Checkbutton(
+        toolbar,
+        text="Show all workspaces",
+        variable=show_all,
+        command=refresh_sessions,
+    ).pack(side=tk.RIGHT, padx=(8, 0))
+    ttk.Button(toolbar, text="Refresh", command=refresh_sessions).pack(side=tk.RIGHT)
+
+    actions = ttk.Frame(root, padding=(8, 0, 8, 8))
+    actions.pack(fill=tk.X)
+    ttk.Button(actions, text="Set / Rename Alias", command=edit_alias).pack(
+        side=tk.LEFT
+    )
+    ttk.Button(actions, text="Remove Alias", command=delete_alias).pack(
+        side=tk.LEFT, padx=(8, 0)
+    )
+    ttk.Button(actions, text="Resume Interactive Codex", command=resume_selected).pack(
+        side=tk.RIGHT
+    )
+
+    tree.bind("<<TreeviewSelect>>", preview_selected)
+    refresh_sessions()
+    root.mainloop()
+
+    plan = resume_holder.get("plan")
+    return (
+        run_interactive_resume(
+            plan,
+            executable=resume_holder.get("executable"),
+        )
+        if isinstance(plan, InteractiveResumePlan)
+        else 0
+    )
+
+
 def add_execution_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("message", nargs="?", help="prompt/context")
     parser.add_argument(
@@ -843,6 +1365,11 @@ def make_parser() -> argparse.ArgumentParser:
     command.add_argument("-n", "--limit", type=int, default=20)
     command.add_argument("--json", action="store_true", help="output JSON")
     command.add_argument("--refresh", action="store_true", help="ignore metadata cache")
+    command.add_argument(
+        "--current-workspace",
+        action="store_true",
+        help="show only sessions from the current workspace",
+    )
     command.add_argument(
         "--scan-events", type=int, default=DEFAULT_SCAN_EVENTS, help=argparse.SUPPRESS
     )
@@ -889,6 +1416,30 @@ def make_parser() -> argparse.ArgumentParser:
     command = sub.add_parser("path", help="print the JSONL path for a session")
     command.add_argument("ref", help="session ID/prefix or alias")
     command.set_defaults(func=path_cmd)
+
+    command = sub.add_parser(
+        "gui",
+        help="browse workspace sessions and resume interactive Codex",
+        description=(
+            "Open a desktop browser for current-workspace Codex sessions. "
+            "Preview conversations, maintain aliases, and hand the selected "
+            "session to interactive `codex resume`."
+        ),
+        epilog=(
+            "The GUI uses the session's original working directory. If the "
+            "directory or an interactive terminal is unavailable, it shows a "
+            "copyable command instead.\n\nExample:\n  aiw cxs gui"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    command.add_argument(
+        "-e",
+        "--events",
+        type=int,
+        default=80,
+        help="maximum JSONL events to inspect in the preview",
+    )
+    command.set_defaults(func=gui_cmd)
 
     return parser
 

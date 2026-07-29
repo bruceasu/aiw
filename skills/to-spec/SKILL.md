@@ -7,15 +7,19 @@ disable-model-invocation: true
 This skill takes the current conversation context and codebase understanding and produces a spec (you may know this document as a PRD). Do NOT interview the user — just synthesize what you already know.
 
 Read `skills/work-management.md` and the repository's
-`docs/agents/work-management.md` when present. Do not create a parallel
-`.scratch` specification or publish externally unless the user explicitly asks.
+`docs/agents/work-management.md` when present. Use AIW for Task lifecycle and
+OpenSpec for the specification artifacts. Do not create a parallel `.scratch`
+specification or publish externally unless the user explicitly asks.
 
 ## Process
 
-1. Resolve the active OpenSpec change using the shared work-management contract.
-   If no unique change exists, ask for a change identifier before writing. Then
-   explore the repo to understand the current state, use the project's domain
-   glossary vocabulary, and respect any ADRs in the area you're touching.
+1. Resolve the active AIW Task using the shared work-management contract. If the
+   work needs a new lifecycle, create it through AIW; use the automatic backend
+   so an installed OpenSpec CLI can create the matching change artifacts. If
+   several Tasks match, ask for the Task ID before writing.
+
+   Then resolve the matching OpenSpec change, explore only the relevant repo
+   area, use the project's domain glossary, and respect applicable ADRs.
 
 2. Sketch out the seams at which you're going to test the feature. Existing seams should be preferred to new ones. Use the highest seam possible. If new seams are needed, propose them at the highest point you can. The fewer seams across the codebase, the better - the ideal number is one.
 
@@ -25,6 +29,10 @@ Check with the user that these seams match their expectations.
    Put motivation and scope in `proposal.md`, decisions in `design.md`,
    normative requirements in capability specs, and follow-up work in
    `tasks.md`. Do not publish to GitHub or GitLab as part of this Skill.
+
+4. Keep the AIW Task linked to the change and synchronize only its coarse title,
+   goal, and planning status. Do not copy OpenSpec-owned content into lifecycle
+   fields or create worktrees during specification work.
 
 <spec-template>
 
@@ -73,6 +81,8 @@ A list of testing decisions that were made. Include:
 - A description of what makes a good test (only test external behavior, not implementation details)
 - Which modules will be tested
 - Prior art for the tests (i.e. similar types of tests in the codebase)
+
+Testing decisions are plans only. This Skill does not run tests.
 
 ## Out of Scope
 

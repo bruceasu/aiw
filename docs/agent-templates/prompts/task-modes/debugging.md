@@ -2,7 +2,9 @@
 
 ## First
 - gather evidence before editing code
-- reproduce the issue or state why reproduction is not possible
+- inspect existing failure evidence first
+- reproduce the issue only when runtime execution is authorized; otherwise say
+  what could not be reproduced
 - compare expected behavior with actual behavior
 
 ## Investigation
@@ -15,6 +17,7 @@
 - remove temporary debug-only edits unless they are part of the final solution
 
 ## Validate
-- rerun the reproduction path
 - add a regression test when practical
+- if authorized, run the focused reproduction path once
+- rerun only after a relevant change; ask before widening scope
 - report the evidence chain from symptom to fix

@@ -11,6 +11,8 @@
 - separate verified facts from expected outcomes
 
 ## Validate
-- use stronger validation than usual
-- validate each phase when the task spans multiple projects or boundaries
+- design a stronger phased validation plan, but do not execute it automatically
+- use static boundary and rollback review first
+- ask once before the first runtime phase, with exact commands and cost
+- ask again before widening beyond the approved scope
 - call out what still needs human review or rollout checks

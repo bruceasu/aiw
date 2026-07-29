@@ -10,9 +10,9 @@ Use this Skill only when the user explicitly asks to publish or update an
 OpenSpec change on GitHub Issues. Normal planning and implementation remain
 local.
 
-Read `skills/work-management.md` and resolve exactly one change before writing.
-If the user did not identify a change and the session/worktree does not resolve
-one uniquely, stop and ask for the change identifier.
+Read `skills/work-management.md` and resolve exactly one AIW Task and matching
+OpenSpec change before writing. If the session/worktree does not resolve one
+uniquely, stop and ask for the Task ID.
 
 ## Process
 
@@ -32,8 +32,9 @@ one uniquely, stop and ask for the change identifier.
    ```
 
    Include the change ID, Goal, Scope, key requirement summaries, task progress,
-   and a statement that OpenSpec is authoritative. Keep detailed design notes
-   and temporary findings local unless the user asks for them.
+   and a statement that AIW owns lifecycle state while OpenSpec owns requirement
+   and checklist content. Keep detailed design notes and temporary findings
+   local unless the user asks for them.
 4. Read `openspec/changes/<change-id>/external/github.json` when it exists.
    It MUST be a versioned JSON object containing `version`, `repository`,
    `issue_number`, and `url`. If it is malformed or the mapped Issue cannot be
@@ -50,7 +51,8 @@ one uniquely, stop and ask for the change identifier.
 
 ## Projection rules
 
-- OpenSpec is authoritative for requirements, task progress, and status.
+- AIW is authoritative for lifecycle status.
+- OpenSpec is authoritative for requirements and detailed checklist progress.
 - Publication is one-way and explicit.
 - The mapping lives at `external/github.json`, not in `task.toml`.
 - Use `--body-file` or stdin for Markdown bodies; do not pass a large generated

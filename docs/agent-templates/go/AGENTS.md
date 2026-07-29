@@ -32,12 +32,17 @@ Load both only when the task truly spans both service and CLI code.
 - context or concurrency changes
 - auth, schema, or deployment changes
 
-## Validation
-Prefer the nearest `./scripts/verify.sh`.
-Otherwise use repository-standard commands such as:
-- `go test ./...`
-- `go vet ./...`
-- `go build ./...`
+## Validation Options
+Use static review by default. Do not automatically run `scripts/verify.sh`,
+tests, vet, or builds.
+
+When the shared resource budget authorizes runtime validation, choose one
+smallest relevant command:
+- `go test ./path/to/package`
+- `go vet ./path/to/package`
+- `go build ./path/to/package`
+
+Ask before repository-wide commands. Rerun only after a relevant change.
 
 ## Escalation
 If a deeper subtree has its own `AGENTS.md` or `CODEX.md`, prefer that local file.

@@ -24,4 +24,7 @@ For non-trivial work, provide:
 - Risks
 
 Inspect tests, schemas, and config before broad exploration.
-Prefer the nearest `./scripts/verify.sh`.
+Follow the shared resource budget. Use static review by default; do not run
+formatters, linters, type checks, tests, builds, or verification scripts
+automatically. When authorized, run one path-focused command and ask before
+widening scope.

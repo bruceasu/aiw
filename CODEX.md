@@ -1,113 +1,55 @@
-
 # CODEX.md
+
 Always respond in Chinese.
-## Role
-You are operating as a local coding agent for a Go codebase.
-Follow AGENTS.md first, then apply these Go-specific execution preferences.
+Follow `AGENTS.md` first.
 
----
+## Default Mode
 
-## Default Mod
-eFor medium or high complexity work, begin in planning mode.Before editing files, provide:
-- Understanding
-- Relevant packages / files
-- Assumptions
-- Missing information
-- Step-by-step plan
-- Risks
-- Validation commandsPrefer `/plan` first for:
-- new features
-- refactors
-- concurrency changes
-- public API changes
-- dependency changes
-- package structure changes
----
-## Execution Preferences
+- Use static analysis and code editing by default.
+- Keep the active context and prompt set small.
+- For non-trivial work, state understanding, affected files, assumptions, plan,
+  risks, and the proposed validation level before editing.
+- Do not treat implementation as permission to test, build, use the network,
+  probe permissions, escalate privileges, or start automated reviews.
 
-### Preferred sequence
-1. inspect only relevant files
-2. identify affected packages, exported symbols, tests, and configs
-3. produce a plan
-4. apply minimal code changes
-5. add or update tests
-6. run validation
-7. summarize results and remaining risks
-### Editing rules
-- keep changes localized
-- preserve package boundaries
-- avoid speculative abstractions
-- keep interfaces minimal
-- prefer explicit, idiomatic Go
----
-## Go-Specific Guidance
-### Package and API Design
-- Be careful with exported names and public types
-- Preserve API stability unless the task explicitly requires change
-- Do not introduce unnecessary interfaces
-### Context and ConcurrencyTreat changes involving:
-- `context.Context`
-- goroutines
-- channels
-- locks
-- retries
-- background workersas high-risk.Explicitly call out:
-- cancellation behavior
-- timeout behavior
-- shutdown behavior
-- race-condition risks
-- validation strategy
+## Execution Sequence
 
-### Dependency Management
-Treat `go.mod` and `go.sum` changes as high-risk.Do not casually add libraries when the standard library or existing patterns are sufficient.
+1. Read the nearest relevant instructions and OpenSpec artifacts.
+2. Inspect only the affected code, config, docs, and nearby tests.
+3. Apply the smallest correct change.
+4. Review the final diff statically.
+5. Run no executable validation unless `AGENTS.md` authorizes it.
+6. Report what was and was not verified.
 
----
+Stop broad exploration after three targeted discovery batches unless a concrete
+unknown blocks the task. Batch related reads and searches, limit command output,
+and do not repeat equivalent commands.
 
-## Approval Required Before
-- adding or changing dependencies
-- changing package structure broadly
-- changing exported APIs
-- changing concurrency or context behavior
-- changing auth/security logic
-- changing persistence/migrations
-- changing deployment or CI config
+## Go Guidance
 
----
+- Preserve package boundaries and exported behavior.
+- Prefer concrete types unless an existing seam requires an interface.
+- Preserve context cancellation, timeouts, retries, shutdown, and error flow.
+- Treat concurrency, dependencies, public APIs, auth, persistence, migrations,
+  deployment, and CI as high-risk.
 
-## Validation Preferences
-Prefer:```bash./scripts/verify.sh```
-Otherwise use repository-standard commands only.
-Common examples:```bashgo test ./...go build ./...go vet ./...```
-Always report:  
+## Validation
 
-- exact commands run  
-- pass/fail results  
-- what remains unverified
+Static review is sufficient by default. Tests, builds, formatting, linting, vet,
+verification scripts, networking, and `codex-auto-review` have a default budget
+of zero.
 
-## Output FormatUse this structure for non-trivial tasks:
+If runtime validation is authorized, run one narrow command. A second run is
+allowed only after a relevant change. Ask before widening scope.
 
-- Understanding
-- Relevant Packages
-- Assumptions
-- Plan
-- Implementation
-- Validation
-- Risks
-- Harness improvements suggested
+## Completion
 
-## Definition of DoneA task is not done until:  
+A task is complete when the requested change is implemented and the final
+report clearly distinguishes:
 
-- requested behavior is implemented  
-- relevant tests are updated or added  
-- public API and concurrency impacts are called out  
-- validation is run or limitations are explicitly stated  
-- docs are updated if needed
+- static evidence;
+- commands actually run;
+- checks intentionally not run;
+- residual risks.
 
-## Forbidden ShortcutsDo not:  
-
-- skip tests silently  
-- introduce interfaces without need  
-- change concurrency behavior without explanation  
-- change public APIs casually  
-- add dependencies casually  
-- claim correctness without evidence
+Do not claim runtime correctness without runtime evidence.

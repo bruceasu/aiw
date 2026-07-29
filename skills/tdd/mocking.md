@@ -1,59 +1,61 @@
 # When to Mock
 
-Mock at **system boundaries** only:
+Mock at system boundaries only:
 
-- External APIs (payment, email, etc.)
-- Databases (sometimes - prefer test DB)
-- Time/randomness
-- File system (sometimes)
+- External APIs and SDKs
+- Databases when a real test database is not practical
+- Time and randomness
+- File system access
+- Queues, email, and other infrastructure clients
 
 Don't mock:
 
-- Your own classes/modules
+- Your own classes or modules
 - Internal collaborators
-- Anything you control
+- Private methods
+- Anything you control directly
 
 ## Designing for Mockability
 
-At system boundaries, design interfaces that are easy to mock:
+At boundaries, make dependencies easy to replace:
 
-**1. Use dependency injection**
+- Inject clients or ports instead of constructing them internally.
+- Keep interfaces small and specific.
+- Prefer fakes or in-memory adapters when they are simpler than mocks.
 
-Pass external dependencies in rather than creating them internally:
+Language cues:
 
-```typescript
-// Easy to mock
-function processPayment(order, paymentClient) {
-  return paymentClient.charge(order.total);
-}
+- Java: inject interfaces or clients; use Mockito at boundaries only.
+- Go: define small interfaces on the consumer side; prefer hand-written fakes and `httptest` before third-party mocking.
+- Python: pass collaborators in, or monkeypatch imported boundary objects; use `unittest.mock` or `pytest.monkeypatch` for external boundaries.
 
-// Hard to mock
-function processPayment(order) {
-  const client = new StripeClient(process.env.STRIPE_KEY);
-  return client.charge(order.total);
+Examples:
+
+```java
+class PaymentService {
+  private final PaymentClient client;
+
+  PaymentService(PaymentClient client) {
+    this.client = client;
+  }
+
+  Receipt process(Order order) {
+    return client.charge(order.total());
+  }
 }
 ```
 
-**2. Prefer SDK-style interfaces over generic fetchers**
+```go
+type PaymentClient interface {
+  Charge(total Money) Receipt
+}
 
-Create specific functions for each external operation instead of one generic function with conditional logic:
-
-```typescript
-// GOOD: Each function is independently mockable
-const api = {
-  getUser: (id) => fetch(`/users/${id}`),
-  getOrders: (userId) => fetch(`/users/${userId}/orders`),
-  createOrder: (data) => fetch('/orders', { method: 'POST', body: data }),
-};
-
-// BAD: Mocking requires conditional logic inside the mock
-const api = {
-  fetch: (endpoint, options) => fetch(endpoint, options),
-};
+func ProcessPayment(order Order, client PaymentClient) Receipt {
+  return client.Charge(order.Total)
+}
 ```
 
-The SDK approach means:
-- Each mock returns one specific shape
-- No conditional logic in test setup
-- Easier to see which endpoints a test exercises
-- Type safety per endpoint
+```python
+def process_payment(order, payment_client):
+    return payment_client.charge(order.total)
+```

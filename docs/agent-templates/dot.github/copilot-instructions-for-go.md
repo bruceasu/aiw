@@ -16,6 +16,7 @@ Read `AGENTS.md` first, then `go/AGENTS.md`.
 - inspect local tests, config, and public contracts first
 - respect package boundaries
 - keep exported APIs and context flow stable unless the task requires change
-- prefer the nearest `./scripts/verify.sh`
-- otherwise use standard checks such as:
-  `go test ./...`, `go vet ./...`, `go build ./...`
+- use static review by default
+- do not run tests, vet, builds, verification scripts, network calls, or
+  permission probes without resource-budget authorization
+- when authorized, run one package-focused command and ask before widening

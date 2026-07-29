@@ -14,6 +14,8 @@
 - packaging and entrypoint patterns
 
 ## Validate
-- prefer the nearest verification script
-- otherwise run the project-standard lint, type, and test commands
+- use static command wiring, exit code, output, and error-flow review by default
 - add tests for behavior and failure paths when CLI behavior changes
+- when authorized, run one smallest relevant `ruff`, `mypy`, or `pytest`
+  command for the changed command or package
+- ask before widening beyond that package

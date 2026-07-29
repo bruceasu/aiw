@@ -11,11 +11,9 @@
 - [module/package/service names]
 
 ## Validation
-- [ ] format/lint
-- [ ] typecheck/static checks
-- [ ] unit tests
-- [ ] integration tests
-- [ ] build
+Describe the static review performed.
+List runtime checks only when they were explicitly authorized and actually run.
+State tests and builds not run without treating that as a failure.
 
 Commands run:
 

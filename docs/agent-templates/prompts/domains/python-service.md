@@ -15,6 +15,8 @@
 - async, retry, timeout, and shutdown behavior
 
 ## Validate
-- prefer the nearest verification script
-- otherwise use the project-standard `ruff`, `mypy`, and `pytest` commands
+- use static schema, typing, config, and request-flow review by default
 - add regression or contract tests when API behavior changes
+- when authorized, run one smallest relevant `ruff`, `mypy`, or `pytest`
+  command for the changed package or behavior
+- ask before widening beyond that package

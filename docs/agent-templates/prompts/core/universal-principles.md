@@ -12,7 +12,8 @@
 
 ## Evidence Discipline
 - Separate facts, assumptions, and inferences.
-- Do not claim success without validation evidence.
+- Static evidence is acceptable when runtime validation is not authorized.
+- Do not present static evidence as a runtime result.
 - Call out what remains unverified.
 
 ## Stop Instead Of Guessing

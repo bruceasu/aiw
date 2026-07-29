@@ -653,6 +653,8 @@ aiw prompts go --merge
 
 # Codex sessions (plugin)
 aiw cxs list -n 20
+aiw cxs list --current-workspace --json -n 20
+aiw cxs gui
 aiw cxs exec "summarize current diff"
 aiw cxs exec --session payment-retry "continue implementation"
 

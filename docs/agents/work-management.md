@@ -1,20 +1,20 @@
 # Work Management
 
-OpenSpec is the canonical local source of truth for this repository.
+AIW is authoritative for Task lifecycle, branch, worktree, Session, and handoff
+state. OpenSpec is authoritative for proposal, design, capability requirements,
+and the detailed checklist in `tasks.md`.
 
-Local work lives under:
+Local work normally uses:
 
-- `openspec/changes/<change-id>/` for active changes and their task artifacts.
-- `openspec/specs/` for stable capability requirements.
-- `openspec/archive/` for archived changes.
-- `.wt/<task-id>/` for AIW task worktrees when a task declares one.
+- `openspec/changes/<task-id>/` for active Task artifacts;
+- `openspec/specs/` for stable capability requirements;
+- `.wt/<task-id>/` for AIW-managed Task worktrees.
 
-The normal workflow does not ask users to choose a Local Markdown, GitHub, or
-GitLab tracker. Existing `.scratch` content is legacy user data and is left
-untouched; new canonical specifications and tickets are not written there.
+Use AIW lifecycle commands for Task creation, status, completion, and archive.
+Use `aiw wt` for worktrees. AIW's automatic backend may delegate supported
+artifact operations to an installed OpenSpec CLI.
 
-GitHub and GitLab are optional external projections. They are used only after an
-explicit request, and OpenSpec remains authoritative for requirements, task
-progress, and local status.
+Do not create new canonical work under `.scratch`. GitHub and GitLab remain
+optional external projections.
 
-For Skill behavior and context resolution, read `skills/work-management.md`.
+For complete Skill behavior, read `skills/work-management.md`.

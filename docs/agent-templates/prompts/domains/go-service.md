@@ -15,6 +15,8 @@
 - explicit error handling style
 
 ## Validate
-- prefer the nearest verification script
-- otherwise use the project-standard `go test`, `go vet`, and `go build` commands
+- use static package, contract, context, and error-flow review by default
 - add regression or contract tests when service behavior changes
+- when authorized, run one smallest relevant `go test`, `go vet`, or `go build`
+  command for the changed package
+- ask before widening beyond that package
