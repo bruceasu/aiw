@@ -65,6 +65,13 @@ When PRs are in scope, include external PRs in these buckets and tag each line `
 
 Show counts and a one-line summary per item. Let the maintainer pick.
 
+## Verification Boundary
+
+Triage is static by default. Trace code paths and inspect diffs; runtime
+reproduction or tests require explicit user authorization. If not authorized,
+record `%% NOT_RUN: runtime verification not authorized` and distinguish
+confirmed, failed, or insufficient detail.
+
 ## Triage a specific issue or PR
 
 1. **Gather context.** Read the full issue or PR (body, comments, labels, author, dates; for a PR, the diff too). Parse any prior triage notes so you don't re-ask resolved questions. Explore the codebase using the project's domain glossary, respecting ADRs in the area. Run two checks against the codebase: (a) **redundancy** — search for an existing implementation of the requested behavior by domain concept (not just the request's wording), and report where you looked. If found, it's an already-implemented `wontfix` (step 5). (b) **prior rejection** — read `.out-of-scope/*.md` and surface any that resembles this request.
