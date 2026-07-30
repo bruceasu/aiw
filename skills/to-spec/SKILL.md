@@ -6,7 +6,8 @@ disable-model-invocation: true
 
 This skill takes the current conversation context and codebase understanding and produces a spec (you may know this document as a PRD). Do NOT interview the user — just synthesize what you already know.
 
-Read `skills/work-management.md` and the repository's
+Follow `skills/reviewed-skill-contract.md`. Read `skills/work-management.md`
+and the repository's
 `docs/agents/work-management.md` when present. Use AIW for Task lifecycle and
 OpenSpec for the specification artifacts. Do not create a parallel `.scratch`
 specification or publish externally unless the user explicitly asks.

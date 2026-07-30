@@ -4,10 +4,10 @@
 
 **Prerequisites:** None — can start immediately
 
-- [ ] 明确 Skill 的触发条件与非触发条件。
-- [ ] 明确输入、输出、完成标准和 `%%` 未决事项格式。
-- [ ] 明确文件、Task、OpenSpec、worktree、commit 和外部发布的授权边界。
-- [ ] 复用 `skills/work-management.md`，不复制第二套生命周期规则。
+- [x] 明确 Skill 的触发条件与非触发条件。
+- [x] 明确输入、输出、完成标准和 `%%` 未决事项格式。
+- [x] 明确文件、Task、OpenSpec、worktree、commit 和外部发布的授权边界。
+- [x] 复用 `skills/work-management.md`，不复制第二套生命周期规则。
 
 ## 02 — 修正核心路由与生命周期
 
@@ -15,10 +15,10 @@
 
 **Prerequisites:** 01
 
-- [ ] 咨询、探索、规格、任务拆分、实现和交接的入口与出口清晰。
-- [ ] 咨询阶段不创建 Task、OpenSpec change 或修改文件。
-- [ ] `/implement` 不自动触发 TDD、code review、测试或构建。
-- [ ] handoff、Task、OpenSpec change、branch 和 worktree 的关系可追踪。
+- [x] 咨询、探索、规格、任务拆分、实现和交接的入口与出口清晰。
+- [x] 咨询阶段不创建 Task、OpenSpec change 或修改文件。
+- [x] `/implement` 不自动触发 TDD、code review、测试或构建。
+- [x] handoff、Task、OpenSpec change、branch 和 worktree 的关系可追踪。
 
 ## 03 — 修正金融规划与治理 Skills
 
@@ -26,11 +26,11 @@
 
 **Prerequisites:** 01, 02
 
-- [ ] 保留五阶段 review 顺序，并支持 full、focused 和 resume 模式。
-- [ ] 分离 Plan Status 与 Release Readiness。
-- [ ] 缺少证据时使用 `%%` 和阻塞状态，不补写业务规则或数据来源。
-- [ ] release 默认是 `NOT YET REVIEWED`，只有满足触发条件和证据要求才允许 `GO`。
-- [ ] 正确区分 proposal、design、capability spec、tasks 和 AIW Task metadata。
+- [x] 保留五阶段 review 顺序，并支持 full、focused 和 resume 模式。
+- [x] 分离 Plan Status 与 Release Readiness。
+- [x] 缺少证据时使用 `%%` 和阻塞状态，不补写业务规则或数据来源。
+- [x] release 默认是 `NOT YET REVIEWED`，只有满足触发条件和证据要求才允许 `GO`。
+- [x] 正确区分 proposal、design、capability spec、tasks 和 AIW Task metadata。
 
 ## 04 — 修正质量与工程 Skills
 
@@ -38,10 +38,10 @@
 
 **Prerequisites:** 01, 02
 
-- [ ] TDD 和 code review 均为显式 opt-in。
-- [ ] 默认不运行测试、构建、格式化、完整 review 或扩大检查范围。
-- [ ] 诊断、架构改进和实现保持清晰边界。
-- [ ] 合并冲突处理保留现场，并遵循可恢复的生命周期规则。
+- [x] TDD 和 code review 均为显式 opt-in。
+- [x] 默认不运行测试、构建、格式化、完整 review 或扩大检查范围。
+- [x] 诊断、架构改进和实现保持清晰边界。
+- [x] 合并冲突处理保留现场，并遵循可恢复的生命周期规则。
 
 ## 05 — 修正 Session、原型和外部发布 Skills
 
@@ -49,10 +49,10 @@
 
 **Prerequisites:** 01, 02
 
-- [ ] Session 恢复结果可预测，并保留必要上下文。
-- [ ] prototype 结果可通过 handoff 回流主流程。
-- [ ] GitHub 或其他外部发布必须由用户显式请求。
-- [ ] 安装、发布或恢复失败时不伪造成功状态。
+- [x] Session 恢复结果可预测，并保留必要上下文。
+- [x] prototype 结果可通过 handoff 回流主流程。
+- [x] GitHub 或其他外部发布必须由用户显式请求。
+- [x] 安装、发布或恢复失败时不伪造成功状态。
 
 ## 06 — 修正通用工作 Skills
 
@@ -96,8 +96,15 @@
 - [x] Task 04 — quality and engineering Skills.
 - [x] Task 05 — Session, prototype, and external publication boundaries.
 - [x] Task 06 — general-purpose Skills.
-- [ ] Task 07 — cross-Skill consistency check.
-- [ ] Task 08 — final documentation and verification record.
+- [x] Task 07 — cross-Skill consistency check.
+- [x] Task 08 — final documentation and verification record.
+
+## Final Status Reconciliation
+
+- [x] Task 07 — all 31 reviewed Skills exist; all reference the shared contract; no missing recommended Skill was found.
+- [x] Task 08 — Verification records static checks and explicitly records that tests, builds, validators, and external publication were not run.
+
+%% NEEDS_INPUT: The original change note asks whether the 31-Skill delivery should be split into independently archived batches; this implementation kept one AIW Task and one lifecycle.
 
 The original detailed acceptance checkboxes above remain the authoritative
 criteria; this reconciliation records the implementation status without

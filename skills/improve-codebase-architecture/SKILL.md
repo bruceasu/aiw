@@ -6,6 +6,10 @@ disable-model-invocation: true
 
 # Improve Codebase Architecture
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+Architecture exploration returns recommendations; implementation requires a
+separate approved lifecycle step.
+
 Surface architectural friction and propose **deepening opportunities** — refactors that turn shallow modules into deep ones. The aim is testability and AI-navigability.
 
 This command is _informed_ by the project's domain model and built on a shared design vocabulary:

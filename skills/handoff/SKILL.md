@@ -5,7 +5,8 @@ argument-hint: "What will the next session be used for?"
 disable-model-invocation: true
 ---
 
-Read `skills/work-management.md` when present. Resolve the AIW Task, its
+Follow `skills/reviewed-skill-contract.md`. Read `skills/work-management.md`
+when present. Resolve the AIW Task, its
 worktree, Session, and matching OpenSpec change before writing the handoff.
 
 Write a handoff document summarising the current conversation so a fresh agent

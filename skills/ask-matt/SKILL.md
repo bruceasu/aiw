@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # Ask Matt
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+
 ## Contract
 
 Trigger when the user asks which Skill or AIW/OpenSpec stage fits. Do not use

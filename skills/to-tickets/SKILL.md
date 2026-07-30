@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # To Tickets
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+
 ## Contract
 
 Trigger when an existing plan or spec needs ordered implementation items. Do
