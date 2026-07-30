@@ -88,6 +88,21 @@
 - [ ] 剩余不确定性使用 `%%` 记录，不使用 `TODO` 掩盖缺失证据。
 - [ ] 明确下一步是 `/implement`，且不暗示规划阶段已经完成实现。
 
+## Reconciled Task Status
+
+- [x] Task 01 — unified Skill contract and verification rules.
+- [x] Task 02 — core routing and lifecycle.
+- [x] Task 03 — finance planning and governance.
+- [x] Task 04 — quality and engineering Skills.
+- [x] Task 05 — Session, prototype, and external publication boundaries.
+- [x] Task 06 — general-purpose Skills.
+- [ ] Task 07 — cross-Skill consistency check.
+- [ ] Task 08 — final documentation and verification record.
+
+The original detailed acceptance checkboxes above remain the authoritative
+criteria; this reconciliation records the implementation status without
+claiming Tasks 07–08 are complete.
+
 ## Verification
 
 - [x] Implementation status: Tasks 01–06 complete; commits `20a922c`, `8a8b4af`, `a5db9b3`, `fe2ead0`, `0aee5ab`, and `3bcf0b2`.
