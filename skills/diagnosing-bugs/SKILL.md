@@ -5,6 +5,10 @@ description: Diagnosis loop for hard bugs and performance regressions. Use when 
 
 # Diagnosing Bugs
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+Diagnosis is separate from implementation; runtime reproduction is opt-in and
+must be reported as not run when unauthorized.
+
 A discipline for hard bugs. Skip phases only when explicitly justified.
 
 When exploring the codebase, read `CONTEXT.md` (if it exists) to get a clear mental model of the relevant modules, and check ADRs in the area you're touching.

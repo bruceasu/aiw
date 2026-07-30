@@ -5,6 +5,10 @@ description: Test-driven development for frontend, Java, Go, and Python projects
 
 # Test-Driven Development
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+TDD is explicit opt-in; `/implement` does not invoke it and tests require
+explicit authorization.
+
 Use TDD as a red-green loop. Keep each cycle focused on one seam and one observable behavior.
 
 Before writing the first test, identify the repo's test stack, naming conventions, and package layout. If `CONTEXT.md` exists, read it. For Java, Go, and Python projects, follow the existing framework instead of forcing a new style.

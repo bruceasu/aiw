@@ -90,6 +90,8 @@
 
 ## Verification
 
+- [x] Task 04 quality boundaries added to TDD, design, and diagnosis Skills; runtime checks remain opt-in.
+
 - [x] Task 03 finance governance boundaries added to the five review Skills; Plan Status and Release Readiness remain separate.
 
 - [x] Task 02 core routing boundaries updated for `ask-matt`, `to-tickets`, and `triage`; `to-spec`, `implement`, `handoff`, and `wayfinder` retain their managed-flow boundaries.
