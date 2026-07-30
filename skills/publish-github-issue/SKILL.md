@@ -6,6 +6,10 @@ disable-model-invocation: true
 
 # Publish OpenSpec to GitHub Issue
 
+External publication is explicit opt-in. Follow
+`skills/reviewed-skill-contract.md` and `skills/work-management.md`; publication
+failure must not mutate Task status, archive, merge, or clean up resources.
+
 Use this Skill only when the user explicitly asks to publish or update an
 OpenSpec change on GitHub Issues. Normal planning and implementation remain
 local.

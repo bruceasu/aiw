@@ -6,6 +6,10 @@ disable-model-invocation: true
 
 # Setup Engineering Skills
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+Setup may change configuration only when explicitly requested; it must report
+what was inspected and must not claim successful installation without evidence.
+
 Read `skills/work-management.md`.
 
 ## Inspect

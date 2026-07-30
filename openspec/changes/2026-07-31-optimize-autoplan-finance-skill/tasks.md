@@ -90,6 +90,8 @@
 
 ## Verification
 
+- [x] Task 05 Session, prototype, setup, and external-publication boundaries added; publication remains explicit opt-in.
+
 - [x] Task 04 quality boundaries added to TDD, design, and diagnosis Skills; runtime checks remain opt-in.
 
 - [x] Task 03 finance governance boundaries added to the five review Skills; Plan Status and Release Readiness remain separate.

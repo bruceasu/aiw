@@ -5,6 +5,10 @@ description: List local Codex sessions for the current workspace as numbered opt
 
 # Resume Ext
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+This Skill selects and reports a resumable Session only; it does not switch
+Tasks, seize leases, or mutate worktrees automatically.
+
 Use `aiw cxs` as the source of truth. Keep all prompts and option labels in Easy
 English.
 
