@@ -53,11 +53,11 @@ implementation changes on the AIW Task branch.
 If every implementation checklist item in `tasks.md` is complete, run the
 completion protocol automatically:
 
-1. Synchronize AIW and OpenSpec state.
-2. Archive the completed change through the automatic backend.
-3. Merge the Task branch into its recorded parent branch.
-4. Verify the merge succeeded.
-5. Remove the Task worktree and delete the Task branch.
+1. Merge the Task branch into its validated `parent_branch`.
+2. Verify the merge succeeded.
+3. Remove the Task worktree and delete the Task branch.
+4. Synchronize AIW and OpenSpec state.
+5. Archive the completed change through the automatic backend.
 
 Do not start this protocol when any checklist item is incomplete. If sync,
 archive, merge, or verification fails, stop and preserve the Task branch and

@@ -44,8 +44,10 @@ Update the selected checklist item, TODO, Verification, and remaining `%%`
 risks or questions. Synchronize the coarse AIW Task status without overwriting
 OpenSpec-owned content.
 
-Perform one static review of the changed paths. Do not commit, archive, remove
-the worktree, or delete the branch unless the user asks.
+Perform one static review of the changed paths. Commit the completed changes on
+the Task branch. When every checklist item is complete, merge and verify the
+branch, remove the worktree and feature branch, then sync and archive. Preserve
+resources if any step fails.
 
 After development is complete, ask once whether the user wants one focused test
 command run. Show the exact command, scope, and expected duration. Default to no

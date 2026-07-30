@@ -55,7 +55,10 @@ delivery, or archive lifecycle, and only after the user approves the split.
   `.wt/<task-id>` worktree.
 - Do not use raw `git worktree` when AIW is available.
 - Do not silently implement in a workspace that does not match the Task.
-- Do not remove a worktree or branch automatically, including after archive.
+- After all checklist items are complete, merge the Task branch into its
+  recorded parent branch and verify the merge. Then remove the Task worktree
+  and delete the Task branch. Sync and archive are the final lifecycle steps.
+  Preserve resources if merge or cleanup fails.
 
 If AIW is unavailable, report the missing capability and ask before using a raw
 Git fallback.
@@ -80,8 +83,9 @@ For synchronization:
 - Proposal, design, specs, and checklist content remain OpenSpec-owned.
 - Stop on conflicts instead of overwriting either side.
 
-Archive through `aiw archive <task-id> --backend auto`. Do not add worktree or
-branch cleanup flags unless the user explicitly requests cleanup.
+Archive through `aiw archive <task-id> --backend auto` only after the merged
+branch has been verified and the worktree and feature branch have been cleaned
+up. Do not archive a partial or conflicted Task.
 
 ## Sub-Agents
 
@@ -113,4 +117,5 @@ After implementation:
   notes;
 - synchronize the coarse AIW Task status without overwriting OpenSpec content;
 - report static evidence and checks not run;
-- do not commit, archive, or clean a worktree unless requested.
+- merge and verify the completed branch, clean its worktree and feature branch,
+  then sync and archive; do not clean partial or failed work.

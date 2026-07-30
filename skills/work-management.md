@@ -62,10 +62,10 @@ delivery, or archive lifecycle, and only after the user approves the split.
   parent branch; never infer the target from the current checkout.
 - Do not use raw `git worktree` when AIW is available.
 - Do not silently implement in a workspace that does not match the Task.
-- Remove the Task worktree and delete the Task branch automatically only after
-  the completion protocol succeeds: all checklist items are complete, sync and
-  archive succeed, and the Task branch has merged into its recorded parent
-  branch. Preserve both on any failure or merge conflict.
+- After all checklist items are complete, merge the Task branch into its
+  recorded parent branch and verify the merge. Then remove the Task worktree
+  and delete the Task branch. Only after cleanup succeeds, run sync and archive.
+  Preserve Task resources on any failure or merge conflict before cleanup.
 
 If AIW is unavailable, report the missing capability and ask before using a raw
 Git fallback.
@@ -90,12 +90,11 @@ For synchronization:
 - Proposal, design, specs, and checklist content remain OpenSpec-owned.
 - Stop on conflicts instead of overwriting either side.
 
-Archive through `aiw archive <task-id> --backend auto` as part of the
-completion protocol. The protocol must verify the selected `tasks.md` has no
-unchecked implementation items, synchronize the AIW/OpenSpec state, archive the
-change, merge the Task branch into its recorded parent branch, and only then
-remove the worktree and delete the Task branch. Stop and preserve the Task
-resources if any step fails or a merge conflict occurs.
+Archive through `aiw archive <task-id> --backend auto` only after the completed
+Task branch has been merged into its recorded parent branch, the merge has been
+verified, and the worktree and feature branch have been cleaned up. Sync and
+archive are the final lifecycle steps. Stop and preserve resources if merge or
+cleanup fails.
 
 ## Sub-Agents
 
@@ -129,6 +128,6 @@ After implementation:
 - report static evidence and checks not run;
 - commit the completed implementation changes on the AIW Task branch after the
   static review. When every checklist item is complete, run the completion
-  protocol: synchronize, archive, merge into the recorded parent branch, then
-  remove the worktree and delete the Task branch. Do not clean up partial or
-  failed work.
+  protocol: merge into the recorded parent branch, verify the merge, remove the
+  worktree and delete the Task branch, then synchronize and archive. Do not
+  clean up partial or failed work.
