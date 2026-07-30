@@ -3,10 +3,10 @@
     {
       "id": "2026-07-30-task-agent-next-autocreate",
       "status": "TODO",
-      "branch": "feature/2026-07-30-task-agent-next-autocreate",
+      "branch": "",
       "worktree": "",
       "path": "openspec/changes/2026-07-30-task-agent-next-autocreate",
-      "updated_at": "2026-07-30"
+      "updated_at": "2026-07-31"
     },
     {
       "id": "aiw-skills-user-scope",
