@@ -90,6 +90,8 @@
 
 ## Verification
 
+- [x] Task 01 contract defined in `skills/reviewed-skill-contract.md`; `autoplan-finance` now references it and reports completion and authorization boundaries.
+
 - [ ] 8 个 ticket 按前置关系执行，未引入第二套任务追踪系统。
 - [ ] 31 个 Skill 均被覆盖。
 - [ ] 路由、生命周期、证据和验证边界跨 Skill 一致。
