@@ -21,7 +21,7 @@ openspec/
   changes/
     <change-id>/
       task.toml          # required, machine-readable intake
-      task.md            # required, human-readable intake
+      tasks.md            # required, human-readable intake
       tasks.md           # required, ordered task checklist
       design.md          # produced here (sections 1..5, 8..11 of Output Format)
       release.md         # produced here only if caller requests a release stub

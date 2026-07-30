@@ -59,7 +59,7 @@ If a required input is missing, ask **once**, then return a `HOLD` brief listing
 
 - **Primary**: a single `# Problem Brief` document using the [Output Format](#output-format) below.
 - **Recommendation** must be exactly one of: `PROCEED` | `HOLD` | `REDUCE` | `NEEDS_VALIDATION`, with an explicit `Next:` pointer to the sibling skill or manual step that should follow.
-- **Secondary (when OpenSpec Profile is requested)**: contents targeted at `task.md` under `openspec/changes/<change-id>/`. See [OpenSpec Handoff](#openspec-handoff).
+- **Secondary (when OpenSpec Profile is requested)**: contents targeted at `tasks.md` under `openspec/changes/<change-id>/`. See [OpenSpec Handoff](#openspec-handoff).
 
 ## Handoff
 
@@ -154,14 +154,14 @@ Use `references/intake-template.md` when handing the raw template to the user.
 
 When this skill runs **inside** `autoplan-finance`, its output populates sections 1, 2, 3, 5, and 14 of `PLAN.md`. No file emission is needed.
 
-When this skill runs **standalone** and the caller asks for OpenSpec output, emit `task.md` under `openspec/changes/<change-id>/`:
+When this skill runs **standalone** and the caller asks for OpenSpec output, emit `tasks.md` under `openspec/changes/<change-id>/`:
 
 ```text
 openspec/
   changes/
     <change-id>/
       task.toml          # machine-readable intake, one field per Recommendation
-      task.md            # produced here (Problem Brief body)
+      tasks.md            # produced here (Problem Brief body)
       tasks.md           # each Unknown row with "Blocks Next Step? yes" becomes a task
 ```
 

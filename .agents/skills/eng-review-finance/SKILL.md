@@ -52,7 +52,7 @@ Required from caller:
 
 Optional but improves quality:
 
-- Existing OpenSpec artifacts (`task.md`, prior `design.md`, spec deltas).
+- Existing OpenSpec artifacts (`tasks.md`, prior `design.md`, spec deltas).
 - Metric definitions from `metrics-review` (source system.table.field, owner, cut-off).
 - Draft permission matrix or role list.
 - Known audit / retention / regulatory constraints.

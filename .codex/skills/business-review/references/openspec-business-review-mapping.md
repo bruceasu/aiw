@@ -7,7 +7,7 @@
 ## Two Layers
 
 1. **Logical profile** ── what this skill emits:
-   - Appended `## Business Review` section on `task.md`
+   - Appended `## Business Review` section on `tasks.md`
    - Updated `[business]` block in `task.toml`
    - Follow-up rows appended to `tasks.md` for each Required Condition marked `Blocks Decision? yes`
 
@@ -27,7 +27,7 @@ openspec/
   changes/
     <change-id>/
       task.toml          # [business] decision + named owner
-      task.md            # append Business Review section
+      tasks.md            # append Business Review section
       tasks.md           # each Required Condition with Blocks Decision = yes becomes a task
       design.md          # produced later by eng-review-finance
       release.md         # produced later by release-review
@@ -42,14 +42,14 @@ openspec/
 
 | Output Format section | Target location | Notes |
 |---|---|---|
-| `## Decision` | `task.toml` `[business].decision` + head of appended section in `task.md` | Enum: `APPROVE` / `REDUCE` / `HOLD`. |
-| `## 1. Context` | `task.md` (Business Review section) | Named business owner also goes to `task.toml` `[business].owner`. |
-| `## 2. Value Matrix` | `task.md` | 1:1. Keep the 6-row table intact. |
-| `## 3. Cost vs Benefit` | `task.md` | 1:1. Payback horizon also goes to `task.toml` `[business].payback_months`. |
-| `## 4. Scope Challenge` | `task.md` | Recommendations here may modify the upstream `office-hours-finance` Scope section ── update by appending a `## 4.1 Post-Business-Review Scope Adjustment` note; do not silently edit the original. |
-| `## 5. Smaller Alternatives` | `task.md` | If any row is `reuse` and covers ≥ 80%, the decision must be `REDUCE`. |
-| `## 6. Validation Path` | `task.md` + `tasks.md` | Validation metric must be defined in `openspec/specs/<capability>/metrics.md`; if missing, that becomes a task and a Required Condition. |
-| `## 7. Required Conditions` | `task.md` + `tasks.md` | Every `Blocks Decision? yes` row becomes a task in `tasks.md`. |
+| `## Decision` | `task.toml` `[business].decision` + head of appended section in `tasks.md` | Enum: `APPROVE` / `REDUCE` / `HOLD`. |
+| `## 1. Context` | `tasks.md` (Business Review section) | Named business owner also goes to `task.toml` `[business].owner`. |
+| `## 2. Value Matrix` | `tasks.md` | 1:1. Keep the 6-row table intact. |
+| `## 3. Cost vs Benefit` | `tasks.md` | 1:1. Payback horizon also goes to `task.toml` `[business].payback_months`. |
+| `## 4. Scope Challenge` | `tasks.md` | Recommendations here may modify the upstream `office-hours-finance` Scope section ── update by appending a `## 4.1 Post-Business-Review Scope Adjustment` note; do not silently edit the original. |
+| `## 5. Smaller Alternatives` | `tasks.md` | If any row is `reuse` and covers ≥ 80%, the decision must be `REDUCE`. |
+| `## 6. Validation Path` | `tasks.md` + `tasks.md` | Validation metric must be defined in `openspec/specs/<capability>/metrics.md`; if missing, that becomes a task and a Required Condition. |
+| `## 7. Required Conditions` | `tasks.md` + `tasks.md` | Every `Blocks Decision? yes` row becomes a task in `tasks.md`. |
 | `## 8. Final Recommendation` | `task.toml` `[business]` block | Includes decision, next-step pointer, named owner, next review date. |
 
 ## `task.toml` Update Example
@@ -81,7 +81,7 @@ Example: `2026-07-07-deposit-reconciliation-dashboard`.
 
 ## Cross-Reference Discipline
 
-- `task.md` **references** but does not **redefine**:
+- `tasks.md` **references** but does not **redefine**:
   - Metric formulas (owned by `metrics.md`).
   - Permission matrix (owned by `permissions.md`).
   - Audit fields (owned by `audit.md`).
@@ -97,7 +97,7 @@ Example: `2026-07-07-deposit-reconciliation-dashboard`.
 ## Validator Note
 
 The included `scripts/validate_business_review.py` validates a **single**
-`BUSINESS_REVIEW.md` (or a `task.md` extract) file against the Output Format
+`BUSINESS_REVIEW.md` (or a `tasks.md` extract) file against the Output Format
 headings. It does not walk the whole `openspec/` tree.
 
 ## Backward Compatibility

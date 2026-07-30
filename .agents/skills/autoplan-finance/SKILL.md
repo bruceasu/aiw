@@ -201,7 +201,7 @@ If the host repository uses the OpenSpec-lite TOML workflow (`openspec/changes/<
 
 | Profile file | OpenSpec-lite location |
 |---|---|
-| `requirements.md` | `openspec/changes/<change-id>/task.md` (or the `[requirements]` block in `task.toml`) |
+| `requirements.md` | `openspec/changes/<change-id>/tasks.md` (or the `[requirements]` block in `task.toml`) |
 | `design.md` | `openspec/changes/<change-id>/design.md` |
 | `tasks.md` | `openspec/changes/<change-id>/tasks.md` |
 | `metrics.md` | `openspec/specs/<capability>/metrics.md` |

@@ -26,7 +26,7 @@ openspec/
   changes/
     <change-id>/
       task.toml
-      task.md
+      tasks.md
       tasks.md
       design.md          # from eng-review-finance
       release.md         # produced here by release-review

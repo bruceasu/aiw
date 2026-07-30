@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate a BUSINESS_REVIEW.md (or task.md Business Review section) against
+"""Validate a BUSINESS_REVIEW.md (or tasks.md Business Review section) against
 the business-review Output Format.
 
 Checks that:

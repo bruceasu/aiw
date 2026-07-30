@@ -167,7 +167,7 @@ aiw-flow run BUG-1001-login \
   --phase analyze \
   --prompt-file examples/analyze.md
 
-Get-Content .\task.md | aiw-flow run BUG-1001-login --phase analyze
+Get-Content .\tasks.md | aiw-flow run BUG-1001-login --phase analyze
 ```
 
 ## 继续任务：`continue`

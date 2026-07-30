@@ -24,7 +24,7 @@ openspec/
   changes/
     <change-id>/
       task.toml
-      task.md
+      tasks.md
       tasks.md
       design.md          # may reference metrics from specs/
   specs/

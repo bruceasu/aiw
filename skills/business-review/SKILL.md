@@ -63,7 +63,7 @@ If required inputs are missing, ask **once**, then proceed with `Decision: HOLD`
 ## Outputs
 
 - **Primary**: a single `BUSINESS_REVIEW.md` document following the [Output Format](#output-format) below. Return as a message; do not write to disk unless the caller explicitly asks.
-- **Secondary (when OpenSpec Profile is requested)**: contents targeted at the `[business]` block of `task.toml` and an appended section in `task.md`. See [OpenSpec Handoff](#openspec-handoff).
+- **Secondary (when OpenSpec Profile is requested)**: contents targeted at the `[business]` block of `task.toml` and an appended section in `tasks.md`. See [OpenSpec Handoff](#openspec-handoff).
 
 ## Handoff
 
@@ -201,14 +201,14 @@ Use `references/business-review-template.md` when you need to hand the raw templ
 
 When this skill runs **inside** `autoplan-finance`, its output populates `## 4. Business Value` of `PLAN.md`. No file emission is needed.
 
-When this skill runs **standalone** and the caller asks for OpenSpec output, append a `## Business Review` section to `openspec/changes/<change-id>/task.md` and update the `[business]` block in `task.toml`:
+When this skill runs **standalone** and the caller asks for OpenSpec output, append a `## Business Review` section to `openspec/changes/<change-id>/tasks.md` and update the `[business]` block in `task.toml`:
 
 ```text
 openspec/
   changes/
     <change-id>/
       task.toml          # [business] decision + named owner
-      task.md            # append Business Review section
+      tasks.md            # append Business Review section
       tasks.md           # each Required Condition with Blocks Decision = yes becomes a task
 ```
 

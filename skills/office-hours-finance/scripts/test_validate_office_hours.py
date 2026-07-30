@@ -127,7 +127,7 @@ class FileAndCliTests(unittest.TestCase):
         self._tmp.cleanup()
 
     def test_validate_file_with_bom(self):
-        p = self._write("task.md", _full_valid_markdown())
+        p = self._write("tasks.md", _full_valid_markdown())
         errors = v.validate_file(p, strict=True)
         self.assertEqual(errors, [])
 
@@ -137,7 +137,7 @@ class FileAndCliTests(unittest.TestCase):
         self.assertTrue(any("file not found" in e for e in errors))
 
     def test_cli_json_reports_ok(self):
-        p = self._write("task.md", _full_valid_markdown())
+        p = self._write("tasks.md", _full_valid_markdown())
         result = subprocess.run(
             [sys.executable, str(HERE / "validate_office_hours.py"), str(p), "--json"],
             capture_output=True,

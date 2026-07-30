@@ -44,8 +44,23 @@ Update the selected checklist item, TODO, Verification, and remaining `%%`
 risks or questions. Synchronize the coarse AIW Task status without overwriting
 OpenSpec-owned content.
 
-Perform one static review of the changed paths. Do not commit, archive, remove
-the worktree, or delete the branch unless the user asks.
+Perform one static review of the changed paths, then commit the completed
+implementation changes on the AIW Task branch.
+
+If every implementation checklist item in `tasks.md` is complete, run the
+completion protocol automatically:
+
+1. Synchronize AIW and OpenSpec state.
+2. Archive the completed change through the automatic backend.
+3. Merge the Task branch into its recorded parent branch.
+4. Verify the merge succeeded.
+5. Remove the Task worktree and delete the Task branch.
+
+Do not start this protocol when any checklist item is incomplete. If sync,
+archive, merge, or verification fails, stop and preserve the Task branch and
+worktree for recovery. Do not clean up a partial task or a conflicted merge.
+The merge target must be the validated `parent_branch` recorded in the Task
+metadata.
 
 After development is complete, ask once whether the user wants one focused test
 command run. Show the exact command, scope, and expected duration. Default to no

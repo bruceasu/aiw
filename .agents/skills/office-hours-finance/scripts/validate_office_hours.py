@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate a Problem Brief (task.md) against the office-hours-finance
+"""Validate a Problem Brief (tasks.md) against the office-hours-finance
 Output Format.
 
 Checks that:

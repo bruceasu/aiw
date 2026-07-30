@@ -6,7 +6,7 @@ Use this mapping when the host repository uses the **OpenSpec-lite TOML** workfl
 
 | Logical Profile File | OpenSpec-lite On-Disk Location |
 |---|---|
-| `requirements.md` | `openspec/changes/<change-id>/task.md` (or the `[requirements]` block in `task.toml`) |
+| `requirements.md` | `openspec/changes/<change-id>/tasks.md` (or the `[requirements]` block in `task.toml`) |
 | `design.md` | `openspec/changes/<change-id>/design.md` |
 | `tasks.md` | `openspec/changes/<change-id>/tasks.md` |
 | `metrics.md` | `openspec/specs/<capability>/metrics.md` |
@@ -18,8 +18,8 @@ Use this mapping when the host repository uses the **OpenSpec-lite TOML** workfl
 
 - **One change directory per change-id.** Do not mix multiple changes in one folder.
 - **Governance docs live under `openspec/specs/<capability>/`** and are updated in place, not per-change.
-- **`task.toml` is the source of truth** for status, title, and links between artifacts. Keep the human-readable `task.md` / `tasks.md` in sync with the TOML block titles.
-- **English titles/keywords, localized body.** Titles and section headings in `task.toml`, `task.md`, and `tasks.md` stay in English so tooling can parse them; body content follows the user's language.
+- **`task.toml` is the source of truth** for status, title, and links between artifacts. Keep the human-readable `tasks.md` / `tasks.md` in sync with the TOML block titles.
+- **English titles/keywords, localized body.** Titles and section headings in `task.toml`, `tasks.md`, and `tasks.md` stay in English so tooling can parse them; body content follows the user's language.
 - **Section coverage is checked in-place.** The validator does not re-resolve paths — run it once against the logical profile folder (e.g., a temp staging dir) or against the capability specs dir for governance docs.
 - **`%%` markers for uncertainties** — use inline `%%` notes so open questions are searchable and never silently accepted.
 
@@ -38,7 +38,7 @@ openspec/
 ├── changes/
 │   └── add-abnormal-fund-adjust/
 │       ├── task.toml           # source of truth: id, title, status, owner, links
-│       ├── task.md             # human-readable → profile requirements.md
+│       ├── tasks.md             # human-readable → profile requirements.md
 │       ├── tasks.md            # ordered task list → profile tasks.md
 │       ├── design.md           # → profile design.md
 │       └── release.md          # → profile release.md

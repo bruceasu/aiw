@@ -13,15 +13,19 @@ managed engineering work.
 
 1. Use `/grill-with-docs` when the idea still needs clarification.
 2. Resolve or create the AIW Task before creating managed planning artifacts.
-3. Use `/to-spec` to write the matching OpenSpec proposal, design, specs, and
-   task outline.
+3. Use `/to-spec` to write the matching OpenSpec proposal, design, capability
+   specs, and task outline, together with the AIW `task.toml` mapping required
+   for `/implement` to resolve the Task and worktree later. Treat the flow as
+   incomplete until the required artifact set and ID consistency checks pass.
 4. Use `/to-tickets` for ordered implementation slices in `tasks.md`.
 5. Use `/implement` for one selected item in the AIW-managed Task worktree.
 6. After development, ask once whether the user wants one focused test command.
    Default to no test.
 7. Use `/code-review` only when the user explicitly requests a review.
-8. Mark the AIW Task done or archive it only when the user requests that
-   lifecycle transition.
+8. When implementation completes every checklist item, let `/implement` run
+   the AIW completion protocol: sync, archive, merge into the recorded parent
+   branch, then clean the worktree and delete the Task branch. Stop and preserve
+   resources if any step fails or conflicts.
 
 Keep checklist items under one AIW Task when they share a goal, branch,
 worktree, delivery, and archive lifecycle. Create another AIW Task and OpenSpec
