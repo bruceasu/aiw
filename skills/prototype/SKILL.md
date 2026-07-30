@@ -5,6 +5,10 @@ description: Build a throwaway prototype to answer a design question. Use when t
 
 # Prototype
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+Prototype output is explicitly throwaway and must return through handoff before
+becoming implementation scope; do not create a parallel lifecycle silently.
+
 A prototype is **throwaway code that answers a question**. The question decides the shape.
 
 ## Pick a branch

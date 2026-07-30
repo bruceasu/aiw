@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # Triage
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+
 Move issues on the project issue tracker through a small state machine of triage roles.
 
 If this repo treats external pull requests as a request surface (see the issue-tracker config), triage covers them too: **a PR is an issue with attached code** — same roles, same states, same machine, with a few deltas marked "for a PR" below. Resolve a bare `#42` to an issue or PR per the tracker config.
@@ -64,6 +66,13 @@ Query the issue tracker and present three buckets, oldest first:
 When PRs are in scope, include external PRs in these buckets and tag each line `[PR]` or `[issue]`. Discovery surfaces only *external* PRs (the tracker config defines who counts as external) — a collaborator's in-flight PR is not triage work. This filter is discovery-only; an explicitly named PR is always triaged regardless of author.
 
 Show counts and a one-line summary per item. Let the maintainer pick.
+
+## Verification Boundary
+
+Triage is static by default. Trace code paths and inspect diffs; runtime
+reproduction or tests require explicit user authorization. If not authorized,
+record `%% NOT_RUN: runtime verification not authorized` and distinguish
+confirmed, failed, or insufficient detail.
 
 ## Triage a specific issue or PR
 

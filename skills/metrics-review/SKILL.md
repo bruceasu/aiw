@@ -15,6 +15,11 @@ description: metrics governance and data definition workflow for financial syste
 
 # Metrics Review
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+Missing definitions or sources remain `%% NEEDS_INPUT: ...` and block a
+complete metric recommendation; this Skill does not create implementation
+artifacts.
+
 Use this skill to define or review financial metrics **before** they are wired into dashboards, reports, APIs, admin tools, data marts, or decision workflows. This skill is a **read-only metrics governance reviewer**: it emits a structured `METRICS_SPEC.md` (metric-registry-first) and never writes code or SQL beyond illustrative snippets inside the spec.
 
 ## When To Use

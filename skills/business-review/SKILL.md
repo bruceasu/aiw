@@ -15,6 +15,10 @@ description: business value review workflow for financial admin platforms, opera
 
 # Business Review
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+`APPROVE` is a business-value result only; it does not authorize coding,
+Task/worktree creation, commit, release, or external publication.
+
 Use this skill to decide whether a financial admin, reporting, risk, operations, finance, or analytics request is **worth pursuing**. This skill is a **read-only value gate**: it emits a structured `BUSINESS_REVIEW.md` and never writes code, tickets, or PRs.
 
 ## When To Use

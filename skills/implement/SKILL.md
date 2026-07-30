@@ -6,6 +6,9 @@ disable-model-invocation: true
 
 # Implement
 
+Follow `skills/reviewed-skill-contract.md`; lifecycle ownership remains in
+`skills/work-management.md`.
+
 Read `skills/work-management.md` and
 `docs/agents/work-management.md` when present.
 

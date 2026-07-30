@@ -8,6 +8,10 @@ A skill exists to wrangle determinism out of a stochastic system. **Predictabili
 
 **Bold terms** are defined in [`GLOSSARY.md`](GLOSSARY.md); look them up there for the full meaning.
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+Skill-authoring output must state trigger, inputs, outputs, completion, and
+authorization boundaries; it does not claim validation that was not run.
+
 ## Invocation
 
 Two choices, trading different costs:

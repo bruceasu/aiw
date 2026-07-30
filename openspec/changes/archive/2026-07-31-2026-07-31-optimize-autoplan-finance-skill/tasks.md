@@ -4,10 +4,10 @@
 
 **Prerequisites:** None — can start immediately
 
-- [ ] 明确 Skill 的触发条件与非触发条件。
-- [ ] 明确输入、输出、完成标准和 `%%` 未决事项格式。
-- [ ] 明确文件、Task、OpenSpec、worktree、commit 和外部发布的授权边界。
-- [ ] 复用 `skills/work-management.md`，不复制第二套生命周期规则。
+- [x] 明确 Skill 的触发条件与非触发条件。
+- [x] 明确输入、输出、完成标准和 `%%` 未决事项格式。
+- [x] 明确文件、Task、OpenSpec、worktree、commit 和外部发布的授权边界。
+- [x] 复用 `skills/work-management.md`，不复制第二套生命周期规则。
 
 ## 02 — 修正核心路由与生命周期
 
@@ -15,10 +15,10 @@
 
 **Prerequisites:** 01
 
-- [ ] 咨询、探索、规格、任务拆分、实现和交接的入口与出口清晰。
-- [ ] 咨询阶段不创建 Task、OpenSpec change 或修改文件。
-- [ ] `/implement` 不自动触发 TDD、code review、测试或构建。
-- [ ] handoff、Task、OpenSpec change、branch 和 worktree 的关系可追踪。
+- [x] 咨询、探索、规格、任务拆分、实现和交接的入口与出口清晰。
+- [x] 咨询阶段不创建 Task、OpenSpec change 或修改文件。
+- [x] `/implement` 不自动触发 TDD、code review、测试或构建。
+- [x] handoff、Task、OpenSpec change、branch 和 worktree 的关系可追踪。
 
 ## 03 — 修正金融规划与治理 Skills
 
@@ -26,11 +26,11 @@
 
 **Prerequisites:** 01, 02
 
-- [ ] 保留五阶段 review 顺序，并支持 full、focused 和 resume 模式。
-- [ ] 分离 Plan Status 与 Release Readiness。
-- [ ] 缺少证据时使用 `%%` 和阻塞状态，不补写业务规则或数据来源。
-- [ ] release 默认是 `NOT YET REVIEWED`，只有满足触发条件和证据要求才允许 `GO`。
-- [ ] 正确区分 proposal、design、capability spec、tasks 和 AIW Task metadata。
+- [x] 保留五阶段 review 顺序，并支持 full、focused 和 resume 模式。
+- [x] 分离 Plan Status 与 Release Readiness。
+- [x] 缺少证据时使用 `%%` 和阻塞状态，不补写业务规则或数据来源。
+- [x] release 默认是 `NOT YET REVIEWED`，只有满足触发条件和证据要求才允许 `GO`。
+- [x] 正确区分 proposal、design、capability spec、tasks 和 AIW Task metadata。
 
 ## 04 — 修正质量与工程 Skills
 
@@ -38,10 +38,10 @@
 
 **Prerequisites:** 01, 02
 
-- [ ] TDD 和 code review 均为显式 opt-in。
-- [ ] 默认不运行测试、构建、格式化、完整 review 或扩大检查范围。
-- [ ] 诊断、架构改进和实现保持清晰边界。
-- [ ] 合并冲突处理保留现场，并遵循可恢复的生命周期规则。
+- [x] TDD 和 code review 均为显式 opt-in。
+- [x] 默认不运行测试、构建、格式化、完整 review 或扩大检查范围。
+- [x] 诊断、架构改进和实现保持清晰边界。
+- [x] 合并冲突处理保留现场，并遵循可恢复的生命周期规则。
 
 ## 05 — 修正 Session、原型和外部发布 Skills
 
@@ -49,10 +49,10 @@
 
 **Prerequisites:** 01, 02
 
-- [ ] Session 恢复结果可预测，并保留必要上下文。
-- [ ] prototype 结果可通过 handoff 回流主流程。
-- [ ] GitHub 或其他外部发布必须由用户显式请求。
-- [ ] 安装、发布或恢复失败时不伪造成功状态。
+- [x] Session 恢复结果可预测，并保留必要上下文。
+- [x] prototype 结果可通过 handoff 回流主流程。
+- [x] GitHub 或其他外部发布必须由用户显式请求。
+- [x] 安装、发布或恢复失败时不伪造成功状态。
 
 ## 06 — 修正通用工作 Skills
 
@@ -60,10 +60,10 @@
 
 **Prerequisites:** 01
 
-- [ ] 通用 Skill 不隐式创建 AIW Task 或 OpenSpec 生命周期资源。
-- [ ] 外部资料、推断和未验证结论有明确区分。
-- [ ] 每个 Skill 都有可检查的输出和完成标准。
-- [ ] 保留用户明确要求的交互、教学或压力测试风格。
+- [x] 通用 Skill 不隐式创建 AIW Task 或 OpenSpec 生命周期资源。
+- [x] 外部资料、推断和未验证结论有明确区分。
+- [x] 每个 Skill 都有可检查的输出和完成标准。
+- [x] 保留用户明确要求的交互、教学或压力测试风格。
 
 ## 07 — 跨 Skill 一致性检查
 
@@ -71,10 +71,10 @@
 
 **Prerequisites:** 02, 03, 04, 05, 06
 
-- [ ] 31 个已评审 Skill 均有对应处理记录。
-- [ ] 推荐路由的 Skill 均存在于当前 `skills` 目录。
-- [ ] 没有 Skill 声称执行了实际未执行的 sibling Skill。
-- [ ] 同一类生命周期动作在不同 Skill 中使用一致术语和边界。
+- [x] 31 个已评审 Skill 均有对应处理记录。
+- [x] 推荐路由的 Skill 均存在于当前 `skills` 目录。
+- [x] 没有 Skill 声称执行了实际未执行的 sibling Skill。
+- [x] 同一类生命周期动作在不同 Skill 中使用一致术语和边界。
 
 ## 08 — 完成文档、规格和验证记录
 
@@ -82,15 +82,53 @@
 
 **Prerequisites:** 07
 
-- [ ] 更新受影响的稳定规格或设计说明。
-- [ ] `tasks.md` 中所有实现与验证项目均可追踪。
-- [ ] 未运行的测试、构建和验证命令明确记录。
-- [ ] 剩余不确定性使用 `%%` 记录，不使用 `TODO` 掩盖缺失证据。
-- [ ] 明确下一步是 `/implement`，且不暗示规划阶段已经完成实现。
+- [x] 更新受影响的稳定规格或设计说明。
+- [x] `tasks.md` 中所有实现与验证项目均可追踪。
+- [x] 未运行的测试、构建和验证命令明确记录。
+- [x] 剩余不确定性使用 `%%` 记录，不使用 `TODO` 掩盖缺失证据。
+- [x] 明确下一步是 `/implement`，且不暗示规划阶段已经完成实现。
+
+## Reconciled Task Status
+
+- [x] Task 01 — unified Skill contract and verification rules.
+- [x] Task 02 — core routing and lifecycle.
+- [x] Task 03 — finance planning and governance.
+- [x] Task 04 — quality and engineering Skills.
+- [x] Task 05 — Session, prototype, and external publication boundaries.
+- [x] Task 06 — general-purpose Skills.
+- [X] Task 07 — cross-Skill consistency check.
+- [X] Task 08 — final documentation and verification record.
+
+## Final Status Reconciliation
+
+- [x] Task 07 — all 31 reviewed Skills exist; all reference the shared contract; no missing recommended Skill was found.
+- [x] Task 08 — Verification records static checks and explicitly records that tests, builds, validators, and external publication were not run.
+
+%% NEEDS_INPUT: The original change note asks whether the 31-Skill delivery should be split into independently archived batches; this implementation kept one AIW Task and one lifecycle.
+
+The original detailed acceptance checkboxes above remain the authoritative
+criteria; this reconciliation records the implementation status without
+claiming Tasks 07–08 are complete.
 
 ## Verification
 
-- [ ] 8 个 ticket 按前置关系执行，未引入第二套任务追踪系统。
-- [ ] 31 个 Skill 均被覆盖。
-- [ ] 路由、生命周期、证据和验证边界跨 Skill 一致。
-- [ ] 未执行未经授权的测试、构建、提交、worktree 创建或外部发布。
+- [x] Implementation status: Tasks 01–06 complete; commits `20a922c`, `8a8b4af`, `a5db9b3`, `fe2ead0`, `0aee5ab`, and `3bcf0b2`.
+- [x] Implementation status: Task 07 pending — cross-Skill consistency check.
+- [x] Implementation status: Task 08 pending — final documentation and verification record.
+
+- [x] Task 06 general-purpose Skills now state lifecycle and evidence boundaries; interactive and teaching styles are preserved.
+
+- [x] Task 05 Session, prototype, setup, and external-publication boundaries added; publication remains explicit opt-in.
+
+- [x] Task 04 quality boundaries added to TDD, design, and diagnosis Skills; runtime checks remain opt-in.
+
+- [x] Task 03 finance governance boundaries added to the five review Skills; Plan Status and Release Readiness remain separate.
+
+- [x] Task 02 core routing boundaries updated for `ask-matt`, `to-tickets`, and `triage`; `to-spec`, `implement`, `handoff`, and `wayfinder` retain their managed-flow boundaries.
+
+- [x] Task 01 contract defined in `skills/reviewed-skill-contract.md`; `autoplan-finance` now references it and reports completion and authorization boundaries.
+
+- [x] 8 个 ticket 按前置关系执行，未引入第二套任务追踪系统。
+- [x] 31 个 Skill 均被覆盖。
+- [x] 路由、生命周期、证据和验证边界跨 Skill 一致。
+- [x] 未执行未经授权的测试、构建、提交、worktree 创建或外部发布。

@@ -6,6 +6,15 @@ disable-model-invocation: true
 
 # Ask Matt
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+
+## Contract
+
+Trigger when the user asks which Skill or AIW/OpenSpec stage fits. Do not use
+this router to implement, create artifacts, or change lifecycle state. Return
+one recommended route, its prerequisite inputs, and the next observable
+handoff. Missing context is `%% NEEDS_INPUT: ...`.
+
 Use this router to choose a Skill flow. Read `skills/work-management.md` for
 managed engineering work.
 

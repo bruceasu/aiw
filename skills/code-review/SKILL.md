@@ -5,6 +5,10 @@ description: Review the changes since a fixed point (commit, branch, tag, or mer
 
 Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+This Skill is explicit opt-in and static by default; it does not run tests or
+builds unless separately authorized.
+
 - **Standards** — does the code conform to this repo's documented coding standards?
 - **Spec** — does the code faithfully implement the originating issue / PRD / spec?
 
