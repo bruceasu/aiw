@@ -1,4 +1,8 @@
 ---
+
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+Ask one question at a time, preserve unresolved decisions as `%% NEEDS_INPUT`,
+and do not implement before confirmation.
 name: grilling
 description: Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test their thinking, or uses any 'grill' trigger phrases.
 ---
