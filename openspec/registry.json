@@ -1,14 +1,6 @@
 {
   "changes": [
     {
-      "id": "--help",
-      "status": "TODO",
-      "branch": "feature/--help",
-      "worktree": ".wt/--help",
-      "path": "openspec/changes/--help",
-      "updated_at": "2026-07-31"
-    },
-    {
       "id": "2026-07-30-task-agent-next-autocreate",
       "status": "TODO",
       "branch": "feature/2026-07-30-task-agent-next-autocreate",
@@ -33,6 +25,6 @@
       "updated_at": "2026-07-31"
     }
   ],
-  "updated": "2026-07-31T02:16:01+09:00",
+  "updated": "2026-07-31T02:41:35+09:00",
   "version": "1"
 }
