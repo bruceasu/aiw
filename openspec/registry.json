@@ -1,28 +1,12 @@
 {
   "changes": [
     {
-      "id": "--help",
-      "status": "TODO",
-      "branch": "feature/--help",
-      "worktree": ".wt/--help",
-      "path": "openspec/changes/--help",
-      "updated_at": "2026-07-31"
-    },
-    {
       "id": "2026-07-30-task-agent-next-autocreate",
       "status": "TODO",
       "branch": "feature/2026-07-30-task-agent-next-autocreate",
       "worktree": "",
       "path": "openspec/changes/2026-07-30-task-agent-next-autocreate",
       "updated_at": "2026-07-30"
-    },
-    {
-      "id": "2026-07-31-optimize-autoplan-finance-skill",
-      "status": "TODO",
-      "branch": "feature/2026-07-31-optimize-autoplan-finance-skill",
-      "worktree": ".wt/2026-07-31-optimize-autoplan-finance-skill",
-      "path": "openspec/changes/2026-07-31-optimize-autoplan-finance-skill",
-      "updated_at": "2026-07-31"
     },
     {
       "id": "aiw-skills-user-scope",
@@ -33,6 +17,6 @@
       "updated_at": "2026-07-31"
     }
   ],
-  "updated": "2026-07-31T02:16:01+09:00",
+  "updated": "2026-07-31T02:41:56+09:00",
   "version": "1"
 }
