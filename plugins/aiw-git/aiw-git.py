@@ -150,6 +150,7 @@ def render_overview_help(commands):
         [
             "",
             "Run `aiw git help <subcommand>` for detailed help and more examples.",
+            "Unknown commands require explicit confirmation before native Git fallback.",
         ]
     )
     return "\n".join(lines)
@@ -220,6 +221,46 @@ def print_detailed(commands, subcommand):
     return 0
 
 
+def render_native_command(argv):
+    """Render argv without allowing values to inject extra terminal lines."""
+    return " ".join(repr(value) for value in argv)
+
+
+def native_fallback(argv, description):
+    """Ask before delegating an unknown command to native Git."""
+    if shutil.which("git") is None:
+        print("Native Git executable not found; fallback refused.", file=sys.stderr)
+        return 127
+
+    is_tty = getattr(sys.stdin, "isatty", lambda: False)()
+    if not is_tty:
+        print(
+            "Native Git fallback requires interactive confirmation; refusing.",
+            file=sys.stderr,
+        )
+        return 2
+
+    print(f"{description} is not an aiw-git command.", file=sys.stderr)
+    print("Candidate native command:", file=sys.stderr)
+    print(f"  {render_native_command(argv)}", file=sys.stderr)
+    print("Proceed with native Git fallback? [y/N] ", end="", file=sys.stderr)
+    try:
+        answer = sys.stdin.readline().strip().lower()
+    except (EOFError, OSError):
+        answer = ""
+    if answer not in {"y", "yes"}:
+        print("Native Git fallback refused.", file=sys.stderr)
+        return 2
+
+    print("fallback: delegating to native Git after explicit confirmation", file=sys.stderr)
+    try:
+        proc = subprocess.run(argv)
+    except OSError as exc:
+        print(f"Unable to execute native Git: {exc}", file=sys.stderr)
+        return 127
+    return proc.returncode
+
+
 def build_external_command(path, ext, args):
     if ext in {".bat", ".cmd"}:
         if os.name == "nt":
@@ -254,14 +295,14 @@ def main(argv):
         if len(argv) == 1 or argv[1] in HELP_FLAGS:
             print_overview(commands)
             return 0
-        return print_detailed(commands, argv[1])
+        if argv[1] in commands:
+            return print_detailed(commands, argv[1])
+        return native_fallback(["git", "help", *argv[1:]], f"Help target {argv[1]}")
 
     subcommand = argv[0]
     command = commands.get(subcommand)
     if command is None:
-        print(f"Unknown git subcommand: {subcommand}", file=sys.stderr)
-        print("Run `aiw git` to see available commands.", file=sys.stderr)
-        return 1
+        return native_fallback(["git", *argv], f"Subcommand {subcommand}")
     if any(arg in HELP_FLAGS for arg in argv[1:]):
         return print_detailed(commands, subcommand)
     return dispatch_command(command, argv[1:])

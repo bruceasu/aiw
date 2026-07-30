@@ -1,0 +1,8 @@
+id = "aiw-skills-user-scope"
+type = "task"
+status = "DONE"
+created = "2026-07-30"
+updated = "2026-07-30"
+branch = "feature/aiw-skills-user-scope"
+worktree = ".wt/aiw-skills-user-scope"
+session = "aiw-skills-user-scope"

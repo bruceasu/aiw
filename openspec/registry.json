@@ -1,13 +1,13 @@
 {
   "version": "1",
-  "updated": "2026-07-30T08:25:27.629836+09:00",
+  "updated": "2026-07-30T20:07:16.614606+09:00",
   "changes": [
     {
       "id": "2026-07-30-task-agent-next-autocreate",
       "status": "TODO",
       "branch": "feature/2026-07-30-task-agent-next-autocreate",
       "worktree": "",
-      "path": "D:/03_projects/aiw/openspec/changes/2026-07-30-task-agent-next-autocreate",
+      "path": "C:/Users/svictor/workspace/tools/aiw/openspec/changes/2026-07-30-task-agent-next-autocreate",
       "updated_at": "2026-07-30"
     }
   ]

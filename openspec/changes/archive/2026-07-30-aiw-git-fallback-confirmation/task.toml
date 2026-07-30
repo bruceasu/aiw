@@ -1,0 +1,9 @@
+id = "aiw-git-fallback-confirmation"
+type = "task"
+<<<<<<< HEAD
+status = "DONE"
+created = "2026-07-30"
+updated = "2026-07-30"
+branch = "feature/aiw-git-fallback-confirmation"
+worktree = ".wt/aiw-git-fallback-confirmation"
+session = "aiw-git-fallback-confirmation"

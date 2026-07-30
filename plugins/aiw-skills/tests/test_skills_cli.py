@@ -6,6 +6,7 @@ import sys
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Optional
 
 
 PLUGIN = Path(__file__).resolve().parents[1] / "aiw-skills.py"
@@ -127,9 +128,18 @@ def run_windows_batch(
 
 
 class SkillsCliTests(unittest.TestCase):
-    def run_cli(self, project: Path, source: Path, *args: str) -> subprocess.CompletedProcess:
+    def run_cli(
+        self,
+        project: Path,
+        source: Path,
+        *args: str,
+        home: Optional[Path] = None,
+    ) -> subprocess.CompletedProcess:
         env = os.environ.copy()
         env["AIW_SKILLS_SOURCE_ROOT"] = str(source)
+        if home is not None:
+            env["HOME"] = str(home)
+            env["USERPROFILE"] = str(home)
         return subprocess.run(
             [sys.executable, str(PLUGIN), *args],
             cwd=str(project),
@@ -152,6 +162,67 @@ class SkillsCliTests(unittest.TestCase):
             self.assertIn(".agents/skills", result.stdout)
             self.assertIn("Quick start", result.stdout)
             self.assertIn("aiw skills install tdd --dry-run", result.stdout)
+
+    def test_user_scope_installs_under_user_agents_skills(self):
+        with TemporaryDirectory() as temp_dir:
+            base, source, project = make_workspace(temp_dir)
+            user_home = base / "user-home"
+            user_home.mkdir()
+            write_skill(source, "user-skill", "Install for the user.")
+
+            result = self.run_cli(
+                project,
+                source,
+                "install",
+                "user-skill",
+                "--scope",
+                "user",
+                "--json",
+                home=user_home,
+            )
+
+            destination = user_home / ".agents" / "skills" / "user-skill"
+            self.assertEqual(result.returncode, 0, result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["scope"], "user")
+            self.assertEqual(payload["destination"], str(destination))
+            self.assertTrue((destination / "SKILL.md").is_file())
+            self.assertTrue((user_home / ".agents" / "skills" / ".aiw-skills.json").is_file())
+            self.assertFalse((project / ".agents").exists())
+
+    def test_user_scope_discover_uses_user_manifest(self):
+        with TemporaryDirectory() as temp_dir:
+            base, source, project = make_workspace(temp_dir)
+            user_home = base / "user-home"
+            user_home.mkdir()
+            write_skill(source, "discover-user", "Discover for the user.")
+
+            install = self.run_cli(
+                project,
+                source,
+                "install",
+                "discover-user",
+                "--scope",
+                "user",
+                home=user_home,
+            )
+            self.assertEqual(install.returncode, 0, install.stderr)
+
+            result = self.run_cli(
+                project,
+                source,
+                "discover",
+                "--scope",
+                "user",
+                "--json",
+                home=user_home,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["scope"], "user")
+            self.assertEqual(payload["root"], str(user_home / ".agents" / "skills"))
+            self.assertEqual(payload["skills"][0]["name"], "discover-user")
 
     def test_command_help_explains_use_constraints_and_examples(self):
         with TemporaryDirectory() as temp_dir:

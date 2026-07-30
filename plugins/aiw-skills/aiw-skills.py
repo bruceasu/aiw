@@ -183,13 +183,29 @@ def repository_work_management_path() -> Path:
     return Path(__file__).resolve().parents[2] / "skills" / "work-management.md"
 
 
-def destination_root() -> Path:
-    return Path.cwd() / ".agents" / "skills"
+SKILL_SCOPES = ("project", "user")
+
+
+def destination_root(scope: str = "project") -> Path:
+    if scope == "project":
+        return (Path.cwd() / ".agents" / "skills").resolve()
+    if scope == "user":
+        return (Path.home() / ".agents" / "skills").resolve()
+    raise SkillError("Unsupported Skill scope: {}".format(scope))
 
 
 def manifest_path(root: Optional[Path] = None) -> Path:
     base = root if root is not None else destination_root()
     return base / ".aiw-skills.json"
+
+
+def add_scope_argument(command: argparse.ArgumentParser) -> None:
+    command.add_argument(
+        "--scope",
+        choices=SKILL_SCOPES,
+        default="project",
+        help="Skill catalog scope: project (default) or user.",
+    )
 
 
 def materialize_skill_source(skill: Skill, temp_root: Path) -> Path:
@@ -475,10 +491,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     discover = commands.add_parser(
         "discover",
-        help="Inspect installed Skills under ./.agents/skills without changing them.",
+        help="Inspect installed Skills under the selected .agents/skills catalog.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=(
-            "Inspect installed Skills under ./.agents/skills without changing them.\n\n"
+            "Inspect installed Skills under the selected .agents/skills catalog without changing them.\n\n"
             "Use this when you want to see which local Skills are already managed, "
             "which are unmanaged, and which ones can be adopted."
         ),
@@ -493,6 +509,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Write one machine-readable JSON result.",
     )
+    add_scope_argument(discover)
 
     adopt = commands.add_parser(
         "adopt",
@@ -514,6 +531,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Write one machine-readable JSON result.",
     )
+    add_scope_argument(adopt)
 
     sync = commands.add_parser(
         "sync",
@@ -537,15 +555,17 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Write one machine-readable JSON result.",
     )
+    add_scope_argument(sync)
 
     install = commands.add_parser(
         "install",
-        help="Safely install one or more Skills into ./.agents/skills.",
+        help="Safely install one or more Skills into the selected .agents/skills catalog.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=(
             "Safely install canonical Skills or path-based Skill bundles.\n\n"
             "Use this when a project needs one AIW-maintained Skill or a local "
-            "source bundle. The default target is ./.agents/skills. A same-name "
+            "source bundle. The default target is the project ./.agents/skills. "
+            "Use --scope user for the user's shared catalog. A same-name "
             "unmanaged directory is protected and will not be replaced."
         ),
         epilog=(
@@ -567,6 +587,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Write one machine-readable JSON result.",
     )
+    add_scope_argument(install)
     return parser
 
 
@@ -580,9 +601,10 @@ def install_skills_from_sources(
     dry_run: bool,
     json_output: bool,
     source_label: str,
+    scope: str = "project",
     require_managed_destination: bool = False,
 ) -> int:
-    root = destination_root()
+    root = destination_root(scope)
     manifest = load_manifest(manifest_path(root))
     managed_skills = cast(Dict[str, object], manifest["skills"])
 
@@ -597,6 +619,7 @@ def install_skills_from_sources(
                     "destination": str(destinations[0]) if len(destinations) == 1 else str(root),
                     "name": skill_entries[0].name if len(skill_entries) == 1 else source_label,
                     "ok": True,
+                    "scope": scope,
                     "source": source_label,
                     "status": "would_install",
                 }
@@ -604,18 +627,20 @@ def install_skills_from_sources(
         else:
             if len(skill_entries) == 1:
                 print(
-                    "Would install {} from {} to {}".format(
+                    "Would install {} from {} to {} (scope: {})".format(
                         skill_entries[0].name,
                         source_label,
                         destinations[0],
+                        scope,
                     )
                 )
             else:
                 print(
-                    "Would install {} from {} to {}".format(
+                    "Would install {} from {} to {} (scope: {})".format(
                         ", ".join(skill.name for skill in skill_entries),
                         source_label,
                         root,
+                        scope,
                     )
                 )
         return 0
@@ -718,6 +743,7 @@ def install_skills_from_sources(
                 "name": installed[0] if len(installed) == 1 else source_label,
                 "ok": True,
                 "sha256": last_digest,
+                "scope": scope,
                 "status": "installed",
             }
         else:
@@ -727,6 +753,7 @@ def install_skills_from_sources(
                 "name": already_installed[0],
                 "ok": True,
                 "sha256": last_digest,
+                "scope": scope,
                 "status": "already_installed",
             }
         print_json(payload)
@@ -734,30 +761,33 @@ def install_skills_from_sources(
         if installed:
             if len(installed) == 1:
                 print(
-                    "Installed {} to {} (sha256: {})".format(
+                    "Installed {} to {} (scope: {}; sha256: {})".format(
                         installed[0],
                         destinations[0],
+                        scope,
                         last_digest,
                     )
                 )
             else:
                 print(
-                    "Installed {} skills to {}".format(
+                    "Installed {} skills to {} (scope: {})".format(
                         len(installed),
                         root,
+                        scope,
                     )
                 )
         else:
             print(
-                "Already installed {} at {}".format(
+                "Already installed {} at {} (scope: {})".format(
                     already_installed[0],
                     destinations[0],
+                    scope,
                 )
             )
     return 0
 
 
-def command_sync(source_text: str, *, json_output: bool) -> int:
+def command_sync(source_text: str, *, json_output: bool, scope: str) -> int:
     source = Path(source_text)
     if source.exists():
         with tempfile.TemporaryDirectory(prefix=".aiw-install-") as tmp:
@@ -767,6 +797,7 @@ def command_sync(source_text: str, *, json_output: bool) -> int:
                 dry_run=False,
                 json_output=json_output,
                 source_label=str(source.resolve()),
+                scope=scope,
                 require_managed_destination=True,
             )
 
@@ -784,12 +815,13 @@ def command_sync(source_text: str, *, json_output: bool) -> int:
         dry_run=False,
         json_output=json_output,
         source_label=str(candidate),
+        scope=scope,
         require_managed_destination=True,
     )
 
 
-def command_discover(*, json_output: bool) -> int:
-    root = destination_root()
+def command_discover(*, json_output: bool, scope: str) -> int:
+    root = destination_root(scope)
     statuses, issues = load_skill_statuses(root)
     if json_output:
         print_json(
@@ -798,11 +830,12 @@ def command_discover(*, json_output: bool) -> int:
                 "issues": issues,
                 "ok": True,
                 "root": str(root),
+                "scope": scope,
                 "skills": statuses,
             }
         )
         return 0
-    print("Installed Skills:")
+    print("Installed Skills (scope: {}; root: {}):".format(scope, root))
     for status in statuses:
         print("  {} [{}]".format(status["name"], status["status"]))
     for issue in issues:
@@ -810,8 +843,8 @@ def command_discover(*, json_output: bool) -> int:
     return 0
 
 
-def command_adopt(*, json_output: bool) -> int:
-    root = destination_root()
+def command_adopt(*, json_output: bool, scope: str) -> int:
+    root = destination_root(scope)
     manifest = load_manifest(manifest_path(root))
     managed_skills = cast(Dict[str, object], manifest["skills"])
     statuses, issues = load_skill_statuses(root)
@@ -838,21 +871,28 @@ def command_adopt(*, json_output: bool) -> int:
                 "issues": issues,
                 "ok": True,
                 "root": str(root),
+                "scope": scope,
                 "skipped": skipped,
             }
         )
     else:
         if adopted:
-            print("Adopted {} Skills under {}".format(len(adopted), root))
+            print("Adopted {} Skills under {} (scope: {})".format(len(adopted), root, scope))
         else:
-            print("No unmanaged Skills found under {}".format(root))
+            print("No unmanaged Skills found under {} (scope: {})".format(root, scope))
         if skipped:
             print("Already managed: {}".format(", ".join(skipped)))
         for issue in issues:
             print("Warning: {}".format(issue), file=sys.stderr)
     return 0
 
-def command_install(source_text: str, *, dry_run: bool, json_output: bool) -> int:
+def command_install(
+    source_text: str,
+    *,
+    dry_run: bool,
+    json_output: bool,
+    scope: str,
+) -> int:
     source = Path(source_text)
     if source.exists():
         with tempfile.TemporaryDirectory(prefix=".aiw-install-") as tmp:
@@ -862,6 +902,7 @@ def command_install(source_text: str, *, dry_run: bool, json_output: bool) -> in
                 dry_run=dry_run,
                 json_output=json_output,
                 source_label=str(source.resolve()),
+                scope=scope,
             )
 
     if not NAME_RE.fullmatch(source_text):
@@ -878,6 +919,7 @@ def command_install(source_text: str, *, dry_run: bool, json_output: bool) -> in
         dry_run=dry_run,
         json_output=json_output,
         source_label=str(candidate),
+        scope=scope,
     )
 
 
@@ -914,16 +956,17 @@ def main(argv: Sequence[str]) -> int:
         if args.command == "list":
             return command_list(json_output=args.json)
         if args.command == "discover":
-            return command_discover(json_output=args.json)
+            return command_discover(json_output=args.json, scope=args.scope)
         if args.command == "adopt":
-            return command_adopt(json_output=args.json)
+            return command_adopt(json_output=args.json, scope=args.scope)
         if args.command == "sync":
-            return command_sync(args.source, json_output=args.json)
+            return command_sync(args.source, json_output=args.json, scope=args.scope)
         if args.command == "install":
             return command_install(
                 args.source,
                 dry_run=args.dry_run,
                 json_output=args.json,
+                scope=args.scope,
             )
         raise SkillError("Unknown command: {}".format(args.command))
     except (OSError, UnicodeError, SkillError) as exc:

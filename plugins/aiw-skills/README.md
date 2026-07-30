@@ -2,10 +2,10 @@
 
 Use `aiw skills` to list, discover, adopt, and safely install canonical AIW Skills.
 
-This release installs one Portable Skill at a time. It always uses the current
-project and the standard `.agents/skills` target. Managed reinstall, adoption,
-and discovery are supported; user scope, Codex-specific targets, removal, and
-links are separate follow-up features.
+This release installs one Portable Skill at a time. It uses the standard
+`.agents/skills` target at project scope by default and supports the shared
+user-level `.agents/skills` target with `--scope user`. Managed reinstall,
+adoption, and discovery are supported for both scopes.
 
 ## Quick start
 
@@ -14,6 +14,7 @@ aiw skills list
 aiw skills discover
 aiw skills install tdd --dry-run
 aiw skills install tdd
+aiw skills install tdd --scope user
 ```
 
 查看完整命令帮助：
@@ -45,23 +46,25 @@ aiw skills discover
 aiw skills discover --json
 ```
 
-`discover` inspects `.agents/skills` and reports which installed Skills are
-already managed by AIW and which are unmanaged.
+`discover` inspects the project `.agents/skills` catalog by default. Use
+`--scope user` to inspect the current user's `.agents/skills` catalog.
 
 ## Adopt existing Skills
 
 ```text
 aiw skills adopt
+aiw skills adopt --scope user
 ```
 
 `adopt` writes a managed manifest for valid existing Skill directories under
-`.agents/skills`. Use this before reinstalling Skills that already exist but
-are currently unmanaged.
+the selected `.agents/skills` catalog. Use this before reinstalling Skills
+that already exist but are currently unmanaged.
 
 ## Preview an installation
 
 ```text
 aiw skills install tdd --dry-run
+aiw skills install tdd --scope user --dry-run
 ```
 
 The preview validates the Skill and shows the source and destination. It does
@@ -71,7 +74,13 @@ not create the target root, staging content, or a managed manifest.
 
 ```text
 aiw skills install tdd
+aiw skills install tdd --scope user
 ```
+
+The default `project` scope installs under `./.agents/skills`. The `user`
+scope installs under the current user's `~/.agents/skills`, which is shared by
+compatible Agents such as Codex and GitHub Copilot CLI. The selected scope is
+also available in JSON results.
 
 The installer:
 
@@ -82,9 +91,9 @@ The installer:
 5. publishes the directory;
 6. atomically records managed ownership.
 
-The managed manifest is `.agents/skills/.aiw-skills.json`. It records schema
-version, source identity, source revision when available, copy mode, and the
-SHA-256 content digest.
+The managed manifest is `.agents/skills/.aiw-skills.json` under the selected
+scope. It records schema version, source identity, source revision when
+available, copy mode, and the SHA-256 content digest.
 
 An unmanaged same-name directory is protected and will not be replaced by
 default. An already managed Skill may be republished from canonical source,
