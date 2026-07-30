@@ -90,6 +90,10 @@
 
 ## Verification
 
+- [x] Implementation status: Tasks 01–06 complete; commits `20a922c`, `8a8b4af`, `a5db9b3`, `fe2ead0`, `0aee5ab`, and `3bcf0b2`.
+- [ ] Implementation status: Task 07 pending — cross-Skill consistency check.
+- [ ] Implementation status: Task 08 pending — final documentation and verification record.
+
 - [x] Task 06 general-purpose Skills now state lifecycle and evidence boundaries; interactive and teaching styles are preserved.
 
 - [x] Task 05 Session, prototype, setup, and external-publication boundaries added; publication remains explicit opt-in.
