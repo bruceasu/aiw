@@ -13,6 +13,10 @@ related_skills:
 description: planning orchestrator for financial product decision workflows across office hours, business review, metrics review, engineering review, and release readiness review. use when a user wants a complete plan.md for a financial admin, operations, reporting, dashboard, risk, finance, or analytics requirement. enforce decision flow, metrics governance, permissions, auditability, and release gates. generate structured planning output only. do not code, modify files, or create pull requests.
 ---
 
+This Skill follows [`skills/reviewed-skill-contract.md`](../reviewed-skill-contract.md)
+and [`skills/work-management.md`](../work-management.md). It is read-only and
+does not create or mutate lifecycle artifacts.
+
 # Autoplan Finance
 
 Use this skill to generate a complete planning document (`PLAN.md`) for a financial admin, operations, reporting, finance, risk, or analytics requirement. This skill is a **read-only planning orchestrator**: it consolidates the outputs of five sibling review skills into one decision-centric plan.
@@ -36,7 +40,7 @@ Use this skill to generate a complete planning document (`PLAN.md`) for a financ
 - Do not create pull requests, branches, or commits.
 - Do not invent missing business rules, data sources, permissions, or audit requirements.
 - Do not upgrade a `HOLD` / `BLOCKED` plan to `APPROVE` without new information from the user.
-- If inputs are incomplete, produce a plan with explicit `TODO` markers and a decision gate that blocks downstream sections.
+- If inputs are incomplete, produce a plan with `%% NEEDS_INPUT: ...` notes and a decision gate that blocks downstream sections.
 
 ## Inputs
 
@@ -54,6 +58,21 @@ Optional but improves quality:
 - Compliance / regulatory context.
 
 If required inputs are missing, ask **once**, then proceed with `Status: BLOCKED: incomplete intake` and list what is missing under `## 14. Open Questions`.
+
+## Completion Criteria
+
+Return a complete `PLAN.md`-shaped response with both status axes, all required
+section headings, the five review stages in order, and every missing or
+unverified input represented by `%%` or a blocking status. Report whether
+runtime validation or sibling Skill invocation was actually performed.
+
+## Authorization Boundary
+
+The Skill may read caller-provided context and return planning content. It may
+not write `PLAN.md` or OpenSpec files, create or mutate Tasks, branches,
+worktrees, commits, pull requests, or external publications unless the caller
+explicitly requests that separate action and the appropriate lifecycle Skill
+handles it.
 
 ## Outputs
 

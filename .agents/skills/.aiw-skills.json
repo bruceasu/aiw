@@ -3,159 +3,189 @@
   "skills": {
     "ask-matt": {
       "mode": "copy",
-      "sha256": "a0a3d1adb4a81ff4bd97d0398208012bee34ba1da255308126bf752ca3bba8c0",
-      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\ask-matt",
-      "source_revision": "8ee4e7e8ab8915500a0d05ff4f374be6db28411e"
+      "sha256": "7bc6d3fde55eba64af3fcce6f274d3e58417540f7829f98cee52d5b942086b45",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\ask-matt",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "autoplan-finance": {
       "mode": "copy",
-      "sha256": "5db185045faee9fe73d00b08053f767e4965d4675b927bc884c0964f7054f9ef",
-      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\autoplan-finance",
-      "source_revision": "8ee4e7e8ab8915500a0d05ff4f374be6db28411e"
+      "sha256": "078f37ea84435ca6830684b096f4833c4f895c4cec2be0d2d46bb3f67769b56f",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\autoplan-finance",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "business-review": {
       "mode": "copy",
-      "sha256": "14e8e4bc604c9a168b0854b9d4f41f53cc3b40ebe96c00ed6ca2cb6ed3e8adda",
-      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\business-review",
-      "source_revision": "8ee4e7e8ab8915500a0d05ff4f374be6db28411e"
+      "sha256": "bb40abb66861f2bc70d1c14afd5bf2d934238966441d33cffdc67e1ae72a2654",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\business-review",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "code-review": {
       "mode": "copy",
-      "sha256": "42b38d5d9cc9d8933999c459813a4d1601698a87f9c483beb0f84424d586b4a4",
-      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\code-review",
-      "source_revision": "8ee4e7e8ab8915500a0d05ff4f374be6db28411e"
+      "sha256": "a63afba0595669fb91bdefaebccf1d052b767d3b4e092f469f99fc1b35784394",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\code-review",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "codebase-design": {
       "mode": "copy",
-      "sha256": "a38ba92eb80b615f3aa16ad35dcc5a8695bc2df0c9df758fe6210089b09b73d2",
-      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\codebase-design",
-      "source_revision": "8ee4e7e8ab8915500a0d05ff4f374be6db28411e"
+      "sha256": "f63bdb5804eb7b27f07ea4491bcbed95d8658ff4552ccf5b3544386c60df9345",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\codebase-design",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
+    },
+    "diagnosing-bugs": {
+      "mode": "copy",
+      "sha256": "5f619ac6bb773631191b35ecf06fecaaf0756df6d25dd0949d6db0b2f8a88de1",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\diagnosing-bugs",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "domain-modeling": {
       "mode": "copy",
-      "sha256": "ada1c4159d1784ece88029725cf7a40c51d1fccf7178901d1306b7cca825f3b1",
-      "source_identity": "<adopted-from-installed>",
-      "source_revision": null
+      "sha256": "d370ca6af54fcf50e7f827403014a710de298d22f2a42c81a5fd0ab33df0510f",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\domain-modeling",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
+    },
+    "edit-article": {
+      "mode": "copy",
+      "sha256": "098808020b0091d85ebf8fcddf29b57afe27c91985ae90427e0e69d3990ef5cf",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\edit-article",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "eng-review-finance": {
       "mode": "copy",
-      "sha256": "b657f15e658b2f64e7dfc078632d580fb46cccfd662c08a84579e70386dad3d3",
-      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\eng-review-finance",
-      "source_revision": "8ee4e7e8ab8915500a0d05ff4f374be6db28411e"
+      "sha256": "dbdad4bec79d947ca7bb11297e1b937a881bcfba26b52470796dbae6501607d6",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\eng-review-finance",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
+    },
+    "grill-me": {
+      "mode": "copy",
+      "sha256": "61aa763203bf16d904325e6f1216a5526f78bff74f9a3dc881d43e63f5349ecd",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\grill-me",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "grill-with-docs": {
       "mode": "copy",
-      "sha256": "096ff06950040f76b024ab3a0eec0688a1c507467639d5444ae8c007aa234961",
-      "source_identity": "<adopted-from-installed>",
-      "source_revision": null
+      "sha256": "03a8be22bf39d0783a375a7fc3a5c12f84074120915734ebc36853c27ec28de5",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\grill-with-docs",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "grilling": {
       "mode": "copy",
-      "sha256": "e5f4a1dffd26e1a6ccab60bb9a60e6d7fcd6436130152912e68e7868c9766335",
-      "source_identity": "<adopted-from-installed>",
-      "source_revision": null
+      "sha256": "1e0081fbcefff68e7445a4188606413a88d190ea2ad121bac2028a10f5179df2",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\grilling",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "handoff": {
       "mode": "copy",
-      "sha256": "93b659261747f69b1d610132b22b840ddfd92f954f7012ddadc8f0135dba05c4",
-      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\handoff",
-      "source_revision": "8ee4e7e8ab8915500a0d05ff4f374be6db28411e"
+      "sha256": "19cf1538438f07f50e60e46c91bf7906f5748e3ca136827205cc91524d1aea37",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\handoff",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "implement": {
       "mode": "copy",
-      "sha256": "ffe797451636a4990d5eb7f8947bfc6e3b67ce1d97136c08846e7ab24e8a9d14",
-      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\implement",
-      "source_revision": "8ee4e7e8ab8915500a0d05ff4f374be6db28411e"
+      "sha256": "ca47d9f14bfadcb3f2742dc34876149d16dc99c029defc141a6b5d309193fe99",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\implement",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "improve-codebase-architecture": {
       "mode": "copy",
-      "sha256": "975af77f85006b29ae49b0d367eccc0720515fa0540f66c637a8a97cc81e8995",
-      "source_identity": "<adopted-from-installed>",
-      "source_revision": null
+      "sha256": "1f74e38b2d143abe0bd413b0fd108221dcdc17b4ab21bcd94e54b0851728279c",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\improve-codebase-architecture",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "metrics-review": {
       "mode": "copy",
-      "sha256": "7ea0628001eae3506eda57e7c9fcd710837a6cb10d9c8b851b41ede74d47622e",
-      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\metrics-review",
-      "source_revision": "8ee4e7e8ab8915500a0d05ff4f374be6db28411e"
+      "sha256": "09540c798e7c66858191954d5e68f43dca2ea045c2f51d4e55ae7f4da49f39a5",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\metrics-review",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "office-hours-finance": {
       "mode": "copy",
-      "sha256": "a66b642399d2212b7c92d8aa5a9605bf6b6693e28c9242764b1784edfd51983b",
-      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\office-hours-finance",
-      "source_revision": "8ee4e7e8ab8915500a0d05ff4f374be6db28411e"
+      "sha256": "759bfd4cb88d239ebefa52cd6657115efb1ff6b99d750453b1708f194c4c5152",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\office-hours-finance",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
+    },
+    "prototype": {
+      "mode": "copy",
+      "sha256": "39cb09e918c0ae9d7f3ab2693432cbb5b2cc4d88dfd802a5cf5939c6771b5522",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\prototype",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "publish-github-issue": {
       "mode": "copy",
-      "sha256": "7f4a856fdb9f8e29bf8975cf7511e0bdb35caba8803125ab5ef622da66756a54",
-      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\publish-github-issue",
-      "source_revision": "8ee4e7e8ab8915500a0d05ff4f374be6db28411e"
+      "sha256": "1a3d75fa9251683cfefd55145866944892721a3dfecc4b8d12e34a5e0a8a38bb",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\publish-github-issue",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "release-review": {
       "mode": "copy",
-      "sha256": "3ed867b086a8ee22c2339a8abe886ee97252cc5ab8cf6638c61ea6a83f8609e5",
-      "source_identity": "<adopted-from-installed>",
-      "source_revision": null
+      "sha256": "eb9fefac4550eac29f2f278417b43415c7779b74ff833132d87123812103cd14",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\release-review",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
+    },
+    "research": {
+      "mode": "copy",
+      "sha256": "ed6e99246300309b369dbd004aa840bd4d132f3e1412f8fab6753ec46094694b",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\research",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "resolving-merge-conflicts": {
       "mode": "copy",
-      "sha256": "1d547b52a99ede49c97b1480cd2f8be95f0eb4107a7a6c4ea4b9190cbef70517",
-      "source_identity": "<adopted-from-installed>",
-      "source_revision": null
+      "sha256": "e2162b26795cc937696e3ddf313130b9ddeab6a2216bb1a0f03fed5ea32e2ce8",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\resolving-merge-conflicts",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "resume-ext": {
       "mode": "copy",
-      "sha256": "1a119c6e0d6e6776025b21be98b951f290a9538d84178d499c09374f3cfd86ad",
-      "source_identity": "<adopted-from-installed>",
-      "source_revision": null
+      "sha256": "de26f5577d6b18de33ba244055fca26d6b91ab3f5a4538c6453e29d9a282b2a7",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\resume-ext",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "setup-matt-pocock-skills": {
       "mode": "copy",
-      "sha256": "01211acd66d45e1313ebae92dd954e75abccda4f28d8a52477be38aaf80e2dcc",
-      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\setup-matt-pocock-skills",
-      "source_revision": "8ee4e7e8ab8915500a0d05ff4f374be6db28411e"
+      "sha256": "497bb7971457bc37b4b46945025fbd2282a13f90afb0af131702132baf6b51d3",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\setup-matt-pocock-skills",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "tdd": {
       "mode": "copy",
-      "sha256": "7abb81c5ac6a2380097eeddd83c75f74ad80093bb73be84205f318b05c4e8d26",
-      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\tdd",
-      "source_revision": "8ee4e7e8ab8915500a0d05ff4f374be6db28411e"
+      "sha256": "36783702d332605b2f5524772d27d03f2a7cd0d81d87ea44ed368335c368bfcf",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\tdd",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "teach": {
       "mode": "copy",
-      "sha256": "6cb668604b51edf6c427dd15494dc1dd1f81b9e81a0f05b1481e32db9cc74b60",
-      "source_identity": "<adopted-from-installed>",
-      "source_revision": null
+      "sha256": "9fa97c21e6f8b99e5ff2468c5c692d2f0848779acee5da9c7ddf2896f6afe61d",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\teach",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "to-spec": {
       "mode": "copy",
-      "sha256": "0f2305197e0a7bde61a5db614fb144f8a2240e60e2901ee5556ce046ee141c7a",
-      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\to-spec",
-      "source_revision": "8ee4e7e8ab8915500a0d05ff4f374be6db28411e"
+      "sha256": "f6d6983d818a61e5d5c3a83e398c29518451787c3051a542cb7af0996f11e269",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\to-spec",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "to-tickets": {
       "mode": "copy",
-      "sha256": "42f445398bdeb59a10428d478ef8513970fea501a84894fa5e9f4baa123c2fda",
-      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\to-tickets",
-      "source_revision": "8ee4e7e8ab8915500a0d05ff4f374be6db28411e"
+      "sha256": "47d47e11d368f80c4a06ac8cb8720c371ba0acb286faf438e00b785f9a34c2f3",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\to-tickets",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "triage": {
       "mode": "copy",
-      "sha256": "cca1739497d26ca0c7a2153c36194ba62bc85bd9d32027850e6930309854e7dd",
-      "source_identity": "<adopted-from-installed>",
-      "source_revision": null
+      "sha256": "4ebeb1c53bbd88141eb1fd2d9fba0d9dc2631dc202a48ed5c5232fdc112f798c",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\triage",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "wayfinder": {
       "mode": "copy",
-      "sha256": "c1b368f780924bb25bd69483a6be0c61016280297b7b2a578dd536dccf2f8c61",
-      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\wayfinder",
-      "source_revision": "8ee4e7e8ab8915500a0d05ff4f374be6db28411e"
+      "sha256": "67fd04abb15923504663b390f6d459475f9e7d84f58180930fd7cb901ec67d45",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\wayfinder",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     },
     "writing-great-skills": {
       "mode": "copy",
-      "sha256": "179eadd2728eec403876be47fb47dc53806abe3a486357675f5514e4a22343d2",
-      "source_identity": "<adopted-from-installed>",
-      "source_revision": null
+      "sha256": "ceb5080e2da7623280a1315702a4dac7c8e3a38c8d3ee2e7f81304ace89ebd58",
+      "source_identity": "D:\\03_projects\\aiw\\skills\\writing-great-skills",
+      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
     }
   }
 }

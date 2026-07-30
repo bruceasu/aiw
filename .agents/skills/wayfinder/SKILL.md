@@ -4,7 +4,8 @@ description: Plan a huge chunk of work — more than one agent session can hold 
 disable-model-invocation: true
 ---
 
-Read `skills/work-management.md`. Its AIW Task, worktree, test, and sub-agent
+Read `skills/work-management.md` and follow `skills/reviewed-skill-contract.md`.
+Its output is a planning map, not implementation. Its AIW Task, worktree, test, and sub-agent
 rules override any broader wording below. In particular, start at most two
 research sub-agents, do not let them run tests, and use a user-approved
 independent AIW Task plus `aiw wt` instead of a throwaway branch when isolation

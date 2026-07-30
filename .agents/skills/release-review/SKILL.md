@@ -15,6 +15,10 @@ description: release gate review workflow for financial admin systems, operation
 
 # Release Review
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+Release Readiness defaults to `NOT YET REVIEWED`; `GO` requires the documented
+trigger and evidence, and never authorizes deployment by itself.
+
 Use this skill to review whether a financial admin, operations, reporting, risk, finance, analytics, dashboard, or data-pipeline change is safe to release. This skill is a **read-only release gate**: it emits a structured `RELEASE_REVIEW.md` and never writes code, migrations, or deployment scripts.
 
 ## When To Use

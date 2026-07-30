@@ -6,6 +6,15 @@ disable-model-invocation: true
 
 # To Tickets
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+
+## Contract
+
+Trigger when an existing plan or spec needs ordered implementation items. Do
+not create a second tracker, worktree, branch, commit, or external projection.
+Return ordered checklist items with prerequisites and acceptance criteria;
+record unresolved scope as `%% NEEDS_INPUT: ...`.
+
 Break a plan, spec, or conversation into a set of **tickets** — tracer-bullet vertical slices, each declaring the tickets that **block** it.
 
 Read `skills/work-management.md`. Resolve one AIW Task and its matching OpenSpec

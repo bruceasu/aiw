@@ -5,6 +5,10 @@ description: Shared vocabulary for designing deep modules. Use when the user wan
 
 # Codebase Design
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+This Skill produces design guidance only and does not implement, commit, or
+run validation.
+
 When using sub-agents, use at most two bounded static passes. They must not run
 tests or create branches or worktrees.
 

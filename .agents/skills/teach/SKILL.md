@@ -7,6 +7,10 @@ argument-hint: "What would you like to learn about?"
 
 The user has asked you to teach them something. This is a stateful request - they intend to learn the topic over multiple sessions.
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+Teaching returns learning guidance and does not create implementation lifecycle
+artifacts implicitly.
+
 ## Teaching Workspace
 
 Treat the current directory as a teaching workspace. The state of their learning is captured in this directory in several files:

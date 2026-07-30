@@ -6,6 +6,9 @@ disable-model-invocation: true
 
 # Implement
 
+Follow `skills/reviewed-skill-contract.md`; lifecycle ownership remains in
+`skills/work-management.md`.
+
 Read `skills/work-management.md` and
 `docs/agents/work-management.md` when present.
 
@@ -44,10 +47,23 @@ Update the selected checklist item, TODO, Verification, and remaining `%%`
 risks or questions. Synchronize the coarse AIW Task status without overwriting
 OpenSpec-owned content.
 
-Perform one static review of the changed paths. Commit the completed changes on
-the Task branch. When every checklist item is complete, merge and verify the
-branch, remove the worktree and feature branch, then sync and archive. Preserve
-resources if any step fails.
+Perform one static review of the changed paths, then commit the completed
+implementation changes on the AIW Task branch.
+
+If every implementation checklist item in `tasks.md` is complete, run the
+completion protocol automatically:
+
+1. Merge the Task branch into its validated `parent_branch`.
+2. Verify the merge succeeded.
+3. Remove the Task worktree and delete the Task branch.
+4. Synchronize AIW and OpenSpec state.
+5. Archive the completed change through the automatic backend.
+
+Do not start this protocol when any checklist item is incomplete. If sync,
+archive, merge, or verification fails, stop and preserve the Task branch and
+worktree for recovery. Do not clean up a partial task or a conflicted merge.
+The merge target must be the validated `parent_branch` recorded in the Task
+metadata.
 
 After development is complete, ask once whether the user wants one focused test
 command run. Show the exact command, scope, and expected duration. Default to no

@@ -6,7 +6,8 @@ disable-model-invocation: true
 
 This skill takes the current conversation context and codebase understanding and produces a spec (you may know this document as a PRD). Do NOT interview the user — just synthesize what you already know.
 
-Read `skills/work-management.md` and the repository's
+Follow `skills/reviewed-skill-contract.md`. Read `skills/work-management.md`
+and the repository's
 `docs/agents/work-management.md` when present. Use AIW for Task lifecycle and
 OpenSpec for the specification artifacts. Do not create a parallel `.scratch`
 specification or publish externally unless the user explicitly asks.
@@ -18,6 +19,14 @@ specification or publish externally unless the user explicitly asks.
    so an installed OpenSpec CLI can create the matching change artifacts. If
    several Tasks match, ask for the Task ID before writing.
 
+   The AIW Task and OpenSpec change are one managed unit. Before continuing,
+   establish and record the same normalized Task ID in both locations:
+   `openspec/changes/<task-id>/task.toml` and the matching OpenSpec change
+   directory. The `task.toml` must be the AIW lifecycle record, not an
+   OpenSpec-only substitute, and must retain the Task's status, branch,
+   worktree, parent branch, and Session fields when those fields exist. Do not proceed with
+   an untracked OpenSpec directory or an AIW Task that has no matching change.
+
    Then resolve the matching OpenSpec change, explore only the relevant repo
    area, use the project's domain glossary, and respect applicable ADRs.
 
@@ -26,13 +35,38 @@ specification or publish externally unless the user explicitly asks.
 Check with the user that these seams match their expectations.
 
 3. Write or update the applicable OpenSpec artifacts using the template below.
+   A successful `to-spec` run must leave this minimum artifact set in the
+   matching change directory:
+
+   - `task.toml` — AIW Task identity and lifecycle mapping;
+   - `proposal.md` — motivation, scope, and user-facing solution;
+   - `design.md` — durable implementation and architectural decisions;
+   - `specs/<capability>/spec.md` — normative requirements and scenarios for
+     each changed capability;
+   - `tasks.md` — ordered implementation checklist, including TODO and
+     Verification sections or equivalent records.
+
    Put motivation and scope in `proposal.md`, decisions in `design.md`,
    normative requirements in capability specs, and follow-up work in
    `tasks.md`. Do not publish to GitHub or GitLab as part of this Skill.
 
+   Before reporting completion, verify statically that all required files
+   exist, that the change directory name, `task.toml.id`, and AIW Task ID are
+   identical, and that every checklist item is actionable by `/implement`.
+   If AIW or the automatic OpenSpec backend cannot create or link these
+   records, stop and report the missing capability; do not create a parallel
+   `.scratch` or ad-hoc task record.
+
 4. Keep the AIW Task linked to the change and synchronize only its coarse title,
-   goal, and planning status. Do not copy OpenSpec-owned content into lifecycle
-   fields or create worktrees during specification work.
+   goal, and planning status. Do not create the implementation worktree during
+   specification work. The resulting `tasks.md` is the checklist source that
+   `/implement` will resolve; do not leave implementation work only in the
+   proposal or design.
+
+   Once the required artifacts and ID checks pass, commit the specification
+   artifacts on the current branch before handing the Task to `/implement`.
+   The later AIW worktree must be created from that commit so it inherits the
+   artifacts directly; never ask the implementer to copy them manually.
 
 <spec-template>
 
