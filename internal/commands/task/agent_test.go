@@ -20,7 +20,7 @@ func TestWriteLineageIsReadable(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join("openspec", "changes", "T-1"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	want := agentLineage{TaskID: "T-1", SessionID: "S-1", ParentThread: "p", ChildThread: "c", Status: "completed"}
+	want := agentLineage{TaskID: "T-1", SessionID: "S-1", ParentThread: "p", ChildThread: "c", ParentState: "handed-off", ChildState: "completed", Status: "completed"}
 	if err := writeLineage("T-1", want); err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +32,23 @@ func TestWriteLineageIsReadable(t *testing.T) {
 	if err := json.Unmarshal(b, &got); err != nil {
 		t.Fatal(err)
 	}
-	if got.TaskID != want.TaskID || got.ChildThread != want.ChildThread || got.Status != want.Status {
+	if got.TaskID != want.TaskID || got.ChildThread != want.ChildThread || got.ParentState != want.ParentState || got.ChildState != want.ChildState || got.Status != want.Status {
 		t.Fatalf("unexpected lineage: %+v", got)
+	}
+}
+
+func TestParseAgentOptions(t *testing.T) {
+	opts, err := parseAgentOptions([]string{"--handoff", "handoff.md", "--takeover", "--yes"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if opts.Handoff != "handoff.md" || !opts.Takeover || !opts.Yes {
+		t.Fatalf("unexpected options: %+v", opts)
+	}
+}
+
+func TestNormalizeIDIsDeterministic(t *testing.T) {
+	if got := normalizeID("Feature/Task 42"); got != "feature-task-42" {
+		t.Fatalf("unexpected normalized ID: %q", got)
 	}
 }

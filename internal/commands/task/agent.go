@@ -31,6 +31,8 @@ type agentLineage struct {
 	Handoff      string
 	HandoffHash  string
 	HandoffStatus string
+	ParentState   string
+	ChildState    string
 	StartedAt    string
 	CompletedAt  string
 	Status       string
@@ -157,7 +159,7 @@ func runTaskAgent(args []string) error {
 	if err != nil {
 		return err
 	}
-	lineage := agentLineage{TaskID: id, ParentTask: id, SessionID: meta.Session, ChildSession: meta.Session, ParentThread: status.Codex.ThreadID, Handoff: handoff, HandoffStatus: "pending", StartedAt: time.Now().UTC().Format(time.RFC3339), Status: "starting"}
+	lineage := agentLineage{TaskID: id, ParentTask: id, SessionID: meta.Session, ChildSession: meta.Session, ParentThread: status.Codex.ThreadID, Handoff: handoff, HandoffStatus: "pending", ParentState: "active", ChildState: "starting", StartedAt: time.Now().UTC().Format(time.RFC3339), Status: "starting"}
 	if b, readErr := os.ReadFile(handoff); readErr == nil {
 		digest := sha256.Sum256(b)
 		lineage.HandoffHash = hex.EncodeToString(digest[:])
@@ -165,7 +167,7 @@ func runTaskAgent(args []string) error {
 	if err := writeLineage(id, lineage); err != nil { return err }
 	prompt := fmt.Sprintf("Continue Task %s.\n\nSession: %s\n\nRead the handoff at %s and referenced artifacts before taking action. Preserve the existing Task and worktree; report validation when done.\n\nTask context:\n%s", id, meta.Session, handoff, readTaskGoal(id))
 	if _, err := runFlow(worktree, "run", meta.Session, "--force-new-thread", "--prompt", prompt); err != nil {
-		lineage.Status, lineage.Error = "failed", err.Error()
+		lineage.Status, lineage.ChildState, lineage.Error = "failed", "failed", err.Error()
 		_ = writeLineage(id, lineage)
 		return err
 	}
@@ -175,6 +177,8 @@ func runTaskAgent(args []string) error {
 	}
 	lineage.ChildThread = child.Codex.ThreadID
 	lineage.HandoffStatus = "consumed"
+	lineage.ParentState = "handed-off"
+	lineage.ChildState = "completed"
 	lineage.CompletedAt = time.Now().UTC().Format(time.RFC3339)
 	lineage.Status = "completed"
 	if err := writeLineage(id, lineage); err != nil {

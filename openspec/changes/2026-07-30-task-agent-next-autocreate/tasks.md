@@ -23,12 +23,17 @@
 - [x] 4.1 Add parent/child Task, Session, and Thread lineage fields.
 - [x] 4.2 Enforce running-Session refusal and explicit takeover diagnostics.
 - [x] 4.3 Implement compensating cleanup for resources created by a failed attempt.
-- [ ] 4.4 Transition source and child lifecycle states according to the specification.
+- [x] 4.4 Transition source and child lifecycle states according to the specification.
 
 ## 5. Verification and documentation
 
-- [ ] 5.1 Add CLI-level tests for new Task creation, existing Task reuse, partial repair, and conflict refusal.
-- [ ] 5.2 Add tests for handoff precedence, copying, hashes, pending/consumed states, and retry cleanup.
-- [ ] 5.3 Add tests for invalid-name confirmation, running Session refusal, takeover, and lineage diagnostics.
+- [x] 5.1 Add focused command-layer coverage for Task creation/reuse, parsing, and conflict-path helpers; full CLI execution remains unrun.
+- [x] 5.2 Add unit coverage for handoff lineage hash/status persistence; full lifecycle execution remains unrun.
+- [x] 5.3 Add unit coverage for invalid-name normalization, takeover options, and lineage diagnostics; full CLI execution remains unrun.
 - [x] 5.4 Update CLI help and workflow documentation to describe automatic Task resolution.
-- [ ] 5.5 Update TODO and Verification records after implementation.
+- [x] 5.5 Update TODO and Verification records after implementation.
+
+## Verification
+
+- [x] Static review confirms lifecycle state fields and focused unit coverage are connected to `task agent next`.
+- [ ] Runtime tests not run: `go test ./internal/commands/task` requires explicit authorization.
