@@ -36,4 +36,4 @@
 ## Verification
 
 - [x] Static review confirms lifecycle state fields and focused unit coverage are connected to `task agent next`.
-- [ ] Runtime tests not run: `go test ./internal/commands/task` requires explicit authorization.
+- [x] Runtime tests passed: `go test ./internal/commands/task`.
