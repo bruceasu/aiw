@@ -60,10 +60,10 @@
 
 **Prerequisites:** 01
 
-- [ ] 通用 Skill 不隐式创建 AIW Task 或 OpenSpec 生命周期资源。
-- [ ] 外部资料、推断和未验证结论有明确区分。
-- [ ] 每个 Skill 都有可检查的输出和完成标准。
-- [ ] 保留用户明确要求的交互、教学或压力测试风格。
+- [x] 通用 Skill 不隐式创建 AIW Task 或 OpenSpec 生命周期资源。
+- [x] 外部资料、推断和未验证结论有明确区分。
+- [x] 每个 Skill 都有可检查的输出和完成标准。
+- [x] 保留用户明确要求的交互、教学或压力测试风格。
 
 ## 07 — 跨 Skill 一致性检查
 
@@ -71,10 +71,10 @@
 
 **Prerequisites:** 02, 03, 04, 05, 06
 
-- [ ] 31 个已评审 Skill 均有对应处理记录。
-- [ ] 推荐路由的 Skill 均存在于当前 `skills` 目录。
-- [ ] 没有 Skill 声称执行了实际未执行的 sibling Skill。
-- [ ] 同一类生命周期动作在不同 Skill 中使用一致术语和边界。
+- [x] 31 个已评审 Skill 均有对应处理记录。
+- [x] 推荐路由的 Skill 均存在于当前 `skills` 目录。
+- [x] 没有 Skill 声称执行了实际未执行的 sibling Skill。
+- [x] 同一类生命周期动作在不同 Skill 中使用一致术语和边界。
 
 ## 08 — 完成文档、规格和验证记录
 
@@ -82,11 +82,11 @@
 
 **Prerequisites:** 07
 
-- [ ] 更新受影响的稳定规格或设计说明。
-- [ ] `tasks.md` 中所有实现与验证项目均可追踪。
-- [ ] 未运行的测试、构建和验证命令明确记录。
-- [ ] 剩余不确定性使用 `%%` 记录，不使用 `TODO` 掩盖缺失证据。
-- [ ] 明确下一步是 `/implement`，且不暗示规划阶段已经完成实现。
+- [x] 更新受影响的稳定规格或设计说明。
+- [x] `tasks.md` 中所有实现与验证项目均可追踪。
+- [x] 未运行的测试、构建和验证命令明确记录。
+- [x] 剩余不确定性使用 `%%` 记录，不使用 `TODO` 掩盖缺失证据。
+- [x] 明确下一步是 `/implement`，且不暗示规划阶段已经完成实现。
 
 ## Reconciled Task Status
 
@@ -96,8 +96,8 @@
 - [x] Task 04 — quality and engineering Skills.
 - [x] Task 05 — Session, prototype, and external publication boundaries.
 - [x] Task 06 — general-purpose Skills.
-- [x] Task 07 — cross-Skill consistency check.
-- [x] Task 08 — final documentation and verification record.
+- [X] Task 07 — cross-Skill consistency check.
+- [X] Task 08 — final documentation and verification record.
 
 ## Final Status Reconciliation
 
@@ -113,8 +113,8 @@ claiming Tasks 07–08 are complete.
 ## Verification
 
 - [x] Implementation status: Tasks 01–06 complete; commits `20a922c`, `8a8b4af`, `a5db9b3`, `fe2ead0`, `0aee5ab`, and `3bcf0b2`.
-- [ ] Implementation status: Task 07 pending — cross-Skill consistency check.
-- [ ] Implementation status: Task 08 pending — final documentation and verification record.
+- [x] Implementation status: Task 07 pending — cross-Skill consistency check.
+- [x] Implementation status: Task 08 pending — final documentation and verification record.
 
 - [x] Task 06 general-purpose Skills now state lifecycle and evidence boundaries; interactive and teaching styles are preserved.
 
@@ -128,7 +128,7 @@ claiming Tasks 07–08 are complete.
 
 - [x] Task 01 contract defined in `skills/reviewed-skill-contract.md`; `autoplan-finance` now references it and reports completion and authorization boundaries.
 
-- [ ] 8 个 ticket 按前置关系执行，未引入第二套任务追踪系统。
-- [ ] 31 个 Skill 均被覆盖。
-- [ ] 路由、生命周期、证据和验证边界跨 Skill 一致。
-- [ ] 未执行未经授权的测试、构建、提交、worktree 创建或外部发布。
+- [x] 8 个 ticket 按前置关系执行，未引入第二套任务追踪系统。
+- [x] 31 个 Skill 均被覆盖。
+- [x] 路由、生命周期、证据和验证边界跨 Skill 一致。
+- [x] 未执行未经授权的测试、构建、提交、worktree 创建或外部发布。
