@@ -90,6 +90,8 @@
 
 ## Verification
 
+- [x] Task 03 finance governance boundaries added to the five review Skills; Plan Status and Release Readiness remain separate.
+
 - [x] Task 02 core routing boundaries updated for `ask-matt`, `to-tickets`, and `triage`; `to-spec`, `implement`, `handoff`, and `wayfinder` retain their managed-flow boundaries.
 
 - [x] Task 01 contract defined in `skills/reviewed-skill-contract.md`; `autoplan-finance` now references it and reports completion and authorization boundaries.

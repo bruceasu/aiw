@@ -15,6 +15,11 @@ description: financial product intake and scope reduction workflow for admin pla
 
 # Office Hours Finance
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+This consultation Skill is read-only: it returns a problem brief, does not
+create Tasks or OpenSpec artifacts, and routes confirmed scope to
+`autoplan-finance` or `/to-spec`.
+
 Use this skill to turn vague financial admin, operations, reporting, risk, finance, or analytics requests into a **decision-centric problem brief** — before any design, metric, permission, or engineering discussion begins.
 
 ## When To Use

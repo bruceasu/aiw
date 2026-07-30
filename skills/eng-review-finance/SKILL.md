@@ -15,6 +15,10 @@ description: architecture review workflow for financial admin platforms, operati
 
 # Engineering Review Finance
 
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+This is a pre-implementation review only; it returns architecture evidence and
+open risks, without coding, Task/worktree mutation, or release approval.
+
 Use this skill to review or draft a financial-system technical design **before implementation**. This skill is a **read-only architecture reviewer**: it emits a structured `ENG_REVIEW.md` and never writes code, migrations, or PRs.
 
 ## When To Use
