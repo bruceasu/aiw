@@ -14,20 +14,26 @@ Read `skills/work-management.md` and
 
 ## Resolve Work
 
-1. Resolve one AIW Task.
-2. Resolve its matching OpenSpec change and selected `tasks.md` item.
+1. Resolve one AIW Task when AIW is available; otherwise resolve one matching
+   standalone OpenSpec change or explicitly selected work item.
+2. Resolve its matching OpenSpec change and selected `tasks.md` item when
+   those artifacts exist.
 3. Read only the applicable `task.toml`, proposal, design, capability specs,
    checklist, and notes.
 4. Stop and ask for the Task ID when several Tasks match.
 
 ## Prepare The Workspace
 
-Create or resolve the Task worktree through `aiw wt`. Verify that its branch and
-path match AIW Task metadata before modifying implementation files.
+In managed mode, create or resolve the Task worktree through `aiw wt` and
+verify that its branch and path match AIW Task metadata. If AIW is unavailable
+but Git is available and isolation is useful, use an explicit native
+`git worktree` and branch. Otherwise work in the user's current workspace or
+selected branch after checking for conflicting changes.
 
 Do not use raw `git worktree` when AIW is available. Do not silently implement
-in another workspace. If the active agent cannot safely continue in the
-resolved worktree, report its path and stop.
+in another workspace. A native Git worktree is a valid fallback only when AIW
+is unavailable; report its path and branch. If isolation is unavailable,
+continue in place when safe and report the limitation.
 
 ## Implement
 
@@ -44,14 +50,17 @@ resolved worktree, report its path and stop.
 ## Complete Development
 
 Update the selected checklist item, TODO, Verification, and remaining `%%`
-risks or questions. Synchronize the coarse AIW Task status without overwriting
-OpenSpec-owned content.
+risks or questions. Synchronize the coarse AIW Task status when AIW is
+available; in standalone modes, update OpenSpec-owned records without
+fabricating AIW state.
 
 Perform one static review of the changed paths, then commit the completed
-implementation changes on the AIW Task branch.
+implementation changes on the managed Task branch when AIW is active. In
+standalone modes, commit on the selected Git branch when appropriate; do not
+claim an AIW Task branch.
 
-If every implementation checklist item in `tasks.md` is complete, run the
-completion protocol automatically:
+If every implementation checklist item in `tasks.md` is complete and managed
+mode is active, run the completion protocol automatically:
 
 1. Merge the Task branch into its validated `parent_branch`.
 2. Verify the merge succeeded.
@@ -59,7 +68,8 @@ completion protocol automatically:
 4. Synchronize AIW and OpenSpec state.
 5. Archive the completed change through the automatic backend.
 
-Do not start this protocol when any checklist item is incomplete. If sync,
+Do not start this protocol when any checklist item is incomplete. In standalone
+modes, do not attempt these AIW-only operations. If sync,
 archive, merge, or verification fails, stop and preserve the Task branch and
 worktree for recovery. Do not clean up a partial task or a conflicted merge.
 The merge target must be the validated `parent_branch` recorded in the Task

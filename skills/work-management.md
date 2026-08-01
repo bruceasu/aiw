@@ -1,6 +1,8 @@
 # AIW Work Management Contract
 
-Use this contract for engineering Skills in an AIW/OpenSpec repository.
+Use this contract for engineering Skills in an AIW/OpenSpec repository. Skills
+should make the best safe progress available; a missing optional tool changes
+the workflow mode rather than stopping the work.
 
 ## Ownership
 
@@ -24,6 +26,21 @@ Current AIW task lifecycle commonly uses `aiw new`, `aiw show`, `aiw status`,
 
 Do not install AIW or OpenSpec automatically.
 
+## Capability Modes
+
+Choose the strongest safe mode available:
+
+- **managed**: AIW Task/Session/worktree lifecycle, with OpenSpec delegated
+  through AIW when available.
+- **spec**: AIW is unavailable, so a local OpenSpec change is the standalone
+  work unit; native Git worktrees may still provide workspace isolation.
+- **native**: AIW and OpenSpec are unavailable; use the user's current or
+  explicitly selected Git branch and keep a concise work record when useful.
+
+Never fabricate AIW Task, Session, worktree, sync, or archive state in
+standalone modes. Report unavailable capabilities and continue with independent
+safe work. Do not install tools automatically.
+
 ## Resolve Or Create The Task
 
 Resolve context in this order:
@@ -33,9 +50,10 @@ Resolve context in this order:
 3. AIW Task associated with the current worktree or branch.
 4. A unique matching OpenSpec change.
 
-If planning work needs a new lifecycle, create it through AIW. `aiw new
-<task-id> --backend auto` may delegate artifact creation to an installed
-OpenSpec CLI and otherwise uses AIW's native backend.
+If planning work needs a new lifecycle and AIW is available, create it through
+AIW. `aiw new <task-id> --backend auto` may delegate artifact creation to an
+installed OpenSpec CLI and otherwise uses AIW's native backend. Without AIW,
+use a standalone OpenSpec change when that is the requested artifact.
 
 If several Tasks match, stop and ask for the Task ID.
 
@@ -50,9 +68,18 @@ delivery, or archive lifecycle, and only after the user approves the split.
 
 ## Worktree Rules
 
-- Create or resolve implementation worktrees through `aiw wt`.
+- In managed mode, create or resolve implementation worktrees through `aiw wt`.
+- If AIW is unavailable but Git is available and isolation is useful, use
+  native `git worktree` with an explicit path and branch, and report that the
+  worktree is Git-managed rather than AIW-managed.
+- Do not create worktrees for read-only review, diagnosis, planning, or
+  OpenSpec-only work.
+- For small, documentation-only, or explicitly in-place changes, the current
+  workspace is acceptable after checking its branch and existing changes.
+- Prefer a worktree for multi-step, parallel, or high-risk changes. If the user
+  explicitly chooses in-place work, honor that choice and record the risk.
 - Default to one Task, one `feature/<task-id>` branch, and one
-  `.wt/<task-id>` worktree.
+  `.wt/<task-id>` worktree only for managed implementation tasks.
 - Specification artifacts created on the current branch must be committed
   before creating the Task worktree. The new branch/worktree must inherit
   `task.toml`, proposal, design, specs, and `tasks.md` from that commit; do not
@@ -67,8 +94,10 @@ delivery, or archive lifecycle, and only after the user approves the split.
   and delete the Task branch. Only after cleanup succeeds, run sync and archive.
   Preserve Task resources on any failure or merge conflict before cleanup.
 
-If AIW is unavailable, report the missing capability and ask before using a raw
-Git fallback.
+If AIW is unavailable, do not stop solely because `aiw wt` cannot run. Use
+native Git worktree when isolation is needed and Git is available; otherwise
+use standalone OpenSpec or the current workspace. Report which lifecycle and
+workspace capabilities were used.
 
 ## OpenSpec Operations
 
