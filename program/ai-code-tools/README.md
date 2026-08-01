@@ -1,4 +1,4 @@
-# ai-code-tools v1.2.0
+# ai-code-tools v1.3.0
 
 Two global commands:
 
@@ -6,6 +6,14 @@ Two global commands:
 generate-ai-index
 ai-code-index
 ```
+
+## What's new in v1.3.0
+
+- `generate-ai-index` now records richer declarations for AI context:
+  - Java interfaces, enums, and records;
+  - Go structs, interfaces, and named types;
+  - Python class methods with their class owner;
+  - TypeScript interfaces, type aliases, and enums.
 
 ## What's new in v1.2.0
 

@@ -11,6 +11,11 @@ must be reported as not run when unauthorized.
 
 A discipline for hard bugs. Skip phases only when explicitly justified.
 
+Before building the feedback loop, apply the shared Repository Index Context
+procedure when diagnosis requires repository exploration. A failed or missing
+index provider must not block diagnosis; fall back to live search using `rg`,
+then `fd`, then `grep`, and record the limitation.
+
 When exploring the codebase, read `CONTEXT.md` (if it exists) to get a clear mental model of the relevant modules, and check ADRs in the area you're touching.
 
 ## Phase 1 — Build a feedback loop

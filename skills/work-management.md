@@ -41,6 +41,32 @@ Never fabricate AIW Task, Session, worktree, sync, or archive state in
 standalone modes. Report unavailable capabilities and continue with independent
 safe work. Do not install tools automatically.
 
+## Repository Index Context
+
+For code-understanding work, treat the repository index as an optional context
+provider, never as a workflow prerequisite. Before exploring implementation
+code, review, or diagnosis:
+
+1. Discover `ai-code-index` and `generate-ai-index` in PATH, the configured
+   AIW/plugin location, or the repository's known tool location.
+2. If a generator is available, refresh the current repository's `.ai/` index
+   before relying on it. Prefer the generator directly or
+   `ai-code-index scan <repo> --run-generator`.
+3. Read resulting `.ai/PROJECT_MAP.md`, `.ai/API_INDEX.md`, and relevant JSONL
+   records as candidate context, then confirm important locations from source.
+4. If refresh fails, use an existing index only with a `stale` note. Combine
+   indexed candidates with live repository search. Prefer `rg` for content and
+   pattern search, then `fd` for file discovery, then `grep` when the faster
+   tools are unavailable. If none are available, use Git and direct source
+   reads.
+
+Refresh is expected for implementation, code review, and bug diagnosis. Do not
+refresh for pure planning, specification-only, or documentation-only work
+unless repository structure is itself being investigated. Index generation and
+search-tool discovery must not block the task, and generated `.ai/` output is
+not an AIW lifecycle artifact. Discover tools before using them and report any
+fallback to a slower or more limited implementation.
+
 ## Resolve Or Create The Task
 
 Resolve context in this order:

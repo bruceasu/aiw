@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-generate-ai-index v1.2.0
+generate-ai-index v1.3.0
 
 Generate AI-friendly repository indexes.
 
@@ -16,6 +16,8 @@ JSONL:
   .ai/files.jsonl
   .ai/metadata.json
 
+V1.3.0 additions:
+  - richer Java/Go/Python/JavaScript/TypeScript symbol records
 V1.2.0 additions:
   - line_start / line_end for symbols
   - line for API route annotation / route declaration
@@ -37,7 +39,7 @@ from pathlib import Path
 from typing import Iterable
 
 
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 
 IGNORE_DIRS = {
     ".git", ".idea", ".vscode", ".gradle", "target", "build", "dist", "out",
@@ -348,6 +350,7 @@ def parse_java(path: Path, root: Path, index: Index) -> None:
     if not class_match:
         return
 
+    declaration_type = class_match.group(3)
     class_name = class_match.group(4)
     class_line = line_no(text, class_match.start())
 
@@ -357,7 +360,10 @@ def parse_java(path: Path, root: Path, index: Index) -> None:
     before_class = text[:class_match.start()]
     recent_annotations = "\n".join(before_class.splitlines()[-20:])
 
-    kind = "JavaClass"
+    kind = {
+        "class": "JavaClass", "interface": "JavaInterface",
+        "enum": "JavaEnum", "record": "JavaRecord",
+    }.get(declaration_type, "JavaClass")
     for anno, mapped_kind in SPRING_STEREOTYPES.items():
         if re.search(r"@" + anno + r"\b", recent_annotations):
             kind = mapped_kind
@@ -456,6 +462,7 @@ def parse_java(path: Path, root: Path, index: Index) -> None:
 
 GO_PACKAGE_RE = re.compile(r"^\s*package\s+([A-Za-z_][A-Za-z0-9_]*)", re.MULTILINE)
 GO_FUNC_RE = re.compile(r"^\s*func\s+(?:\(([^)]+)\)\s*)?([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)", re.MULTILINE)
+GO_TYPE_RE = re.compile(r"^\s*type\s+([A-Za-z_][A-Za-z0-9_]*)\s+(struct|interface|[A-Za-z_][A-Za-z0-9_.*\[\]]*)", re.MULTILINE)
 
 
 def parse_go(path: Path, root: Path, index: Index) -> None:
@@ -464,6 +471,14 @@ def parse_go(path: Path, root: Path, index: Index) -> None:
 
     pm = GO_PACKAGE_RE.search(text)
     package = pm.group(1) if pm else ""
+
+    for tm in GO_TYPE_RE.finditer(text):
+        name, declared = tm.group(1), tm.group(2)
+        start = line_no(text, tm.start())
+        open_pos = text.find("{", tm.end() - 1)
+        end = find_block_end_line(text, open_pos) if open_pos >= 0 else start
+        kind = "GoStruct" if declared == "struct" else "GoInterface" if declared == "interface" else "GoType"
+        index.symbols.append(Symbol(type="type", kind=kind, name=name, signature=f"{name} {declared}", file=rpath, package=package, language="go", line_start=start, line_end=end, id=make_symbol_id("go", "", name, declared, rpath, start), keywords=symbol_keywords(name, declared, package, rpath)))
 
     for fm in GO_FUNC_RE.finditer(text):
         receiver = re.sub(r"\s+", " ", (fm.group(1) or "").strip())
@@ -520,6 +535,22 @@ PY_CLASS_RE = re.compile(r"^\s*class\s+([A-Za-z_][A-Za-z0-9_]*)", re.MULTILINE)
 PY_FUNC_RE = re.compile(r"^\s*(?:async\s+)?def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)", re.MULTILINE)
 
 
+def python_owner(text: str, function_pos: int) -> str:
+    lines = text.splitlines()
+    function_line_no = line_no(text, function_pos)
+    if function_line_no > len(lines):
+        return ""
+    function_line = lines[function_line_no - 1]
+    function_indent = len(function_line) - len(function_line.lstrip(" "))
+    for raw in reversed(lines[:function_line_no - 1]):
+        match = re.match(r"^(\s*)class\s+([A-Za-z_][A-Za-z0-9_]*)", raw)
+        if match and len(match.group(1)) < function_indent:
+            return match.group(2)
+        if raw.strip() and len(raw) - len(raw.lstrip(" ")) < function_indent:
+            break
+    return ""
+
+
 def parse_python(path: Path, root: Path, index: Index) -> None:
     text = read_text(path)
     rpath = rel(path, root)
@@ -537,7 +568,8 @@ def parse_python(path: Path, root: Path, index: Index) -> None:
         signature = short_signature(f"{name}({params})")
         start = line_no(text, fm.start())
         end = find_python_block_end_line(text, fm.start())
-        index.symbols.append(Symbol(type="function", kind="PythonFunc", name=name, signature=signature, file=rpath, language="python", line_start=start, line_end=end, id=make_symbol_id("python", "", name, signature, rpath, start), keywords=symbol_keywords(name, signature, rpath)))
+        owner = python_owner(text, fm.start())
+        index.symbols.append(Symbol(type="method" if owner else "function", kind="PythonMethod" if owner else "PythonFunc", name=name, owner=owner, signature=signature, file=rpath, language="python", line_start=start, line_end=end, id=make_symbol_id("python", owner, name, signature, rpath, start), keywords=symbol_keywords(name, owner, signature, rpath)))
 
     py_route_re = re.compile(
         r"@(?:app|router|blueprint|bp)\.(get|post|put|delete|patch|options|head|route)"
@@ -569,12 +601,21 @@ def parse_python(path: Path, root: Path, index: Index) -> None:
 
 JS_CLASS_RE = re.compile(r"\bclass\s+([A-Za-z_][A-Za-z0-9_]*)")
 JS_FUNC_RE = re.compile(r"\b(?:function\s+([A-Za-z_][A-Za-z0-9_]*)|const\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>)")
+JS_TYPE_RE = re.compile(r"^\s*(?:export\s+)?(?:declare\s+)?(interface|type|enum)\s+([A-Za-z_][A-Za-z0-9_]*)", re.MULTILINE)
 
 
 def parse_js_ts(path: Path, root: Path, index: Index) -> None:
     text = read_text(path)
     rpath = rel(path, root)
     language = EXT_LANGUAGE.get(path.suffix, "javascript")
+
+    for tm in JS_TYPE_RE.finditer(text):
+        declared, name = tm.group(1), tm.group(2)
+        start = line_no(text, tm.start())
+        open_pos = text.find("{", tm.end() - 1)
+        end = find_block_end_line(text, open_pos) if open_pos >= 0 else start
+        kind = {"interface": "TSInterface", "type": "TSType", "enum": "TSEnum"}[declared]
+        index.symbols.append(Symbol(type="type", kind=kind, name=name, signature=f"{declared} {name}", file=rpath, language=language, line_start=start, line_end=end, id=make_symbol_id(language, "", name, declared, rpath, start), keywords=symbol_keywords(name, declared, rpath)))
 
     for cm in JS_CLASS_RE.finditer(text):
         name = cm.group(1)

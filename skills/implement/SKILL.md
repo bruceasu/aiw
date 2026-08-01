@@ -37,6 +37,10 @@ continue in place when safe and report the limitation.
 
 ## Implement
 
+- Before exploring implementation paths, apply the shared Repository Index
+  Context procedure. Refresh `.ai/` when a generator is available; otherwise
+  continue with existing index data or live search (`rg`, then `fd`, then
+  `grep`) and report the fallback.
 - Apply the smallest complete change for the selected checklist item.
 - Use at most two bounded sub-agents under the shared contract.
 - Use `aiw patch` as the preferred path for AI-generated patches when
