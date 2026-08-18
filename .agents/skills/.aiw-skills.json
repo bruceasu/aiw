@@ -21,9 +21,9 @@
     },
     "code-review": {
       "mode": "copy",
-      "sha256": "a63afba0595669fb91bdefaebccf1d052b767d3b4e092f469f99fc1b35784394",
+      "sha256": "3bca754c40c895163ba2a132b67fca204609bc5db9a85f1a16f5bc504564a38b",
       "source_identity": "D:\\03_projects\\aiw\\skills\\code-review",
-      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
+      "source_revision": "f6c45fab6a60a400c0da36e410b9b6923438b77c"
     },
     "codebase-design": {
       "mode": "copy",
@@ -33,9 +33,9 @@
     },
     "diagnosing-bugs": {
       "mode": "copy",
-      "sha256": "5f619ac6bb773631191b35ecf06fecaaf0756df6d25dd0949d6db0b2f8a88de1",
+      "sha256": "1ecbf89531d5ed311d4b01374701987bfba0ebb69f08cd502ffaafacc3581dcd",
       "source_identity": "D:\\03_projects\\aiw\\skills\\diagnosing-bugs",
-      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
+      "source_revision": "f6c45fab6a60a400c0da36e410b9b6923438b77c"
     },
     "domain-modeling": {
       "mode": "copy",
@@ -69,9 +69,9 @@
     },
     "grilling": {
       "mode": "copy",
-      "sha256": "1e0081fbcefff68e7445a4188606413a88d190ea2ad121bac2028a10f5179df2",
+      "sha256": "9b722bca556e6b7ea05e15ce86f60688161301fc38302db16d4ecc3fc21299ef",
       "source_identity": "D:\\03_projects\\aiw\\skills\\grilling",
-      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
+      "source_revision": "f6c45fab6a60a400c0da36e410b9b6923438b77c"
     },
     "handoff": {
       "mode": "copy",
@@ -81,9 +81,9 @@
     },
     "implement": {
       "mode": "copy",
-      "sha256": "ca47d9f14bfadcb3f2742dc34876149d16dc99c029defc141a6b5d309193fe99",
+      "sha256": "02b941ec26414e915ebd1ce0b75eef6e7ed3e384c43f1d694b93838e6c6957be",
       "source_identity": "D:\\03_projects\\aiw\\skills\\implement",
-      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
+      "source_revision": "f6c45fab6a60a400c0da36e410b9b6923438b77c"
     },
     "improve-codebase-architecture": {
       "mode": "copy",
@@ -159,9 +159,9 @@
     },
     "to-spec": {
       "mode": "copy",
-      "sha256": "f6d6983d818a61e5d5c3a83e398c29518451787c3051a542cb7af0996f11e269",
+      "sha256": "17f4f1be68d1fb64845d121dd25843760b932ae102d156b7ae9135902c1a9166",
       "source_identity": "D:\\03_projects\\aiw\\skills\\to-spec",
-      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
+      "source_revision": "f6c45fab6a60a400c0da36e410b9b6923438b77c"
     },
     "to-tickets": {
       "mode": "copy",
@@ -177,9 +177,9 @@
     },
     "wayfinder": {
       "mode": "copy",
-      "sha256": "67fd04abb15923504663b390f6d459475f9e7d84f58180930fd7cb901ec67d45",
+      "sha256": "859e986f39a929ee5a4d01e11c3c8af4ba91389621b7977ad2dee4121b4d0abf",
       "source_identity": "D:\\03_projects\\aiw\\skills\\wayfinder",
-      "source_revision": "0bb3015d85d6c4281d3d274c478ec39f564c34fb"
+      "source_revision": "f6c45fab6a60a400c0da36e410b9b6923438b77c"
     },
     "writing-great-skills": {
       "mode": "copy",
