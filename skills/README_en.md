@@ -18,8 +18,9 @@
 
   These skills help turn vague ideas into something concrete enough to discuss and decide on:
 
-  `ask-matt`, `grilling`, `grill-with-docs`, `office-hours-finance`, `business-review`, `metrics-
-  review`, `eng-review-finance`, `domain-modeling`, `codebase-design`, `improve-codebase-
+  `ask-matt`, `grilling`, `grill-me`, `grill-with-docs`, `prototype`, `research`, `office-hours-
+  finance`, `business-review`, `metrics-review`, `eng-review-finance`, `domain-modeling`, `codebase-
+  design`, `improve-codebase-
   architecture`, `autoplan-finance`.
 
   ### 2. OpenSpec and Implementation
@@ -35,7 +36,7 @@
   transfer:
 
   `handoff`, `resume-ext`, `resolving-merge-conflicts`, `triage`, `wayfinder`, `setup-matt-pocock-
-  skills`, `teach`, `writing-great-skills`.
+  skills`, `edit-article`, `teach`, `writing-great-skills`.
 
   ## 2. The Most Common End-to-End Path
 
@@ -64,6 +65,30 @@
   instead.
 
   ## 3. Skill-by-Skill Guide
+
+  ### grill-me: Interactive pressure testing only
+
+  Purpose: challenge a plan or design through an ongoing interview without creating documents or
+  implementation artifacts.
+
+  ### prototype: Quickly validate a design question
+
+  Purpose: build a throwaway prototype to test a state model, logic, or UI direction.
+
+  ### research: Conduct cited research
+
+  Purpose: investigate a question using high-trust sources, distinguish facts from inference, and
+  capture the result as Markdown.
+
+  ### diagnosing-bugs: Diagnose failures and regressions
+
+  Purpose: use an evidence-driven diagnosis loop to find the cause of broken, failing, throwing, or
+  slow behavior.
+
+  ### edit-article: Edit and improve an article
+
+  Purpose: restructure an article, improve clarity, and tighten prose; return a revision or explicit
+  proposed edits.
 
   ### ask-matt: You do not know what to use next
 
@@ -577,6 +602,11 @@
   ## 8. Quick Memory Aid
 
   Not clear      ask-matt / grilling
+  Pressure-test  grill-me
+  Validate design prototype
+  Research       research
+  Diagnose bugs  diagnosing-bugs
+  Edit article   edit-article
   Need docs      grill-with-docs / domain-modeling
   Finance plan   autoplan-finance
   Write spec     to-spec

@@ -9,12 +9,6 @@ Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
 This Skill is explicit opt-in and static by default; it does not run tests or
 builds unless separately authorized.
 
-Before reviewing code paths, apply the shared Repository Index Context
-procedure. Refresh the repository index when available, then use it only to
-narrow candidate files and symbols; verify findings against the diff and source.
-Index refresh failure or absence must fall back to the normal diff and live
-search. Prefer `rg`, then `fd`, then `grep`, followed by direct source review.
-
 - **Standards** — does the code conform to this repo's documented coding standards?
 - **Spec** — does the code faithfully implement the originating issue / PRD / spec?
 

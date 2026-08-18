@@ -113,5 +113,10 @@ func runOpenSpec(bin string, operation string, args []string) error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("OpenSpec %s failed: %w", operation, err)
 	}
+	if operation == "new" {
+		if err := ensureTaskMeta(args[0]); err != nil {
+			return fmt.Errorf("create AIW task metadata: %w", err)
+		}
+	}
 	return nil
 }

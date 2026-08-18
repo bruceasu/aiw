@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import sys
 import unittest
+import zipfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Optional
@@ -475,6 +476,44 @@ class SkillsCliTests(unittest.TestCase):
             self.assertEqual(
                 list((project / ".agents" / "skills").glob(".aiw-manifest-*")),
                 [],
+            )
+
+    def test_install_directory_ignores_archive_inside_skill_directory(self):
+        with TemporaryDirectory() as temp_dir:
+            _, source, project = make_workspace(temp_dir)
+            skill = write_skill(source, "packaged-skill", "Install the directory copy.")
+            archive = skill / "skill.zip"
+            with zipfile.ZipFile(str(archive), "w") as bundle:
+                bundle.writestr(
+                    "packaged-skill/SKILL.md",
+                    (skill / "SKILL.md").read_text(encoding="utf-8"),
+                )
+
+            result = self.run_cli(project, source, "install", str(source))
+
+            installed = project / ".agents" / "skills" / "packaged-skill"
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("Installed packaged-skill", result.stdout)
+            self.assertEqual(
+                (installed / "SKILL.md").read_text(encoding="utf-8"),
+                (skill / "SKILL.md").read_text(encoding="utf-8"),
+            )
+
+    def test_install_all_canonical_skills(self):
+        with TemporaryDirectory() as temp_dir:
+            _, source, project = make_workspace(temp_dir)
+            write_skill(source, "first-skill", "Install the first Skill.")
+            write_skill(source, "second-skill", "Install the second Skill.")
+
+            result = self.run_cli(project, source, "install", "--all")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("Installed 2 skills", result.stdout)
+            self.assertTrue(
+                (project / ".agents" / "skills" / "first-skill" / "SKILL.md").is_file()
+            )
+            self.assertTrue(
+                (project / ".agents" / "skills" / "second-skill" / "SKILL.md").is_file()
             )
 
     def test_install_copies_shared_work_management_reference_when_declared(self):

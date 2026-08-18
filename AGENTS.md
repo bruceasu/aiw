@@ -23,8 +23,8 @@ Prioritize `tasks.md`, `design.md` when present, and the relevant spec.
 
 Git convention:
 
-- managed implementation branch: `feature/<task-id>`
-- managed implementation worktree: `.wt/<task-id>`
+- branch: `feature/<task-id>`
+- worktree: `.wt/<task-id>`
 
 ## Resource Budget
 
@@ -75,10 +75,9 @@ to the user's requested outcome.
 
 ## Working Rules
 
-- For managed engineering work, read `skills/work-management.md`. Prefer AIW
-  for Task lifecycle and worktrees, and OpenSpec for requirement and checklist
-  artifacts. If AIW is unavailable, use standalone OpenSpec or ordinary Git
-  fallback whenever safe; do not invent AIW state.
+- For managed engineering work, read `skills/work-management.md`. Use AIW for
+  Task lifecycle and worktrees, and OpenSpec for requirement and checklist
+  artifacts.
 - Plan first for non-trivial work.
 - Inspect the nearest code, tests, config, and docs.
 - Expand only when current evidence is insufficient.

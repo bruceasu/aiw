@@ -65,6 +65,7 @@ that already exist but are currently unmanaged.
 ```text
 aiw skills install tdd --dry-run
 aiw skills install tdd --scope user --dry-run
+aiw skills install --all --dry-run
 ```
 
 The preview validates the Skill and shows the source and destination. It does
@@ -75,7 +76,11 @@ not create the target root, staging content, or a managed manifest.
 ```text
 aiw skills install tdd
 aiw skills install tdd --scope user
+aiw skills install --all
 ```
+
+Use `--all` to install every valid Skill from the canonical catalog. It can
+also be combined with `--dry-run`, `--json`, and `--scope user`.
 
 The default `project` scope installs under `./.agents/skills`. The `user`
 scope installs under the current user's `~/.agents/skills`, which is shared by

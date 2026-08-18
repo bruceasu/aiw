@@ -66,3 +66,24 @@ func TestReadTaskMeta_ParsesSpecsAndTags(t *testing.T) {
 		t.Fatalf("unexpected tags: %+v", meta.Tags)
 	}
 }
+
+func TestWriteTaskMeta_PreservesParentBranch(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "task.toml")
+	meta := TaskMeta{
+		ID:           "sample",
+		Status:       "ACTIVE",
+		ParentBranch: "main",
+	}
+
+	if err := WriteTaskMeta(path, meta); err != nil {
+		t.Fatalf("write task meta: %v", err)
+	}
+
+	got, err := ReadTaskMeta(path)
+	if err != nil {
+		t.Fatalf("read task meta: %v", err)
+	}
+	if got.ParentBranch != meta.ParentBranch {
+		t.Fatalf("parent branch = %q, want %q", got.ParentBranch, meta.ParentBranch)
+	}
+}

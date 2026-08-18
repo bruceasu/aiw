@@ -15,7 +15,7 @@
 
 这些 skill 帮助我们把模糊想法变成可讨论、可决策的内容：
 
-`ask-matt`、`grilling`、`grill-with-docs`、`office-hours-finance`、`business-review`、`metrics-review`、`eng-review-finance`、`domain-modeling`、`codebase-design`、`improve-codebase-architecture`、`autoplan-finance`。
+`ask-matt`、`grilling`、`grill-me`、`grill-with-docs`、`prototype`、`research`、`office-hours-finance`、`business-review`、`metrics-review`、`eng-review-finance`、`domain-modeling`、`codebase-design`、`improve-codebase-architecture`、`autoplan-finance`。
 
 ### 2. OpenSpec 与实现类
 
@@ -27,7 +27,7 @@
 
 这些 skill 处理任务路由、会话连续性、Git 状态、环境配置和知识传递：
 
-`handoff`、`resume-ext`、`resolving-merge-conflicts`、`triage`、`wayfinder`、`setup-matt-pocock-skills`、`teach`、`writing-great-skills`。
+`handoff`、`resume-ext`、`resolving-merge-conflicts`、`triage`、`wayfinder`、`setup-matt-pocock-skills`、`edit-article`、`teach`、`writing-great-skills`。
 
 ## 二、最常用的完整路线
 
@@ -54,6 +54,26 @@
 `autoplan-finance` 是财务场景的编排器：当你希望一次得到完整的 `PLAN.md`，可以直接使用它；如果只想解决一个局部问题，就使用对应的单项 review。
 
 ## 三、逐个 Skill 教程
+
+### `grill-me`：只做交互式压力测试
+
+作用：通过持续追问来检验计划或设计，不自动创建文档或实现产物。
+
+### `prototype`：快速验证设计问题
+
+作用：构建一次性的原型，验证状态模型、逻辑或 UI 方向是否合理。
+
+### `research`：开展带引用的研究
+
+作用：针对问题查找高可信来源，区分事实与推断，并将结果整理成 Markdown。
+
+### `diagnosing-bugs`：诊断故障和性能回归
+
+作用：用证据驱动的诊断循环定位异常、失败、报错或变慢的原因。
+
+### `edit-article`：编辑和改进文章
+
+作用：重组文章结构、提升清晰度并收紧措辞，返回修订稿或明确的修改建议。
 
 ### `ask-matt`：不知道下一步用什么
 
@@ -429,6 +449,11 @@ release-review       = 审核上线条件
 
 ```text
 不清楚       ask-matt / grilling
+压测想法     grill-me
+验证设计     prototype
+查资料       research
+排查故障     diagnosing-bugs
+改文章       edit-article
 需要文档     grill-with-docs / domain-modeling
 财务规划     autoplan-finance
 写规格       to-spec

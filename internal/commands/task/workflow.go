@@ -29,14 +29,9 @@ func newTask(id string) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	meta := taskx.TaskMeta{
-		ID:       id,
-		Type:     "task",
-		Status:   "TODO",
-		Created:  taskx.Today(),
-		Updated:  taskx.Today(),
-		Branch:   "feature/" + id,
-		Worktree: filepath.ToSlash(filepath.Join(taskx.WorktreeDir, id)),
+	meta, err := newTaskMeta(id)
+	if err != nil {
+		return err
 	}
 	taskMD := `# Goal
 Describe the goal.
@@ -71,6 +66,50 @@ Temporary findings, debugging notes, experiments.
 		return err
 	}
 	if err := os.WriteFile(filepath.Join(dir, "notes.md"), []byte(notesMD), 0o644); err != nil {
+		return err
+	}
+	return writeRegistry()
+}
+
+func newTaskMeta(id string) (taskx.TaskMeta, error) {
+	parentBranch, err := gitx.CurrentBranch()
+	if err != nil {
+		return taskx.TaskMeta{}, fmt.Errorf("create task metadata: %w", err)
+	}
+	return taskMetaFor(id, parentBranch), nil
+}
+
+func taskMetaFor(id, parentBranch string) taskx.TaskMeta {
+	return taskx.TaskMeta{
+		ID:           id,
+		Type:         "task",
+		Status:       "TODO",
+		Created:      taskx.Today(),
+		Updated:      taskx.Today(),
+		Branch:       "feature/" + id,
+		ParentBranch: parentBranch,
+		Worktree:     filepath.ToSlash(filepath.Join(taskx.WorktreeDir, id)),
+		Session:      id,
+	}
+}
+
+func ensureTaskMeta(id string) error {
+	path := taskx.TaskMetaPath(id)
+	if fsx.Exists(path) {
+		meta, err := taskx.ReadTaskMeta(path)
+		if err != nil {
+			return err
+		}
+		if meta.ID != "" && meta.ID != id {
+			return fmt.Errorf("task metadata id mismatch: %s", meta.ID)
+		}
+		return nil
+	}
+	meta, err := newTaskMeta(id)
+	if err != nil {
+		return err
+	}
+	if err := taskx.WriteTaskMeta(path, meta); err != nil {
 		return err
 	}
 	return writeRegistry()

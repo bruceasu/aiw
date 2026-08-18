@@ -8,30 +8,24 @@ This skill takes the current conversation context and codebase understanding and
 
 Follow `skills/reviewed-skill-contract.md`. Read `skills/work-management.md`
 and the repository's
-`docs/agents/work-management.md` when present. Prefer AIW for Task lifecycle
-and OpenSpec for specification artifacts. If AIW is unavailable, use a
-standalone OpenSpec change. Do not create a parallel `.scratch` specification
-or publish externally unless the user explicitly asks.
+`docs/agents/work-management.md` when present. Use AIW for Task lifecycle and
+OpenSpec for the specification artifacts. Do not create a parallel `.scratch`
+specification or publish externally unless the user explicitly asks.
 
 ## Process
 
-1. Resolve the active AIW Task using the shared work-management contract when
-   AIW is available. If the work needs a new managed lifecycle, create it
-   through AIW; use the automatic backend
+1. Resolve the active AIW Task using the shared work-management contract. If the
+   work needs a new lifecycle, create it through AIW; use the automatic backend
    so an installed OpenSpec CLI can create the matching change artifacts. If
    several Tasks match, ask for the Task ID before writing.
 
-   In managed mode, the AIW Task and OpenSpec change are one managed unit.
-   Before continuing,
+   The AIW Task and OpenSpec change are one managed unit. Before continuing,
    establish and record the same normalized Task ID in both locations:
    `openspec/changes/<task-id>/task.toml` and the matching OpenSpec change
    directory. The `task.toml` must be the AIW lifecycle record, not an
    OpenSpec-only substitute, and must retain the Task's status, branch,
    worktree, parent branch, and Session fields when those fields exist. Do not proceed with
    an untracked OpenSpec directory or an AIW Task that has no matching change.
-
-   In standalone mode, resolve or create the matching OpenSpec change directly;
-   do not fabricate AIW lifecycle fields.
 
    Then resolve the matching OpenSpec change, explore only the relevant repo
    area, use the project's domain glossary, and respect applicable ADRs.
@@ -41,7 +35,7 @@ or publish externally unless the user explicitly asks.
 Check with the user that these seams match their expectations.
 
 3. Write or update the applicable OpenSpec artifacts using the template below.
-   A successful managed `to-spec` run must leave this minimum artifact set in the
+   A successful `to-spec` run must leave this minimum artifact set in the
    matching change directory:
 
    - `task.toml` — AIW Task identity and lifecycle mapping;
@@ -58,15 +52,12 @@ Check with the user that these seams match their expectations.
 
    Before reporting completion, verify statically that all required files
    exist, that the change directory name, `task.toml.id`, and AIW Task ID are
-   identical in managed mode, and that every checklist item is actionable by
-   `/implement`. In standalone mode, verify artifact consistency without
-   requiring an AIW Task ID.
+   identical, and that every checklist item is actionable by `/implement`.
    If AIW or the automatic OpenSpec backend cannot create or link these
-   records, continue with standalone OpenSpec artifacts when safe and report
-   the missing lifecycle capability; do not create a parallel `.scratch` or
-   ad-hoc task record.
+   records, stop and report the missing capability; do not create a parallel
+   `.scratch` or ad-hoc task record.
 
-4. In managed mode, keep the AIW Task linked to the change and synchronize only its coarse title,
+4. Keep the AIW Task linked to the change and synchronize only its coarse title,
    goal, and planning status. Do not create the implementation worktree during
    specification work. The resulting `tasks.md` is the checklist source that
    `/implement` will resolve; do not leave implementation work only in the

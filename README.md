@@ -160,6 +160,7 @@ aiw skills list
 aiw skills install tdd --dry-run
 aiw skills install ./bundle.zip
 aiw skills install tdd
+aiw skills install --all
 ```
 
 The installer protects unmanaged same-name directories and records verified

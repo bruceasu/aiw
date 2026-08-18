@@ -90,6 +90,10 @@ The system SHALL list valid canonical portable Skills and install them into the 
 - **WHEN** the user installs a valid canonical Skill into a project where its destination does not exist
 - **THEN** the complete Skill directory is copied to the default project target and becomes discoverable there
 
+#### Scenario: Install all canonical Skills
+- **WHEN** the user runs `aiw skills install --all`
+- **THEN** every valid canonical Skill is installed into the selected target catalog
+
 #### Scenario: Reject an unknown Skill
 - **WHEN** the user names a Skill that is not in the valid canonical catalog
 - **THEN** the command fails without creating the destination root or manifest

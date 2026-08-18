@@ -31,6 +31,7 @@ type TaskMeta struct {
 	Created  string
 	Updated  string
 	Branch   string
+	ParentBranch string
 	Worktree string
 	Session  string
 	Specs    []string
@@ -120,6 +121,8 @@ func ReadTaskMeta(path string) (TaskMeta, error) {
 			meta.Updated = value
 		case "branch":
 			meta.Branch = value
+		case "parent_branch":
+			meta.ParentBranch = value
 		case "worktree":
 			meta.Worktree = value
 		case "session", "session_id":
@@ -174,6 +177,7 @@ status = "%s"
 created = "%s"
 updated = "%s"
 branch = "%s"
+parent_branch = "%s"
 worktree = "%s"
 session = "%s"
 %s%s`,
@@ -183,6 +187,7 @@ session = "%s"
 		meta.Created,
 		meta.Updated,
 		meta.Branch,
+		meta.ParentBranch,
 		meta.Worktree,
 		meta.Session,
 		specsLine,

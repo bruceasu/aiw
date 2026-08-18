@@ -31,3 +31,13 @@ func TestOpenSpecModeRejectsUnsupportedOperation(t *testing.T) {
 		t.Fatal("expected unsupported operation error")
 	}
 }
+
+func TestNewTaskMetaRecordsParentBranch(t *testing.T) {
+	meta := taskMetaFor("TASK-1", "feature/base")
+	if meta.ParentBranch != "feature/base" {
+		t.Fatalf("parent branch = %q, want %q", meta.ParentBranch, "feature/base")
+	}
+	if meta.Session != "TASK-1" {
+		t.Fatalf("session = %q, want %q", meta.Session, "TASK-1")
+	}
+}

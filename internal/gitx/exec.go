@@ -31,6 +31,19 @@ func RefExists(ref string) bool {
 	return cmd.Run() == nil
 }
 
+func CurrentBranch() (string, error) {
+	cmd := exec.Command("git", "branch", "--show-current")
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("read current branch: %w", err)
+	}
+	branch := strings.TrimSpace(string(out))
+	if branch == "" {
+		return "", errors.New("current checkout is not on a branch")
+	}
+	return branch, nil
+}
+
 func DetectBaseBranch() (string, error) {
 	for _, candidate := range []string{"origin/main", "origin/master", "main", "master"} {
 		if RefExists(candidate) {

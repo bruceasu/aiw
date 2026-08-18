@@ -48,6 +48,30 @@ Keep ordinary implementation slices as checklist items in `tasks.md`. Create a
 separate AIW Task/change only when a slice needs an independent worktree,
 delivery, or archive lifecycle, and only after the user approves the split.
 
+## OpenSpec Change Creation
+
+For a managed AIW change, AIW is the required entry point even when OpenSpec is
+installed:
+
+```text
+aiw new <task-id> --backend auto
+```
+
+This creates the AIW lifecycle record and delegates proposal/spec artifact
+creation to OpenSpec when available. The resulting change MUST contain
+`openspec/changes/<task-id>/task.toml` with the Task ID, status, branch,
+worktree, `parent_branch`, and Session mapping.
+
+Do not use `openspec new change <task-id>` directly for a managed change. That
+command creates OpenSpec artifacts but does not establish AIW lifecycle
+metadata. If a third-party or upgradeable OpenSpec skill instructs direct
+creation, this contract takes precedence; use AIW first and then continue with
+the OpenSpec artifact steps.
+
+An OpenSpec-only change is allowed only when the user explicitly accepts that
+it is not tracked by AIW. It must not be handed to the AIW implementation or
+completion workflow until the Task and `task.toml` have been reconciled.
+
 ## Worktree Rules
 
 - Create or resolve implementation worktrees through `aiw wt`.

@@ -241,6 +241,22 @@ def iter_nested_skill_zips(path: Path) -> Iterable[Path]:
     return path.rglob("skill.zip")
 
 
+def nested_skill_zips_outside(
+    path: Path, skill_dirs: Sequence[Path]
+) -> List[Path]:
+    roots = [skill_dir.resolve() for skill_dir in skill_dirs]
+    result: List[Path] = []
+    for nested_zip in iter_nested_skill_zips(path):
+        resolved = nested_zip.resolve()
+        if any(
+            resolved == root or root in resolved.parents
+            for root in roots
+        ):
+            continue
+        result.append(nested_zip)
+    return result
+
+
 def direct_skill_dirs_under(path: Path) -> List[Path]:
     result: List[Path] = []
     if path.is_dir() and find_skill_md(path):
@@ -291,14 +307,16 @@ def collect_skill_dirs_from_path(source: Path, work_dir: Path) -> List[Path]:
     collected: List[Path] = []
     if is_zip(source):
         extracted = extract_zip(source, work_dir)
-        nested_zips = list(iter_nested_skill_zips(extracted))
+        direct_skills = deep_skill_dirs(extracted)
+        nested_zips = nested_skill_zips_outside(extracted, direct_skills)
         for nested_zip in nested_zips:
             nested_extracted = extract_zip(nested_zip, work_dir / "nested")
             collected.extend(deep_skill_dirs(nested_extracted))
-        collected.extend(deep_skill_dirs(extracted))
+        collected.extend(direct_skills)
     elif source.is_dir():
-        collected.extend(direct_skill_dirs_under(source))
-        nested_zips = list(iter_nested_skill_zips(source))
+        direct_skills = direct_skill_dirs_under(source)
+        collected.extend(direct_skills)
+        nested_zips = nested_skill_zips_outside(source, direct_skills)
         for nested_zip in nested_zips:
             nested_extracted = extract_zip(nested_zip, work_dir / "nested")
             collected.extend(deep_skill_dirs(nested_extracted))
@@ -456,8 +474,7 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=(
             "Manage canonical AIW Skills.\n\n"
-            "Portable Skills install to ./.agents/skills by default. "
-            "This first release installs one Skill at a time."
+            "Portable Skills install to ./.agents/skills by default."
         ),
         epilog=(
             "Quick start:\n"
@@ -564,19 +581,31 @@ def build_parser() -> argparse.ArgumentParser:
         description=(
             "Safely install canonical Skills or path-based Skill bundles.\n\n"
             "Use this when a project needs one AIW-maintained Skill or a local "
-            "source bundle. The default target is the project ./.agents/skills. "
+            "source bundle, or use --all for the complete canonical catalog. "
+            "The default target is the project ./.agents/skills. "
             "Use --scope user for the user's shared catalog. A same-name "
             "unmanaged directory is protected and will not be replaced."
         ),
         epilog=(
             "Examples:\n"
             "  aiw skills install tdd --dry-run\n"
+            "  aiw skills install --all --dry-run\n"
+            "  aiw skills install --all\n"
             "  aiw skills install ./bundle.zip\n"
             "  aiw skills install ./skills\n"
             "  aiw skills install tdd --json"
         ),
     )
-    install.add_argument("source", help="Canonical Skill name or local source path.")
+    install.add_argument(
+        "source",
+        nargs="?",
+        help="Canonical Skill name or local source path; omit with --all.",
+    )
+    install.add_argument(
+        "--all",
+        action="store_true",
+        help="Install every valid Skill from the canonical catalog.",
+    )
     install.add_argument(
         "--dry-run",
         action="store_true",
@@ -887,12 +916,33 @@ def command_adopt(*, json_output: bool, scope: str) -> int:
     return 0
 
 def command_install(
-    source_text: str,
+    source_text: Optional[str],
     *,
+    all_skills: bool,
     dry_run: bool,
     json_output: bool,
     scope: str,
 ) -> int:
+    if all_skills:
+        if source_text is not None:
+            raise SkillError("--all cannot be combined with a Skill name or source path")
+        canonical_skills, issues = discover_skills(source_root())
+        if issues:
+            raise SkillError(
+                "Cannot install all canonical Skills: {}".format("; ".join(issues))
+            )
+        if not canonical_skills:
+            raise SkillError("No canonical Skills found in: {}".format(source_root()))
+        return install_skills_from_sources(
+            [skill.source for skill in canonical_skills],
+            dry_run=dry_run,
+            json_output=json_output,
+            source_label=str(source_root()),
+            scope=scope,
+        )
+
+    if source_text is None:
+        raise SkillError("install requires a Skill name, source path, or --all")
     source = Path(source_text)
     if source.exists():
         with tempfile.TemporaryDirectory(prefix=".aiw-install-") as tmp:
@@ -964,6 +1014,7 @@ def main(argv: Sequence[str]) -> int:
         if args.command == "install":
             return command_install(
                 args.source,
+                all_skills=args.all,
                 dry_run=args.dry_run,
                 json_output=args.json,
                 scope=args.scope,

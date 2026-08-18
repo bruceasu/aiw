@@ -1,11 +1,11 @@
 ---
+name: research
+description: Investigate a question against high-trust primary sources and capture the findings as a Markdown file in the repo. Use when the user wants a topic researched, docs or API facts gathered, or reading legwork delegated to a background agent.
+---
 
 Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
 Return cited findings and distinguish sourced facts from inference; research
 does not create Tasks or implementation changes unless explicitly requested.
-name: research
-description: Investigate a question against high-trust primary sources and capture the findings as a Markdown file in the repo. Use when the user wants a topic researched, docs or API facts gathered, or reading legwork delegated to a background agent.
----
 
 Spin up a **background agent** to do the research, so you keep working while it reads.
 
