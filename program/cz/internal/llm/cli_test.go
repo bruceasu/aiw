@@ -3,6 +3,7 @@ package llm
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 	"testing"
 
 	czdata "aiw-cz/internal/cz"
@@ -40,6 +41,15 @@ func TestRunCodexCLINotFound(t *testing.T) {
 	_, err := RunCodexCLI("test", czdata.Config{})
 	if err == nil {
 		t.Fatal("expected codex cli not found error")
+	}
+}
+
+func TestCodexOutputSchemaIsCandidateShape(t *testing.T) {
+	if !strings.Contains(czCandidatesJSONSchema, `"candidates"`) {
+		t.Fatal("expected candidates property in Codex output schema")
+	}
+	if !strings.Contains(czCandidatesJSONSchema, `"subject"`) {
+		t.Fatal("expected subject property in Codex output schema")
 	}
 }
 

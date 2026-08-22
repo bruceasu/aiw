@@ -486,8 +486,9 @@ Recent commits:
 %s
 
 Staged diff:
+Staged diff bytes: %d
 %s
-`, cfg.Candidates, strings.Join(typeList, ", "), files, hist, diff)
+`, cfg.Candidates, strings.Join(typeList, ", "), files, hist, len(diff), diff)
 
 		out, err := llm.RunLLM(prompt, cfg)
 		if err != nil {
@@ -495,7 +496,10 @@ Staged diff:
 		}
 
 		allowedIssueRefs := detectIssueRefs(diff + "\n" + files + "\n" + hist)
-
+		if cfg.DebugSource {
+			fmt.Println("LLM prompt:\n" + prompt)
+			fmt.Println("LLM output:\n" + out)
+		}
 		cands, err := llm.ParseLLMCandidates(out)
 		if err != nil {
 			return czdata.Draft{}, fmt.Errorf("parse llm output: %w", err)

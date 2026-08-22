@@ -36,17 +36,23 @@ def module_name_for_path(path):
 
 def load_python_module(path):
     spec = importlib.util.spec_from_file_location(module_name_for_path(path), path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load Python subcommand module: {path}")
     module = importlib.util.module_from_spec(spec)
-    missing = object()
-    previous = sys.modules.get(spec.name, missing)
-    sys.modules[spec.name] = module
+    spec_name = spec.name
+    had_previous = spec_name in sys.modules
+    previous_module = sys.modules[spec_name] if had_previous else None
+    sys.modules[spec_name] = module
     try:
         spec.loader.exec_module(module)
     except BaseException:
-        if previous is missing:
-            sys.modules.pop(spec.name, None)
+        if not had_previous:
+            sys.modules.pop(spec_name, None)
         else:
-            sys.modules[spec.name] = previous
+            if previous_module is None:
+                sys.modules.pop(spec_name, None)
+            else:
+                sys.modules[spec_name] = previous_module
         raise
     return module
 
@@ -150,7 +156,7 @@ def render_overview_help(commands):
         [
             "",
             "Run `aiw git help <subcommand>` for detailed help and more examples.",
-            "Unknown commands require explicit confirmation before native Git fallback.",
+            "Unknown commands fall back to native Git.",
         ]
     )
     return "\n".join(lines)
@@ -227,32 +233,11 @@ def render_native_command(argv):
 
 
 def native_fallback(argv, description):
-    """Ask before delegating an unknown command to native Git."""
+    """Delegate an unknown command to native Git."""
     if shutil.which("git") is None:
         print("Native Git executable not found; fallback refused.", file=sys.stderr)
         return 127
 
-    is_tty = getattr(sys.stdin, "isatty", lambda: False)()
-    if not is_tty:
-        print(
-            "Native Git fallback requires interactive confirmation; refusing.",
-            file=sys.stderr,
-        )
-        return 2
-
-    print(f"{description} is not an aiw-git command.", file=sys.stderr)
-    print("Candidate native command:", file=sys.stderr)
-    print(f"  {render_native_command(argv)}", file=sys.stderr)
-    print("Proceed with native Git fallback? [y/N] ", end="", file=sys.stderr)
-    try:
-        answer = sys.stdin.readline().strip().lower()
-    except (EOFError, OSError):
-        answer = ""
-    if answer not in {"y", "yes"}:
-        print("Native Git fallback refused.", file=sys.stderr)
-        return 2
-
-    print("fallback: delegating to native Git after explicit confirmation", file=sys.stderr)
     try:
         proc = subprocess.run(argv)
     except OSError as exc:

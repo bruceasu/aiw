@@ -106,64 +106,35 @@ class DispatcherTests(unittest.TestCase):
             self.assertEqual(rc, 0)
             self.assertIn("show short", stdout.getvalue())
 
-    def test_unknown_command_refuses_by_default(self):
+    def test_unknown_command_falls_back_without_confirmation(self):
         dispatcher = load_dispatcher()
         stdin = mock.Mock()
-        stdin.isatty.return_value = True
-        stdin.readline.return_value = "\n"
-        stderr = io.StringIO()
+        proc = mock.Mock(returncode=17)
         with mock.patch.object(dispatcher.sys, "stdin", stdin), mock.patch.object(
             dispatcher.shutil, "which", return_value="/usr/bin/git"
-        ), mock.patch.object(dispatcher.subprocess, "run") as run_cmd, contextlib.redirect_stderr(
-            stderr
-        ):
+        ), mock.patch.object(dispatcher.subprocess, "run", return_value=proc) as run_cmd:
             rc = dispatcher.main(["unknown-command", "--force"])
 
-        self.assertEqual(rc, 2)
-        run_cmd.assert_not_called()
-        self.assertIn("Candidate native command", stderr.getvalue())
-        self.assertIn("Native Git fallback refused", stderr.getvalue())
-
-    def test_unknown_command_requires_tty_without_reading_input(self):
-        dispatcher = load_dispatcher()
-        stdin = mock.Mock()
         stdin.isatty.return_value = False
-        stderr = io.StringIO()
-        with mock.patch.object(dispatcher.sys, "stdin", stdin), mock.patch.object(
-            dispatcher.shutil, "which", return_value="/usr/bin/git"
-        ), mock.patch.object(dispatcher.subprocess, "run") as run_cmd, contextlib.redirect_stderr(
-            stderr
-        ):
-            rc = dispatcher.main(["unknown-command"])
-
-        self.assertEqual(rc, 2)
+        self.assertEqual(rc, 17)
         stdin.readline.assert_not_called()
-        run_cmd.assert_not_called()
-        self.assertIn("requires interactive confirmation", stderr.getvalue())
+        run_cmd.assert_called_once_with(["git", "unknown-command", "--force"])
 
-    def test_approved_unknown_command_preserves_argv_and_exit_code(self):
+    def test_unknown_command_preserves_argv_and_exit_code(self):
         dispatcher = load_dispatcher()
         stdin = mock.Mock()
-        stdin.isatty.return_value = True
-        stdin.readline.return_value = "yes\n"
         proc = mock.Mock(returncode=17)
-        stderr = io.StringIO()
         with mock.patch.object(dispatcher.sys, "stdin", stdin), mock.patch.object(
             dispatcher.shutil, "which", return_value="/usr/bin/git"
-        ), mock.patch.object(dispatcher.subprocess, "run", return_value=proc) as run_cmd, contextlib.redirect_stderr(
-            stderr
-        ):
+        ), mock.patch.object(dispatcher.subprocess, "run", return_value=proc) as run_cmd:
             rc = dispatcher.main(["custom", "--message", "value with spaces"])
 
         self.assertEqual(rc, 17)
         run_cmd.assert_called_once_with(["git", "custom", "--message", "value with spaces"])
-        self.assertIn("fallback: delegating", stderr.getvalue())
 
-    def test_unknown_help_uses_native_git_help_after_confirmation(self):
+    def test_unknown_help_uses_native_git_help(self):
         dispatcher = load_dispatcher()
         stdin = mock.Mock()
-        stdin.isatty.return_value = True
-        stdin.readline.return_value = "y\n"
         proc = mock.Mock(returncode=0)
         with mock.patch.object(dispatcher.sys, "stdin", stdin), mock.patch.object(
             dispatcher.shutil, "which", return_value="/usr/bin/git"
@@ -172,7 +143,6 @@ class DispatcherTests(unittest.TestCase):
 
         self.assertEqual(rc, 0)
         run_cmd.assert_called_once_with(["git", "help", "custom"])
-
 
 if __name__ == "__main__":
     unittest.main()

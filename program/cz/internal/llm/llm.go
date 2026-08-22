@@ -264,12 +264,12 @@ func parseCandidatesJSON(raw string) ([]czdata.Draft, bool) {
 		return nil, false
 	}
 	var resp czdata.LLMResponse
-	if err := json.Unmarshal([]byte(raw), &resp); err == nil && len(resp.Candidates) > 0 {
+	if err := json.Unmarshal([]byte(raw), &resp); err == nil && resp.Candidates != nil {
 		return resp.Candidates, true
 	}
 
 	var list []czdata.Draft
-	if err := json.Unmarshal([]byte(raw), &list); err == nil && len(list) > 0 {
+	if err := json.Unmarshal([]byte(raw), &list); err == nil && list != nil {
 		return list, true
 	}
 	return nil, false

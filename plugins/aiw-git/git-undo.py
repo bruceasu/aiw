@@ -16,12 +16,12 @@ spec.loader.exec_module(core)
 
 META = {
     'name': 'aiw git undo',
-    'short': 'Undo last commit while keeping changes (or discard with --hard).',
-    'long': 'Resets HEAD to the previous commit. By default changes are kept in the working tree. Use --hard to discard changes (dangerous).',
+    'short': 'Undo the last commit while keeping changes staged (or discard with --hard).',
+    'long': 'Moves HEAD to the previous commit. By default changes remain staged with --soft. Use --hard to discard working-tree and staged changes (dangerous).',
     'usage': 'aiw git undo [--hard] [--force]',
     'args': [
-        {'flag': '--hard', 'desc': 'Also discard working-tree changes.'},
-        {'flag': '--force', 'desc': 'Skip confirmation prompts.'},
+        {'flag': '--hard', 'description': 'Discard working-tree and staged changes.'},
+        {'flag': '--force', 'description': 'Skip the confirmation prompt for --hard.'},
     ],
     'examples': ['aiw git undo', 'aiw git undo --hard --force']
 }
@@ -32,12 +32,16 @@ def main(argv):
     if any(f in argv for f in help_flags):
         core.print_help_meta(META)
         return 0
+    if any(arg not in {'--hard', '--force'} for arg in argv):
+        print('error: undo accepts only --hard and --force', file=sys.stderr)
+        core.print_help_meta(META)
+        return 2
     if '--hard' in argv:
         if not core.git_confirm('--hard will permanently discard all working-tree changes.', argv):
             print('aborted', file=sys.stderr)
             return 0
         return core.run_cmd(['git', 'reset', '--hard', 'HEAD~1'])
-    return core.run_cmd(['git', 'reset', 'HEAD~1'])
+    return core.run_cmd(['git', 'reset', '--soft', 'HEAD~1'])
 
 
 if __name__ == '__main__':

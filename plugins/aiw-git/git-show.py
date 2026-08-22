@@ -11,6 +11,8 @@ import importlib.util
 HERE = os.path.dirname(__file__)
 CORE_PATH = os.path.join(HERE, 'aiw-git-core.py')
 spec = importlib.util.spec_from_file_location('aiw_git_core', CORE_PATH)
+if spec is None or spec.loader is None:
+    raise RuntimeError(f'Cannot load aiw git core module from {CORE_PATH}')
 core = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(core)
 
@@ -20,13 +22,43 @@ META = {
     'long': 'Collection of read-only git inspection helpers including repository status, commit logs, file evolution, blame, historical file content, upstream differences, and conflicts.',
     'usage': 'aiw git show <view> [args]',
     'args': [
+        {'flag': 'st', 'description': 'Short subcommand for status.'},
+        {'flag': 'lg', 'description': 'Short subcommand for graph log (built-in last 20).'},
+        {'flag': 'l1', 'description': 'Short subcommand for one-line log (built-in last 20).'},
+        {'flag': 'fh', 'description': 'Short subcommand for full file history (built-in options).'},
+        {'flag': 'in|out', 'description': 'Short subcommands for unpulled / unpushed.'},
+        {'flag': 'cf', 'description': 'Short subcommand for commit-files status mode.'},
+        {'flag': 'c|ck', 'description': 'Short subcommands for conflict list / conflict check.'},
+        {'flag': 'file-oneline|file-patch|file-stat|file-graph', 'description': 'Clear file history mode commands.'},
+        {'flag': 'log-date', 'description': 'Clear date log command (built-in last 20).'},
+        {'flag': 'commit-files-names|commit-files-root', 'description': 'Clear commit-files mode commands.'},
+        {'flag': 'conflicts-diff|conflicts-staged', 'description': 'Clear conflict detail commands.'},
+        {'flag': 'whatchanged-names', 'description': 'Clear whatchanged names-only command.'},
         {'flag': 'file', 'description': 'Show one file history, following renames by default.'},
+        {'flag': 'file-hist', 'description': 'Show full file history (patch + stat), following renames.'},
         {'flag': 'blame', 'description': 'Show line-by-line attribution for one file.'},
         {'flag': 'file-at', 'description': 'Show one file as it existed at a revision.'},
         {'flag': 'lines', 'description': 'Track a line range or function with git log -L.'},
         {'flag': '<view>', 'description': 'Other views: commit-files, conflicts, log, status, unpulled, unpushed, whatchanged.'},
     ],
     'examples': [
+        'aiw git show st',
+        'aiw git show lg',
+        'aiw git show l1',
+        'aiw git show file-oneline src/App.java',
+        'aiw git show file-patch src/App.java',
+        'aiw git show file-stat src/App.java',
+        'aiw git show file-graph src/App.java',
+        'aiw git show fh src/App.java',
+        'aiw git show in',
+        'aiw git show out',
+        'aiw git show commit-files-names HEAD~1',
+        'aiw git show commit-files-root HEAD',
+        'aiw git show conflicts-diff',
+        'aiw git show conflicts-staged',
+        'aiw git show ck',
+        'aiw git show whatchanged-names HEAD~1',
+        'aiw git show file-hist src/App.java',
         'aiw git show status',
         'aiw git show log -n 20',
         'aiw git show file --full src/App.java',
@@ -38,6 +70,51 @@ META = {
         'aiw git show conflicts --check',
     ],
 }
+
+QUICK_COMMANDS = [
+    ('st', 'status'),
+    ('lg [-n N]', 'graph log (user-controlled count)'),
+    ('l1 [-n N]', 'one-line log (user-controlled count)'),
+    ('fh <path>', 'full file history'),
+    ('in / out', 'upstream delta'),
+    ('cf [rev]', 'commit files status'),
+    ('c / ck', 'conflicts list / check'),
+    ('file-oneline|file-patch|file-stat|file-graph <path>', 'clear file modes'),
+    ('log-date [-n N]', 'clear date log (user-controlled count)'),
+    ('commit-files-names|commit-files-root [rev]', 'clear commit-files modes'),
+    ('conflicts-diff|conflicts-staged', 'clear conflict detail modes'),
+    ('whatchanged-names [rev]', 'clear whatchanged names-only'),
+]
+
+VIEW_GROUPS = [
+    ('High-frequency short commands', [
+        'st', 'lg', 'l1', 'fh', 'in', 'out', 'cf', 'c', 'ck',
+    ]),
+    ('Clear word commands', [
+        'log-date', 'file-oneline', 'file-patch', 'file-stat',
+        'file-graph', 'commit-files-names', 'commit-files-root',
+        'conflicts-diff', 'conflicts-staged', 'whatchanged-names',
+    ]),
+    ('Compatible long commands', [
+        'status', 'log', 'file', 'file-hist', 'blame', 'file-at',
+        'lines', 'commit-files', 'conflicts', 'unpulled', 'unpushed',
+        'whatchanged',
+    ]),
+]
+
+
+def print_available_views():
+    print('\nAvailable views:')
+    for title, commands in VIEW_GROUPS:
+        print(f'\n{title}:')
+        for command in commands:
+            print(f'  {command}')
+
+
+def print_quick_start():
+    print('Daily Quick Start:')
+    for command, description in QUICK_COMMANDS:
+        print(f'  {command:12} {description}')
 
 # --- Subcommand: conflicts ---
 META_CONFLICTS = {
@@ -81,65 +158,103 @@ def cmd_conflicts(argv):
 META_LOG = {
     'name': 'log',
     'short': 'Show a formatted commit log with several styles.',
-    'long': 'Displays the commit history. Styles: lg (default), l (one-line), hist (absolute dates).',
-    'usage': 'log [lg|l|hist] [-n <count>]',
+    'long': 'Displays the commit history. Styles: lg/g (default), l/1 (one-line), hist/d (absolute dates). No default commit count limit unless -n is provided.',
+    'usage': 'log [lg|g|l|1|hist|d] [-n <count>]',
     'args': [
-        {'flag': 'lg', 'description': 'Style with graph, relative dates, and decorations.'},
-        {'flag': 'l', 'description': 'One-line format for compact view.'},
-        {'flag': 'hist', 'description': 'Graph with absolute dates for detailed history.'},
+        {'flag': 'lg|g', 'description': 'Style with graph, relative dates, and decorations.'},
+        {'flag': 'l|1', 'description': 'One-line format for compact view.'},
+        {'flag': 'hist|d', 'description': 'Graph with absolute dates for detailed history.'},
         {'flag': '-n <count>', 'description': 'Limit the number of commits shown.'}
     ],
-    'examples': ['log lg', 'log -n 50']
+    'examples': ['log lg', 'log 1 -n 50', 'log d -n 30']
 }
 
 def cmd_log(argv):
     if any(f in argv for f in {'-h', '--help'}):
         core.print_help_meta(META_LOG)
         return 0
-    style, n, i, remain = "lg", "20", 0, []
+    style, n, i, remain = "lg", None, 0, []
+    style_aliases = {
+        'g': 'lg',
+        '1': 'l',
+        'd': 'hist',
+    }
     while i < len(argv):
-        if argv[i] in ("lg", "l", "hist"): style = argv[i]
+        if argv[i] in ("lg", "l", "hist", "g", "1", "d"):
+            style = style_aliases.get(argv[i], argv[i])
         elif argv[i] == "-n" and i + 1 < len(argv):
             n = argv[i + 1]
             i += 1
         else: remain.append(argv[i])
         i += 1
     if style == "l":
-        return core.run_cmd(["git", "log", "--pretty=oneline", "-n", n])
+        cmd = ["git", "log", "--pretty=oneline"]
+        if n is not None:
+            cmd.extend(["-n", n])
+        return core.run_cmd(cmd)
     if style == "hist":
-        return core.run_cmd(["git", "log", "--color", "--graph", "--pretty=format:%Cred%h%Creset %Cgreen%ad%Creset | %s %C(yellow)%d%Creset %C(bold blue)<%an>%Creset", "--date=short", "-n", n])
+        cmd = ["git", "log", "--color", "--graph", "--pretty=format:%Cred%h%Creset %Cgreen%ad%Creset | %s %C(yellow)%d%Creset %C(bold blue)<%an>%Creset", "--date=short"]
+        if n is not None:
+            cmd.extend(["-n", n])
+        return core.run_cmd(cmd)
     if style == "lg":
-        return core.run_cmd(["git", "log", "--all", "--color", "--graph", "--pretty=format:%Cred%h%Creset - %C(yellow)%d%Creset %s %Cgreen[%cr] %C(bold blue)<%an>%Creset", "--abbrev-commit", "--date=relative", "-n", n])
-    return core.run_cmd(['git', 'log', '-n', n] + remain)
+        cmd = ["git", "log", "--all", "--color", "--graph", "--pretty=format:%Cred%h%Creset - %C(yellow)%d%Creset %s %Cgreen[%cr] %C(bold blue)<%an>%Creset", "--abbrev-commit", "--date=relative"]
+        if n is not None:
+            cmd.extend(["-n", n])
+        return core.run_cmd(cmd)
+    cmd = ['git', 'log']
+    if n is not None:
+        cmd.extend(['-n', n])
+    return core.run_cmd(cmd + remain)
 
 # --- Subcommand: file ---
 META_FILE = {
     'name': 'file',
     'short': 'Show the commit history for one file.',
     'long': 'Follows renames by default and supports concise, patch, statistics, graph, and full-evolution output.',
-    'usage': 'file [--oneline|--patch|--stat|--graph|--full] [--no-follow] <path>',
+    'usage': 'file [--oneline|-1|--patch|-p|--stat|-s|--graph|-g|--full|-f] [--no-follow] <path>',
     'args': [
-        {'flag': '--oneline', 'description': 'Show compact one-line commits.'},
-        {'flag': '--patch', 'description': 'Show the diff from every commit.'},
-        {'flag': '--stat', 'description': 'Show file change statistics.'},
-        {'flag': '--graph', 'description': 'Show a decorated one-line commit graph.'},
-        {'flag': '--full', 'description': 'Show the recommended patch and statistics view.'},
+        {'flag': '--oneline|-1', 'description': 'Show compact one-line commits.'},
+        {'flag': '--patch|-p', 'description': 'Show the diff from every commit.'},
+        {'flag': '--stat|-s', 'description': 'Show file change statistics.'},
+        {'flag': '--graph|-g', 'description': 'Show a decorated one-line commit graph.'},
+        {'flag': '--full|-f', 'description': 'Show the recommended patch and statistics view.'},
         {'flag': '--no-follow', 'description': 'Do not follow history across renames.'},
         {'flag': '<path>', 'description': 'Repository-relative file path.'},
     ],
     'examples': [
         'file README.md',
-        'file --oneline src/App.java',
-        'file --full src/App.java',
+        'file -1 src/App.java',
+        'file -f src/App.java',
+    ],
+}
+
+META_FILE_HIST = {
+    'name': 'file-hist',
+    'short': 'Show full commit history for one file (patch + stat).',
+    'long': 'High-frequency shortcut for `file --full`. Follows renames by default.',
+    'usage': 'file-hist [--no-follow] <path>',
+    'args': [
+        {'flag': '--no-follow', 'description': 'Do not follow history across renames.'},
+        {'flag': '<path>', 'description': 'Repository-relative file path.'},
+    ],
+    'examples': [
+        'file-hist README.md',
+        'file-hist --no-follow src/App.java',
     ],
 }
 
 FILE_MODES = {
     '--oneline': ['--oneline'],
+    '-1': ['--oneline'],
     '--patch': ['-p'],
+    '-p': ['-p'],
     '--stat': ['--stat'],
+    '-s': ['--stat'],
     '--graph': ['--graph', '--decorate', '--oneline'],
+    '-g': ['--graph', '--decorate', '--oneline'],
     '--full': ['-p', '--stat'],
+    '-f': ['-p', '--stat'],
 }
 
 
@@ -147,6 +262,30 @@ def usage_error(meta, message):
     print(f"error: {message}", file=sys.stderr)
     core.print_help_meta(meta)
     return 2
+
+
+def ensure_no_args(meta, argv, command_name):
+    if argv:
+        return usage_error(meta, f'{command_name} does not accept extra arguments')
+    return None
+
+
+def parse_single_path(meta, argv, command_name):
+    paths = argv[1:] if argv[:1] == ['--'] else argv
+    if len(paths) != 1:
+        usage_error(meta, f'{command_name} requires exactly one path')
+        return None
+    return paths[0]
+
+
+def parse_optional_revision(meta, argv, command_name):
+    if any(arg.startswith('-') for arg in argv):
+        usage_error(meta, f'{command_name} only accepts an optional revision')
+        return None
+    if len(argv) > 1:
+        usage_error(meta, f'{command_name} accepts at most one revision')
+        return None
+    return argv[0] if argv else 'HEAD'
 
 
 def cmd_file(argv):
@@ -181,6 +320,35 @@ def cmd_file(argv):
     if modes:
         cmd.extend(FILE_MODES[modes[0]])
     cmd.extend(['--', paths[0]])
+    return core.run_cmd(cmd)
+
+
+def cmd_file_hist(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_FILE_HIST)
+        return 0
+
+    follow, paths_only = True, False
+    paths = []
+    for arg in argv:
+        if paths_only:
+            paths.append(arg)
+        elif arg == '--':
+            paths_only = True
+        elif arg == '--no-follow':
+            follow = False
+        elif arg.startswith('-'):
+            return usage_error(META_FILE_HIST, f"unknown option: {arg}")
+        else:
+            paths.append(arg)
+
+    if len(paths) != 1:
+        return usage_error(META_FILE_HIST, 'file-hist requires exactly one path')
+
+    cmd = ['git', 'log']
+    if follow:
+        cmd.append('--follow')
+    cmd.extend(['-p', '--stat', '--', paths[0]])
     return core.run_cmd(cmd)
 
 
@@ -300,6 +468,25 @@ def cmd_status(argv):
         return 0
     return core.run_cmd(['git', 'status', '-sb'])
 
+
+META_ST = {
+    'name': 'st',
+    'short': 'Short subcommand for concise status.',
+    'usage': 'st',
+    'args': [],
+    'examples': ['st'],
+}
+
+
+def cmd_st(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_ST)
+        return 0
+    err = ensure_no_args(META_ST, argv, 'st')
+    if err is not None:
+        return err
+    return core.run_cmd(['git', 'status', '-sb'])
+
 # --- Subcommand: unpulled ---
 META_UNPULLED = {
     'name': 'unpulled',
@@ -319,6 +506,25 @@ def cmd_unpulled(argv):
         return 2
     return core.run_cmd(['git', 'log', '--oneline', f'HEAD..{up}'])
 
+
+META_IN = {
+    'name': 'in',
+    'short': 'Short subcommand for unpulled commits.',
+    'usage': 'in',
+    'args': [],
+    'examples': ['in'],
+}
+
+
+def cmd_in(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_IN)
+        return 0
+    err = ensure_no_args(META_IN, argv, 'in')
+    if err is not None:
+        return err
+    return cmd_unpulled([])
+
 # --- Subcommand: unpushed ---
 META_UNPUSHED = {
     'name': 'unpushed',
@@ -337,6 +543,25 @@ def cmd_unpushed(argv):
         print('no upstream configured', file=sys.stderr)
         return 2
     return core.run_cmd(['git', 'log', '--oneline', f'{up}..HEAD'])
+
+
+META_OUT = {
+    'name': 'out',
+    'short': 'Short subcommand for unpushed commits.',
+    'usage': 'out',
+    'args': [],
+    'examples': ['out'],
+}
+
+
+def cmd_out(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_OUT)
+        return 0
+    err = ensure_no_args(META_OUT, argv, 'out')
+    if err is not None:
+        return err
+    return cmd_unpushed([])
 
 # --- Subcommand: whatchanged ---
 META_WHATCHANGED = {
@@ -362,28 +587,359 @@ def cmd_whatchanged(argv):
         return core.run_cmd(["git", "diff-tree", "--no-commit-id", "--name-only", "-r", sha])
     return core.run_cmd(["git", "show", "--stat", sha])
 
+
+META_LG = {
+    'name': 'lg',
+    'short': 'Short subcommand for graph log style (user-controlled count).',
+    'usage': 'lg [-n <count>]',
+    'args': [
+        {'flag': '-n <count>', 'description': 'Optional commit count limit. Not limited by default.'},
+    ],
+    'examples': ['lg', 'lg -n 30'],
+}
+
+
+def cmd_lg(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_LG)
+        return 0
+    return cmd_log(['lg', *argv])
+
+
+META_L1 = {
+    'name': 'l1',
+    'short': 'Short subcommand for one-line recent commits (user-controlled count).',
+    'usage': 'l1 [-n <count>]',
+    'args': [
+        {'flag': '-n <count>', 'description': 'Optional commit count limit. Not limited by default.'},
+    ],
+    'examples': ['l1', 'l1 -n 50'],
+}
+
+
+def cmd_l1(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_L1)
+        return 0
+    return cmd_log(['1', *argv])
+
+
+META_LOG_DATE = {
+    'name': 'log-date',
+    'short': 'Date log style (user-controlled count).',
+    'usage': 'log-date [-n <count>]',
+    'args': [
+        {'flag': '-n <count>', 'description': 'Optional commit count limit. Not limited by default.'},
+    ],
+    'examples': ['log-date', 'log-date -n 40'],
+}
+
+
+def cmd_log_date(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_LOG_DATE)
+        return 0
+    return cmd_log(['hist', *argv])
+
+
+META_FILE_ONELINE = {
+    'name': 'file-oneline',
+    'short': 'File one-line history (follow rename).',
+    'usage': 'file-oneline <path>',
+    'args': [{'flag': '<path>', 'description': 'Repository-relative file path.'}],
+    'examples': ['file-oneline src/App.java'],
+}
+
+
+def cmd_file_oneline(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_FILE_ONELINE)
+        return 0
+    path = parse_single_path(META_FILE_ONELINE, argv, 'file-oneline')
+    if path is None:
+        return 2
+    return core.run_cmd(['git', 'log', '--follow', '--oneline', '--', path])
+
+
+META_FILE_PATCH = {
+    'name': 'file-patch',
+    'short': 'File patch history (follow rename).',
+    'usage': 'file-patch <path>',
+    'args': [{'flag': '<path>', 'description': 'Repository-relative file path.'}],
+    'examples': ['file-patch src/App.java'],
+}
+
+
+def cmd_file_patch(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_FILE_PATCH)
+        return 0
+    path = parse_single_path(META_FILE_PATCH, argv, 'file-patch')
+    if path is None:
+        return 2
+    return core.run_cmd(['git', 'log', '--follow', '-p', '--', path])
+
+
+META_FILE_STAT = {
+    'name': 'file-stat',
+    'short': 'File stat history (follow rename).',
+    'usage': 'file-stat <path>',
+    'args': [{'flag': '<path>', 'description': 'Repository-relative file path.'}],
+    'examples': ['file-stat src/App.java'],
+}
+
+
+def cmd_file_stat(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_FILE_STAT)
+        return 0
+    path = parse_single_path(META_FILE_STAT, argv, 'file-stat')
+    if path is None:
+        return 2
+    return core.run_cmd(['git', 'log', '--follow', '--stat', '--', path])
+
+
+META_FILE_GRAPH = {
+    'name': 'file-graph',
+    'short': 'File graph history (follow rename).',
+    'usage': 'file-graph <path>',
+    'args': [{'flag': '<path>', 'description': 'Repository-relative file path.'}],
+    'examples': ['file-graph src/App.java'],
+}
+
+
+def cmd_file_graph(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_FILE_GRAPH)
+        return 0
+    path = parse_single_path(META_FILE_GRAPH, argv, 'file-graph')
+    if path is None:
+        return 2
+    return core.run_cmd(['git', 'log', '--follow', '--graph', '--decorate', '--oneline', '--', path])
+
+
+META_FH = {
+    'name': 'fh',
+    'short': 'Short subcommand for full file history (patch + stat).',
+    'usage': 'fh <path>',
+    'args': [
+        {'flag': '<path>', 'description': 'Repository-relative file path.'},
+    ],
+    'examples': ['fh src/App.java'],
+}
+
+
+def cmd_fh(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_FH)
+        return 0
+    path = parse_single_path(META_FH, argv, 'fh')
+    if path is None:
+        return 2
+    return core.run_cmd(['git', 'log', '--follow', '-p', '--stat', '--', path])
+
+
+META_CF = {
+    'name': 'cf',
+    'short': 'Short subcommand for commit-files with built-in defaults.',
+    'usage': 'cf [<revision>]',
+    'args': [
+        {'flag': '<revision>', 'description': 'Commit to inspect; defaults to HEAD.'},
+    ],
+    'examples': ['cf', 'cf HEAD~1'],
+}
+
+
+def cmd_cf(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_CF)
+        return 0
+    revision = parse_optional_revision(META_CF, argv, 'cf')
+    if revision is None:
+        return 2
+    return core.run_cmd(['git', 'diff-tree', '--no-commit-id', '--name-status', '-r', revision])
+
+
+META_COMMIT_FILES_NAMES = {
+    'name': 'commit-files-names',
+    'short': 'Commit files names-only (built-in mode).',
+    'usage': 'commit-files-names [<revision>]',
+    'args': [{'flag': '<revision>', 'description': 'Commit to inspect; defaults to HEAD.'}],
+    'examples': ['commit-files-names', 'commit-files-names HEAD~1'],
+}
+
+
+def cmd_commit_files_names(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_COMMIT_FILES_NAMES)
+        return 0
+    revision = parse_optional_revision(META_COMMIT_FILES_NAMES, argv, 'commit-files-names')
+    if revision is None:
+        return 2
+    return core.run_cmd(['git', 'diff-tree', '--no-commit-id', '--name-only', '-r', revision])
+
+
+META_COMMIT_FILES_ROOT = {
+    'name': 'commit-files-root',
+    'short': 'Commit files with root files included (built-in mode).',
+    'usage': 'commit-files-root [<revision>]',
+    'args': [{'flag': '<revision>', 'description': 'Commit to inspect; defaults to HEAD.'}],
+    'examples': ['commit-files-root', 'commit-files-root HEAD'],
+}
+
+
+def cmd_commit_files_root(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_COMMIT_FILES_ROOT)
+        return 0
+    revision = parse_optional_revision(META_COMMIT_FILES_ROOT, argv, 'commit-files-root')
+    if revision is None:
+        return 2
+    return core.run_cmd(['git', 'diff-tree', '--no-commit-id', '--name-status', '-r', '--root', revision])
+
+
+META_C = {
+    'name': 'c',
+    'short': 'Short subcommand for unresolved conflict files list.',
+    'usage': 'c',
+    'args': [],
+    'examples': ['c'],
+}
+
+
+def cmd_c(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_C)
+        return 0
+    err = ensure_no_args(META_C, argv, 'c')
+    if err is not None:
+        return err
+    return cmd_conflicts([])
+
+
+META_CK = {
+    'name': 'ck',
+    'short': 'Short subcommand for conflict marker check.',
+    'usage': 'ck',
+    'args': [],
+    'examples': ['ck'],
+}
+
+
+def cmd_ck(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_CK)
+        return 0
+    err = ensure_no_args(META_CK, argv, 'ck')
+    if err is not None:
+        return err
+    return core.run_cmd(['git', 'diff', '--check'])
+
+
+META_CONFLICTS_DIFF = {
+    'name': 'conflicts-diff',
+    'short': 'Short subcommand for unmerged conflict diff.',
+    'usage': 'conflicts-diff',
+    'args': [],
+    'examples': ['conflicts-diff'],
+}
+
+
+def cmd_conflicts_diff(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_CONFLICTS_DIFF)
+        return 0
+    err = ensure_no_args(META_CONFLICTS_DIFF, argv, 'conflicts-diff')
+    if err is not None:
+        return err
+    return core.run_cmd(['git', 'diff', '--diff-filter=U'])
+
+
+META_CONFLICTS_STAGED = {
+    'name': 'conflicts-staged',
+    'short': 'Short subcommand for staged conflict diff.',
+    'usage': 'conflicts-staged',
+    'args': [],
+    'examples': ['conflicts-staged'],
+}
+
+
+def cmd_conflicts_staged(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_CONFLICTS_STAGED)
+        return 0
+    err = ensure_no_args(META_CONFLICTS_STAGED, argv, 'conflicts-staged')
+    if err is not None:
+        return err
+    return core.run_cmd(['git', 'diff', '--staged'])
+
+
+META_WHATCHANGED_NAMES = {
+    'name': 'whatchanged-names',
+    'short': 'Whatchanged names-only shortcut.',
+    'usage': 'whatchanged-names [<revision>]',
+    'args': [{'flag': '<revision>', 'description': 'Commit to inspect; defaults to HEAD.'}],
+    'examples': ['whatchanged-names', 'whatchanged-names HEAD~1'],
+}
+
+
+def cmd_whatchanged_names(argv):
+    if any(f in argv for f in {'-h', '--help'}):
+        core.print_help_meta(META_WHATCHANGED_NAMES)
+        return 0
+    revision = parse_optional_revision(META_WHATCHANGED_NAMES, argv, 'whatchanged-names')
+    if revision is None:
+        return 2
+    return core.run_cmd(['git', 'diff-tree', '--no-commit-id', '--name-only', '-r', revision])
+
 SUBCOMMANDS = {
     'blame': cmd_blame,
+    'c': cmd_c,
+    'ck': cmd_ck,
+    'cf': cmd_cf,
+    'commit-files-names': cmd_commit_files_names,
+    'commit-files-root': cmd_commit_files_root,
     'commit-files': cmd_commit_files,
     'conflicts': cmd_conflicts,
+    'conflicts-diff': cmd_conflicts_diff,
+    'conflicts-staged': cmd_conflicts_staged,
     'file': cmd_file,
+    'file-oneline': cmd_file_oneline,
+    'file-patch': cmd_file_patch,
+    'file-stat': cmd_file_stat,
+    'file-graph': cmd_file_graph,
+    'fh': cmd_fh,
+    'file-hist': cmd_file_hist,
     'file-at': cmd_file_at,
+    'in': cmd_in,
+    'l1': cmd_l1,
+    'lg': cmd_lg,
+    'log-date': cmd_log_date,
     'lines': cmd_lines,
     'log': cmd_log,
+    'out': cmd_out,
+    'st': cmd_st,
     'status': cmd_status,
     'unpulled': cmd_unpulled,
     'unpushed': cmd_unpushed,
+    'whatchanged-names': cmd_whatchanged_names,
     'whatchanged': cmd_whatchanged,
+}
+
+SUBCOMMAND_ALIASES = {
+    's': 'st',
+    'l': 'lg',
+    'f': 'fh',
 }
 
 def main(argv):
     if not argv or argv[0] in {'-h', '--help'}:
         core.print_help_meta(META)
-        print("\nAvailable views:")
-        for sub in sorted(SUBCOMMANDS.keys()):
-            print(f"  {sub}")
+        print('')
+        print_quick_start()
+        print_available_views()
         return 0
-    sub = argv[0]
+    sub = SUBCOMMAND_ALIASES.get(argv[0], argv[0])
     if sub in SUBCOMMANDS:
         return SUBCOMMANDS[sub](argv[1:])
     print(f"Unknown subcommand: {sub}", file=sys.stderr)
