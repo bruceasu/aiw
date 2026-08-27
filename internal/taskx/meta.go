@@ -33,6 +33,8 @@ type TaskMeta struct {
 	Branch   string
 	ParentBranch string
 	Worktree string
+	WorkspaceKind string
+	Delivery string
 	Session  string
 	Specs    []string
 	Tags     []string
@@ -43,6 +45,8 @@ type RegistryEntry struct {
 	Status    string `json:"status"`
 	Branch    string `json:"branch"`
 	Worktree  string `json:"worktree"`
+	WorkspaceKind string `json:"workspace_kind"`
+	Delivery string `json:"delivery"`
 	Path      string `json:"path"`
 	UpdatedAt string `json:"updated_at"`
 }
@@ -125,6 +129,10 @@ func ReadTaskMeta(path string) (TaskMeta, error) {
 			meta.ParentBranch = value
 		case "worktree":
 			meta.Worktree = value
+		case "workspace_kind":
+			meta.WorkspaceKind = value
+		case "delivery":
+			meta.Delivery = value
 		case "session", "session_id":
 			meta.Session = value
 		case "specs":
@@ -179,6 +187,8 @@ updated = "%s"
 branch = "%s"
 parent_branch = "%s"
 worktree = "%s"
+workspace_kind = "%s"
+delivery = "%s"
 session = "%s"
 %s%s`,
 		meta.ID,
@@ -189,6 +199,8 @@ session = "%s"
 		meta.Branch,
 		meta.ParentBranch,
 		meta.Worktree,
+		meta.WorkspaceKind,
+		meta.Delivery,
 		meta.Session,
 		specsLine,
 		tagsLine,

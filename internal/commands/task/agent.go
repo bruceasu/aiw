@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"aiw/internal/fsx"
+	"aiw/internal/gitx"
 	"aiw/internal/taskx"
 )
 
@@ -49,7 +50,7 @@ func runTaskAgent(args []string) error {
 		return nil
 	}
 	if len(args) < 3 || args[0] != "agent" || args[1] != "next" {
-		return errors.New("usage: task agent next <task-id> [--handoff PATH] [--takeover] [--yes]")
+		return errors.New("usage: task agent next <task-id> [--handoff PATH] [--takeover] [--isolated] [--allow-dirty] [--yes]")
 	}
 	id := args[2]
 	opts, err := parseAgentOptions(args[3:])
@@ -78,7 +79,7 @@ func runTaskAgent(args []string) error {
 		if err != nil {
 			return err
 		}
-		if err := newTask(id); err != nil {
+		if err := newTask(id, opts.AllowDirty); err != nil {
 			return fmt.Errorf("create task: %w", err)
 		}
 		metaPath = taskx.ResolveTaskMetaPath(id)
@@ -89,12 +90,9 @@ func runTaskAgent(args []string) error {
 		if err := copyHandoff(id, handoff, source); err != nil {
 			return rollbackNewTask(id, fmt.Errorf("copy handoff: %w", err))
 		}
-		if err := addTaskWorktree(id); err != nil {
-			return rollbackNewTask(id, fmt.Errorf("create worktree: %w", err))
-		}
-		meta, err = taskx.ReadTaskMeta(metaPath)
-		if err != nil {
-			return rollbackNewTask(id, err)
+		if opts.Isolated {
+			if err := addTaskWorktree(id); err != nil { return fmt.Errorf("Task created but isolation failed: %w", err) }
+			meta, err = taskx.ReadTaskMeta(metaPath); if err != nil { return err }
 		}
 		meta.Session = id
 		if err := taskx.WriteTaskMeta(metaPath, meta); err != nil {
@@ -111,8 +109,7 @@ func runTaskAgent(args []string) error {
 			return err
 		}
 	}
-	worktree := meta.Worktree
-	if worktree == "" {
+	if opts.Isolated && meta.WorkspaceKind != "isolated" {
 		if err := addTaskWorktree(id); err != nil {
 			return err
 		}
@@ -120,10 +117,14 @@ func runTaskAgent(args []string) error {
 		if err != nil {
 			return err
 		}
-		worktree = meta.Worktree
 	}
+	kind := resolvedWorkspaceKind(meta)
+	if kind == "unassigned" || kind == "unknown" { return fmt.Errorf("task %s workspace is %s", id, kind) }
+	worktree := meta.Worktree
+	if strings.TrimSpace(worktree) == "" { return fmt.Errorf("task %s workspace is unassigned", id) }
 	if !filepath.IsAbs(worktree) {
-		worktree = filepath.Join(".", filepath.FromSlash(worktree))
+		root, rootErr := gitx.ProjectRoot(); if rootErr != nil { return rootErr }
+		worktree = filepath.Join(root, filepath.FromSlash(worktree))
 	}
 	worktree, err = filepath.Abs(worktree)
 	if err != nil || !fsx.Exists(worktree) {
@@ -188,13 +189,15 @@ func runTaskAgent(args []string) error {
 	return nil
 }
 
-type agentOptions struct { Handoff string; Takeover bool; Yes bool }
+type agentOptions struct { Handoff string; Takeover bool; Isolated bool; AllowDirty bool; Yes bool }
 
 func parseAgentOptions(args []string) (agentOptions, error) {
 	var opts agentOptions
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--takeover": opts.Takeover = true
+		case "--isolated": opts.Isolated = true
+		case "--allow-dirty": opts.AllowDirty = true
 		case "--yes": opts.Yes = true
 		case "--handoff":
 			if i+1 >= len(args) { return opts, errors.New("--handoff requires a path") }
@@ -242,10 +245,11 @@ func createTaskSession(id, worktree string) error {
 	instructions := filepath.Join(taskx.TaskDir(id), "artifacts", "instructions.md")
 	content := "Read artifacts/handoff.md before acting. Preserve the Task scope and report validation.\n"
 	if err := os.WriteFile(instructions, []byte(content), 0o644); err != nil { return err }
+	if !filepath.IsAbs(worktree) { root, err := gitx.ProjectRoot(); if err != nil { return err }; worktree = filepath.Join(root, filepath.FromSlash(worktree)) }
 	return runCommand("aiw-flow", "new", "--id", id, "--title", id, "--workspace", worktree, "--instructions", instructions)
 }
 
-func addTaskWorktree(id string) error { return runCommand("aiw", "wt", "add", id, "main") }
+func addTaskWorktree(id string) error { return runCommand("aiw", "wt", "add", id) }
 
 func runCommand(name string, args ...string) error {
 	cmd := exec.Command(name, args...); cmd.Stdout = os.Stdout; cmd.Stderr = os.Stderr

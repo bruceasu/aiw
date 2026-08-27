@@ -28,10 +28,11 @@ func DispatchTopLevel(name string, args []string) error {
 		}
 		return initWorkspace(opts)
 	case "new":
-		if len(args) != 1 {
-			return fmt.Errorf("usage: new <task-id>")
+		id, allowDirty, err := parseNewArgs(args)
+		if err != nil {
+			return err
 		}
-		return newTask(args[0])
+		return newTask(id, allowDirty)
 	case "list":
 		return listTasks()
 	case "show":
@@ -83,7 +84,15 @@ func DispatchTopLevel(name string, args []string) error {
 		return syncPrompts(opts)
 	case "agent":
 		return runTaskAgent(args)
+	case "workspace":
+		return bindTaskWorkspace(args)
 	default:
 		return fmt.Errorf("unknown task command: %s", name)
 	}
+}
+
+func parseNewArgs(args []string) (string, bool, error) {
+	if len(args) < 1 || len(args) > 2 { return "", false, fmt.Errorf("usage: new <task-id> [--allow-dirty]") }
+	if len(args) == 2 && args[1] != "--allow-dirty" { return "", false, fmt.Errorf("unknown new option: %s", args[1]) }
+	return args[0], len(args) == 2, nil
 }

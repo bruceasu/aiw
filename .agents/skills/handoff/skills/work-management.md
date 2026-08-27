@@ -41,8 +41,8 @@ If several Tasks match, stop and ask for the Task ID.
 
 ## Task And Change Mapping
 
-Use one AIW Task and one OpenSpec change for work sharing the same goal, branch,
-worktree, delivery, and archive lifecycle.
+Use one AIW Task and one OpenSpec change for work sharing the same goal and
+archive lifecycle. A Task does not imply a dedicated branch or worktree.
 
 Keep ordinary implementation slices as checklist items in `tasks.md`. Create a
 separate AIW Task/change only when a slice needs an independent worktree,
@@ -72,13 +72,21 @@ An OpenSpec-only change is allowed only when the user explicitly accepts that
 it is not tracked by AIW. It must not be handed to the AIW implementation or
 completion workflow until the Task and `task.toml` have been reconciled.
 
-## Worktree Rules
+## Workspace Rules
 
-- Create or resolve implementation worktrees through `aiw wt`.
-- Default to one Task, one `feature/<task-id>` branch, and one
-  `.wt/<task-id>` worktree.
+- Work in the primary Git checkout and current branch by default.
+- A Task lifecycle does not imply a feature branch or linked worktree.
+- Use isolation only for parallel writes, conflicting work, long-running work,
+  disposable experiments, or an explicit user request. State the reason before
+  creating it.
+- Create or resolve isolated worktrees only through `aiw wt`; never create one
+  silently.
+- Require explicit Task or Session context when several Tasks share the primary
+  workspace. Never select the most recent Task by guesswork.
+- Treat `unassigned` and unknown workspace bindings as read-only until the user
+  explicitly binds or repairs them.
 - Specification artifacts created on the current branch must be committed
-  before creating the Task worktree. The new branch/worktree must inherit
+  before creating an isolated Task worktree. The new branch/worktree must inherit
   `task.toml`, proposal, design, specs, and `tasks.md` from that commit; do not
   copy them manually into the worktree.
 - Record the source branch as `parent_branch` in the Task metadata before
@@ -86,10 +94,9 @@ completion workflow until the Task and `task.toml` have been reconciled.
   parent branch; never infer the target from the current checkout.
 - Do not use raw `git worktree` when AIW is available.
 - Do not silently implement in a workspace that does not match the Task.
-- After all checklist items are complete, merge the Task branch into its
-  recorded parent branch and verify the merge. Then remove the Task worktree
-  and delete the Task branch. Only after cleanup succeeds, run sync and archive.
-  Preserve Task resources on any failure or merge conflict before cleanup.
+- Do not commit, merge, push, remove a worktree, or delete a branch merely
+  because Task implementation is complete. Git delivery is separately
+  authorized. Preserve Task resources on any failure or conflict.
 
 If AIW is unavailable, report the missing capability and ask before using a raw
 Git fallback.
@@ -114,11 +121,10 @@ For synchronization:
 - Proposal, design, specs, and checklist content remain OpenSpec-owned.
 - Stop on conflicts instead of overwriting either side.
 
-Archive through `aiw archive <task-id> --backend auto` only after the completed
-Task branch has been merged into its recorded parent branch, the merge has been
-verified, and the worktree and feature branch have been cleaned up. Sync and
-archive are the final lifecycle steps. Stop and preserve resources if merge or
-cleanup fails.
+Archive a primary Task after its checklist and Verification are complete; its
+Git delivery remains unmanaged. Archive an isolated Task only after its branch
+has been verifiably merged and its managed worktree and temporary branch have
+been cleaned up. A cancelled discarded Task may archive with its reason.
 
 ## Sub-Agents
 
@@ -150,8 +156,7 @@ After implementation:
   notes;
 - synchronize the coarse AIW Task status without overwriting OpenSpec content;
 - report static evidence and checks not run;
-- commit the completed implementation changes on the AIW Task branch after the
-  static review. When every checklist item is complete, run the completion
-  protocol: merge into the recorded parent branch, verify the merge, remove the
-  worktree and delete the Task branch, then synchronize and archive. Do not
-  clean up partial or failed work.
+- report Task completion separately from Git delivery. Do not automatically
+  commit, merge, push, clean a worktree, delete a branch, or archive. When Git
+  delivery is explicitly requested, validate the recorded parent branch and
+  preserve resources on partial or failed work.

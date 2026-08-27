@@ -40,4 +40,10 @@ func TestNewTaskMetaRecordsParentBranch(t *testing.T) {
 	if meta.Session != "TASK-1" {
 		t.Fatalf("session = %q, want %q", meta.Session, "TASK-1")
 	}
+	if meta.Branch != "feature/base" || meta.Worktree != "." {
+		t.Fatalf("primary binding = branch %q, worktree %q", meta.Branch, meta.Worktree)
+	}
+	if meta.WorkspaceKind != "primary" || meta.Delivery != "unmanaged" {
+		t.Fatalf("lifecycle = workspace %q, delivery %q", meta.WorkspaceKind, meta.Delivery)
+	}
 }

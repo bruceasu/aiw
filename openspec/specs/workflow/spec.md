@@ -43,6 +43,46 @@ The system SHALL report the selected backend and whether delegation or fallback 
 #### Scenario: Auto fallback diagnostic
 - **WHEN** auto mode selects the native backend
 - **THEN** a concise diagnostic identifies native fallback and the reason
+
+### Requirement: Bind new Tasks to the primary workspace
+The system SHALL bind newly created native and delegated Tasks to the AIW
+project's primary checkout and current branch with `workspace_kind = "primary"`
+and `delivery = "unmanaged"`.
+
+#### Scenario: Create an ordinary Task
+- **WHEN** a user creates a Task from a clean primary checkout
+- **THEN** AIW records `worktree = "."` without creating or predicting a linked worktree
+
+#### Scenario: Dirty or linked checkout
+- **WHEN** creation occurs from a linked worktree or from dirty state without
+  `--allow-dirty`
+- **THEN** creation fails without changing Git state
+
+### Requirement: Protect explicit workspace lifecycle
+The system MUST use verified workspace state and Git registration for isolation,
+cleanup, discard, repair, and archive decisions.
+
+#### Scenario: Explicit isolation
+- **WHEN** committed Task artifacts and an available branch and path permit
+  `aiw wt add`
+- **THEN** the Task becomes isolated with pending delivery without an automatic fetch
+
+#### Scenario: Unsafe destructive target
+- **WHEN** a cleanup target is primary, unassigned, unknown, or not registered
+  by Git
+- **THEN** the operation fails without deleting files or branches
+
+### Requirement: Separate Task completion from Git delivery
+The system SHALL treat DONE as Task completion and SHALL track isolated Git
+delivery separately as pending, merged, or discarded.
+
+#### Scenario: Primary archive
+- **WHEN** a DONE primary Task is archived
+- **THEN** it archives with unmanaged delivery and does not perform Git delivery
+
+#### Scenario: Isolated archive
+- **WHEN** a DONE isolated Task is archived
+- **THEN** Git ancestry and managed-resource cleanup must be verified first
 ### Requirement: Sync archived spec context
 The system SHALL sync referenced change specs into the stable `openspec/specs/` tree when archiving a change that references specs.
 

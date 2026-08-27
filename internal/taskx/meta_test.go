@@ -73,6 +73,8 @@ func TestWriteTaskMeta_PreservesParentBranch(t *testing.T) {
 		ID:           "sample",
 		Status:       "ACTIVE",
 		ParentBranch: "main",
+		WorkspaceKind: "isolated",
+		Delivery: "pending",
 	}
 
 	if err := WriteTaskMeta(path, meta); err != nil {
@@ -85,5 +87,8 @@ func TestWriteTaskMeta_PreservesParentBranch(t *testing.T) {
 	}
 	if got.ParentBranch != meta.ParentBranch {
 		t.Fatalf("parent branch = %q, want %q", got.ParentBranch, meta.ParentBranch)
+	}
+	if got.WorkspaceKind != "isolated" || got.Delivery != "pending" {
+		t.Fatalf("lifecycle = workspace %q, delivery %q", got.WorkspaceKind, got.Delivery)
 	}
 }

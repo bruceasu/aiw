@@ -50,9 +50,10 @@ delivery, or archive lifecycle, and only after the user approves the split.
 
 ## Worktree Rules
 
-- Create or resolve implementation worktrees through `aiw wt`.
-- Default to one Task, one `feature/<task-id>` branch, and one
-  `.wt/<task-id>` worktree.
+- Work in the primary Git checkout and current branch by default.
+- A Task does not imply a dedicated branch or linked worktree.
+- Use `aiw wt` only for explicitly authorized isolation such as parallel,
+  conflicting, long-running, or disposable work.
 - Do not use raw `git worktree` when AIW is available.
 - Do not silently implement in a workspace that does not match the Task.
 - Do not remove a worktree or branch automatically, including after archive.

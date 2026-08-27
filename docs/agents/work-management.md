@@ -8,10 +8,11 @@ Local work normally uses:
 
 - `openspec/changes/<task-id>/` for active Task artifacts;
 - `openspec/specs/` for stable capability requirements;
-- `.wt/<task-id>/` for AIW-managed Task worktrees.
+- the primary Git checkout for ordinary sequential implementation;
+- `.wt/<task-id>/` only for explicitly isolated Task worktrees.
 
 Use AIW lifecycle commands for Task creation, status, completion, and archive.
-Use `aiw wt` for worktrees. AIW's automatic backend may delegate supported
+Use `aiw wt` only when isolation is needed. AIW's automatic backend may delegate supported
 artifact operations to an installed OpenSpec CLI.
 
 Do not create new canonical work under `.scratch`. GitHub and GitLab remain

@@ -22,8 +22,9 @@ Read `skills/work-management.md` and
 
 ## Prepare The Workspace
 
-Create or resolve the Task worktree through `aiw wt`. Verify that its branch and
-path match AIW Task metadata before modifying implementation files.
+Use the Task's declared workspace. Ordinary sequential work stays in the
+primary workspace; verify its project root and branch before modifying files.
+Use `aiw wt` only when isolation is explicitly authorized and beneficial.
 
 Do not use raw `git worktree` when AIW is available. Do not silently implement
 in another workspace. If the active agent cannot safely continue in the
@@ -47,23 +48,11 @@ Update the selected checklist item, TODO, Verification, and remaining `%%`
 risks or questions. Synchronize the coarse AIW Task status without overwriting
 OpenSpec-owned content.
 
-Perform one static review of the changed paths, then commit the completed
-implementation changes on the AIW Task branch.
-
-If every implementation checklist item in `tasks.md` is complete, run the
-completion protocol automatically:
-
-1. Merge the Task branch into its validated `parent_branch`.
-2. Verify the merge succeeded.
-3. Remove the Task worktree and delete the Task branch.
-4. Synchronize AIW and OpenSpec state.
-5. Archive the completed change through the automatic backend.
-
-Do not start this protocol when any checklist item is incomplete. If sync,
-archive, merge, or verification fails, stop and preserve the Task branch and
-worktree for recovery. Do not clean up a partial task or a conflicted merge.
-The merge target must be the validated `parent_branch` recorded in the Task
-metadata.
+Perform one static review of the changed paths and mark Task completion
+separately from Git delivery. Do not automatically commit, merge, push, remove
+a worktree, delete a branch, synchronize, or archive. If the user explicitly
+requests Git delivery, validate the recorded `parent_branch` and preserve all
+resources on failure.
 
 After development is complete, ask once whether the user wants one focused test
 command run. Show the exact command, scope, and expected duration. Default to no

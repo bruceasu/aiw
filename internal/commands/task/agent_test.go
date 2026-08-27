@@ -37,6 +37,13 @@ func TestWriteLineageIsReadable(t *testing.T) {
 	}
 }
 
+func TestParseAgentOptionsAllowsExplicitIsolation(t *testing.T) {
+	opts, err := parseAgentOptions([]string{"--isolated"})
+	if err != nil || !opts.Isolated {
+		t.Fatalf("expected isolated option, got %+v err=%v", opts, err)
+	}
+}
+
 func TestParseAgentOptions(t *testing.T) {
 	opts, err := parseAgentOptions([]string{"--handoff", "handoff.md", "--takeover", "--yes"})
 	if err != nil {

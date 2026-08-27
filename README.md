@@ -324,8 +324,11 @@ Default metadata:
 ```toml
 type = "task"
 status = "TODO"
-branch = "feature/<task-id>"
-worktree = ".wt/<task-id>"
+branch = "<current-branch>"
+parent_branch = "<current-branch>"
+worktree = "."
+workspace_kind = "primary"
+delivery = "unmanaged"
 ```
 
 ## 3. `aiw decision <task-id>`
@@ -402,7 +405,8 @@ Worktree management commands (`aiw wt help` for details).
 
 | Subcommand             | Description                                                                 |
 | ---------------------- | --------------------------------------------------------------------------- |
-| `add <task-id> [base]` | Create a worktree on branch `feature/<task-id>`, default base `origin/main` |
+| `add <task-id> [base]` | Explicitly isolate a Task on branch `feature/<task-id>` using its recorded parent branch by default |
+| `discard <task-id> --yes` | Discard a confirmed isolated experiment |
 | `rm <task-id>`         | Remove a worktree                                                           |
 | `list`                 | List all worktrees                                                          |
 | `prune`                | Remove stale worktree metadata                                              |
@@ -414,7 +418,6 @@ Worktree management commands (`aiw wt help` for details).
 `add` executes:
 
 ```bash
-git fetch origin &&
 git worktree add .wt/<task-id> -b feature/<task-id> <base>
 ```
 

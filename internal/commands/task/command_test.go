@@ -28,8 +28,15 @@ func TestParseArchiveOptionsFinalizeEnablesAllFlags(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse archive options: %v", err)
 	}
-	if !opts.Push || !opts.CleanupWT || !opts.DeleteBranch {
+	if opts.Push || !opts.CleanupWT || !opts.DeleteBranch || !opts.Finalize {
 		t.Fatalf("expected finalize to enable all flags, got %+v", opts)
+	}
+}
+
+func TestParseNewArgsAllowsExplicitDirtyWorkspace(t *testing.T) {
+	id, allowDirty, err := parseNewArgs([]string{"TASK-1", "--allow-dirty"})
+	if err != nil || id != "TASK-1" || !allowDirty {
+		t.Fatalf("unexpected parse result: id=%q allowDirty=%v err=%v", id, allowDirty, err)
 	}
 }
 

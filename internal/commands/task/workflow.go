@@ -16,12 +16,19 @@ type ArchiveOptions struct {
 	Push         bool
 	CleanupWT    bool
 	DeleteBranch bool
+	Finalize     bool
 }
 
-func newTask(id string) error {
+func newTask(id string, allowDirty bool) error {
 	if !safeID(id) {
 		return errors.New("invalid task id")
 	}
+	primary, primaryPath, err := gitx.IsPrimaryWorktree()
+	if err != nil { return err }
+	if !primary { return fmt.Errorf("ordinary Tasks must be created from the primary workspace: %s", primaryPath) }
+	dirty, err := gitx.IsDirty()
+	if err != nil { return err }
+	if dirty && !allowDirty { return errors.New("working tree has uncommitted changes; commit or clean them, or rerun with --allow-dirty") }
 	dir := taskx.TaskDir(id)
 	if fsx.Exists(dir) {
 		return fmt.Errorf("task already exists: %s", dir)
@@ -86,9 +93,11 @@ func taskMetaFor(id, parentBranch string) taskx.TaskMeta {
 		Status:       "TODO",
 		Created:      taskx.Today(),
 		Updated:      taskx.Today(),
-		Branch:       "feature/" + id,
+		Branch:       parentBranch,
 		ParentBranch: parentBranch,
-		Worktree:     filepath.ToSlash(filepath.Join(taskx.WorktreeDir, id)),
+		Worktree:     ".",
+		WorkspaceKind: "primary",
+		Delivery:     "unmanaged",
 		Session:      id,
 	}
 }
@@ -102,6 +111,17 @@ func ensureTaskMeta(id string) error {
 		}
 		if meta.ID != "" && meta.ID != id {
 			return fmt.Errorf("task metadata id mismatch: %s", meta.ID)
+		}
+		if meta.Branch == "" || meta.ParentBranch == "" || meta.Worktree == "" || meta.WorkspaceKind == "" || meta.Delivery == "" {
+			defaults, err := newTaskMeta(id); if err != nil { return err }
+			if meta.Branch == "" { meta.Branch = defaults.Branch }
+			if meta.ParentBranch == "" { meta.ParentBranch = defaults.ParentBranch }
+			if meta.Worktree == "" { meta.Worktree = defaults.Worktree }
+			if meta.WorkspaceKind == "" { meta.WorkspaceKind = defaults.WorkspaceKind }
+			if meta.Delivery == "" { meta.Delivery = defaults.Delivery }
+			if meta.Session == "" { meta.Session = defaults.Session }
+			if err := taskx.WriteTaskMeta(path, meta); err != nil { return err }
+			return writeRegistry()
 		}
 		return nil
 	}
@@ -218,6 +238,32 @@ func updateStatus(id, status string) error {
 	return writeRegistry()
 }
 
+func bindTaskWorkspace(args []string) error {
+	if len(args) != 3 || args[0] != "bind" || args[2] != "--primary" { return errors.New("usage: task workspace bind <task-id> --primary") }
+	id := args[1]
+	primary, primaryPath, err := gitx.IsPrimaryWorktree(); if err != nil { return err }
+	if !primary { return fmt.Errorf("primary workspace is %s", primaryPath) }
+	metaPath := taskx.ResolveTaskMetaPath(id)
+	meta, err := taskx.ReadTaskMeta(metaPath); if err != nil { return err }
+	branch, err := gitx.CurrentBranch(); if err != nil { return err }
+	if meta.ParentBranch != "" && meta.ParentBranch != branch { return fmt.Errorf("current branch %s does not match parent_branch %s", branch, meta.ParentBranch) }
+	meta.Branch, meta.ParentBranch, meta.Worktree = branch, branch, "."
+	meta.WorkspaceKind, meta.Delivery, meta.Updated = "primary", "unmanaged", taskx.Today()
+	if err := taskx.WriteTaskMeta(metaPath, meta); err != nil { return err }
+	return writeRegistry()
+}
+
+func resolvedWorkspaceKind(meta taskx.TaskMeta) string {
+	if kind := strings.TrimSpace(meta.WorkspaceKind); kind != "" { return kind }
+	wt := strings.TrimSpace(meta.Worktree)
+	if wt == "" { return "unassigned" }
+	if wt == "." { return "primary" }
+	root, err := gitx.ProjectRoot(); if err != nil { return "unknown" }
+	path := wt; if !filepath.IsAbs(path) { path = filepath.Join(root, filepath.FromSlash(path)) }
+	if gitx.WorktreeRegistered(path) { return "isolated" }
+	return "unknown"
+}
+
 func archiveTask(id string, opts ArchiveOptions) error {
 	src := taskx.TaskDir(id)
 	if !fsx.Exists(src) {
@@ -229,6 +275,14 @@ func archiveTask(id string, opts ArchiveOptions) error {
 	if err != nil {
 		return err
 	}
+	if meta.Status != "DONE" && meta.Status != "CANCELLED" { return fmt.Errorf("task must be DONE or CANCELLED before archive: %s", meta.Status) }
+	kind := resolvedWorkspaceKind(meta)
+	if kind == "unknown" { return errors.New("cannot archive Task with unknown workspace binding; repair it first") }
+	if meta.Status == "CANCELLED" && meta.Delivery != "discarded" { return errors.New("cancelled Task must record discarded delivery before archive") }
+	if kind == "primary" {
+		if opts.CleanupWT || opts.DeleteBranch || opts.Finalize { return errors.New("primary Task has no managed worktree or branch to finalize") }
+		if dirty, _ := gitx.IsDirty(); dirty { fmt.Fprintln(os.Stderr, "warning: archiving primary Task with unmanaged Git delivery and uncommitted changes") }
+	}
 
 	branch := strings.TrimSpace(meta.Branch)
 	if branch == "" {
@@ -239,12 +293,19 @@ func archiveTask(id string, opts ArchiveOptions) error {
 		wt = filepath.ToSlash(filepath.Join(taskx.WorktreeDir, id))
 	}
 
+	if (kind == "isolated" || (kind == "unassigned" && meta.Delivery == "pending")) && meta.Status != "CANCELLED" {
+		if !gitx.IsAncestor(branch, meta.ParentBranch) { return fmt.Errorf("task branch %s is not merged into %s", branch, meta.ParentBranch) }
+		meta.Delivery = "merged"
+		if kind == "isolated" && !opts.CleanupWT { return errors.New("isolated worktree must be cleaned before archive") }
+		if !opts.DeleteBranch { return errors.New("merged task branch must be deleted before archive") }
+	}
 	if opts.Push {
 		if err := gitx.Run("git", "push", "-u", "origin", branch); err != nil {
 			return err
 		}
 	}
 	if opts.CleanupWT {
+		if kind != "isolated" || !gitx.WorktreeRegistered(wt) { return errors.New("refusing to clean an unverified isolated worktree") }
 		if err := gitx.Run("git", "worktree", "remove", wt); err != nil {
 			return err
 		}
@@ -254,6 +315,8 @@ func archiveTask(id string, opts ArchiveOptions) error {
 			return err
 		}
 	}
+	meta.Updated = taskx.Today()
+	if err := taskx.WriteTaskMeta(metaPath, meta); err != nil { return err }
 
 	if err := syncSpecSnapshots(src, meta.Specs); err != nil {
 		return err
@@ -323,9 +386,10 @@ func parseArchiveOptions(args []string) (ArchiveOptions, error) {
 		DeleteBranch: hasFlag(args, "--delete-branch"),
 	}
 	if hasFlag(args, "--finalize") {
-		opts.Push = true
+		fmt.Fprintln(os.Stderr, "warning: --finalize is deprecated; use explicit cleanup options")
 		opts.CleanupWT = true
 		opts.DeleteBranch = true
+		opts.Finalize = true
 	}
 	return opts, nil
 }

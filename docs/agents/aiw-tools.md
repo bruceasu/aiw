@@ -59,6 +59,7 @@ When working in AIW, the usual order is:
 1. Resolve or create the AIW Task.
 2. Read its OpenSpec artifacts.
 3. Check runtime discovery once before unfamiliar mutations.
-4. Create or resolve its worktree with `aiw wt` before implementation.
+4. Use its primary workspace by default; create an isolated worktree with
+   `aiw wt` only when explicitly needed.
 5. Use Skills for method support.
 6. Use AI support or plugins only when the task needs them.

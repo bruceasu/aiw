@@ -27,7 +27,7 @@ managed engineering work.
    for `/implement` to resolve the Task and worktree later. Treat the flow as
    incomplete until the required artifact set and ID consistency checks pass.
 4. Use `/to-tickets` for ordered implementation slices in `tasks.md`.
-5. Use `/implement` for one selected item in the AIW-managed Task worktree.
+5. Use `/implement` for one selected item in the AIW-managed Task workspace.
 6. After development, ask once whether the user wants one focused test command.
    Default to no test.
 7. Use `/code-review` only when the user explicitly requests a review.
@@ -51,7 +51,7 @@ may use an installed OpenSpec CLI.
 - The main agent may use at most two bounded sub-agents.
 - Sub-agents do not run tests, builds, network calls, permission escalation,
   commits, archive operations, or worktree operations.
-- Worktrees are created and resolved through `aiw wt`, not raw Git.
+- Explicitly isolated worktrees are created and resolved through `aiw wt`, not raw Git.
 
 ## On-Ramps
 

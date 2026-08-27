@@ -36,21 +36,21 @@ if not exist "%INSTALL_DIR%\docs\usage" (
 
 @if "%~1"=="" (
     echo Install plugins, skills agent-templates, and usage
-    call cp-mirror.bat plugins  "%INSTALL_DIR%\plugins" >nul 2>&1 || exit /b 1
-    call cp-mirror.bat skills  "%INSTALL_DIR%\skills" >nul 2>&1 || exit /b 1
-    call cp-mirror.bat docs\usage  "%INSTALL_DIR%\docs\usage" >nul 2>&1 || exit /b 1
-    call cp-mirror.bat docs\agent-templates  "%INSTALL_DIR%\docs\agent-templates" >nul 2>&1 || exit /b 1
+    call cp-mirror.bat plugins  "%INSTALL_DIR%\plugins"  || exit /b 1
+    call cp-mirror.bat skills  "%INSTALL_DIR%\skills" || exit /b 1
+    call cp-mirror.bat docs\usage  "%INSTALL_DIR%\docs\usage" || exit /b 1
+    call cp-mirror.bat docs\agent-templates  "%INSTALL_DIR%\docs\agent-templates"  || exit /b 1
     exit /b 0
 )
 
 
 for %%a in (%*) do (
-    call cp-mirror.bat "plugins\%%a" "%INSTALL_DIR%\plugins\%%a" >nul 2>&1 || exit /b 1
+    call cp-mirror.bat "plugins\%%a" "%INSTALL_DIR%\plugins\%%a" || exit /b 1
     if /I "%%a"=="aiw-skills" (
-        call cp-mirror.bat skills "%INSTALL_DIR%\skills" >nul 2>&1 || exit /b 1
+        call cp-mirror.bat skills "%INSTALL_DIR%\skills" || exit /b 1
     )
     if exist "docs\usage\%%a" (
-        call cp-mirror.bat "docs\usage\%%a" "%INSTALL_DIR%\docs\usage\%%a" >nul 2>&1 || exit /b 1
+        call cp-mirror.bat "docs\usage\%%a" "%INSTALL_DIR%\docs\usage\%%a" || exit /b 1
     )
 )
 

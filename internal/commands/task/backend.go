@@ -7,6 +7,9 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+
+	"aiw/internal/gitx"
+	"aiw/internal/taskx"
 )
 
 type backendMode string
@@ -96,14 +99,21 @@ func runOpenSpec(bin string, operation string, args []string) error {
 	command := []string{}
 	switch operation {
 	case "new":
-		if len(args) != 1 {
-			return errors.New("usage: new <task-id> [--backend <mode>]")
-		}
-		command = []string{"new", "change", args[0]}
+		id, allowDirty, err := parseNewArgs(args)
+		if err != nil { return err }
+		primary, primaryPath, err := gitx.IsPrimaryWorktree(); if err != nil { return err }
+		if !primary { return fmt.Errorf("ordinary Tasks must be created from the primary workspace: %s", primaryPath) }
+		dirty, err := gitx.IsDirty(); if err != nil { return err }
+		if dirty && !allowDirty { return errors.New("working tree has uncommitted changes; commit or clean them, or rerun with --allow-dirty") }
+		command = []string{"new", "change", id}
 	case "archive":
 		if len(args) != 1 {
 			return errors.New("OpenSpec archive delegation supports only: archive <change-id>")
 		}
+		meta, err := taskx.ReadTaskMeta(taskx.ResolveTaskMetaPath(args[0]))
+		if err != nil { return err }
+		if meta.Status != "DONE" && meta.Status != "CANCELLED" { return fmt.Errorf("task must be DONE or CANCELLED before archive: %s", meta.Status) }
+		if resolvedWorkspaceKind(meta) != "primary" && !(meta.Status == "CANCELLED" && meta.Delivery == "discarded") { return errors.New("delegated archive supports only primary or discarded Tasks; clean isolated delivery first") }
 		command = []string{"archive", "--yes", args[0]}
 	default:
 		return fmt.Errorf("unsupported OpenSpec operation: %s", operation)
@@ -114,7 +124,8 @@ func runOpenSpec(bin string, operation string, args []string) error {
 		return fmt.Errorf("OpenSpec %s failed: %w", operation, err)
 	}
 	if operation == "new" {
-		if err := ensureTaskMeta(args[0]); err != nil {
+		id, _, _ := parseNewArgs(args)
+		if err := ensureTaskMeta(id); err != nil {
 			return fmt.Errorf("create AIW task metadata: %w", err)
 		}
 	}

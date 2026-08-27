@@ -38,6 +38,8 @@ func WriteRegistry() error {
 			Status:    meta.Status,
 			Branch:    meta.Branch,
 			Worktree:  meta.Worktree,
+			WorkspaceKind: meta.WorkspaceKind,
+			Delivery: meta.Delivery,
 			Path:      filepath.ToSlash(dir),
 			UpdatedAt: meta.Updated,
 		})

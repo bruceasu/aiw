@@ -2,6 +2,10 @@
 
 ## Context
 
+%% Superseded for default workspace creation by
+`primary-workspace-default`; the historical handoff and lineage decisions in
+this change remain intact.
+
 The existing sequential handoff command is bound to a pre-existing Task,
 Session, and worktree. The desired user model is handoff-oriented: a handoff
 document is the input to the next agent, and the command should decide whether

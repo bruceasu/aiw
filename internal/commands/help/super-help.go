@@ -106,7 +106,7 @@ func listAll() error {
 		"  registry                  Rebuild openspec/registry.json.\n\n")
 
 	fmt.Print("Worktree:\n" +
-		"  wt add <task-id> [base]   Create or attach a task worktree.\n" +
+		"  wt add <task-id> [base]   Explicitly isolate a task in a worktree.\n" +
 		"  wt rm <task-id>           Remove a task worktree.\n" +
 		"  wt list                   List known worktrees.\n" +
 		"  wt prune [--dry-run]      Remove stale worktree metadata.\n" +
@@ -398,7 +398,7 @@ func builtinUsageText(name string) (string, bool) {
 	case "done":
 		return "usage: aiw done <task-id>\n", true
 	case "archive":
-		return "usage: aiw archive <task-id> [--push] [--cleanup-wt] [--delete-branch] [--finalize]\n", true
+		return "usage: aiw archive <task-id> [--push] [--cleanup-wt] [--delete-branch] [--finalize]\n  --finalize is deprecated and never pushes implicitly.\n", true
 	case "context":
 		return "usage: aiw context <task-id>\n", true
 	case "decision":

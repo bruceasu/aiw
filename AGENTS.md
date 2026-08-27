@@ -21,7 +21,7 @@ Prioritize `tasks.md`, `design.md` when present, and the relevant spec.
 - Update stable specs or design notes only when their requirements or decisions
   changed.
 
-Git convention:
+When a dedicated branch or worktree is needed:
 
 - branch: `feature/<task-id>`
 - worktree: `.wt/<task-id>`
@@ -76,8 +76,8 @@ to the user's requested outcome.
 ## Working Rules
 
 - For managed engineering work, read `skills/work-management.md`. Use AIW for
-  Task lifecycle and worktrees, and OpenSpec for requirement and checklist
-  artifacts.
+  Task lifecycle and explicit workspace isolation, and OpenSpec for requirement
+  and checklist artifacts. Work in the primary workspace by default.
 - Plan first for non-trivial work.
 - Inspect the nearest code, tests, config, and docs.
 - Expand only when current evidence is insufficient.
