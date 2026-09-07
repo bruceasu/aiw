@@ -1,6 +1,7 @@
 package task
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -14,30 +15,34 @@ import (
 
 	"aiw/internal/fsx"
 	"aiw/internal/gitx"
+	"aiw/internal/session"
 	"aiw/internal/taskx"
 )
 
-type flowStatus struct {
-	Session struct{ State string }
-	Codex   struct{ ThreadID string }
-}
-
 type agentLineage struct {
-	TaskID       string
-	ParentTask   string
-	SessionID    string
-	ChildSession string
-	ParentThread string
-	ChildThread  string
-	Handoff      string
-	HandoffHash  string
-	HandoffStatus string
-	ParentState   string
-	ChildState    string
-	StartedAt    string
-	CompletedAt  string
-	Status       string
-	Error        string
+	TaskID           string
+	ParentTask       string
+	SourceTask       string
+	SessionID        string
+	SourceSession    string
+	ChildSession     string
+	ParentThread     string
+	SourceThread     string
+	ChildThread      string
+	Handoff          string
+	SourcePath       string
+	HandoffHash      string
+	HandoffStatus    string
+	HandoffCreatedAt string
+	ConsumedAt       string
+	ConsumerThread   string
+	ConsumedHash     string
+	ParentState      string
+	ChildState       string
+	StartedAt        string
+	CompletedAt      string
+	Status           string
+	Error            string
 }
 
 func runTaskAgent(args []string) error {
@@ -69,7 +74,16 @@ func runTaskAgent(args []string) error {
 	existing := fsx.Exists(taskx.TaskDir(id))
 	var meta taskx.TaskMeta
 	sessionMissing := false
+	createdTask := false
 	if existing {
+		originalMeta, readErr := taskx.ReadTaskMeta(metaPath)
+		if readErr != nil {
+			return fmt.Errorf("read task metadata: %w", readErr)
+		}
+		sessionMissing = strings.TrimSpace(originalMeta.Session) == "" || !fsx.Exists(filepath.Join(".ai", "sessions", originalMeta.Session, "status.json"))
+		if err := ensureTaskMeta(id); err != nil {
+			return fmt.Errorf("repair task metadata: %w", err)
+		}
 		meta, err = taskx.ReadTaskMeta(metaPath)
 		if err != nil {
 			return fmt.Errorf("read task metadata: %w", err)
@@ -79,9 +93,11 @@ func runTaskAgent(args []string) error {
 		if err != nil {
 			return err
 		}
+		printAgentPlan(id, "create", "", "", "", source)
 		if err := newTask(id, opts.AllowDirty); err != nil {
 			return fmt.Errorf("create task: %w", err)
 		}
+		createdTask = true
 		metaPath = taskx.ResolveTaskMetaPath(id)
 		meta, err = taskx.ReadTaskMeta(metaPath)
 		if err != nil {
@@ -91,8 +107,13 @@ func runTaskAgent(args []string) error {
 			return rollbackNewTask(id, fmt.Errorf("copy handoff: %w", err))
 		}
 		if opts.Isolated {
-			if err := addTaskWorktree(id); err != nil { return fmt.Errorf("Task created but isolation failed: %w", err) }
-			meta, err = taskx.ReadTaskMeta(metaPath); if err != nil { return err }
+			if err := addTaskWorktree(id); err != nil {
+				return rollbackNewTask(id, fmt.Errorf("isolation failed: %w", err))
+			}
+			meta, err = taskx.ReadTaskMeta(metaPath)
+			if err != nil {
+				return err
+			}
 		}
 		meta.Session = id
 		if err := taskx.WriteTaskMeta(metaPath, meta); err != nil {
@@ -109,6 +130,9 @@ func runTaskAgent(args []string) error {
 			return err
 		}
 	}
+	if err := validateTaskBindings(id, meta); err != nil {
+		return err
+	}
 	if opts.Isolated && meta.WorkspaceKind != "isolated" {
 		if err := addTaskWorktree(id); err != nil {
 			return err
@@ -119,11 +143,18 @@ func runTaskAgent(args []string) error {
 		}
 	}
 	kind := resolvedWorkspaceKind(meta)
-	if kind == "unassigned" || kind == "unknown" { return fmt.Errorf("task %s workspace is %s", id, kind) }
+	if kind == "unassigned" || kind == "unknown" {
+		return fmt.Errorf("task %s workspace is %s", id, kind)
+	}
 	worktree := meta.Worktree
-	if strings.TrimSpace(worktree) == "" { return fmt.Errorf("task %s workspace is unassigned", id) }
+	if strings.TrimSpace(worktree) == "" {
+		return fmt.Errorf("task %s workspace is unassigned", id)
+	}
 	if !filepath.IsAbs(worktree) {
-		root, rootErr := gitx.ProjectRoot(); if rootErr != nil { return rootErr }
+		root, rootErr := gitx.ProjectRoot()
+		if rootErr != nil {
+			return rootErr
+		}
 		worktree = filepath.Join(root, filepath.FromSlash(worktree))
 	}
 	worktree, err = filepath.Abs(worktree)
@@ -144,9 +175,12 @@ func runTaskAgent(args []string) error {
 	defer os.Remove(leasePath)
 
 	if sessionMissing {
-		if err := createTaskSession(id, meta.Worktree); err != nil { return err }
+		if err := createTaskSession(id, meta.Worktree); err != nil {
+			return err
+		}
 	}
-	status, err := flowStatusJSON(meta.Session)
+	store := session.NewStore("")
+	status, err := store.Load(meta.Session)
 	if err != nil {
 		return err
 	}
@@ -160,28 +194,50 @@ func runTaskAgent(args []string) error {
 	if err != nil {
 		return err
 	}
-	lineage := agentLineage{TaskID: id, ParentTask: id, SessionID: meta.Session, ChildSession: meta.Session, ParentThread: status.Codex.ThreadID, Handoff: handoff, HandoffStatus: "pending", ParentState: "active", ChildState: "starting", StartedAt: time.Now().UTC().Format(time.RFC3339), Status: "starting"}
+	printAgentPlan(id, "reuse", meta.Session, meta.Branch, meta.Worktree, handoff)
+	lineage := agentLineage{TaskID: id, ParentTask: id, SessionID: meta.Session, ChildSession: meta.Session, ParentThread: status.Backend.ThreadID, Handoff: handoff, HandoffStatus: "pending", ParentState: "active", ChildState: "starting", StartedAt: time.Now().UTC().Format(time.RFC3339), Status: "starting"}
+	lineage.SourcePath = handoff
+	lineage.SourceSession = meta.Session
+	lineage.SourceThread = status.Backend.ThreadID
+	lineage.HandoffCreatedAt = lineage.StartedAt
 	if b, readErr := os.ReadFile(handoff); readErr == nil {
 		digest := sha256.Sum256(b)
 		lineage.HandoffHash = hex.EncodeToString(digest[:])
 	}
-	if err := writeLineage(id, lineage); err != nil { return err }
+	if err := writeLineage(id, lineage); err != nil {
+		return err
+	}
 	prompt := fmt.Sprintf("Continue Task %s.\n\nSession: %s\n\nRead the handoff at %s and referenced artifacts before taking action. Preserve the existing Task and worktree; report validation when done.\n\nTask context:\n%s", id, meta.Session, handoff, readTaskGoal(id))
-	if _, err := runFlow(worktree, "run", meta.Session, "--force-new-thread", "--prompt", prompt); err != nil {
+	result, err := session.ExecuteTurn(context.Background(), store, meta.Session, "handoff", prompt, status.Backend.Name, status.Backend.Model, true)
+	if err != nil {
+		_ = recordSessionHandoff(store, meta.Session, lineage)
 		lineage.Status, lineage.ChildState, lineage.Error = "failed", "failed", err.Error()
 		_ = writeLineage(id, lineage)
+		if createdTask {
+			return rollbackNewTask(id, err)
+		}
 		return err
 	}
-	child, err := flowStatusJSON(meta.Session)
-	if err != nil {
-		return err
-	}
-	lineage.ChildThread = child.Codex.ThreadID
+	lineage.ChildThread = result.ThreadID
 	lineage.HandoffStatus = "consumed"
+	lineage.ConsumedAt = time.Now().UTC().Format(time.RFC3339)
+	lineage.ConsumerThread = result.ThreadID
+	lineage.ConsumedHash = lineage.HandoffHash
 	lineage.ParentState = "handed-off"
 	lineage.ChildState = "completed"
 	lineage.CompletedAt = time.Now().UTC().Format(time.RFC3339)
 	lineage.Status = "completed"
+	if err := recordSessionHandoff(store, meta.Session, lineage); err != nil {
+		return err
+	}
+	if err := markTaskRunning(id); err != nil {
+		lineage.Status, lineage.Error = "failed", err.Error()
+		_ = writeLineage(id, lineage)
+		if createdTask {
+			return rollbackNewTask(id, err)
+		}
+		return err
+	}
 	if err := writeLineage(id, lineage); err != nil {
 		return err
 	}
@@ -189,20 +245,34 @@ func runTaskAgent(args []string) error {
 	return nil
 }
 
-type agentOptions struct { Handoff string; Takeover bool; Isolated bool; AllowDirty bool; Yes bool }
+type agentOptions struct {
+	Handoff    string
+	Takeover   bool
+	Isolated   bool
+	AllowDirty bool
+	Yes        bool
+}
 
 func parseAgentOptions(args []string) (agentOptions, error) {
 	var opts agentOptions
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
-		case "--takeover": opts.Takeover = true
-		case "--isolated": opts.Isolated = true
-		case "--allow-dirty": opts.AllowDirty = true
-		case "--yes": opts.Yes = true
+		case "--takeover":
+			opts.Takeover = true
+		case "--isolated":
+			opts.Isolated = true
+		case "--allow-dirty":
+			opts.AllowDirty = true
+		case "--yes":
+			opts.Yes = true
 		case "--handoff":
-			if i+1 >= len(args) { return opts, errors.New("--handoff requires a path") }
-			i++; opts.Handoff = args[i]
-		default: return opts, fmt.Errorf("unknown option: %s", args[i])
+			if i+1 >= len(args) {
+				return opts, errors.New("--handoff requires a path")
+			}
+			i++
+			opts.Handoff = args[i]
+		default:
+			return opts, fmt.Errorf("unknown option: %s", args[i])
 		}
 	}
 	return opts, nil
@@ -211,7 +281,11 @@ func parseAgentOptions(args []string) (agentOptions, error) {
 func normalizeID(id string) string {
 	var b strings.Builder
 	for _, r := range strings.ToLower(id) {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' || r == '_' || r == '.' { b.WriteRune(r) } else { b.WriteRune('-') }
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' || r == '_' || r == '.' {
+			b.WriteRune(r)
+		} else {
+			b.WriteRune('-')
+		}
 	}
 	return strings.Trim(b.String(), "-_.")
 }
@@ -225,69 +299,132 @@ func confirm(prompt string) bool {
 
 func resolveHandoff(explicit, session, taskID string) (string, string, error) {
 	paths := []string{}
-	if explicit != "" { paths = append(paths, explicit) }
-	if taskID != "" { paths = append(paths, filepath.Join(taskx.TaskDir(taskID), "artifacts", "handoff.md")) }
-	if session != "" { paths = append(paths, filepath.Join(".aiw", "sessions", session, "artifacts", "handoff.md"), filepath.Join("artifacts", "handoff.md")) }
+	if explicit != "" {
+		paths = append(paths, explicit)
+	}
+	if taskID != "" {
+		paths = append(paths, filepath.Join(taskx.TaskDir(taskID), "artifacts", "handoff.md"))
+	}
+	if session != "" {
+		paths = append(paths, filepath.Join(".ai", "sessions", session, "artifacts", "handoff.md"), filepath.Join("artifacts", "handoff.md"))
+	}
 	for _, path := range paths {
-		if fsx.Exists(path) { absolute, err := filepath.Abs(path); if err != nil { return "", "", err }; return absolute, absolute, nil }
+		if fsx.Exists(path) {
+			absolute, err := filepath.Abs(path)
+			if err != nil {
+				return "", "", err
+			}
+			return absolute, absolute, nil
+		}
 	}
 	return "", "", errors.New("handoff not found; use --handoff PATH or create a Session handoff first")
 }
 
 func copyHandoff(id, source, sourcePath string) error {
-	b, err := os.ReadFile(source); if err != nil { return err }
+	b, err := os.ReadFile(source)
+	if err != nil {
+		return err
+	}
 	dir := filepath.Join(taskx.TaskDir(id), "artifacts")
-	if err := os.MkdirAll(dir, 0o755); err != nil { return err }
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
 	return os.WriteFile(filepath.Join(dir, "handoff.md"), b, 0o644)
 }
 
 func createTaskSession(id, worktree string) error {
 	instructions := filepath.Join(taskx.TaskDir(id), "artifacts", "instructions.md")
 	content := "Read artifacts/handoff.md before acting. Preserve the Task scope and report validation.\n"
-	if err := os.WriteFile(instructions, []byte(content), 0o644); err != nil { return err }
-	if !filepath.IsAbs(worktree) { root, err := gitx.ProjectRoot(); if err != nil { return err }; worktree = filepath.Join(root, filepath.FromSlash(worktree)) }
-	return runCommand("aiw-flow", "new", "--id", id, "--title", id, "--workspace", worktree, "--instructions", instructions)
+	if err := os.WriteFile(instructions, []byte(content), 0o644); err != nil {
+		return err
+	}
+	if !filepath.IsAbs(worktree) {
+		root, err := gitx.ProjectRoot()
+		if err != nil {
+			return err
+		}
+		worktree = filepath.Join(root, filepath.FromSlash(worktree))
+	}
+	_, err := session.NewStore("").Create(id, id, worktree, "codex", "", content)
+	return err
 }
 
 func addTaskWorktree(id string) error { return runCommand("aiw", "wt", "add", id) }
 
 func runCommand(name string, args ...string) error {
-	cmd := exec.Command(name, args...); cmd.Stdout = os.Stdout; cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil { return fmt.Errorf("%s %s: %w", name, strings.Join(args, " "), err) }
+	cmd := exec.Command(name, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%s %s: %w", name, strings.Join(args, " "), err)
+	}
 	return nil
 }
 
 func rollbackNewTask(id string, cause error) error {
-	_ = runCommand("aiw-flow", "delete", id, "--yes")
+	_ = session.NewStore("").Delete(id)
 	worktreeErr := runCommand("aiw", "wt", "rm", id, "--force")
-	if worktreeErr == nil {
-		_ = os.RemoveAll(taskx.TaskDir(id))
-		return fmt.Errorf("%w (new Task %s was rolled back)", cause, id)
+	_ = os.RemoveAll(taskx.TaskDir(id))
+	if worktreeErr != nil {
+		return fmt.Errorf("%w (new Task %s was rolled back; worktree cleanup: %v)", cause, id, worktreeErr)
 	}
-	return fmt.Errorf("%w (new Task %s needs manual cleanup: %v)", cause, id, worktreeErr)
+	return fmt.Errorf("%w (new Task %s was rolled back)", cause, id)
 }
 
-func flowStatusJSON(session string) (flowStatus, error) {
-	cmd := exec.Command("aiw-flow", "status", session, "--json")
-	out, err := cmd.Output()
+func markTaskRunning(id string) error {
+	path := taskx.ResolveTaskMetaPath(id)
+	meta, err := taskx.ReadTaskMeta(path)
 	if err != nil {
-		return flowStatus{}, fmt.Errorf("read aiw-flow session %s: %w", session, err)
+		return err
 	}
-	var status flowStatus
-	if err := json.Unmarshal(out, &status); err != nil {
-		return flowStatus{}, fmt.Errorf("decode aiw-flow status: %w", err)
+	meta.Status = "RUNNING"
+	meta.Updated = taskx.Today()
+	if err := taskx.WriteTaskMeta(path, meta); err != nil {
+		return err
 	}
-	return status, nil
+	return taskx.WriteRegistry()
 }
 
-func runFlow(worktree string, args ...string) (string, error) {
-	cmd := exec.Command("aiw-flow", args...)
-	cmd.Dir = worktree
-	out, err := cmd.CombinedOutput()
+func recordSessionHandoff(store *session.Store, sessionID string, lineage agentLineage) error {
+	_, err := store.Update(sessionID, func(status *session.Status) error {
+		status.Task = map[string]interface{}{
+			"task_id": lineage.TaskID, "handoff": lineage.Handoff,
+			"handoff_hash": lineage.HandoffHash, "handoff_status": lineage.HandoffStatus,
+			"handoff_created_at": lineage.HandoffCreatedAt, "consumed_hash": lineage.ConsumedHash,
+			"parent_thread": lineage.ParentThread, "child_thread": lineage.ChildThread,
+			"consumed_at": lineage.ConsumedAt, "consumer_thread": lineage.ConsumerThread,
+			"parent_state": lineage.ParentState, "child_state": lineage.ChildState,
+		}
+		return nil
+	})
+	return err
+}
+
+func validateTaskBindings(id string, meta taskx.TaskMeta) error {
+	entries, err := os.ReadDir(taskx.ChangesDir)
 	if err != nil {
-		return string(out), fmt.Errorf("aiw-flow %s: %w\n%s", strings.Join(args, " "), err, strings.TrimSpace(string(out)))
+		return err
 	}
-	return string(out), nil
+	for _, entry := range entries {
+		if !entry.IsDir() || entry.Name() == id || entry.Name() == "archive" {
+			continue
+		}
+		other, readErr := taskx.ReadTaskMeta(taskx.ResolveTaskMetaPathInDir(filepath.Join(taskx.ChangesDir, entry.Name())))
+		if readErr != nil {
+			continue
+		}
+		if strings.TrimSpace(meta.Session) != "" && meta.Session == other.Session {
+			return fmt.Errorf("session %s is already bound to Task %s", meta.Session, other.ID)
+		}
+		if strings.TrimSpace(meta.Worktree) != "" && meta.Worktree != "." && meta.Worktree == other.Worktree {
+			return fmt.Errorf("worktree %s is already bound to Task %s", meta.Worktree, other.ID)
+		}
+	}
+	return nil
+}
+
+func printAgentPlan(id, path, sessionID, branch, worktree, handoff string) {
+	fmt.Printf("Task agent plan: task=%s path=%s session=%s branch=%s worktree=%s handoff=%s thread=fresh\n", id, path, sessionID, branch, worktree, handoff)
 }
 
 func readTaskGoal(id string) string {

@@ -17,7 +17,7 @@ The project now uses four layers:
    - Skill installation and discovery for Codex and AIW workflows
 
 3. AI support layer
-   - `aiw-flow` for automation-oriented AI process execution
+   - `aiw flow` for AIW-native Session lifecycle and process execution
    - `aiw cxs` for Codex session inspection and continuation support
    - interactive session behavior, handoff artifacts, and task-agent lineage
 
@@ -29,7 +29,8 @@ The project now uses four layers:
 
 - AIW core owns workflow structure and persistence.
 - Skills own reusable capability content.
-- AI support commands can use skills and workflow context, but they do not redefine the core product.
+- AI support commands can use skills and workflow context, while `aiw flow` owns
+   Task-bound Session execution state inside the Core.
 - Plugins extend the CLI without becoming workflow authority.
 - OpenSpec documents describe expected behavior; they do not replace the workflow model.
 

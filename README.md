@@ -83,6 +83,7 @@ aiw context <task-id>
 aiw decision <task-id>
 aiw spec <spec-id>
 aiw task agent next <task-id>
+aiw flow <new|run|continue|status|list|finish|archive|delete|memory|handoff>
 aiw registry
 
 aiw prompts list
@@ -141,8 +142,8 @@ Use `aiw task agent status <task-id>` to inspect the recorded parent/child
 Thread transition.
 
 This workflow is sequential. Use `aiw wt` to give parallel agents separate
-worktrees and sessions. Existing `aiw flow` and `aiw cxs` entry points are
-auxiliary execution and session-support surfaces, not the core workflow.
+worktrees and sessions. `aiw flow` is the AIW Core Session execution surface;
+`aiw cxs` remains focused on native Codex session navigation.
 `task.toml` is canonical; `tasks.toml` is a legacy fallback.
 
 # Plugin System
@@ -518,11 +519,11 @@ Ctrl+E
 
 launches an external editor.
 
-### LLM Support
+### AI Provider Support
 
 Enabled only with `--llm`.
 
-Uses the OpenAI Chat Completions API directly.
+Uses the globally configured AI provider through the shared provider module.
 
 ```bash
 set OPENAI_API_KEY=your_api_key
@@ -547,10 +548,10 @@ aiw.toml
 .aiw.toml
 ```
 
-### OpenAI Configuration Priority
+### AI Provider Configuration Priority
 
 ```text
-[cz] section in config
+[ai] section in config
 鈫?environment variables
 鈫?.env in current directory
 鈫?.env in program directory
@@ -576,7 +577,8 @@ OPENAI_API_KEY
 Example:
 
 ```toml
-[cz]
+[ai]
+provider = "openai"
 llm = false
 candidates = 3
 emoji = false
@@ -593,6 +595,10 @@ name = "feat:     New Feature | A new feature"
 value = "fix"
 name = "fix:      Bug Fix | A bug fix"
 ```
+
+The provider settings are global and are shared by `aiw flow`, `aiw help`, and
+CZ. Existing provider settings under `[cz]` remain supported as a compatibility
+fallback.
 
 ### New Features
 

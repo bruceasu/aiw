@@ -153,7 +153,7 @@ The system SHALL treat skill work management as a local AIW capability and optio
 
 <!-- archived spec: skill-work-management -->
 
-## ADDED Requirements
+### Archived Requirements
 
 ### Requirement: Use OpenSpec as canonical local work state
 Bundled engineering Skills running in an AIW/OpenSpec repository SHALL treat
@@ -353,7 +353,7 @@ outside that block.
 
 <!-- archived spec: skill-installation -->
 
-## ADDED Requirements
+### Archived Requirements
 
 ### Requirement: List canonical Portable Skills
 The system SHALL list valid canonical Portable Skills through the `aiw skills`

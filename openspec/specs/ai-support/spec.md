@@ -1,11 +1,13 @@
 # ai-support Specification
 
 ## Purpose
-Define AI support behavior for aiw-flow, interactive sessions, handoff artifacts, grill workflows, and task-bound session lineage.
+Define AI support behavior for `aiw flow`, interactive Sessions, handoff artifacts,
+Grill workflows, and Task-bound Session lineage.
 
 ## Requirements
 ### Requirement: Enter an interactive Session loop
-The system SHALL provide `loop SESSION_ID` to repeatedly accept terminal input for an existing Session within one aiw-flow process.
+The system SHALL provide an interactive Session loop through the AIW flow
+execution surface.
 
 #### Scenario: Resume a Session with a Thread
 - **WHEN** a user starts the loop for a Session with a saved Codex Thread ID and enters a message
@@ -151,7 +153,7 @@ The Session state SHALL expose the optional Task binding and the latest fresh-Th
 - **THEN** those commands retain their current behavior and no Task metadata is required
 
 ### Requirement: Start Grill sessions
-The system SHALL provide a Grill command that creates a normal aiw-flow Session from a Session ID, title, workspace, and requirement, then starts the first Codex turn using the existing exec backend.
+The system SHALL provide a Grill command that creates a normal `aiw flow` Session from a Session ID, title, workspace, and requirement, then starts the first Codex turn using the selected backend.
 
 #### Scenario: Start requirement discovery
 - **WHEN** a user supplies a valid new Session ID, existing workspace, and non-empty requirement
@@ -183,7 +185,7 @@ The system SHALL allow a Grill command with `--loop` to enter the interactive Se
 
 #### Scenario: Continue immediately after the first question
 - **WHEN** a user starts a valid Grill Session with `--loop` and the first turn succeeds
-- **THEN** the system waits for the user's answer in the same aiw-flow process using phase `grill`
+- **THEN** the system waits for the user's answer in the same AIW flow process using phase `grill`
 
 #### Scenario: Preserve one-shot Grill
 - **WHEN** a user starts a valid Grill Session without `--loop`
@@ -195,14 +197,14 @@ The system SHALL allow a Grill command with `--loop` to enter the interactive Se
 
 <!-- archived spec: grill-workflow -->
 
-## ADDED Requirements
+### Archived Requirements
 
 ### Requirement: Start Grill in interactive mode
 The system SHALL allow a Grill command with `--loop` to enter the interactive Session loop after the first Grill response.
 
 #### Scenario: Continue immediately after the first question
 - **WHEN** a user starts a valid Grill Session with `--loop` and the first turn succeeds
-- **THEN** the system waits for the user's answer in the same aiw-flow process using phase `grill`
+- **THEN** the system waits for the user's answer in the same AIW flow process using phase `grill`
 
 #### Scenario: Preserve one-shot Grill
 - **WHEN** a user starts a valid Grill Session without `--loop`
@@ -214,10 +216,10 @@ The system SHALL allow a Grill command with `--loop` to enter the interactive Se
 
 <!-- archived spec: interactive-session-loop -->
 
-## ADDED Requirements
+### Archived Requirements
 
 ### Requirement: Enter an interactive Session loop
-The system SHALL provide `loop SESSION_ID` to repeatedly accept terminal input for an existing Session within one aiw-flow process.
+The system SHALL provide an interactive flow loop to repeatedly accept terminal input for an existing Session within one AIW flow process.
 
 #### Scenario: Resume a Session with a Thread
 - **WHEN** a user starts the loop for a Session with a saved Codex Thread ID and enters a message
@@ -306,7 +308,7 @@ The system SHALL refuse to enter a loop for a Session that is running, completed
 
 <!-- archived spec: aiw-flow-cli-help -->
 
-## ADDED Requirements
+### Archived Requirements
 
 ### Requirement: Task-oriented top-level HELP
 The system SHALL explain what aiw-flow does, show the common Session workflow, summarize every top-level command, provide quick-start examples, and direct users to command-specific HELP.
@@ -361,7 +363,7 @@ HELP improvements MUST NOT change command names, option names, required argument
 
 <!-- archived spec: session-handoff -->
 
-## ADDED Requirements
+### Archived Requirements
 
 ### Requirement: Create a deterministic handoff
 The system SHALL create a deterministic Markdown handoff from stored session status, memory, artifact references, workspace context, and the latest final output excerpt without invoking a model.
@@ -401,7 +403,7 @@ The handoff SHALL reference saved prompts, outputs, events, patches, and context
 
 <!-- archived spec: workspace-context -->
 
-## ADDED Requirements
+### Archived Requirements
 
 ### Requirement: Collect context from the declared workspace
 The system SHALL collect workspace context only from the resolved workspace stored for the session.
@@ -440,7 +442,7 @@ The collector MUST invoke Git with argument arrays and MUST NOT use `shell=True`
 
 <!-- archived spec: session-skill-invocation -->
 
-## ADDED Requirements
+### Archived Requirements
 
 ### Requirement: Discover Skills from standard locations
 The system SHALL discover Skill directories from project and user `.agents/skills` locations and from compatible project and user `.codex/skills` locations without requiring configurable search paths.
@@ -523,7 +525,7 @@ The new Skill commands MUST coexist with all existing loop messages, escapes, an
 
 <!-- archived spec: workflow-backend-routing -->
 
-## ADDED Requirements
+### Archived Requirements
 
 ### Requirement: Select a workflow backend
 The system SHALL support `auto`, `openspec`, and `native` backend modes for
@@ -578,9 +580,9 @@ was used.
 
 <!-- archived spec: session -->
 
-# session Specification Delta
+### Archived spec: session
 
-## ADDED Requirements
+### Archived Requirements
 
 ### Requirement: Fork a fresh Thread from the interactive Loop
 The Loop SHALL support `/fork` to create a persistent handoff, execute one
@@ -612,18 +614,18 @@ fresh-Thread handoff lineage without changing ordinary loop persistence.
 
 <!-- archived spec: task-agent-handoff -->
 
-# task-agent-handoff Specification
+### Archived spec: task-agent-handoff
 
-## Purpose
+### Purpose
 
 Define a sequential Task handoff that starts a fresh Codex Thread while
-preserving the Task's bound workspace and aiw-flow Session.
+preserving the Task's bound workspace and AIW flow Session.
 
-## ADDED Requirements
+### Archived Requirements
 
 ### Requirement: Start the next agent Thread for a Task
 The system SHALL provide `aiw task agent next TASK_ID` for an existing Task
-with a valid workspace and aiw-flow Session binding, and SHALL reuse that
+with a valid workspace and AIW flow Session binding, and SHALL reuse that
 workspace unless isolation is explicitly requested.
 
 #### Scenario: Start a child Thread
@@ -690,13 +692,13 @@ The new command SHALL NOT change the behavior of one-shot runs, interactive
 loops, or same-Thread continuation.
 
 #### Scenario: Existing continuation
-- **WHEN** a user runs the existing `aiw-flow continue SESSION_ID`
+- **WHEN** a user runs the existing `aiw flow continue SESSION_ID`
 - **THEN** it resumes the current Thread without creating a task-agent
   handoff transition
 
 <!-- archived spec: file-operations -->
 
-# File Operations Specification
+### Archived spec: file-operations
 
 ### Requirement: Detect supported text encodings
 
@@ -741,9 +743,9 @@ AI Skills SHALL use aiw file read/info/write for text file content access and SH
 
 <!-- archived spec: ai-support -->
 
-# Patch Application Specification
+### Archived spec: patch-application
 
-## Purpose
+### Purpose
 
 Provide reliable, Git-backed patch application across Windows terminal encodings.
 

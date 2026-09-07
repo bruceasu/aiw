@@ -1,17 +1,16 @@
 package help
 
 import (
+	"aiw/internal/ai"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"aiw/internal/fsx"
 	plug "aiw/internal/plugin"
@@ -119,7 +118,7 @@ func listAll() error {
 		"  prompts <...>             Generate or merge prompt files.\n" +
 		"  task agent <...>          Fresh-agent handoff and lineage tools.\n" +
 		"  cxs <...>                 Inspect and resume Codex CLI sessions.\n" +
-		"  flow <...>                Automate repeatable AI processing flows.\n\n")
+		"  flow <...>                Manage AIW-native Sessions and AI execution.\n\n")
 
 	fmt.Print("Plugins:\n" +
 		"  git <subcommand>         Git helpers and discoverable Git subcommands.\n" +
@@ -423,11 +422,14 @@ func searchAndAnswer(query string) error {
 		return nil
 	}
 
-	// try LLM if configured
-	if url := os.Getenv("AIW_LLM_URL"); url != "" {
-		if ans, err := askLLM(url, query, matches); err == nil && ans != "" {
-			fmt.Println(ans)
-			return nil
+	// Use the provider selected in the shared AIW configuration.
+	if cfg, err := ai.LoadConfig(); err == nil && cfg.Name != "" {
+		if provider, err := ai.NewProvider(cfg); err == nil {
+			prompt := buildHelpPrompt(query, matches)
+			if result, err := provider.Generate(context.Background(), ai.Request{Prompt: prompt, Model: cfg.Model}); err == nil && strings.TrimSpace(result.FinalOutput) != "" {
+				fmt.Println(result.FinalOutput)
+				return nil
+			}
 		}
 	}
 
@@ -501,38 +503,8 @@ func excerptText(doc, query string, max int) string {
 	return ex
 }
 
-// askLLM posts a JSON payload to configured URL and expects a text response.
-// Payload: {"query": "...", "docs": ["...",...]}
-func askLLM(url, query string, docs []string) (string, error) {
-	payload := map[string]any{"query": query, "docs": docs}
-	data, err := json.Marshal(payload)
-	if err != nil {
-		return "", err
-	}
-	client := &http.Client{Timeout: 15 * time.Second}
-	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	// allow API key via AIW_LLM_KEY
-	if k := os.Getenv("AIW_LLM_KEY"); k != "" {
-		req.Header.Set("Authorization", "Bearer "+k)
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode/100 != 2 {
-		b, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("llm error: %d %s", resp.StatusCode, string(b))
-	}
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
+func buildHelpPrompt(query string, docs []string) string {
+	return fmt.Sprintf("Answer the user's AIW help question using only the following documentation. If the documentation is insufficient, say so clearly.\n\nQuestion:\n%s\n\nDocumentation:\n%s", query, strings.Join(docs, "\n\n---\n\n"))
 }
 
 func pluginNameFromFile(filename string) (string, bool) {

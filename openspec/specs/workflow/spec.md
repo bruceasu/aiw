@@ -127,7 +127,7 @@ The collector MUST invoke Git with argument arrays and MUST NOT use `shell=True`
 
 <!-- archived spec: git-file-history -->
 
-## ADDED Requirements
+### Archived Requirements
 
 ### Requirement: File commit history
 The system SHALL provide a read-only file history view that follows renames by default and SHALL support default, concise, patch, statistics, graph, and full-evolution output modes.

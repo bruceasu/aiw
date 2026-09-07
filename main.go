@@ -6,8 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	flowcmd "aiw/internal/commands/flow"
 	help "aiw/internal/commands/help"
 	taskcmd "aiw/internal/commands/task"
+	czcmd "aiw/internal/commands/cz"
 
 	plug "aiw/internal/plugin"
 )
@@ -69,12 +71,16 @@ func main() {
 		} else {
 			err = taskcmd.DispatchTopLevel(os.Args[2], os.Args[3:])
 		}
+	case "flow":
+		err = flowcmd.Dispatch(os.Args[2:])
+	case "cz":
+		err = czcmd.Dispatch(os.Args[2:])
 	default:
 		// try plugin fallback: aiw-<subcommand>
 		pluginName := os.Args[1]
 		bin, err := plug.DiscoverPlugin(pluginName)
 		if err != nil {
-			println("plugin discovery error:", err)
+			fmt.Println("plugin discovery error:", err)
 			help.Dispatch([]string{})
 		} else {
 			// prepare env
