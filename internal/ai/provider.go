@@ -28,6 +28,8 @@ type Request struct {
 	ForceNewThread bool
 	OutputSchema   map[string]any
 	Timeout        time.Duration
+	AdditionalDirs []string
+	ReadOnly       bool
 }
 
 type Response struct {
@@ -44,15 +46,60 @@ type Response struct {
 type Provider interface {
 	Name() string
 	Generate(context.Context, Request) (Response, error)
+	Interactive(context.Context, Request) (Response, error)
+}
+
+func unsupportedInteractiveProvider(name string) (Response, error) {
+	return Response{}, fmt.Errorf("AI provider %s does not support interactive execution", name)
 }
 
 type Config struct {
-	Name       string
-	Model      string
-	APIKey     string
-	BaseURL    string
-	Command    string
-	HTTPClient *http.Client
+	Name           string
+	Model          string
+	APIKey         string
+	BaseURL        string
+	Command        string
+	CodexCommand   string
+	CopilotCommand string
+	HTTPClient     *http.Client
+}
+
+// ResolveConfig applies the documented execution precedence without changing
+// persisted Session state. Callers pass the stored Session values separately
+// from one-call command-line overrides.
+func ResolveConfig(sessionName, sessionModel, providerOverride, modelOverride string) (Config, error) {
+	cfg, err := LoadConfig()
+	if err != nil {
+		return Config{}, err
+	}
+	if strings.TrimSpace(sessionName) != "" {
+		cfg.Name = normalize(sessionName)
+	}
+	if strings.TrimSpace(sessionModel) != "" {
+		cfg.Model = sessionModel
+	}
+	if strings.TrimSpace(providerOverride) != "" {
+		cfg.Name = normalize(providerOverride)
+	}
+	if strings.TrimSpace(modelOverride) != "" {
+		cfg.Model = modelOverride
+	}
+	cfg.Command = commandForProvider(cfg)
+	if cfg.Name != "" && cfg.Name != "auto" {
+		applyProviderDefaults(&cfg)
+	}
+	return cfg, nil
+}
+
+func commandForProvider(cfg Config) string {
+	switch normalize(cfg.Name) {
+	case "codex", "codex-cli", "codex_cli", "codexcli":
+		return cfg.CodexCommand
+	case "copilot", "copilot-cli", "copilot_cli", "copilotcli":
+		return cfg.CopilotCommand
+	default:
+		return cfg.Command
+	}
 }
 
 func ConfigFromEnv(name, model string) Config {

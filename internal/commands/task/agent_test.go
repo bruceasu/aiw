@@ -11,6 +11,7 @@ import (
 
 	"aiw/internal/session"
 	"aiw/internal/taskx"
+	"aiw/internal/workflow"
 )
 
 func TestWriteLineageIsReadable(t *testing.T) {
@@ -60,14 +61,24 @@ func TestParseAgentOptions(t *testing.T) {
 	}
 }
 
+func TestParseAgentOptionsAcceptsProviderAndModelOverrides(t *testing.T) {
+	opts, err := parseAgentOptions([]string{"--provider", "copilot", "--model", "gpt-test"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if opts.Provider != "copilot" || opts.Model != "gpt-test" {
+		t.Fatalf("unexpected provider/model overrides: %+v", opts)
+	}
+}
+
 func TestNormalizeIDIsDeterministic(t *testing.T) {
 	if got := normalizeID("Feature/Task 42"); got != "feature-task-42" {
 		t.Fatalf("unexpected normalized ID: %q", got)
 	}
 }
 
-func TestRunTaskAgentRejectsInvalidIDWithoutConfirmation(t *testing.T) {
-	if err := runTaskAgent([]string{"agent", "next", "invalid/id"}); err == nil {
+func TestRunTaskTurnRejectsInvalidIDWithoutConfirmation(t *testing.T) {
+	if err := runTaskAgent([]string{"turn", "invalid/id"}); err == nil {
 		t.Fatal("expected invalid Task ID refusal")
 	}
 }
@@ -123,7 +134,7 @@ func TestValidateTaskBindingsRejectsUnrelatedSession(t *testing.T) {
 	}
 }
 
-func TestMarkTaskRunningPersistsStatus(t *testing.T) {
+func TestStartManagedAttemptPersistsAttemptLease(t *testing.T) {
 	tmp := t.TempDir()
 	old, err := os.Getwd()
 	if err != nil {
@@ -140,15 +151,19 @@ func TestMarkTaskRunningPersistsStatus(t *testing.T) {
 	if err := taskx.WriteTaskMeta(taskx.TaskMetaPath("T-1"), meta); err != nil {
 		t.Fatal(err)
 	}
-	if err := markTaskRunning("T-1"); err != nil {
-		t.Fatal(err)
-	}
-	got, err := taskx.ReadTaskMeta(taskx.TaskMetaPath("T-1"))
+	attemptID, err := startManagedAttempt("T-1", meta)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Status != "RUNNING" {
-		t.Fatalf("got status %q, want RUNNING", got.Status)
+	state, err := workflow.NewStore("").Load("T-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state.WriteLease == nil || state.WriteLease.AttemptID != attemptID {
+		t.Fatalf("expected Attempt write lease, got %#v", state.WriteLease)
+	}
+	if state.LastEventSequence == 0 {
+		t.Fatalf("expected compatibility fallback to record workflow history: %#v", state)
 	}
 }
 
@@ -166,7 +181,7 @@ func TestRecordSessionHandoffPersistsConsumptionAudit(t *testing.T) {
 	if _, err := store.Create("S-1", "S-1", tmp, "codex", "", "instructions"); err != nil {
 		t.Fatal(err)
 	}
-	lineage := agentLineage{TaskID: "T-1", SessionID: "S-1", Handoff: "handoff.md", HandoffHash: "hash", HandoffStatus: "consumed", ParentThread: "parent", ChildThread: "child", ConsumedAt: "2026-09-08T00:00:00Z", ConsumerThread: "child"}
+	lineage := agentLineage{TaskID: "T-1", WorkItemID: "wi-0001", SessionID: "S-1", Handoff: "handoff.md", HandoffHash: "hash", HandoffStatus: "consumed", ParentThread: "parent", ChildThread: "child", ConsumedAt: "2026-09-08T00:00:00Z", ConsumerThread: "child"}
 	if err := recordSessionHandoff(store, "S-1", lineage); err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +189,7 @@ func TestRecordSessionHandoffPersistsConsumptionAudit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if status.Task["handoff_status"] != "consumed" || status.Task["consumer_thread"] != "child" {
+	if status.Task == nil || status.Task.WorkItemID != "wi-0001" || status.Task.HandoffStatus != "consumed" || status.Task.ConsumerThread != "child" {
 		t.Fatalf("unexpected handoff audit: %#v", status.Task)
 	}
 }
@@ -228,17 +243,17 @@ func TestRunTaskAgentReusesAndCreatesTasks(t *testing.T) {
 	if _, err := store.Create("S-existing", "S-existing", tmp, "codex", "", "instructions"); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(filepath.Join(taskx.TaskDir("existing"), "artifacts"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(taskx.RuntimeTaskDir("existing"), "artifacts"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	meta := taskx.TaskMeta{ID: "existing", Status: "TODO", Created: "2026-09-08", Updated: "2026-09-08", Branch: "main", ParentBranch: "main", Worktree: ".", WorkspaceKind: "primary", Delivery: "unmanaged", Session: "S-existing"}
 	if err := taskx.WriteTaskMeta(taskx.TaskMetaPath("existing"), meta); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(taskx.TaskDir("existing"), "artifacts", "handoff.md"), []byte("existing handoff"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(taskx.RuntimeTaskDir("existing"), "artifacts", "handoff.md"), []byte("existing handoff"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := runTaskAgent([]string{"agent", "next", "existing", "--allow-dirty"}); err != nil {
+	if err := runTaskAgent([]string{"turn", "existing", "--allow-dirty"}); err != nil {
 		t.Fatal(err)
 	}
 	lineage, err := readLineage("existing")
@@ -252,30 +267,30 @@ func TestRunTaskAgentReusesAndCreatesTasks(t *testing.T) {
 	if err := os.WriteFile("source-handoff.md", []byte("new handoff"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := runTaskAgent([]string{"agent", "next", "created", "--handoff", "source-handoff.md", "--allow-dirty"}); err != nil {
+	if err := runTaskAgent([]string{"turn", "created", "--handoff", "source-handoff.md", "--allow-dirty"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(taskx.TaskDir("created"), "artifacts", "handoff.md")); err != nil {
+	if _, err := os.Stat(filepath.Join(taskx.RuntimeTaskDir("created"), "artifacts", "handoff.md")); err != nil {
 		t.Fatal(err)
 	}
 	createdMeta, err := taskx.ReadTaskMeta(taskx.TaskMetaPath("created"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if createdMeta.Status != "RUNNING" {
-		t.Fatalf("created Task status = %q, want RUNNING", createdMeta.Status)
+	if createdMeta.Status != "DRAFT" {
+		t.Fatalf("created Task status = %q, want DRAFT", createdMeta.Status)
 	}
 
-	if err := os.MkdirAll(filepath.Join(taskx.TaskDir("partial"), "artifacts"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(taskx.RuntimeTaskDir("partial"), "artifacts"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := taskx.WriteTaskMeta(taskx.TaskMetaPath("partial"), taskx.TaskMeta{ID: "partial"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(taskx.TaskDir("partial"), "artifacts", "handoff.md"), []byte("partial handoff"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(taskx.RuntimeTaskDir("partial"), "artifacts", "handoff.md"), []byte("partial handoff"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := runTaskAgent([]string{"agent", "next", "partial", "--allow-dirty"}); err != nil {
+	if err := runTaskAgent([]string{"turn", "partial", "--allow-dirty"}); err != nil {
 		t.Fatal(err)
 	}
 	partialMeta, err := taskx.ReadTaskMeta(taskx.TaskMetaPath("partial"))
@@ -292,16 +307,16 @@ func TestRunTaskAgentReusesAndCreatesTasks(t *testing.T) {
 	if err := taskx.WriteTaskMeta(taskx.TaskMetaPath("owner"), taskx.TaskMeta{ID: "owner", Session: "S-conflict", Worktree: ".wt/owner"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(filepath.Join(taskx.TaskDir("conflict"), "artifacts"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(taskx.RuntimeTaskDir("conflict"), "artifacts"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := taskx.WriteTaskMeta(taskx.TaskMetaPath("conflict"), taskx.TaskMeta{ID: "conflict", Session: "S-conflict", Worktree: "."}); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(taskx.TaskDir("conflict"), "artifacts", "handoff.md"), []byte("conflict handoff"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(taskx.RuntimeTaskDir("conflict"), "artifacts", "handoff.md"), []byte("conflict handoff"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := runTaskAgent([]string{"agent", "next", "conflict", "--allow-dirty"}); err == nil {
+	if err := runTaskAgent([]string{"turn", "conflict", "--allow-dirty"}); err == nil {
 		t.Fatal("expected unrelated Session conflict")
 	}
 
@@ -311,16 +326,16 @@ func TestRunTaskAgentReusesAndCreatesTasks(t *testing.T) {
 	if _, err := store.Transition("S-running", session.StateRunning); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(filepath.Join(taskx.TaskDir("running"), "artifacts"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(taskx.RuntimeTaskDir("running"), "artifacts"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := taskx.WriteTaskMeta(taskx.TaskMetaPath("running"), taskx.TaskMeta{ID: "running", Session: "S-running", Worktree: ".", WorkspaceKind: "primary"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(taskx.TaskDir("running"), "artifacts", "handoff.md"), []byte("running handoff"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(taskx.RuntimeTaskDir("running"), "artifacts", "handoff.md"), []byte("running handoff"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := runTaskAgent([]string{"agent", "next", "running", "--allow-dirty"}); err == nil {
+	if err := runTaskAgent([]string{"turn", "running", "--allow-dirty"}); err == nil {
 		t.Fatal("expected running Session refusal")
 	}
 	failing := "#!/bin/sh\nexit 1\n"
@@ -330,7 +345,7 @@ func TestRunTaskAgentReusesAndCreatesTasks(t *testing.T) {
 	if err := os.WriteFile(codexPath, []byte(failing), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := runTaskAgent([]string{"agent", "next", "failed-create", "--handoff", "source-handoff.md", "--allow-dirty"}); err == nil {
+	if err := runTaskAgent([]string{"turn", "failed-create", "--handoff", "source-handoff.md", "--allow-dirty"}); err == nil {
 		t.Fatal("expected failed Thread startup")
 	}
 	if _, err := os.Stat(taskx.TaskDir("failed-create")); !os.IsNotExist(err) {

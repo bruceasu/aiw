@@ -16,6 +16,39 @@ func TestParseInitOptionsRequiresPromptsWhenUsingTemplate(t *testing.T) {
 	}
 }
 
+func TestInitWorkspaceRunsOfficialSetupAfterBaseInitialization(t *testing.T) {
+	previous, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(previous) })
+
+	previousSetup := runOfficialSetupFn
+	runOfficialSetupFn = func(baseAgentsCreated bool) {
+		if !baseAgentsCreated {
+			t.Fatal("expected setup to receive base AGENTS creation state")
+		}
+		if _, err := os.Stat(taskx.ChangesDir); err != nil {
+			t.Fatalf("base initialization did not complete before setup: %v", err)
+		}
+	}
+	t.Cleanup(func() { runOfficialSetupFn = previousSetup })
+
+	if err := initWorkspace(InitOptions{}); err != nil {
+		t.Fatalf("initialize workspace: %v", err)
+	}
+}
+
+func TestParseInitOptionsAcceptsNoSetup(t *testing.T) {
+	opts, err := parseInitOptions([]string{"--no-setup"})
+	if err != nil || !opts.SkipSetup {
+		t.Fatalf("unexpected no-setup options: %+v (%v)", opts, err)
+	}
+}
+
 func TestParsePromptOptionsRejectsListWithMerge(t *testing.T) {
 	_, err := parsePromptOptions([]string{"list", "--merge"})
 	if err == nil {
@@ -34,9 +67,35 @@ func TestParseArchiveOptionsFinalizeEnablesAllFlags(t *testing.T) {
 }
 
 func TestParseNewArgsAllowsExplicitDirtyWorkspace(t *testing.T) {
-	id, allowDirty, err := parseNewArgs([]string{"TASK-1", "--allow-dirty"})
-	if err != nil || id != "TASK-1" || !allowDirty {
-		t.Fatalf("unexpected parse result: id=%q allowDirty=%v err=%v", id, allowDirty, err)
+	id, allowUnrelatedDirty, err := parseNewArgs([]string{"TASK-1", "--allow-unrelated-dirty"})
+	if err != nil || id != "TASK-1" || !allowUnrelatedDirty {
+		t.Fatalf("unexpected parse result: id=%q allowUnrelatedDirty=%v err=%v", id, allowUnrelatedDirty, err)
+	}
+}
+
+func TestParseNewArgsRejectsRetiredDirtyBypass(t *testing.T) {
+	_, _, err := parseNewArgs([]string{"TASK-1", "--allow-dirty"})
+	if err == nil {
+		t.Fatal("expected retired dirty bypass to be rejected")
+	}
+}
+
+func TestDispatchTopLevelUsesCanonicalAgentCommands(t *testing.T) {
+	for _, name := range []string{"turn", "chat"} {
+		err := DispatchTopLevel(name, nil)
+		if err == nil || !strings.Contains(err.Error(), "aiw turn|chat") {
+			t.Fatalf("DispatchTopLevel(%q) error = %v, want canonical usage", name, err)
+		}
+	}
+	if err := DispatchTopLevel("agent", []string{"next"}); err == nil {
+		t.Fatal("expected retired task agent command to be rejected")
+	}
+}
+
+func TestParsePromoteArgsAllowsUnrelatedDirtyByDefault(t *testing.T) {
+	requirementID, taskID, allowUnrelatedDirty, err := parsePromoteArgs([]string{"requirement", "--task", "TASK-1"})
+	if err != nil || requirementID != "requirement" || taskID != "TASK-1" || !allowUnrelatedDirty {
+		t.Fatalf("unexpected promote arguments: requirement=%q task=%q allow=%v err=%v", requirementID, taskID, allowUnrelatedDirty, err)
 	}
 }
 

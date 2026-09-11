@@ -1,0 +1,65 @@
+[messages]
+type = "选择提交类型"
+scope = "范围（可选）"
+custom_scope = "输入自定义范围"
+subject = "提交标题"
+body = "正文（可选）"
+breaking = "破坏性变更（可选）"
+footer_prefixes = "选择 issue 前缀（可选）"
+custom_footer_prefix = "输入自定义 issue 前缀"
+footer = "关联 issue（可选，例如 #31）"
+confirm_commit = "确认提交"
+select_type = "输入类型编号或名称"
+select_prefix = "输入前缀编号或名称"
+subject_required = "标题不能为空"
+subject_too_long = "标题过长（最大 %d）"
+invalid_type = "无效类型，请重试"
+invalid_selection = "无效选择，请重试"
+preview = "提交信息预览"
+action = "操作"
+candidate = "选择 AI 候选项"
+regenerate = "重新生成候选项"
+commit = "提交此信息"
+edit = "编辑字段"
+cancel = "取消"
+aborted = "已取消"
+editing = "编辑字段（留空则保留当前值）"
+done_editing = "完成编辑"
+empty_scope = "（空）无范围"
+custom_scope_option = "（自定义）输入范围"
+footer_edit = "编辑 footer？[y/N]"
+editor_hint = "（输入 /edit 或 Ctrl+E 使用编辑器）"
+
+[[types]]
+value = "feat"
+name = "新增功能"
+[[types]]
+value = "fix"
+name = "修复缺陷"
+[[types]]
+value = "docs"
+name = "仅文档变更"
+[[types]]
+value = "style"
+name = "仅代码风格"
+[[types]]
+value = "refactor"
+name = "代码重构"
+[[types]]
+value = "perf"
+name = "性能优化"
+[[types]]
+value = "test"
+name = "测试"
+[[types]]
+value = "build"
+name = "构建系统或依赖"
+[[types]]
+value = "ci"
+name = "CI 配置"
+[[types]]
+value = "revert"
+name = "回退提交"
+[[types]]
+value = "chore"
+name = "其他维护"

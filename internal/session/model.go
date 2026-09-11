@@ -25,7 +25,7 @@ type Status struct {
 	Instructions  InstructionsInfo       `json:"instructions"`
 	Execution     ExecutionInfo          `json:"execution"`
 	Result        ResultInfo             `json:"result"`
-	Task          map[string]interface{} `json:"task,omitempty"`
+	Task          *ManagedExecutionRef   `json:"task,omitempty"`
 	Extra         map[string]interface{} `json:"-"`
 }
 
@@ -67,6 +67,27 @@ type ResultInfo struct {
 	Status          string `json:"status"`
 	FinalOutputFile string `json:"final_output_file,omitempty"`
 	ErrorMessage    string `json:"error_message,omitempty"`
+}
+
+// ManagedExecutionRef links a Session to a Workflow Core Attempt. It is
+// optional so standalone Sessions retain their existing lifecycle and JSON
+// shape. Fields retain the former task map's JSON names for read compatibility.
+type ManagedExecutionRef struct {
+	SchemaVersion    int    `json:"schema_version,omitempty"`
+	TaskID           string `json:"task_id"`
+	WorkItemID       string `json:"work_item_id,omitempty"`
+	AttemptID        string `json:"attempt_id,omitempty"`
+	Handoff          string `json:"handoff,omitempty"`
+	HandoffHash      string `json:"handoff_hash,omitempty"`
+	HandoffStatus    string `json:"handoff_status,omitempty"`
+	HandoffCreatedAt string `json:"handoff_created_at,omitempty"`
+	ConsumedHash     string `json:"consumed_hash,omitempty"`
+	ParentThread     string `json:"parent_thread,omitempty"`
+	ChildThread      string `json:"child_thread,omitempty"`
+	ConsumedAt       string `json:"consumed_at,omitempty"`
+	ConsumerThread   string `json:"consumer_thread,omitempty"`
+	ParentState      string `json:"parent_state,omitempty"`
+	ChildState       string `json:"child_state,omitempty"`
 }
 
 type TurnRequest = ai.Request

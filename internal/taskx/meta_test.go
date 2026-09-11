@@ -8,7 +8,7 @@ import (
 
 func TestResolveTaskMetaPath_PrefersTaskToml(t *testing.T) {
 	id := "resolve-prefer-primary"
-	dir := TaskDir(id)
+	dir := RuntimeTaskDir(id)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +31,7 @@ func TestResolveTaskMetaPath_PrefersTaskToml(t *testing.T) {
 
 func TestResolveTaskMetaPath_FallsBackToLegacy(t *testing.T) {
 	id := "resolve-fallback-legacy"
-	dir := TaskDir(id)
+	dir := RuntimeTaskDir(id)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -70,11 +70,11 @@ func TestReadTaskMeta_ParsesSpecsAndTags(t *testing.T) {
 func TestWriteTaskMeta_PreservesParentBranch(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "task.toml")
 	meta := TaskMeta{
-		ID:           "sample",
-		Status:       "ACTIVE",
-		ParentBranch: "main",
+		ID:            "sample",
+		Status:        "ACTIVE",
+		ParentBranch:  "main",
 		WorkspaceKind: "isolated",
-		Delivery: "pending",
+		Delivery:      "pending",
 	}
 
 	if err := WriteTaskMeta(path, meta); err != nil {

@@ -89,6 +89,21 @@ class GithubPluginTests(unittest.TestCase):
         with self.assertRaises(SystemExit):
             aiw_github.update_issue(args, "token")
 
+    def test_get_issue_reads_current_remote_state(self):
+        parser = aiw_github.build_parser()
+        args = parser.parse_args(["get-issue", "owner/repo", "12"])
+        captured = {}
+
+        def fake_request(method, path, token, params=None, json_body=None):
+            captured.update(method=method, path=path, token=token)
+            return {"number": 12, "html_url": "url", "state": "open", "title": "Current"}
+
+        with mock.patch.object(aiw_github, "request", side_effect=fake_request), \
+                mock.patch.object(aiw_github, "emit_issue_panel"):
+            aiw_github.get_issue(args, "token")
+
+        self.assertEqual(captured, {"method": "GET", "path": "/repos/owner/repo/issues/12", "token": "token"})
+
     def test_discover_repo_supports_origin_remote(self):
         outputs = iter(["C:/repo\n", "git@github.com:owner/repo.git\n"])
         with mock.patch.object(aiw_github, "run_git", side_effect=lambda args: type("Result", (), {"stdout": next(outputs)})()):

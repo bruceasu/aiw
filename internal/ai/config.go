@@ -24,16 +24,7 @@ func LoadConfig() (Config, error) {
 // ConfigFor resolves a named provider using global file configuration and
 // environment overrides while preserving an explicit model from the caller.
 func ConfigFor(name, model string) (Config, error) {
-	cfg, err := LoadConfig()
-	if err != nil {
-		return Config{}, err
-	}
-	cfg.Name = name
-	if model != "" {
-		cfg.Model = model
-	}
-	applyProviderDefaults(&cfg)
-	return cfg, nil
+	return ResolveConfig("", "", name, model)
 }
 
 func configPaths() []string {
@@ -133,12 +124,8 @@ func configFromValues(values map[string]string) Config {
 		apiKey = firstValue(values, "ai.llamacpp_api_key", "cz.llamacpp_api_key", "ai.api_key", "cz.api_key")
 	}
 	command := firstValue(values, "ai.command", "cz.command")
-	if name == "codex" || name == "codex-cli" {
-		command = firstValue(values, "ai.codex_command", "cz.codex_command", "ai.command", "cz.command")
-	}
-	if name == "copilot" || name == "copilot-cli" {
-		command = firstValue(values, "ai.copilot_command", "cz.copilot_command", "ai.command", "cz.command")
-	}
+	codexCommand := firstValue(values, "ai.codex_command", "cz.codex_command", "ai.command", "cz.command")
+	copilotCommand := firstValue(values, "ai.copilot_command", "cz.copilot_command", "ai.command", "cz.command")
 
 	modelEnv, baseEnv, keyEnv := providerEnvNames(name)
 	if modelEnv != "" {
@@ -169,7 +156,8 @@ func configFromValues(values map[string]string) Config {
 		apiKey = v
 	}
 
-	cfg := Config{Name: name, Model: model, APIKey: apiKey, BaseURL: baseURL, Command: command}
+	cfg := Config{Name: name, Model: model, APIKey: apiKey, BaseURL: baseURL, Command: command, CodexCommand: codexCommand, CopilotCommand: copilotCommand}
+	cfg.Command = commandForProvider(cfg)
 	if name != "" && name != "auto" {
 		applyProviderDefaults(&cfg)
 	}

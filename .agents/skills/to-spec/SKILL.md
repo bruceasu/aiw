@@ -21,14 +21,32 @@ specification or publish externally unless the user explicitly asks.
 
    The AIW Task and OpenSpec change are one managed unit. Before continuing,
    establish and record the same normalized Task ID in both locations:
-   `openspec/changes/<task-id>/task.toml` and the matching OpenSpec change
-   directory. The `task.toml` must be the AIW lifecycle record, not an
-   OpenSpec-only substitute, and must retain the Task's status, branch,
+  `.ai/tasks/<task-id>/task.toml` and the matching OpenSpec change directory.
+  The `task.toml` must be the AIW lifecycle record, not an OpenSpec-owned
+  specification artifact, and must retain the Task's status, branch,
    worktree, parent branch, and Session fields when those fields exist. Do not proceed with
    an untracked OpenSpec directory or an AIW Task that has no matching change.
 
    Then resolve the matching OpenSpec change, explore only the relevant repo
-   area, use the project's domain glossary, and respect applicable ADRs.
+   area, use the project's domain glossary, and respect applicable ADRs. If
+   business terminology, entity relationships, or domain boundaries are still
+   unsettled, load `domain-modeling` in engineering mode before drafting the
+   OpenSpec artifacts.
+
+   Assess design readiness before drafting the specification. Automatically
+   load `fd-workflow` in managed AIW/OpenSpec mode when the available context
+   leaves material design work: multiple viable approaches; an unresolved
+   system boundary, data model, API, permission, migration, compatibility, or
+   concurrency decision; or a design-level `%% NEEDS_INPUT`. Use its findings
+   only to update this change's OpenSpec artifacts and report its proposed
+   Gates, Evidence, and next action. Do not create standalone FD files or a
+   second lifecycle.
+
+   For a narrow, reversible change whose design is already explicit, record
+   `FD_NOT_REQUIRED` with a short rationale in `design.md`; do not load FD just
+   because this is a Task. Record `FD_APPLIED`, `FD_NOT_REQUIRED`, or `BLOCKED`
+   in a `## Design Readiness` section. `BLOCKED` must retain its `%%` question
+   and prevents a handoff to implementation.
 
 2. Sketch out the seams at which you're going to test the feature. Existing seams should be preferred to new ones. Use the highest seam possible. If new seams are needed, propose them at the highest point you can. The fewer seams across the codebase, the better - the ideal number is one.
 
@@ -38,7 +56,6 @@ Check with the user that these seams match their expectations.
    A successful `to-spec` run must leave this minimum artifact set in the
    matching change directory:
 
-   - `task.toml` — AIW Task identity and lifecycle mapping;
    - `proposal.md` — motivation, scope, and user-facing solution;
    - `design.md` — durable implementation and architectural decisions;
    - `specs/<capability>/spec.md` — normative requirements and scenarios for
@@ -46,13 +63,29 @@ Check with the user that these seams match their expectations.
    - `tasks.md` — ordered implementation checklist, including TODO and
      Verification sections or equivalent records.
 
+   The AIW lifecycle record and runtime artifacts belong under
+   `.ai/tasks/<task-id>/`, including `task.toml`, handoff documents, and
+   lineage data. They are not OpenSpec change artifacts.
+
    Put motivation and scope in `proposal.md`, decisions in `design.md`,
    normative requirements in capability specs, and follow-up work in
    `tasks.md`. Do not publish to GitHub or GitLab as part of this Skill.
 
+   Whenever this Skill creates or materially updates `tasks.md`, run the
+   managed Task synchronization command `aiw task workflow sync <task-id>`
+   before reporting completion. This creates or updates the Workflow Core Work
+   Item mapping while preserving OpenSpec-owned checklist prose; it MUST NOT
+   create an Attempt, claim a lease, advance, or complete work. Treat a failed
+   synchronization as a blocking Gate: report the error and do not call the
+   change ready for `/implement`. For an existing checklist that this Skill
+   leaves unchanged, synchronize it when its mapping is absent before handoff
+   so an older Task cannot defer mapping creation until execution or archive.
+
    Before reporting completion, verify statically that all required files
    exist, that the change directory name, `task.toml.id`, and AIW Task ID are
-   identical, and that every checklist item is actionable by `/implement`.
+   identical, that Design Readiness is not `BLOCKED`, that the Workflow Core
+   Work Item mapping is synchronized, and that every checklist item is
+   actionable by `/implement`.
    If AIW or the automatic OpenSpec backend cannot create or link these
    records, stop and report the missing capability; do not create a parallel
    `.scratch` or ad-hoc task record.
@@ -63,10 +96,30 @@ Check with the user that these seams match their expectations.
    `/implement` will resolve; do not leave implementation work only in the
    proposal or design.
 
-   Once the required artifacts and ID checks pass, commit the specification
-   artifacts on the current branch before handing the Task to `/implement`.
-   The later AIW worktree must be created from that commit so it inherits the
-   artifacts directly; never ask the implementer to copy them manually.
+   Once the required artifacts and ID checks pass, report planning Evidence and
+   unresolved Gates before handing the Task to `/implement`. Do not commit or
+   create a worktree unless the user separately authorizes Git delivery or
+   isolation.
+
+## Artifact generation contract
+
+Use the active `spec-driven` schema as the source of truth. When the OpenSpec
+CLI is available, obtain artifact instructions before writing and run its
+validator after writing. When it is unavailable, use the repository's shared
+AIW renderer/templates and still produce the same structure:
+
+- `proposal.md` with `## Why` and `## What Changes`;
+- `design.md` with the design sections required by the schema;
+- delta specs with `## ADDED/MODIFIED/REMOVED/RENAMED Requirements`,
+  `### Requirement:`, normative `MUST`/`SHALL` text, and `#### Scenario:` blocks;
+- `tasks.md` with `- [ ] X.Y` numbered checklist items.
+
+Do not report the change as ready when local structural validation fails. The
+CLI is optional for availability, but schema conformance is not optional.
+
+For a promoted Requirement, use the managed adapter `aiw requirement
+prepare-spec <requirement-id>` so to-spec and promotion share the same renderer
+and preservation behavior. Do not maintain a second template in this Skill.
 
 <spec-template>
 

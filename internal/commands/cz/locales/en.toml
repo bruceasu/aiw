@@ -1,0 +1,65 @@
+[messages]
+type = "Select commit type"
+scope = "Scope (optional)"
+custom_scope = "Enter custom scope"
+subject = "Subject"
+body = "Body (optional)"
+breaking = "Breaking changes (optional)"
+footer_prefixes = "Select issue prefix (optional)"
+custom_footer_prefix = "Enter custom issue prefix"
+footer = "Related issue (optional, e.g. #31)"
+confirm_commit = "Commit this message"
+select_type = "Enter type number or value"
+select_prefix = "Enter prefix number or value"
+subject_required = "subject is required"
+subject_too_long = "subject is too long (max %d)"
+invalid_type = "invalid type; try again"
+invalid_selection = "invalid selection; try again"
+preview = "Commit message preview"
+action = "Action"
+candidate = "Select AI candidate"
+regenerate = "Regenerate candidate list"
+commit = "Commit this message"
+edit = "Edit fields"
+cancel = "Cancel"
+aborted = "aborted"
+editing = "Edit fields (leave empty to keep current)"
+done_editing = "Done editing"
+empty_scope = "(empty) no scope"
+custom_scope_option = "(custom) enter custom scope"
+footer_edit = "Edit footer? [y/N]"
+editor_hint = "(use /edit or Ctrl+E for editor)"
+
+[[types]]
+value = "feat"
+name = "A new feature"
+[[types]]
+value = "fix"
+name = "A bug fix"
+[[types]]
+value = "docs"
+name = "Documentation only"
+[[types]]
+value = "style"
+name = "Code style only"
+[[types]]
+value = "refactor"
+name = "Code restructuring"
+[[types]]
+value = "perf"
+name = "Performance improvement"
+[[types]]
+value = "test"
+name = "Tests"
+[[types]]
+value = "build"
+name = "Build system or dependencies"
+[[types]]
+value = "ci"
+name = "CI configuration"
+[[types]]
+value = "revert"
+name = "Revert a commit"
+[[types]]
+value = "chore"
+name = "Other maintenance"

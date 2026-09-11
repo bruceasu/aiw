@@ -18,6 +18,10 @@ type geminiProvider struct {
 	httpClient *http.Client
 }
 
+func (p geminiProvider) Interactive(context.Context, Request) (Response, error) {
+	return unsupportedInteractiveProvider("gemini")
+}
+
 func NewGeminiProvider(cfg Config) Provider {
 	baseURL := cfg.BaseURL
 	if baseURL == "" {

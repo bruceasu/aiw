@@ -39,7 +39,7 @@ func (ui LineUI) DraftFromWizard(cfg Config) (Draft, error) {
 		if d.Subject != "" {
 			break
 		}
-		fmt.Fprintln(os.Stderr, "subject is required")
+		fmt.Fprintln(os.Stderr, cfg.Messages.SubjectRequired)
 	}
 
 	if d.Body, err = ui.PromptMultilineEditorFn(cfg.Messages.Body, cfg, ""); err != nil {
@@ -69,7 +69,7 @@ func (ui LineUI) DraftFromLLM(cfg Config) (Draft, error) {
 func (ui LineUI) ReviewAndCommit(draft Draft, cfg Config, commitFn func(string) error) error {
 	for {
 		msg := BuildCommitMessage(draft)
-		fmt.Printf("\n--- Commit message preview ---\n%s\n--------------------------------\n", msg)
+		fmt.Printf("\n--- %s ---\n%s\n--------------------------------\n", cfg.Messages.Preview, msg)
 		in := strings.ToLower(strings.TrimSpace(ui.PromptLineFn(cfg.Messages.ConfirmCommit + " [y(commit), e(edit), n(cancel)] ")))
 		switch in {
 		case "y", "yes", "":
@@ -77,16 +77,16 @@ func (ui LineUI) ReviewAndCommit(draft Draft, cfg Config, commitFn func(string) 
 		case "e", "edit":
 			draft = ui.editDraftWithLineUI(draft, cfg)
 		case "n", "no":
-			fmt.Fprintln(os.Stderr, "aborted")
+			fmt.Fprintln(os.Stderr, cfg.Messages.Aborted)
 			return nil
 		default:
-			fmt.Fprintln(os.Stderr, "invalid input")
+			fmt.Fprintln(os.Stderr, cfg.Messages.InvalidSelection)
 		}
 	}
 }
 
 func (ui LineUI) editDraftWithLineUI(d Draft, cfg Config) Draft {
-	fmt.Println("Editing fields (leave empty to keep current):")
+	fmt.Println(cfg.Messages.Editing)
 	if t, err := PromptType(cfg, ui.PromptLineFn); err == nil && t != "" {
 		d.Type = t
 	}
@@ -101,15 +101,15 @@ func (ui LineUI) editDraftWithLineUI(d Draft, cfg Config) Draft {
 	if subject != "" {
 		d.Subject = subject
 	}
-	if s, err := ui.PromptMultilineEditorFn("Body: ", cfg, d.Body); err == nil {
+	if s, err := ui.PromptMultilineEditorFn(cfg.Messages.Body+": ", cfg, d.Body); err == nil {
 		d.Body = NormalizeMultiline(s)
 	}
-	if s, err := ui.PromptMultilineEditorFn("Breaking: ", cfg, d.Breaking); err == nil {
+	if s, err := ui.PromptMultilineEditorFn(cfg.Messages.Breaking+": ", cfg, d.Breaking); err == nil {
 		d.Breaking = NormalizeMultiline(s)
 	}
-	if in := strings.TrimSpace(ui.PromptLineFn("Edit footer? [y/N] ")); strings.EqualFold(in, "y") {
+	if in := strings.TrimSpace(ui.PromptLineFn(cfg.Messages.FooterEdit+" ")); strings.EqualFold(in, "y") {
 		prefix := PromptFooterPrefix(cfg, ui.PromptLineFn)
-		if s, err := ui.PromptMultilineEditorFn("Footer: ", cfg, d.Footer); err == nil {
+		if s, err := ui.PromptMultilineEditorFn(cfg.Messages.Footer+": ", cfg, d.Footer); err == nil {
 			footer := strings.TrimSpace(s)
 			if footer != "" && prefix != "" && !strings.HasPrefix(strings.ToLower(footer), strings.ToLower(prefix)) {
 				footer = prefix + " " + footer
@@ -123,12 +123,12 @@ func (ui LineUI) editDraftWithLineUI(d Draft, cfg Config) Draft {
 func PromptType(cfg Config, promptFn func(string) string) (string, error) {
 	fmt.Println(cfg.Messages.Type)
 	for i, t := range cfg.Types {
-		fmt.Printf("  %2d) %s\n", i+1, t.Name)
+		fmt.Printf("  %2d) %-10s %s\n", i+1, t.Value, t.Name)
 	}
 	for {
-		in := strings.TrimSpace(promptFn("Type # or value: "))
+		in := strings.TrimSpace(promptFn(cfg.Messages.SelectType+": "))
 		if in == "" {
-			return "", errors.New("type is required")
+			return "", errors.New(cfg.Messages.SubjectRequired)
 		}
 		if idx, err := strconv.Atoi(in); err == nil {
 			if idx >= 1 && idx <= len(cfg.Types) {
@@ -140,7 +140,7 @@ func PromptType(cfg Config, promptFn func(string) string) (string, error) {
 				return in, nil
 			}
 		}
-		fmt.Fprintln(os.Stderr, "invalid type, try again")
+		fmt.Fprintln(os.Stderr, cfg.Messages.InvalidType)
 	}
 }
 
@@ -177,7 +177,11 @@ func EditInExternalEditor(cfg Config, initial string) (string, error) {
 	if strings.TrimSpace(editor) == "" {
 		return "", errors.New("no editor available")
 	}
-	tmpDir, err := os.MkdirTemp("", "cz-edit-*")
+	workspaceTmpDir, err := workspaceTempDir()
+	if err != nil {
+		return "", err
+	}
+	tmpDir, err := os.MkdirTemp(workspaceTmpDir, "cz-edit-*")
 	if err != nil {
 		return "", err
 	}
@@ -289,10 +293,10 @@ func PromptFooterPrefix(cfg Config, promptFn func(string) string) string {
 	fmt.Println(cfg.Messages.FooterPrefixes)
 	options := []string{"#", "refs", "closes", "custom", "skip"}
 	for i, o := range options {
-		fmt.Printf("  %2d) %s\n", i+1, o)
+		fmt.Printf("  %2d) %-10s\n", i+1, o)
 	}
 	for {
-		in := strings.TrimSpace(promptFn("Choose prefix # or value: "))
+		in := strings.TrimSpace(promptFn(cfg.Messages.SelectPrefix+": "))
 		if in == "" {
 			return ""
 		}
@@ -319,7 +323,7 @@ func PromptFooterPrefix(cfg Config, promptFn func(string) string) string {
 				return o
 			}
 		}
-		fmt.Fprintln(os.Stderr, "invalid selection; try again")
+		fmt.Fprintln(os.Stderr, cfg.Messages.InvalidSelection)
 	}
 }
 

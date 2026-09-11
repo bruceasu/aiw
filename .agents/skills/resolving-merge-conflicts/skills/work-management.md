@@ -8,10 +8,17 @@ Use this contract for engineering Skills in an AIW/OpenSpec repository.
   and external mappings.
 - OpenSpec owns proposal, design, capability specs, and the detailed
   implementation checklist in `tasks.md`.
+- Workflow Core owns Work Items, Attempts, Gates, Evidence, write leases, and
+  derived execution/validation/readiness state in `.ai/tasks/<task-id>/`.
 - GitHub and GitLab are optional projections used only on explicit request.
 
 Do not create a second task tracker or let OpenSpec lifecycle state override the
 resolved AIW Task.
+
+Do not treat `task.toml.status` as an independently writable execution source.
+Request a Workflow Core transition through the managed Task context and report
+its resulting summary. OpenSpec checklist prose is human-owned; generated
+Workflow summaries and markers are Core-owned protected regions.
 
 ## Discover Commands
 
@@ -58,8 +65,8 @@ aiw new <task-id> --backend auto
 ```
 
 This creates the AIW lifecycle record and delegates proposal/spec artifact
-creation to OpenSpec when available. The resulting change MUST contain
-`openspec/changes/<task-id>/task.toml` with the Task ID, status, branch,
+creation to OpenSpec when available. The resulting runtime record MUST be stored
+at `.ai/tasks/<task-id>/task.toml` with the Task ID, status, branch,
 worktree, `parent_branch`, and Session mapping.
 
 Do not use `openspec new change <task-id>` directly for a managed change. That
@@ -74,7 +81,9 @@ completion workflow until the Task and `task.toml` have been reconciled.
 
 ## Workspace Rules
 
-- Work in the primary Git checkout and current branch by default.
+- Work in the primary Git checkout and current branch for ordinary manual work.
+  Automated Task execution uses an isolated worktree by default; use the
+  documented explicit primary-workspace opt-out only when authorized.
 - A Task lifecycle does not imply a feature branch or linked worktree.
 - Use isolation only for parallel writes, conflicting work, long-running work,
   disposable experiments, or an explicit user request. State the reason before
@@ -128,7 +137,7 @@ been cleaned up. A cancelled discarded Task may archive with its reason.
 
 ## Sub-Agents
 
-- At most two sub-agents may run concurrently.
+
 - Use them only for bounded static analysis, code location, or independent
   implementation fragments.
 - Sub-agents must not run tests, builds, network calls, permission escalation,

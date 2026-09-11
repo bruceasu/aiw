@@ -21,6 +21,10 @@ type openAIResponsesProvider struct {
 	client  *openai.Client
 }
 
+func (p openAIResponsesProvider) Interactive(context.Context, Request) (Response, error) {
+	return unsupportedInteractiveProvider("openai")
+}
+
 func NewOpenAIResponsesProvider(cfg Config) Provider {
 	return openAIResponsesProvider{apiKey: cfg.APIKey, baseURL: cfg.BaseURL, model: cfg.Model}
 }

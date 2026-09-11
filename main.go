@@ -6,10 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	flowcmd "aiw/internal/commands/flow"
-	help "aiw/internal/commands/help"
-	taskcmd "aiw/internal/commands/task"
+	completioncmd "aiw/internal/commands/completion"
+	askcmd "aiw/internal/commands/ask"
 	czcmd "aiw/internal/commands/cz"
+	help "aiw/internal/commands/help"
+	sessioncmd "aiw/internal/commands/session"
+	taskcmd "aiw/internal/commands/task"
 
 	plug "aiw/internal/plugin"
 )
@@ -19,7 +21,6 @@ const (
 	changesDir    = "openspec/changes"
 	specsDir      = "openspec/specs"
 	archiveDir    = "openspec/archive"
-	registryFile  = "openspec/registry.json"
 	worktreeDir   = ".wt"
 	gitignoreFile = ".gitignore"
 	promptsDir    = "docs/agent-templates"
@@ -61,18 +62,26 @@ func main() {
 		err = taskcmd.DispatchTopLevel("decision", os.Args[2:])
 	case "spec":
 		err = taskcmd.DispatchTopLevel("spec", os.Args[2:])
-	case "registry":
-		err = taskcmd.DispatchTopLevel("registry", os.Args[2:])
+	case "requirement":
+		err = taskcmd.DispatchTopLevel("requirement", os.Args[2:])
 	case "prompts":
 		err = taskcmd.DispatchTopLevel("prompts", os.Args[2:])
+	case "turn", "chat":
+		err = taskcmd.DispatchTopLevel(os.Args[1], os.Args[2:])
+	case "workflow", "workspace":
+		err = taskcmd.DispatchTopLevel(os.Args[1], os.Args[2:])
+	case "completion":
+		err = completioncmd.Dispatch(os.Args[2:])
+	case "ask":
+		err = askcmd.Dispatch(os.Args[2:])
 	case "task":
 		if len(os.Args) < 3 {
-			err = fmt.Errorf("usage: aiw task agent <next|status> <task-id>")
+			err = taskcmd.DispatchTopLevel("help", nil)
 		} else {
 			err = taskcmd.DispatchTopLevel(os.Args[2], os.Args[3:])
 		}
-	case "flow":
-		err = flowcmd.Dispatch(os.Args[2:])
+	case "session":
+		err = sessioncmd.Dispatch(os.Args[2:])
 	case "cz":
 		err = czcmd.Dispatch(os.Args[2:])
 	default:

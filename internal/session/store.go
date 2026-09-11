@@ -10,13 +10,15 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"aiw/internal/repo"
 )
 
 type Store struct{ Root string }
 
 func NewStore(root string) *Store {
 	if root == "" {
-		root = ".ai"
+		root = filepath.Join(repo.Root(), ".ai")
 	}
 	return &Store{Root: root}
 }

@@ -29,7 +29,7 @@
 - [x] `research`
 - [x] `resolving-merge-conflicts`
 - [x] `resume-ext`
-- [x] `setup-matt-pocock-skills`
+- [x] `setup-project`
 - [x] `tdd`
 - [x] `teach`
 - [x] `to-spec`
@@ -1591,7 +1591,7 @@ Standards smell 仍然必须是判断性建议，不能仅因命中 smell 就标
 
 ### 当前评价
 
-质量约为 8.5/10。当前版本在参考版本基础上正确加入了 AIW Task、worktree、Session、OpenSpec change 和 `aiw task agent next` 约束，已经适合本项目的跨 Session 工程协作。主要还需要补充 handoff 文档的结构、完成校验、状态边界和与自动完成闭环的关系。
+质量约为 8.5/10。当前版本在参考版本基础上正确加入了 AIW Task、worktree、Session、OpenSpec change 和 `aiw turn` 约束，已经适合本项目的跨 Session 工程协作。主要还需要补充 handoff 文档的结构、完成校验、状态边界和与自动完成闭环的关系。
 
 ### 参考版本中值得保留的做法
 
@@ -1605,7 +1605,7 @@ Standards smell 仍然必须是判断性建议，不能仅因命中 smell 就标
 
 - 已要求先解析 AIW Task、worktree、Session 和 matching OpenSpec change。
 - 优先使用 AIW Session artifact location，避免临时目录成为 canonical work。
-- 只有用户明确要求交接执行时才调用 `aiw task agent next`，不自动创建 Thread。
+- 只有用户明确要求交接执行时才调用 `aiw turn`，不自动创建 Thread。
 - 已明确不重复 OpenSpec 和其他权威工件。
 - 已保留敏感信息脱敏要求。
 - 已将 handoff 与 Task/worktree/lease/lineage 绑定，避免新 agent 在错误目录继续工作。
@@ -1645,7 +1645,7 @@ handoff 完成至少要验证：
 建议明确两种模式：
 
 - `save-only`：只生成 handoff 文档，当前 agent 停止；
-- `continue`：用户明确要求继续执行时，先保存并校验 handoff，再调用 `aiw task agent next <task-id>`。
+- `continue`：用户明确要求继续执行时，先保存并校验 handoff，再调用 `aiw turn <task-id>`。
 
 默认使用 `save-only`。保存失败时不能启动新 Thread；启动后也不能删除原 handoff。
 
@@ -1692,7 +1692,7 @@ handoff 发生在任务未完成时，不能触发 sync/archive/merge/cleanup。
 
 后续修正 `skills/handoff/SKILL.md` 时，建议：
 
-1. 保留 AIW artifact store 优先和 `aiw task agent next` 的显式启动规则。
+1. 保留 AIW artifact store 优先和 `aiw turn` 的显式启动规则。
 2. 增加最小 handoff 文档结构和恢复就绪完成标准。
 3. 增加 `save-only / continue` 模式。
 4. 增加 Task、Session、worktree、lease 和未提交修改的状态门禁。
@@ -3121,9 +3121,9 @@ resume-ext 只负责发现和准备命令，不负责：
 
 本章节只记录评审建议，尚未修改 `skills/resume-ext/SKILL.md`。
 
-## `setup-matt-pocock-skills`
+## `setup-project`
 
-目标文件：`skills/setup-matt-pocock-skills/SKILL.md`
+目标文件：`skills/setup-project/SKILL.md`
 
 参考文件：`D:\03_projects\third-part\skills\skills\engineering\setup-matt-pocock-skills\SKILL.md`
 
@@ -3231,7 +3231,7 @@ setup 完成至少要报告：
 
 ### 下一步修正规格
 
-后续修正 `skills/setup-matt-pocock-skills/SKILL.md` 时，建议：
+后续修正 `skills/setup-project/SKILL.md` 时，建议：
 
 1. 保留 AIW/OpenSpec ownership split 和三类配置探索。
 2. 增加幂等性、冲突 diff 和写入前用户确认。
@@ -3735,7 +3735,7 @@ wide refactor 说明中提到 CI green，但当前项目默认不运行测试/�
 
 #### 1. 明确外部 tracker 不是默认权威来源
 
-`setup-matt-pocock-skills` 已明确避免引入独立 issue tracker。triage 不应默认要求 tracker 配置，也不应把 tracker 标签当作 AIW Task 的替代品。应支持以下两种清晰路径：
+`setup-project` 已明确避免引入独立 issue tracker。triage 不应默认要求 tracker 配置，也不应把 tracker 标签当作 AIW Task 的替代品。应支持以下两种清晰路径：
 
 - 没有外部 tracker：对用户输入、发现项或本地文档生成只读 triage brief，并路由到 `/office-hours-finance`、`/to-spec` 或 `/implement`。
 - 已明确配置外部 tracker：把 tracker 作为外部投影或输入源，AIW Task、OpenSpec change 和 `tasks.md` 仍是本地执行权威。

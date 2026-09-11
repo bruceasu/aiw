@@ -15,6 +15,10 @@ not create a second tracker, worktree, branch, commit, or external projection.
 Return ordered checklist items with prerequisites and acceptance criteria;
 record unresolved scope as `%% NEEDS_INPUT: ...`.
 
+For a managed Task, map each checklist item to a proposed Work Item and report
+its dependencies and likely Gates. This Skill does not create Attempts, claim
+leases, or mark execution completion.
+
 Break a plan, spec, or conversation into a set of **tickets** — tracer-bullet vertical slices, each declaring the tickets that **block** it.
 
 Read `skills/work-management.md`. Resolve one AIW Task and its matching OpenSpec
@@ -28,6 +32,19 @@ Work from whatever is already in the conversation context. If the user passes a
 change identifier or spec path, resolve and read the corresponding OpenSpec
 artifacts. A GitHub/GitLab URL is read only when the user explicitly asks for an
 external projection.
+
+For a managed Task, read `design.md` before splitting work. Honour its
+`## Design Readiness` when present. If it is `BLOCKED`, do not create tickets
+that appear ready for implementation. If ticket splitting exposes a material
+missing design decision or a design-level `%% NEEDS_INPUT`, automatically load
+`fd-workflow` in managed AIW/OpenSpec mode to resolve or record that gap, then
+continue only when the resulting Design Readiness permits it. Do not load FD
+again merely to change ticket size, ordering, or wording.
+
+Older changes may not have a Design Readiness section. Preserve compatibility:
+use the existing design and specs when they make every selected item actionable;
+otherwise report the missing decision as a Design Readiness Gate rather than
+inventing it.
 
 ### 2. Explore the codebase (optional)
 

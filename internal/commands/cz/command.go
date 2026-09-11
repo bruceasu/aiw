@@ -20,6 +20,10 @@ type czOptions struct {
 	UseLLM     *bool
 	Candidates *int
 	Retry      *bool
+	Provider   string
+	Model      string
+	Language   string
+	LanguageSet bool
 }
 
 func Dispatch(args []string) error {
@@ -50,7 +54,12 @@ func dispatchWithUI(args []string, u UI, stagedFn func() (string, error), commit
 	if cfg.Candidates <= 0 {
 		cfg.Candidates = 3
 	}
-
+	if opts.Provider != "" {
+		cfg.LLMProvider = opts.Provider
+	}
+	if opts.Model != "" {
+		cfg.LLMModel = opts.Model
+	}
 	staged, err := stagedFn()
 	if err != nil {
 		return err
@@ -112,6 +121,23 @@ func parseCzOptions(args []string) (czOptions, error) {
 		case "-r", "--retry":
 			v := true
 			opts.Retry = &v
+		case "--provider":
+			if i+1 >= len(args) {
+				return opts, errors.New("missing value for --provider")
+			}
+			i++
+			opts.Provider = args[i]
+		case "--model":
+			if i+1 >= len(args) {
+				return opts, errors.New("missing value for --model")
+			}
+			i++
+			opts.Model = args[i]
+		case "--lang":
+			if i+1 >= len(args) { return opts, errors.New("missing value for --lang") }
+			i++
+			opts.Language = args[i]
+			opts.LanguageSet = true
 		default:
 			return opts, fmt.Errorf("unknown cz option: %s", a)
 		}
@@ -121,6 +147,7 @@ func parseCzOptions(args []string) (czOptions, error) {
 
 func loadCzConfig(opts czOptions) (Config, error) {
 	cfg := DefaultConfig()
+	projectDefaultLanguage := ""
 
 	// 1. Project root config (highest priority)
 	projectCfgPath := ""
@@ -131,6 +158,7 @@ func loadCzConfig(opts czOptions) (Config, error) {
 		if err := mergeCzConfigFromTomlFile(&cfg, projectCfgPath); err != nil {
 			return cfg, fmt.Errorf("load project config %s: %w", projectCfgPath, err)
 		}
+		projectDefaultLanguage = cfg.DefaultLanguage
 	}
 
 	// 2. AIW_ROOT config
@@ -155,12 +183,16 @@ func loadCzConfig(opts czOptions) (Config, error) {
 			return cfg, fmt.Errorf("load program config %s: %w", progCfgPath, err)
 		}
 	}
+	restoreProjectDefaultLanguage(&cfg, projectDefaultLanguage)
 
 	if opts.UseLLM != nil {
 		cfg.UseLLM = *opts.UseLLM
 	}
 	if opts.Candidates != nil {
 		cfg.Candidates = *opts.Candidates
+	}
+	if err := applyCzLocaleSelection(&cfg, opts.LanguageSet, opts.Language); err != nil {
+		return cfg, err
 	}
 
 	finalizeConfig(&cfg)
@@ -183,6 +215,23 @@ func loadCzConfig(opts czOptions) (Config, error) {
 		}
 	}
 	return cfg, nil
+}
+
+func restoreProjectDefaultLanguage(cfg *Config, projectDefaultLanguage string) {
+	if cfg == nil || projectDefaultLanguage == "" {
+		return
+	}
+	cfg.DefaultLanguage = projectDefaultLanguage
+}
+
+func applyCzLocaleSelection(cfg *Config, requestedLanguageSet bool, requestedLanguage string) error {
+	if requestedLanguageSet {
+		return ApplyConfiguredLocale(cfg, requestedLanguage)
+	}
+	if cfg.DefaultLanguage != "" {
+		return ApplyConfiguredLocale(cfg, cfg.DefaultLanguage)
+	}
+	return ApplyConfiguredLocale(cfg, detectedLocale(cfg))
 }
 
 // LoadAIProviderConfig exposes the shared AIW provider configuration to other
@@ -258,9 +307,16 @@ func mergeCzConfigFromTomlFile(cfg *Config, path string) error {
 	curType := map[string]string{}
 	hasType := false
 	typeSectionSeen := false
+	typeLocale := ""
 	curScope := map[string]string{}
 	hasScope := false
 	scopeSectionSeen := false
+	scopeLocale := ""
+	localeTypeSectionSeen := map[string]bool{}
+	localeScopeSectionSeen := map[string]bool{}
+	if cfg.Locales == nil {
+		cfg.Locales = map[string]LocaleOverride{}
+	}
 
 	applyType := func() {
 		if !hasType {
@@ -269,10 +325,17 @@ func mergeCzConfigFromTomlFile(cfg *Config, path string) error {
 		v := strings.TrimSpace(curType["value"])
 		n := strings.TrimSpace(curType["name"])
 		if v != "" && n != "" {
-			cfg.Types = append(cfg.Types, Type{Value: v, Name: n})
+			if typeLocale != "" {
+				override := cfg.Locales[typeLocale]
+				override.Types = append(override.Types, Type{Value: v, Name: n})
+				cfg.Locales[typeLocale] = override
+			} else {
+				cfg.Types = append(cfg.Types, Type{Value: v, Name: n})
+			}
 		}
 		curType = map[string]string{}
 		hasType = false
+		typeLocale = ""
 	}
 	applyScope := func() {
 		if !hasScope {
@@ -284,10 +347,17 @@ func mergeCzConfigFromTomlFile(cfg *Config, path string) error {
 			if n == "" {
 				n = v
 			}
-			cfg.Scopes = append(cfg.Scopes, Scope{Value: v, Name: n})
+			if scopeLocale != "" {
+				override := cfg.Locales[scopeLocale]
+				override.Scopes = append(override.Scopes, Scope{Value: v, Name: n})
+				cfg.Locales[scopeLocale] = override
+			} else {
+				cfg.Scopes = append(cfg.Scopes, Scope{Value: v, Name: n})
+			}
 		}
 		curScope = map[string]string{}
 		hasScope = false
+		scopeLocale = ""
 	}
 
 	scanner := bufio.NewScanner(file)
@@ -302,12 +372,30 @@ func mergeCzConfigFromTomlFile(cfg *Config, path string) error {
 			applyScope()
 			tag := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(line, "[["), "]]"))
 			section = tag
-			if section == "cz.types" {
+			if locale, kind, ok := configuredLocaleSection(section); ok && kind == "types" {
+				if !localeTypeSectionSeen[locale] {
+					override := cfg.Locales[locale]
+					override.HasTypes = true
+					cfg.Locales[locale] = override
+					localeTypeSectionSeen[locale] = true
+				}
+				hasType = true
+				typeLocale = locale
+			} else if section == "cz.types" {
 				if !typeSectionSeen {
 					cfg.Types = nil
 					typeSectionSeen = true
 				}
 				hasType = true
+			} else if locale, kind, ok := configuredLocaleSection(section); ok && kind == "scopes" {
+				if !localeScopeSectionSeen[locale] {
+					override := cfg.Locales[locale]
+					override.HasScopes = true
+					cfg.Locales[locale] = override
+					localeScopeSectionSeen[locale] = true
+				}
+				hasScope = true
+				scopeLocale = locale
 			} else if section == "cz.scopes" {
 				if !scopeSectionSeen {
 					cfg.Scopes = nil
@@ -333,7 +421,36 @@ func mergeCzConfigFromTomlFile(cfg *Config, path string) error {
 		valRaw := strings.TrimSpace(parts[1])
 		val := parseTomlStringValue(valRaw)
 
+		if locale, kind, ok := configuredLocaleSection(section); ok {
+			override := cfg.Locales[locale]
+			switch kind {
+			case "messages":
+				if override.Messages == nil {
+					override.Messages = map[string]string{}
+				}
+				override.Messages[key] = val
+			case "types":
+				if !hasType {
+					hasType = true
+					typeLocale = locale
+				}
+				curType[key] = val
+			case "scopes":
+				if !hasScope {
+					hasScope = true
+					scopeLocale = locale
+				}
+				curScope[key] = val
+			}
+			cfg.Locales[locale] = override
+			continue
+		}
+
 		switch section {
+		case "i18n":
+			if key == "default_language" {
+				cfg.DefaultLanguage = strings.ToLower(strings.TrimSpace(val))
+			}
 		case "cz":
 			switch key {
 			case "llm", "use_llm":
@@ -432,6 +549,19 @@ func mergeCzConfigFromTomlFile(cfg *Config, path string) error {
 		cfg.Types = DefaultConfig().Types
 	}
 	return scanner.Err()
+}
+
+func configuredLocaleSection(section string) (string, string, bool) {
+	parts := strings.Split(section, ".")
+	if len(parts) != 4 || parts[0] != "cz" || parts[1] != "locales" {
+		return "", "", false
+	}
+	locale := normalizeLocale(parts[2])
+	kind := strings.TrimSpace(parts[3])
+	if locale == "" || (kind != "messages" && kind != "types" && kind != "scopes") {
+		return "", "", false
+	}
+	return locale, kind, true
 }
 
 func parseTomlStringValue(raw string) string {
@@ -712,7 +842,11 @@ func splitCommandLine(s string) ([]string, error) {
 }
 
 func commitWithMessage(msg string) error {
-	tmp, err := os.CreateTemp("", "cz-*.msg")
+	tmpDir, err := workspaceTempDir()
+	if err != nil {
+		return err
+	}
+	tmp, err := os.CreateTemp(tmpDir, "cz-*.msg")
 	if err != nil {
 		return err
 	}
@@ -725,4 +859,16 @@ func commitWithMessage(msg string) error {
 		return err
 	}
 	return util.Run(DryRun, "git", "commit", "-F", tmp.Name())
+}
+
+func workspaceTempDir() (string, error) {
+	root, err := detectProjectRoot()
+	if err != nil {
+		return "", fmt.Errorf("resolve project root for temporary output: %w", err)
+	}
+	dir := filepath.Join(root, ".ai", "tmp")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", fmt.Errorf("create workspace temporary output directory: %w", err)
+	}
+	return dir, nil
 }

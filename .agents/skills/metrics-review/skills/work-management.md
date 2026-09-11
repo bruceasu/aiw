@@ -58,8 +58,8 @@ aiw new <task-id> --backend auto
 ```
 
 This creates the AIW lifecycle record and delegates proposal/spec artifact
-creation to OpenSpec when available. The resulting change MUST contain
-`openspec/changes/<task-id>/task.toml` with the Task ID, status, branch,
+creation to OpenSpec when available. The resulting runtime record MUST be stored
+at `.ai/tasks/<task-id>/task.toml` with the Task ID, status, branch,
 worktree, `parent_branch`, and Session mapping.
 
 Do not use `openspec new change <task-id>` directly for a managed change. That
@@ -128,7 +128,7 @@ been cleaned up. A cancelled discarded Task may archive with its reason.
 
 ## Sub-Agents
 
-- At most two sub-agents may run concurrently.
+
 - Use them only for bounded static analysis, code location, or independent
   implementation fragments.
 - Sub-agents must not run tests, builds, network calls, permission escalation,

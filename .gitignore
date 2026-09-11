@@ -11,4 +11,11 @@ backup.log
 release/
 ref/
 plugins/aiw-cz/cz
-.ai
+.ai/
+.scratch/
+授权.bat
+HEAD.zip
+fd-init.md
+fd-workflow-codex-copilot.zip
+drafts/
+.tmp-go-cache/

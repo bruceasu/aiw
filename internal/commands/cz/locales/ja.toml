@@ -1,0 +1,65 @@
+[messages]
+type = "コミット種別を選択"
+scope = "スコープ（任意）"
+custom_scope = "カスタムスコープを入力"
+subject = "コミット件名"
+body = "本文（任意）"
+breaking = "破壊的変更（任意）"
+footer_prefixes = "issue 接頭辞を選択（任意）"
+custom_footer_prefix = "カスタム issue 接頭辞を入力"
+footer = "関連 issue（任意、例: #31）"
+confirm_commit = "コミットしますか"
+select_type = "種別番号または値を入力"
+select_prefix = "接頭辞番号または値を入力"
+subject_required = "件名は必須です"
+subject_too_long = "件名が長すぎます（最大 %d）"
+invalid_type = "無効な種別です。再試行してください"
+invalid_selection = "無効な選択です。再試行してください"
+preview = "コミットメッセージのプレビュー"
+action = "操作"
+candidate = "AI 候補を選択"
+regenerate = "候補を再生成"
+commit = "このメッセージでコミット"
+edit = "項目を編集"
+cancel = "キャンセル"
+aborted = "中止しました"
+editing = "項目を編集（空欄は現在値を維持）"
+done_editing = "編集完了"
+empty_scope = "（なし）スコープなし"
+custom_scope_option = "（カスタム）スコープを入力"
+footer_edit = "footer を編集しますか？[y/N]"
+editor_hint = "（/edit または Ctrl+E でエディタを使用）"
+
+[[types]]
+value = "feat"
+name = "新機能"
+[[types]]
+value = "fix"
+name = "バグ修正"
+[[types]]
+value = "docs"
+name = "ドキュメントのみ"
+[[types]]
+value = "style"
+name = "コードスタイルのみ"
+[[types]]
+value = "refactor"
+name = "コード再構成"
+[[types]]
+value = "perf"
+name = "性能改善"
+[[types]]
+value = "test"
+name = "テスト"
+[[types]]
+value = "build"
+name = "ビルドまたは依存関係"
+[[types]]
+value = "ci"
+name = "CI 設定"
+[[types]]
+value = "revert"
+name = "コミットを戻す"
+[[types]]
+value = "chore"
+name = "その他の保守"

@@ -25,12 +25,22 @@ type LLMConfig struct {
 	CopilotCommand string
 	DryRun         bool
 	DebugSource    bool
+	// Workspace and AdditionalDirs limit filesystem-aware CLI providers for a
+	// single call. They are deliberately opt-in so existing callers preserve
+	// their current provider behavior.
+	Workspace      string
+	AdditionalDirs []string
+	ReadOnly       bool
 }
 
 func RunLLM(prompt string, cfg LLMConfig, outputSchema map[string]any) (string, error) {
+	return RunLLMWithSystemPrompt(prompt, cfg, outputSchema, "You generate Conventional Commit candidates. Return JSON only.")
+}
+
+func RunLLMWithSystemPrompt(prompt string, cfg LLMConfig, outputSchema map[string]any, systemPrompt string) (string, error) {
 	provider := normalizeProviderName(cfg.Provider)
 	if provider != "" {
-		return runProvider(provider, prompt, cfg, outputSchema)
+		return runProvider(provider, prompt, cfg, outputSchema, systemPrompt)
 	}
 
 	providers, err := detectAvailableProviders(cfg)
@@ -43,7 +53,7 @@ func RunLLM(prompt string, cfg LLMConfig, outputSchema map[string]any) (string, 
 
 	var errs []string
 	for _, p := range providers {
-		out, runErr := runProvider(p, prompt, cfg, outputSchema)
+		out, runErr := runProvider(p, prompt, cfg, outputSchema, systemPrompt)
 		if runErr == nil {
 			return out, nil
 		}
@@ -75,7 +85,7 @@ func normalizeProviderName(provider string) string {
 	}
 }
 
-func runProvider(provider, prompt string, cfg LLMConfig, outputSchema map[string]any) (string, error) {
+func runProvider(provider, prompt string, cfg LLMConfig, outputSchema map[string]any, systemPrompt string) (string, error) {
 	if cfg.DryRun {
 		return `{"candidates":[{"type":"chore","scope":"","subject":"dry run preview","body":"","breaking":"","footer":""}]}`, nil
 	}
@@ -108,8 +118,11 @@ func runProvider(provider, prompt string, cfg LLMConfig, outputSchema map[string
 	result, err := p.Generate(context.Background(), Request{
 		Prompt:       prompt,
 		Model:        model,
-		SystemPrompt: "You generate Conventional Commit candidates. Return JSON only.",
+		SystemPrompt: systemPrompt,
 		OutputSchema: outputSchema,
+		Workspace:    cfg.Workspace,
+		AdditionalDirs: cfg.AdditionalDirs,
+		ReadOnly:     cfg.ReadOnly,
 	})
 	if err != nil {
 		return "", err

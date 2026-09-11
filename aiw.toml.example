@@ -1,127 +1,95 @@
-﻿# aiw git cz configuration template
+# AIW configuration template
 # Priority: CLI > project-root config > program-directory config
 # Supported file names: aiw.toml or .aiw.toml
 
 [runtime]
-python = "C:/green/python3.12/python.exe"
+# python = "C:/path/to/python.exe"
+
+# Global UI language. CZ resolves: --lang, [i18n].default_language, then
+# terminal locale env in this order: LC_ALL, LC_MESSAGES, LANGUAGE, LANG.
+# Terminal values normalize to a base language by trimming, lowercasing,
+# removing any encoding, then removing region/variant suffixes. LANGUAGE is
+# checked left-to-right across colon-separated candidates. Unsupported
+# detected locales fall back to built-in English. Blank/unsupported --lang and
+# invalid default_language values are errors. A valid --lang always wins over
+# lower-priority settings. Built-in CZ locales: en, zh, ja. Configure
+# non-built-in languages under [cz.locales.<language>]; unspecified values
+# fall back to the built-in English locale.
+[i18n]
+# default_language = "en"
+
+# Shared AI provider configuration. [ai] is the canonical section; [cz]
+# provider settings remain supported only as a compatibility fallback.
+[ai]
+# OpenAI
+# provider = "openai"
+# model = "gpt-4o-mini"
+# base_url = "https://api.openai.com/v1"
+# Keep API keys in environment variables, for example OPENAI_API_KEY.
+# api_key = ""
+
+# Gemini
+# provider = "gemini"
+# model = "gemini-1.5-flash"
+# base_url = "https://generativelanguage.googleapis.com"
+
+# Local Ollama
+# provider = "ollama"
+# model = "llama3"
+# base_url = "http://localhost:11434"
+
+# AI CLI providers
+# provider = "codex"
+# model = "your-model"
+# codex_command = "codex"
+# provider = "copilot"
+# copilot_command = "copilot"
 
 [cz]
-# Default is no-llm wizard. Set true to enable LLM by default.
+# Default is no-LLM wizard. Set true to enable LLM by default.
 llm = false
-
-
-#gemini ollama openai codex
-#llm_provider=ollama
-llm_provider=codex
-#llm_model=
-
 
 # Candidate count used in LLM mode.
 candidates = 5
 
-# LLM model used by direct OpenAI API call.
-# You can also set OPENAI_MODEL environment variable.
-#openai_model = "gpt-5.4-mini"
-
-# OpenAI API base URL.
-# You can also set OPENAI_BASE_URL environment variable.
-#openai_base_url = "https://api.openai.com/v1"
-
-# OpenAI API key.
-# You can also set OPENAI_API_KEY environment variable.
-#openai_api_key = ""
-
-
-#GEMINI_MODEL
-#GEMINI_BASE_URL
-#GEMINI_API_KEY
-
-#gemini_model=
-#gemini_base_url
-#gemini_api_key=
-
-#OLLAMA_MODEL
-#OLLAMA_BASE_URL
-
-#ollama_model=llama3
-#ollama_base_url=http://localhost:11434
-#ollama_api_key=
-
-
-
-# Print resolved source for OPENAI_MODEL/OPENAI_BASE_URL/OPENAI_API_KEY
-# during `aiw git cz --llm` runs.
-# Also can be enabled by environment variable: AIW_CZ_DEBUG=1
+# Print resolved provider configuration during `aiw cz --llm` runs.
+# Also available through AIW_CZ_DEBUG=1.
 debug_source = false
-
-# Fallback source when process env is not set:
-# 1) ./.env (current working directory)
-# 2) <program-dir>/.env
 
 # Add emoji prefix in commit header.
 emoji = false
 
-# Preferred editor command for long-form editing in cz flow.
-# If configured, this takes precedence over GIT_EDITOR/VISUAL/EDITOR.
-# Examples:
+# Preferred editor command for long-form editing in CZ.
+# This takes precedence over GIT_EDITOR/VISUAL/EDITOR.
 # editor = "code --wait"
 # editor = "notepad"
-EDITOR = ""
-# In wizard prompts, input /edit or ^e to launch this editor for long text.
+editor = ""
 
-[cz.messages]
-type = "选择你要提交的类型 / Select commit type:"
-scope = "选择一个提交范围（可选）/ Scope (optional):"
-customScope = "请输入自定义的提交范围 / Input custom scope:"
-subject = "填写简短精炼的变更描述 / Subject:\n"
-body = "填写更加详细的变更描述（可选） / Body (optional), use | for new line:\n"
-breaking = "列举非兼容性重大的变更（可选） / Breaking changes (optional), use | for new line:\n"
-footerPrefixesSelect = "选择关联 issue 前缀（可选） / Select issue prefix (optional):"
-customFooterPrefix = "输入自定义 issue 前缀 / Input custom issue prefix:"
-footer = "列举关联 issue（可选），例如: #31, #I3244 / Footer (optional):\n"
-confirmCommit = "是否提交或修改 commit? / Commit or modify?"
-
-# You can override type list entirely by defining your own [[cz.types]] entries.
-[[cz.types]]
-value = "feat"
-name = "feat:     新增功能 | A new feature"
-
-[[cz.types]]
-value = "fix"
-name = "fix:      修复缺陷 | A bug fix"
-
-[[cz.types]]
-value = "docs"
-name = "docs:     文档更新 | Documentation only changes"
-
-[[cz.types]]
-value = "style"
-name = "style:    代码格式 | Changes that do not affect the meaning of the code"
-
-[[cz.types]]
-value = "refactor"
-name = "refactor: 代码重构 | A code change that neither fixes a bug nor adds a feature"
-
-[[cz.types]]
-value = "perf"
-name = "perf:     性能提升 | A code change that improves performance"
-
-[[cz.types]]
-value = "test"
-name = "test:     测试相关 | Adding missing tests or correcting existing tests"
-
-[[cz.types]]
-value = "build"
-name = "build:    构建相关 | Changes that affect the build system or external dependencies"
-
-[[cz.types]]
-value = "ci"
-name = "ci:       持续集成 | Changes to our CI configuration files and scripts"
-
-[[cz.types]]
-value = "revert"
-name = "revert:   回退代码 | Revert to a commit"
-
-[[cz.types]]
-value = "chore"
-name = "chore:    其他修改 | Other changes that do not modify src or test files"
+# Built-in locales require no CZ message/type configuration. To add a language
+# such as French, select it with [i18n].default_language = "fr" or
+# `aiw cz --lang fr`, then define the named locale below. Unspecified values
+# fall back to the built-in English locale.
+#
+# [cz.locales.fr.messages]
+# type = "Choisissez le type de commit :"
+# scope = "Portée (facultatif) :"
+# customScope = "Saisissez une portée personnalisée :"
+# subject = "Sujet :"
+# body = "Corps (facultatif) :"
+# breaking = "Changements incompatibles (facultatif) :"
+# footerPrefixesSelect = "Préfixe d'issue (facultatif) :"
+# customFooterPrefix = "Préfixe personnalisé :"
+# footer = "Référence d'issue (facultatif) :"
+# confirmCommit = "Créer ou modifier le commit ?"
+#
+# [[cz.locales.fr.types]]
+# value = "feat"
+# name = "feat:     Nouvelle fonctionnalité"
+#
+# [[cz.locales.fr.types]]
+# value = "fix"
+# name = "fix:      Correction de bogue"
+#
+# [[cz.locales.fr.scopes]]
+# value = "core"
+# name = "noyau"

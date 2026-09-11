@@ -85,7 +85,7 @@ branch cleanup flags unless the user explicitly requests cleanup.
 
 ## Sub-Agents
 
-- At most two sub-agents may run concurrently.
+
 - Use them only for bounded static analysis, code location, or independent
   implementation fragments.
 - Sub-agents must not run tests, builds, network calls, permission escalation,

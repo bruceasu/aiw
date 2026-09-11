@@ -44,5 +44,21 @@ smallest relevant command:
 
 Ask before repository-wide commands. Rerun only after a relevant change.
 
+## Concurrent Go Cache Isolation
+
+When a managed AIW Task or change ID is known, every Go runtime command MUST
+use a Task-scoped build cache. In PowerShell, set it only for the current
+process before the authorized command:
+
+```powershell
+$env:GOCACHE = ".ai/cache/go/<task-id>"
+go test ./path/to/package
+```
+
+Replace `<task-id>` with the resolved AIW Task ID. Create no global Go
+configuration: do not run `go env -w GOCACHE`, and do not override
+`GOMODCACHE`. Preserve Task-scoped caches for recovery; do not delete them as
+part of validation or completion.
+
 ## Escalation
 If a deeper subtree has its own `AGENTS.md` or `CODEX.md`, prefer that local file.

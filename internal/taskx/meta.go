@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"aiw/internal/fsx"
+	"aiw/internal/repo"
 )
 
 const (
@@ -17,38 +18,27 @@ const (
 	SpecsDir           = "openspec/specs"
 	ArchiveDir         = "openspec/changes/archive"
 	LegacyArchiveDir   = "openspec/archive"
-	RegistryFile       = "openspec/registry.json"
 	WorktreeDir        = ".wt"
 	GitignoreFile      = ".gitignore"
 	TaskMetaFile       = "task.toml"
 	LegacyTaskMetaFile = "tasks.toml"
+	RuntimeTasksDir    = ".ai/tasks"
 )
 
 type TaskMeta struct {
-	ID       string
-	Type     string
-	Status   string
-	Created  string
-	Updated  string
-	Branch   string
-	ParentBranch string
-	Worktree string
+	ID            string
+	Type          string
+	Status        string
+	Created       string
+	Updated       string
+	Branch        string
+	ParentBranch  string
+	Worktree      string
 	WorkspaceKind string
-	Delivery string
-	Session  string
-	Specs    []string
-	Tags     []string
-}
-
-type RegistryEntry struct {
-	ID        string `json:"id"`
-	Status    string `json:"status"`
-	Branch    string `json:"branch"`
-	Worktree  string `json:"worktree"`
-	WorkspaceKind string `json:"workspace_kind"`
-	Delivery string `json:"delivery"`
-	Path      string `json:"path"`
-	UpdatedAt string `json:"updated_at"`
+	Delivery      string
+	Session       string
+	Specs         []string
+	Tags          []string
 }
 
 func Today() string {
@@ -59,16 +49,28 @@ func TaskDir(id string) string {
 	return filepath.Join(ChangesDir, id)
 }
 
+func RuntimeTaskDir(id string) string {
+	return filepath.Join(repo.Root(), RuntimeTasksDir, id)
+}
+
+func RuntimeTasksPath() string {
+	return filepath.Join(repo.Root(), RuntimeTasksDir)
+}
+
+func RuntimeRoot() string {
+	return repo.Root()
+}
+
 func ArchiveTaskDir(name string) string {
 	return filepath.Join(ArchiveDir, name)
 }
 
 func TaskMetaPath(id string) string {
-	return filepath.Join(TaskDir(id), TaskMetaFile)
+	return filepath.Join(RuntimeTaskDir(id), TaskMetaFile)
 }
 
 func ResolveTaskMetaPath(id string) string {
-	dir := TaskDir(id)
+	dir := RuntimeTaskDir(id)
 	primary := filepath.Join(dir, TaskMetaFile)
 	if fsx.Exists(primary) {
 		return primary
@@ -170,6 +172,9 @@ func parseStringArray(raw string) []string {
 }
 
 func WriteTaskMeta(path string, meta TaskMeta) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
 	var specsLine string
 	if len(meta.Specs) > 0 {
 		specsLine = fmt.Sprintf("specs = [%s]\n", quoteStringArray(meta.Specs))

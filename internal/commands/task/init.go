@@ -8,12 +8,18 @@ import (
 	"strings"
 
 	"aiw/internal/fsx"
+	"aiw/internal/plugin"
 	"aiw/internal/taskx"
 )
+
+const officialSetupPlugin = "setup-project"
+
+var runOfficialSetupFn = runOfficialSetup
 
 type InitOptions struct {
 	Prompts     PromptOptions
 	WithPrompts bool
+	SkipSetup   bool
 }
 
 func initWorkspace(opts InitOptions) error {
@@ -22,6 +28,7 @@ func initWorkspace(opts InitOptions) error {
 		taskx.ChangesDir,
 		taskx.SpecsDir,
 		taskx.ArchiveDir,
+		taskx.RuntimeTasksPath(),
 		taskx.WorktreeDir,
 		filepath.Dir(copilotFile),
 	}
@@ -30,29 +37,52 @@ func initWorkspace(opts InitOptions) error {
 			return err
 		}
 	}
-	if err := writeIfMissing(agentsFile, agentsTemplate()); err != nil {
+	baseAgentsCreated, err := writeIfMissing(agentsFile, agentsTemplate())
+	if err != nil {
 		return err
 	}
-	if err := writeIfMissing(copilotFile, copilotTemplate()); err != nil {
+	if _, err := writeIfMissing(copilotFile, copilotTemplate()); err != nil {
 		return err
 	}
 	if err := taskx.EnsureWorktreeIgnored(); err != nil {
 		return err
 	}
-	if err := writeRegistry(); err != nil {
-		return err
-	}
 	if opts.WithPrompts {
-		return syncPrompts(opts.Prompts)
+		if err := syncPrompts(opts.Prompts); err != nil {
+			return err
+		}
+	}
+	if !opts.SkipSetup {
+		runOfficialSetupFn(baseAgentsCreated)
 	}
 	return nil
+}
+
+func runOfficialSetup(baseAgentsCreated bool) {
+	path, err := plugin.DiscoverPlugin(officialSetupPlugin)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "official setup plugin is unavailable; continuing with base initialization")
+		return
+	}
+	args := []string{}
+	if baseAgentsCreated {
+		args = append(args, "--base-agents-created")
+	}
+	code, err := plugin.ExecPlugin(path, args, map[string]string{"AIW_SETUP_MODE": "init"})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "official setup plugin could not start; continuing with base initialization")
+		return
+	}
+	if code != 0 {
+		fmt.Fprintln(os.Stderr, "official setup plugin failed; continuing with base initialization")
+	}
 }
 
 func agentsTemplate() string {
 	return `# AGENTS.md
 This repository uses OpenSpec-lite TOML workflow.
 Before coding:
-- read openspec/changes/<task>/task.toml (or legacy tasks.toml) if exists
+- read .ai/tasks/<task>/task.toml if exists
 - read openspec/changes/<task>/tasks.md if exists
 - read design.md if exists
 - read related specs under openspec/specs/
@@ -78,11 +108,14 @@ Avoid broad refactors.
 `
 }
 
-func writeIfMissing(path, content string) error {
+func writeIfMissing(path, content string) (bool, error) {
 	if fsx.Exists(path) {
-		return nil
+		return false, nil
 	}
-	return os.WriteFile(path, []byte(content), 0o644)
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func parseInitOptions(args []string) (InitOptions, error) {
@@ -92,6 +125,8 @@ func parseInitOptions(args []string) (InitOptions, error) {
 		switch arg {
 		case "--prompts":
 			opts.WithPrompts = true
+		case "--no-setup":
+			opts.SkipSetup = true
 		case "--merge":
 			opts.Prompts.Merge = true
 		case "--force":

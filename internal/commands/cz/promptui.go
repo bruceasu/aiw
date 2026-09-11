@@ -72,9 +72,9 @@ func (ui PromptUI) DraftFromWizard(cfg Config) (Draft, error) {
 func (ui PromptUI) SelectType(cfg Config) (string, error) {
 	templates := &promptui.SelectTemplates{
 		Label:    "{{ . }}",
-		Active:   "\U0001F449 {{ .Value | cyan }} ({{ .Name | faint }})",
-		Inactive: "   {{ .Value }} ({{ .Name | faint }})",
-		Selected: "\U0001F449 {{ .Value | cyan }}",
+		Active:   "\U0001F449 {{ printf \"%-10s\" .Value | cyan }} {{ .Name | faint }}",
+		Inactive: "   {{ printf \"%-10s\" .Value }} {{ .Name | faint }}",
+		Selected: "\U0001F449 {{ printf \"%-10s\" .Value | cyan }}",
 	}
 
 	searcher := func(input string, index int) bool {
@@ -111,8 +111,8 @@ func (ui PromptUI) selectScope(cfg Config) (string, error) {
 	// For promptui, we don't have multi-select, so we use single select.
 	// We add "custom" and "none" to the list.
 	items := []Scope{
-		{Value: "", Name: "(empty) no scope"},
-		{Value: ".", Name: "(custom) input custom scope"},
+		{Value: "", Name: cfg.Messages.EmptyScope},
+		{Value: ".", Name: cfg.Messages.CustomScopeOption},
 	}
 	items = append(items, cfg.Scopes...)
 
@@ -153,10 +153,10 @@ func (ui PromptUI) selectScope(cfg Config) (string, error) {
 func (ui PromptUI) RunSubjectInput(cfg Config, initial string) (string, error) {
 	validate := func(input string) error {
 		if strings.TrimSpace(input) == "" {
-			return errors.New("subject is required")
+			return errors.New(cfg.Messages.SubjectRequired)
 		}
 		if cfg.MaxSubjectLength > 0 && len([]rune(input)) > cfg.MaxSubjectLength {
-			return fmt.Errorf("subject too long (max %d)", cfg.MaxSubjectLength)
+			return fmt.Errorf(cfg.Messages.SubjectTooLong, cfg.MaxSubjectLength)
 		}
 		return nil
 	}
@@ -184,7 +184,7 @@ func (ui PromptUI) SelectCandidate(cfg Config, cands []Draft) (Draft, error) {
 	for i, c := range cands {
 		items = append(items, item{Index: i, Label: BuildHeader(c), Value: strconv.Itoa(i)})
 	}
-	items = append(items, item{Index: -1, Label: "(regenerate) generate a new candidate list", Value: "__regen__"})
+	items = append(items, item{Index: -1, Label: cfg.Messages.Regenerate, Value: "__regen__"})
 
 	templates := &promptui.SelectTemplates{
 		Label:    "{{ . }}",
@@ -194,7 +194,7 @@ func (ui PromptUI) SelectCandidate(cfg Config, cands []Draft) (Draft, error) {
 	}
 
 	prompt := promptui.Select{
-		Label:     "Select AI candidate",
+		Label:     cfg.Messages.Candidate,
 		Items:     items,
 		Templates: templates,
 		Size:      10,
@@ -214,15 +214,15 @@ func (ui PromptUI) SelectCandidate(cfg Config, cands []Draft) (Draft, error) {
 func (ui PromptUI) ReviewAndCommit(draft Draft, cfg Config, commitFn func(string) error) error {
 	for {
 		msg := BuildCommitMessage(draft)
-		fmt.Printf("\n--- Commit message preview ---\n%s\n--------------------------------\n", msg)
+		fmt.Printf("\n--- %s ---\n%s\n--------------------------------\n", cfg.Messages.Preview, msg)
 
 		items := []struct {
 			Label string
 			Value string
 		}{
-			{"commit this message", "__commit__"},
-			{"edit fields", "__edit__"},
-			{"cancel", "__cancel__"},
+			{cfg.Messages.Commit, "__commit__"},
+			{cfg.Messages.Edit, "__edit__"},
+			{cfg.Messages.Cancel, "__cancel__"},
 		}
 
 		templates := &promptui.SelectTemplates{
@@ -233,7 +233,7 @@ func (ui PromptUI) ReviewAndCommit(draft Draft, cfg Config, commitFn func(string
 		}
 
 		prompt := promptui.Select{
-			Label:     "Action",
+			Label:     cfg.Messages.Action,
 			Items:     items,
 			Templates: templates,
 		}
@@ -249,7 +249,7 @@ func (ui PromptUI) ReviewAndCommit(draft Draft, cfg Config, commitFn func(string
 		case "__edit__":
 			draft = ui.editDraft(draft, cfg)
 		case "__cancel__":
-			fmt.Fprintln(os.Stderr, "aborted")
+			fmt.Fprintln(os.Stderr, cfg.Messages.Aborted)
 			return nil
 		}
 	}
@@ -261,13 +261,13 @@ func (ui PromptUI) editDraft(d Draft, cfg Config) Draft {
 			Label string
 			Value string
 		}{
-			{"edit type", "__field_type__"},
-			{"edit scope", "__field_scope__"},
-			{"edit subject", "__field_subject__"},
-			{"edit body", "__field_body__"},
-			{"edit breaking", "__field_breaking__"},
-			{"edit footer", "__field_footer__"},
-			{"done editing", "__done__"},
+			{cfg.Messages.Type, "__field_type__"},
+			{cfg.Messages.Scope, "__field_scope__"},
+			{cfg.Messages.Subject, "__field_subject__"},
+			{cfg.Messages.Body, "__field_body__"},
+			{cfg.Messages.Breaking, "__field_breaking__"},
+			{cfg.Messages.Footer, "__field_footer__"},
+			{cfg.Messages.DoneEditing, "__done__"},
 		}
 
 		templates := &promptui.SelectTemplates{
@@ -278,7 +278,7 @@ func (ui PromptUI) editDraft(d Draft, cfg Config) Draft {
 		}
 
 		prompt := promptui.Select{
-			Label:     fmt.Sprintf("Edit fields (Current: %s)", BuildHeader(d)),
+			Label:     fmt.Sprintf("%s (%s)", cfg.Messages.Editing, BuildHeader(d)),
 			Items:     items,
 			Templates: templates,
 		}

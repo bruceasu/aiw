@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"strings"
 
-	"aiw/internal/gitx"
 	"aiw/internal/taskx"
 )
 
@@ -99,12 +98,9 @@ func runOpenSpec(bin string, operation string, args []string) error {
 	command := []string{}
 	switch operation {
 	case "new":
-		id, allowDirty, err := parseNewArgs(args)
+		id, allowUnrelatedDirty, err := parseNewArgs(args)
 		if err != nil { return err }
-		primary, primaryPath, err := gitx.IsPrimaryWorktree(); if err != nil { return err }
-		if !primary { return fmt.Errorf("ordinary Tasks must be created from the primary workspace: %s", primaryPath) }
-		dirty, err := gitx.IsDirty(); if err != nil { return err }
-		if dirty && !allowDirty { return errors.New("working tree has uncommitted changes; commit or clean them, or rerun with --allow-dirty") }
+		if err := authorizeTaskCreation(id, allowUnrelatedDirty); err != nil { return err }
 		command = []string{"new", "change", id}
 	case "archive":
 		if len(args) != 1 {

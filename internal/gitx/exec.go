@@ -69,10 +69,59 @@ func IsPrimaryWorktree() (bool, string, error) {
 }
 
 func IsDirty() (bool, error) {
-	cmd := exec.Command("git", "status", "--porcelain")
-	out, err := cmd.Output()
-	if err != nil { return false, fmt.Errorf("read worktree status: %w", err) }
-	return len(strings.TrimSpace(string(out))) > 0, nil
+	paths, err := DirtyPaths()
+	if err != nil {
+		return false, err
+	}
+	return len(paths) > 0, nil
+}
+
+// DirtyPaths returns normalized repository-relative paths with uncommitted changes.
+// Renamed and copied entries return both paths so callers can safely check either
+// side of the change for overlap.
+func DirtyPaths() ([]string, error) {
+	return dirtyPaths(readDirtyStatus)
+}
+
+func dirtyPaths(readStatus func() ([]byte, error)) ([]string, error) {
+	out, err := readStatus()
+	if err != nil {
+		return nil, fmt.Errorf("read worktree status: %w", err)
+	}
+	return parseDirtyPaths(out)
+}
+
+func readDirtyStatus() ([]byte, error) {
+	cmd := exec.Command("git", "status", "--porcelain=v1", "-z")
+	return cmd.Output()
+}
+
+func parseDirtyPaths(status []byte) ([]string, error) {
+	fields := strings.Split(string(status), "\x00")
+	paths := make([]string, 0, len(fields))
+	for index := 0; index < len(fields)-1; index++ {
+		record := fields[index]
+		if record == "" {
+			continue
+		}
+		if len(record) < 4 || record[2] != ' ' {
+			return nil, fmt.Errorf("parse worktree status record: %q", record)
+		}
+		paths = append(paths, normalizeStatusPath(record[3:]))
+		if record[0] != 'R' && record[0] != 'C' && record[1] != 'R' && record[1] != 'C' {
+			continue
+		}
+		if index+1 >= len(fields)-1 || fields[index+1] == "" {
+			return nil, fmt.Errorf("parse renamed worktree status record: %q", record)
+		}
+		index++
+		paths = append(paths, normalizeStatusPath(fields[index]))
+	}
+	return paths, nil
+}
+
+func normalizeStatusPath(path string) string {
+	return filepath.Clean(filepath.FromSlash(path))
 }
 
 func IsAncestor(ancestor, descendant string) bool {

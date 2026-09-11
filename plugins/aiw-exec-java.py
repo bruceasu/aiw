@@ -285,7 +285,7 @@ def run_command(cmd: List[str], cwd: Path, env: dict, dry_run: bool = False) -> 
 
     if returncode != 0:
         raise SystemExit(returncode)
-        
+
 def parse_exec_args(args_text: Optional[str]) -> List[str]:
     """
     把 --args 字符串拆成参数列表。
@@ -404,7 +404,7 @@ def compile_multi_module(
         "-am",
         "-DskipTests",
         "-B",
-        f"-Dfile.ecnoding={FILE_ENCODING}", 
+        f"-Dfile.encoding={FILE_ENCODING}",
         "compile",
         "install"  # 会有依赖，所以要install
     ])
@@ -438,7 +438,7 @@ def run_multi_module(
     cmd = [maven]
     append_maven_common_flags(cmd, quiet)
     cmd.extend([
-        f"-Dfile.ecnoding={FILE_ENCODING}", 
+        f"-Dfile.encoding={FILE_ENCODING}",
         exec_plugin_goal,
         "-B",
         f"-Dexec.mainClass={main_class}",
@@ -474,8 +474,8 @@ def run_single_module(
     append_maven_common_flags(cmd, quiet)
     cmd.extend([
         "compile",
-        f"-Dfile.ecnoding={FILE_ENCODING}", 
-        "-DskipTests", 
+        f"-Dfile.encoding={FILE_ENCODING}",
+        "-DskipTests",
         "-B",
         exec_plugin_goal,
         f"-Dexec.mainClass={main_class}",

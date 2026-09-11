@@ -1,0 +1,36 @@
+id = "aiw-ask"
+title = "Add aiw ask command for LLM-assisted AIW guidance"
+status = "PROMOTED"
+created = "2026-09-10"
+updated = "2026-09-10"
+revision = 9
+
+[approval]
+status = "APPROVED"
+by = "user"
+at = "2026-09-10T14:26:26+09:00"
+reason = "价值方向明确，按核心最小范围进入工程规划，并通过推广期数据验证"
+
+[promotion]
+status = "SPEC_DRAFTED"
+task_id = "aiw-ask"
+
+[conversation]
+session_id = ""
+
+[terminal]
+by = ""
+at = ""
+reason = ""
+
+[artifact]
+business-case = "requirements/aiw-ask/business-case.md"
+engineering-options = "requirements/aiw-ask/engineering-options.md"
+problem-brief = "requirements/aiw-ask/problem-brief.md"
+requirement-plan = "requirements/aiw-ask/requirement-plan.md"
+
+[digest]
+business-case = "35bb8e141e33dff7307f03c8a2fb4623175f78a1961d1304065a16ef5ee73fe2"
+engineering-options = "352d6305b15636d0b23eab14efa3093c148703155ea59991076a44726bfd2425"
+problem-brief = "9033b1cf2ebe412d7470d5d9a983a412e08c4053351ddf020fa71c25c3fe80b0"
+requirement-plan = "4a391cd6fe3b355ca9a4d834a930f7b7871131f5be5ce5b6920ada6060b66ef2"

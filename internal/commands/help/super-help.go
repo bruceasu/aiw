@@ -92,21 +92,25 @@ func listAll() error {
 		"  aiw help <command>\n\n")
 
 	fmt.Print("Core workflow:\n" +
-		"  init [--prompts] [--merge] [--force] [--template <name>]\n" +
+		"  init [--no-setup] [--prompts] [--merge] [--force] [--template <name>]\n" +
 		"  new <task-id>             Create a task/change.\n" +
 		"  list                      List tasks under openspec/changes.\n" +
 		"  show <task-id>            Print tasks.md.\n" +
 		"  status <task-id> <s>      Update task status.\n" +
 		"  done <task-id>            Shortcut for: status <task-id> DONE.\n" +
-		"  archive <task-id> [opts]  Archive a completed task/change.\n" +
+		"  archive <task-id> [opts]  Archive a completed task/change (sync, validate, repair).\n" +
+		"  workflow <op> <task-id>   Run workflow execution and delivery operations.\n" +
+		"  workspace <op> <task-id>  Manage task workspace state.\n" +
 		"  context <task-id>         Show files to read before implementing.\n" +
 		"  decision <task-id>        Create design.md for a task.\n" +
-		"  spec <spec-id>            Create a long-lived spec under openspec/specs.\n" +
-		"  registry                  Rebuild openspec/registry.json.\n\n")
+		"  spec <spec-id>            Create a long-lived spec under openspec/specs.\n\n")
 
 	fmt.Print("Worktree:\n" +
 		"  wt add <task-id> [base]   Explicitly isolate a task in a worktree.\n" +
 		"  wt rm <task-id>           Remove a task worktree.\n" +
+		"  wt status <task-id>       Check worktree and merge readiness.\n" +
+		"  wt commit <task-id>       Commit worktree changes.\n" +
+		"  wt pull <task-id>         Merge task branch into its parent.\n" +
 		"  wt list                   List known worktrees.\n" +
 		"  wt prune [--dry-run]      Remove stale worktree metadata.\n" +
 		"  wt lock <task-id> [r]     Protect a worktree from removal.\n" +
@@ -115,10 +119,12 @@ func listAll() error {
 		"  wt ignore                 Add .wt/ to .gitignore.\n\n")
 
 	fmt.Print("Auxiliary:\n" +
+		"  ask <prompt>               Ask the built-in LLM for AIW guidance.\n" +
 		"  prompts <...>             Generate or merge prompt files.\n" +
+		"  completion <shell>        Generate shell completion scripts.\n" +
 		"  task agent <...>          Fresh-agent handoff and lineage tools.\n" +
 		"  cxs <...>                 Inspect and resume Codex CLI sessions.\n" +
-		"  flow <...>                Manage AIW-native Sessions and AI execution.\n\n")
+		"  session <...>             Manage persisted AIW Sessions.\n\n")
 
 	fmt.Print("Plugins:\n" +
 		"  git <subcommand>         Git helpers and discoverable Git subcommands.\n" +
@@ -371,8 +377,6 @@ func builtinHelpShort(name string) string {
 		return "create or show a design decision"
 	case "spec":
 		return "create a long-lived spec"
-	case "registry":
-		return "rebuild the registry"
 	case "prompts":
 		return "generate or merge prompt files"
 	case "task":
@@ -385,9 +389,9 @@ func builtinHelpShort(name string) string {
 func builtinUsageText(name string) (string, bool) {
 	switch name {
 	case "init":
-		return "usage: aiw init [--prompts] [--merge] [--force] [--template <name>]\n", true
+		return "usage: aiw init [--no-setup] [--prompts] [--merge] [--force] [--template <name>]\n", true
 	case "new":
-		return "usage: aiw new <task-id>\n", true
+		return "usage: aiw new <task-id> [--allow-unrelated-dirty]\n", true
 	case "list":
 		return "usage: aiw list\n", true
 	case "show":
@@ -404,12 +408,10 @@ func builtinUsageText(name string) (string, bool) {
 		return "usage: aiw decision <task-id>\n", true
 	case "spec":
 		return "usage: aiw spec <spec-id>\n", true
-	case "registry":
-		return "usage: aiw registry\n", true
 	case "prompts":
 		return "usage: aiw prompts [list|<template>] [--merge] [--force]\n", true
 	case "task":
-		return "usage: aiw task agent <next|status> <task-id> [--handoff PATH] [--takeover] [--yes]\n", true
+		return "usage: aiw <turn|chat> <task-id> [--handoff PATH] [--provider NAME] [--model MODEL]\n", true
 	default:
 		return "", false
 	}

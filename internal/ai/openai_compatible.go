@@ -19,6 +19,10 @@ type openAICompatibleProvider struct {
 	httpClient *http.Client
 }
 
+func (p openAICompatibleProvider) Interactive(context.Context, Request) (Response, error) {
+	return unsupportedInteractiveProvider(p.name)
+}
+
 func NewOpenAICompatibleProvider(name string, cfg Config) Provider {
 	baseURL := strings.TrimRight(cfg.BaseURL, "/")
 	if baseURL == "" {
