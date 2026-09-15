@@ -4,7 +4,8 @@ aiw-wt plugin: Python implementation of worktree commands mirroring Go `wt`.
 Supports: add, rm, list, prune, lock, unlock, repair, ignore
 
 This plugin uses the same conventions as the Go code: task metadata under
-.ai/tasks/<id>/task.toml with legacy tasks.toml fallback.
+.ai/<id>/task.toml, with .ai/tasks/<id>/ as a legacy location and tasks.toml
+as a legacy filename fallback.
 """
 import os
 import shutil
@@ -82,7 +83,8 @@ def resolve_root():
 
 ROOT = resolve_root()
 CHANGES_DIR = ROOT / "openspec" / "changes"
-RUNTIME_TASKS_DIR = ROOT / ".ai" / "tasks"
+RUNTIME_TASKS_DIR = ROOT / ".ai"
+LEGACY_RUNTIME_TASKS_DIR = RUNTIME_TASKS_DIR / "tasks"
 WORKTREE_DIR = Path(".wt")
 
 
@@ -130,8 +132,13 @@ def task_dir(task_id):
 
 
 def task_meta_path(task_id):
-    primary = RUNTIME_TASKS_DIR / task_id / "task.toml"
-    legacy = RUNTIME_TASKS_DIR / task_id / "tasks.toml"
+    task_dir = RUNTIME_TASKS_DIR / task_id
+    legacy_task_dir = LEGACY_RUNTIME_TASKS_DIR / task_id
+    if not task_dir.exists() and legacy_task_dir.exists():
+        task_dir = legacy_task_dir
+        print(f"warning: using legacy task metadata directory {legacy_task_dir}; migrate it to {RUNTIME_TASKS_DIR / task_id}", file=sys.stderr)
+    primary = task_dir / "task.toml"
+    legacy = task_dir / "tasks.toml"
     if primary.exists():
         return primary
     if legacy.exists():
@@ -786,7 +793,7 @@ def apply_merge_resolution(task_id, confirmed):
     return 0
 
 
-def pull(task_id, resolve_agent=False):
+def pull(task_id, conflict_handoff=False):
     context = worktree_context(task_id)
     if context is None:
         return 2
@@ -812,11 +819,11 @@ def pull(task_id, resolve_agent=False):
         binary = aiw_binary()
         if binary:
             run_cmd([binary, "task", "workflow", "delivery-failed", task_id, "merge", "Git merge failed; parent worktree conflict state preserved"])
-        if resolve_agent:
+        if conflict_handoff:
             handoff = write_merge_resolution_handoff(task_id, parent, branch)
             if handoff is not None:
                 print(f"proposal handoff: {handoff}", file=sys.stderr)
-                print("Review it with an agent; it has not edited, staged, committed, or completed the merge.", file=sys.stderr)
+                print("No agent was started. Give this handoff to an agent to create proposal.patch and proposal.md; then use `aiw wt resolve review <task-id>`.", file=sys.stderr)
         print_merge_conflict_guidance(task_id)
         return 2
     binary = aiw_binary()
@@ -869,7 +876,7 @@ def usage():
     print("  add <task-id> [base]                 Create a task worktree.")
     print("  rm <task-id> [--delete-branch] [--force]  Remove a worktree.")
     print("  commit <task-id> \"message\"             Commit all worktree changes.")
-    print("  pull <task-id> [--resolve=agent]         Merge task branch; optionally create a conflict proposal handoff.")
+    print("  pull <task-id> [--conflict-handoff]      Merge task branch; on conflict, write and print a handoff path. Does not start an agent.")
     print("  resolve review <task-id>                 Display an agent resolution proposal without changing Git state.")
     print("  resolve apply <task-id> --confirm        Apply and stage an accepted proposal; never commits or completes a merge.")
     print("  status <task-id>                         Show worktree and merge readiness.")
@@ -917,10 +924,10 @@ def main():
             return 2
         return commit(rest[0], rest[1])
     if sub == "pull":
-        if not rest or len(rest) > 2 or (len(rest) == 2 and rest[1] != "--resolve=agent"):
-            print("usage: aiw wt pull <task-id> [--resolve=agent]", file=sys.stderr)
+        if not rest or len(rest) > 2 or (len(rest) == 2 and rest[1] != "--conflict-handoff"):
+            print("usage: aiw wt pull <task-id> [--conflict-handoff]", file=sys.stderr)
             return 2
-        return pull(rest[0], "--resolve=agent" in rest[1:])
+        return pull(rest[0], "--conflict-handoff" in rest[1:])
     if sub == "resolve":
         if len(rest) == 2 and rest[0] == "review":
             return review_merge_resolution(rest[1])

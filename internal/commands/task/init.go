@@ -82,7 +82,7 @@ func agentsTemplate() string {
 	return `# AGENTS.md
 This repository uses OpenSpec-lite TOML workflow.
 Before coding:
-- read .ai/tasks/<task>/task.toml if exists
+- read .ai/<task>/task.toml if exists
 - read openspec/changes/<task>/tasks.md if exists
 - read design.md if exists
 - read related specs under openspec/specs/

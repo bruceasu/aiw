@@ -12,13 +12,113 @@ import (
 // LoadConfig reads the global AI configuration. The canonical section is
 // [ai]; provider settings in [cz] remain supported as a legacy fallback.
 func LoadConfig() (Config, error) {
+	values, err := loadConfigValues()
+	if err != nil {
+		return Config{}, err
+	}
+	return configFromValues(values), nil
+}
+
+// Profile is a named provider and model pair used by Managed Workflow routing.
+// It deliberately excludes credentials and transport settings, which continue
+// to resolve through the existing global AI configuration.
+type Profile struct {
+	Name     string
+	Provider string
+	Model    string
+}
+
+// LoadProfiles reads named [ai.profiles.<name>] provider/model pairs.
+// Profiles with an empty provider or model are ignored so callers can safely
+// fall back to the canonical global [ai] configuration.
+func LoadProfiles() (map[string]Profile, error) {
+	values, err := loadConfigValues()
+	if err != nil {
+		return nil, err
+	}
+	profiles := map[string]Profile{}
+	const prefix = "ai.profiles."
+	for key, provider := range values {
+		if !strings.HasPrefix(key, prefix) || !strings.HasSuffix(key, ".provider") {
+			continue
+		}
+		name := strings.TrimSuffix(strings.TrimPrefix(key, prefix), ".provider")
+		model := strings.TrimSpace(values[prefix+name+".model"])
+		provider = strings.TrimSpace(provider)
+		if name == "" || provider == "" || model == "" {
+			continue
+		}
+		profiles[name] = Profile{Name: name, Provider: normalize(provider), Model: model}
+	}
+	return profiles, nil
+}
+
+// DefaultProfileForActor returns the deterministic Managed Workflow routing.
+// Compiler is intentionally non-LLM and therefore has no AI Profile.
+func DefaultProfileForActor(actor string) string {
+	switch strings.ToLower(strings.TrimSpace(actor)) {
+	case "analysis":
+		return "fast"
+	case "coder", "tester":
+		return "balanced"
+	case "verifier":
+		return "reasoning"
+	default:
+		return ""
+	}
+}
+
+// ResolveActorProfile resolves the routed Profile for Managed Workflow only.
+// Missing or incomplete Profiles fall back to the existing global [ai]
+// resolution. The returned Profile always records the selected Profile name
+// and the provider/model actually selected for the request.
+func ResolveActorProfile(actor string) (Profile, Config, error) {
+	profileName := DefaultProfileForActor(actor)
+	if profileName == "" {
+		global, err := LoadConfig()
+		if err != nil {
+			return Profile{}, Config{}, err
+		}
+		return Profile{}, global, nil
+	}
+	return ResolveProfile(profileName)
+}
+
+// ResolveProfile resolves a named Managed Workflow Profile. Missing or
+// incomplete entries retain the existing global [ai] provider/model while the
+// returned Profile still records the requested routing name.
+func ResolveProfile(profileName string) (Profile, Config, error) {
+	global, err := LoadConfig()
+	if err != nil {
+		return Profile{}, Config{}, err
+	}
+	profileName = strings.TrimSpace(profileName)
+	if profileName == "" {
+		return Profile{}, global, nil
+	}
+	profiles, err := LoadProfiles()
+	if err != nil {
+		return Profile{}, Config{}, err
+	}
+	profile, ok := profiles[profileName]
+	if !ok {
+		return Profile{Name: profileName, Provider: global.Name, Model: global.Model}, global, nil
+	}
+	config, err := ConfigFor(profile.Provider, profile.Model)
+	if err != nil {
+		return Profile{}, Config{}, err
+	}
+	return Profile{Name: profileName, Provider: config.Name, Model: config.Model}, config, nil
+}
+
+func loadConfigValues() (map[string]string, error) {
 	values := map[string]string{}
 	for _, path := range configPaths() {
 		if err := mergeConfigFile(values, path); err != nil {
-			return Config{}, err
+			return nil, err
 		}
 	}
-	return configFromValues(values), nil
+	return values, nil
 }
 
 // ConfigFor resolves a named provider using global file configuration and
@@ -79,7 +179,7 @@ func mergeConfigFile(values map[string]string, path string) error {
 			section = strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(line, "["), "]"))
 			continue
 		}
-		if section != "ai" && section != "cz" {
+		if !isAIConfigSection(section) {
 			continue
 		}
 		parts := strings.SplitN(line, "=", 2)
@@ -97,6 +197,11 @@ func mergeConfigFile(values map[string]string, path string) error {
 		return fmt.Errorf("read AI config %s: %w", path, err)
 	}
 	return nil
+}
+
+func isAIConfigSection(section string) bool {
+	return section == "ai" || section == "cz" ||
+		(strings.HasPrefix(section, "ai.profiles.") && strings.TrimSpace(strings.TrimPrefix(section, "ai.profiles.")) != "")
 }
 
 func configFromValues(values map[string]string) Config {

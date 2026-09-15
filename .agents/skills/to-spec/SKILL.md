@@ -21,7 +21,7 @@ specification or publish externally unless the user explicitly asks.
 
    The AIW Task and OpenSpec change are one managed unit. Before continuing,
    establish and record the same normalized Task ID in both locations:
-  `.ai/tasks/<task-id>/task.toml` and the matching OpenSpec change directory.
+  `.ai/<task-id>/task.toml` and the matching OpenSpec change directory.
   The `task.toml` must be the AIW lifecycle record, not an OpenSpec-owned
   specification artifact, and must retain the Task's status, branch,
    worktree, parent branch, and Session fields when those fields exist. Do not proceed with
@@ -64,7 +64,7 @@ Check with the user that these seams match their expectations.
      Verification sections or equivalent records.
 
    The AIW lifecycle record and runtime artifacts belong under
-   `.ai/tasks/<task-id>/`, including `task.toml`, handoff documents, and
+   `.ai/<task-id>/`, including `task.toml`, handoff documents, and
    lineage data. They are not OpenSpec change artifacts.
 
    Put motivation and scope in `proposal.md`, decisions in `design.md`,

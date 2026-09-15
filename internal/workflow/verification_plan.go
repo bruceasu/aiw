@@ -35,6 +35,11 @@ type VerificationPlan struct {
 	Checks        []VerificationCheck `json:"checks"`
 }
 
+// TestExecutionPlan is the structured, collected unit-test plan consumed by
+// the controlled runner. VerificationPlan remains its compatibility name for
+// existing task artifacts.
+type TestExecutionPlan = VerificationPlan
+
 // VerificationCheck is one immutable candidate command. Argv is never a shell
 // command string: the controlled runner receives only its individual entries.
 type VerificationCheck struct {
@@ -48,6 +53,10 @@ type VerificationCheck struct {
 	Profile             string   `json:"profile"`
 	AllowedEnvironment  []string `json:"allowed_environment,omitempty"`
 }
+
+// TestExecutionCheck is the compatibility-safe name for one collected plan
+// entry. Its argv is always an argument vector, never a shell command.
+type TestExecutionCheck = VerificationCheck
 
 // VerificationPlanSelection is the auditable, read-only test-agent handoff.
 // It intentionally contains no command, directory, timeout, or authority.
@@ -149,12 +158,14 @@ type FocusedTestResult struct {
 	SchemaVersion      int                    `json:"schema_version"`
 	PlanDigest         string                 `json:"plan_digest"`
 	CheckID            string                 `json:"check_id"`
+	WorkItemID         WorkItemID             `json:"work_item_id"`
 	Argv               []string               `json:"argv"`
 	WorkingDirectory   string                 `json:"working_directory"`
 	StartedAt          string                 `json:"started_at"`
 	FinishedAt         string                 `json:"finished_at"`
 	ExitCode           *int                   `json:"exit_code,omitempty"`
 	TimedOut           bool                   `json:"timed_out"`
+	NetworkEnforcement string                 `json:"network_enforcement"`
 	RunnerError        string                 `json:"runner_error,omitempty"`
 	Output             BoundedOutputReference `json:"output"`
 }

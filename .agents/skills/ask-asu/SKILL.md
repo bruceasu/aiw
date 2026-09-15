@@ -28,6 +28,7 @@ description: 在整个 AIW/OpenSpec 开发流程中提供阶段建议，并路�
 - **新想法、问题不清或需求冲突**：先澄清问题、受众、成功条件和范围；推荐 `requirement-management`。复杂或跨域决策可用 `wayfinder`。
 - **缺陷、报错或性能退化**：先以 `triage` 分类；问题难以定位时用 `diagnosing-bugs`，并把运行时复现作为需显式授权的后续步骤。
 - **需求已稳定但尚未可实施**：确认一个 AIW Task 与一个 OpenSpec change 的生命周期映射；设计、规格和任务拆分依次推荐 `fd-workflow` / `to-spec` / `to-tickets`。
+- **需求或设计中的领域语言不稳定**：先使用 `domain-modeling` 固化术语、实体关系和边界，再继续需求或 OpenSpec 设计。
 - **准备编码**：确认选中的 `tasks.md` 条目、工作区和授权边界；推荐 `implement`。只有明确要求测试先行时才推荐 `tdd`。
 - **实现中或实现后**：建议检查变更是否覆盖当前 checklist、静态证据和未决 Gate；测试、构建、格式化和评审均须用户明确授权。用户明确要求审查时才推荐 `code-review`。
 - **交付、并行或跨会话**：先确认 Task 的工作区、分支和父分支；隔离工作区使用 `aiw wt`，跨会话使用 `handoff` 后由用户明确要求的 `aiw turn <task-id>`。合并、发布、清理和归档必须单独授权。

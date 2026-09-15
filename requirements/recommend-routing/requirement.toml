@@ -1,0 +1,32 @@
+id = "recommend-routing"
+title = "Recommend workflow AI routing"
+status = "PROMOTED"
+created = "2026-09-14"
+updated = "2026-09-14"
+revision = 14
+
+[approval]
+status = "APPROVED"
+by = "svictor"
+at = "2026-09-14T15:26:15+09:00"
+reason = "agree the plan"
+
+[promotion]
+status = "SPEC_DRAFTED"
+task_id = "recommend-routing"
+
+[conversation]
+session_id = ""
+
+[terminal]
+by = ""
+at = ""
+reason = ""
+
+[artifact]
+problem-brief = "requirements/recommend-routing/problem-brief.md"
+requirement-plan = "requirements/recommend-routing/requirement-plan.md"
+
+[digest]
+problem-brief = "25587772f78eef369028109121642303d78c10165725bb1e512fa5cdac1af70f"
+requirement-plan = "bbdf72920df9e225a1784346d43fc4b0c8d78272886a27a116b3986d31330210"

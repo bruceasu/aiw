@@ -25,6 +25,7 @@ func NewCompatibleRuntime(task TaskReference, planning PlanningState, delivery D
 		Attempts:      []Attempt{},
 		Gates:         []Gate{},
 		Evidence:      []Evidence{},
+		ActorHandoffs: []ActorHandoff{},
 	}
 	state.Summary = DeriveSummary(state)
 	return state
@@ -35,7 +36,21 @@ func NewCompatibleRuntime(task TaskReference, planning PlanningState, delivery D
 func (s *Store) EnsureCompatible(state RuntimeState) (RuntimeState, error) {
 	loaded, err := s.Load(state.Task.ID)
 	if err == nil {
-		return loaded, nil
+		if err := s.ensureEventLog(state.Task.ID); err != nil {
+			return RuntimeState{}, err
+		}
+		if _, statErr := os.Stat(s.path(state.Task.ID, runtimeStateFile)); statErr == nil {
+			return loaded, nil
+		}
+		lock, lockErr := s.lock(state.Task.ID)
+		if lockErr != nil {
+			return RuntimeState{}, lockErr
+		}
+		defer unlock(lock)
+		if migrateErr := s.migrateLegacyLocked(state.Task.ID); migrateErr != nil {
+			return RuntimeState{}, migrateErr
+		}
+		return s.Load(state.Task.ID)
 	}
 	if !errors.Is(err, os.ErrNotExist) {
 		return RuntimeState{}, err

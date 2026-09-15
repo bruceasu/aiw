@@ -1,6 +1,10 @@
 package workflow
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestVerificationPlanDigestIgnoresCheckAndEnvironmentOrder(t *testing.T) {
 	first := validVerificationPlan()
@@ -98,6 +102,35 @@ func TestVerificationPlanRejectsUnsafeChecks(t *testing.T) {
 				t.Fatal("Validate() succeeded for an unsafe check")
 			}
 		})
+	}
+}
+
+func TestSelectCompileAdapterPrefersCompileScriptThenGo(t *testing.T) {
+	workspace := t.TempDir()
+	if err := os.WriteFile(filepath.Join(workspace, "go.mod"), []byte("module example.test/adapter\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	adapter, err := SelectCompileAdapter(workspace)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if adapter.Kind != "go" || adapter.Name != "go-build" {
+		t.Fatalf("adapter without script = %+v, want Go adapter", adapter)
+	}
+
+	if err := os.MkdirAll(filepath.Join(workspace, "scripts"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(workspace, "scripts", "compile.py"), []byte("raise SystemExit(0)\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	adapter, err = SelectCompileAdapter(workspace)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if adapter.Kind != "script" || adapter.Name != "scripts/compile.py" {
+		t.Fatalf("adapter with script = %+v, want compile script", adapter)
 	}
 }
 

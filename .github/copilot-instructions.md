@@ -12,8 +12,11 @@ Read `AGENTS.md` first.
 
 ## Resource Guard
 
-Do not automatically run tests, builds, formatters, linters, vet, verification
-scripts, network calls, permission probes, privilege escalation,
+After implementation, run one compile-only check: prefer `scripts/compile*` or
+root `compile*`; otherwise use the narrowest language-level compiler command.
+Do not automatically run tests, `build*` scripts, final-artifact builds,
+formatters, linters, vet, verification scripts, network calls, permission
+probes, privilege escalation,
 `codex-auto-review`, or sub-agents.
 
 After editing, use at most one static/read-only validation command by default.
@@ -45,7 +48,9 @@ Read `AGENTS.md` first, then `go/AGENTS.md`.
 - respect package boundaries
 - keep exported APIs and context flow stable unless the task requires change
 - use static review by default
-- do not run tests, vet, builds, verification scripts, network calls, or
-  permission probes without resource-budget authorization
+- after implementation, run one compile-only check using a `compile*` script or
+  the narrowest language-level compiler command; do not retain a final artifact
+- do not run tests, vet, `build*` scripts, final-artifact builds, verification
+  scripts, network calls, or permission probes without authorization
 - when authorized, run one package-focused command and ask before widening
 <!-- aiw-prompts:go:copilot end -->

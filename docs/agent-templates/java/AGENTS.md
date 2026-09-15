@@ -28,8 +28,11 @@ Use it when the task is mostly Java or the current directory contains Java marke
 - public API or event contract changes
 
 ## Validation Options
-Use static review by default. Do not automatically run `scripts/verify.sh`,
-Maven, Gradle, tests, or builds.
+Use static review by default. After implementation, run one compile-only check:
+prefer `scripts/compile*` or root `compile*`, otherwise use the narrowest
+Maven or Gradle compile goal without retaining a final distributable artifact.
+Do not run `scripts/verify.sh`, tests, `build*` scripts, or final-artifact
+builds.
 
 When the shared resource budget authorizes runtime validation, choose one
 smallest relevant command:

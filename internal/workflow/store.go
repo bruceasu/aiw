@@ -19,6 +19,8 @@ const (
 	runtimeLocksDir    = "locks"
 	runtimeStateFile   = "state.json"
 	runtimeEventsFile  = "events.jsonl"
+	legacyMigrationFile = "migrated-to"
+	legacyMigrationPendingFile = ".migration-pending"
 )
 
 // Store persists local, high-churn Workflow Core state. It deliberately does
@@ -54,7 +56,8 @@ func (s *Store) Create(state RuntimeState) (RuntimeState, error) {
 	if err := ValidateRuntimeState(state); err != nil {
 		return RuntimeState{}, err
 	}
-	if _, err := os.Stat(s.taskDir(state.Task.ID)); err == nil {
+	statePath := s.path(state.Task.ID, runtimeStateFile)
+	if _, err := os.Stat(statePath); err == nil {
 		return RuntimeState{}, fmt.Errorf("workflow Task already exists: %s", state.Task.ID)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return RuntimeState{}, err
@@ -65,7 +68,7 @@ func (s *Store) Create(state RuntimeState) (RuntimeState, error) {
 	if err := s.save(state); err != nil {
 		return RuntimeState{}, err
 	}
-	if err := atomicWrite(s.path(state.Task.ID, runtimeEventsFile), nil); err != nil {
+	if err := s.ensureEventLog(state.Task.ID); err != nil {
 		return RuntimeState{}, err
 	}
 	return s.Load(state.Task.ID)
@@ -75,7 +78,17 @@ func (s *Store) Load(id TaskID) (RuntimeState, error) {
 	if err := validateTaskID(id); err != nil {
 		return RuntimeState{}, err
 	}
-	b, err := os.ReadFile(s.path(id, runtimeStateFile))
+	dir := s.taskDir(id)
+	if _, err := os.Stat(filepath.Join(dir, runtimeStateFile)); errors.Is(err, os.ErrNotExist) {
+		dir = s.legacyTaskDir(id)
+	} else if err != nil {
+		return RuntimeState{}, err
+	}
+	return s.loadFromDir(id, dir)
+}
+
+func (s *Store) loadFromDir(id TaskID, dir string) (RuntimeState, error) {
+	b, err := os.ReadFile(filepath.Join(dir, runtimeStateFile))
 	if err != nil {
 		return RuntimeState{}, err
 	}
@@ -97,7 +110,7 @@ func (s *Store) Load(id TaskID) (RuntimeState, error) {
 
 func normalizeRuntimeState(state *RuntimeState) error {
 	switch state.SchemaVersion {
-	case 1, 2, 3:
+	case 1, 2, 3, 4, 5, 6, 7, 8:
 		state.SchemaVersion = SchemaVersion
 	case SchemaVersion:
 	default:
@@ -108,6 +121,9 @@ func normalizeRuntimeState(state *RuntimeState) error {
 		if item.RetryPolicy.MaxAttempts == 0 {
 			item.RetryPolicy.MaxAttempts = DefaultRetryLimit
 		}
+	}
+	if err := normalizeOperationalRetries(&state.OperationalRetries); err != nil {
+		return err
 	}
 	return nil
 }
@@ -120,6 +136,9 @@ func (s *Store) update(id TaskID, change func(*RuntimeState) error) (RuntimeStat
 		return RuntimeState{}, err
 	}
 	defer unlock(lock)
+	if err := s.migrateLegacyLocked(id); err != nil {
+		return RuntimeState{}, err
+	}
 
 	state, err := s.Load(id)
 	if err != nil {
@@ -150,6 +169,9 @@ func (s *Store) UpdateWithEvent(id TaskID, event Event, change func(*RuntimeStat
 		return RuntimeState{}, err
 	}
 	defer unlock(lock)
+	if err := s.migrateLegacyLocked(id); err != nil {
+		return RuntimeState{}, err
+	}
 
 	state, err := s.Load(id)
 	if err != nil {
@@ -201,6 +223,18 @@ func (s *Store) appendEvent(event Event, id TaskID) error {
 	return err
 }
 
+// ensureEventLog completes runtime bootstrap after an interrupted initial
+// state write without replacing existing event history.
+func (s *Store) ensureEventLog(id TaskID) error {
+	path := s.path(id, runtimeEventsFile)
+	if _, err := os.Stat(path); err == nil {
+		return nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return atomicWrite(path, nil)
+}
+
 // RecoverPendingEvent appends only the exact event already persisted in state.
 // It never reruns the transition or any caller-owned external operation.
 func (s *Store) RecoverPendingEvent(id TaskID) (RuntimeState, error) {
@@ -209,6 +243,9 @@ func (s *Store) RecoverPendingEvent(id TaskID) (RuntimeState, error) {
 		return RuntimeState{}, err
 	}
 	defer unlock(lock)
+	if err := s.migrateLegacyLocked(id); err != nil {
+		return RuntimeState{}, err
+	}
 	state, err := s.Load(id)
 	if err != nil {
 		return RuntimeState{}, err
@@ -308,6 +345,10 @@ func (s *Store) ReleaseWriteLease(id TaskID, attemptID AttemptID) (RuntimeState,
 }
 
 func (s *Store) taskDir(id TaskID) string {
+	return filepath.Join(s.Root, string(id))
+}
+
+func (s *Store) legacyTaskDir(id TaskID) string {
 	return filepath.Join(s.Root, runtimeTasksDir, string(id))
 }
 
@@ -332,6 +373,125 @@ func (s *Store) save(state RuntimeState) error {
 		return err
 	}
 	return atomicWrite(s.path(state.Task.ID, runtimeStateFile), append(b, '\n'))
+}
+
+// migrateLegacyLocked promotes the complete legacy Task aggregate only while
+// the Task's exclusive state lock is held. A rename keeps state, events,
+// handoffs, and adapter-owned payloads together. The migration event follows
+// the same pending-event protocol as ordinary transitions, so an interruption
+// can be recovered without replaying a caller action.
+func (s *Store) migrateLegacyLocked(id TaskID) error {
+	canonical := s.taskDir(id)
+	legacy := s.legacyTaskDir(id)
+	if _, err := os.Stat(filepath.Join(canonical, runtimeStateFile)); err == nil {
+		if _, err := s.loadFromDir(id, canonical); err != nil {
+			return err
+		}
+		if _, err := os.Stat(filepath.Join(canonical, legacyMigrationPendingFile)); err == nil {
+			if err := s.recoverMigrationEvent(id); err != nil {
+				return err
+			}
+			if err := s.recordMigrationEvent(id); err != nil {
+				return err
+			}
+			if err := os.Remove(filepath.Join(canonical, legacyMigrationPendingFile)); err != nil && !errors.Is(err, os.ErrNotExist) {
+				return err
+			}
+		}
+		return s.markLegacyMigrated(legacy, canonical)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if _, err := os.Stat(filepath.Join(legacy, runtimeStateFile)); errors.Is(err, os.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	if err := atomicWrite(filepath.Join(legacy, legacyMigrationPendingFile), []byte("pending\n")); err != nil {
+		return err
+	}
+	if err := os.Rename(legacy, canonical); err != nil {
+		return fmt.Errorf("migrate legacy workflow Task %s: %w", id, err)
+	}
+	if err := s.recordMigrationEvent(id); err != nil {
+		return err
+	}
+	if err := os.Remove(filepath.Join(canonical, legacyMigrationPendingFile)); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return s.markLegacyMigrated(legacy, canonical)
+}
+
+func (s *Store) recordMigrationEvent(id TaskID) error {
+	state, err := s.loadFromDir(id, s.taskDir(id))
+	if err != nil {
+		return err
+	}
+	if state.PendingEvent != nil {
+		return fmt.Errorf("legacy workflow Task %s has pending event %d; recover it before migration", id, state.PendingEvent.Sequence)
+	}
+	events, err := s.readEvents(id)
+	if err != nil {
+		return err
+	}
+	for _, existing := range events {
+		if existing.Type == "runtime.migrated" && existing.Detail == "from .ai/tasks" {
+			return nil
+		}
+	}
+	event := Event{SchemaVersion: SchemaVersion, Sequence: state.LastEventSequence + 1, Type: "runtime.migrated", At: time.Now().UTC().Format(time.RFC3339), Detail: "from .ai/tasks"}
+	state.PendingEvent = &event
+	if err := s.save(state); err != nil {
+		return err
+	}
+	if err := s.appendEvent(event, id); err != nil {
+		return err
+	}
+	state.LastEventSequence = event.Sequence
+	state.PendingEvent = nil
+	return s.save(state)
+}
+
+func (s *Store) recoverMigrationEvent(id TaskID) error {
+	state, err := s.loadFromDir(id, s.taskDir(id))
+	if err != nil {
+		return err
+	}
+	if state.PendingEvent == nil {
+		return nil
+	}
+	pending := *state.PendingEvent
+	if pending.Type != "runtime.migrated" || pending.Sequence != state.LastEventSequence+1 {
+		return fmt.Errorf("legacy workflow Task %s has unrelated pending event; recover it before migration", id)
+	}
+	events, err := s.readEvents(id)
+	if err != nil {
+		return err
+	}
+	found := false
+	for _, existing := range events {
+		if existing.Sequence == pending.Sequence {
+			if existing != pending {
+				return fmt.Errorf("migration event sequence %d conflicts with event history", pending.Sequence)
+			}
+			found = true
+		}
+	}
+	if !found {
+		if err := s.appendEvent(pending, id); err != nil {
+			return err
+		}
+	}
+	state.LastEventSequence = pending.Sequence
+	state.PendingEvent = nil
+	return s.save(state)
+}
+
+func (s *Store) markLegacyMigrated(legacy, canonical string) error {
+	if err := os.MkdirAll(legacy, 0o755); err != nil {
+		return err
+	}
+	return atomicWrite(filepath.Join(legacy, legacyMigrationFile), []byte(canonical+"\n"))
 }
 
 func validateTaskID(id TaskID) error {

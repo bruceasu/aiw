@@ -37,9 +37,10 @@ func (s *Store) SetRetryPolicy(id TaskID, workItemID WorkItemID, policy RetryPol
 	})
 }
 
-// ReopenWorkItem resets the automatic retry budget only for a Work Item that
-// was blocked by exhausting that budget. The reason is retained in event
-// history so reopening remains an explicit operator decision.
+// ReopenWorkItem explicitly returns a blocked Work Item to the ready queue
+// after its relevant Gates have been resolved. An exhausted retry budget is
+// reset; a blocked outcome that did not exhaust the budget preserves its
+// count. The reason is retained in event history for operator auditability.
 func (s *Store) ReopenWorkItem(id TaskID, workItemID WorkItemID, reason string) (RuntimeState, error) {
 	if workItemID == "" {
 		return RuntimeState{}, fmt.Errorf("work item id is required")
@@ -54,16 +55,30 @@ func (s *Store) ReopenWorkItem(id TaskID, workItemID WorkItemID, reason string) 
 			if item.ID != workItemID {
 				continue
 			}
-			if item.State != WorkItemBlocked || item.NoProgressCount < item.RetryPolicy.MaxAttempts {
-				return fmt.Errorf("work item %s is not blocked by its retry limit", workItemID)
+			if item.State != WorkItemBlocked {
+				return fmt.Errorf("work item %s is not blocked", workItemID)
+			}
+			if hasOpenRecoveryGate(*state, workItemID) {
+				return fmt.Errorf("work item %s has an unresolved Gate; resolve it before reopening", workItemID)
 			}
 			if err := ValidateWorkItemTransition(item.ID, item.State, WorkItemReady); err != nil {
 				return err
 			}
 			item.State = WorkItemReady
-			item.NoProgressCount = 0
+			if item.NoProgressCount >= item.RetryPolicy.MaxAttempts {
+				item.NoProgressCount = 0
+			}
 			return nil
 		}
 		return fmt.Errorf("unknown work item %s", workItemID)
 	})
+}
+
+func hasOpenRecoveryGate(state RuntimeState, workItemID WorkItemID) bool {
+	for _, gate := range state.Gates {
+		if gate.State == GateOpen && (gate.WorkItemID == "" || gate.WorkItemID == workItemID) {
+			return true
+		}
+	}
+	return false
 }

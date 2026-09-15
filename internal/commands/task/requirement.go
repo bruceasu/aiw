@@ -476,6 +476,9 @@ func promoteRequirement(args []string) error {
 	if !fsx.Exists(taskx.RuntimeTaskDir(taskID)) {
 		return fmt.Errorf("promoted task not found: %s", taskID)
 	}
+	if err := ensureChecklistMapping(taskID); err != nil {
+		return fmt.Errorf("recover Work Item mapping: %w", err)
+	}
 	if meta.Promotion.TaskID == "" {
 		meta, _, err = requirement.StartPromotion(reqID, taskID)
 		if err != nil {
@@ -491,6 +494,9 @@ func promoteRequirement(args []string) error {
 	}
 	if err := prepareOpenSpecArtifactsShared(meta, snapshot); err != nil {
 		return err
+	}
+	if err := runWorkflowCommand([]string{"recommend-routing", taskID}); err != nil {
+		return fmt.Errorf("recommend Task routing: %w", err)
 	}
 	meta, err = requirement.CompletePromotion(reqID, taskID)
 	if err != nil {

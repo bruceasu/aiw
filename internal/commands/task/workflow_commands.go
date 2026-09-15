@@ -1,6 +1,10 @@
 package task
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,8 +12,10 @@ import (
 	"strings"
 	"time"
 
+	"aiw/internal/ai"
 	"aiw/internal/fsx"
 	"aiw/internal/gitx"
+	"aiw/internal/session"
 	"aiw/internal/taskx"
 	"aiw/internal/ui"
 	"aiw/internal/workflow"
@@ -24,6 +30,39 @@ func runWorkflowCommand(args []string) error {
 		return fmt.Errorf("usage: task workflow <operation> <task-id> [arguments]")
 	}
 	op, id := args[0], args[1]
+	if op == "recommend-routing" {
+		if len(args) != 2 || !safeID(id) { return fmt.Errorf("usage: task workflow recommend-routing <task-id>") }
+		meta, store, err := compatibleWorkflow(id)
+		if err != nil { return err }
+		workspace := meta.Worktree
+		if strings.TrimSpace(workspace) == "" { return fmt.Errorf("Task %s workspace is unassigned", id) }
+		plan := workflow.NewRoutingPlan(workflow.TaskID(id), "defaults", workflow.DefaultRoutingProfiles(), workflow.CompilePlanForWorkspace(workspace))
+		if profiles, recommendErr := recommendRoutingProfiles(workspace); recommendErr == nil {
+			plan = workflow.NewRoutingPlan(workflow.TaskID(id), "llm", profiles, plan.Compile)
+		}
+		state, reference, err := store.PersistRoutingPlan(workflow.TaskID(id), plan)
+		if err != nil { return err }
+		fmt.Printf("routing plan: %s (source=%s; review recommended, not required)\n", reference, plan.Source)
+		return projectWorkflowState(id, state)
+	}
+	if op == "report" {
+		if len(args) != 2 {
+			return fmt.Errorf("usage: task workflow report <task-id>")
+		}
+		if !safeID(id) {
+			return fmt.Errorf("invalid task id: %s", id)
+		}
+		content, err := workflow.NewStore("").ReadLatestFailureReport(workflow.TaskID(id))
+		if errors.Is(err, os.ErrNotExist) {
+			fmt.Printf("no unresolved failure report for task=%s\n", id)
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("read latest failure report: %w", err)
+		}
+		fmt.Print(string(content))
+		return nil
+	}
 	if op == "diagnose" {
 		if len(args) != 2 {
 			return fmt.Errorf("usage: task workflow diagnose <task-id>")
@@ -84,6 +123,16 @@ func runWorkflowCommand(args []string) error {
 		}
 		return projectWorkflowState(id, state)
 	}
+	if op == "local-merge" {
+		if len(args) < 3 {
+			return fmt.Errorf("usage: task workflow local-merge <task-id> <commit-message>")
+		}
+		meta, store, err := compatibleWorkflow(id)
+		if err != nil {
+			return err
+		}
+		return localMergeDelivery(id, meta, store, strings.Join(args[2:], " "))
+	}
 	if op == "delivery-failed" {
 		if len(args) < 4 {
 			return fmt.Errorf("usage: task workflow delivery-failed <task-id> <stage> <detail>")
@@ -110,7 +159,7 @@ func runWorkflowCommand(args []string) error {
 	case "plan", "sync":
 		state, err = syncWorkflowChecklist(id, store)
 	case "advance":
-		state, err = advanceWorkflow(id, meta, store)
+		state, err = advanceWorkflow(id, meta, store, false, "", "")
 	case "attempt":
 		if len(args) < 3 {
 			return fmt.Errorf("usage: task workflow attempt <task-id> <start|checkpoint> ...")
@@ -143,11 +192,20 @@ func runWorkflowCommand(args []string) error {
 			return fmt.Errorf("usage: task workflow gate <task-id> <gate-id> <resolved|waived>")
 		}
 		state, err = store.ResolveGate(workflow.TaskID(id), workflow.GateID(args[2]), workflow.GateState(args[3]))
+	case "skip-focused-test":
+		var workItemID workflow.WorkItemID
+		state, workItemID, err = store.SkipFocusedTest(workflow.TaskID(id), strings.Join(args[2:], " "))
+		if err == nil {
+			err = projectAcceptedWorkItem(id, store, state, workItemID)
+		}
 	case "complete":
 		if len(args) != 3 {
 			return fmt.Errorf("usage: task workflow complete <task-id> <work-item-id>")
 		}
 		state, err = store.CompleteWorkItem(workflow.TaskID(id), workflow.WorkItemID(args[2]))
+		if err == nil {
+			err = projectAcceptedWorkItem(id, store, state, workflow.WorkItemID(args[2]))
+		}
 	case "retry-policy":
 		limit, parseErr := strconv.Atoi(args[3])
 		if parseErr != nil {
@@ -169,7 +227,7 @@ func runWorkflowCommand(args []string) error {
 		if err != nil {
 			break
 		}
-		execution, executeErr := runFocusedTestCommand(meta, state, store, workflow.AttemptID(args[2]), nil, osFocusedTestProcessRunner{})
+		execution, executeErr := runFocusedTestCommand(meta, state, store, workflow.AttemptID(args[2]), installedFocusedTestNetworkEnforcer{}, noNetworkFocusedTestProcessRunner{})
 		if execution.RuntimeState.Task.ID != "" {
 			if projectErr := projectWorkflowState(id, execution.RuntimeState); projectErr != nil {
 				return projectErr
@@ -193,6 +251,9 @@ func runFocusedTestCommand(meta taskx.TaskMeta, state workflow.RuntimeState, sto
 	run, err := ResolveFocusedTestRun(meta, state, attemptID)
 	if err != nil {
 		return FocusedTestExecution{}, err
+	}
+	if focusedTestNetworkEnforcementWaived(state, run) {
+		process = waivedFocusedTestProcessRunner{}
 	}
 	return ExecuteFocusedTest(store, run, enforcer, process)
 }
@@ -255,14 +316,38 @@ func runWorkflowWithOverrides(id string, execute, supervised, primary bool, prov
 		if err != nil {
 			return err
 		}
+		if !primary {
+			if err := newWorkspaceCoordinator(store).Prepare(id, meta); err != nil {
+				return fmt.Errorf("coordinate automated workspace: %w", err)
+			}
+		}
+	}
+	var sessionEnvironment []string
+	if execute && supervised {
+		sessionEnvironment, err = preflightSupervisedGitWorkspace(meta)
+		if err != nil {
+			if _, gateErr := store.OpenWorkspaceAccessGate(workflow.TaskID(id), err.Error()); gateErr != nil {
+				return fmt.Errorf("%w; record workspace-access Gate: %v", err, gateErr)
+			}
+			return err
+		}
 	}
 	state, err := syncWorkflowChecklist(id, store)
 	if err != nil {
 		return err
 	}
+	if execute && supervised {
+		state, skippedWorkItem, skipErr := skipUnconfiguredFocusedVerification(id, store, state)
+		if skipErr != nil {
+			return skipErr
+		}
+		if skippedWorkItem != "" {
+			return projectAcceptedWorkItem(id, store, state, skippedWorkItem)
+		}
+	}
 	outcome := workflow.NextRunnerOutcome(state)
 	if outcome.Kind == "" {
-		state, err = advanceWorkflow(id, meta, store)
+		state, err = advanceWorkflow(id, meta, store, supervised, provider, model)
 		if err != nil {
 			return err
 		}
@@ -278,17 +363,75 @@ func runWorkflowWithOverrides(id string, execute, supervised, primary bool, prov
 	if !execute {
 		return projectWorkflowState(id, state)
 	}
+	if supervised && outcome.Request.AISelection != nil {
+		provider, model = outcome.Request.AISelection.Provider, outcome.Request.AISelection.Model
+	}
+	if state.Policy == nil {
+		snapshot, resolveErr := workflow.ResolvePolicy(workflow.PolicyLayers{
+			{Ordinary: map[string]string{
+				"network":                workflow.NetworkPolicyDeny,
+				"local-unit-test-runner": "aiw-no-network-runner",
+			}, Capabilities: map[string]workflow.CapabilityAuthorization{
+				"local-unit-test": {State: workflow.CapabilityAllowed},
+			}},
+			{Ordinary: map[string]string{"provider": provider, "model": model}},
+		})
+		if resolveErr != nil {
+			return resolveErr
+		}
+		state, err = store.SnapshotPolicy(workflow.TaskID(id), snapshot)
+		if err != nil {
+			return err
+		}
+	}
 	if err := ensureRunnerHandoff(id, outcome.Request); err != nil {
 		return err
 	}
-	return runBoundedTaskTurn(id, supervised, provider, model)
+	// A request can be prepared by a non-executing workflow pass. Only the
+	// supervisor that is about to invoke the managed adapter may mark it
+	// dispatched; a later recovery must inspect its bound Session result rather
+	// than silently create another turn.
+	if supervised {
+		if outcome.Request.DispatchedAt != "" {
+			return nil
+		}
+		if err := ensureSupervisedCompilePlan(store, outcome.Request); err != nil {
+			return err
+		}
+		if _, err := store.DispatchPreparedAgentRequest(workflow.TaskID(id), outcome.Request.AttemptID); err != nil {
+			return err
+		}
+		if outcome.Request.Handoff != "" {
+			args := []string{"turn", id, "--supervised", "--handoff", outcome.Request.Handoff}
+			if provider != "" { args = append(args, "--provider", provider) }
+			if model != "" { args = append(args, "--model", model) }
+			return runTaskAgentWithEnvironment(args, sessionEnvironment)
+		}
+	}
+	return runBoundedTaskTurn(id, supervised, sessionEnvironment, provider, model)
+}
+
+func skipUnconfiguredFocusedVerification(id string, store *workflow.Store, state workflow.RuntimeState) (workflow.RuntimeState, workflow.WorkItemID, error) {
+	if _, err := os.Stat(taskx.VerificationPlanPath(id)); err == nil {
+		return state, "", nil
+	} else if !os.IsNotExist(err) {
+		return state, "", fmt.Errorf("inspect verification plan: %w", err)
+	}
+	updated, workItemID, err := store.SkipFocusedTest(workflow.TaskID(id), "no Verification Plan supplied; optional focused verification skipped by supervisor policy")
+	if err != nil && !strings.Contains(err.Error(), "has no authorized focused verification Work Item") {
+		return state, "", err
+	}
+	if workItemID == "" {
+		return state, "", nil
+	}
+	return updated, workItemID, nil
 }
 
 // runBoundedTaskTurn is the canonical handoff from automatic workflow
 // execution to the one-turn Task Agent command. Keeping this boundary here
 // ensures Runner and Supervisor never start an interactive Chat or a legacy
 // agent command surface.
-func runBoundedTaskTurn(id string, supervised bool, overrides ...string) error {
+func runBoundedTaskTurn(id string, supervised bool, environment []string, overrides ...string) error {
 	args := []string{"turn", id}
 	if supervised {
 		args = append(args, "--supervised")
@@ -299,7 +442,7 @@ func runBoundedTaskTurn(id string, supervised bool, overrides ...string) error {
 	if len(overrides) > 1 && strings.TrimSpace(overrides[1]) != "" {
 		args = append(args, "--model", overrides[1])
 	}
-	return runTaskAgent(args)
+	return runTaskAgentWithEnvironment(args, environment)
 }
 
 func ensureAutomatedWorkspace(id string, meta taskx.TaskMeta, primary bool) (taskx.TaskMeta, error) {
@@ -371,13 +514,65 @@ func syncWorkflowChecklist(id string, store *workflow.Store) (workflow.RuntimeSt
 	}
 	items, err := taskx.ReadWorkflowChecklist(path)
 	if err != nil {
+		var projectionErr *taskx.ChecklistProjectionError
+		if errors.As(err, &projectionErr) {
+			_, _ = store.OpenChecklistReconciliationGate(workflow.TaskID(id), "", projectionErr.Code, projectionErr.Error())
+		}
 		return workflow.RuntimeState{}, err
 	}
 	candidates := make([]workflow.ChecklistCandidate, len(items))
 	for index, item := range items {
-		candidates[index] = workflow.ChecklistCandidate{Item: item.Number, Title: item.Title, Completed: item.Completed}
+		candidates[index] = workflow.ChecklistCandidate{Item: item.Number, Title: item.Title, Completed: item.Completed, DependsOn: item.DependsOn}
 	}
 	return store.SyncChecklist(workflow.TaskID(id), candidates, taskx.ChecklistFingerprint(items))
+}
+
+// projectAcceptedWorkItem is the only reverse projection from Workflow Core to
+// OpenSpec. workflowChecklistPath resolves the isolated Task worktree, so this
+// path never writes the parent checkout during supervised execution.
+func projectAcceptedWorkItem(id string, store *workflow.Store, state workflow.RuntimeState, workItemID workflow.WorkItemID) error {
+	var item *workflow.WorkItem
+	for index := range state.WorkItems {
+		if state.WorkItems[index].ID == workItemID {
+			item = &state.WorkItems[index]
+			break
+		}
+	}
+	if item == nil || item.State != workflow.WorkItemCompleted || item.Checklist.Item == "" {
+		return fmt.Errorf("completed work item %s has no checklist projection", workItemID)
+	}
+	meta, err := taskx.ReadTaskMeta(taskx.ResolveTaskMetaPath(id))
+	if err == nil && resolvedWorkspaceKind(meta) != "isolated" {
+		err = fmt.Errorf("accepted Work Item projection requires an isolated Task worktree")
+	}
+	path := ""
+	if err == nil {
+		path, err = workflowChecklistPath(id)
+	}
+	if err == nil {
+		err = taskx.ProjectWorkflowChecklistCompletion(path, item.Checklist.Item)
+	}
+	if err == nil {
+		return nil
+	}
+	var projectionErr *taskx.ChecklistProjectionError
+	if errors.As(err, &projectionErr) {
+		_, gateErr := store.OpenChecklistReconciliationGate(workflow.TaskID(id), workItemID, projectionErr.Code, projectionErr.Error())
+		if gateErr != nil {
+			return fmt.Errorf("project accepted Work Item: %w; record reconciliation Gate: %v", err, gateErr)
+		}
+		return err
+	}
+	_, repairErr := store.EnqueueProjectionRepair(workflow.TaskID(id), workflow.ProjectionRepair{
+		EventSequence: state.LastEventSequence,
+		Target:        "tasks.md/" + string(workItemID),
+		ErrorClass:    "checklist-projection-failed",
+		Recommended:   fmt.Sprintf("aiw task workflow repair %s", id),
+	})
+	if repairErr != nil {
+		return fmt.Errorf("project accepted Work Item: %w; enqueue projection repair: %v", err, repairErr)
+	}
+	return err
 }
 
 // workflowChecklistPath selects the Task's bound workspace as the source of
@@ -406,7 +601,7 @@ func workflowChecklistPath(id string) (string, error) {
 	return filepath.Join(worktree, taskx.TaskDir(id), "tasks.md"), nil
 }
 
-func advanceWorkflow(id string, meta taskx.TaskMeta, store *workflow.Store) (workflow.RuntimeState, error) {
+func advanceWorkflow(id string, meta taskx.TaskMeta, store *workflow.Store, supervised bool, providerOverride, modelOverride string) (workflow.RuntimeState, error) {
 	state, err := syncWorkflowChecklist(id, store)
 	if err != nil {
 		return workflow.RuntimeState{}, err
@@ -427,12 +622,51 @@ func advanceWorkflow(id string, meta taskx.TaskMeta, store *workflow.Store) (wor
 		return store.RecordAutomation(workflow.TaskID(id), state.Automation.PlanFingerprint, workflow.AutomationCursor{Result: "no-executable-work", Detail: err.Error()}, nil)
 	}
 	attemptID := workflow.AttemptID(fmt.Sprintf("attempt-%d", time.Now().UTC().UnixNano()))
+	var selection *workflow.AISelection
+	if supervised {
+		selection, err = resolveSupervisedAISelection(store, workflow.TaskID(id), providerOverride, modelOverride)
+		if err != nil {
+			return workflow.RuntimeState{}, err
+		}
+	}
 	state, err = store.StartAttempt(workflow.TaskID(id), workflow.Attempt{ID: attemptID, WorkItemID: item.ID, SessionID: meta.Session, Workspace: meta.Worktree})
 	if err != nil {
 		return workflow.RuntimeState{}, err
 	}
-	request := &workflow.PreparedAgentRequest{TaskID: workflow.TaskID(id), WorkItemID: item.ID, AttemptID: attemptID, SessionID: meta.Session, Workspace: meta.Worktree}
+	sessionStatus, err := session.NewStore("").Load(meta.Session)
+	if err != nil {
+		return workflow.RuntimeState{}, fmt.Errorf("load prepared request Session: %w", err)
+	}
+	request := &workflow.PreparedAgentRequest{TaskID: workflow.TaskID(id), WorkItemID: item.ID, AttemptID: attemptID, SessionID: meta.Session, ExpectedSessionTurn: sessionStatus.Session.LastTurn + 1, Workspace: meta.Worktree, AISelection: selection}
+	if supervised {
+		request.Compile = &workflow.SupervisedCompileState{}
+		plan, loadErr := store.LoadRoutingPlan(workflow.TaskID(id))
+		if loadErr == nil { request.Compile.Plan, request.Compile.PlanReference = &plan.Compile, plan.Reference() } else if !os.IsNotExist(loadErr) { return state, loadErr }
+	}
 	return store.RecordAutomation(workflow.TaskID(id), state.Automation.PlanFingerprint, workflow.AutomationCursor{Result: "agent-request-prepared", Detail: string(item.ID)}, request)
+}
+
+func resolveSupervisedAISelection(store *workflow.Store, id workflow.TaskID, providerOverride, modelOverride string) (*workflow.AISelection, error) {
+	profileName := ai.DefaultProfileForActor("coder")
+	if plan, err := store.LoadRoutingPlan(id); err == nil && strings.TrimSpace(plan.Profiles["coder"]) != "" {
+		profileName = plan.Profiles["coder"]
+	} else if err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("load routing plan: %w", err)
+	}
+	profile, config, err := ai.ResolveProfile(profileName)
+	if err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(providerOverride) != "" || strings.TrimSpace(modelOverride) != "" {
+		provider, model := config.Name, config.Model
+		if strings.TrimSpace(providerOverride) != "" { provider = providerOverride }
+		if strings.TrimSpace(modelOverride) != "" { model = modelOverride }
+		config, err = ai.ConfigFor(provider, model)
+		if err != nil { return nil, err }
+	}
+	digestSource := strings.Join([]string{profile.Name, config.Name, config.Model, config.BaseURL, config.Command, config.CodexCommand, config.CopilotCommand}, "\n")
+	digest := sha256.Sum256([]byte(digestSource))
+	return &workflow.AISelection{Profile: profile.Name, Provider: config.Name, Model: config.Model, Digest: hex.EncodeToString(digest[:])}, nil
 }
 
 func validateWorkflowArgs(op string, args []string) error {
@@ -440,7 +674,7 @@ func validateWorkflowArgs(op string, args []string) error {
 		return fmt.Errorf("invalid task id: %s", args[1])
 	}
 	switch op {
-	case "plan", "sync", "advance":
+	case "plan", "sync", "advance", "recommend-routing":
 		if len(args) != 2 {
 			return fmt.Errorf("usage: task workflow plan <task-id>")
 		}
@@ -479,6 +713,10 @@ func validateWorkflowArgs(op string, args []string) error {
 		}
 		if strings.TrimSpace(args[2]) == "" || (args[3] != string(workflow.GateResolved) && args[3] != string(workflow.GateWaived)) {
 			return fmt.Errorf("invalid gate resolution")
+		}
+	case "skip-focused-test":
+		if len(args) < 3 || strings.TrimSpace(strings.Join(args[2:], " ")) == "" {
+			return fmt.Errorf("usage: task workflow skip-focused-test <task-id> <reason>")
 		}
 	case "complete":
 		if len(args) != 3 {
@@ -523,6 +761,28 @@ func validateWorkflowArgs(op string, args []string) error {
 		return fmt.Errorf("unknown workflow operation: %s", op)
 	}
 	return nil
+}
+
+type routingRecommendation struct { Profiles map[string]string `json:"profiles"` }
+
+func recommendRoutingProfiles(workspace string) (map[string]string, error) {
+	config, err := ai.LoadConfig()
+	if err != nil || strings.TrimSpace(config.Name) == "" { return nil, fmt.Errorf("no configured LLM recommendation provider") }
+	profiles, err := ai.LoadProfiles()
+	if err != nil { return nil, err }
+	allowed := []string{"fast", "balanced", "reasoning"}
+	for name := range profiles { allowed = append(allowed, name) }
+	prompt := "Recommend one profile for each actor: analysis, coder, tester, verifier. Use only these profile names: " + strings.Join(allowed, ", ") + ". Return JSON with only profiles. Do not include commands. Workspace: " + filepath.ToSlash(workspace)
+	output, err := ai.RunLLMWithSystemPrompt(prompt, ai.LLMConfig{Provider: config.Name, Model: config.Model, APIBaseURL: config.BaseURL, APIKey: config.APIKey, CodexCommand: config.CodexCommand, CopilotCommand: config.CopilotCommand, Workspace: workspace, ReadOnly: true}, map[string]any{"type": "object"}, "Return JSON only. Recommend safe AI routing. Never recommend commands.")
+	if err != nil { return nil, err }
+	var recommendation routingRecommendation
+	if err := json.Unmarshal([]byte(output), &recommendation); err != nil { return nil, fmt.Errorf("decode routing recommendation: %w", err) }
+	permitted := make(map[string]bool, len(allowed))
+	for _, name := range allowed { permitted[name] = true }
+	for actor := range workflow.DefaultRoutingProfiles() {
+		if !permitted[recommendation.Profiles[actor]] { return nil, fmt.Errorf("routing recommendation has invalid %s profile", actor) }
+	}
+	return recommendation.Profiles, nil
 }
 
 func knownEvidenceKind(value string) bool {
@@ -664,9 +924,8 @@ func printDeliveryGuidance(meta taskx.TaskMeta, state workflow.RuntimeState) {
 	terminal.Field("parent", meta.ParentBranch)
 	terminal.Section("Next")
 	terminal.Line("  1. Review the worktree changes.")
-	terminal.Line(fmt.Sprintf("  2. If you edited files manually, commit them with `aiw wt commit %s \"message\"`.", meta.ID))
-	terminal.Line(fmt.Sprintf("  3. Merge the task branch with `aiw wt pull %s`.", meta.ID))
-	terminal.Line("  4. Remove the merged worktree with `aiw wt rm " + meta.ID + " --delete-branch`.")
+	terminal.Line("  2. Supervise automatically runs local-merge when acceptance and validation are complete and no Gate remains open.")
+	terminal.Line(fmt.Sprintf("  3. For manual delivery, run `aiw workflow local-merge %s \"Complete Task %s\"`.", meta.ID, meta.ID))
 }
 
 func repairWorkflowState(id string) error {
@@ -709,19 +968,24 @@ Typical flow:
 Plan and execute:
   plan <task-id>                       Create or reconcile Work Items from tasks.md.
   sync <task-id>                       Synchronize checklist completion into Workflow Core.
+  recommend-routing <task-id>          Persist advisory AI routing and Compile Plan.
   advance <task-id>                    Prepare the next ready Work Item without executing it.
   run <task-id> [--execute] [--primary] [--provider NAME] [--model MODEL]
                                          Preview the next action, or execute one Work Item.
   supervise <task-id> <start|status|stop>
-                                         Start, inspect, or stop managed execution.
+                                         Start, inspect, or stop managed execution; start locally merges accepted isolated Tasks.
 
 Record progress:
   attempt <task-id> start <work-item-id> <attempt-id>
   attempt <task-id> checkpoint <attempt-id> <running|paused>
   evidence <task-id> <evidence-id> <work-item-id> <kind> <state> [reference]
   gate <task-id> <gate-id> <resolved|waived>
+  skip-focused-test <task-id> <reason>
+                                      Waive optional focused verification and complete its Work Item.
   complete <task-id> <work-item-id>
   delivery <task-id> <merged|discarded>
+	local-merge <task-id> <commit-message>
+	                                     Commit accepted Task changes and perform verified local delivery.
   retry-policy <task-id> <work-item-id> <1-5>
                                          Set the automatic Attempt limit (default: 3).
   reopen <task-id> <work-item-id> <reason>
@@ -731,6 +995,7 @@ Record progress:
   focused-test <task-id> <attempt-id>   Run the selected approved focused check.
 
 Inspect and recover:
+  report <task-id>                     Show the latest unresolved failure report without changing runtime state.
   diagnose <task-id>                   Show Workflow Core diagnostics and repair guidance.
   recover <task-id>                    Re-project a committed pending transition.
   repair <task-id>                     Re-project state and resolve recorded projection repairs.
@@ -740,7 +1005,8 @@ Execution and workspace rules:
   - --execute delegates one prepared Work Item to aiw turn.
   - Automated execution uses an isolated .wt/<task-id> worktree by default.
   - --primary is an explicit opt-out and only works for Tasks bound to the primary workspace.
-  - Git delivery, merge, cleanup, and archive remain separate operations.
+  - supervise start commits and locally merges accepted isolated Tasks, then cleans verified merged resources.
+  - Manual run does not deliver; push and archive remain separate operations.
   - Each Work Item has a default automatic Attempt limit of 3; retry-policy accepts 1 through 5.
   - Exhaustion blocks only that Work Item, clears its prepared request, and releases its lease.
   - reopen requires a reason and is the only operation that resets an exhausted Work Item's count.

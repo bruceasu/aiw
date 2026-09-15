@@ -22,6 +22,9 @@ For non-trivial work, provide:
 - Risks
 
 Inspect contracts, tests, and configuration before broad exploration.
-Follow the shared resource budget. Use static review by default; do not run
-Maven, Gradle, tests, builds, or verification scripts automatically. When
-authorized, run one module-focused command and ask before widening scope.
+Follow the shared resource budget. After implementation, run one compile-only
+check: prefer `scripts/compile*` or root `compile*`, otherwise use the
+narrowest Maven or Gradle compile goal without retaining a final artifact. Do
+not run tests, `build*` scripts, final-artifact builds, or verification scripts
+automatically. When authorized, run one module-focused command and ask before
+widening scope.

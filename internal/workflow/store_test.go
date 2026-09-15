@@ -54,6 +54,55 @@ func TestEnsureCompatibleCreatesInactiveRuntime(t *testing.T) {
 	}
 }
 
+func TestEnsureCompatibleInitializesPreexistingMetadataDirectory(t *testing.T) {
+	store := NewStore(t.TempDir())
+	dir := store.taskDir("task-1")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "task.toml"), []byte("id = \"task-1\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.EnsureCompatible(compatibleState()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, runtimeStateFile)); err != nil {
+		t.Fatalf("state was not initialized: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, runtimeEventsFile)); err != nil {
+		t.Fatalf("event log was not initialized: %v", err)
+	}
+	if _, err := store.EnsureCompatible(compatibleState()); err != nil {
+		t.Fatalf("retry was not idempotent: %v", err)
+	}
+	events, err := store.readEvents("task-1")
+	if err != nil || len(events) != 0 {
+		t.Fatalf("initialization wrote unexpected events: %#v, %v", events, err)
+	}
+}
+
+func TestEnsureCompatibleRestoresMissingEventLogWithoutReplacingState(t *testing.T) {
+	store := NewStore(t.TempDir())
+	if _, err := store.Create(compatibleState()); err != nil {
+		t.Fatal(err)
+	}
+	statePath := store.path("task-1", runtimeStateFile)
+	before, err := os.ReadFile(statePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(store.path("task-1", runtimeEventsFile)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.EnsureCompatible(compatibleState()); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.ReadFile(statePath)
+	if err != nil || string(after) != string(before) {
+		t.Fatalf("existing state was replaced: %q, %v", after, err)
+	}
+}
+
 func TestAtomicWriteLeavesReadableReplacement(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 	if err := atomicWrite(path, []byte("before")); err != nil {

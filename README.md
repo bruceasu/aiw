@@ -1,4 +1,4 @@
-﻿# aiw
+# aiw
 
 AIW is a workflow-first CLI for organizing work, preserving task state, and exposing reusable capabilities through a small core, Skills, AI support, and plugins.
 
@@ -33,9 +33,9 @@ repo/
 Notes:
 
 * `AGENTS.md` and `.github/copilot-instructions.md` are created only if they do not already exist.
-* Active Task metadata is discovered from `openspec/changes/*` task folders.
-  `openspec/changes/archive/` is reserved for archived changes.
-  Metadata discovery prefers `task.toml` and falls back to legacy `tasks.toml`.
+* Canonical Task metadata and runtime state live under `.ai/<task-id>/`.
+  OpenSpec proposal, design, specs, and checklists live under
+  `openspec/changes/<task-id>/`. Legacy metadata remains readable.
 
 ## Build and Installation
 
@@ -73,7 +73,7 @@ aiw requirement promote <requirement-id> --task <task-id>
 aiw wt add <task-id> [base-branch]
 aiw wt rm <task-id> [--delete-branch] [--force]
 aiw wt commit <task-id> "message"
-aiw wt pull <task-id> [--resolve=agent]
+aiw wt pull <task-id> [--conflict-handoff]
 aiw wt status <task-id>
 aiw wt list [--porcelain]
 aiw wt prune [--dry-run]
@@ -89,7 +89,7 @@ aiw turn <task-id> [--handoff PATH] [--provider NAME] [--model MODEL] [--takeove
 aiw chat <task-id> [--handoff PATH] [--provider NAME] [--model MODEL] [--takeover] [--yes]
 aiw workflow <operation> <task-id>
 aiw workspace <operation> <task-id>
-aiw task workflow <plan|sync|advance|run|supervise|repair|attempt|evidence|gate|complete|diagnose|recover> <task-id>
+aiw task workflow <plan|sync|advance|run|supervise|recommend-routing|report|repair|attempt|evidence|gate|complete|diagnose|recover> <task-id>
 aiw task workflow run <task-id> [--execute] [--primary] [--provider NAME] [--model MODEL]
 aiw task workflow supervise <task-id> <start|status|stop> [--provider NAME] [--model MODEL]
 aiw completion <powershell|bash|zsh|fish>
@@ -182,8 +182,14 @@ operator may explicitly request a bounded, agent-assisted proposal for eligible
 text files:
 
 ```powershell
-aiw wt pull payment-retry --resolve=agent
+aiw wt pull payment-retry --conflict-handoff
 ```
+
+This option is off by default. On eligible conflicts it writes
+`proposal-request.md` and prints its path as `proposal handoff: ...`.
+No Agent is started: give that file to an Agent to produce `proposal.patch`
+and `proposal.md`, then use `aiw wt resolve review <task-id>` and, after review,
+`aiw wt resolve apply <task-id> --confirm`. The old option is not accepted.
 
 The proposal is for review only. It never changes protected lifecycle or
 metadata files, binary files, lockfiles, dependency lockfiles, or configured
@@ -488,16 +494,37 @@ For a long-running local loop, start supervision explicitly. Supervisor
 execution uses the same isolated-worktree default:
 
 ```text
+aiw workflow recommend-routing daily-withdrawal-report
 aiw task workflow supervise daily-withdrawal-report start
 aiw task workflow supervise daily-withdrawal-report status
 aiw task workflow supervise daily-withdrawal-report stop
 ```
 
-The Supervisor re-evaluates the Task only after durable changes and invokes one
-bounded `run --execute` step at a time. It pauses on a Gate, authorization
-requirement, failed or incomplete Session result, active lease, repair item, or
-terminal no-work result. It does not run as a background scheduler unless the
-operator starts it explicitly.
+Supervisor dispatches sequential, non-interactive Agent turns. A completed
+Session must return a valid structured outcome bound to the expected Attempt
+and Session turn. Only `completed` proceeds to the frozen Compile Plan;
+`blocked` opens a Gate, and `no-progress` follows the ordinary retry policy.
+Compiler failures prepare repair turns in the same Attempt. Three consecutive
+failures stop repair; a successful compile resets the separate counter.
+
+Generate routing before starting a manually created Task. Requirement
+promotion invokes `recommend-routing` automatically. A missing frozen Compile
+Plan opens a Gate and requires a fresh prepared request after planning.
+
+When an isolated Task completes execution and satisfies validation and Gate
+checks, supervise automatically commits its changes, merges into its recorded
+parent branch, verifies ancestry, and removes the merged Task worktree and
+branch. It does not push or archive. Delivery failures preserve recovery
+information. See [Supervise](docs/supervise.md) for the loop, recovery commands,
+and conflict handling, and [multi-actor status](docs/multi-actor-turn-handoff.md)
+for the distinction between implemented paths and architectural targets.
+
+Named models are defined under `[ai.profiles.<name>]` with `provider` and
+`model`. Default routes are `analysis=fast`, `coder/tester=balanced`, and
+`verifier=reasoning`; the current supervised dispatcher selects the `coder`
+route. Missing or incomplete Profiles fall back to global `[ai]`. New requests
+snapshot the resolved choice, including `start --provider/--model` overrides;
+recovery and compiler repairs reuse it. There is no automatic model escalation.
 
 ### Evidence, completion, and recovery
 
@@ -516,6 +543,7 @@ record before continuing:
 
 ```text
 aiw task workflow diagnose <task-id>
+aiw task workflow report <task-id>
 aiw task workflow recover <task-id>
 aiw task workflow repair <task-id>
 ```
@@ -533,12 +561,16 @@ may set a limit from one through five, but only for that Work Item:
 aiw workflow retry-policy daily-withdrawal-report wi-0001 3
 ```
 
-Failed or no-progress turns count toward that limit. At exhaustion, AIW blocks
+Only structured no-progress outcomes consume this limit in supervise; blocked
+outcomes do not. Git preflight failures create a deduplicated workspace-access
+Gate before a new Attempt starts. Compiler failures have their own three-failure
+limit and do not consume ordinary retries. At exhaustion, AIW blocks
 the Work Item, clears its prepared request, releases its lease, and retains the
 last output reference for diagnosis. It does not silently retry or mark the
 checklist item complete. Reopen an exhausted Work Item only with an explicit
 reason; reopening resets that item's count and does not affect other Work
-Items:
+Items. A blocked outcome must have its relevant Gates resolved before explicit
+reopening; a non-exhausted ordinary retry count is preserved:
 
 ```powershell
 aiw workflow reopen daily-withdrawal-report wi-0001 "validation authorization granted"
@@ -567,13 +599,15 @@ Automatic development is deliberately bounded. AIW does not automatically:
 * approve or promote a Requirement;
 * resolve a Gate or grant validation authorization;
 * run tests, builds, migrations, or broad verification without authorization;
-* commit, push, merge, delete branches, or publish external changes;
+* push, publish pull requests, or archive after supervised local delivery;
 * create a background scheduler.
 
 Use `aiw task workflow run` to preview the next action and
 `aiw task workflow run --execute` or `supervise ... start` only with the
-appropriate authorization. Git delivery remains separate from Task completion;
-`aiw done` and `aiw archive` do not mean that code has been pushed or merged.
+appropriate authorization. Supervise includes compile validation and automatic
+local delivery for eligible isolated Tasks; ordinary `aiw done` does not itself
+perform that delivery. Task completion and verified Git delivery remain distinct
+states. Review the parent branch before pushing.
 
 ### Focused-test pilot
 

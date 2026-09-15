@@ -34,9 +34,12 @@ Add another prompt only when the task genuinely spans contexts.
 - Use no more than three targeted discovery batches before editing unless
   blocked by a concrete unknown.
 - Keep output narrow; do not dump large files or logs.
-- Do not run tests, builds, verification scripts, network calls, permission
-  probes, escalation, auto-review, or sub-agents unless authorized by the
-  resource budget.
+- After implementation, run one compile-only check: prefer `scripts/compile*`
+  or root `compile*`, otherwise use the narrowest language-level compiler
+  command without retaining a final distributable artifact.
+- Do not run tests, `build*` scripts, final-artifact builds, verification
+  scripts, network calls, permission probes, escalation, auto-review, or
+  sub-agents unless authorized by the resource budget.
 - Do not repeat equivalent commands.
 
 ## Completion

@@ -39,6 +39,7 @@ func (p cliProvider) Generate(ctx context.Context, request Request) (Response, e
 	defer cleanup()
 	cmd := exec.CommandContext(ctx, p.command, args...)
 	cmd.Dir = request.Workspace
+	cmd.Env = commandEnvironment(request.Environment)
 	if p.name == "codex" {
 		cmd.Stdin = strings.NewReader(cliPrompt(request))
 	}
@@ -213,6 +214,7 @@ func (p cliProvider) Interactive(ctx context.Context, request Request) (Response
 	started := time.Now().UTC()
 	cmd := exec.CommandContext(ctx, p.command, p.interactiveArgs(request)...)
 	cmd.Dir = request.Workspace
+	cmd.Env = commandEnvironment(request.Environment)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -228,6 +230,34 @@ func (p cliProvider) Interactive(ctx context.Context, request Request) (Response
 		return result, fmt.Errorf("%s interactive provider: %w", p.name, err)
 	}
 	return result, nil
+}
+
+func commandEnvironment(overrides []string) []string {
+	environment := append([]string(nil), os.Environ()...)
+	for _, override := range overrides {
+		key, _, found := strings.Cut(override, "=")
+		if !found || key == "" {
+			continue
+		}
+		for index := len(environment) - 1; index >= 0; index-- {
+			if environmentEntryHasKey(environment[index], key) {
+				environment = append(environment[:index], environment[index+1:]...)
+			}
+		}
+		environment = append(environment, override)
+	}
+	return environment
+}
+
+func environmentEntryHasKey(entry, key string) bool {
+	entryKey, _, found := strings.Cut(entry, "=")
+	if !found {
+		return false
+	}
+	if os.PathSeparator == '\\' {
+		return strings.EqualFold(entryKey, key)
+	}
+	return entryKey == key
 }
 
 func (p cliProvider) interactiveArgs(request Request) []string {

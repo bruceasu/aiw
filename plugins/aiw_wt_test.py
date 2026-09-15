@@ -19,7 +19,7 @@ class MergeResolutionFixtureTest(unittest.TestCase):
         self.git("config", "user.email", "fixture@example.test")
         self.git("config", "user.name", "Fixture")
         self.write("safe.txt", "base\n")
-        self.write(".ai/tasks/task-1/task.toml", self.metadata())
+        self.write(".ai/task-1/task.toml", self.metadata())
         self.write("openspec/changes/task-1/tasks.md", "# Tasks\n")
         self.git("add", ".")
         self.git("commit", "-m", "base")
@@ -27,11 +27,11 @@ class MergeResolutionFixtureTest(unittest.TestCase):
         self.git("-C", ".wt/task-1", "config", "user.email", "fixture@example.test")
         self.git("-C", ".wt/task-1", "config", "user.name", "Fixture")
         self.write(".wt/task-1/safe.txt", "task version\n")
-        self.write(".wt/task-1/.ai/tasks/task-1/task.toml", self.metadata("task metadata"))
+        self.write(".wt/task-1/.ai/task-1/task.toml", self.metadata("task metadata"))
         self.git("-C", ".wt/task-1", "add", ".")
         self.git("-C", ".wt/task-1", "commit", "-m", "task changes")
         self.write("safe.txt", "parent version\n")
-        self.write(".ai/tasks/task-1/task.toml", self.metadata("parent metadata"))
+        self.write(".ai/task-1/task.toml", self.metadata("parent metadata"))
         self.git("add", ".")
         self.git("commit", "-m", "parent changes")
         os.chdir(self.root)
@@ -44,11 +44,11 @@ class MergeResolutionFixtureTest(unittest.TestCase):
         self.tempdir.cleanup()
 
     def test_opt_in_proposal_rejection_and_confirmed_application(self):
-        self.assertEqual(2, self.plugin.pull("task-1", resolve_agent=True))
-        handoff = self.root / ".ai/tasks/task-1/merge-resolution"
+        self.assertEqual(2, self.plugin.pull("task-1", conflict_handoff=True))
+        handoff = self.root / ".ai/task-1/merge-resolution"
         request = (handoff / "proposal-request.md").read_text(encoding="utf-8")
         self.assertIn("### safe.txt", request)
-        self.assertIn(".ai/tasks/task-1/task.toml", request)
+        self.assertIn(".ai/task-1/task.toml", request)
         self.assertIn("Task metadata is protected", request)
         self.assertEqual(2, self.plugin.apply_merge_resolution("task-1", False))
         self.assertIn("UU safe.txt", self.status())
@@ -61,8 +61,19 @@ class MergeResolutionFixtureTest(unittest.TestCase):
         self.assertEqual(0, self.plugin.apply_merge_resolution("task-1", True))
         status = self.status()
         self.assertNotIn("UU safe.txt", status)
-        self.assertIn("UU .ai/tasks/task-1/task.toml", status)
+        self.assertIn("UU .ai/task-1/task.toml", status)
         self.assertEqual("resolved version\n", (self.root / "safe.txt").read_text(encoding="utf-8"))
+
+    def test_task_meta_path_prefers_canonical_directory_and_falls_back_to_legacy(self):
+        self.assertEqual(
+            self.root / ".ai/task-1/task.toml",
+            self.plugin.task_meta_path("task-1"),
+        )
+        self.write(".ai/tasks/legacy-task/tasks.toml", self.metadata())
+        self.assertEqual(
+            self.root / ".ai/tasks/legacy-task/tasks.toml",
+            self.plugin.task_meta_path("legacy-task"),
+        )
 
     def metadata(self, note="base metadata"):
         return ('id = "task-1"\nbranch = "feature/task-1"\nparent_branch = "main"\n'

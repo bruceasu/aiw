@@ -49,6 +49,10 @@ type agentLineage struct {
 }
 
 func runTaskAgent(args []string) error {
+	return runTaskAgentWithEnvironment(args, nil)
+}
+
+func runTaskAgentWithEnvironment(args []string, environment []string) error {
 	if len(args) >= 2 && (args[1] == "help" || args[1] == "--help" || args[1] == "-h") {
 		printAgentHelp()
 		return nil
@@ -212,15 +216,20 @@ func runTaskAgent(args []string) error {
 		return err
 	}
 	prompt := fmt.Sprintf("Continue Task %s.\n\nSession: %s\n\nRead the handoff at %s and referenced artifacts before taking action. Preserve the existing Task and worktree; report validation when done.\n\nTask context:\n%s", id, meta.Session, handoff, readTaskGoal(id))
+	if opts.Supervised {
+		prompt += "\n\nThe supervisor owns compile-only validation and its bounded repair loop. Implement the selected work, update its checkbox, and report your structured outcome; the supervisor will compile before accepting it. Do not run tests."
+		prompt += supervisedWorkItemInstruction(id, workItemID, environment)
+		prompt += "\n\nWhen you finish, return exactly one JSON object (no Markdown) with outcome=completed, blocked, or no-progress; include detail and, for blocked, blocked_category=workspace-access, authorization, dependency, validation, or unknown. Do not claim completed unless you updated the authored checklist."
+	}
 	if args[0] == "chat" {
-		result, runErr := session.ExecuteInteractiveWithOverrides(context.Background(), store, meta.Session, "handoff", prompt, opts.Provider, opts.Model, true)
+		result, runErr := session.ExecuteInteractiveWithOverridesAndEnvironment(context.Background(), store, meta.Session, "handoff", prompt, opts.Provider, opts.Model, true, environment)
 		if err := finalizeInteractiveAgent(id, metaPath, meta, store, lineage, attemptID, result, runErr, opts.Supervised); err != nil {
 			return err
 		}
 		fmt.Printf("Task %s chat completed: %s\n", id, lineage.ChildThread)
 		return nil
 	}
-	result, err := session.ExecuteTurnWithOverrides(context.Background(), store, meta.Session, "handoff", prompt, opts.Provider, opts.Model, true)
+	result, err := session.ExecuteTurnWithOverridesAndEnvironment(context.Background(), store, meta.Session, "handoff", prompt, opts.Provider, opts.Model, true, environment)
 	if err != nil {
 		if !opts.Supervised {
 			_, _ = workflow.NewStore("").RecordAttemptOutcome(workflow.TaskID(id), attemptID, false)
@@ -267,6 +276,51 @@ func runTaskAgent(args []string) error {
 	}
 	fmt.Printf("Task %s handed off: %s -> %s\n", id, lineage.ParentThread, lineage.ChildThread)
 	return nil
+}
+
+// supervisedWorkItemInstruction supplies execution authority that is narrower
+// than an Agent handoff.  A handoff can be stale after an operator repairs a
+// Task binding; the current supervised request is authoritative for its own
+// scoped, read-only inspection.
+func supervisedWorkItemInstruction(id string, workItemID workflow.WorkItemID, environment []string) string {
+	state, err := workflow.NewStore("").Load(workflow.TaskID(id))
+	if err != nil {
+		return ""
+	}
+	for _, item := range state.WorkItems {
+		if item.ID != workItemID || !strings.Contains(strings.ToLower(item.Title), "no unrelated changes") {
+			continue
+		}
+		trustDirectory := supervisedGitTrustDirectory(environment)
+		if trustDirectory == "" {
+			return ""
+		}
+		return fmt.Sprintf("\n\nFor this scope-review Work Item, use this exact command prefix for read-only Git inspection: `%s`. Append status, diff, staged diff, or untracked-file listing arguments. Keep the forward slashes and shell quotes as shown. The supervisor preflight approved exactly this directory. This command-local option is required because the sandbox does not inherit Git environment variables. It supersedes historical handoff notes that prohibit retrying Git. Do not change Git configuration, index, branches, or commits. After collecting valid evidence, you may edit only the selected checkbox in openspec/changes/%s/tasks.md; do not edit any other file.", supervisedGitCommandPrefix(trustDirectory), id)
+	}
+	return ""
+}
+
+// Render shell arguments, not Go string literals: PowerShell preserves the
+// doubled backslashes produced by %q instead of decoding them.
+func supervisedGitCommandPrefix(directory string) string {
+	directory = filepath.ToSlash(directory)
+	quote := func(value string) string {
+		if os.PathSeparator == '\\' {
+			return "'" + strings.ReplaceAll(value, "'", "''") + "'"
+		}
+		return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'"
+	}
+	return "git -c " + quote("safe.directory="+directory) + " -C " + quote(directory)
+}
+
+func supervisedGitTrustDirectory(environment []string) string {
+	for _, entry := range environment {
+		key, value, found := strings.Cut(entry, "=")
+		if found && strings.EqualFold(key, "GIT_CONFIG_VALUE_0") {
+			return value
+		}
+	}
+	return ""
 }
 
 func printAgentHelp() {

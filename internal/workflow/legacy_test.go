@@ -1,6 +1,10 @@
 package workflow
 
-import "testing"
+import (
+	"encoding/json"
+	"os"
+	"testing"
+)
 
 func TestApplyLegacyStatusRejectsFabricatedDone(t *testing.T) {
 	state := NewCompatibleRuntime(
@@ -30,9 +34,18 @@ func TestApplyLegacyStatusMapsPlanningAliases(t *testing.T) {
 func TestLoadMigratesLegacyWorkItemRetryPolicyToDefault(t *testing.T) {
 	store := NewStore(t.TempDir())
 	state := compatibleState()
-	state.Version = SchemaVersion - 1
+	state.SchemaVersion = SchemaVersion - 1
 	state.WorkItems = []WorkItem{{ID: "wi-0001", Title: "legacy work", State: WorkItemReady}}
 	if _, err := store.Create(state); err != nil {
+		t.Fatal(err)
+	}
+	// Create normalizes its input. Restore an actual legacy payload so this
+	// test exercises Load's migration rather than Create's normalization.
+	content, err := json.Marshal(state)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(store.path("task-1", runtimeStateFile), content, 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -40,7 +53,7 @@ func TestLoadMigratesLegacyWorkItemRetryPolicyToDefault(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if migrated.Version != SchemaVersion || migrated.WorkItems[0].RetryPolicy.MaxAttempts != DefaultRetryLimit || migrated.WorkItems[0].NoProgressCount != 0 {
+	if migrated.SchemaVersion != SchemaVersion || migrated.WorkItems[0].RetryPolicy.MaxAttempts != DefaultRetryLimit || migrated.WorkItems[0].NoProgressCount != 0 {
 		t.Fatalf("legacy retry state was not migrated: %+v", migrated)
 	}
 }

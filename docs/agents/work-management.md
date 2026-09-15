@@ -23,7 +23,7 @@ diagnostics in its runtime store. A retry-exhausted Work Item stays blocked
 until an operator reopens it with a reason. A force-close records `CANCELLED`
 and an explicit merged or discarded delivery outcome; it is not a substitute
 for validation or checklist completion. For a worktree pull conflict,
-`aiw wt pull <task-id> --resolve=agent` is opt-in and yields a reviewable
+`aiw wt pull <task-id> --conflict-handoff` is opt-in and yields a reviewable
 proposal only for eligible text files; protected paths and unsafe file types
 remain manual, and proposal application never commits or completes the merge.
 

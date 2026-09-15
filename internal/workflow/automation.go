@@ -22,11 +22,38 @@ func (s *Store) RecordAutomation(id TaskID, fingerprint string, cursor Automatio
 		if request.PreparedAt == "" {
 			request.PreparedAt = cursor.RecordedAt
 		}
+		if request.SkillManifest != nil {
+			if err := request.SkillManifest.Validate(); err != nil {
+				return RuntimeState{}, fmt.Errorf("Skill manifest: %w", err)
+			}
+		}
+		if selection := request.AISelection; selection != nil && (strings.TrimSpace(selection.Profile) == "" || strings.TrimSpace(selection.Provider) == "" || strings.TrimSpace(selection.Model) == "" || strings.TrimSpace(selection.Digest) == "") {
+			return RuntimeState{}, fmt.Errorf("AI selection requires Profile, provider, model, and digest")
+		}
 	}
 	return s.UpdateWithEvent(id, Event{Type: "automation.recorded", Detail: cursor.Result}, func(state *RuntimeState) error {
 		state.Automation.PlanFingerprint = fingerprint
 		state.Automation.Cursor = cursor
 		state.Automation.PreparedRequest = request
+		return nil
+	})
+}
+
+// DispatchPreparedAgentRequest marks a prepared request as having crossed the
+// managed-adapter boundary. The marker is durable so recovery never mistakes a
+// merely prepared request for a completed Session result.
+func (s *Store) DispatchPreparedAgentRequest(id TaskID, attemptID AttemptID) (RuntimeState, error) {
+	if attemptID == "" {
+		return RuntimeState{}, fmt.Errorf("prepared agent request attempt is required")
+	}
+	return s.UpdateWithEvent(id, Event{Type: "agent-request.dispatched", AttemptID: attemptID}, func(state *RuntimeState) error {
+		request := state.Automation.PreparedRequest
+		if request == nil || request.AttemptID != attemptID {
+			return fmt.Errorf("prepared agent request does not match Attempt %s", attemptID)
+		}
+		if request.DispatchedAt == "" {
+			request.DispatchedAt = time.Now().UTC().Format(time.RFC3339)
+		}
 		return nil
 	})
 }

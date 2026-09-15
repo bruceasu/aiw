@@ -17,7 +17,9 @@ Read `AGENTS.md` first, then `python/AGENTS.md`.
 - keep typing and config patterns consistent
 - keep framework glue thin
 - use static review by default
-- do not run formatters, linters, type checks, tests, builds, verification
-  scripts, network calls, or permission probes without resource-budget
-  authorization
+- after implementation, run one compile-only check using a `compile*` script or
+  the narrowest language-level compiler command; do not retain a final artifact
+- do not run formatters, linters, type checks, tests, `build*` scripts,
+  final-artifact builds, verification scripts, network calls, or permission
+  probes without authorization
 - when authorized, run one path-focused command and ask before widening

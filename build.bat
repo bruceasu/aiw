@@ -44,6 +44,7 @@ if /i "%~1"=="linux" goto :build_linux
 if /i "%~1"=="plugins" goto :build_plugins
 if /i "%~1"=="docs" goto :build_docs
 if /i "%~1"=="skills" goto :build_skills
+if /i "%~1"=="bin" call :build_windows & call :build_linux & exit /b 0
 if /i "%~1"=="all" call :build_windows & call :build_linux & call :build_plugins & call :build_docs & call :build_skills & exit /b 0
 echo Error: Unknown build action: %~1
 echo Run build.bat --help for available actions.

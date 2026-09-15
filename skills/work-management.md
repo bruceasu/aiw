@@ -9,7 +9,7 @@ Use this contract for engineering Skills in an AIW/OpenSpec repository.
 - OpenSpec owns proposal, design, capability specs, and the detailed
   implementation checklist in `tasks.md`.
 - Workflow Core owns Work Items, Attempts, Gates, Evidence, write leases, and
-  derived execution/validation/readiness state in `.ai/tasks/<task-id>/`.
+  derived execution/validation/readiness state in `.ai/<task-id>/`.
 - GitHub and GitLab are optional projections used only on explicit request.
 
 Do not create a second task tracker or let OpenSpec lifecycle state override the
@@ -66,7 +66,7 @@ aiw new <task-id> --backend auto
 
 This creates the AIW lifecycle record and delegates proposal/spec artifact
 creation to OpenSpec when available. The resulting runtime record MUST be stored
-at `.ai/tasks/<task-id>/task.toml` with the Task ID, status, branch,
+at `.ai/<task-id>/task.toml` with the Task ID, status, branch,
 worktree, `parent_branch`, and Session mapping.
 
 Do not use `openspec new change <task-id>` directly for a managed change. That
@@ -140,16 +140,19 @@ been cleaned up. A cancelled discarded Task may archive with its reason.
 
 - Use them only for bounded static analysis, code location, or independent
   implementation fragments.
-- Sub-agents must not run tests, builds, network calls, permission escalation,
-  commits, archive operations, or worktree operations.
+- Sub-agents must not run tests, final-artifact builds, network calls,
+  permission escalation, commits, archive operations, or worktree operations.
 - The main agent owns integration, lifecycle mutations, and the final report.
 - Do not invoke `code-review` automatically after implementation.
 
 ## Tests
 
-Writing or editing tests is allowed. Running tests, builds, type checks,
-formatters, linters, vet, or verification scripts requires an explicit user
-instruction to execute them.
+Writing or editing tests is allowed. After implementation, compile the changed
+project: first use `compile*` under `scripts/` or at the repository root, and
+otherwise use the narrowest language-level compiler command. The compile path
+must not retain a final distributable artifact, and `build*` scripts are not
+compile scripts. Running tests, final-artifact builds, type checks, formatters,
+linters, vet, or verification scripts requires an explicit user instruction.
 
 After development is complete, ask once whether the user wants one focused test
 command run. Include the exact command, scope, and expected duration. Default to

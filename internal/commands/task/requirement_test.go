@@ -32,6 +32,52 @@ func TestPromoteRequirementRefusesUnapprovedWithoutTask(t *testing.T) {
 	}
 }
 
+func TestPromoteRequirementRecoversTaskMetadataWithoutWorkflowState(t *testing.T) {
+	previous, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	t.Cleanup(func() { _ = os.Chdir(previous) })
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := requirement.Create("approved", "Approved"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("source-plan.md", []byte("# Approved plan\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := requirement.Capture("approved", "requirement-plan", "source-plan.md"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := requirement.Approve("approved", "APPROVED", "owner", "ready"); err != nil {
+		t.Fatal(err)
+	}
+	meta := taskx.TaskMeta{ID: "target", Status: "TODO", Created: "2026-09-14", Updated: "2026-09-14", Worktree: ".", WorkspaceKind: "primary", Delivery: "unmanaged"}
+	if err := taskx.WriteTaskMeta(taskx.TaskMetaPath("target"), meta); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(taskx.TaskDir("target"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(taskx.TaskDir("target"), "tasks.md"), []byte("# Tasks\n\n- [ ] 1.1 Recover promotion\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := promoteRequirement([]string{"approved", "--task", "target"}); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"state.json", "events.jsonl"} {
+		if _, err := os.Stat(filepath.Join(taskx.RuntimeTaskDir("target"), name)); err != nil {
+			t.Fatalf("runtime %s was not recovered: %v", name, err)
+		}
+	}
+	promoted, err := requirement.Read("approved")
+	if err != nil || promoted.Promotion.TaskID != "target" || promoted.Promotion.Status != "SPEC_DRAFTED" {
+		t.Fatalf("promotion link was not completed: %#v, %v", promoted.Promotion, err)
+	}
+}
+
 func TestParseTerminalArgsAllowsUnorderedOptionalActor(t *testing.T) {
 	id, by, reason, err := parseTerminalArgs([]string{"req", "--reason", "done"}, "archive")
 	if err != nil || id != "req" || by == "" || reason != "done" {

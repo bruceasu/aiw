@@ -24,7 +24,9 @@ For non-trivial work, provide:
 - Risks
 
 Inspect tests, schemas, and config before broad exploration.
-Follow the shared resource budget. Use static review by default; do not run
-formatters, linters, type checks, tests, builds, or verification scripts
-automatically. When authorized, run one path-focused command and ask before
-widening scope.
+Follow the shared resource budget. After implementation, run one compile-only
+check: prefer `scripts/compile*` or root `compile*`, otherwise use the
+narrowest language-level compiler command without retaining a final artifact.
+Do not run formatters, linters, type checks, tests, `build*` scripts,
+final-artifact builds, or verification scripts automatically. When authorized,
+run one path-focused command and ask before widening scope.

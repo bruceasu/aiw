@@ -21,6 +21,45 @@ func focusedTestStore(t *testing.T) *Store {
 	return store
 }
 
+func TestSkipFocusedTestWaivesEvidenceAndCompletesBlockedWorkItem(t *testing.T) {
+	store := NewStore(t.TempDir())
+	state := compatibleState()
+	state.WorkItems = []WorkItem{{ID: "wi-0004", Title: "Run the authorized focused verification.", State: WorkItemBlocked}}
+	state.Gates = []Gate{{ID: "focused-test-missing", WorkItemID: "wi-0004", Kind: GateAuthorization, State: GateOpen}}
+	if _, err := store.Create(state); err != nil {
+		t.Fatal(err)
+	}
+	updated, workItemID, err := store.SkipFocusedTest("task-1", "verification is optional for this Task")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if workItemID != "wi-0004" || updated.WorkItems[0].State != WorkItemCompleted {
+		t.Fatalf("skip result = item:%s state:%s", workItemID, updated.WorkItems[0].State)
+	}
+	if updated.Gates[0].State != GateWaived {
+		t.Fatalf("gate state = %s", updated.Gates[0].State)
+	}
+	if len(updated.Evidence) != 1 || updated.Evidence[0].State != EvidenceWaived {
+		t.Fatalf("evidence = %#v", updated.Evidence)
+	}
+}
+
+func TestSkipFocusedTestIsNoOpAfterVerificationCompleted(t *testing.T) {
+	store := NewStore(t.TempDir())
+	state := compatibleState()
+	state.WorkItems = []WorkItem{{ID: "wi-0004", Title: "Run the authorized focused verification.", State: WorkItemCompleted}}
+	if _, err := store.Create(state); err != nil {
+		t.Fatal(err)
+	}
+	updated, workItemID, err := store.SkipFocusedTest("task-1", "verification remains optional")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if workItemID != "" || updated.LastEventSequence != state.LastEventSequence {
+		t.Fatalf("completed verification must be a no-op: item=%q event=%d", workItemID, updated.LastEventSequence)
+	}
+}
+
 func authorizeActiveFocusedPlan(t *testing.T, store *Store, digest string) RuntimeState {
 	t.Helper()
 	if _, err := store.ActivateFocusedTestPlan("task-1", digest); err != nil {
@@ -87,6 +126,22 @@ func TestFocusedTestPlanChangeInvalidatesAuthorization(t *testing.T) {
 	}
 }
 
+func TestFocusedTestAuthorizationIsConsumedOnlyOnce(t *testing.T) {
+	store := focusedTestStore(t)
+	authorizeActiveFocusedPlan(t, store, focusedPlanDigestA)
+
+	consumed, err := store.ConsumeFocusedTestAuthorization("task-1", focusedPlanDigestA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := consumed.FocusedTestAuthorizationState(focusedPlanDigestA); got != FocusedTestAuthorizationConsumed {
+		t.Fatalf("authorization after consumption = %q, want consumed", got)
+	}
+	if _, err := store.ConsumeFocusedTestAuthorization("task-1", focusedPlanDigestA); err == nil {
+		t.Fatal("second authorization consumption succeeded")
+	}
+}
+
 func TestFocusedTestEvidenceDerivesPendingFailedAndPassedWithoutRepair(t *testing.T) {
 	cases := []struct {
 		name       string
@@ -138,6 +193,46 @@ func TestCommandEvidenceRequiresResolvedAuthorization(t *testing.T) {
 	if _, err := store.RecordEvidence("task-1", Evidence{ID: "e-1", WorkItemID: "wi-0001", Kind: EvidenceCommand, State: EvidencePassed}); err != nil { t.Fatal(err) }
 }
 
+func TestOpenWorkspaceAccessGateRecordsOneFailureWithoutAnAttempt(t *testing.T) {
+	store := NewStore(t.TempDir())
+	state := compatibleState()
+	state.WorkItems = []WorkItem{{ID: "wi-0001", Title: "work", State: WorkItemReady, NoProgressCount: 1}}
+	if _, err := store.Create(state); err != nil {
+		t.Fatal(err)
+	}
+
+	updated, err := store.OpenWorkspaceAccessGate("task-1", "Git rejects this worktree")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(updated.Attempts) != 0 {
+		t.Fatalf("workspace preflight created attempts: %#v", updated.Attempts)
+	}
+	if len(updated.Gates) != 1 || updated.Gates[0].Kind != GateWorkspaceAccess || updated.Gates[0].State != GateOpen {
+		t.Fatalf("workspace Gate = %#v", updated.Gates)
+	}
+	if len(updated.Evidence) != 1 || updated.Evidence[0].ID != WorkspaceAccessEvidenceID || updated.Evidence[0].State != EvidenceFailed {
+		t.Fatalf("workspace failure evidence = %#v", updated.Evidence)
+	}
+	if got := DeriveSummary(updated).Execution; got != ExecutionBlocked {
+		t.Fatalf("execution = %q, want blocked", got)
+	}
+
+	again, err := store.OpenWorkspaceAccessGate("task-1", "Git still rejects this worktree")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(again.Evidence) != 1 || len(again.Attempts) != 0 {
+		t.Fatalf("repeated workspace preflight must preserve evidence and attempts: %#v", again)
+	}
+	if len(again.Gates) != 1 || again.Gates[0].ID != WorkspaceAccessGateID || again.WorkItems[0].NoProgressCount != 1 {
+		t.Fatalf("repeated ownership failure duplicated the Gate or consumed a retry: %+v", again)
+	}
+	if next := NextRunnerOutcome(again); next.Kind != RunnerGate || next.Request != nil {
+		t.Fatalf("ownership failure must stop Agent scheduling: %+v", next)
+	}
+}
+
 func TestSetDeliveryRequiresDeliveryGate(t *testing.T) {
 	store := NewStore(t.TempDir())
 	state := compatibleState()
@@ -181,7 +276,7 @@ func TestForceCloseCancelsActiveAttemptAndClearsExecutionOwnership(t *testing.T)
 	if _, err := store.StartAttempt("task-1", Attempt{ID: "attempt-1", WorkItemID: "wi-0001", Workspace: ".", State: AttemptCreated}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := store.RecordAutomation("task-1", "", AutomationCursor{}, &PreparedAgentRequest{TaskID: "task-1", WorkItemID: "wi-0001", AttemptID: "attempt-1"}); err != nil {
+	if _, err := store.RecordAutomation("task-1", "", AutomationCursor{Result: string(RunnerPrepared)}, &PreparedAgentRequest{TaskID: "task-1", WorkItemID: "wi-0001", AttemptID: "attempt-1", Workspace: "."}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -198,7 +293,14 @@ func TestForceCloseCancelsActiveAttemptAndClearsExecutionOwnership(t *testing.T)
 	if closed.Cancellation == nil || closed.Cancellation.Reason != "superseded by a replacement" || closed.Cancellation.Delivery != DeliveryDiscarded || closed.Delivery != DeliveryPending {
 		t.Fatalf("force-close terminal record is incomplete: %+v", closed)
 	}
-	if got := closed.Events[len(closed.Events)-1].Type; got != "task.force-closed" {
+	events, err := store.readEvents("task-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(events) == 0 || events[len(events)-1].Sequence != closed.LastEventSequence {
+		t.Fatalf("event log does not match closed state: %+v", events)
+	}
+	if got := events[len(events)-1].Type; got != "task.force-closed" {
 		t.Fatalf("last event = %q, want task.force-closed", got)
 	}
 }
@@ -226,5 +328,30 @@ func TestReconcileChecklistKeepsWorkItemIDsAcrossRenameAndReorder(t *testing.T) 
 	}
 	if state.WorkItems[1].ID != "wi-0002" || state.WorkItems[1].Title != "renamed second" {
 		t.Fatalf("second mapping changed unexpectedly: %#v", state.WorkItems[1])
+	}
+}
+
+func TestSyncChecklistMapsExplicitDependenciesToWorkItemIDs(t *testing.T) {
+	store := NewStore(t.TempDir())
+	if _, err := store.Create(compatibleState()); err != nil {
+		t.Fatal(err)
+	}
+	state, err := store.SyncChecklist("task-1", []ChecklistCandidate{
+		{Item: "3.2", Title: "compiler"},
+		{Item: "5.2", Title: "dependent", DependsOn: []string{"3.2"}},
+	}, "dependencies")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(state.WorkItems[1].Dependencies) != 1 || state.WorkItems[1].Dependencies[0] != state.WorkItems[0].ID {
+		t.Fatalf("dependencies=%#v", state.WorkItems[1].Dependencies)
+	}
+	if _, err := SelectReadyMappedWorkItem(state); err != nil {
+		t.Fatal(err)
+	}
+	state.WorkItems[0].State = WorkItemBlocked
+	item, err := SelectReadyMappedWorkItem(state)
+	if err == nil || item.ID != "" {
+		t.Fatalf("blocked predecessor was scheduled: item=%#v err=%v", item, err)
 	}
 }

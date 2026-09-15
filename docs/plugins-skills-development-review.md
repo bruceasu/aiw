@@ -354,7 +354,7 @@ aiw wt pull payment-retry
 需要 Agent 生成有限范围的文本冲突建议时：
 
 ```powershell
-aiw wt pull payment-retry --resolve=agent
+aiw wt pull payment-retry --conflict-handoff
 aiw wt resolve review payment-retry
 ```
 

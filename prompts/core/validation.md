@@ -8,12 +8,15 @@ Static review is the default and normally the only validation:
 - trace changed types, config, contracts, and call paths;
 - check docs and prompt consistency.
 
-Do not automatically run tests, builds, formatters, linters, type checkers,
-verification scripts, or smoke commands after an edit.
+After implementation, run one compile-only check. Prefer a `compile*` script
+under `scripts/` or at the repository root; otherwise use the narrowest
+language-level compiler command. Do not run `build*` scripts, tests,
+final-artifact builds, formatters, linters, type checkers, verification
+scripts, or smoke commands after an edit.
 
 ## Authorization
 
-Executable validation is allowed only when:
+Executable validation other than compile-only is allowed only when:
 
 - the user explicitly requests it;
 - the task is specifically to create or repair tests; or

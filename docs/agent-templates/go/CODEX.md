@@ -24,9 +24,12 @@ For non-trivial work, provide:
 - Risks
 
 Inspect tests, configs, and public contracts before broad exploration.
-Follow the shared resource budget. Use static review by default; do not run
-tests, vet, builds, or verification scripts automatically. When authorized,
-run one package-focused command and ask before widening scope.
+Follow the shared resource budget. After implementation, run one compile-only
+check: prefer `scripts/compile*` or root `compile*`, otherwise use the
+narrowest applicable `go build` command without retaining a final artifact.
+Do not run tests, vet, `build*` scripts, final-artifact builds, or verification
+scripts automatically. When authorized, run one package-focused command and ask
+before widening scope.
 
 For a managed Task, set a process-local Task-scoped `GOCACHE` before each
 authorized Go command. Do not change global Go settings or `GOMODCACHE`; see

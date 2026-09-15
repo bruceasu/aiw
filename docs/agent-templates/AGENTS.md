@@ -23,10 +23,13 @@ Do not load the whole prompt library.
 ## Resource Guard
 
 - Static analysis and editing are the default.
-- Tests, builds, formatters, linters, type checks, verification scripts,
-  network calls, permission probes, privilege escalation, `codex-auto-review`,
-  and sub-agents have a default budget of zero.
-- Implementation does not imply authorization to run them.
+- Tests, final-artifact builds, formatters, linters, type checks, verification
+  scripts, network calls, permission probes, privilege escalation,
+  `codex-auto-review`, and sub-agents have a default budget of zero.
+- After implementation, run one compile-only check: prefer `scripts/compile*`
+  or root `compile*`, otherwise use the narrowest language-level compiler
+  command. The command must not retain a final distributable artifact.
+- Implementation does not imply authorization to run the restricted commands.
 - Use no more than three targeted discovery batches before editing unless a
   concrete blocker remains.
 - After editing, use at most one static/read-only validation command by default.

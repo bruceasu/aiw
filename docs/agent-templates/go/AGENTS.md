@@ -33,14 +33,15 @@ Load both only when the task truly spans both service and CLI code.
 - auth, schema, or deployment changes
 
 ## Validation Options
-Use static review by default. Do not automatically run `scripts/verify.sh`,
-tests, vet, or builds.
+Use static review by default. After implementation, run one compile-only check:
+prefer `scripts/compile*` or root `compile*`, otherwise run the narrowest
+applicable `go build` command without retaining a final artifact. Do not run
+`scripts/verify.sh`, tests, vet, `build*` scripts, or final-artifact builds.
 
 When the shared resource budget authorizes runtime validation, choose one
 smallest relevant command:
 - `go test ./path/to/package`
 - `go vet ./path/to/package`
-- `go build ./path/to/package`
 
 Ask before repository-wide commands. Rerun only after a relevant change.
 

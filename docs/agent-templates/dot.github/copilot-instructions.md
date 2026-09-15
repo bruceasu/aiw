@@ -14,9 +14,11 @@ Read `AGENTS.md` first.
 - use static analysis and minimal edits
 - use at most three targeted discovery batches before editing unless blocked
 - keep command output narrow
-- do not run tests, builds, formatters, linters, type checks, vet,
-  verification scripts, network calls, permission probes, escalation,
-  `codex-auto-review`, or sub-agents without resource-budget authorization
+- after implementation, run one compile-only check using a `compile*` script or
+    the narrowest language-level compiler command; do not retain a final artifact
+- do not run tests, `build*` scripts, final-artifact builds, formatters,
+    linters, type checks, vet, verification scripts, network calls, permission
+    probes, escalation, `codex-auto-review`, or sub-agents without authorization
 - use at most one static/read-only post-edit command by default
 - do not repeat equivalent commands
 

@@ -13,7 +13,7 @@
 | `openspec/changes/archive/` | 已归档 Change |
 | `openspec/specs/` | 长期维护的规格说明 |
 | `.wt/` | Git worktree 默认目录 |
-| `.ai/tasks/` | AIW Task 和 Workflow 的运行时数据 |
+| `.ai/` | AIW Task 和 Workflow 的运行时数据 |
 | `AGENTS.md` | 项目级 Agent 工作规则 |
 | `.github/copilot-instructions.md` | GitHub Copilot 项目指令 |
 | `docs/agents/work-management.md` | AIW 工作管理规则 |
@@ -31,7 +31,7 @@ openspec/changes/<task-id>/
 ├── tasks.md
 └── notes.md
 
-.ai/tasks/<task-id>/
+.ai/<task-id>/
 ├── task.toml
 ├── state.json
 └── events.jsonl
@@ -41,7 +41,7 @@ openspec/changes/<task-id>/
 
 - `tasks.md`：人工维护的目标、范围、任务清单和验证项。
 - `notes.md`：临时发现、调试和实验记录。
-- `.ai/tasks/<task-id>/task.toml`：Task 元数据、分支、worktree、Session 等信息。
+- `.ai/<task-id>/task.toml`：Task 元数据、分支、worktree、Session 等信息。
 - `state.json`：Workflow Core 的运行状态、Work Items、Attempts、Gates 和 Evidence。
 - `events.jsonl`：Workflow 状态事件日志。
 
@@ -52,10 +52,10 @@ openspec/changes/<task-id>/
 | `aiw decision <task-id>` | `openspec/changes/<task-id>/design.md` |
 | `aiw spec <spec-id>` | `openspec/specs/<spec-id>/spec.toml`、`spec.md` |
 | `aiw turn <task-id>` | `openspec/changes/<task-id>/artifacts/handoff.md`、`agent-lineage.json` |
-| `Workflow Runner` | `.ai/tasks/<task-id>/artifacts/handoff.md` |
+| `Workflow Runner` | `.ai/<task-id>/artifacts/handoff.md` |
 | `aiw archive` | 将 Change 移动到 `openspec/changes/archive/` |
 
-这里的 Workflow Runner handoff 是运行时生成的 Attempt-bound managed context，属于 `.ai/tasks/`；不要与 Session handoff（`.ai/sessions/<session-id>/artifacts/handoff.md`）或 OpenSpec 的业务交接产物混淆。
+这里的 Workflow Runner handoff 是运行时生成的 Attempt-bound managed context，属于 `.ai/`；不要与 Session handoff（`.ai/sessions/<session-id>/artifacts/handoff.md`）或 OpenSpec 的业务交接产物混淆。
 
 Requirement promotion 还可能补充 OpenSpec 标准文件：
 
@@ -152,7 +152,7 @@ Focused Test 试验功能使用以下文件：
 ```text
 openspec/changes/<task-id>/artifacts/verification-plan.json
 
-.ai/tasks/<task-id>/artifacts/
+.ai/<task-id>/artifacts/
 ├── focused-test-selection.json
 ├── focused-test-result.json
 └── focused-test-output.txt

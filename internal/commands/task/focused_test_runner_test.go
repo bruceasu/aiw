@@ -16,6 +16,12 @@ type countingFocusedTestProcess struct {
 	calls int
 }
 
+type unavailableFocusedTestNetworkEnforcer struct{}
+
+func (unavailableFocusedTestNetworkEnforcer) EnforceNoNetwork(FocusedTestRun) error {
+	return os.ErrPermission
+}
+
 func (p *countingFocusedTestProcess) Run(context.Context, FocusedTestRun) ([]byte, int, error) {
 	p.calls++
 	return nil, 0, nil
@@ -85,6 +91,91 @@ func TestFocusedTestCommandDoesNotStartProcessBeforeValidation(t *testing.T) {
 				t.Fatalf("process calls = %d, want 0", process.calls)
 			}
 		})
+	}
+}
+
+func TestFocusedTestNetworkEnforcementFailsClosedWithoutWaiver(t *testing.T) {
+	fixture := newFocusedTestCommandFixture(t)
+	run, err := ResolveFocusedTestRun(fixture.meta, fixture.state(t), fixture.attemptID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	state, executable, err := EnsureFocusedTestNetworkEnforcement(fixture.store, run, unavailableFocusedTestNetworkEnforcer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if executable {
+		t.Fatal("unenforceable network boundary was executable without a waiver")
+	}
+	if len(state.Gates) == 0 || state.Gates[0].ID != workflow.FocusedTestNetworkEnforcementGateID {
+		t.Fatalf("network enforcement gate = %+v, want open gate", state.Gates)
+	}
+	process := &countingFocusedTestProcess{}
+	if _, err := ExecuteFocusedTest(fixture.store, run, unavailableFocusedTestNetworkEnforcer{}, process); err == nil {
+		t.Fatal("unavailable no-network enforcement started a process")
+	}
+	if process.calls != 0 {
+		t.Fatalf("process calls = %d, want 0", process.calls)
+	}
+}
+
+func TestFocusedTestNetworkEnforcementAllowsExplicitWaiver(t *testing.T) {
+	fixture := newFocusedTestCommandFixture(t)
+	run, err := ResolveFocusedTestRun(fixture.meta, fixture.state(t), fixture.attemptID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	blocked, executable, err := EnsureFocusedTestNetworkEnforcement(fixture.store, run, unavailableFocusedTestNetworkEnforcer{})
+	if err != nil || executable {
+		t.Fatalf("initial unavailable enforcement = executable %t, error %v", executable, err)
+	}
+	if _, err := fixture.store.AuthorizeFocusedTest(fixture.id, run.PlanDigest, "reviewer@example.test"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := fixture.store.ResolveGate(fixture.id, blocked.Gates[0].ID, workflow.GateWaived); err != nil {
+		t.Fatal(err)
+	}
+	process := &countingFocusedTestProcess{}
+	execution, err := ExecuteFocusedTest(fixture.store, run, unavailableFocusedTestNetworkEnforcer{}, process)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if process.calls != 1 || execution.Result.NetworkEnforcement != "waived" {
+		t.Fatalf("waived execution = calls %d, result %#v", process.calls, execution.Result)
+	}
+	if execution.RuntimeState.FocusedTestAuthorization == nil || execution.RuntimeState.FocusedTestAuthorization.ConsumedAt == "" {
+		t.Fatalf("waived execution did not consume authorization: %#v", execution.RuntimeState.FocusedTestAuthorization)
+	}
+}
+
+func TestFocusedTestNetworkEnforcementResolvedGateRechecksRunner(t *testing.T) {
+	fixture := newFocusedTestCommandFixture(t)
+	run, err := ResolveFocusedTestRun(fixture.meta, fixture.state(t), fixture.attemptID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	blocked, _, err := EnsureFocusedTestNetworkEnforcement(fixture.store, run, unavailableFocusedTestNetworkEnforcer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := fixture.store.ResolveGate(fixture.id, blocked.Gates[0].ID, workflow.GateResolved); err != nil {
+		t.Fatal(err)
+	}
+	updated, executable, err := EnsureFocusedTestNetworkEnforcement(fixture.store, run, unavailableFocusedTestNetworkEnforcer{})
+	if err != nil || executable {
+		t.Fatalf("resolved unavailable enforcement = executable %t, error %v", executable, err)
+	}
+	if updated.Gates[0].State != workflow.GateOpen {
+		t.Fatalf("resolved Gate was not reopened: %#v", updated.Gates[0])
+	}
+}
+
+func TestNoNetworkFocusedTestRunnerWrapsOnlyApprovedPlanArgv(t *testing.T) {
+	run := FocusedTestRun{Argv: []string{"go", "test", "./internal/workflow"}}
+	got := noNetworkFocusedTestRunnerArgv(run)
+	want := []string{"--", "go", "test", "./internal/workflow"}
+	if strings.Join(got, "\x00") != strings.Join(want, "\x00") {
+		t.Fatalf("wrapper argv = %#v, want %#v", got, want)
 	}
 }
 

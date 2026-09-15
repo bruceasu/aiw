@@ -29,6 +29,9 @@ type Request struct {
 	OutputSchema   map[string]any
 	Timeout        time.Duration
 	AdditionalDirs []string
+	// Environment contains process-local environment entries for a CLI-backed
+	// provider invocation. It is never persisted in Session state.
+	Environment    []string
 	ReadOnly       bool
 }
 

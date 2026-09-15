@@ -4,14 +4,19 @@
 
 For an ordinary implementation request:
 
-- tests and builds: `0`
+- tests and final-artifact builds: `0`
 - formatter, linter, type-checker, vet, and verification runs: `0`
+- compile-only checks: allowed after implementation; first use a
+  `scripts/compile*` or root `compile*` script, otherwise the narrowest
+  language-level compiler command. The command must not retain a final
+  distributable artifact.
 - network calls and dependency downloads: `0`
 - permission probes and privilege escalation requests: `0`
 - `codex-auto-review`, sub-agents, and repeated review passes: `0`
 - post-edit command validation: at most `1` static/read-only command
 
-Implementation does not imply authorization for runtime validation.
+Implementation does not imply authorization for tests, final-artifact builds,
+or other runtime validation.
 
 ## Discovery Budget
 

@@ -46,6 +46,33 @@ func TestSyncChecklistCompletesCheckedItem(t *testing.T) {
 	}
 }
 
+func TestSyncChecklistCompletesCheckedItemBlockedByRetryLimit(t *testing.T) {
+	store := NewStore(t.TempDir())
+	initial := RuntimeState{SchemaVersion: SchemaVersion, Task: TaskReference{ID: "task-1", Workspace: ".", Kind: WorkspacePrimary}, Planning: PlanningReady, Delivery: DeliveryUnmanaged}
+	if _, err := store.Create(initial); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.SyncChecklist("task-1", []ChecklistCandidate{{Item: "1.1", Title: "done"}}, "one"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.UpdateWithEvent("task-1", Event{Type: "retry.exhausted"}, func(state *RuntimeState) error {
+		item := &state.WorkItems[0]
+		item.State = WorkItemBlocked
+		item.NoProgressCount = item.RetryPolicy.MaxAttempts
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	state, err := store.SyncChecklist("task-1", []ChecklistCandidate{{Item: "1.1", Title: "done", Completed: true}}, "two")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state.WorkItems[0].State != WorkItemCompleted || state.WorkItems[0].NoProgressCount != 0 {
+		t.Fatalf("checked blocked item did not converge to completed: %+v", state.WorkItems[0])
+	}
+}
+
 func TestSyncChecklistReportsCompletedItemConflict(t *testing.T) {
 	store := NewStore(t.TempDir())
 	initial := RuntimeState{SchemaVersion: SchemaVersion, Task: TaskReference{ID: "task-1", Workspace: ".", Kind: WorkspacePrimary}, Planning: PlanningReady, Delivery: DeliveryUnmanaged}

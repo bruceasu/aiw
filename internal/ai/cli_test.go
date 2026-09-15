@@ -100,6 +100,25 @@ func TestCLIProviderPromptIncludesSystemPrompt(t *testing.T) {
 	}
 }
 
+func TestCommandEnvironmentOverridesOnlyTheRequestedProcessValue(t *testing.T) {
+	const key = "AIW_CLI_ENVIRONMENT_TEST"
+	t.Setenv(key, "parent")
+
+	environment := commandEnvironment([]string{key + "=child"})
+	matches := 0
+	for _, entry := range environment {
+		if environmentEntryHasKey(entry, key) {
+			matches++
+			if entry != key+"=child" {
+				t.Fatalf("environment value = %q, want child value", entry)
+			}
+		}
+	}
+	if matches != 1 {
+		t.Fatalf("environment has %d values for %s, want 1", matches, key)
+	}
+}
+
 func TestInteractiveProviderUsesWorkspaceAndProviderSpecificArguments(t *testing.T) {
 	for _, provider := range []string{"codex", "copilot"} {
 		t.Run(provider, func(t *testing.T) {

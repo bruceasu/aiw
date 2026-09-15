@@ -33,13 +33,17 @@ Token and command cost are hard constraints.
 Default budget for an ordinary implementation request:
 
 - tests: `0`
-- builds, linters, formatters, vet, and verification scripts: `0`
+- final-artifact builds, linters, formatters, vet, and verification scripts: `0`
+- compile-only checks: allowed after implementation; prefer `scripts/compile*`
+  or root `compile*`, otherwise use the narrowest language-level compile
+  command. The command must not retain a final distributable artifact.
 - network calls and dependency downloads: `0`
 - permission probes or privilege escalation requests: `0`
 - `codex-auto-review`, sub-agents, and repeated review passes: `0`
 - post-edit validation commands: at most `1`, and static/read-only
 
-Implementation does not imply authorization to test or build.
+Implementation does not imply authorization to test or create final build
+artifacts.
 
 Before the first edit, use no more than three targeted discovery batches unless
 the task is genuinely blocked. Batch related reads and searches. Read relevant
@@ -53,7 +57,7 @@ broader commands.
 
 ## Runtime Authorization
 
-Run a test or other executable validation only when:
+Run a test or executable validation other than compile-only only when:
 
 - the user explicitly asks for it;
 - the task is specifically to create or repair tests; or
@@ -95,15 +99,17 @@ Static review is the default validation:
 - trace changed types, config, and call paths;
 - check instruction and documentation consistency.
 
-Do not run `scripts/verify.sh`, tests, builds, formatters, linters, or vet by
-default.
+After implementation, run one compile-only check. Prefer `scripts/compile*` or
+root `compile*`; otherwise use the narrowest language-level compiler command.
+Do not run `build*` scripts, `scripts/verify.sh`, tests, final-artifact builds,
+formatters, linters, or vet by default.
 
 Report:
 
 - what changed and why;
 - static evidence reviewed;
 - commands actually run;
-- tests, builds, or checks intentionally not run;
+- tests, final-artifact builds, or checks intentionally not run;
 - remaining risks or optional focused commands the user may authorize.
 
 Never claim a runtime result for a command that was not run.
@@ -134,10 +140,13 @@ Do not load the whole prompt library.
 ## Resource Guard
 
 - Static analysis and editing are the default.
-- Tests, builds, formatters, linters, type checks, verification scripts,
-  network calls, permission probes, privilege escalation, `codex-auto-review`,
-  and sub-agents have a default budget of zero.
-- Implementation does not imply authorization to run them.
+- Tests, final-artifact builds, formatters, linters, type checks, verification
+  scripts, network calls, permission probes, privilege escalation,
+  `codex-auto-review`, and sub-agents have a default budget of zero.
+- After implementation, run one compile-only check: prefer `scripts/compile*`
+  or root `compile*`, otherwise use the narrowest language-level compiler
+  command. The command must not retain a final distributable artifact.
+- Implementation does not imply authorization to run the restricted commands.
 - Use no more than three targeted discovery batches before editing unless a
   concrete blocker remains.
 - After editing, use at most one static/read-only validation command by default.
@@ -223,14 +232,15 @@ Load both only when the task truly spans both service and CLI code.
 - auth, schema, or deployment changes
 
 ## Validation Options
-Use static review by default. Do not automatically run `scripts/verify.sh`,
-tests, vet, or builds.
+Use static review by default. After implementation, run one compile-only check:
+prefer `scripts/compile*` or root `compile*`, otherwise run the narrowest
+applicable `go build` command without retaining a final artifact. Do not run
+`scripts/verify.sh`, tests, vet, `build*` scripts, or final-artifact builds.
 
 When the shared resource budget authorizes runtime validation, choose one
 smallest relevant command:
 - `go test ./path/to/package`
 - `go vet ./path/to/package`
-- `go build ./path/to/package`
 
 Ask before repository-wide commands. Rerun only after a relevant change.
 

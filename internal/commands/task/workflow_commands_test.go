@@ -32,6 +32,7 @@ func TestValidateWorkflowArgsAcceptsControlledOperations(t *testing.T) {
 		{"attempt", "task-1", "checkpoint", "attempt-1", "paused"},
 		{"evidence", "task-1", "e-1", "wi-0001", "static-review", "passed"},
 		{"gate", "task-1", "gate-1", "resolved"},
+		{"skip-focused-test", "task-1", "not requested"},
 		{"complete", "task-1", "wi-0001"},
 	}
 	for _, args := range tests {
@@ -71,6 +72,19 @@ func TestParseWorkflowRunArgsSupportsPrimaryOptOut(t *testing.T) {
 	execute, primary, err := parseWorkflowRunArgs([]string{"run", "task-1", "--execute", "--primary"})
 	if err != nil || !execute || !primary {
 		t.Fatalf("parse returned execute=%v primary=%v err=%v", execute, primary, err)
+	}
+}
+
+func TestSupervisedPolicyFreezesLocalUnitTestBoundary(t *testing.T) {
+	snapshot, err := workflow.ResolvePolicy(workflow.PolicyLayers{{
+		Ordinary: map[string]string{"network": workflow.NetworkPolicyDeny, "local-unit-test-runner": "aiw-no-network-runner"},
+		Capabilities: map[string]workflow.CapabilityAuthorization{"local-unit-test": {State: workflow.CapabilityAllowed}},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snapshot.Ordinary["network"] != workflow.NetworkPolicyDeny || snapshot.Ordinary["local-unit-test-runner"] != "aiw-no-network-runner" || snapshot.Capabilities["local-unit-test"].State != workflow.CapabilityAllowed {
+		t.Fatalf("supervised policy = %#v", snapshot)
 	}
 }
 

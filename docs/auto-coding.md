@@ -108,7 +108,7 @@ Supervisor 运行在当前终端进程中。关闭终端、发送中断或进程
 
 Supervisor 启动后会：
 
-1. 从 `.ai/tasks/<task-id>/state.json` 加载 Workflow 状态。
+1. 从 `.ai/<task-id>/state.json` 加载 Workflow 状态。
 2. 获取该 Task 唯一的 Supervisor lease，默认有效期约为一分钟。
 3. 检查未解决的 projection repair；存在时先尝试修复，修复失败则暂停。
 4. 同步 `tasks.md` 与 Workflow Core 的 Work Item 投影。
@@ -370,7 +370,7 @@ aiw wt repair
 处理原则：
 
 1. 不要立即启动第二个 Supervisor。
-2. 不要手动删除 `.ai/tasks/<task-id>/state.json` 或 Session 输出。
+2. 不要手动删除 `.ai/<task-id>/state.json` 或 Session 输出。
 3. 保留失败 Attempt 和 Session 结果，以便审计。
 4. 先修复状态、worktree 或 projection，再恢复 Supervisor。
 5. Session 结果未知时，不要创建第二个 Attempt 覆盖原结果。

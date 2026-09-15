@@ -12,6 +12,7 @@ type ChecklistCandidate struct {
 	Item      string
 	Title     string
 	Completed bool
+	DependsOn []string
 }
 
 // ReconcileChecklist maps new checklist references to Work Items while
@@ -91,11 +92,40 @@ func (s *Store) syncChecklistWithEvent(id TaskID, candidates []ChecklistCandidat
 			byReference[candidate.Item] = len(state.WorkItems) - 1
 		}
 		for _, candidate := range candidates {
+			index := byReference[candidate.Item]
+			dependencies := make([]WorkItemID, 0, len(candidate.DependsOn))
+			for _, reference := range candidate.DependsOn {
+				dependencyIndex, exists := byReference[reference]
+				if !exists {
+					return fmt.Errorf("checklist item %s depends on absent checklist item %s", candidate.Item, reference)
+				}
+				dependency := state.WorkItems[dependencyIndex].ID
+				if dependency == state.WorkItems[index].ID {
+					return fmt.Errorf("checklist item %s cannot depend on itself", candidate.Item)
+				}
+				dependencies = append(dependencies, dependency)
+			}
+			state.WorkItems[index].Dependencies = dependencies
+		}
+		for _, candidate := range candidates {
 			if !candidate.Completed {
 				continue
 			}
 			index := byReference[candidate.Item]
+			if request := state.Automation.PreparedRequest; request != nil && request.WorkItemID == state.WorkItems[index].ID && (request.AISelection != nil || request.Compile != nil || state.Automation.Supervisor.LeaseID != "") {
+				if request.Compile == nil || request.Compile.Result == nil || request.Compile.Result.Status != ActorResultAccepted {
+					continue
+				}
+			}
 			if state.WorkItems[index].State == WorkItemCompleted {
+				continue
+			}
+			if request := state.Automation.PreparedRequest; request != nil && request.WorkItemID == state.WorkItems[index].ID && (request.DispatchedAt != "" || request.CompilerResult != nil || state.Automation.Supervisor.LeaseID != "") {
+				// The supervised outcome and compiler must finish before authored
+				// checkboxes can release the Attempt or schedule dependent work.
+				continue
+			}
+			if state.WorkItems[index].State == WorkItemBlocked || state.WorkItems[index].CompileFailureCount > 0 {
 				continue
 			}
 			closeChecklistAttempt(state, state.WorkItems[index].ID)
@@ -111,7 +141,7 @@ func (s *Store) syncChecklistWithEvent(id TaskID, candidates []ChecklistCandidat
 			if item.Checklist.Item == "" || present[item.Checklist.Item] {
 				continue
 			}
-			gateID := GateID("plan-mapping-review-" + string(item.ID))
+			gateID := GateID("checklist-identifier-deleted-" + string(item.ID))
 			found := false
 			for _, gate := range state.Gates {
 				if gate.ID == gateID {
@@ -120,7 +150,7 @@ func (s *Store) syncChecklistWithEvent(id TaskID, candidates []ChecklistCandidat
 				}
 			}
 			if !found {
-				state.Gates = append(state.Gates, Gate{ID: gateID, WorkItemID: item.ID, Kind: GateDecision, State: GateOpen, Reason: "mapped checklist item is absent from the current plan"})
+				state.Gates = append(state.Gates, Gate{ID: gateID, WorkItemID: item.ID, Kind: GateDecision, State: GateOpen, Reason: "mapped checklist identifier is absent from the current plan"})
 			}
 		}
 		if fingerprint != "" {
@@ -367,6 +397,103 @@ func (s *Store) AuthorizeFocusedTest(id TaskID, planDigest, approver string) (Ru
 	})
 }
 
+// OpenChecklistReconciliationGate records an authored-checklist conflict that
+// an adapter encountered while reading or projecting a Work Item. The Gate is
+// idempotent so a retry preserves the original reconciliation decision.
+func (s *Store) OpenChecklistReconciliationGate(id TaskID, workItemID WorkItemID, code, reason string) (RuntimeState, error) {
+	if strings.TrimSpace(code) == "" || strings.TrimSpace(reason) == "" {
+		return RuntimeState{}, fmt.Errorf("checklist reconciliation gate code and reason are required")
+	}
+	gateID := GateID("checklist-reconciliation-" + code)
+	if workItemID != "" {
+		gateID += "-" + GateID(workItemID)
+	}
+	return s.UpdateWithEvent(id, Event{Type: "checklist.reconciliation-gated", WorkItemID: workItemID, Detail: code}, func(state *RuntimeState) error {
+		for index := range state.Gates {
+			if state.Gates[index].ID != gateID {
+				continue
+			}
+			state.Gates[index].State = GateOpen
+			state.Gates[index].Reason = reason
+			return nil
+		}
+		state.Gates = append(state.Gates, Gate{ID: gateID, WorkItemID: workItemID, Kind: GateDecision, State: GateOpen, Reason: reason})
+		return nil
+	})
+}
+
+const (
+	WorkspaceAccessGateID     GateID     = "workspace-access"
+	WorkspaceAccessEvidenceID EvidenceID = "workspace-access-preflight"
+)
+
+// OpenWorkspaceAccessGate records a deterministic pre-Attempt workspace
+// failure. Reopening the same gate preserves the original failed evidence so
+// a supervisor retry never consumes a Work Item retry counter for this class
+// of environment problem.
+func (s *Store) OpenWorkspaceAccessGate(id TaskID, reason string) (RuntimeState, error) {
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		return RuntimeState{}, fmt.Errorf("workspace access gate reason is required")
+	}
+	updated, err := s.UpdateWithEvent(id, Event{Type: "workspace-access.gated", Detail: reason}, func(state *RuntimeState) error {
+		foundGate := false
+		for index := range state.Gates {
+			if state.Gates[index].ID != WorkspaceAccessGateID {
+				continue
+			}
+			state.Gates[index].Kind = GateWorkspaceAccess
+			state.Gates[index].State = GateOpen
+			state.Gates[index].Reason = reason
+			foundGate = true
+			break
+		}
+		if !foundGate {
+			state.Gates = append(state.Gates, Gate{ID: WorkspaceAccessGateID, Kind: GateWorkspaceAccess, State: GateOpen, Reason: reason})
+		}
+		for _, evidence := range state.Evidence {
+			if evidence.ID == WorkspaceAccessEvidenceID {
+				return nil
+			}
+		}
+		state.Evidence = append(state.Evidence, Evidence{
+			ID:         WorkspaceAccessEvidenceID,
+			Kind:       EvidenceManual,
+			State:      EvidenceFailed,
+			Reference:  "supervised Git preflight",
+			RecordedAt: time.Now().UTC().Format(time.RFC3339),
+		})
+		return nil
+	})
+	if err != nil {
+		return updated, err
+	}
+	if _, err := s.PersistFailureReport(updated, FailureReport{
+		SchemaVersion: FailureReportSchemaVersion, TaskID: updated.Task.ID, EventSequence: updated.LastEventSequence,
+		Category: string(BlockedOutcomeWorkspaceAccess), Detail: reason, EvidenceReference: "supervised Git preflight",
+		Retryable: false, Owner: "operator", RecommendedAction: "repair the recorded worktree binding, then resolve the workspace-access Gate",
+	}); err != nil {
+		return updated, err
+	}
+	return updated, nil
+}
+
+// ConsumeFocusedTestAuthorization spends the exact-digest human authorization
+// before a focused test starts. A separate network-enforcement Gate records
+// whether the process is isolated or explicitly waived.
+func (s *Store) ConsumeFocusedTestAuthorization(id TaskID, planDigest string) (RuntimeState, error) {
+	if err := validateVerificationPlanDigest(planDigest); err != nil {
+		return RuntimeState{}, err
+	}
+	return s.UpdateWithEvent(id, Event{Type: "focused-test.authorization-consumed", Detail: planDigest}, func(state *RuntimeState) error {
+		if state.FocusedTestPlanDigest != planDigest || state.FocusedTestAuthorizationState(planDigest) != FocusedTestAuthorizationAuthorized {
+			return fmt.Errorf("focused-test requires an unused authorization for verification plan digest %s", planDigest)
+		}
+		state.FocusedTestAuthorization.ConsumedAt = time.Now().UTC().Format(time.RFC3339)
+		return nil
+	})
+}
+
 // OpenFocusedTestNetworkEnforcementGate records that an otherwise selected
 // focused check cannot run because its runtime cannot enforce network: deny.
 // It deliberately does not change authorization or record command Evidence.
@@ -381,7 +508,7 @@ func (s *Store) OpenFocusedTestNetworkEnforcementGate(id TaskID, planDigest stri
 	if detail == "" {
 		detail = "the selected runtime does not provide enforced network isolation"
 	}
-	reason := fmt.Sprintf("focused-test check for verification plan digest %s requires network: deny, but %s; use a runtime with enforceable network isolation", planDigest, detail)
+	reason := fmt.Sprintf("focused-test check for verification plan digest %s requires network: deny, but %s; install an enforceable runner or explicitly waive this Gate to run the frozen command without technical network isolation", planDigest, detail)
 	return s.UpdateWithEvent(id, Event{Type: "focused-test.network-enforcement-unavailable", WorkItemID: workItemID, Detail: detail}, func(state *RuntimeState) error {
 		for index := range state.Gates {
 			if state.Gates[index].ID != FocusedTestNetworkEnforcementGateID {
@@ -518,6 +645,76 @@ func (s *Store) CompleteWorkItem(id TaskID, workItemID WorkItemID) (RuntimeState
 	return s.UpdateWithEvent(id, Event{Type: "work-item.completed", WorkItemID: workItemID}, func(state *RuntimeState) error {
 		return completeWorkItem(state, workItemID)
 	})
+}
+
+// SkipFocusedTest records an explicit waived validation result and completes
+// the one checklist item that requests focused verification. It is idempotent
+// so a supervisor can apply the no-Plan policy without consuming retries.
+func (s *Store) SkipFocusedTest(id TaskID, reason string) (RuntimeState, WorkItemID, error) {
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		return RuntimeState{}, "", fmt.Errorf("focused-test skip reason is required")
+	}
+	// An already completed optional verification must be a true no-op. In
+	// particular, it must not create an event that causes a later, unrelated
+	// prepared request to be deferred for another supervisor iteration.
+	current, err := s.Load(id)
+	if err != nil {
+		return RuntimeState{}, "", err
+	}
+	for _, item := range current.WorkItems {
+		if strings.Contains(strings.ToLower(item.Title), "authorized focused verification") && item.State == WorkItemCompleted {
+			return current, "", nil
+		}
+	}
+	var skipped WorkItemID
+	updated, err := s.UpdateWithEvent(id, Event{Type: "focused-test.skipped", Detail: reason}, func(state *RuntimeState) error {
+		for index := range state.WorkItems {
+			item := &state.WorkItems[index]
+			if !strings.Contains(strings.ToLower(item.Title), "authorized focused verification") {
+				continue
+			}
+			if skipped != "" {
+				return fmt.Errorf("multiple focused verification Work Items found")
+			}
+			skipped = item.ID
+			for attemptIndex := range state.Attempts {
+				attempt := state.Attempts[attemptIndex]
+				if attempt.WorkItemID == item.ID && attempt.State == AttemptRunning {
+					return fmt.Errorf("focused verification Work Item %s has a running Attempt", item.ID)
+				}
+			}
+			for gateIndex := range state.Gates {
+				gate := &state.Gates[gateIndex]
+				if gate.WorkItemID == item.ID && gate.State == GateOpen {
+					gate.State = GateWaived
+				}
+			}
+			evidenceID := EvidenceID("focused-test-skipped-" + string(item.ID))
+			hasEvidence := false
+			for _, evidence := range state.Evidence {
+				if evidence.ID == evidenceID {
+					hasEvidence = true
+					break
+				}
+			}
+			if !hasEvidence {
+				state.Evidence = append(state.Evidence, Evidence{ID: evidenceID, WorkItemID: item.ID, Kind: EvidenceManual, State: EvidenceWaived, Reference: reason, RecordedAt: time.Now().UTC().Format(time.RFC3339)})
+			}
+			if item.State == WorkItemBlocked {
+				if err := ValidateWorkItemTransition(item.ID, item.State, WorkItemReady); err != nil {
+					return err
+				}
+				item.State = WorkItemReady
+			}
+			return completeWorkItem(state, item.ID)
+		}
+		if skipped == "" {
+			return fmt.Errorf("Task has no authorized focused verification Work Item")
+		}
+		return nil
+	})
+	return updated, skipped, err
 }
 
 func completeWorkItem(state *RuntimeState, workItemID WorkItemID) error {

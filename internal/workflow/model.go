@@ -5,8 +5,10 @@
 // concepts used to coordinate their execution.
 package workflow
 
+import "encoding/json"
+
 const (
-	SchemaVersion     = 4
+	SchemaVersion     = 9
 	MinRetryLimit     = 1
 	MaxRetryLimit     = 5
 	DefaultRetryLimit = 3
@@ -17,6 +19,7 @@ type WorkItemID string
 type AttemptID string
 type GateID string
 type EvidenceID string
+type NotificationID string
 
 type PlanningState string
 
@@ -58,6 +61,7 @@ const (
 	FocusedTestAuthorizationDisabled FocusedTestAuthorizationState = "disabled"
 	FocusedTestAuthorizationAuthorized FocusedTestAuthorizationState = "authorized"
 	FocusedTestAuthorizationStale    FocusedTestAuthorizationState = "stale"
+	FocusedTestAuthorizationConsumed FocusedTestAuthorizationState = "consumed"
 )
 
 type DeliveryState string
@@ -67,6 +71,18 @@ const (
 	DeliveryPending   DeliveryState = "pending"
 	DeliveryMerged    DeliveryState = "merged"
 	DeliveryDiscarded DeliveryState = "discarded"
+)
+
+// NotificationState records the durable state of a notification outbox item.
+// A Plugin receives the stable notification ID so a delivery backend can
+// provide idempotency across a recovered dispatch.
+type NotificationState string
+
+const (
+	NotificationPending     NotificationState = "pending"
+	NotificationDispatching NotificationState = "dispatching"
+	NotificationFailed      NotificationState = "failed"
+	NotificationDelivered   NotificationState = "delivered"
 )
 
 type WorkspaceState string
@@ -109,6 +125,7 @@ const (
 	GateAuthorization GateKind = "authorization"
 	GateValidation    GateKind = "validation"
 	GateDelivery      GateKind = "delivery"
+	GateWorkspaceAccess GateKind = "workspace-access"
 )
 
 type GateState string
@@ -162,14 +179,54 @@ type RuntimeState struct {
 	Attempts          []Attempt       `json:"attempts"`
 	Gates             []Gate          `json:"gates"`
 	Evidence          []Evidence      `json:"evidence"`
+	ActorHandoffs     []ActorHandoff  `json:"actor_handoffs,omitempty"`
 	WriteLease        *WriteLease     `json:"write_lease,omitempty"`
 	LastEventSequence uint64          `json:"last_event_sequence,omitempty"`
 	PendingEvent      *Event          `json:"pending_event,omitempty"`
 	Automation        AutomationState `json:"automation,omitempty"`
+	Workspace         *WorkspaceBinding `json:"workspace_binding,omitempty"`
 	FocusedTestAuthorization *FocusedTestAuthorization `json:"focused_test_authorization,omitempty"`
 	FocusedTestPlanDigest    string                    `json:"focused_test_plan_digest,omitempty"`
 	Cancellation      *Cancellation   `json:"cancellation,omitempty"`
+	Policy            *PolicySnapshot `json:"policy_snapshot,omitempty"`
+	OperationalRetries OperationalRetryAccounting `json:"operational_retries,omitempty"`
+	Notifications      []Notification             `json:"notifications,omitempty"`
 	Summary           TaskSummary     `json:"summary"`
+}
+
+// Notification is a persisted outbox record. Payload is frozen before a
+// Plugin process starts, so workflow transition completion does not depend on
+// a transient Plugin invocation.
+type Notification struct {
+	ID               NotificationID    `json:"id"`
+	Topic            string            `json:"topic"`
+	Payload          json.RawMessage   `json:"payload"`
+	State            NotificationState `json:"state"`
+	CreatedAt        string            `json:"created_at"`
+	UpdatedAt        string            `json:"updated_at"`
+	DispatchAttempts int               `json:"dispatch_attempts"`
+	LastError        string            `json:"last_error,omitempty"`
+	Receipt          string            `json:"receipt,omitempty"`
+}
+
+// WorkspaceBinding is the durable boundary between a Task worktree and its
+// parent checkout. It is recorded before managed execution so recovery can
+// reject a repointed worktree without relying on mutable Task metadata.
+type WorkspaceBinding struct {
+	ParentPath   string `json:"parent_path"`
+	ParentBranch string `json:"parent_branch"`
+	ParentCommit string `json:"parent_commit"`
+	WorktreePath string `json:"worktree_path"`
+	TaskBranch   string `json:"task_branch"`
+	ParentDrift  []ParentDrift `json:"parent_drift,omitempty"`
+}
+
+// ParentDrift is an audit observation only. External parent changes do not
+// stop work; only ConfirmParentWriteFenceViolation opens the blocking Gate.
+type ParentDrift struct {
+	ObservedAt string   `json:"observed_at"`
+	Commit     string   `json:"commit"`
+	Paths      []string `json:"paths,omitempty"`
 }
 
 // FocusedTestAuthorizationGateID is reserved for the active task-local
@@ -178,8 +235,8 @@ const FocusedTestAuthorizationGateID GateID = "focused-test-authorization"
 
 // FocusedTestNetworkEnforcementGateID records that the selected runtime cannot
 // technically enforce a Plan's required network boundary. Resolving this Gate
-// alone never grants execution: the adapter must check the capability again
-// before every process creation.
+// requires the adapter to check the capability again; waiving it explicitly
+// authorizes one frozen-command execution without technical isolation.
 const FocusedTestNetworkEnforcementGateID GateID = "focused-test-network-enforcement"
 
 // FocusedTestAuthorization is the explicit human approval required to enable
@@ -191,6 +248,7 @@ type FocusedTestAuthorization struct {
 	PlanDigest string `json:"plan_digest"`
 	Approver   string `json:"approver"`
 	ApprovedAt string `json:"approved_at"`
+	ConsumedAt string `json:"consumed_at,omitempty"`
 }
 
 // Cancellation records the operator decision that terminally stopped managed
@@ -241,9 +299,50 @@ type PreparedAgentRequest struct {
 	WorkItemID WorkItemID `json:"work_item_id"`
 	AttemptID  AttemptID  `json:"attempt_id"`
 	SessionID  string     `json:"session_id,omitempty"`
+	// ExpectedSessionTurn binds this request to the next Session turn observed
+	// at preparation time. Zero is accepted for pre-schema requests.
+	ExpectedSessionTurn int `json:"expected_session_turn,omitempty"`
+	// DispatchedAt is set immediately before the managed adapter is asked to
+	// start the bound Session turn. A prepared request is deliberately not a
+	// dispatched request: it may have been created by a dry workflow pass.
+	DispatchedAt string `json:"dispatched_at,omitempty"`
+	// CompilerResult is committed with the compile counter so recovery cannot
+	// count the same completed compiler invocation twice.
+	CompilerResult *CompilerResult `json:"compiler_result,omitempty"`
 	Workspace  string     `json:"workspace"`
 	Handoff    string     `json:"handoff,omitempty"`
+	// SkillManifest freezes the selected Skills for this Actor request.  A
+	// resumed request must use this snapshot rather than rediscovering Skills
+	// from mutable filesystem roots.
+	SkillManifest *SkillManifest `json:"skill_manifest,omitempty"`
+	// AISelection freezes the supervised Actor's resolved routing choice. It
+	// intentionally contains no credentials, so retries and recovery do not
+	// depend on mutable configuration while the runtime state remains safe to
+	// inspect.
+	AISelection *AISelection `json:"ai_selection,omitempty"`
+	Compile *SupervisedCompileState `json:"compile,omitempty"`
 	PreparedAt string     `json:"prepared_at"`
+}
+
+// SupervisedCompileState is frozen with the prepared request. A nil Plan is
+// a legacy request, never permission to discover another compiler at runtime.
+type SupervisedCompileState struct {
+	Plan *CompilePlan `json:"plan,omitempty"`
+	PlanReference ActorReference `json:"plan_reference"`
+	Request *CompilerRequest `json:"request,omitempty"`
+	Result *CompilerResult `json:"result,omitempty"`
+	Failures int `json:"failures"`
+	RepairPending bool `json:"repair_pending,omitempty"`
+}
+
+// AISelection is the secret-free AI configuration provenance for one
+// supervised request. Digest is computed by the command adapter from the
+// resolved non-secret configuration fields.
+type AISelection struct {
+	Profile  string `json:"profile"`
+	Provider string `json:"provider"`
+	Model    string `json:"model"`
+	Digest   string `json:"digest"`
 }
 
 // ProjectionRepair identifies one committed transition whose durable Task or
@@ -271,6 +370,7 @@ type WorkItem struct {
 	State               WorkItemState      `json:"state"`
 	RetryPolicy         RetryPolicy        `json:"retry_policy"`
 	NoProgressCount     int                `json:"no_progress_count"`
+	CompileFailureCount int                `json:"compile_failure_count,omitempty"`
 	LastOutputReference string             `json:"last_output_reference,omitempty"`
 }
 
@@ -279,6 +379,33 @@ type WorkItem struct {
 // pre-policy state remains compatible.
 type RetryPolicy struct {
 	MaxAttempts int `json:"max_attempts"`
+}
+
+// OperationalRetryKind identifies retries that are deliberately independent
+// from a Work Item's implementation Attempts.  A failed notification, for
+// example, must not make an otherwise repairable Work Item unavailable.
+type OperationalRetryKind string
+
+const (
+	RetryRecovery     OperationalRetryKind = "recovery"
+	RetryNotification OperationalRetryKind = "notification"
+	RetryDelivery     OperationalRetryKind = "delivery"
+)
+
+// OperationalRetryAccounting persists the bounded retry budget for each
+// task-level operation category.  Notification outbox records can retain
+// their own delivery details while consuming only the notification budget.
+type OperationalRetryAccounting struct {
+	Recovery     RetryCounter `json:"recovery"`
+	Notification RetryCounter `json:"notification"`
+	Delivery     RetryCounter `json:"delivery"`
+}
+
+// RetryCounter is a compatibility-safe counter: a zero MaxAttempts is
+// normalized to DefaultRetryLimit when an older state snapshot is read.
+type RetryCounter struct {
+	MaxAttempts int `json:"max_attempts"`
+	Used        int `json:"used"`
 }
 
 // ChecklistReference preserves the human-readable checkbox identifier from
@@ -296,6 +423,37 @@ type Attempt struct {
 	StartedAt  string       `json:"started_at,omitempty"`
 	EndedAt    string       `json:"ended_at,omitempty"`
 	Handoff    Handoff      `json:"handoff,omitempty"`
+	Outcome    *SupervisedOutcome `json:"outcome,omitempty"`
+}
+
+type SupervisedOutcomeKind string
+
+const (
+	SupervisedOutcomeCompleted  SupervisedOutcomeKind = "completed"
+	SupervisedOutcomeBlocked    SupervisedOutcomeKind = "blocked"
+	SupervisedOutcomeNoProgress SupervisedOutcomeKind = "no-progress"
+)
+
+type BlockedOutcomeCategory string
+
+const (
+	BlockedOutcomeWorkspaceAccess BlockedOutcomeCategory = "workspace-access"
+	BlockedOutcomeAuthorization   BlockedOutcomeCategory = "authorization"
+	BlockedOutcomeDependency      BlockedOutcomeCategory = "dependency"
+	BlockedOutcomeValidation      BlockedOutcomeCategory = "validation"
+	BlockedOutcomeUnknown         BlockedOutcomeCategory = "unknown"
+)
+
+// SupervisedOutcome is the structured result of one supervised Agent stage.
+// EvidenceReference points to immutable Session output; it is intentionally
+// separate from validation Evidence because an Agent statement is not itself
+// proof that the authored checklist has been completed.
+type SupervisedOutcome struct {
+	Kind              SupervisedOutcomeKind `json:"kind"`
+	BlockedCategory   BlockedOutcomeCategory `json:"blocked_category,omitempty"`
+	Detail            string                `json:"detail,omitempty"`
+	EvidenceReference string                `json:"evidence_reference"`
+	RecordedAt        string                `json:"recorded_at"`
 }
 
 type Handoff struct {

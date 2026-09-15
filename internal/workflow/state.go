@@ -2,6 +2,7 @@ package workflow
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -70,6 +71,9 @@ func ValidateRuntimeState(state RuntimeState) error {
 		if item.NoProgressCount < 0 {
 			return fmt.Errorf("work item %s has negative no-progress count", item.ID)
 		}
+		if item.CompileFailureCount < 0 {
+			return fmt.Errorf("work item %s has negative compile-failure count", item.ID)
+		}
 		if _, exists := workItems[item.ID]; exists {
 			return fmt.Errorf("duplicate work item id: %s", item.ID)
 		}
@@ -85,10 +89,16 @@ func ValidateRuntimeState(state RuntimeState) error {
 	if err := validateAttemptReferences(state.Attempts, workItems); err != nil {
 		return err
 	}
+	if err := validateActorHandoffs(state.ActorHandoffs, state.Task.ID, workItems, state.Attempts); err != nil {
+		return err
+	}
 	if err := validateGateReferences(state.Gates, workItems); err != nil {
 		return err
 	}
 	if err := validateEvidenceReferences(state.Evidence, workItems); err != nil {
+		return err
+	}
+	if err := validateNotifications(state.Notifications); err != nil {
 		return err
 	}
 	if err := validateFocusedTestAuthorization(state.FocusedTestAuthorization); err != nil {
@@ -110,6 +120,21 @@ func ValidateRuntimeState(state RuntimeState) error {
 			return errors.New("cancellation delivery does not match the requested terminal delivery")
 		}
 	}
+	if state.Policy != nil {
+		if err := state.Policy.Validate(); err != nil {
+			return fmt.Errorf("policy snapshot: %w", err)
+		}
+	}
+	if binding := state.Workspace; binding != nil {
+		if strings.TrimSpace(binding.ParentPath) == "" || strings.TrimSpace(binding.ParentBranch) == "" || strings.TrimSpace(binding.ParentCommit) == "" || strings.TrimSpace(binding.WorktreePath) == "" || strings.TrimSpace(binding.TaskBranch) == "" {
+			return errors.New("workspace binding requires parent path, branch, commit, worktree path, and task branch")
+		}
+		for _, drift := range binding.ParentDrift {
+			if strings.TrimSpace(drift.ObservedAt) == "" || strings.TrimSpace(drift.Commit) == "" {
+				return errors.New("parent drift requires observed time and commit")
+			}
+		}
+	}
 	return validateWriteLease(state.WriteLease, state.Attempts)
 }
 
@@ -123,6 +148,9 @@ func (state RuntimeState) FocusedTestAuthorizationState(planDigest string) Focus
 	}
 	if authorization.PlanDigest != planDigest {
 		return FocusedTestAuthorizationStale
+	}
+	if authorization.ConsumedAt != "" {
+		return FocusedTestAuthorizationConsumed
 	}
 	return FocusedTestAuthorizationAuthorized
 }
@@ -142,6 +170,11 @@ func validateFocusedTestAuthorization(authorization *FocusedTestAuthorization) e
 	}
 	if _, err := time.Parse(time.RFC3339, authorization.ApprovedAt); err != nil {
 		return fmt.Errorf("focused-test authorization approved_at must be RFC3339: %w", err)
+	}
+	if authorization.ConsumedAt != "" {
+		if _, err := time.Parse(time.RFC3339, authorization.ConsumedAt); err != nil {
+			return fmt.Errorf("focused-test authorization consumed_at must be RFC3339: %w", err)
+		}
 	}
 	return nil
 }
@@ -180,6 +213,37 @@ func validateAttemptReferences(attempts []Attempt, workItems map[WorkItemID]stru
 	return nil
 }
 
+func validateActorHandoffs(handoffs []ActorHandoff, taskID TaskID, workItems map[WorkItemID]struct{}, attempts []Attempt) error {
+	seen := make(map[string]struct{}, len(handoffs))
+	attemptByID := make(map[AttemptID]Attempt, len(attempts))
+	for _, attempt := range attempts {
+		attemptByID[attempt.ID] = attempt
+	}
+	for _, handoff := range handoffs {
+		if err := handoff.Validate(); err != nil {
+			return fmt.Errorf("actor handoff %q: %w", handoff.ID, err)
+		}
+		if _, exists := seen[handoff.ID]; exists {
+			return fmt.Errorf("duplicate actor handoff id: %s", handoff.ID)
+		}
+		seen[handoff.ID] = struct{}{}
+		if handoff.Request.TaskID != taskID {
+			return fmt.Errorf("actor handoff %s references another Task", handoff.ID)
+		}
+		if _, exists := workItems[handoff.Request.WorkItemID]; !exists {
+			return fmt.Errorf("actor handoff %s references unknown work item %s", handoff.ID, handoff.Request.WorkItemID)
+		}
+		attempt, exists := attemptByID[handoff.Request.AttemptID]
+		if !exists {
+			return fmt.Errorf("actor handoff %s references unknown Attempt %s", handoff.ID, handoff.Request.AttemptID)
+		}
+		if attempt.WorkItemID != handoff.Request.WorkItemID || attempt.Workspace != handoff.Request.Workspace {
+			return fmt.Errorf("actor handoff %s does not match its Attempt", handoff.ID)
+		}
+	}
+	return nil
+}
+
 func validateGateReferences(gates []Gate, workItems map[WorkItemID]struct{}) error {
 	seen := make(map[GateID]struct{}, len(gates))
 	for _, gate := range gates {
@@ -213,6 +277,51 @@ func validateEvidenceReferences(evidence []Evidence, workItems map[WorkItemID]st
 			if _, exists := workItems[record.WorkItemID]; !exists {
 				return fmt.Errorf("evidence %s references unknown work item %s", record.ID, record.WorkItemID)
 			}
+		}
+	}
+	return nil
+}
+
+func validateNotifications(notifications []Notification) error {
+	seen := make(map[NotificationID]struct{}, len(notifications))
+	for _, notification := range notifications {
+		if notification.ID == "" {
+			return errors.New("notification id is required")
+		}
+		if _, exists := seen[notification.ID]; exists {
+			return fmt.Errorf("duplicate notification id: %s", notification.ID)
+		}
+		seen[notification.ID] = struct{}{}
+		if strings.TrimSpace(notification.Topic) == "" || !json.Valid(notification.Payload) {
+			return fmt.Errorf("notification %s requires a topic and valid JSON payload", notification.ID)
+		}
+		if notification.CreatedAt == "" || notification.UpdatedAt == "" {
+			return fmt.Errorf("notification %s timestamps are required", notification.ID)
+		}
+		if _, err := time.Parse(time.RFC3339, notification.CreatedAt); err != nil {
+			return fmt.Errorf("notification %s created_at must be RFC3339: %w", notification.ID, err)
+		}
+		if _, err := time.Parse(time.RFC3339, notification.UpdatedAt); err != nil {
+			return fmt.Errorf("notification %s updated_at must be RFC3339: %w", notification.ID, err)
+		}
+		if notification.DispatchAttempts < 0 {
+			return fmt.Errorf("notification %s has negative dispatch attempts", notification.ID)
+		}
+		switch notification.State {
+		case NotificationPending:
+			if notification.DispatchAttempts != 0 {
+				return fmt.Errorf("pending notification %s has dispatch attempts", notification.ID)
+			}
+		case NotificationDispatching, NotificationFailed:
+			if notification.DispatchAttempts == 0 {
+				return fmt.Errorf("notification %s has no dispatch attempt", notification.ID)
+			}
+		case NotificationDelivered:
+			if notification.DispatchAttempts == 0 || strings.TrimSpace(notification.Receipt) == "" {
+				return fmt.Errorf("delivered notification %s requires an attempt and receipt", notification.ID)
+			}
+		default:
+			return fmt.Errorf("notification %s has unsupported state: %s", notification.ID, notification.State)
 		}
 	}
 	return nil
@@ -377,7 +486,7 @@ func hasOpenGate(gates []Gate, kind GateKind) bool {
 }
 
 func hasBlockingExecutionGate(gates []Gate) bool {
-	return hasOpenGate(gates, GateDependency) || hasOpenGate(gates, GateDecision)
+	return hasOpenGate(gates, GateDependency) || hasOpenGate(gates, GateDecision) || hasOpenGate(gates, GateWorkspaceAccess)
 }
 
 func openBlockingGates(gates []Gate) []GateID {

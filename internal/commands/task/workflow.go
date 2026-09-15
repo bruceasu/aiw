@@ -63,9 +63,6 @@ Relevant modules:
 - [ ] 1.1 Implement the approved change.
 - [ ] 1.2 Add or update focused tests.
 
-## 2. Verification
-- [ ] 2.1 Run the authorized focused verification.
-
 # Verification
 - [ ] 3.1 Confirm the change meets the approved scope.
 - [ ] 3.2 Confirm there are no unrelated changes.

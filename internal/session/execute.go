@@ -18,6 +18,13 @@ func ExecuteTurn(ctx context.Context, store *Store, id, phase, prompt, backendNa
 // ExecuteTurnWithOverrides applies provider and model overrides to this turn
 // only. It deliberately leaves the stored Backend configuration unchanged.
 func ExecuteTurnWithOverrides(ctx context.Context, store *Store, id, phase, prompt, providerOverride, modelOverride string, forceNew bool) (TurnResult, error) {
+	return ExecuteTurnWithOverridesAndEnvironment(ctx, store, id, phase, prompt, providerOverride, modelOverride, forceNew, nil)
+}
+
+// ExecuteTurnWithOverridesAndEnvironment applies one-call provider, model,
+// and process-local environment overrides without persisting them in Session
+// state.
+func ExecuteTurnWithOverridesAndEnvironment(ctx context.Context, store *Store, id, phase, prompt, providerOverride, modelOverride string, forceNew bool, environment []string) (TurnResult, error) {
 	status, err := store.Load(id)
 	if err != nil {
 		return TurnResult{}, err
@@ -67,7 +74,7 @@ func ExecuteTurnWithOverrides(ctx context.Context, store *Store, id, phase, prom
 	}); err != nil {
 		return TurnResult{}, err
 	}
-	result, runErr := backend.Generate(ctx, TurnRequest{SessionID: id, Prompt: composed, Workspace: status.Workspace.Path, ThreadID: status.Backend.ThreadID, Instructions: instructions, Memory: memory, Phase: phase, TurnNumber: turn, OutputDir: store.sessionDir(id) + "/outputs", ForceNewThread: forceNew})
+	result, runErr := backend.Generate(ctx, TurnRequest{SessionID: id, Prompt: composed, Workspace: status.Workspace.Path, ThreadID: status.Backend.ThreadID, Instructions: instructions, Memory: memory, Phase: phase, TurnNumber: turn, OutputDir: store.sessionDir(id) + "/outputs", ForceNewThread: forceNew, Environment: environment})
 	if runErr != nil && result.ExitCode == 0 {
 		result.ExitCode = 1
 	}
@@ -110,6 +117,13 @@ func ExecuteInteractive(ctx context.Context, store *Store, id, phase, prompt, ba
 // ExecuteInteractiveWithOverrides applies one-call overrides without changing
 // the persisted Session provider or model.
 func ExecuteInteractiveWithOverrides(ctx context.Context, store *Store, id, phase, prompt, providerOverride, modelOverride string, forceNew bool) (TurnResult, error) {
+	return ExecuteInteractiveWithOverridesAndEnvironment(ctx, store, id, phase, prompt, providerOverride, modelOverride, forceNew, nil)
+}
+
+// ExecuteInteractiveWithOverridesAndEnvironment applies one-call provider,
+// model, and process-local environment overrides without persisting them in
+// Session state.
+func ExecuteInteractiveWithOverridesAndEnvironment(ctx context.Context, store *Store, id, phase, prompt, providerOverride, modelOverride string, forceNew bool, environment []string) (TurnResult, error) {
 	status, err := store.Load(id)
 	if err != nil { return TurnResult{}, err }
 	if err := RequireRunnable(status); err != nil { return TurnResult{}, err }
@@ -134,7 +148,7 @@ func ExecuteInteractiveWithOverrides(ctx context.Context, store *Store, id, phas
 		current.Execution.LastStartedAt = time.Now().UTC().Format(time.RFC3339)
 		return nil
 	}); err != nil { return TurnResult{}, err }
-	result, runErr := backend.Interactive(ctx, TurnRequest{SessionID: id, Prompt: composed, Workspace: status.Workspace.Path, ThreadID: status.Backend.ThreadID, Instructions: instructions, Memory: memory, Phase: phase, TurnNumber: turn, OutputDir: store.sessionDir(id) + "/outputs", ForceNewThread: forceNew, Model: cfg.Model})
+	result, runErr := backend.Interactive(ctx, TurnRequest{SessionID: id, Prompt: composed, Workspace: status.Workspace.Path, ThreadID: status.Backend.ThreadID, Instructions: instructions, Memory: memory, Phase: phase, TurnNumber: turn, OutputDir: store.sessionDir(id) + "/outputs", ForceNewThread: forceNew, Model: cfg.Model, Environment: environment})
 	saveErr := SaveTurnResult(store, status, result)
 	executionErr := runErr
 	if saveErr != nil {

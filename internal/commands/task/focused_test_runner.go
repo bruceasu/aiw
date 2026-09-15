@@ -19,6 +19,8 @@ import (
 
 const maxFocusedTestOutputBytes = 64 * 1024
 
+const noNetworkFocusedTestRunnerCommand = "aiw-no-network-runner"
+
 // FocusedTestRun is the immutable execution input resolved by the controlled
 // runner. It has no field for an Agent-provided command: argv and directory
 // always come from the active Verification Plan.
@@ -56,9 +58,69 @@ type FocusedTestProcessRunner interface {
 	Run(context.Context, FocusedTestRun) ([]byte, int, error)
 }
 
-type osFocusedTestProcessRunner struct{}
+// installedFocusedTestNetworkEnforcer confirms that the approved wrapper is
+// available before a child process is created. The wrapper itself is the
+// technical no-network boundary; this check never treats prompt text or an
+// environment setting as an equivalent substitute.
+type installedFocusedTestNetworkEnforcer struct {
+	command string
+}
 
-func (osFocusedTestProcessRunner) Run(ctx context.Context, run FocusedTestRun) ([]byte, int, error) {
+func (e installedFocusedTestNetworkEnforcer) EnforceNoNetwork(FocusedTestRun) error {
+	command := e.command
+	if command == "" {
+		command = noNetworkFocusedTestRunnerCommand
+	}
+	if _, err := exec.LookPath(command); err != nil {
+		return fmt.Errorf("required no-network runner %q is unavailable: %w", command, err)
+	}
+	return nil
+}
+
+// noNetworkFocusedTestProcessRunner invokes only the frozen Plan argv through
+// the approved no-network wrapper. It never accepts a caller-provided shell
+// fragment.
+type noNetworkFocusedTestProcessRunner struct {
+	command string
+}
+
+func (p noNetworkFocusedTestProcessRunner) Run(ctx context.Context, run FocusedTestRun) ([]byte, int, error) {
+	commandName := p.command
+	if commandName == "" {
+		commandName = noNetworkFocusedTestRunnerCommand
+	}
+	runner, err := exec.LookPath(commandName)
+	if err != nil {
+		return nil, -1, fmt.Errorf("required no-network runner %q is unavailable: %w", commandName, err)
+	}
+	argv := noNetworkFocusedTestRunnerArgv(run)
+	command := exec.CommandContext(ctx, runner, argv...)
+	command.Dir = run.WorkingDirectory
+	command.Env = focusedTestEnvironment(run.AllowedEnvironment)
+	output, err := command.CombinedOutput()
+	if err == nil {
+		return output, 0, nil
+	}
+	var exitError *exec.ExitError
+	if errors.As(err, &exitError) {
+		return output, exitError.ExitCode(), nil
+	}
+	return output, -1, err
+}
+
+func noNetworkFocusedTestRunnerArgv(run FocusedTestRun) []string {
+	return append([]string{"--"}, run.Argv...)
+}
+
+// waivedFocusedTestProcessRunner runs the immutable Plan argv without a
+// network boundary only after the matching enforcement Gate was explicitly
+// waived. It does not accept shell fragments or Agent-provided arguments.
+type waivedFocusedTestProcessRunner struct{}
+
+func (waivedFocusedTestProcessRunner) Run(ctx context.Context, run FocusedTestRun) ([]byte, int, error) {
+	if len(run.Argv) == 0 {
+		return nil, -1, fmt.Errorf("focused-test argv is required")
+	}
 	command := exec.CommandContext(ctx, run.Argv[0], run.Argv[1:]...)
 	command.Dir = run.WorkingDirectory
 	command.Env = focusedTestEnvironment(run.AllowedEnvironment)
@@ -154,16 +216,23 @@ func ResolveFocusedTestRun(meta taskx.TaskMeta, state workflow.RuntimeState, att
 	}, nil
 }
 
-// EnsureFocusedTestNetworkEnforcement fail-closes the controlled path before
-// process creation. A missing or failing enforcer opens a Core-owned
-// authorization Gate and returns executable=false; callers must project that
-// state and stop rather than invoking a process runner.
+// EnsureFocusedTestNetworkEnforcement checks the technical boundary before
+// process creation. A missing or failing enforcer opens a Core-owned Gate.
+// Only an explicit GateWaived for this Work Item permits the controlled
+// degraded path; GateResolved requires a fresh technical check.
 func EnsureFocusedTestNetworkEnforcement(store *workflow.Store, run FocusedTestRun, enforcer FocusedTestNetworkEnforcer) (state workflow.RuntimeState, executable bool, err error) {
 	if store == nil {
 		return workflow.RuntimeState{}, false, fmt.Errorf("focused-test workflow store is required")
 	}
 	if run.NetworkPolicy != workflow.NetworkPolicyDeny {
 		return workflow.RuntimeState{}, false, fmt.Errorf("focused-test check %q does not require network: deny", run.CheckID)
+	}
+	state, err = store.Load(run.TaskID)
+	if err != nil {
+		return workflow.RuntimeState{}, false, err
+	}
+	if focusedTestNetworkEnforcementWaived(state, run) {
+		return state, true, nil
 	}
 	if enforcer == nil {
 		state, err = store.OpenFocusedTestNetworkEnforcementGate(run.TaskID, run.PlanDigest, run.WorkItemID, "the selected runtime has no no-network enforcer")
@@ -212,6 +281,12 @@ func ExecuteFocusedTest(store *workflow.Store, run FocusedTestRun, enforcer Focu
 		return FocusedTestExecution{}, fmt.Errorf("record focused-test pending evidence: %w", err)
 	}
 
+	if focusedTestNetworkEnforcementWaived(state, run) {
+		state, err = store.ConsumeFocusedTestAuthorization(run.TaskID, run.PlanDigest)
+		if err != nil {
+			return FocusedTestExecution{}, fmt.Errorf("consume focused-test network waiver: %w", err)
+		}
+	}
 	startedAt := time.Now().UTC()
 	ctx, cancel := context.WithTimeout(context.Background(), run.Timeout)
 	output, exitCode, runErr := process.Run(ctx, run)
@@ -220,8 +295,9 @@ func ExecuteFocusedTest(store *workflow.Store, run FocusedTestRun, enforcer Focu
 	finishedAt := time.Now().UTC()
 	result := workflow.FocusedTestResult{
 		SchemaVersion: workflow.VerificationPlanSchemaVersion,
-		PlanDigest: run.PlanDigest, CheckID: run.CheckID, Argv: append([]string(nil), run.Argv...),
+		PlanDigest: run.PlanDigest, CheckID: run.CheckID, WorkItemID: run.WorkItemID, Argv: append([]string(nil), run.Argv...),
 		WorkingDirectory: filepath.ToSlash(worktreeRelativeDirectory), StartedAt: startedAt.Format(time.RFC3339), FinishedAt: finishedAt.Format(time.RFC3339), TimedOut: timedOut,
+		NetworkEnforcement: focusedTestNetworkEnforcement(state, run),
 	}
 	if exitCode >= 0 {
 		result.ExitCode = &exitCode
@@ -246,6 +322,22 @@ func ExecuteFocusedTest(store *workflow.Store, run FocusedTestRun, enforcer Focu
 		return execution, fmt.Errorf("focused-test check %q failed", run.CheckID)
 	}
 	return execution, nil
+}
+
+func focusedTestNetworkEnforcementWaived(state workflow.RuntimeState, run FocusedTestRun) bool {
+	for _, gate := range state.Gates {
+		if gate.ID == workflow.FocusedTestNetworkEnforcementGateID && gate.WorkItemID == run.WorkItemID && gate.State == workflow.GateWaived {
+			return true
+		}
+	}
+	return false
+}
+
+func focusedTestNetworkEnforcement(state workflow.RuntimeState, run FocusedTestRun) string {
+	if focusedTestNetworkEnforcementWaived(state, run) {
+		return "waived"
+	}
+	return "enforced"
 }
 
 func focusedTestEnvironment(allowed []string) []string {

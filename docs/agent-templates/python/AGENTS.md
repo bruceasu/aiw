@@ -34,8 +34,11 @@ Load both only when the task truly spans both service and CLI code.
 - runtime or deployment config
 
 ## Validation Options
-Use static review by default. Do not automatically run `scripts/verify.sh`,
-formatters, linters, type checks, tests, or builds.
+Use static review by default. After implementation, run one compile-only check:
+prefer `scripts/compile*` or root `compile*`, otherwise use the narrowest
+language-level compiler command without retaining a final distributable
+artifact. Do not run `scripts/verify.sh`, formatters, linters, type checks,
+tests, `build*` scripts, or final-artifact builds.
 
 When the shared resource budget authorizes runtime validation, choose one
 smallest relevant command:

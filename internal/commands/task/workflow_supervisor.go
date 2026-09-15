@@ -42,6 +42,10 @@ func runWorkflowSupervisor(args []string) (runErr error) {
 		printSupervisorRuntimeStatus(state)
 		return nil
 	case "start":
+		if state.Delivery == workflow.DeliveryMerged || state.Delivery == workflow.DeliveryDiscarded {
+			printSupervisorStatus(state)
+			return nil
+		}
 		leaseID := fmt.Sprintf("supervisor-%d", time.Now().UTC().UnixNano())
 		if _, err := store.StartSupervisor(workflow.TaskID(id), leaseID); err != nil {
 			return err
@@ -79,8 +83,11 @@ func runWorkflowSupervisor(args []string) (runErr error) {
 				}
 				if err := runWorkflowWithOverrides(id, true, true, false, provider, model); err != nil {
 					failed, loadErr := store.Load(workflow.TaskID(id))
-					if loadErr == nil && failed.Automation.PreparedRequest != nil {
-						if failed, loadErr = store.RecordAttemptOutcome(workflow.TaskID(id), failed.Automation.PreparedRequest.AttemptID, false); loadErr == nil {
+					// Compiler preparation and repair errors retain their Attempt;
+					// only an ordinary Agent runner failure consumes no-progress.
+					if loadErr == nil && failed.Automation.PreparedRequest != nil && !hasPendingSupervisedCompile(failed.Automation.PreparedRequest) {
+						outcome := workflow.SupervisedOutcome{Kind: workflow.SupervisedOutcomeNoProgress, Detail: err.Error(), EvidenceReference: "supervisor runner error"}
+						if failed, loadErr = store.RecordSupervisedOutcome(workflow.TaskID(id), failed.Automation.PreparedRequest.AttemptID, outcome); loadErr == nil {
 							_ = projectWorkflowState(id, failed)
 						}
 					}
@@ -98,11 +105,26 @@ func runWorkflowSupervisor(args []string) (runErr error) {
 					if _, err = store.RenewSupervisorLease(workflow.TaskID(id), leaseID); err != nil {
 						return err
 					}
-					if err = recordSupervisorSessionEvidence(store, request); err != nil {
-						_, _ = store.PauseSupervisor(workflow.TaskID(id), leaseID, "session-result-unknown", err.Error(), time.Now().UTC().Add(30*time.Second))
-						return err
+					outcome, outcomeErr := recordSupervisorSessionOutcome(store, request)
+					if outcomeErr != nil {
+						_, _ = store.PauseSupervisor(workflow.TaskID(id), leaseID, "session-result-unknown", outcomeErr.Error(), time.Now().UTC().Add(30*time.Second))
+						return outcomeErr
 					}
-					updated, err = store.RecordAttemptOutcome(workflow.TaskID(id), request.AttemptID, true)
+					if outcome.Kind == workflow.SupervisedOutcomeCompleted {
+						var repairPending bool
+						outcome, repairPending, err = compileSupervisedOutcome(id, store, request, outcome, workflow.ExecCompileCommandRunner{})
+						if err != nil {
+							_, _ = store.PauseSupervisor(workflow.TaskID(id), leaseID, "compiler-paused", err.Error(), time.Now().UTC().Add(30*time.Second))
+							return err
+						}
+						if _, err = store.RenewSupervisorLease(workflow.TaskID(id), leaseID); err != nil {
+							return err
+						}
+						if repairPending {
+							continue
+						}
+					}
+					updated, err = store.RecordSupervisedOutcome(workflow.TaskID(id), request.AttemptID, outcome)
 					if err != nil {
 						return err
 					}
@@ -131,7 +153,19 @@ func runWorkflowSupervisor(args []string) (runErr error) {
 					return err
 				}
 				switch updated.Automation.Cursor.Result {
-				case string(workflow.RunnerGate), string(workflow.RunnerNoWork), "repair-required", "blocked":
+				case string(workflow.RunnerNoWork):
+					delivered, deliveryErr := deliverCompletedSupervisorTask(id, store)
+					if deliveryErr != nil {
+						_, _ = store.PauseSupervisor(workflow.TaskID(id), leaseID, "delivery-paused", deliveryErr.Error(), time.Now().UTC().Add(30*time.Second))
+						return deliveryErr
+					}
+					if delivered {
+						_, err = store.StopSupervisor(workflow.TaskID(id), leaseID)
+						return err
+					}
+					_, err = store.PauseSupervisor(workflow.TaskID(id), leaseID, "supervisor-paused", updated.Automation.Cursor.Result, time.Now().UTC().Add(30*time.Second))
+					return err
+				case string(workflow.RunnerGate), "repair-required", "blocked":
 					_, err = store.PauseSupervisor(workflow.TaskID(id), leaseID, "supervisor-paused", updated.Automation.Cursor.Result, time.Now().UTC().Add(30*time.Second))
 					return err
 				}
@@ -147,6 +181,33 @@ func runWorkflowSupervisor(args []string) (runErr error) {
 	default:
 		return fmt.Errorf("usage: task workflow supervise <task-id> <start|status|stop>")
 	}
+}
+
+func deliverCompletedSupervisorTask(id string, store *workflow.Store) (bool, error) {
+	state, err := store.Load(workflow.TaskID(id))
+	if err != nil {
+		return false, err
+	}
+	summary := workflow.DeriveSummary(state)
+	if summary.Execution != workflow.ExecutionCompleted ||
+		(summary.Validation != workflow.ValidationPassed && summary.Validation != workflow.ValidationNotRequired && summary.Validation != workflow.ValidationWaived) ||
+		state.Delivery == workflow.DeliveryMerged || state.Delivery == workflow.DeliveryDiscarded ||
+		state.Automation.PreparedRequest != nil ||
+		workflow.NextRunnerOutcome(state).Kind != workflow.RunnerNoWork {
+		return false, nil
+	}
+	meta, err := taskx.ReadTaskMeta(taskx.ResolveTaskMetaPath(id))
+	if err != nil {
+		return false, err
+	}
+	if resolvedWorkspaceKind(meta) != "isolated" {
+		return false, nil
+	}
+	if err := localMergeDelivery(id, meta, store, "Complete Task "+id); err != nil {
+		return false, err
+	}
+	fmt.Printf("Task %s locally merged into %s; worktree and task branch removed. Review the parent branch before pushing.\n", id, meta.ParentBranch)
+	return true, nil
 }
 
 func parseProviderModelOverrides(args []string) (string, string, error) {
@@ -218,6 +279,9 @@ func printSupervisorStatus(state workflow.RuntimeState) {
 	terminal.Field("lease", supervisor.LeaseID)
 	terminal.Field("expires", supervisor.LeaseExpiresAt)
 	terminal.Field("observed event", fmt.Sprintf("%d", supervisor.ObservedEvent))
+	if state.Policy != nil {
+		terminal.Field("policy digest", state.Policy.Digest)
+	}
 	if supervisor.Result != "" {
 		terminal.Section("Last result")
 		terminal.Field("result", supervisor.Result)
@@ -238,7 +302,11 @@ func printSupervisorRuntimeStatus(state workflow.RuntimeState) {
 	terminal := ui.NewTerminal(os.Stdout)
 	if request := state.Automation.PreparedRequest; request != nil {
 		terminal.Section("Agent request")
-		terminal.State("state", "prepared")
+		requestState := "prepared"
+		if request.DispatchedAt != "" {
+			requestState = "dispatched"
+		}
+		terminal.State("state", requestState)
 		terminal.Field("work item", string(request.WorkItemID))
 		terminal.Field("attempt", string(request.AttemptID))
 		terminal.Field("session", request.SessionID)
@@ -353,33 +421,48 @@ func supervisorLiveProgress(state workflow.RuntimeState) string {
 	return " agent=active"
 }
 
-func recordSupervisorSessionEvidence(store *workflow.Store, request *workflow.PreparedAgentRequest) error {
+func recordSupervisorSessionOutcome(store *workflow.Store, request *workflow.PreparedAgentRequest) (workflow.SupervisedOutcome, error) {
 	if request == nil || request.SessionID == "" {
-		return fmt.Errorf("managed Session binding is required")
+		return workflow.SupervisedOutcome{}, fmt.Errorf("managed Session binding is required")
+	}
+	if request.DispatchedAt == "" {
+		return workflow.SupervisedOutcome{}, fmt.Errorf("session-result-not-dispatched: Session %s was prepared but was not dispatched for Attempt %s", request.SessionID, request.AttemptID)
 	}
 	status, err := session.NewStore("").Load(request.SessionID)
 	if err != nil {
-		return err
+		return workflow.SupervisedOutcome{}, err
 	}
 	if status.Result.Status != "completed" || status.Result.FinalOutputFile == "" {
-		return fmt.Errorf("managed Session result is incomplete")
+		return workflow.SupervisedOutcome{}, fmt.Errorf("managed Session result is incomplete")
 	}
-	evidenceID := workflow.EvidenceID("agent-output-" + string(request.AttemptID))
-	state, err := store.Load(request.TaskID)
+	if err := validateSupervisorSessionResult(status, request); err != nil {
+		return workflow.SupervisedOutcome{}, err
+	}
+	reference := ".ai/sessions/" + request.SessionID + "/" + status.Result.FinalOutputFile
+	output, err := session.NewStore("").ReadText(request.SessionID, status.Result.FinalOutputFile)
 	if err != nil {
-		return err
+		return workflow.SupervisedOutcome{}, err
 	}
-	for _, existing := range state.Evidence {
-		if existing.ID == evidenceID {
-			return nil
-		}
+	return normalizeSupervisorSessionOutcome(parseSupervisedOutcome(output, reference)), nil
+}
+
+func validateSupervisorSessionResult(status session.Status, request *workflow.PreparedAgentRequest) error {
+	if status.Task == nil || status.Task.AttemptID != string(request.AttemptID) {
+		return fmt.Errorf("session-result-stale: Session %s has no completed result for Attempt %s", request.SessionID, request.AttemptID)
 	}
-	_, err = store.RecordEvidence(request.TaskID, workflow.Evidence{
-		ID:         evidenceID,
-		WorkItemID: request.WorkItemID,
-		Kind:       workflow.EvidenceManual,
-		State:      workflow.EvidencePassed,
-		Reference:  ".ai/sessions/" + request.SessionID + "/" + status.Result.FinalOutputFile,
-	})
-	return err
+	if request.ExpectedSessionTurn > 0 && status.Session.LastTurn < request.ExpectedSessionTurn {
+		return fmt.Errorf("session-result-stale: Session %s is at turn %d, expected turn %d for Attempt %s", request.SessionID, status.Session.LastTurn, request.ExpectedSessionTurn, request.AttemptID)
+	}
+	return nil
+}
+
+func normalizeSupervisorSessionOutcome(outcome workflow.SupervisedOutcome) workflow.SupervisedOutcome {
+	// workspace-access is Core-owned evidence from the scoped Git preflight.
+	// An Agent can report its observation but cannot establish that the current
+	// process lacks that access, especially when its handoff is stale.
+	if outcome.Kind == workflow.SupervisedOutcomeBlocked && outcome.BlockedCategory == workflow.BlockedOutcomeWorkspaceAccess {
+		outcome.BlockedCategory = workflow.BlockedOutcomeUnknown
+		outcome.Detail = "Agent reported workspace access after supervisor preflight; inspect the recorded session output and current scoped Git evidence: " + outcome.Detail
+	}
+	return outcome
 }

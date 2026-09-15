@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -47,6 +48,38 @@ func ExecPlugin(path string, args []string, env map[string]string) (int, error) 
 		return -1, nil
 	}
 	return -1, err
+}
+
+// ExecPluginWithInput invokes a Plugin using the same interpreter resolution
+// as the CLI fallback while exchanging a bounded JSON-style request/response.
+// It is used by adapters that must persist the request before dispatching it.
+func ExecPluginWithInput(path string, args []string, env map[string]string, input []byte) ([]byte, int, error) {
+	cmd, err := buildPluginCommand(path, args)
+	if err != nil {
+		return nil, -1, err
+	}
+	if cmd == nil {
+		return nil, -1, fmt.Errorf("unsupported plugin execution for %s", path)
+	}
+	var stdout, stderr bytes.Buffer
+	cmd.Stdin = bytes.NewReader(input)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	finalEnv := os.Environ()
+	for key, value := range env {
+		finalEnv = append(finalEnv, fmt.Sprintf("%s=%s", key, value))
+	}
+	cmd.Env = finalEnv
+	if err := cmd.Run(); err == nil {
+		return stdout.Bytes(), 0, nil
+	} else if exitErr, ok := err.(*exec.ExitError); ok {
+		if status, ok := exitErr.Sys().(interface{ ExitStatus() int }); ok {
+			return stdout.Bytes(), status.ExitStatus(), nil
+		}
+		return stdout.Bytes(), -1, nil
+	} else {
+		return stdout.Bytes(), -1, fmt.Errorf("run plugin: %w: %s", err, stderr.String())
+	}
 }
 
 func buildPluginCommand(path string, args []string) (*exec.Cmd, error) {

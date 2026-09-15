@@ -131,16 +131,19 @@ been cleaned up. A cancelled discarded Task may archive with its reason.
 
 - Use them only for bounded static analysis, code location, or independent
   implementation fragments.
-- Sub-agents must not run tests, builds, network calls, permission escalation,
-  commits, archive operations, or worktree operations.
+- Sub-agents must not run tests, final-artifact builds, network calls,
+  permission escalation, commits, archive operations, or worktree operations.
 - The main agent owns integration, lifecycle mutations, and the final report.
 - Do not invoke `code-review` automatically after implementation.
 
 ## Tests
 
-Writing or editing tests is allowed. Running tests, builds, type checks,
-formatters, linters, vet, or verification scripts requires an explicit user
-instruction to execute them.
+Writing or editing tests is allowed. After implementation, compile the changed
+project: first use `compile*` under `scripts/` or at the repository root, and
+otherwise use the narrowest language-level compiler command. The compile path
+must not retain a final distributable artifact, and `build*` scripts are not
+compile scripts. Running tests, final-artifact builds, type checks, formatters,
+linters, vet, or verification scripts requires an explicit user instruction.
 
 After development is complete, ask once whether the user wants one focused test
 command run. Include the exact command, scope, and expected duration. Default to

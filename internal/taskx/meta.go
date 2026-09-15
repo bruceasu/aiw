@@ -22,7 +22,8 @@ const (
 	GitignoreFile      = ".gitignore"
 	TaskMetaFile       = "task.toml"
 	LegacyTaskMetaFile = "tasks.toml"
-	RuntimeTasksDir    = ".ai/tasks"
+	RuntimeTasksDir       = ".ai"
+	LegacyRuntimeTasksDir = ".ai/tasks"
 )
 
 type TaskMeta struct {
@@ -50,7 +51,11 @@ func TaskDir(id string) string {
 }
 
 func RuntimeTaskDir(id string) string {
-	return filepath.Join(repo.Root(), RuntimeTasksDir, id)
+	canonical := filepath.Join(repo.Root(), RuntimeTasksDir, id)
+	if fsx.Exists(canonical) || !fsx.Exists(filepath.Join(repo.Root(), LegacyRuntimeTasksDir, id)) {
+		return canonical
+	}
+	return filepath.Join(repo.Root(), LegacyRuntimeTasksDir, id)
 }
 
 func RuntimeTasksPath() string {

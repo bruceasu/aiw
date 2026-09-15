@@ -1,8 +1,18 @@
-# AIW configuration template
-# Priority: CLI > project-root config > program-directory config
-# Supported file names: aiw.toml or .aiw.toml
+﻿# AIW configuration template
+# Supported project file names: aiw.toml or .aiw.toml.
+# Loading rules differ by section; there is no single global priority order.
+# Shared AI reads project, AIW_ROOT, then executable-directory files. Later
+# values overwrite earlier values; .aiw.toml follows aiw.toml in each directory.
+# CZ reads project, AIW_ROOT, then executable-directory cz.toml/.cz.toml.
+# Later CZ values overwrite earlier values, except project default_language.
+# Keep values and comments on separate lines for the built-in parsers.
 
 [runtime]
+# Python plugin runtime: AIW_PYTHON > user config > executable-dir aiw.toml.
+# User config: OS config directory/aiw/aiw.toml (Windows: %APPDATA%/aiw/aiw.toml),
+# with ~/.config/aiw/aiw.toml used only when the OS config file is absent.
+# Project configuration is not read for this setting. Use an existing absolute
+# file path, not a command name or a command with arguments.
 # python = "C:/path/to/python.exe"
 
 # Global UI language. CZ resolves: --lang, [i18n].default_language, then
@@ -38,32 +48,146 @@
 # model = "llama3"
 # base_url = "http://localhost:11434"
 
+# Local llama.cpp (also accepts llamacpp and llama-cpp)
+# provider = "llama.cpp"
+# model = "local-model"
+# base_url = "http://localhost:8080/v1"
+
 # AI CLI providers
 # provider = "codex"
 # model = "your-model"
 # codex_command = "codex"
 # provider = "copilot"
 # copilot_command = "copilot"
+# Shared fallback command for CLI providers.
+# command = "codex"
+
+# Different CLI agents can use different models per invocation:
+# aiw turn <task-id> --provider codex --model <codex-model>
+# aiw turn <task-id> --provider copilot --model <copilot-model>
+# The same --provider/--model options are available for aiw chat.
+# For Session execution, each non-empty field resolves independently:
+# CLI override > stored Session backend/model > shared AI configuration.
+# One-call overrides do not change the stored Session backend/model.
+# Changing only --provider does not select a separate model for that provider;
+# pass --model as well when the agents need different models.
+#
+# Not supported in this file: codex_model, copilot_model, or [agents.<name>]
+# model mappings. Codex and Copilot currently use the shared model above.
+# codex_command and copilot_command select commands, not separate models.
+
+# Provider-specific values override generic model/base_url/api_key values.
+# Leave unused settings commented out. These values are examples, not secrets.
+# openai_model = "gpt-4o-mini"
+# openai_base_url = "https://api.openai.com/v1"
+# openai_api_key = ""
+# gemini_model = "gemini-1.5-flash"
+# gemini_base_url = "https://generativelanguage.googleapis.com"
+# gemini_api_key = ""
+# ollama_model = "llama3"
+# ollama_base_url = "http://localhost:11434"
+# ollama_api_key = ""
+# llamacpp_model = "local-model"
+# llamacpp_base_url = "http://localhost:8080/v1"
+# llamacpp_api_key = ""
+
+# Compatibility keys (prefer provider/model/base_url/api_key above).
+# llm_provider = "openai"
+# llm_model = "your-model"
+# llm_base_url = "https://api.openai.com/v1"
+# llm_api_key = ""
+# All [ai] keys above are also accepted under [cz] as legacy fallbacks.
+# Environment overrides: OPENAI_*, GEMINI_*, OLLAMA_*, LLAMACPP_* with
+# MODEL, BASE_URL and API_KEY suffixes; then AIW_LLM_PROVIDER, AIW_LLM_MODEL,
+# AIW_LLM_BASE_URL and AIW_LLM_API_KEY override the resolved values.
+
+[ai.profiles.fast]
+provider = "copilot"
+model = "your-fast-model"
+
+[ai.profiles.balanced]
+provider = "codex"
+model = "your-coding-model"
+
+[ai.profiles.reasoning]
+provider = "codex"
+model = "your-reasoning-model"
+
+# Managed Workflow AI Profiles. They affect only `aiw workflow supervise`;
+# other AI commands continue to use the global [ai] configuration above.
+# Each selected Profile must provide both a provider and a model. Missing or
+# incomplete Profiles fall back to [ai].
+# [ai.profiles.fast]
+# provider = "openai"
+# model = "gpt-4o-mini"
+#
+# [ai.profiles.balanced]
+# provider = "openai"
+# model = "gpt-4o"
+#
+# [ai.profiles.reasoning]
+# provider = "openai"
+# model = "o3-mini"
 
 [cz]
 # Default is no-LLM wizard. Set true to enable LLM by default.
 llm = false
 
-# Candidate count used in LLM mode.
+# Candidate count used in LLM mode; positive integer. Built-in default: 3.
 candidates = 5
 
 # Print resolved provider configuration during `aiw cz --llm` runs.
 # Also available through AIW_CZ_DEBUG=1.
 debug_source = false
 
-# Add emoji prefix in commit header.
-emoji = false
+# Not configurable: the current CZ parser does not read emoji.
+# emoji = false
+
+# Allow multiple scopes, choose their separator, and limit subject length.
+# max_subject_length must be a positive integer; separator must not be empty.
+# enable_multiple_scopes = false
+# scope_enum_separator = ","
+# max_subject_length = 72
+
+# Compatibility aliases (use one spelling per setting):
+# use_llm = false
+# debug = false
+# EDITOR = "code --wait"
+# enableMultipleScopes = false
+# scopeEnumSeparator = ","
+# maxSubjectLength = 72
+# codex_cli_command = "codex"
+# copilot_cli_command = "copilot"
 
 # Preferred editor command for long-form editing in CZ.
 # This takes precedence over GIT_EDITOR/VISUAL/EDITOR.
 # editor = "code --wait"
 # editor = "notepad"
 editor = ""
+
+# Legacy global customization. Prefer named locales below for new settings.
+# Defining types/scopes replaces the corresponding list, rather than adding
+# one entry to the built-in list. Type entries need both value and name;
+# scope name is optional and defaults to value.
+# [[cz.types]]
+# value = "feat"
+# name = "A new feature"
+#
+# [[cz.scopes]]
+# value = "core"
+# name = "core"
+#
+# [cz.messages]
+# type = "Select commit type"
+# scope = "Scope (optional)"
+# customScope = "Enter custom scope"
+# subject = "Subject"
+# body = "Body (optional)"
+# breaking = "Breaking changes (optional)"
+# footerPrefixesSelect = "Select issue prefix (optional)"
+# customFooterPrefix = "Enter custom issue prefix"
+# footer = "Related issue (optional)"
+# confirmCommit = "Commit this message"
 
 # Built-in locales require no CZ message/type configuration. To add a language
 # such as French, select it with [i18n].default_language = "fr" or
@@ -93,3 +217,36 @@ editor = ""
 # [[cz.locales.fr.scopes]]
 # value = "core"
 # name = "noyau"
+
+# Additional named-locale message keys (example for English).
+# The ten prompts above also accept snake_case names in named locales:
+# custom_scope, footer_prefixes, custom_footer_prefix, confirm_commit.
+# [cz.locales.en.messages]
+# select_type = "Enter type number or value"
+# select_prefix = "Enter prefix number or value"
+# subject_required = "subject is required"
+# subject_too_long = "subject is too long (max %d)"
+# invalid_type = "invalid type; try again"
+# invalid_selection = "invalid selection; try again"
+# preview = "Commit message preview"
+# action = "Action"
+# candidate = "Select AI candidate"
+# regenerate = "Regenerate candidate list"
+# commit = "Commit this message"
+# edit = "Edit fields"
+# cancel = "Cancel"
+# aborted = "aborted"
+# editing = "Edit fields (leave empty to keep current)"
+# done_editing = "Done editing"
+# empty_scope = "(empty) no scope"
+# custom_scope_option = "(custom) enter custom scope"
+# footer_edit = "Edit footer? [y/N]"
+# editor_hint = "(use /edit or Ctrl+E for editor)"
+
+# Not read from aiw.toml: ask system prompts.
+# Put the following section in ~/.aiw/ask/config.toml instead.
+# Priority: --system-prompt > --system-prompt-file > private config.
+# Within private config, system_prompt takes priority over system_prompt_file.
+# [ask]
+# system_prompt = "Answer clearly and briefly."
+# system_prompt_file = "C:/path/to/system-prompt.txt"

@@ -45,6 +45,28 @@ func CurrentBranch() (string, error) {
 	return branch, nil
 }
 
+func CurrentBranchAt(dir string) (string, error) {
+	cmd := exec.Command("git", "-C", dir, "branch", "--show-current")
+	out, err := cmd.Output()
+	if err != nil { return "", fmt.Errorf("read current branch: %w", err) }
+	branch := strings.TrimSpace(string(out))
+	if branch == "" { return "", errors.New("current checkout is not on a branch") }
+	return branch, nil
+}
+
+func HeadAt(dir string) (string, error) {
+	out, err := exec.Command("git", "-C", dir, "rev-parse", "HEAD").Output()
+	if err != nil { return "", fmt.Errorf("read checkout commit: %w", err) }
+	return strings.TrimSpace(string(out)), nil
+}
+
+func DirtyPathsAt(dir string) ([]string, error) {
+	cmd := exec.Command("git", "-C", dir, "status", "--porcelain=v1", "-z")
+	out, err := cmd.Output()
+	if err != nil { return nil, fmt.Errorf("read worktree status: %w", err) }
+	return parseDirtyPaths(out)
+}
+
 func ProjectRoot() (string, error) {
 	cmd := exec.Command("git", "rev-parse", "--show-toplevel")
 	out, err := cmd.Output()
