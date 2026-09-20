@@ -67,6 +67,17 @@ Check with the user that these seams match their expectations.
    `.ai/<task-id>/`, including `task.toml`, handoff documents, and
    lineage data. They are not OpenSpec change artifacts.
 
+   **Creation semantics:** with the `spec-driven` OpenSpec backend, `aiw new
+   <task-id> --backend auto` may create only the AIW lifecycle record and the
+   change directory containing `.openspec.yaml`. This is a successful
+   initialization, not a failed artifact creation. `openspec show <task-id>`
+   can remain unavailable until the proposal exists. In that state, continue
+   by obtaining `openspec instructions` and writing the required proposal,
+   design, capability specs, and checklist. Treat creation as blocked only if
+   the same task ID cannot be found in both `.ai/<task-id>/task.toml` and
+   `openspec/changes/<task-id>/`, or if AIW reports an actual creation/linking
+   error.
+
    Put motivation and scope in `proposal.md`, decisions in `design.md`,
    normative requirements in capability specs, and follow-up work in
    `tasks.md`. Do not publish to GitHub or GitLab as part of this Skill.
