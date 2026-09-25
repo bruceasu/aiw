@@ -1,0 +1,16 @@
+{"Time":"2026-09-25T10:30:48.6913226+09:00","Action":"start","Package":"aiw/internal/workflow"}
+{"Time":"2026-09-25T10:30:48.7289718+09:00","Action":"run","Package":"aiw/internal/workflow","Test":"TestAuxiliaryRecoverySurvivesRestartAndConsumerReuse"}
+{"Time":"2026-09-25T10:30:48.7289718+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestAuxiliaryRecoverySurvivesRestartAndConsumerReuse","Output":"=== RUN   TestAuxiliaryRecoverySurvivesRestartAndConsumerReuse\n"}
+{"Time":"2026-09-25T10:30:48.9299697+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestAuxiliaryRecoverySurvivesRestartAndConsumerReuse","Output":"--- PASS: TestAuxiliaryRecoverySurvivesRestartAndConsumerReuse (0.20s)\n"}
+{"Time":"2026-09-25T10:30:48.9305314+09:00","Action":"pass","Package":"aiw/internal/workflow","Test":"TestAuxiliaryRecoverySurvivesRestartAndConsumerReuse","Elapsed":0.2}
+{"Time":"2026-09-25T10:30:48.9305314+09:00","Action":"run","Package":"aiw/internal/workflow","Test":"TestAuxiliaryQueueLimitPreservesSourceCursor"}
+{"Time":"2026-09-25T10:30:48.9305314+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestAuxiliaryQueueLimitPreservesSourceCursor","Output":"=== RUN   TestAuxiliaryQueueLimitPreservesSourceCursor\n"}
+{"Time":"2026-09-25T10:30:49.0030424+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestAuxiliaryQueueLimitPreservesSourceCursor","Output":"--- PASS: TestAuxiliaryQueueLimitPreservesSourceCursor (0.07s)\n"}
+{"Time":"2026-09-25T10:30:49.0030424+09:00","Action":"pass","Package":"aiw/internal/workflow","Test":"TestAuxiliaryQueueLimitPreservesSourceCursor","Elapsed":0.07}
+{"Time":"2026-09-25T10:30:49.0030424+09:00","Action":"run","Package":"aiw/internal/workflow","Test":"TestAuxiliaryLateMemoryPublicationAndStop"}
+{"Time":"2026-09-25T10:30:49.0030424+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestAuxiliaryLateMemoryPublicationAndStop","Output":"=== RUN   TestAuxiliaryLateMemoryPublicationAndStop\n"}
+{"Time":"2026-09-25T10:30:49.3202213+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestAuxiliaryLateMemoryPublicationAndStop","Output":"--- PASS: TestAuxiliaryLateMemoryPublicationAndStop (0.32s)\n"}
+{"Time":"2026-09-25T10:30:49.3207458+09:00","Action":"pass","Package":"aiw/internal/workflow","Test":"TestAuxiliaryLateMemoryPublicationAndStop","Elapsed":0.32}
+{"Time":"2026-09-25T10:30:49.3207458+09:00","Action":"output","Package":"aiw/internal/workflow","Output":"PASS\n"}
+{"Time":"2026-09-25T10:30:49.3230282+09:00","Action":"output","Package":"aiw/internal/workflow","Output":"ok  \taiw/internal/workflow\t0.632s\n"}
+{"Time":"2026-09-25T10:30:49.3230282+09:00","Action":"pass","Package":"aiw/internal/workflow","Elapsed":0.632}

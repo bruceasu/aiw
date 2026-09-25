@@ -24,6 +24,10 @@ Current AIW task lifecycle commonly uses `aiw new`, `aiw show`, `aiw status`,
 
 Do not install AIW or OpenSpec automatically.
 
+## Legacy Task Path Adjustment
+
+The canonical active Task directory is `.ai/tasks/<task-id>/`; archives remain at `.ai/archive/<date>-<task-id>/`. For a confirmed one-time relocation of the sole active legacy Task, stop the old AIW program first, stop that Task's Supervisor next, then verify there is no active Attempt, write lease, or other writer. Preserve the target `migrated-to` marker outside the target, require the legacy source to be the sole Task record, and stop on any destination data or identity conflict. Move the complete runtime directory, verify Task identity plus state, event history, reports, and artifacts, then use the new version for a read-only status check. Never move archived Tasks or infer a general migration workflow from this exception.
+
 ## Resolve Or Create The Task
 
 Resolve context in this order:
@@ -99,11 +103,11 @@ Writing or editing tests is allowed. Running tests, builds, type checks,
 formatters, linters, vet, or verification scripts requires an explicit user
 instruction to execute them.
 
-After development is complete, ask once whether the user wants one focused test
-command run. Include the exact command, scope, and expected duration. Default to
-not testing when the user declines or does not respond.
-
-Broader test or build scope requires separate approval.
+After development, report which tests were not run. When a focused test
+would add useful evidence, give one optional command with scope and expected
+duration; do not ask solely because implementation finished. Run tests only
+under the repository's runtime authorization rules. Broader tests or builds
+require separate approval.
 
 ## Completion
 

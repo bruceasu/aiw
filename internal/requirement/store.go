@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -13,7 +14,7 @@ import (
 	"time"
 )
 
-const Root = "requirements"
+const Root = "docs/requirements"
 const archiveRoot = "archive"
 const cancelledRoot = "cancelled"
 
@@ -38,6 +39,7 @@ type Approval struct {
 	By     string
 	At     string
 	Reason string
+	SourceDigest string
 }
 
 type Promotion struct {
@@ -88,6 +90,10 @@ func dirFor(id string) string {
 }
 
 func Create(id, title string) (Meta, error) {
+	return createWithSequence(id, title, false)
+}
+
+func createExact(id, title string) (Meta, error) {
 	if !ValidID(id) {
 		return Meta{}, errors.New("invalid requirement id")
 	}
@@ -99,7 +105,10 @@ func Create(id, title string) (Meta, error) {
 		}
 	}
 	dir := Dir(id)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(Root, 0o755); err != nil {
+		return Meta{}, err
+	}
+	if err := os.Mkdir(dir, 0o755); err != nil {
 		return Meta{}, err
 	}
 	today := time.Now().Format("2006-01-02")
@@ -114,16 +123,32 @@ func Read(id string) (Meta, error) {
 	if !ValidID(id) {
 		return Meta{}, errors.New("invalid requirement id")
 	}
-	path := filepath.Join(dirFor(id), "requirement.toml")
+	dir := dirFor(id)
+	path := filepath.Join(dir, "requirement.toml")
 	f, err := os.Open(path)
 	if err != nil {
 		return Meta{}, err
 	}
 	defer f.Close()
+	meta, err := readMeta(id, f)
+	if err != nil { return Meta{}, err }
+	// Stored paths are historical hints. The registered kind resolves the
+	// current location after a directory move without rewriting the source file.
+	for kind, artifact := range meta.Artifacts {
+		if filename, ok := artifactFiles[kind]; ok {
+			artifact.Path = filepath.ToSlash(filepath.Join(dir, filename))
+			meta.Artifacts[kind] = artifact
+		}
+	}
+	return meta, nil
+}
 
+// readMeta shares metadata decoding with the bounded, project-rooted context
+// reader without changing the existing lifecycle storage API.
+func readMeta(id string, input io.Reader) (Meta, error) {
 	meta := Meta{Artifacts: map[string]Artifact{}}
 	section := ""
-	scanner := bufio.NewScanner(f)
+	scanner := bufio.NewScanner(input)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" || strings.HasPrefix(line, "#") {
@@ -154,6 +179,7 @@ func Read(id string) (Meta, error) {
 			artifact.Digest = value
 			meta.Artifacts[kind] = artifact
 		case "approval":
+			if key == "source_digest" { meta.Approval.SourceDigest = value }
 			switch key { case "status": meta.Approval.Status = value; case "by": meta.Approval.By = value; case "at": meta.Approval.At = value; case "reason": meta.Approval.Reason = value }
 		case "promotion":
 			switch key { case "status": meta.Promotion.Status = value; case "task_id": meta.Promotion.TaskID = value }
@@ -174,6 +200,7 @@ func Read(id string) (Meta, error) {
 func Write(meta Meta) error {
 	if !ValidID(meta.ID) { return errors.New("invalid requirement id") }
 	content := fmt.Sprintf("id = %q\ntitle = %q\nstatus = %q\ncreated = %q\nupdated = %q\nrevision = %d\n\n[approval]\nstatus = %q\nby = %q\nat = %q\nreason = %q\n\n[promotion]\nstatus = %q\ntask_id = %q\n\n[conversation]\nsession_id = %q\n\n[terminal]\nby = %q\nat = %q\nreason = %q\n", meta.ID, meta.Title, meta.Status, meta.Created, meta.Updated, meta.Revision, meta.Approval.Status, meta.Approval.By, meta.Approval.At, meta.Approval.Reason, meta.Promotion.Status, meta.Promotion.TaskID, meta.Conversation.SessionID, meta.Terminal.By, meta.Terminal.At, meta.Terminal.Reason)
+	content = strings.Replace(content, "\n[promotion]\n", fmt.Sprintf("source_digest = %q\n\n[promotion]\n", meta.Approval.SourceDigest), 1)
 	keys := make([]string, 0, len(meta.Artifacts))
 	for kind := range meta.Artifacts { keys = append(keys, kind) }
 	sort.Strings(keys)
@@ -230,6 +257,7 @@ func Approve(id, decision, by, reason string) (Meta, error) {
 	if decision == "APPROVED" && meta.Status != "DECIDED" { return Meta{}, fmt.Errorf("requirement must be DECIDED before approval: %s", meta.Status) }
 	meta.Status, meta.Approval.Status, meta.Approval.By, meta.Approval.Reason = decision, decision, by, reason
 	meta.Approval.At = time.Now().Format(time.RFC3339)
+	meta.Approval.SourceDigest = approvalSourceDigest(meta)
 	meta.Updated = time.Now().Format("2006-01-02")
 	meta.Revision++
 	if err := Write(meta); err != nil { return Meta{}, err }
@@ -323,14 +351,15 @@ func ArtifactSnapshot(id string) ([]Artifact, error) {
 
 func atomicWrite(path string, data []byte) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil { return err }
-	tmp, err := os.CreateTemp(filepath.Dir(path), ".requirement-*.tmp")
+	temporaryRoot := filepath.Join(runtimeRoot(), "temporary")
+	if err := os.MkdirAll(temporaryRoot, 0o700); err != nil { return err }
+	tmp, err := os.CreateTemp(temporaryRoot, ".requirement-*.tmp")
 	if err != nil { return err }
 	tmpPath := tmp.Name()
 	defer os.Remove(tmpPath)
 	if _, err := tmp.Write(data); err != nil { tmp.Close(); return err }
+	if err := tmp.Sync(); err != nil { tmp.Close(); return err }
 	if err := tmp.Close(); err != nil { return err }
-	if err := os.Rename(tmpPath, path); err == nil { return nil }
-	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) { return err }
 	return os.Rename(tmpPath, path)
 }
 

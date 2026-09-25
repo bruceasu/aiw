@@ -1,19 +1,20 @@
 package task
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
-	"aiw/internal/session"
 	"aiw/internal/taskx"
 	"aiw/internal/ui"
 	"aiw/internal/workflow"
+	"aiw/internal/workflow/execution"
 )
 
+// runWorkflowSupervisor routes the supervise CLI action and prints recovery
+// guidance for any failed start, status, or stop operation.
 func runWorkflowSupervisor(args []string) (runErr error) {
 	if len(args) < 3 || !safeID(args[1]) {
 		return fmt.Errorf("usage: task workflow supervise <task-id> <start|status|stop> [--provider NAME] [--model MODEL]")
@@ -31,8 +32,23 @@ func runWorkflowSupervisor(args []string) (runErr error) {
 	if action != "start" && (provider != "" || model != "") {
 		return fmt.Errorf("provider/model overrides are only valid for supervisor start")
 	}
+	if action != "start" && action != "status" && action != "stop" {
+		return fmt.Errorf("usage: task workflow supervise <task-id> <start|status|stop>")
+	}
 	store := workflow.NewStore("")
 	state, err := store.Load(workflow.TaskID(id))
+	if action == "start" && errors.Is(err, os.ErrNotExist) {
+		// Only durable metadata can initialize a missing projection. A change
+		// directory or migration marker cannot restore execution history.
+		meta, metaErr := taskx.ReadTaskMeta(taskx.ResolveTaskMetaPath(id))
+		if metaErr != nil {
+			return fmt.Errorf("cannot initialize workflow Task %s: restore valid task metadata before starting; existing artifacts were preserved: %w", id, metaErr)
+		}
+		if meta.ID != id {
+			return fmt.Errorf("task metadata id mismatch: expected %s, got %s", id, meta.ID)
+		}
+		state, err = store.EnsureCompatible(taskx.WorkflowRuntimeFromMeta(meta))
+	}
 	if err != nil {
 		return err
 	}
@@ -40,139 +56,26 @@ func runWorkflowSupervisor(args []string) (runErr error) {
 	case "status":
 		printSupervisorStatus(state)
 		printSupervisorRuntimeStatus(state)
+		if p := state.Protocol; p != nil {
+			fmt.Printf("Durable execution: revision=%d budget-known=%t stopped=%t\n", state.StateRevision, p.BudgetKnown, p.Stop != nil)
+			if p.Stop != nil { fmt.Printf("Stop reason: %s\n", p.Stop.Reason) }
+			for _, item := range p.Items { fmt.Printf("%s: phase=%s request=%s\n", item.WorkItemID, item.Phase, item.CurrentRequest) }
+			for _, request := range p.Requests { if !request.Consumed && request.Dispatch != "not-dispatched" { fmt.Printf("In flight: %s observation=%s executor=%s\n", request.Request.ID, request.Dispatch, request.Executor) } }
+			for _, recovery := range p.Recoveries { fmt.Printf("Recovery %s/%s: remaining=%d\n", recovery.WorkItemID, recovery.Phase, 2-len(recovery.Requests)) }
+			if a := p.Auxiliary; a != nil {
+				if a.HostGap != "" { fmt.Printf("Auxiliary host gap: %s\n", a.HostGap) }
+				fmt.Printf("Auxiliary sources: consumed=%d total=%d\n", a.Cursor, len(a.Sources))
+				for _, job := range a.Jobs { fmt.Printf("Auxiliary %s/%s: state=%s recovery-used=%t reason=%s\n", job.Kind, job.Key, job.State, job.RecoveryUsed, job.Reason) }
+			}
+		}
 		return nil
 	case "start":
-		if state.Delivery == workflow.DeliveryMerged || state.Delivery == workflow.DeliveryDiscarded {
-			printSupervisorStatus(state)
-			return nil
-		}
-		leaseID := fmt.Sprintf("supervisor-%d", time.Now().UTC().UnixNano())
-		if _, err := store.StartSupervisor(workflow.TaskID(id), leaseID); err != nil {
-			return err
-		}
-		current, err := store.Load(workflow.TaskID(id))
-		if err != nil {
-			return err
-		}
-		for _, repair := range current.Automation.ProjectionRepairs {
-			if repair.ResolvedAt != "" {
-				continue
-			}
-			if err := repairWorkflowState(id); err != nil {
-				_, _ = store.RecordSupervisorObservation(workflow.TaskID(id), leaseID, current.LastEventSequence, "repair-paused", repair.Target)
-				return err
-			}
-			current, err = store.Load(workflow.TaskID(id))
-			if err != nil {
-				return err
-			}
-			_, err = store.RecordSupervisorObservation(workflow.TaskID(id), leaseID, current.LastEventSequence, "repair-resolved", repair.Target)
-			return err
-		}
-		for {
-			if _, err := syncWorkflowChecklist(id, store); err != nil {
-				return err
-			}
-			updated, err := store.Load(workflow.TaskID(id))
-			if err != nil || updated.Automation.Supervisor.LeaseID != leaseID {
-				return err
-			}
-			if workflow.SupervisorDue(updated, time.Now().UTC()) || updated.Automation.Supervisor.ObservedEvent == 0 {
-				if _, err := store.RenewSupervisorLease(workflow.TaskID(id), leaseID); err != nil {
-					return err
-				}
-				if err := runWorkflowWithOverrides(id, true, true, false, provider, model); err != nil {
-					failed, loadErr := store.Load(workflow.TaskID(id))
-					// Compiler preparation and repair errors retain their Attempt;
-					// only an ordinary Agent runner failure consumes no-progress.
-					if loadErr == nil && failed.Automation.PreparedRequest != nil && !hasPendingSupervisedCompile(failed.Automation.PreparedRequest) {
-						outcome := workflow.SupervisedOutcome{Kind: workflow.SupervisedOutcomeNoProgress, Detail: err.Error(), EvidenceReference: "supervisor runner error"}
-						if failed, loadErr = store.RecordSupervisedOutcome(workflow.TaskID(id), failed.Automation.PreparedRequest.AttemptID, outcome); loadErr == nil {
-							_ = projectWorkflowState(id, failed)
-						}
-					}
-					_, _ = store.PauseSupervisor(workflow.TaskID(id), leaseID, "runner-paused", err.Error(), time.Now().UTC().Add(30*time.Second))
-					return err
-				}
-				updated, err = store.Load(workflow.TaskID(id))
-				if err != nil {
-					return err
-				}
-				if request := updated.Automation.PreparedRequest; request != nil {
-					// A model turn may outlive the one-minute supervisor lease. Renew
-					// before committing its result so the completion and the next
-					// outcome remain owned by this supervisor invocation.
-					if _, err = store.RenewSupervisorLease(workflow.TaskID(id), leaseID); err != nil {
-						return err
-					}
-					outcome, outcomeErr := recordSupervisorSessionOutcome(store, request)
-					if outcomeErr != nil {
-						_, _ = store.PauseSupervisor(workflow.TaskID(id), leaseID, "session-result-unknown", outcomeErr.Error(), time.Now().UTC().Add(30*time.Second))
-						return outcomeErr
-					}
-					if outcome.Kind == workflow.SupervisedOutcomeCompleted {
-						var repairPending bool
-						outcome, repairPending, err = compileSupervisedOutcome(id, store, request, outcome, workflow.ExecCompileCommandRunner{})
-						if err != nil {
-							_, _ = store.PauseSupervisor(workflow.TaskID(id), leaseID, "compiler-paused", err.Error(), time.Now().UTC().Add(30*time.Second))
-							return err
-						}
-						if _, err = store.RenewSupervisorLease(workflow.TaskID(id), leaseID); err != nil {
-							return err
-						}
-						if repairPending {
-							continue
-						}
-					}
-					updated, err = store.RecordSupervisedOutcome(workflow.TaskID(id), request.AttemptID, outcome)
-					if err != nil {
-						return err
-					}
-					if err = projectWorkflowState(id, updated); err != nil {
-						return err
-					}
-				}
-				// The execution path leaves the old automation cursor in place.
-				// Re-evaluate the durable state after closing the Attempt so the
-				// Supervisor records the actual next outcome instead of repeating
-				// agent-request-prepared forever.
-				if err = runWorkflowWithOptions(id, false, true, false); err != nil {
-					return err
-				}
-				updated, err = store.Load(workflow.TaskID(id))
-				if err != nil {
-					return err
-				}
-				// A fresh prepared request is external work for the next
-				// supervisor iteration. Do not advance the observation cursor over
-				// it, or the request would remain prepared forever.
-				if updated.Automation.Cursor.Result == string(workflow.RunnerPrepared) {
-					continue
-				}
-				if _, err = store.RecordSupervisorObservation(workflow.TaskID(id), leaseID, updated.LastEventSequence, updated.Automation.Cursor.Result, updated.Automation.Cursor.Detail); err != nil {
-					return err
-				}
-				switch updated.Automation.Cursor.Result {
-				case string(workflow.RunnerNoWork):
-					delivered, deliveryErr := deliverCompletedSupervisorTask(id, store)
-					if deliveryErr != nil {
-						_, _ = store.PauseSupervisor(workflow.TaskID(id), leaseID, "delivery-paused", deliveryErr.Error(), time.Now().UTC().Add(30*time.Second))
-						return deliveryErr
-					}
-					if delivered {
-						_, err = store.StopSupervisor(workflow.TaskID(id), leaseID)
-						return err
-					}
-					_, err = store.PauseSupervisor(workflow.TaskID(id), leaseID, "supervisor-paused", updated.Automation.Cursor.Result, time.Now().UTC().Add(30*time.Second))
-					return err
-				case string(workflow.RunnerGate), "repair-required", "blocked":
-					_, err = store.PauseSupervisor(workflow.TaskID(id), leaseID, "supervisor-paused", updated.Automation.Cursor.Result, time.Now().UTC().Add(30*time.Second))
-					return err
-				}
-			}
-			time.Sleep(2 * time.Second)
-		}
+		return startWorkflowSupervisor(id, provider, model, store, state)
 	case "stop":
+		if state.SchemaVersion == workflow.DurableSchemaVersion {
+			_, err := store.RequestExecutionStop(workflow.TaskID(id), state.StateRevision, "Explicit supervisor Stop", "task workflow supervise stop")
+			return err
+		}
 		if state.Automation.Supervisor.LeaseID == "" {
 			return nil
 		}
@@ -183,33 +86,36 @@ func runWorkflowSupervisor(args []string) (runErr error) {
 	}
 }
 
-func deliverCompletedSupervisorTask(id string, store *workflow.Store) (bool, error) {
-	state, err := store.Load(workflow.TaskID(id))
-	if err != nil {
-		return false, err
+// startWorkflowSupervisor renders terminal Tasks or delegates execution to the
+// foreground Supervisor with CLI reporting callbacks.
+func startWorkflowSupervisor(id, provider, model string, store *workflow.Store,
+	state workflow.RuntimeState) error {
+	store.ResumeAuxiliaryHost(workflow.TaskID(id))
+	if state.Delivery == workflow.DeliveryMerged || state.Delivery == workflow.DeliveryDiscarded {
+		printSupervisorStatus(state)
+		return nil
 	}
-	summary := workflow.DeriveSummary(state)
-	if summary.Execution != workflow.ExecutionCompleted ||
-		(summary.Validation != workflow.ValidationPassed && summary.Validation != workflow.ValidationNotRequired && summary.Validation != workflow.ValidationWaived) ||
-		state.Delivery == workflow.DeliveryMerged || state.Delivery == workflow.DeliveryDiscarded ||
-		state.Automation.PreparedRequest != nil ||
-		workflow.NextRunnerOutcome(state).Kind != workflow.RunnerNoWork {
-		return false, nil
-	}
-	meta, err := taskx.ReadTaskMeta(taskx.ResolveTaskMetaPath(id))
-	if err != nil {
-		return false, err
-	}
-	if resolvedWorkspaceKind(meta) != "isolated" {
-		return false, nil
-	}
-	if err := localMergeDelivery(id, meta, store, "Complete Task "+id); err != nil {
-		return false, err
-	}
-	fmt.Printf("Task %s locally merged into %s; worktree and task branch removed. Review the parent branch before pushing.\n", id, meta.ParentBranch)
-	return true, nil
+	return newWorkflowSupervisor(store).Start(id, provider, model, state)
 }
 
+// newWorkflowSupervisor wires execution to CLI reporting and the existing
+// single-step Runner and Git Delivery adapters.
+func newWorkflowSupervisor(store *workflow.Store) execution.Supervisor {
+	return execution.Supervisor{
+		Store: store,
+		RunStep: func(id string, execute bool, provider, model string) error {
+			return runWorkflowWithOverrides(id, execute, true, false, provider, model)
+		},
+		Merge:  localMergeDelivery,
+		Report: projectWorkflowState,
+		Delivered: func(id, parentBranch string) {
+			fmt.Printf("Task %s locally merged into %s; worktree and task branch removed. Review the parent branch before pushing.\n", id, parentBranch)
+		},
+	}
+}
+
+// parseProviderModelOverrides accepts only the optional provider and model
+// overrides supported by supervise start.
 func parseProviderModelOverrides(args []string) (string, string, error) {
 	provider, model := "", ""
 	for i := 0; i < len(args); i++ {
@@ -231,6 +137,8 @@ func parseProviderModelOverrides(args []string) (string, string, error) {
 	return provider, model, nil
 }
 
+// printSupervisorFailureGuidance reports the recorded diagnostics and the next
+// recovery action without mutating Task state.
 func printSupervisorFailureGuidance(id string, cause error) {
 	fmt.Fprintf(os.Stderr, "supervisor: stopped with an error for task=%s\n", id)
 	fmt.Fprintf(os.Stderr, "next: aiw task workflow diagnose %s\n", id)
@@ -240,6 +148,14 @@ func printSupervisorFailureGuidance(id string, cause error) {
 		fmt.Fprintf(os.Stderr, "diagnosis unavailable: %v\n", err)
 	} else {
 		for _, diagnostic := range diagnostics {
+			if diagnostic.Code == "runtime-missing" {
+				meta, metaErr := taskx.ReadTaskMeta(taskx.ResolveTaskMetaPath(id))
+				if metaErr != nil || meta.ID != id {
+					diagnostic.Repair = "restore valid Task metadata from backup before starting; a change directory or migration marker cannot restore execution history"
+				} else {
+					diagnostic.Repair = "supervise start can initialize an inactive projection from the existing Task metadata; missing Attempt history will not be restored"
+				}
+			}
 			fmt.Fprintf(os.Stderr, "detected %s: %s\nnext: %s\n", diagnostic.Code, diagnostic.Message, diagnostic.Repair)
 		}
 	}
@@ -261,6 +177,7 @@ func printSupervisorFailureGuidance(id string, cause error) {
 	fmt.Fprintln(os.Stderr, "do not start another supervisor until diagnosis or recovery completes")
 }
 
+// printSupervisorStatus renders the durable lease and retry snapshot.
 func printSupervisorStatus(state workflow.RuntimeState) {
 	terminal := ui.NewTerminal(os.Stdout)
 	supervisor := state.Automation.Supervisor
@@ -298,6 +215,8 @@ func printSupervisorStatus(state workflow.RuntimeState) {
 	}
 }
 
+// printSupervisorRuntimeStatus renders the active request, workspace lease,
+// open Gates, and pending projection repairs.
 func printSupervisorRuntimeStatus(state workflow.RuntimeState) {
 	terminal := ui.NewTerminal(os.Stdout)
 	if request := state.Automation.PreparedRequest; request != nil {
@@ -341,128 +260,7 @@ func printSupervisorRuntimeStatus(state workflow.RuntimeState) {
 	}
 }
 
-// runSupervisedWorkflow keeps the foreground CLI informative while the
-// external Agent CLI is running. The Agent output remains persisted in the
-// Session output files; these messages are only lifecycle heartbeats.
-func runSupervisedWorkflow(id, leaseID string) error {
-	terminal := ui.NewTerminal(os.Stdout)
-	started := time.Now()
-	resultCh := make(chan error, 1)
-	go func() {
-		resultCh <- runWorkflowWithOptions(id, true, true, false)
-	}()
-
-	ticker := time.NewTicker(15 * time.Second)
-	defer ticker.Stop()
-	terminal.Line(fmt.Sprintf("supervisor: processing task=%s work_item=agent-turn", id))
-	for {
-		select {
-		case err := <-resultCh:
-			if err != nil {
-				terminal.Line(fmt.Sprintf("supervisor: processing failed task=%s elapsed=%s", id, time.Since(started).Round(time.Second)))
-				return err
-			}
-			terminal.Line(fmt.Sprintf("supervisor: processing completed task=%s elapsed=%s", id, time.Since(started).Round(time.Second)))
-			return nil
-		case <-ticker.C:
-			state, err := workflow.NewStore("").Load(workflow.TaskID(id))
-			if err != nil {
-				terminal.Line(fmt.Sprintf("supervisor: processing task=%s elapsed=%s state=unavailable", id, time.Since(started).Round(time.Second)))
-				continue
-			}
-			if _, err := workflow.NewStore("").RenewSupervisorLease(workflow.TaskID(id), leaseID); err != nil {
-				terminal.Line(fmt.Sprintf("supervisor: processing task=%s elapsed=%s lease=lost", id, time.Since(started).Round(time.Second)))
-				continue
-			}
-			workItem := state.Automation.Cursor.Detail
-			if workItem == "" {
-				workItem = "pending"
-			}
-			terminal.Line(fmt.Sprintf("supervisor: processing task=%s work_item=%s elapsed=%s lease=renewed%s", id, workItem, time.Since(started).Round(time.Second), supervisorLiveProgress(state)))
-		}
-	}
-}
-
-func supervisorLiveProgress(state workflow.RuntimeState) string {
-	request := state.Automation.PreparedRequest
-	if request == nil || request.SessionID == "" {
-		return ""
-	}
-	status, err := session.NewStore("").Load(request.SessionID)
-	if err != nil {
-		return " agent=unavailable"
-	}
-	path := filepath.Join(".ai", "sessions", request.SessionID, "outputs", fmt.Sprintf("%04d-live.jsonl", status.Session.LastTurn+1))
-	content, err := os.ReadFile(path)
-	if err != nil || len(content) == 0 {
-		return " agent=starting"
-	}
-	for index := len(strings.Split(string(content), "\n")) - 1; index >= 0; index-- {
-		line := strings.TrimSpace(strings.Split(string(content), "\n")[index])
-		if line == "" {
-			continue
-		}
-		var event struct {
-			Type string `json:"type"`
-			Item struct {
-				Type string `json:"type"`
-			} `json:"item"`
-		}
-		if json.Unmarshal([]byte(line), &event) == nil {
-			if event.Item.Type != "" {
-				return fmt.Sprintf(" agent_event=%s", event.Item.Type)
-			}
-			if event.Type != "" {
-				return fmt.Sprintf(" agent_event=%s", event.Type)
-			}
-		}
-		return " agent=active"
-	}
-	return " agent=active"
-}
-
-func recordSupervisorSessionOutcome(store *workflow.Store, request *workflow.PreparedAgentRequest) (workflow.SupervisedOutcome, error) {
-	if request == nil || request.SessionID == "" {
-		return workflow.SupervisedOutcome{}, fmt.Errorf("managed Session binding is required")
-	}
-	if request.DispatchedAt == "" {
-		return workflow.SupervisedOutcome{}, fmt.Errorf("session-result-not-dispatched: Session %s was prepared but was not dispatched for Attempt %s", request.SessionID, request.AttemptID)
-	}
-	status, err := session.NewStore("").Load(request.SessionID)
-	if err != nil {
-		return workflow.SupervisedOutcome{}, err
-	}
-	if status.Result.Status != "completed" || status.Result.FinalOutputFile == "" {
-		return workflow.SupervisedOutcome{}, fmt.Errorf("managed Session result is incomplete")
-	}
-	if err := validateSupervisorSessionResult(status, request); err != nil {
-		return workflow.SupervisedOutcome{}, err
-	}
-	reference := ".ai/sessions/" + request.SessionID + "/" + status.Result.FinalOutputFile
-	output, err := session.NewStore("").ReadText(request.SessionID, status.Result.FinalOutputFile)
-	if err != nil {
-		return workflow.SupervisedOutcome{}, err
-	}
-	return normalizeSupervisorSessionOutcome(parseSupervisedOutcome(output, reference)), nil
-}
-
-func validateSupervisorSessionResult(status session.Status, request *workflow.PreparedAgentRequest) error {
-	if status.Task == nil || status.Task.AttemptID != string(request.AttemptID) {
-		return fmt.Errorf("session-result-stale: Session %s has no completed result for Attempt %s", request.SessionID, request.AttemptID)
-	}
-	if request.ExpectedSessionTurn > 0 && status.Session.LastTurn < request.ExpectedSessionTurn {
-		return fmt.Errorf("session-result-stale: Session %s is at turn %d, expected turn %d for Attempt %s", request.SessionID, status.Session.LastTurn, request.ExpectedSessionTurn, request.AttemptID)
-	}
-	return nil
-}
-
-func normalizeSupervisorSessionOutcome(outcome workflow.SupervisedOutcome) workflow.SupervisedOutcome {
-	// workspace-access is Core-owned evidence from the scoped Git preflight.
-	// An Agent can report its observation but cannot establish that the current
-	// process lacks that access, especially when its handoff is stale.
-	if outcome.Kind == workflow.SupervisedOutcomeBlocked && outcome.BlockedCategory == workflow.BlockedOutcomeWorkspaceAccess {
-		outcome.BlockedCategory = workflow.BlockedOutcomeUnknown
-		outcome.Detail = "Agent reported workspace access after supervisor preflight; inspect the recorded session output and current scoped Git evidence: " + outcome.Detail
-	}
-	return outcome
+// deliverCompletedSupervisorTask connects the delivery result to CLI output.
+func deliverCompletedSupervisorTask(id string, store *workflow.Store) (bool, error) {
+	return newWorkflowSupervisor(store).DeliverCompleted(id)
 }

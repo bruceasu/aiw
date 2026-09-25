@@ -1,0 +1,36 @@
+{
+  "command": [
+    "go",
+    "test",
+    "./internal/workflow",
+    "-run",
+    "^(TestGenerationBudgetSharedSixRepairsAndSuccessfulSixth|TestGenerationRoutingFallbackAliasesAndRecoverySnapshot|TestGenerationBudgetLegacyUnknownAndFutureVersion)$",
+    "-count=1",
+    "-timeout=60s",
+    "-vet=off",
+    "-json"
+  ],
+  "cwd": "C:\\Users\\svictor\\workspace\\tools\\aiw\\.wt\\workflow-automation",
+  "started_at": "2026-09-24T09:38:31.113760+00:00",
+  "environment_overrides": {
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local",
+    "GOCACHE": "C:\\Users\\svictor\\workspace\\tools\\aiw\\.wt\\workflow-automation\\.ai\\compile-cache\\go"
+  },
+  "temporary_environment": {
+    "TMP": "C:\\Users\\svictor\\AppData\\Local\\Temp",
+    "TEMP": "C:\\Users\\svictor\\AppData\\Local\\Temp",
+    "TMPDIR": null
+  },
+  "input_manifest_sha256": "ffe2d20c628982e52512cc2b6ab117fa787c034f777bb489fee29ca33bf79961",
+  "plan_reference": "../../e04-remaining-verification-plan.md",
+  "plan_sha256": "cec6faba758f4bf8b2ab497246337d5da0527f9001af07289d7ccbd720cd7eb7",
+  "toolchain": "go version go1.25.1 windows/amd64",
+  "toolchain_error": "",
+  "exit_code": 0,
+  "ended_at": "2026-09-24T09:38:31.726471+00:00",
+  "changed_inputs": [],
+  "stdout.jsonl_sha256": "3f6b5c78c84d860cda0d764b4a644891ab50be0ea69fe7e06eb60aa27dc1cd26",
+  "stderr.txt_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

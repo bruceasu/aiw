@@ -1,0 +1,13 @@
+{"Time":"2026-09-25T13:49:31.6510672+09:00","Action":"start","Package":"aiw/internal/workflow"}
+{"Time":"2026-09-25T13:49:31.6872439+09:00","Action":"run","Package":"aiw/internal/workflow","Test":"TestVerifierRegistrationReusesFrozenSourceAfterRestart"}
+{"Time":"2026-09-25T13:49:31.6872439+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestVerifierRegistrationReusesFrozenSourceAfterRestart","Output":"=== RUN   TestVerifierRegistrationReusesFrozenSourceAfterRestart\n"}
+{"Time":"2026-09-25T13:49:31.7932565+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestVerifierRegistrationReusesFrozenSourceAfterRestart","Output":"    verifier_registration_windows_test.go:50: registration changed development state\n"}
+{"Time":"2026-09-25T13:49:31.7993019+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestVerifierRegistrationReusesFrozenSourceAfterRestart","Output":"--- FAIL: TestVerifierRegistrationReusesFrozenSourceAfterRestart (0.11s)\n"}
+{"Time":"2026-09-25T13:49:31.7993019+09:00","Action":"fail","Package":"aiw/internal/workflow","Test":"TestVerifierRegistrationReusesFrozenSourceAfterRestart","Elapsed":0.11}
+{"Time":"2026-09-25T13:49:31.7993019+09:00","Action":"run","Package":"aiw/internal/workflow","Test":"TestVerifierHistoricalAcceptanceDoesNotInventSnapshot"}
+{"Time":"2026-09-25T13:49:31.7993019+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestVerifierHistoricalAcceptanceDoesNotInventSnapshot","Output":"=== RUN   TestVerifierHistoricalAcceptanceDoesNotInventSnapshot\n"}
+{"Time":"2026-09-25T13:49:31.8940766+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestVerifierHistoricalAcceptanceDoesNotInventSnapshot","Output":"--- PASS: TestVerifierHistoricalAcceptanceDoesNotInventSnapshot (0.10s)\n"}
+{"Time":"2026-09-25T13:49:31.8952629+09:00","Action":"pass","Package":"aiw/internal/workflow","Test":"TestVerifierHistoricalAcceptanceDoesNotInventSnapshot","Elapsed":0.1}
+{"Time":"2026-09-25T13:49:31.8952629+09:00","Action":"output","Package":"aiw/internal/workflow","Output":"FAIL\n"}
+{"Time":"2026-09-25T13:49:31.8973542+09:00","Action":"output","Package":"aiw/internal/workflow","Output":"FAIL\taiw/internal/workflow\t0.245s\n"}
+{"Time":"2026-09-25T13:49:31.8973542+09:00","Action":"fail","Package":"aiw/internal/workflow","Elapsed":0.246}

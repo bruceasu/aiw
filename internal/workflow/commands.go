@@ -42,7 +42,8 @@ func (s *Store) RepairChecklist(id TaskID, candidates []ChecklistCandidate) (Run
 
 // SyncChecklist incrementally reconciles a parsed plan. The fingerprint is
 // supplied by the OpenSpec adapter so Workflow Core remains independent of
-// Markdown parsing. An unchanged non-empty fingerprint produces no write.
+// Markdown parsing. An unchanged fingerprint produces no write unless a
+// completed checklist item still owns a running Attempt.
 func (s *Store) SyncChecklist(id TaskID, candidates []ChecklistCandidate, fingerprint string) (RuntimeState, error) {
 	if strings.TrimSpace(fingerprint) == "" {
 		return RuntimeState{}, fmt.Errorf("plan fingerprint is required")
@@ -51,10 +52,47 @@ func (s *Store) SyncChecklist(id TaskID, candidates []ChecklistCandidate, finger
 	if err != nil {
 		return RuntimeState{}, err
 	}
-	if state.Automation.PlanFingerprint == fingerprint {
+	if state.Automation.PlanFingerprint == fingerprint && !needsChecklistCompletionReconciliation(state, candidates) {
 		return state, nil
 	}
 	return s.syncChecklist(id, candidates, fingerprint)
+}
+
+func needsChecklistCompletionReconciliation(state RuntimeState, candidates []ChecklistCandidate) bool {
+	completed := make(map[string]bool, len(candidates))
+	for _, candidate := range candidates {
+		completed[candidate.Item] = candidate.Completed
+	}
+	for _, item := range state.WorkItems {
+		if !completed[item.Checklist.Item] {
+			continue
+		}
+		if item.State == WorkItemCompleted {
+			for _, attempt := range state.Attempts {
+				if attempt.WorkItemID == item.ID && attempt.State == AttemptRunning {
+					return true
+				}
+			}
+			continue
+		}
+		if item.State == WorkItemBlocked || item.CompileFailureCount > 0 {
+			continue
+		}
+		if request := state.Automation.PreparedRequest; request != nil && request.WorkItemID == item.ID {
+			continue
+		}
+		activeAttempt := false
+		for _, attempt := range state.Attempts {
+			if attempt.WorkItemID == item.ID && (attempt.State == AttemptCreated || attempt.State == AttemptRunning || attempt.State == AttemptPaused) {
+				activeAttempt = true
+				break
+			}
+		}
+		if !activeAttempt {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Store) syncChecklist(id TaskID, candidates []ChecklistCandidate, fingerprint string) (RuntimeState, error) {
@@ -112,13 +150,14 @@ func (s *Store) syncChecklistWithEvent(id TaskID, candidates []ChecklistCandidat
 				continue
 			}
 			index := byReference[candidate.Item]
+			if state.WorkItems[index].State == WorkItemCompleted {
+				closeChecklistAttempt(state, state.WorkItems[index].ID)
+				continue
+			}
 			if request := state.Automation.PreparedRequest; request != nil && request.WorkItemID == state.WorkItems[index].ID && (request.AISelection != nil || request.Compile != nil || state.Automation.Supervisor.LeaseID != "") {
 				if request.Compile == nil || request.Compile.Result == nil || request.Compile.Result.Status != ActorResultAccepted {
 					continue
 				}
-			}
-			if state.WorkItems[index].State == WorkItemCompleted {
-				continue
 			}
 			if request := state.Automation.PreparedRequest; request != nil && request.WorkItemID == state.WorkItems[index].ID && (request.DispatchedAt != "" || request.CompilerResult != nil || state.Automation.Supervisor.LeaseID != "") {
 				// The supervised outcome and compiler must finish before authored
@@ -139,6 +178,9 @@ func (s *Store) syncChecklistWithEvent(id TaskID, candidates []ChecklistCandidat
 		}
 		for _, item := range state.WorkItems {
 			if item.Checklist.Item == "" || present[item.Checklist.Item] {
+				continue
+			}
+			if item.State == WorkItemCancelled {
 				continue
 			}
 			gateID := GateID("checklist-identifier-deleted-" + string(item.ID))
@@ -730,6 +772,7 @@ func completeWorkItem(state *RuntimeState, workItemID WorkItemID) error {
 			return err
 		}
 		item.State = WorkItemCompleted
+		closeChecklistAttempt(state, item.ID)
 		return nil
 	}
 	return fmt.Errorf("unknown work item %s", workItemID)

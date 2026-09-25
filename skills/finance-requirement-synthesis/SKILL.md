@@ -34,8 +34,28 @@ The plan indexes available evidence, separates facts from assumptions, identifie
 - Do not create a Task, OpenSpec change, implementation checklist, branch, worktree, or release decision. After user confirmation, AIW Requirement Management may capture this artifact; this Skill must not invoke capture.
 - Release status is always `NOT_STARTED` until an implemented AIW Task reaches the separate release stage.
 - `READY_FOR_HUMAN_DECISION` is not engineering readiness. Use `%%` for all unresolved gates.
+- Include goals, explicit non-goals, key rules, and verifiable acceptance
+  examples, with sources. Empty headings do not establish completeness.
+- Separate business blockers from proposed engineering postponements. Write
+  each postponement and its reason as an exact Plan statement for human review.
+  It becomes non-blocking only after human confirmation; it never waives an
+  unresolved business rule or conflict. A draft may be saved before it is ready.
 
 ## Output
+
+### When loaded by Requirement Management
+
+Apply this method only to the financial domain identified in the supplied
+context. The current host JSON contract overrides the Markdown template below;
+use the template only for a requested draft or standalone discussion.
+Use loaded source bodies and exact references. Do not load sibling Skills or
+linked materials, invent missing evidence, or treat capture as confirmation.
+Ask only the highest-impact open questions; keep conflicts and proposed
+conclusions separate from host-confirmed fragments. Report missing evidence
+without claiming readiness. The host owns persistence and human checkpoints.
+This method does not authorize tests, external calls, or lifecycle operations.
+
+### Draft artifact
 
 ```markdown
 # Requirement Artifact
@@ -51,7 +71,12 @@ The plan indexes available evidence, separates facts from assumptions, identifie
 ## Facts
 ## Assumptions
 ## Evidence Index
+## Goals
 ## Scope
+## Non-Goals
+## Key Rules
+## Acceptance Examples
+## Remaining Decisions and Proposed Design Postponements
 ## Risks and Open Questions
 ## Earliest Blocking Decision
 ## Human Decision Requested

@@ -39,9 +39,9 @@
     },
     "domain-modeling": {
       "mode": "copy",
-      "sha256": "f33aad1bb495608028e01e8dcbfb167b8d6653d851d1dd9f271d6d331d3887a1",
-      "source_identity": "D:\\green\\aiw\\skills\\domain-modeling",
-      "source_revision": null
+      "sha256": "d656a53173a2aa5adeadc0fb1e5ea875909835dc4bf4d8fa0c193dd0c07db453",
+      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\domain-modeling",
+      "source_revision": "bd019de14d4f18dd3f3f9b3676e38bb710442961"
     },
     "edit-article": {
       "mode": "copy",
@@ -63,15 +63,15 @@
     },
     "finance-engineering-options": {
       "mode": "copy",
-      "sha256": "0bfcdb9ba9ecc99e6257193703772cd658526302a4a00298cd943ec18730f290",
-      "source_identity": "D:\\green\\aiw\\skills\\finance-engineering-options",
-      "source_revision": null
+      "sha256": "e685ad1951e48fcc19db9b511d63d54b287d997a175de28d6ee7b118f34babd0",
+      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\finance-engineering-options",
+      "source_revision": "bd019de14d4f18dd3f3f9b3676e38bb710442961"
     },
     "finance-metric-brief": {
       "mode": "copy",
-      "sha256": "4b3cca541a715db964eb758c6d588a189491940e5be17811d75563d06a63fd02",
-      "source_identity": "D:\\green\\aiw\\skills\\finance-metric-brief",
-      "source_revision": null
+      "sha256": "7bf5a513d56b8479f9ec92a4c3cab7670e5d856b8137e650f961f6ba32cef8a2",
+      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\finance-metric-brief",
+      "source_revision": "bd019de14d4f18dd3f3f9b3676e38bb710442961"
     },
     "finance-release-gate": {
       "mode": "copy",
@@ -81,21 +81,21 @@
     },
     "finance-requirement-intake": {
       "mode": "copy",
-      "sha256": "a4e2d2713e997828669042fe4ff4c3b6a8ced248cf4c93e3053f9ea5a56c3ba8",
-      "source_identity": "D:\\green\\aiw\\skills\\finance-requirement-intake",
-      "source_revision": null
+      "sha256": "ce2b84b16298d9b6c293b5876ea1871936e8dd14ae2dcaf385812f37649a092c",
+      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\finance-requirement-intake",
+      "source_revision": "bd019de14d4f18dd3f3f9b3676e38bb710442961"
     },
     "finance-requirement-synthesis": {
       "mode": "copy",
-      "sha256": "4c860b90446a3414eac24a4f89384a656bd3488fa7757c9de682f823f0eb7ce9",
-      "source_identity": "D:\\green\\aiw\\skills\\finance-requirement-synthesis",
-      "source_revision": null
+      "sha256": "5e459ee442c985a13bc9305e2bba7cf7f035fb614ecccc3b6b1e140aed47b4c4",
+      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\finance-requirement-synthesis",
+      "source_revision": "bd019de14d4f18dd3f3f9b3676e38bb710442961"
     },
     "finance-value-assessment": {
       "mode": "copy",
-      "sha256": "6726fdee990c69095137e291d1f122109f2832ab44a25c7d4cc9e60fbb00d062",
-      "source_identity": "D:\\green\\aiw\\skills\\finance-value-assessment",
-      "source_revision": null
+      "sha256": "290d82a2bfef7324bebf59b65716ecc77d9e952b7b42281f16c36ffc7eefc04f",
+      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\finance-value-assessment",
+      "source_revision": "bd019de14d4f18dd3f3f9b3676e38bb710442961"
     },
     "github-issues-management": {
       "mode": "copy",
@@ -171,9 +171,9 @@
     },
     "requirement-management": {
       "mode": "copy",
-      "sha256": "7963539128650b009b4b9a702caa53e65b94c9350442f5b72d49ff6d522dad3e",
-      "source_identity": "D:\\green\\aiw\\skills\\requirement-management",
-      "source_revision": null
+      "sha256": "4fc1df5229be8b3596242391a1e9a0a5c86c754c09e1d663e50930325dad6c32",
+      "source_identity": "C:\\Users\\svictor\\workspace\\tools\\aiw\\skills\\requirement-management",
+      "source_revision": "94533c7374b4d4c75454b56ac552dd711dc582f3"
     },
     "research": {
       "mode": "copy",

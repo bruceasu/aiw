@@ -10,6 +10,7 @@ import (
 
 	"aiw/internal/fsx"
 	"aiw/internal/repo"
+	"aiw/internal/taskpath"
 )
 
 const (
@@ -22,8 +23,8 @@ const (
 	GitignoreFile      = ".gitignore"
 	TaskMetaFile       = "task.toml"
 	LegacyTaskMetaFile = "tasks.toml"
-	RuntimeTasksDir       = ".ai"
-	LegacyRuntimeTasksDir = ".ai/tasks"
+	RuntimeTasksDir       = ".ai/tasks"
+	LegacyRuntimeTasksDir = ".ai"
 )
 
 type TaskMeta struct {
@@ -51,11 +52,7 @@ func TaskDir(id string) string {
 }
 
 func RuntimeTaskDir(id string) string {
-	canonical := filepath.Join(repo.Root(), RuntimeTasksDir, id)
-	if fsx.Exists(canonical) || !fsx.Exists(filepath.Join(repo.Root(), LegacyRuntimeTasksDir, id)) {
-		return canonical
-	}
-	return filepath.Join(repo.Root(), LegacyRuntimeTasksDir, id)
+	return taskpath.ActiveTaskDir(filepath.Join(repo.Root(), ".ai"), id)
 }
 
 func RuntimeTasksPath() string {
@@ -72,6 +69,25 @@ func ArchiveTaskDir(name string) string {
 
 func TaskMetaPath(id string) string {
 	return filepath.Join(RuntimeTaskDir(id), TaskMetaFile)
+}
+
+// LegacyTaskPathError reports that an active record still occupies its former
+// location. Callers must stop before reading or writing either location.
+func LegacyTaskPathError(id string) error {
+	if err := taskpath.ValidateID(id); err != nil {
+		return err
+	}
+	legacy := taskpath.LegacyTaskDir(filepath.Join(RuntimeRoot(), ".ai"), id)
+	marker := filepath.Join(RuntimeTaskDir(id), "migrated-to")
+	if _, err := os.Lstat(marker); err == nil {
+		return fmt.Errorf("Task %s has a migration marker at %s; stop AIW writers and manually relocate the complete Task directory to %s", id, marker, RuntimeTaskDir(id))
+	} else if !os.IsNotExist(err) { return err }
+	if _, err := os.Lstat(legacy); err == nil {
+		return fmt.Errorf("Task %s remains at legacy path %s; stop AIW writers and manually relocate it to %s", id, legacy, RuntimeTaskDir(id))
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	return nil
 }
 
 func ResolveTaskMetaPath(id string) string {
@@ -180,6 +196,92 @@ func WriteTaskMeta(path string, meta TaskMeta) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
+	return os.WriteFile(path, taskMetaBytes(meta), 0o644)
+}
+
+func replaceTaskMetaField(content []byte, key, value string) ([]byte, bool) {
+	lines := strings.SplitAfter(string(content), "\n")
+	found, changed := false, false
+	for index, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "#") || !strings.HasPrefix(trimmed, key) {
+			continue
+		}
+		remainder := strings.TrimSpace(strings.TrimPrefix(trimmed, key))
+		if !strings.HasPrefix(remainder, "=") {
+			continue
+		}
+		found = true
+		if strings.Trim(strings.TrimSpace(strings.TrimPrefix(remainder, "=")), `"`) == value {
+			continue
+		}
+		prefix := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
+		ending := ""
+		if strings.HasSuffix(line, "\r\n") {
+			ending = "\r\n"
+		} else if strings.HasSuffix(line, "\n") {
+			ending = "\n"
+		}
+		lines[index] = fmt.Sprintf("%s%s = %q%s", prefix, key, value, ending)
+		changed = true
+	}
+	if found {
+		return []byte(strings.Join(lines, "")), changed
+	}
+	separator := ""
+	if len(content) > 0 && !strings.HasSuffix(string(content), "\n") {
+		separator = "\n"
+	}
+	return append(content, []byte(separator+fmt.Sprintf("%s = %q\n", key, value))...), true
+}
+
+func writeTaskMetaAtomically(path string, content []byte) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	temporary, err := os.CreateTemp(filepath.Dir(path), ".aiw-task-meta-*")
+	if err != nil {
+		return err
+	}
+	temporaryPath := temporary.Name()
+	defer os.Remove(temporaryPath)
+	if err := temporary.Chmod(info.Mode()); err != nil {
+		_ = temporary.Close()
+		return err
+	}
+	if _, err := temporary.Write(content); err != nil {
+		_ = temporary.Close()
+		return err
+	}
+	if err := temporary.Sync(); err != nil {
+		_ = temporary.Close()
+		return err
+	}
+	if err := temporary.Close(); err != nil {
+		return err
+	}
+	return os.Rename(temporaryPath, path)
+}
+
+// CreateTaskMeta creates only the missing metadata file, never replacing data.
+func CreateTaskMeta(path string, meta TaskMeta) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		return err
+	}
+	_, err = file.Write(taskMetaBytes(meta))
+	closeErr := file.Close()
+	if err != nil {
+		return err
+	}
+	return closeErr
+}
+
+func taskMetaBytes(meta TaskMeta) []byte {
 	var specsLine string
 	if len(meta.Specs) > 0 {
 		specsLine = fmt.Sprintf("specs = [%s]\n", quoteStringArray(meta.Specs))
@@ -215,7 +317,7 @@ session = "%s"
 		specsLine,
 		tagsLine,
 	)
-	return os.WriteFile(path, []byte(content), 0o644)
+	return []byte(content)
 }
 
 func quoteStringArray(values []string) string {

@@ -14,7 +14,7 @@ func DispatchTopLevel(name string, args []string) error {
 		printTaskHelp()
 		return nil
 	}
-	if name == "new" || name == "decision" || name == "spec" {
+	if name == "new" || name == "decision" || name == "spec" || name == "archive" {
 		mode, routedArgs, err := selectBackend(name, args)
 		if err != nil {
 			return err
@@ -44,7 +44,7 @@ func DispatchTopLevel(name string, args []string) error {
 		}
 		return newTask(id, allowUnrelatedDirty)
 	case "list":
-		return listTasks()
+		return listTasks(args...)
 	case "show":
 		if len(args) != 1 {
 			return fmt.Errorf("usage: show <task-id>")
@@ -103,19 +103,28 @@ func printTaskHelp() {
 		"  aiw task <command> [args...]\n" +
 		"  aiw task help\n" + "  aiw task --help\n\n" +
 		"Task lifecycle:\n" +
+		"  init [options]\n" +
 		"  new <task-id> [--allow-unrelated-dirty]\n" +
-		"  list\n" +
+		"  list [--all]\n" +
 		"  show <task-id>\n" +
 		"  status <task-id> <status>\n" +
 		"  done <task-id>\n" + "  archive <task-id> [options]\n\n" +
+		"  context <task-id>\n" +
+		"  decision <task-id>\n" +
+		"  spec <spec-id>\n" +
+		"  requirement <...>\n" +
+		"  prompts [options]\n\n" +
 		"Execution:\n" +
-		"  aiw turn <task-id> [options]\n" +
-		"  aiw chat <task-id> [options]\n" +
-		"  workflow --help\n" +
+		"  turn|chat <task-id> [--handoff PATH] [--provider NAME] [--model MODEL] [--takeover] [--yes]\n" +
+		"  workflow <operation> <task-id>\n" +
 		"  workspace bind <task-id> --primary\n\n" +
 		"Examples:\n" +
 		"  aiw task new payment-retry\n" +
-		"  aiw task workflow run payment-retry --execute\n" + "  aiw task workflow supervise payment-retry start\n\n" + "Run `aiw task <command> --help` for command-specific help.\n")
+		"  aiw task turn payment-retry\n" +
+		"  aiw task workflow plan payment-retry\n" +
+		"  aiw task workflow run payment-retry --execute\n" +
+		"  aiw task workspace bind payment-retry --primary\n\n" +
+		"Use `aiw workflow --help` for workflow operations.\n")
 }
 
 func parseNewArgs(args []string) (string, bool, error) {

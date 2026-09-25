@@ -34,14 +34,14 @@ func Dispatch(args []string) error {
 		if len(args) != 1 {
 			return errors.New("usage: aiw session archive <task-id>")
 		}
-		id, err := taskSessionID(args[0])
+		id, err := taskSessionID(args[0], store)
 		if err != nil { return err }
 		return store.Archive(id)
 	case "delete":
 		if len(args) != 2 || args[1] != "--yes" {
 			return errors.New("usage: aiw session delete <task-id> --yes")
 		}
-		id, err := taskSessionID(args[0])
+		id, err := taskSessionID(args[0], store)
 		if err != nil { return err }
 		return store.Delete(id)
 	case "memory":
@@ -66,7 +66,7 @@ func status(store *storex.Store, args []string) error {
 	if len(args) != 1 {
 		return errors.New("usage: aiw session status <task-id>")
 	}
-	id, err := taskSessionID(args[0])
+	id, err := taskSessionID(args[0], store)
 	if err != nil { return err }
 	value, err := store.Load(id)
 	if err != nil {
@@ -86,7 +86,7 @@ func list(store *storex.Store) error {
 		return err
 	}
 	for _, entry := range entries {
-		if entry.IsDir() {
+		if entry.IsDir() && entry.Name() != "archive" {
 			if value, err := store.Load(entry.Name()); err == nil {
 				fmt.Printf("%s\t%s\t%s\n", value.Session.ID, value.Session.State, value.Workspace.Path)
 			}
@@ -101,7 +101,7 @@ func get(store *storex.Store, args []string) error {
 	if len(args) != 1 {
 		return errors.New("usage: aiw session get <task-id>")
 	}
-	id, err := taskSessionID(args[0])
+	id, err := taskSessionID(args[0], store)
 	if err != nil { return err }
 	value, err := store.Load(id)
 	if err != nil {
@@ -117,13 +117,34 @@ func get(store *storex.Store, args []string) error {
 	return nil
 }
 
-func taskSessionID(taskID string) (string, error) {
-	meta, err := taskx.ReadTaskMeta(taskx.ResolveTaskMetaPath(taskID))
+func taskSessionID(taskID string, stores ...*storex.Store) (string, error) {
+	locations, err := taskx.DiscoverTaskLocations()
+	if err != nil { return "", err }
+	var meta taskx.TaskMeta
+	found := false
+	for _, location := range locations {
+		if location.ID != taskID { continue }
+		if err := errors.Join(location.Problems...); err != nil { return "", err }
+		path, pathErr := taskx.MetadataPathInDirectory(location.RuntimeDir)
+		if pathErr != nil { return "", pathErr }
+		meta, err = taskx.ReadTaskMeta(path)
+		found = true
+		break
+	}
+	if !found { return "", fmt.Errorf("task not found: %s", taskID) }
 	if err != nil {
 		return "", fmt.Errorf("read task %s: %w", taskID, err)
 	}
 	if strings.TrimSpace(meta.Session) == "" {
 		return "", fmt.Errorf("task %s has no bound AIW Session", taskID)
+	}
+	if meta.ID != taskID { return "", fmt.Errorf("task identity conflict: %s", taskID) }
+	sessionStore := storex.NewStore(os.Getenv("AIW_SESSION_ROOT"))
+	if len(stores) > 0 { sessionStore = stores[0] }
+	location, err := sessionStore.Resolve(meta.Session)
+	if err != nil { return "", err }
+	if (location.TaskID != "" && location.TaskID != taskID) || (location.Status.Task != nil && location.Status.Task.TaskID != "" && location.Status.Task.TaskID != taskID) {
+		return "", fmt.Errorf("session Task identity conflict: %s", meta.Session)
 	}
 	return meta.Session, nil
 }
@@ -132,7 +153,7 @@ func finish(store *storex.Store, args []string) error {
 	if len(args) != 1 {
 		return errors.New("usage: aiw session finish <task-id>")
 	}
-	id, err := taskSessionID(args[0])
+	id, err := taskSessionID(args[0], store)
 	if err != nil { return err }
 	_, err = store.Transition(id, storex.StateCompleted)
 	return err
@@ -140,7 +161,7 @@ func finish(store *storex.Store, args []string) error {
 
 func memory(store *storex.Store, args []string) error {
 	if len(args) == 2 && args[0] == "show" {
-		id, err := taskSessionID(args[1])
+		id, err := taskSessionID(args[1], store)
 		if err != nil { return err }
 		text, err := store.ReadText(id, "memory.md")
 		if err == nil {
@@ -151,7 +172,7 @@ func memory(store *storex.Store, args []string) error {
 	if len(args) != 3 || args[0] != "append" {
 		return errors.New("usage: aiw session memory append <task-id> TEXT | show <task-id>")
 	}
-	id, err := taskSessionID(args[1])
+	id, err := taskSessionID(args[1], store)
 	if err != nil { return err }
 	return store.AppendMemory(id, strings.TrimSpace(args[2]))
 }
@@ -161,7 +182,7 @@ func handoff(store *storex.Store, args []string) error {
 		if len(args) != 2 {
 			return errors.New("usage: aiw session handoff show <task-id>")
 		}
-		id, err := taskSessionID(args[1])
+		id, err := taskSessionID(args[1], store)
 		if err != nil { return err }
 		text, err := store.ReadArtifact(id, "handoff.md")
 		if err == nil {
@@ -176,7 +197,7 @@ func handoff(store *storex.Store, args []string) error {
 	if len(args) == 2 {
 		focus = args[1]
 	}
-	id, err := taskSessionID(args[0])
+	id, err := taskSessionID(args[0], store)
 	if err != nil { return err }
 	return store.Handoff(id, focus)
 }

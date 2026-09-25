@@ -11,6 +11,18 @@ import (
 	"aiw/internal/ai"
 )
 
+// TaskMemoryProjection is installed by the executable composition root. It
+// appends Task-owned facts to this turn only; human Session memory is untouched.
+var TaskMemoryProjection func(string) (string, error)
+
+func projectTaskMemory(status Status, memory string) (string, error) {
+	if TaskMemoryProjection == nil || status.Task == nil || status.Task.TaskID == "" { return memory, nil }
+	projection, err := TaskMemoryProjection(status.Task.TaskID)
+	if err != nil { return "", err }
+	if projection != "" { memory += "\n\n"+projection }
+	return memory, nil
+}
+
 func ExecuteTurn(ctx context.Context, store *Store, id, phase, prompt, backendName, model string, forceNew bool) (TurnResult, error) {
 	return ExecuteTurnWithOverrides(ctx, store, id, phase, prompt, backendName, model, forceNew)
 }
@@ -25,6 +37,28 @@ func ExecuteTurnWithOverrides(ctx context.Context, store *Store, id, phase, prom
 // and process-local environment overrides without persisting them in Session
 // state.
 func ExecuteTurnWithOverridesAndEnvironment(ctx context.Context, store *Store, id, phase, prompt, providerOverride, modelOverride string, forceNew bool, environment []string) (TurnResult, error) {
+	return executeTurn(ctx, store, id, phase, prompt, providerOverride, modelOverride, forceNew, environment, nil)
+}
+
+// FrozenTurn is the exact, Task-owned input selected before dispatch. It
+// prevents a later Session memory update from changing the bound request.
+type FrozenTurn struct {
+	Prompt string
+	Instructions string
+	Memory string
+	ExpectedTurn int
+	ReadOnly bool
+}
+
+func ExecuteFrozenTurn(ctx context.Context, store *Store, id, phase string, frozen FrozenTurn, provider, model string, environment []string) (TurnResult, error) {
+	return executeTurn(ctx, store, id, phase, frozen.Prompt, provider, model, true, environment, &frozen)
+}
+
+func ComposePrompt(instructions, memory, phase, prompt string) string {
+	return fmt.Sprintf("[Persistent Execution Instructions]\n\n%s\n\n[Session Memory]\n\n%s\n\n[Current Phase]\n\n%s\n\n[Current Task]\n\n%s\n", strings.TrimSpace(instructions), strings.TrimSpace(memory), phase, strings.TrimSpace(prompt))
+}
+
+func executeTurn(ctx context.Context, store *Store, id, phase, prompt, providerOverride, modelOverride string, forceNew bool, environment []string, frozen *FrozenTurn) (TurnResult, error) {
 	status, err := store.Load(id)
 	if err != nil {
 		return TurnResult{}, err
@@ -35,13 +69,17 @@ func ExecuteTurnWithOverridesAndEnvironment(ctx context.Context, store *Store, i
 	if strings.TrimSpace(prompt) == "" {
 		return TurnResult{}, fmt.Errorf("prompt is empty")
 	}
-	instructions, err := store.ReadText(id, status.Instructions.File)
-	if err != nil {
-		return TurnResult{}, err
-	}
-	memory, err := store.ReadText(id, status.Instructions.MemoryFile)
-	if err != nil {
-		return TurnResult{}, err
+	var instructions, memory string
+	if frozen != nil {
+		if frozen.ExpectedTurn != status.Session.LastTurn+1 { return TurnResult{}, fmt.Errorf("frozen input does not match the next Session turn") }
+		instructions, memory = frozen.Instructions, frozen.Memory
+	} else {
+		instructions, err = store.ReadText(id, status.Instructions.File)
+		if err != nil { return TurnResult{}, err }
+		memory, err = store.ReadText(id, status.Instructions.MemoryFile)
+		if err != nil { return TurnResult{}, err }
+		memory, err = projectTaskMemory(status, memory)
+		if err != nil { return TurnResult{}, err }
 	}
 	if phase == "" {
 		phase = status.Session.CurrentPhase
@@ -49,7 +87,8 @@ func ExecuteTurnWithOverridesAndEnvironment(ctx context.Context, store *Store, i
 			phase = "interactive"
 		}
 	}
-	composed := fmt.Sprintf("[Persistent Execution Instructions]\n\n%s\n\n[Session Memory]\n\n%s\n\n[Current Phase]\n\n%s\n\n[Current Task]\n\n%s\n", strings.TrimSpace(instructions), strings.TrimSpace(memory), phase, strings.TrimSpace(prompt))
+	composed := ComposePrompt(instructions, memory, phase, prompt)
+	if frozen != nil { composed = frozen.Prompt }
 	turn := status.Session.LastTurn + 1
 	if err := store.SavePrompt(id, turn, phase, composed); err != nil {
 		return TurnResult{}, err
@@ -74,7 +113,7 @@ func ExecuteTurnWithOverridesAndEnvironment(ctx context.Context, store *Store, i
 	}); err != nil {
 		return TurnResult{}, err
 	}
-	result, runErr := backend.Generate(ctx, TurnRequest{SessionID: id, Prompt: composed, Workspace: status.Workspace.Path, ThreadID: status.Backend.ThreadID, Instructions: instructions, Memory: memory, Phase: phase, TurnNumber: turn, OutputDir: store.sessionDir(id) + "/outputs", ForceNewThread: forceNew, Environment: environment})
+	result, runErr := backend.Generate(ctx, TurnRequest{SessionID: id, Prompt: composed, Workspace: status.Workspace.Path, ThreadID: status.Backend.ThreadID, Instructions: instructions, Memory: memory, Phase: phase, TurnNumber: turn, OutputDir: store.sessionDir(id) + "/outputs", ForceNewThread: forceNew, Environment: environment, ReadOnly: frozen != nil && frozen.ReadOnly})
 	if runErr != nil && result.ExitCode == 0 {
 		result.ExitCode = 1
 	}
@@ -131,6 +170,8 @@ func ExecuteInteractiveWithOverridesAndEnvironment(ctx context.Context, store *S
 	instructions, err := store.ReadText(id, status.Instructions.File)
 	if err != nil { return TurnResult{}, err }
 	memory, err := store.ReadText(id, status.Instructions.MemoryFile)
+	if err != nil { return TurnResult{}, err }
+	memory, err = projectTaskMemory(status, memory)
 	if err != nil { return TurnResult{}, err }
 	if phase == "" { phase = status.Session.CurrentPhase; if phase == "" { phase = "interactive" } }
 	composed := fmt.Sprintf("[Persistent Execution Instructions]\n\n%s\n\n[Session Memory]\n\n%s\n\n[Current Phase]\n\n%s\n\n[Current Task]\n\n%s\n", strings.TrimSpace(instructions), strings.TrimSpace(memory), phase, strings.TrimSpace(prompt))

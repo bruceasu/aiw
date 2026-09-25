@@ -282,6 +282,9 @@ func (p cliProvider) interactiveArgs(request Request) []string {
 func (p cliProvider) args(r Request) []string {
 	if p.name == "codex" {
 		args := []string{"exec"}
+		if r.Phase == "artifact-generation" && r.Model != "" {
+			args = append(args, "--model", r.Model)
+		}
 		if r.ReadOnly {
 			if r.Workspace != "" {
 				args = append(args, "--cd", r.Workspace)

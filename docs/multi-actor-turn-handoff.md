@@ -228,7 +228,7 @@ workspace, not an execution workspace.
 
 Allowed writes associated with the parent checkout are limited to:
 
-- the canonical Task state directory under `.ai/<task-id>/`, or its configured
+- the canonical Task state directory under `.ai/tasks/<task-id>/`, or its configured
   external `state_root` equivalent; and
 - shared `.git/` metadata that Git must update for registered worktrees, task
   branch refs, and commits.
@@ -237,7 +237,7 @@ All other writes MUST be routed to the Task worktree or rejected:
 
 ```text
 parent checkout
-|-- .ai/<task-id>/**     Core runtime writes allowed
+|-- .ai/tasks/<task-id>/**     Core runtime writes allowed
 |-- .git/**              Git-managed metadata writes allowed
 `-- tracked files        direct writes forbidden during supervision
 
@@ -301,11 +301,11 @@ Suggested workspace record:
 ## Task State Directory
 
 All runtime data for a Task MUST be colocated under one canonical directory.
-The default is `<repo>/.ai/<task-id>/`. `state_root` and `worktree_root` MAY be
+The default is `<repo>/.ai/tasks/<task-id>/`. `state_root` and `worktree_root` MAY be
 configured, but one Task MUST NOT write authoritative state to multiple roots.
 
 ```text
-.ai/<task-id>/
+.ai/tasks/<task-id>/
 |-- state.json
 |-- events.jsonl
 |-- execution-policy.json
@@ -360,7 +360,7 @@ and parent branch MUST be printed at startup and recorded in `workspace.json`.
 
 ## Artifact Ownership And Projection
 
-Authoritative runtime state lives in `.ai/<task-id>/`; it MUST NOT be split
+Authoritative runtime state lives in `.ai/tasks/<task-id>/`; it MUST NOT be split
 between `tasks.md`, `task.toml`, Session files, and unrelated lock directories.
 
 - OpenSpec proposal, design, specs, and human checklist prose remain
@@ -1120,7 +1120,7 @@ FORCE_CLOSED
 
 Implementation SHOULD proceed in small vertical slices:
 
-1. Canonical `.ai/<task-id>/` store, migration/read compatibility, atomic
+1. Canonical `.ai/tasks/<task-id>/` store, migration/read compatibility, atomic
    events, and recovery.
 2. WorkspaceCoordinator with `ai/<task-id>` and recorded parent ancestry.
 3. SkillRegistry and persisted Actor routing manifest.

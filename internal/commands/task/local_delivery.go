@@ -1,20 +1,24 @@
 package task
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"aiw/internal/fsx"
 	"aiw/internal/gitx"
 	"aiw/internal/taskx"
 	"aiw/internal/workflow"
 )
 
-// localMergeDelivery commits accepted Task changes, merges the isolated Task
-// branch into its recorded parent, verifies the result, and only then removes
-// the managed worktree and branch. It deliberately leaves a conflicting Task
-// worktree intact as the candidate for resolving-merge-conflicts review.
+// localMergeDelivery commits accepted Task changes and merges the isolated
+// Task branch into its recorded parent. Once merged, worktree removal, current
+// binding projection, and branch deletion are recoverable independent steps;
+// historical branch, parent branch, Session, and Core workspace evidence stay
+// intact. A conflicting Task worktree remains the candidate for
+// resolving-merge-conflicts review.
 func localMergeDelivery(id string, meta taskx.TaskMeta, store *workflow.Store, message string) error {
 	message = strings.TrimSpace(message)
 	if message == "" {
@@ -24,6 +28,7 @@ func localMergeDelivery(id string, meta taskx.TaskMeta, store *workflow.Store, m
 	if err != nil {
 		return err
 	}
+	if state.SchemaVersion == workflow.DurableSchemaVersion { return fmt.Errorf("durable delivery requires a frozen managed plan; legacy local-merge is disabled") }
 	summary := workflow.DeriveSummary(state)
 	if summary.Execution != workflow.ExecutionCompleted {
 		return fmt.Errorf("local-merge requires all Work Items to be completed")
@@ -32,7 +37,7 @@ func localMergeDelivery(id string, meta taskx.TaskMeta, store *workflow.Store, m
 		return fmt.Errorf("local-merge requires completed validation, got %s", summary.Validation)
 	}
 	if summary.Delivery == workflow.DeliveryMerged {
-		return fmt.Errorf("Task is already locally merged")
+		return resumeMergedDeliveryCleanup(id, meta, store, state)
 	}
 	if summary.Delivery == workflow.DeliveryDiscarded {
 		return fmt.Errorf("discarded Task cannot be locally merged")
@@ -70,10 +75,59 @@ func localMergeDelivery(id string, meta taskx.TaskMeta, store *workflow.Store, m
 	if err := projectWorkflowState(id, merged); err != nil {
 		return err
 	}
-	if err := gitRunAt(primary, "worktree", "remove", taskWorktree); err != nil {
-		return recordLocalDeliveryFailure(store, id, "cleanup-worktree", err)
+	return resumeMergedDeliveryCleanup(id, meta, store, merged)
+}
+
+// resumeMergedDeliveryCleanup completes only the cleanup steps that remain
+// after Core has recorded a successful merge. A previous metadata or branch
+// cleanup failure must not make an already merged Task impossible to recover.
+func resumeMergedDeliveryCleanup(id string, meta taskx.TaskMeta, store *workflow.Store, state workflow.RuntimeState) error {
+	if state.SchemaVersion == workflow.DurableSchemaVersion { return fmt.Errorf("durable cleanup requires its own grant and sealed-source evidence") }
+	if _, err := taskx.WriteWorkflowSummary(taskx.ResolveTaskMetaPath(id), state); err != nil {
+		return recordLocalDeliveryFailure(store, id, "cleanup-metadata", err)
 	}
-	if err := gitRunAt(primary, "branch", "-d", meta.Branch); err != nil {
+	primary, err := gitx.PrimaryWorktree()
+	if err != nil {
+		return recordLocalDeliveryFailure(store, id, "cleanup-worktree", fmt.Errorf("resolve primary worktree: %w", err))
+	}
+
+	switch resolvedWorkspaceKind(meta) {
+	case "isolated":
+		if strings.TrimSpace(meta.Worktree) == "" {
+			return recordLocalDeliveryFailure(store, id, "cleanup-worktree", fmt.Errorf("isolated Task is missing its worktree path"))
+		}
+		taskWorktree := absoluteTaskWorktree(primary, meta.Worktree)
+		if gitx.WorktreeRegistered(taskWorktree) {
+			if err := gitRunAt(primary, "worktree", "remove", taskWorktree); err != nil {
+				return recordLocalDeliveryFailure(store, id, "cleanup-worktree", err)
+			}
+		}
+		if gitx.WorktreeRegistered(taskWorktree) || fsx.Exists(taskWorktree) {
+			return recordLocalDeliveryFailure(store, id, "cleanup-worktree", fmt.Errorf("isolated Task worktree remains after cleanup: %s", taskWorktree))
+		}
+		updated, err := taskx.UnassignWorkspace(taskx.ResolveTaskMetaPath(id), id)
+		if err != nil {
+			return recordLocalDeliveryFailure(store, id, "cleanup-metadata", err)
+		}
+		meta = updated
+	case "unassigned":
+		// The previous cleanup completed. Continue with any remaining branch.
+	default:
+		return recordLocalDeliveryFailure(store, id, "cleanup-worktree", fmt.Errorf("merged Task has unsupported current workspace binding: %s", resolvedWorkspaceKind(meta)))
+	}
+
+	branch := strings.TrimSpace(meta.Branch)
+	if branch == "" {
+		return nil
+	}
+	exists, err := branchExistsAt(primary, branch)
+	if err != nil {
+		return recordLocalDeliveryFailure(store, id, "cleanup-branch", err)
+	}
+	if !exists {
+		return nil
+	}
+	if err := gitRunAt(primary, "branch", "-d", branch); err != nil {
 		return recordLocalDeliveryFailure(store, id, "cleanup-branch", err)
 	}
 	return nil
@@ -162,6 +216,20 @@ func isAncestorAt(dir, ancestor, descendant string) bool {
 	command := exec.Command("git", "merge-base", "--is-ancestor", ancestor, descendant)
 	command.Dir = dir
 	return command.Run() == nil
+}
+
+func branchExistsAt(dir, branch string) (bool, error) {
+	command := exec.Command("git", "show-ref", "--verify", "--quiet", "refs/heads/"+branch)
+	command.Dir = dir
+	err := command.Run()
+	if err == nil {
+		return true, nil
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+		return false, nil
+	}
+	return false, fmt.Errorf("inspect Task branch %s: %w", branch, err)
 }
 
 func recordLocalDeliveryFailure(store *workflow.Store, id, stage string, cause error) error {

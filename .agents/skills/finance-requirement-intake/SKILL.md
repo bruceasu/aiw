@@ -35,10 +35,26 @@ Include: problem, actor, situation, signal seen, decision, action, downstream im
 - Separate facts, assumptions, and recommendations.
 - Do not accept “add a page/button/report” as a sufficient problem statement.
 - Do not invent owners, frequency, impact, rules, or evidence.
-- Do not write files or create AIW/OpenSpec artifacts. After the user confirms the draft, they may use `aiw requirement capture`; this Skill must not invoke it itself.
+- Do not write files or create AIW/OpenSpec artifacts. Requirement Management
+  prepares the draft and host confirmation checkpoint; do not require the human
+  to construct a file path or capture command. This method must not invoke capture.
 - Recommend one next stage; do not invoke sibling Skills or map its status to their status.
 
 ## Output
+
+### When loaded by Requirement Management
+
+Apply this method only to the financial domain identified in the supplied
+context. The current host JSON contract overrides the Markdown template below;
+use the template only for a requested draft or standalone discussion.
+Use loaded source bodies and exact references. Do not load sibling Skills or
+linked materials, invent missing evidence, or treat capture as confirmation.
+Ask only the highest-impact open questions; keep conflicts and proposed
+conclusions separate from host-confirmed fragments. Report missing evidence
+without claiming readiness. The host owns persistence and human checkpoints.
+This method does not authorize tests, external calls, or lifecycle operations.
+
+### Draft artifact
 
 ```markdown
 # Requirement Artifact

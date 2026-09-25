@@ -28,6 +28,7 @@ func newTask(id string, allowUnrelatedDirty bool) error {
 	if !safeID(id) {
 		return errors.New("invalid task id")
 	}
+	if err := taskx.LegacyTaskPathError(id); err != nil { return err }
 	if err := authorizeTaskCreation(id, allowUnrelatedDirty); err != nil {
 		return err
 	}
@@ -123,6 +124,7 @@ func taskMetaFor(id, parentBranch string) taskx.TaskMeta {
 }
 
 func ensureTaskMeta(id string) error {
+	if err := taskx.LegacyTaskPathError(id); err != nil { return err }
 	path := taskx.TaskMetaPath(id)
 	if err := os.MkdirAll(taskx.RuntimeTaskDir(id), 0o755); err != nil {
 		return err
@@ -228,32 +230,90 @@ updated = "` + taskx.Today() + `"
 	return os.WriteFile(filepath.Join(dir, "spec.md"), []byte(spec), 0o644)
 }
 
-func listTasks() error {
-	entries, err := os.ReadDir(taskx.RuntimeTasksPath())
-	if err != nil {
-		return err
+func listTaskIDs() ([]string, error) {
+	locations, err := taskx.DiscoverTaskLocations()
+	ids := make([]string, 0, len(locations))
+	for _, location := range locations {
+		ids = append(ids, location.ID)
 	}
-	for _, e := range entries {
-		if !e.IsDir() {
+	return ids, err
+}
+
+// listTaskMetaPath preserves the existing path precedence without hiding stat errors.
+// An empty path means that neither supported metadata file exists.
+func listTaskMetaPath(id string) (string, error) {
+	dir := filepath.Join(taskx.RuntimeTasksPath(), id)
+	info, err := os.Stat(dir)
+	if os.IsNotExist(err) {
+		if legacyErr := taskx.LegacyTaskPathError(id); legacyErr != nil { return "", legacyErr }
+	} else if err != nil {
+		return "", fmt.Errorf("check task directory %s: %w", dir, err)
+	} else if !info.IsDir() {
+		return "", fmt.Errorf("check task directory %s: not a directory", dir)
+	}
+	for _, name := range []string{taskx.TaskMetaFile, taskx.LegacyTaskMetaFile} {
+		path := filepath.Join(dir, name)
+		info, err := os.Stat(path)
+		if os.IsNotExist(err) {
 			continue
 		}
-		meta, err := taskx.ReadTaskMeta(taskx.ResolveTaskMetaPath(e.Name()))
 		if err != nil {
-			fmt.Printf("%-24s %-12s %s\n", e.Name(), "UNKNOWN", filepath.ToSlash(taskx.TaskDir(e.Name())))
-			continue
+			return "", fmt.Errorf("check task metadata %s: %w", path, err)
 		}
-		summary, _, summaryErr := workflowSummaryForMeta(meta)
-		if summaryErr != nil {
-			fmt.Printf("%-24s %-24s %s\n", meta.ID, "RUNTIME_ERROR", filepath.ToSlash(taskx.TaskDir(e.Name())))
-			continue
+		if !info.Mode().IsRegular() {
+			return "", fmt.Errorf("check task metadata %s: not a regular file", path)
 		}
-		fmt.Printf("%-24s %-24s %s\n",
-			meta.ID,
-			summary.Status,
-			filepath.ToSlash(taskx.TaskDir(e.Name())),
-		)
+		return path, nil
 	}
-	return nil
+	return "", nil
+}
+
+type taskListRow struct {
+	ID       string
+	Status   string
+	Path     string
+	Archived bool
+}
+
+// collectTaskListRows filters before repair. Explicit archive listings can reuse
+// the same discovery without redirecting archived state into the active store.
+func collectTaskListRows(includeArchived bool) ([]taskListRow, error) {
+	locations, err := taskx.DiscoverTaskLocations()
+	if err != nil {
+		// An unreadable root could hide a conflicting identity. Do not repair.
+		return nil, err
+	}
+	var rows []taskListRow
+	var problems []error
+	for _, location := range locations {
+		if len(location.Problems) > 0 {
+			problem := fmt.Errorf("task %s: %w", location.ID, errors.Join(location.Problems...))
+			fmt.Fprintln(os.Stderr, problem)
+			problems = append(problems, problem)
+			continue
+		}
+		if location.Archived && !includeArchived {
+			continue
+		}
+		path := "规格已删除"
+		if location.ChangeDir != "" {
+			path = filepath.ToSlash(location.ChangeDir)
+		}
+		state, rebuilt, runtimeErr := location.EnsureRuntime()
+		status := "RUNTIME_ERROR"
+		if rebuilt {
+			fmt.Fprintf(os.Stderr, "task %s: 已补建缺失文件（最小记录），历史状态可能丢失 (%s)\n", location.ID, location.RuntimeDir)
+		}
+		if runtimeErr != nil {
+			problem := fmt.Errorf("task %s: %w", location.ID, runtimeErr)
+			fmt.Fprintln(os.Stderr, problem)
+			problems = append(problems, problem)
+		} else {
+			status = string(workflow.DeriveSummary(state).Status)
+		}
+		rows = append(rows, taskListRow{ID: location.ID, Status: status, Path: path, Archived: location.Archived})
+	}
+	return rows, errors.Join(problems...)
 }
 
 func showTask(id string) error {
@@ -285,7 +345,7 @@ func updateStatus(id, status string) error {
 	if err != nil {
 		return err
 	}
-	return reportWorkflowState(meta, state)
+	return projectWorkflowState(id, state)
 }
 
 func bindTaskWorkspace(args []string) error {
@@ -321,57 +381,39 @@ func bindTaskWorkspace(args []string) error {
 }
 
 func resolvedWorkspaceKind(meta taskx.TaskMeta) string {
-	if kind := strings.TrimSpace(meta.WorkspaceKind); kind != "" {
-		return kind
-	}
-	wt := strings.TrimSpace(meta.Worktree)
-	if wt == "" {
-		return "unassigned"
-	}
-	if wt == "." {
-		return "primary"
-	}
-	root, err := gitx.ProjectRoot()
-	if err != nil {
-		return "unknown"
-	}
-	path := wt
-	if !filepath.IsAbs(path) {
-		path = filepath.Join(root, filepath.FromSlash(path))
-	}
-	if gitx.WorktreeRegistered(path) {
-		return "isolated"
-	}
-	return "unknown"
+	return taskx.ResolvedWorkspaceKind(meta)
 }
 
 func archiveTask(id string, opts ArchiveOptions) error {
-	src := taskx.TaskDir(id)
-	if !fsx.Exists(src) {
-		return fmt.Errorf("task not found: %s", id)
-	}
+	return archiveWithBackend(id, opts, "")
+}
 
-	metaPath := taskx.ResolveTaskMetaPath(id)
-	meta, err := taskx.ReadTaskMeta(metaPath)
-	if err != nil {
-		return err
-	}
-	summary, _, err := workflowSummaryForMeta(meta)
-	if err != nil {
-		return fmt.Errorf("read Workflow Core terminal state: %w", err)
-	}
+func prepareArchiveEligibility(id string, opts ArchiveOptions, plan taskArchivePlan, native bool) error {
+	src, meta, summary := plan.location.ChangeDir, plan.meta, plan.summary
 	forceClosed := summary.Status == workflow.TaskCancelled
 	workflowDone := summary.Status == workflow.TaskDone
 	legacyTerminal := meta.Status == "DONE" || meta.Status == "CANCELLED"
 	if !forceClosed && !workflowDone && !legacyTerminal {
 		return fmt.Errorf("task must be DONE or CANCELLED before archive: %s", meta.Status)
 	}
-	if workflowDone || (meta.Status == "DONE" && !forceClosed) {
-		if err := syncArchiveWorkflow(id, metaPath, meta); err != nil {
+	kind := resolvedWorkspaceKind(meta)
+	if kind == "unknown" {
+		return errors.New("cannot archive Task with unknown workspace binding; repair it first")
+	}
+	delivery := summary.Delivery
+	if !forceClosed {
+		delivery = taskx.WorkflowRuntimeFromMeta(meta).Delivery
+	}
+	if kind == "unassigned" && delivery != workflow.DeliveryMerged && delivery != workflow.DeliveryDiscarded {
+		return errors.New("unassigned Task must record merged or discarded delivery before archive")
+	}
+	if !plan.location.Archived && src != "" && (workflowDone || (meta.Status == "DONE" && !forceClosed)) {
+		if err := syncArchiveWorkflow(id, meta, src); err != nil {
 			return err
 		}
 	}
-	problems := archiveArtifactProblems(src)
+	problems := []string{}
+	if !plan.location.Archived && src != "" { problems = archiveArtifactProblems(src) }
 	if len(problems) > 0 && !opts.Force {
 		if err := repairArchiveArtifacts(src, problems); err != nil {
 			fmt.Fprintf(os.Stderr, "archive repair failed: %v\n", err)
@@ -380,10 +422,6 @@ func archiveTask(id string, opts ArchiveOptions) error {
 		if len(problems) > 0 && !confirmArchiveWithWarnings(problems) {
 			return errors.New("archive cancelled")
 		}
-	}
-	kind := resolvedWorkspaceKind(meta)
-	if kind == "unknown" {
-		return errors.New("cannot archive Task with unknown workspace binding; repair it first")
 	}
 	if forceClosed && summary.Delivery != workflow.DeliveryMerged && summary.Delivery != workflow.DeliveryDiscarded {
 		return errors.New("force-closed Task must record successful merged or discarded delivery before archive")
@@ -395,8 +433,10 @@ func archiveTask(id string, opts ArchiveOptions) error {
 		if opts.CleanupWT || opts.DeleteBranch || opts.Finalize {
 			return errors.New("primary Task has no managed worktree or branch to finalize")
 		}
-		if dirty, _ := gitx.IsDirty(); dirty {
-			fmt.Fprintln(os.Stderr, "warning: archiving primary Task with unmanaged Git delivery and uncommitted changes")
+		if !plan.location.Archived {
+			if dirty, _ := gitx.IsDirty(); dirty {
+				fmt.Fprintln(os.Stderr, "warning: archiving primary Task with unmanaged Git delivery and uncommitted changes")
+			}
 		}
 	}
 
@@ -409,9 +449,11 @@ func archiveTask(id string, opts ArchiveOptions) error {
 		wt = filepath.ToSlash(filepath.Join(taskx.WorktreeDir, id))
 	}
 
-	delivery := summary.Delivery
-	if !forceClosed {
-		delivery = taskx.WorkflowRuntimeFromMeta(meta).Delivery
+	if plan.location.Archived {
+		if (kind == "isolated" || kind == "unassigned") && delivery != workflow.DeliveryDiscarded {
+			return verifyArchivedDelivery(branch, wt)
+		}
+		return nil
 	}
 	if kind == "isolated" && (forceClosed || meta.Status != "CANCELLED") {
 		if !opts.CleanupWT {
@@ -448,30 +490,22 @@ func archiveTask(id string, opts ArchiveOptions) error {
 			return err
 		}
 	}
-	if err := syncSpecSnapshots(src, meta.Specs); err != nil {
-		return err
-	}
-
-	dst := taskx.ArchiveTaskDir(taskx.Today() + "-" + id)
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		return err
-	}
-	if err := os.Rename(src, dst); err != nil {
-		return err
+	if native && src != "" {
+		if err := syncSpecSnapshots(src, meta.Specs); err != nil { return err }
 	}
 	return nil
 }
 
-func syncArchiveWorkflow(id, metaPath string, meta taskx.TaskMeta) error {
+func syncArchiveWorkflow(id string, meta taskx.TaskMeta, changeDir string) error {
 	store := workflow.NewStore("")
 	if _, err := store.EnsureCompatible(taskx.WorkflowRuntimeFromMeta(meta)); err != nil {
 		return err
 	}
-	state, err := syncWorkflowChecklist(id, store)
+	state, err := taskx.SyncWorkflowChecklistAtPath(id, store, filepath.Join(changeDir, "tasks.md"))
 	if err != nil {
 		return fmt.Errorf("archive requires workflow sync: %w", err)
 	}
-	return reportWorkflowState(meta, state)
+	return projectWorkflowState(id, state)
 }
 
 func archiveArtifactProblems(src string) []string {

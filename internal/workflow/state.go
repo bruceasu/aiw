@@ -57,9 +57,12 @@ var attemptTransitions = map[AttemptState]map[AttemptState]bool{
 }
 
 func ValidateRuntimeState(state RuntimeState) error {
-	if state.SchemaVersion != SchemaVersion {
+	if state.SchemaVersion != SchemaVersion && state.SchemaVersion != DurableSchemaVersion {
 		return fmt.Errorf("unsupported workflow schema version: %d", state.SchemaVersion)
 	}
+	if state.SchemaVersion == DurableSchemaVersion {
+		if err := validateExecutionProtocol(state); err != nil { return err }
+	} else if state.Protocol != nil { return fmt.Errorf("execution protocol cannot be enabled on a legacy schema") }
 	workItems := make(map[WorkItemID]struct{}, len(state.WorkItems))
 	for _, item := range state.WorkItems {
 		if item.ID == "" {
@@ -307,6 +310,10 @@ func validateNotifications(notifications []Notification) error {
 		if notification.DispatchAttempts < 0 {
 			return fmt.Errorf("notification %s has negative dispatch attempts", notification.ID)
 		}
+		if notification.Managed != nil {
+			if err := validateManagedNotification(notification); err != nil { return err }
+			continue
+		}
 		switch notification.State {
 		case NotificationPending:
 			if notification.DispatchAttempts != 0 {
@@ -316,7 +323,7 @@ func validateNotifications(notifications []Notification) error {
 			if notification.DispatchAttempts == 0 {
 				return fmt.Errorf("notification %s has no dispatch attempt", notification.ID)
 			}
-		case NotificationDelivered:
+		case NotificationDelivered, "legacy-local-ack":
 			if notification.DispatchAttempts == 0 || strings.TrimSpace(notification.Receipt) == "" {
 				return fmt.Errorf("delivered notification %s requires an attempt and receipt", notification.ID)
 			}
@@ -372,7 +379,7 @@ func deriveExecution(state RuntimeState) ExecutionState {
 	if hasWorkItemState(state.WorkItems, WorkItemLeased) {
 		return ExecutionLeased
 	}
-	if len(state.WorkItems) > 0 && allWorkItemsCompleted(state.WorkItems) {
+	if len(state.WorkItems) > 0 && allWorkItemsSettled(state.WorkItems) {
 		return ExecutionCompleted
 	}
 	return ExecutionQueued
@@ -440,9 +447,9 @@ func hasWorkItemState(items []WorkItem, wanted WorkItemState) bool {
 	return false
 }
 
-func allWorkItemsCompleted(items []WorkItem) bool {
+func allWorkItemsSettled(items []WorkItem) bool {
 	for _, item := range items {
-		if item.State != WorkItemCompleted {
+		if item.State != WorkItemCompleted && item.State != WorkItemCancelled {
 			return false
 		}
 	}

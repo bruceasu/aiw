@@ -18,9 +18,9 @@ var taskCommands = []string{
 }
 
 var workflowCommands = []string{
-	"plan", "sync", "advance", "run", "supervise", "repair", "attempt",
-	"evidence", "gate", "delivery", "complete", "retry-policy", "reopen",
-	"force-close", "diagnose", "recover", "help",
+	"plan", "sync", "advance", "run", "supervise", "recommend-routing",
+	"focused-test", "delivery", "local-merge", "delivery-failed", "report",
+	"diagnose", "recover", "repair", "repair-metadata", "help",
 }
 
 var worktreeCommands = []string{
@@ -69,6 +69,7 @@ func printPowerShell() {
     }
     $candidates = @()
     if ($tokens.Count -le 1) { $candidates = $commands }
+    elseif ($tokens[1] -eq "list" -or ($tokens[1] -eq "task" -and $tokens[2] -eq "list")) { $candidates = @("--all", "--help") }
     elseif ($tokens[1] -eq "task" -and $tokens.Count -le 2) { $candidates = $taskCommands }
     elseif (($tokens[1] -eq "workflow" -or ($tokens[1] -eq "task" -and $tokens[2] -eq "workflow")) -and $tokens.Count -le 3) { $candidates = $workflowCommands }
     elseif (($tokens[1] -eq "wt") -and $tokens.Count -le 2) { $candidates = $worktreeCommands }
@@ -91,6 +92,7 @@ func printBash() {
     fi
     local candidates=()
     if (( COMP_CWORD == 1 )); then candidates=("${commands[@]}")
+    elif [[ "${COMP_WORDS[1]}" == list ]] || [[ "${COMP_WORDS[1]}" == task && "${COMP_WORDS[2]}" == list ]]; then candidates=(--all --help)
     elif [[ "${COMP_WORDS[1]}" == task && COMP_CWORD == 2 ]]; then candidates=("${task_commands[@]}")
     elif [[ "${COMP_WORDS[1]}" == workflow && COMP_CWORD == 2 ]] || [[ "${COMP_WORDS[1]}" == task && "${COMP_WORDS[2]}" == workflow && COMP_CWORD == 3 ]]; then candidates=("${workflow_commands[@]}")
     elif [[ "${COMP_WORDS[1]}" == wt && COMP_CWORD == 2 ]]; then candidates=("${worktree_commands[@]}")
@@ -104,11 +106,17 @@ complete -F _aiw_complete aiw
 
 func printZsh() {
 	fmt.Printf(`#compdef aiw
-_arguments '1:command:(%s)' '*:task-id:_files -W openspec/changes'
+if [[ "$words[2]" == list ]] || [[ "$words[2]" == task && "$words[3]" == list ]]; then
+    compadd -- --all --help
+else
+    _arguments '1:command:(%s)' '*:task-id:_files -W openspec/changes'
+fi
 `, strings.Join(rootCommands, " "))
 }
 
 func printFish() {
+	fmt.Println("complete -c aiw -f -n '__fish_seen_subcommand_from list; and not __fish_seen_subcommand_from wt session requirement workflow cxs' -l all -d 'Include archived tasks'")
+	fmt.Println("complete -c aiw -f -n '__fish_seen_subcommand_from list; and not __fish_seen_subcommand_from wt session requirement workflow cxs' -l help -d 'Show list help'")
 	for _, command := range rootCommands {
 		fmt.Printf("complete -c aiw -f -n '__fish_use_subcommand' -a '%s'\n", command)
 	}

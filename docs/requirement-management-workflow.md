@@ -133,7 +133,7 @@ NOT_STARTED -> GO | GO_WITH_RISK | NO_GO
 Requirement 是需要跨 session、跨人员追溯的业务资产，因此默认位于版本控制的仓库根目录，而不是 `.ai/` 运行时目录：
 
 ```text
-requirements/<requirement-id>/
+docs/requirements/<requirement-id>/
   requirement.toml          # AIW Requirement Management 所有
   problem-brief.md
   business-case.md
@@ -168,7 +168,7 @@ task_id = ""
 
 | 命令 | 作用 | 写入边界 |
 |---|---|---|
-| `aiw requirement new <id>` | 创建 Requirement 目录与最小元数据 | 仅 `requirements/<id>/` |
+| `aiw requirement new <id>` | 创建 Requirement 目录与最小元数据 | 仅 `docs/requirements/<id>/` |
 | `aiw requirement show <id>` | 查看状态、产物索引、批准和 promotion | 只读 |
 | `aiw requirement capture <id> <artifact>` | 保存经用户确认的 Requirement Artifact | 仅对应 Requirement Markdown 文件 |
 | `aiw requirement approve <id>` | 记录人工批准、延期或拒绝 | 仅 `requirement.toml` 和 `decision-log.md` |
@@ -190,13 +190,13 @@ APPROVED Requirement
   -> record the resulting OpenSpec artifact links
 ```
 
-完成后的需求状态是 `PROMOTED`；Task 的实现和交付状态仍只由 AIW Workflow 管理。`SPEC_DRAFTED` 与 `COMPLETE` 描述 promotion 交接的完成度，不描述代码是否完成。
+完成后的需求状态是 `PROMOTED`；Task 的实现和交付状态仍只由 AIW Workflow 管理。`SPEC_DRAFTED` 只表示受批准范围约束的候选已 accepted 并写入正式 OpenSpec 工件；`awaiting-agent`、`validating`、候选拒绝或交接文件存在都仍是 promotion 未完成。`COMPLETE` 也不描述代码是否完成。
 
 ### Promotion 的幂等和失败恢复
 
 - 同一 Requirement 默认只能关联一个活动 Task；再次 promote 必须返回已关联的 Task，而不是创建第二个 Task。
 - 如果 Task 已创建但 OpenSpec 工件尚未生成，重复执行必须从 `TASK_CREATED` 恢复。
-- 如果交接已生成但 OpenSpec 生成失败，保留交接与失败原因，并停在 `TASK_CREATED` 或 `SPEC_DRAFTED`；不得删除 Task 或覆盖已有 OpenSpec 内容。
+- 如果交接已生成但 OpenSpec 生成尚未 accepted，保留交接、候选和失败原因，并停在 `TASK_CREATED`；使用 `prepare-spec --candidate` 接续同一批准范围，只有 accepted 后才到 `SPEC_DRAFTED`。不得删除 Task、重跑 promotion 或覆盖已有 OpenSpec 内容。
 - Requirement 产物在 promotion 后发生变化时，记录为新的 Requirement 版本；不得静默覆写已经交给 Task 的版本。后续同步应创建显式的变更请求或新的 promotion revision。
 - `REJECTED`、`DEFERRED` 或未批准的 Requirement 不得 promotion，除非人类先改变批准状态并留下 decision-log 记录。
 
@@ -297,4 +297,4 @@ requirement-capture
 - 本设计不让发布门禁提前参与需求批准。
 ## Requirement history and retention
 
-Requirement records are independent from AIW Task and OpenSpec implementation status. Keep active records under `requirements/<id>/`; move completed records to `requirements/archive/<id>/` and cancelled records to `requirements/cancelled/<id>/`. Archive is allowed for `DECIDED`, `APPROVED`, or `PROMOTED` Requirements. Cancellation requires an actor and reason. Default listing excludes both historical roots, while explicit filters include them. All artifacts, approval data, promotion links, and decision logs are retained.
+Requirement records are independent from AIW Task and OpenSpec implementation status. Keep active records under `docs/requirements/<id>/`; move completed records to `docs/requirements/archive/<id>/` and cancelled records to `docs/requirements/cancelled/<id>/`. Archive is allowed for `DECIDED`, `APPROVED`, or `PROMOTED` Requirements. Cancellation requires an actor and reason. Default listing excludes both historical roots, while explicit filters include them. All artifacts, approval data, promotion links, and decision logs are retained.

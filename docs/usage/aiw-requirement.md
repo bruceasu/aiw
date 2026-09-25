@@ -2,9 +2,9 @@
 
 ## 适用场景
 
-Requirement Management 用于保存需求讨论的结果，并在人工明确批准后，受控地把它交接给 AIW Task。它位于需求讨论与 OpenSpec 工程规格之间：讨论 Skill 产出草案，Requirement 保存已确认的内容，promotion 才会创建或复用工程 Task。
+Requirement Management 用于保存需求讨论的结果，并在人工明确批准后，受控地把它交接给 AIW Task。它位于需求讨论与 OpenSpec 工程规格之间：讨论 Skill 产出草案，Requirement 保存捕获内容和人工决策；保存草稿不代表其中每条断言已确认，promotion 才会创建或复用工程 Task。
 
-它不会自动批准需求、自动开始实现或发布。promotion 会使用共享的 schema-aware 生成器准备 OpenSpec proposal/design/spec/tasks；OpenSpec CLI 仅用于可选的额外校验。
+它不会自动批准需求、自动开始实现或发布。promotion 会创建或复用 Task，并通过共享生成器建立受批准范围约束的 OpenSpec 候选；只有候选被检查、保护式写入并 accepted 后，promotion 才可推进为 `SPEC_DRAFTED`。`awaiting-agent`、`validating` 和失败诊断都是可恢复的未完成状态。OpenSpec CLI 仅用于可选的额外校验。
 
 ## 生命周期与边界
 
@@ -19,10 +19,10 @@ DRAFT -> DISCOVERED -> DECIDED -> APPROVED -> PROMOTED
 - 首次 capture 将 `DRAFT` 变为 `DISCOVERED`。
 - capture `requirement-plan` 后，`DISCOVERED` 变为 `DECIDED`。
 - 只有 `DECIDED` Requirement 可以被人工 `APPROVED`。
-- `promote` 创建或复用一个 AIW Task，生成并校验 OpenSpec artifacts，成功后把 promotion 状态推进到 `SPEC_DRAFTED`。
+- `promote` 创建或复用一个 AIW Task，并建立生成请求。无模型配置时它输出 Agent 交接；候选处于 `awaiting-agent`、`validating` 或失败状态时不得宣称 `SPEC_DRAFTED`。只有 accepted 候选才推进该状态。
 - `DEFERRED` 和 `REJECTED` 不可直接 promotion；当前版本没有重新打开命令，需等待未来的显式 revision 流程。
 
-创建、capture 和 approve 只写入 `requirements/<requirement-id>/`，不会创建 Task、OpenSpec change、Session、worktree 或分支。
+直接 CLI 的创建、capture 和 approve 将正式工件写入 `docs/requirements/<requirement-id>/`，计数、备份和临时文件写入 `.ai/requirements/`，不会创建 Task、OpenSpec change、Session、worktree 或分支。聊天适配器还会保存 Session 证据及确认检查点。
 
 ## 快速开始
 
@@ -36,13 +36,55 @@ aiw requirement chat
 aiw requirement chat daily-withdrawal-report
 ```
 
-Conversation 会按缺口推进 intake、价值、指标、工程选项或 synthesis；只有关键歧义、冲突、不可逆决策或 `%% NEEDS_INPUT` 才进入 deep discovery。每次创建、capture、审批或 promotion 前，它都会展示目标、内容摘要和写入范围。AI 只能准备待执行动作；人类在会话中输入 `confirm` 或“确认”后，适配器才会执行该动作。
+Conversation 默认使用通用发现基线，只有金融领域的相关缺口才选择金融方法，不强制跑完固定阶段。每轮装载实际来源与方法，生成覆盖评估，再选择最多三个高影响问题；冲突优先。每次创建、capture、审批或 promotion 前，宿主展示目标、内容摘要和写入范围。AI 只能准备待执行动作；人类在会话中输入 `confirm` 或“确认”后，适配器才执行。
 
-以下命令适用于脚本、自动化，或已经知道精确参数的用户：
+### 如何看待阶段、确认和批准建议
+
+- 每轮通常有两次模型调用：方法选择和覆盖评估。每次回答或确认后重新读取来源，不仅依赖后端历史。
+- 覆盖分为已明确、待确认、冲突、不适用；本轮回答先作为候选，不能自己证明“已确认”。
+- capture 可保存不完整草稿。聊天可通过可选 --facts-json 展示拟确认的原文片段；只有人类确认且版本/草稿摘要匹配后，这些片段才记为确认。无需用户手工构造参数或编辑 Session JSON。
+- synthesis、零个问题或 DECIDED 状态都不等于可以批准。就绪报告分开列出业务阻塞、Plan 缺项、待确认延后与已确认延后。
+- Plan 必须明示事实、假设、目标、范围、非目标、规则、验收实例、来源和剩余决定，并给出正文依据。工程设计延后必须有理由和人类确认，不能豁免业务缺口。
+- 聊天批准在展示与确认时复核当前证据。直接 approve CLI 保持原兼容语义，不是语义校验工具，也不应被 AI 用来绕过聊天门槛。发现旧批准记录的新风险只提示，不自动撤销批准。
+
+### 恢复与排查
+
+已有需求按 ID 恢复。Session 的来源正文、方法摘要、候选评估和 turn 编号位于
+`.ai/sessions/<session-id>/artifacts/requirement-discussion-*.json`，
+latest 指针指向最新轮；实际 prompt/output 保存在同一 Session 下。
+这些是运行证据，不是第二套正式需求或批准记录。
+
+候选 revision、来源或方法变化时要求复核。缺少结构化历史时从正式工件重建，
+不会把 memory 或未保存的讨论推定为已确认事实，也不从失败的最新记录回退到旧成功结论。
+无效模型输出保留原文和诊断，不自动推进或无限重试。
+
+方法只加载项目 `.agents/skills/<允许名称>/SKILL.md`，不回退个人目录或递归加载链接。
+缺少已选方法会阻塞；可选背景省略会在来源清单说明。不要因为传入路径就认为正文已被读取。
+定位浅问题时先核对该轮实际 prompt 是否包含所需资料，再检查原始回答与宿主诊断。
+
+提问质量的固定案例和人工评分方法见[专业提问人工评审](requirement-discovery-review.md)。
+机器测试通过不等于案例已通过；运行真实模型需另行授权。
+
+### 自动编号与旧 ID
+
+新建需求默认只需提供小写英文短名，例如 `aiw requirement new add-chat-support "Chat support"`。
+首次分配会输出 `REQ00001-add-chat-support`；后续 show、capture、approve、chat、promote 使用输出的完整 ID。
+短名由小写字母或数字片段以单个连字符连接。数字至少五位，超过五位时自然扩展；标题变化不改变 ID。
+
+编号在实际创建时分配，聊天 prepare 不占号，确认后才生成。取消、归档和创建失败不回收已经分配的编号，因此允许跳号。
+同一本地仓库的 linked worktrees 共享 `.ai/requirements/sequence` 高水位记录和创建锁；不同克隆之间不保证全局唯一。
+已有需求不重命名。依赖固定 ID 的脚本应使用 `new --id <id> [title]`；显式指定数字 ID 时，该数字必须大于已知高水位。
+计数缺失或格式损坏时，在创建锁内扫描活动、archive、cancelled 需求目录名，按最大编号加一恢复；没有带编号需求时从 1 开始。正常计数不倒退。损坏原件先备份到 `.ai/requirements/backups/`，替换成功才创建需求，并输出恢复原因、目录最大编号、已预留编号、下一个编号及备份位置。
+读取或备份失败、编号溢出及锁占用仍会报错；不要把删除计数器或活动锁作为重试方法。计数丢失且历史工件已被删除时，不能保证历史编号永不复用。创建已成功而 Session 后续写入失败时，先按报错中的完整 ID 检查工件，避免重复创建。
+
+正式工件仅使用 `docs/requirements`，不回退到旧根目录 `requirements`，不提供迁移命令。旧项目需在停用旧版 aiw 后直接移动工件；旧计数如需保留，应一并移动到 `.ai/requirements/sequence`。不要同时运行新旧版本。
+`.ai/requirements/sequence` 是持久高水位，`sequence.lock` 是活动锁，`backups` 保存恢复证据；它们不是可随意清理的缓存。正式工件写入暂存文件放在 `temporary`，恢复计数的短期暂存文件也在 `.ai/requirements` 内。Session 历史位置不变，旧候选在来源路径变化后需重新复核。
+
+以下命令使用兼容的精确 ID 创建，适用于依赖固定名称的脚本：
 
 ```powershell
 # 1. 创建 Requirement
-aiw requirement new daily-withdrawal-report "Daily withdrawal report"
+aiw requirement new --id daily-withdrawal-report "Daily withdrawal report"
 
 # 2. 查看当前状态
 aiw requirement show daily-withdrawal-report
@@ -59,16 +101,50 @@ aiw requirement promote daily-withdrawal-report --task daily-withdrawal-report-i
 
 如果 promotion 需要新建 Task，且工作区存在未提交改动，AIW 会检查脏路径。目标 Task/Change 目录有脏改动时始终拒绝；全部为无关改动时默认继续。不要手动编辑 Requirement 元数据绕过该保护。
 
+## OpenSpec 候选配置与接续
+
+生成器只使用 `[ai.artifact_generation]` 显式列出的 profile，按顺序尝试且不探测其他 provider。凭据继续使用环境变量或现有 provider 配置，不要写入 `aiw.toml`。
+
+```toml
+[ai.artifact_generation]
+profiles = ["artifact-primary", "artifact-fallback"]
+
+[ai.profiles.artifact-primary]
+provider = "openai"
+model = "your-primary-model"
+
+[ai.profiles.artifact-fallback]
+provider = "gemini"
+model = "your-fallback-model"
+```
+
+将 `profiles` 设为 `[]`、没有可用 profile，或候选被拒绝时，AIW 保留同一已批准范围、Task 和生成请求，并输出交接文件；这不是 promotion 成功。按下面方式接续：
+
+```powershell
+# 继续当前请求：生成配置可用时尝试模型；否则显示 Agent 候选路径
+aiw requirement prepare-spec daily-withdrawal-report
+
+# 将 Agent 按交接格式生成的候选提交给同一请求
+aiw requirement prepare-spec daily-withdrawal-report --candidate .\.ai\requirement-artifact-generation\generation\<request-id>\candidate.json
+
+# 仅在明确放弃当前候选并建立新请求时使用
+aiw requirement prepare-spec daily-withdrawal-report --regenerate
+```
+
+`--candidate` 会重验批准来源、冻结目标和人工内容保护；通过后才写正式工件并 accepted。不要重新运行 `promote` 来绕过 awaiting-agent、validating 或候选拒绝，也不要把交接文件、候选 JSON 或预创建的 tasks.md 当作 accepted 证据。
+
 ## 命令参考
 
 | 命令 | 作用 | 写入范围 |
 | --- | --- | --- |
 | `aiw requirement chat [id]` | 创建或恢复 Requirement Conversation | AIW Session；已有 Requirement 会保存 Session 引用 |
-| `aiw requirement new <id> [title]` | 创建 Requirement 和最小元数据 | `requirements/<id>/` |
+| `aiw requirement new <slug> [title]` | 自动编号并创建 Requirement | `docs/requirements/<完整ID>/`、共享编号记录 |
+| `aiw requirement new --id <id> [title]` | 精确创建兼容 ID | `docs/requirements/<id>/`，数字 ID 同时更新编号记录 |
 | `aiw requirement show <id>` | 输出 Requirement、审批和 promotion 状态 | 无 |
 | `aiw requirement capture <id> <artifact> --file <path>` | 从明确给定的文件复制一个讨论产物 | Requirement 目录及元数据 |
 | `aiw requirement approve <id> <decision> --by <actor> --reason <reason>` | 记录批准、延期或拒绝，并追加决策日志 | Requirement 目录 |
 | `aiw requirement promote <id> --task <task-id>` | 创建或复用一个 AIW Task，并写入交接文件 | Requirement、Task 交接工件 |
+| `aiw requirement prepare-spec <id> [--candidate <path> \| --regenerate]` | 接续当前生成请求、提交 Agent 候选或明确建立新请求 | Generation 记录；仅 accepted 后写入正式 OpenSpec 工件 |
 
 `id` 和 `task-id` 只允许字母、数字、`-`、`_`、`.`。
 
@@ -87,7 +163,7 @@ capture 必须指定 `--file`。源文件不能就是 Requirement 目录中的�
 ## 文件结构
 
 ```text
-requirements/<requirement-id>/
+docs/requirements/<requirement-id>/
   requirement.toml
   problem-brief.md
   business-case.md
@@ -119,11 +195,11 @@ handoff 只引用已批准产物及其摘要，包含批准范围、非目标、
 
 `finance-requirement-intake`、`finance-value-assessment`、`finance-metric-brief`、`finance-engineering-options` 和 `finance-requirement-synthesis` 负责讨论、澄清和输出结构化草案。它们不直接写 Requirement 记录，也不创建 AIW Task。
 
-推荐流程：
+独立使用金融方法时可采用以下显式流程；普通用户优先使用 chat 自动准备草稿和检查点：
 
 1. 用对应 Skill 讨论并得到草案。
 2. 人工确认草案内容。
-3. 用 `aiw requirement capture` 保存确认后的文件。
+3. 用 `aiw requirement capture` 保存文件；直接 capture 本身不创建聊天的片段确认记录。
 4. 用 `approve` 记录决策人和原因。
 5. 用 `promote` 创建工程交接。
 6. 在 Task 中按既有 OpenSpec workflow 创建 proposal、design、spec 和实现清单。
@@ -154,9 +230,9 @@ $requirement-management 继续 requirement daily-withdrawal-report。
 Completed and cancelled Requirements are stored separately from active discussion records:
 
 ```text
-requirements/<id>/
-requirements/archive/<id>/
-requirements/cancelled/<id>/
+docs/requirements/<id>/
+docs/requirements/archive/<id>/
+docs/requirements/cancelled/<id>/
 ```
 
 ```powershell

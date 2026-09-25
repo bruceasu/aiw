@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"strings"
 
-	"aiw/internal/taskx"
 )
 
 type backendMode string
@@ -103,14 +102,10 @@ func runOpenSpec(bin string, operation string, args []string) error {
 		if err := authorizeTaskCreation(id, allowUnrelatedDirty); err != nil { return err }
 		command = []string{"new", "change", id}
 	case "archive":
-		if len(args) != 1 {
-			return errors.New("OpenSpec archive delegation supports only: archive <change-id>")
-		}
-		meta, err := taskx.ReadTaskMeta(taskx.ResolveTaskMetaPath(args[0]))
+		if len(args) == 0 { return errors.New("usage: archive <task-id> [options]") }
+		opts, err := parseArchiveOptions(args[1:])
 		if err != nil { return err }
-		if meta.Status != "DONE" && meta.Status != "CANCELLED" { return fmt.Errorf("task must be DONE or CANCELLED before archive: %s", meta.Status) }
-		if resolvedWorkspaceKind(meta) != "primary" && !(meta.Status == "CANCELLED" && meta.Delivery == "discarded") { return errors.New("delegated archive supports only primary or discarded Tasks; clean isolated delivery first") }
-		command = []string{"archive", "--yes", args[0]}
+		return archiveWithBackend(args[0], opts, bin)
 	default:
 		return fmt.Errorf("unsupported OpenSpec operation: %s", operation)
 	}

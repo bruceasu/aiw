@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"aiw/internal/fsx"
 	"aiw/internal/gitx"
@@ -218,8 +219,21 @@ func runTaskAgentWithEnvironment(args []string, environment []string) error {
 	prompt := fmt.Sprintf("Continue Task %s.\n\nSession: %s\n\nRead the handoff at %s and referenced artifacts before taking action. Preserve the existing Task and worktree; report validation when done.\n\nTask context:\n%s", id, meta.Session, handoff, readTaskGoal(id))
 	if opts.Supervised {
 		prompt += "\n\nThe supervisor owns compile-only validation and its bounded repair loop. Implement the selected work, update its checkbox, and report your structured outcome; the supervisor will compile before accepting it. Do not run tests."
-		prompt += supervisedWorkItemInstruction(id, workItemID, environment)
+		instruction, instructionErr := supervisedWorkItemInstruction(id, workItemID, environment)
+		if instructionErr != nil {
+			return instructionErr
+		}
+		prompt += instruction
 		prompt += "\n\nWhen you finish, return exactly one JSON object (no Markdown) with outcome=completed, blocked, or no-progress; include detail and, for blocked, blocked_category=workspace-access, authorization, dependency, validation, or unknown. Do not claim completed unless you updated the authored checklist."
+	}
+	var frozen *session.FrozenTurn
+	if opts.Supervised {
+		frozen, err = prepareFrozenAgentContext(id, handoff, prompt, store, status)
+		if err != nil {
+			_, gateErr := workflow.NewStore("").OpenCompilerGate(workflow.TaskID(id), workItemID, "execution-input-unavailable", err.Error())
+			return errors.Join(err, gateErr)
+		}
+		if frozen != nil && args[0] == "chat" { return errors.New("frozen supervised inputs require a bounded turn") }
 	}
 	if args[0] == "chat" {
 		result, runErr := session.ExecuteInteractiveWithOverridesAndEnvironment(context.Background(), store, meta.Session, "handoff", prompt, opts.Provider, opts.Model, true, environment)
@@ -229,7 +243,16 @@ func runTaskAgentWithEnvironment(args []string, environment []string) error {
 		fmt.Printf("Task %s chat completed: %s\n", id, lineage.ChildThread)
 		return nil
 	}
-	result, err := session.ExecuteTurnWithOverridesAndEnvironment(context.Background(), store, meta.Session, "handoff", prompt, opts.Provider, opts.Model, true, environment)
+	var result session.TurnResult
+	if frozen != nil {
+		state, loadErr := workflow.NewStore("").Load(workflow.TaskID(id))
+		if loadErr != nil { return loadErr }
+		if state.Automation.PreparedRequest == nil { return errors.New("frozen input lost its prepared request") }
+		if _, dispatchErr := workflow.NewStore("").DispatchPreparedAgentRequest(workflow.TaskID(id), state.Automation.PreparedRequest.AttemptID); dispatchErr != nil { return dispatchErr }
+		result, err = session.ExecuteFrozenTurn(context.Background(), store, meta.Session, "handoff", *frozen, opts.Provider, opts.Model, environment)
+	} else {
+		result, err = session.ExecuteTurnWithOverridesAndEnvironment(context.Background(), store, meta.Session, "handoff", prompt, opts.Provider, opts.Model, true, environment)
+	}
 	if err != nil {
 		if !opts.Supervised {
 			_, _ = workflow.NewStore("").RecordAttemptOutcome(workflow.TaskID(id), attemptID, false)
@@ -262,7 +285,7 @@ func runTaskAgentWithEnvironment(args []string, environment []string) error {
 		return err
 	}
 	if !opts.Supervised {
-		if err := reportWorkflowState(meta, state); err != nil {
+		if err := projectWorkflowState(id, state); err != nil {
 			lineage.Status, lineage.Error = "failed", err.Error()
 			_ = writeLineage(id, lineage)
 			if createdTask {
@@ -282,22 +305,33 @@ func runTaskAgentWithEnvironment(args []string, environment []string) error {
 // than an Agent handoff.  A handoff can be stale after an operator repairs a
 // Task binding; the current supervised request is authoritative for its own
 // scoped, read-only inspection.
-func supervisedWorkItemInstruction(id string, workItemID workflow.WorkItemID, environment []string) string {
+func supervisedWorkItemInstruction(id string, workItemID workflow.WorkItemID, environment []string) (string, error) {
 	state, err := workflow.NewStore("").Load(workflow.TaskID(id))
 	if err != nil {
-		return ""
+		return "", fmt.Errorf("supervised Git preflight trust evidence: load Work Item %s: %w", workItemID, err)
 	}
+	var scopeReview bool
+	found := false
 	for _, item := range state.WorkItems {
-		if item.ID != workItemID || !strings.Contains(strings.ToLower(item.Title), "no unrelated changes") {
+		if item.ID != workItemID {
 			continue
 		}
-		trustDirectory := supervisedGitTrustDirectory(environment)
-		if trustDirectory == "" {
-			return ""
-		}
-		return fmt.Sprintf("\n\nFor this scope-review Work Item, use this exact command prefix for read-only Git inspection: `%s`. Append status, diff, staged diff, or untracked-file listing arguments. Keep the forward slashes and shell quotes as shown. The supervisor preflight approved exactly this directory. This command-local option is required because the sandbox does not inherit Git environment variables. It supersedes historical handoff notes that prohibit retrying Git. Do not change Git configuration, index, branches, or commits. After collecting valid evidence, you may edit only the selected checkbox in openspec/changes/%s/tasks.md; do not edit any other file.", supervisedGitCommandPrefix(trustDirectory), id)
+		found = true
+		scopeReview = strings.Contains(strings.ToLower(item.Title), "no unrelated changes")
+		break
 	}
-	return ""
+	if !found {
+		return "", fmt.Errorf("supervised Git preflight trust evidence: current Work Item %s is missing", workItemID)
+	}
+	trustDirectory, err := supervisedGitTrustDirectory(environment)
+	if err != nil {
+		return "", err
+	}
+	instruction := fmt.Sprintf("\n\nFor this supervised Work Item, use this exact command prefix for read-only Git inspection: `%s`. Append status, diff, staged diff, or untracked-file listing arguments. Keep the forward slashes and shell quotes as shown. The supervisor preflight approved exactly this directory. This command-local option is required because the sandbox does not inherit Git environment variables. It supersedes historical handoff notes that prohibit retrying Git. Do not change Git configuration, index, branches, or commits.", supervisedGitCommandPrefix(trustDirectory))
+	if scopeReview {
+		instruction += fmt.Sprintf(" After collecting valid evidence, you may edit only the selected checkbox in openspec/changes/%s/tasks.md; do not edit any other file.", id)
+	}
+	return instruction, nil
 }
 
 // Render shell arguments, not Go string literals: PowerShell preserves the
@@ -313,14 +347,44 @@ func supervisedGitCommandPrefix(directory string) string {
 	return "git -c " + quote("safe.directory="+directory) + " -C " + quote(directory)
 }
 
-func supervisedGitTrustDirectory(environment []string) string {
+func supervisedGitTrustDirectory(environment []string) (string, error) {
+	var count, key, value string
+	var countFound, keyFound, valueFound bool
 	for _, entry := range environment {
-		key, value, found := strings.Cut(entry, "=")
-		if found && strings.EqualFold(key, "GIT_CONFIG_VALUE_0") {
-			return value
+		environmentKey, environmentValue, found := strings.Cut(entry, "=")
+		if !found {
+			continue
+		}
+		switch {
+		case strings.EqualFold(environmentKey, "GIT_CONFIG_COUNT"):
+			if countFound {
+				return "", fmt.Errorf("supervised Git preflight trust evidence: duplicate GIT_CONFIG_COUNT")
+			}
+			count, countFound = environmentValue, true
+		case strings.EqualFold(environmentKey, "GIT_CONFIG_KEY_0"):
+			if keyFound {
+				return "", fmt.Errorf("supervised Git preflight trust evidence: duplicate GIT_CONFIG_KEY_0")
+			}
+			key, keyFound = environmentValue, true
+		case strings.EqualFold(environmentKey, "GIT_CONFIG_VALUE_0"):
+			if valueFound {
+				return "", fmt.Errorf("supervised Git preflight trust evidence: duplicate GIT_CONFIG_VALUE_0")
+			}
+			value, valueFound = environmentValue, true
+		case strings.HasPrefix(strings.ToUpper(environmentKey), "GIT_CONFIG_KEY_") || strings.HasPrefix(strings.ToUpper(environmentKey), "GIT_CONFIG_VALUE_"):
+			return "", fmt.Errorf("supervised Git preflight trust evidence: unexpected Git configuration entry %s", environmentKey)
 		}
 	}
-	return ""
+	if !countFound || count != "1" {
+		return "", fmt.Errorf("supervised Git preflight trust evidence: expected GIT_CONFIG_COUNT=1")
+	}
+	if !keyFound || key != "safe.directory" {
+		return "", fmt.Errorf("supervised Git preflight trust evidence: expected GIT_CONFIG_KEY_0=safe.directory")
+	}
+	if !valueFound || value == "" {
+		return "", fmt.Errorf("supervised Git preflight trust evidence: GIT_CONFIG_VALUE_0 is missing")
+	}
+	return value, nil
 }
 
 func printAgentHelp() {
@@ -489,6 +553,13 @@ func startManagedAttempt(id string, meta taskx.TaskMeta) (workflow.AttemptID, er
 		}
 	}
 	if workflow.HasMappedWorkItems(state) {
+		// Direct turn/takeover can enter without a Supervisor sync. Refresh the
+		// authored dependencies before selecting a new owner, while preserving
+		// the prepared and running Attempt reuse paths above.
+		state, err = taskx.SyncWorkflowChecklist(id, store)
+		if err != nil {
+			return "", fmt.Errorf("synchronize managed Task %s before selection: %w", id, err)
+		}
 		item, err := workflow.SelectReadyMappedWorkItem(state)
 		if err != nil {
 			return "", fmt.Errorf("managed Task %s has no executable mapped Work Item: %w", id, err)
@@ -604,7 +675,7 @@ func finalizeInteractiveAgent(id, metaPath string, meta taskx.TaskMeta, store *s
 		state, err := workflow.NewStore("").RecordAttemptOutcome(workflow.TaskID(id), attemptID, succeeded)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("record interactive Attempt outcome: %w", err))
-		} else if err := reportWorkflowState(meta, state); err != nil {
+		} else if err := projectWorkflowState(id, state); err != nil {
 			errs = append(errs, fmt.Errorf("render interactive workflow state: %w", err))
 		}
 	}
@@ -660,7 +731,12 @@ func readTaskGoal(id string) string {
 	}
 	text := strings.TrimSpace(string(b))
 	if len(text) > 4000 {
-		text = text[:4000] + "\n[truncated]"
+		end := 4000
+		// Keep the byte budget without splitting a UTF-8 encoded code point.
+		for end > 0 && !utf8.RuneStart(text[end]) {
+			end--
+		}
+		text = text[:end] + "\n[truncated]"
 	}
 	return text
 }

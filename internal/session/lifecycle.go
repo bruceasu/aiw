@@ -56,7 +56,7 @@ func (s *Store) Validate(id string) error {
 	return nil
 }
 func RequireRunnable(status Status) error {
-	if status.Session.State == StateCompleted || status.Session.State == StateArchived || status.Session.State == StateDeleted {
+	if status.archived || status.Session.State == StateCompleted || status.Session.State == StateArchived || status.Session.State == StateDeleted {
 		return errors.New("session is not runnable")
 	}
 	return nil

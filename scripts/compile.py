@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import os
 from pathlib import Path
 import shutil
@@ -12,17 +11,12 @@ import tempfile
 
 
 def worktree_go_cache(root: Path) -> Path:
-    """Return a stable, user-local cache isolated by canonical worktree path."""
+    """Return a stable cache in this worktree unless explicitly overridden."""
     override = os.environ.get("AIW_GOCACHE")
     if override:
         return Path(override).expanduser()
 
-    if os.name == "nt":
-        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
-    else:
-        base = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
-    identity = hashlib.sha256(str(root.resolve()).encode("utf-8")).hexdigest()[:16]
-    return base / "aiw" / "go-cache" / identity
+    return root / ".ai" / "compile-cache" / "go"
 
 
 def main() -> int:
@@ -35,7 +29,9 @@ def main() -> int:
     output_name = "aiw.exe" if os.name == "nt" else "aiw"
     go_cache = worktree_go_cache(root)
     go_cache.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="aiw-compile-") as temporary:
+    temporary_root = root / ".ai" / "compile-cache" / "tmp"
+    temporary_root.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="aiw-compile-", dir=temporary_root) as temporary:
         output = Path(temporary) / output_name
         environment = os.environ.copy()
         environment["GOCACHE"] = str(go_cache)

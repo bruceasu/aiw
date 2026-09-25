@@ -19,12 +19,22 @@ import (
 	"aiw/internal/taskx"
 	"aiw/internal/ui"
 	"aiw/internal/workflow"
+	"aiw/internal/workflow/execution"
 )
 
 func runWorkflowCommand(args []string) error {
+	if len(args) > 0 && args[0] == "knowledge" { return execution.RunKnowledgeCommand(args[1:]) }
+	if len(args) > 0 && args[0] == "auxiliary" { return execution.RunAuxiliaryMaintenance(args[1:]) }
 	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
 		printWorkflowHelp()
 		return nil
+	}
+	if args[0] == "repair-metadata" {
+		options, err := parseMetadataRepairOptions(args[1:])
+		if err != nil {
+			return err
+		}
+		return repairHistoricalMetadata(options)
 	}
 	if len(args) < 2 {
 		return fmt.Errorf("usage: task workflow <operation> <task-id> [arguments]")
@@ -326,10 +336,7 @@ func runWorkflowWithOverrides(id string, execute, supervised, primary bool, prov
 	if execute && supervised {
 		sessionEnvironment, err = preflightSupervisedGitWorkspace(meta)
 		if err != nil {
-			if _, gateErr := store.OpenWorkspaceAccessGate(workflow.TaskID(id), err.Error()); gateErr != nil {
-				return fmt.Errorf("%w; record workspace-access Gate: %v", err, gateErr)
-			}
-			return err
+			return recordSupervisedGitPreflightFailure(store, id, err)
 		}
 	}
 	state, err := syncWorkflowChecklist(id, store)
@@ -384,7 +391,7 @@ func runWorkflowWithOverrides(id string, execute, supervised, primary bool, prov
 			return err
 		}
 	}
-	if err := ensureRunnerHandoff(id, outcome.Request); err != nil {
+	if err := taskx.EnsureRunnerHandoff(id, outcome.Request, supervised); err != nil {
 		return err
 	}
 	// A request can be prepared by a non-executing workflow pass. Only the
@@ -395,11 +402,14 @@ func runWorkflowWithOverrides(id string, execute, supervised, primary bool, prov
 		if outcome.Request.DispatchedAt != "" {
 			return nil
 		}
-		if err := ensureSupervisedCompilePlan(store, outcome.Request); err != nil {
+		if _, err := supervisedWorkItemInstruction(id, outcome.Request.WorkItemID, sessionEnvironment); err != nil {
+			return recordSupervisedGitPreflightFailure(store, id, err)
+		}
+		if err := execution.EnsureSupervisedCompilePlan(store, outcome.Request); err != nil {
 			return err
 		}
-		if _, err := store.DispatchPreparedAgentRequest(workflow.TaskID(id), outcome.Request.AttemptID); err != nil {
-			return err
+		if state.SchemaVersion < 10 {
+			if _, err := store.DispatchPreparedAgentRequest(workflow.TaskID(id), outcome.Request.AttemptID); err != nil { return err }
 		}
 		if outcome.Request.Handoff != "" {
 			args := []string{"turn", id, "--supervised", "--handoff", outcome.Request.Handoff}
@@ -409,6 +419,17 @@ func runWorkflowWithOverrides(id string, execute, supervised, primary bool, prov
 		}
 	}
 	return runBoundedTaskTurn(id, supervised, sessionEnvironment, provider, model)
+}
+
+// recordSupervisedGitPreflightFailure keeps every failure before Agent dispatch
+// in the Core-owned workspace-access diagnostic path. In particular, it must
+// not turn missing trust evidence into an empty Agent instruction or broaden
+// the command-local safe.directory scope.
+func recordSupervisedGitPreflightFailure(store *workflow.Store, id string, preflightErr error) error {
+	if _, gateErr := store.OpenWorkspaceAccessGate(workflow.TaskID(id), preflightErr.Error()); gateErr != nil {
+		return fmt.Errorf("%w; record workspace-access Gate: %v", preflightErr, gateErr)
+	}
+	return preflightErr
 }
 
 func skipUnconfiguredFocusedVerification(id string, store *workflow.Store, state workflow.RuntimeState) (workflow.RuntimeState, workflow.WorkItemID, error) {
@@ -494,7 +515,7 @@ func ensureAutomatedWorkspace(id string, meta taskx.TaskMeta, primary bool) (tas
 
 func verifiedTaskWorktree(meta taskx.TaskMeta) bool {
 	worktree := strings.TrimSpace(meta.Worktree)
-	if worktree == "" || worktree == "." || !gitx.WorktreeRegistered(worktree) {
+	if worktree == "" || worktree == "." {
 		return false
 	}
 	if !filepath.IsAbs(worktree) {
@@ -504,75 +525,18 @@ func verifiedTaskWorktree(meta taskx.TaskMeta) bool {
 		}
 		worktree = filepath.Join(root, filepath.FromSlash(worktree))
 	}
-	return fsx.Exists(worktree)
+	return gitx.WorktreeRegistered(worktree) && fsx.Exists(worktree)
 }
 
 func syncWorkflowChecklist(id string, store *workflow.Store) (workflow.RuntimeState, error) {
-	path, err := workflowChecklistPath(id)
-	if err != nil {
-		return workflow.RuntimeState{}, err
-	}
-	items, err := taskx.ReadWorkflowChecklist(path)
-	if err != nil {
-		var projectionErr *taskx.ChecklistProjectionError
-		if errors.As(err, &projectionErr) {
-			_, _ = store.OpenChecklistReconciliationGate(workflow.TaskID(id), "", projectionErr.Code, projectionErr.Error())
-		}
-		return workflow.RuntimeState{}, err
-	}
-	candidates := make([]workflow.ChecklistCandidate, len(items))
-	for index, item := range items {
-		candidates[index] = workflow.ChecklistCandidate{Item: item.Number, Title: item.Title, Completed: item.Completed, DependsOn: item.DependsOn}
-	}
-	return store.SyncChecklist(workflow.TaskID(id), candidates, taskx.ChecklistFingerprint(items))
+	return taskx.SyncWorkflowChecklist(id, store)
 }
 
 // projectAcceptedWorkItem is the only reverse projection from Workflow Core to
 // OpenSpec. workflowChecklistPath resolves the isolated Task worktree, so this
 // path never writes the parent checkout during supervised execution.
 func projectAcceptedWorkItem(id string, store *workflow.Store, state workflow.RuntimeState, workItemID workflow.WorkItemID) error {
-	var item *workflow.WorkItem
-	for index := range state.WorkItems {
-		if state.WorkItems[index].ID == workItemID {
-			item = &state.WorkItems[index]
-			break
-		}
-	}
-	if item == nil || item.State != workflow.WorkItemCompleted || item.Checklist.Item == "" {
-		return fmt.Errorf("completed work item %s has no checklist projection", workItemID)
-	}
-	meta, err := taskx.ReadTaskMeta(taskx.ResolveTaskMetaPath(id))
-	if err == nil && resolvedWorkspaceKind(meta) != "isolated" {
-		err = fmt.Errorf("accepted Work Item projection requires an isolated Task worktree")
-	}
-	path := ""
-	if err == nil {
-		path, err = workflowChecklistPath(id)
-	}
-	if err == nil {
-		err = taskx.ProjectWorkflowChecklistCompletion(path, item.Checklist.Item)
-	}
-	if err == nil {
-		return nil
-	}
-	var projectionErr *taskx.ChecklistProjectionError
-	if errors.As(err, &projectionErr) {
-		_, gateErr := store.OpenChecklistReconciliationGate(workflow.TaskID(id), workItemID, projectionErr.Code, projectionErr.Error())
-		if gateErr != nil {
-			return fmt.Errorf("project accepted Work Item: %w; record reconciliation Gate: %v", err, gateErr)
-		}
-		return err
-	}
-	_, repairErr := store.EnqueueProjectionRepair(workflow.TaskID(id), workflow.ProjectionRepair{
-		EventSequence: state.LastEventSequence,
-		Target:        "tasks.md/" + string(workItemID),
-		ErrorClass:    "checklist-projection-failed",
-		Recommended:   fmt.Sprintf("aiw task workflow repair %s", id),
-	})
-	if repairErr != nil {
-		return fmt.Errorf("project accepted Work Item: %w; enqueue projection repair: %v", err, repairErr)
-	}
-	return err
+	return taskx.ProjectAcceptedWorkItem(id, store, state, workItemID)
 }
 
 // workflowChecklistPath selects the Task's bound workspace as the source of
@@ -580,25 +544,7 @@ func projectAcceptedWorkItem(id string, store *workflow.Store, state workflow.Ru
 // in the primary workspace, but an Agent's checklist updates live in its
 // isolated worktree until delivery merges that branch.
 func workflowChecklistPath(id string) (string, error) {
-	meta, err := taskx.ReadTaskMeta(taskx.ResolveTaskMetaPath(id))
-	if err != nil {
-		return "", err
-	}
-	if resolvedWorkspaceKind(meta) != "isolated" {
-		return filepath.Join(taskx.TaskDir(id), "tasks.md"), nil
-	}
-	worktree := strings.TrimSpace(meta.Worktree)
-	if worktree == "" {
-		return "", fmt.Errorf("Task %s has no isolated worktree", id)
-	}
-	if !filepath.IsAbs(worktree) {
-		root, err := gitx.PrimaryWorktree()
-		if err != nil {
-			return "", err
-		}
-		worktree = filepath.Join(root, filepath.FromSlash(worktree))
-	}
-	return filepath.Join(worktree, taskx.TaskDir(id), "tasks.md"), nil
+	return taskx.WorkflowChecklistPath(id)
 }
 
 func advanceWorkflow(id string, meta taskx.TaskMeta, store *workflow.Store, supervised bool, providerOverride, modelOverride string) (workflow.RuntimeState, error) {
@@ -624,16 +570,23 @@ func advanceWorkflow(id string, meta taskx.TaskMeta, store *workflow.Store, supe
 	attemptID := workflow.AttemptID(fmt.Sprintf("attempt-%d", time.Now().UTC().UnixNano()))
 	var selection *workflow.AISelection
 	if supervised {
+		if _, err := ensureLocalRoutingPlan(store, workflow.TaskID(id), meta.Worktree); err != nil {
+			return workflow.RuntimeState{}, err
+		}
 		selection, err = resolveSupervisedAISelection(store, workflow.TaskID(id), providerOverride, modelOverride)
 		if err != nil {
 			return workflow.RuntimeState{}, err
 		}
 	}
-	state, err = store.StartAttempt(workflow.TaskID(id), workflow.Attempt{ID: attemptID, WorkItemID: item.ID, SessionID: meta.Session, Workspace: meta.Worktree})
-	if err != nil {
-		return workflow.RuntimeState{}, err
-	}
 	sessionStatus, err := session.NewStore("").Load(meta.Session)
+	if errors.Is(err, session.ErrSessionNotFound) && meta.Session == id {
+		if err = os.MkdirAll(filepath.Join(taskx.RuntimeTaskDir(id), "artifacts"), 0o755); err == nil {
+			err = createTaskSession(id, meta.Worktree)
+		}
+		if err == nil {
+			sessionStatus, err = session.NewStore("").Load(meta.Session)
+		}
+	}
 	if err != nil {
 		return workflow.RuntimeState{}, fmt.Errorf("load prepared request Session: %w", err)
 	}
@@ -642,6 +595,10 @@ func advanceWorkflow(id string, meta taskx.TaskMeta, store *workflow.Store, supe
 		request.Compile = &workflow.SupervisedCompileState{}
 		plan, loadErr := store.LoadRoutingPlan(workflow.TaskID(id))
 		if loadErr == nil { request.Compile.Plan, request.Compile.PlanReference = &plan.Compile, plan.Reference() } else if !os.IsNotExist(loadErr) { return state, loadErr }
+	}
+	state, err = store.StartAttempt(workflow.TaskID(id), workflow.Attempt{ID: attemptID, WorkItemID: item.ID, SessionID: meta.Session, Workspace: meta.Worktree})
+	if err != nil {
+		return workflow.RuntimeState{}, err
 	}
 	return store.RecordAutomation(workflow.TaskID(id), state.Automation.PlanFingerprint, workflow.AutomationCursor{Result: "agent-request-prepared", Detail: string(item.ID)}, request)
 }
@@ -806,16 +763,16 @@ func compatibleWorkflow(id string) (taskx.TaskMeta, *workflow.Store, error) {
 }
 
 func projectWorkflowState(id string, state workflow.RuntimeState) error {
-	meta, err := taskx.ReadTaskMeta(taskx.ResolveTaskMetaPath(id))
+	meta, err := taskx.WriteWorkflowSummary(taskx.ResolveTaskMetaPath(id), state)
 	if err != nil {
-		return err
+		return fmt.Errorf("sync task metadata snapshot after Workflow Core update: %w", err)
 	}
 	return reportWorkflowState(meta, state)
 }
 
-// reportWorkflowState renders Core-owned state without projecting it into the
-// Task metadata or OpenSpec checklist. Runtime storage is the sole durable
-// owner of execution summaries, evidence, leases, retries, and diagnostics.
+// reportWorkflowState renders Core-owned state after the caller has updated
+// the coarse task.toml snapshot. Runtime storage remains the sole durable
+// owner of execution details, evidence, leases, retries, and diagnostics.
 func reportWorkflowState(meta taskx.TaskMeta, state workflow.RuntimeState) error {
 	terminal := ui.NewTerminal(os.Stdout)
 	summary := workflow.DeriveSummary(state)
@@ -929,27 +886,41 @@ func printDeliveryGuidance(meta taskx.TaskMeta, state workflow.RuntimeState) {
 }
 
 func repairWorkflowState(id string) error {
-	meta, store, err := compatibleWorkflow(id)
+	store := workflow.NewStore("")
+	current, err := store.Load(workflow.TaskID(id))
 	if err != nil {
 		return err
 	}
-	path, err := workflowChecklistPath(id)
+	if request := current.Automation.PreparedRequest; request != nil && request.DispatchedAt == "" &&
+		(request.Compile == nil || request.Compile.Plan == nil) {
+		plan, err := ensureLocalRoutingPlan(store, workflow.TaskID(id), request.Workspace)
+		if err != nil {
+			return err
+		}
+		if _, err := store.RepairUndispatchedCompilePlan(workflow.TaskID(id), request.AttemptID, plan); err != nil {
+			return err
+		}
+	}
+	if current.WriteLease != nil && current.Automation.PreparedRequest == nil {
+		for _, attempt := range current.Attempts {
+			if attempt.ID != current.WriteLease.AttemptID || attempt.SessionID == "" {
+				continue
+			}
+			_, sessionErr := session.NewStore("").Load(attempt.SessionID)
+			if errors.Is(sessionErr, session.ErrSessionNotFound) {
+				if _, err := store.RepairMissingSessionAttempt(workflow.TaskID(id), attempt.ID); err != nil {
+					return err
+				}
+			} else if sessionErr != nil {
+				return sessionErr
+			}
+		}
+	}
+	state, err := taskx.RepairWorkflowChecklist(id)
 	if err != nil {
 		return err
 	}
-	items, err := taskx.ReadWorkflowChecklist(path)
-	if err != nil {
-		return err
-	}
-	candidates := make([]workflow.ChecklistCandidate, len(items))
-	for index, item := range items {
-		candidates[index] = workflow.ChecklistCandidate{Item: item.Number, Title: item.Title, Completed: item.Completed}
-	}
-	state, err := store.RepairChecklist(workflow.TaskID(id), candidates)
-	if err != nil {
-		return err
-	}
-	return reportWorkflowState(meta, state)
+	return projectWorkflowState(id, state)
 }
 
 func printWorkflowHelp() {
@@ -965,6 +936,15 @@ Typical flow:
   3. aiw workflow run <task-id> --execute
                                          Execute one prepared Work Item.
 
+Auxiliary maintenance (does not enable schema 10):
+  auxiliary inventory                Print a bounded local inventory for review.
+  knowledge show <task>               Show versioned entries, coverage and review todo.
+  knowledge review <task> <root> <file>  Review an exact version at a human terminal.
+  knowledge import <task> <root> <file>  Preserve selected human text as a candidate.
+  auxiliary policy <file>            Install a reviewed versioned R3 policy.
+  auxiliary initialize               Consume .ai/auxiliary-inventory.json once.
+  auxiliary settle                   Refresh storage without resetting model usage.
+
 Plan and execute:
   plan <task-id>                       Create or reconcile Work Items from tasks.md.
   sync <task-id>                       Synchronize checklist completion into Workflow Core.
@@ -972,20 +952,22 @@ Plan and execute:
   advance <task-id>                    Prepare the next ready Work Item without executing it.
   run <task-id> [--execute] [--primary] [--provider NAME] [--model MODEL]
                                          Preview the next action, or execute one Work Item.
-  supervise <task-id> <start|status|stop>
-                                         Start, inspect, or stop managed execution; start locally merges accepted isolated Tasks.
+  supervise <task-id> <start|status|stop> [--provider NAME] [--model MODEL]
+                                         Start, inspect, or stop managed execution; overrides apply only to start, which locally merges accepted isolated Tasks.
 
 Record progress:
-  attempt <task-id> start <work-item-id> <attempt-id>
-  attempt <task-id> checkpoint <attempt-id> <running|paused>
+  attempt <task-id> start <work-item-id> <attempt-id>       Record a Work Item Attempt.
+  attempt <task-id> checkpoint <attempt-id> <running|paused> Record an Attempt state checkpoint.
   evidence <task-id> <evidence-id> <work-item-id> <kind> <state> [reference]
-  gate <task-id> <gate-id> <resolved|waived>
+                                         Record evidence; kind and state must be supported values.
+  gate <task-id> <gate-id> <resolved|waived>                Resolve or waive a Gate.
   skip-focused-test <task-id> <reason>
                                       Waive optional focused verification and complete its Work Item.
-  complete <task-id> <work-item-id>
-  delivery <task-id> <merged|discarded>
+  complete <task-id> <work-item-id>                       Mark a Work Item complete.
+  delivery <task-id> <merged|discarded>                   Record Task delivery state.
 	local-merge <task-id> <commit-message>
 	                                     Commit accepted Task changes and perform verified local delivery.
+  delivery-failed <task-id> <stage> <detail>              Record a delivery failure and its stage/detail.
   retry-policy <task-id> <work-item-id> <1-5>
                                          Set the automatic Attempt limit (default: 3).
   reopen <task-id> <work-item-id> <reason>
@@ -997,15 +979,18 @@ Record progress:
 Inspect and recover:
   report <task-id>                     Show the latest unresolved failure report without changing runtime state.
   diagnose <task-id>                   Show Workflow Core diagnostics and repair guidance.
-  recover <task-id>                    Re-project a committed pending transition.
-  repair <task-id>                     Re-project state and resolve recorded projection repairs.
+	  recover <task-id>                    Re-project a committed pending transition.
+	  repair <task-id>                     Re-project state and resolve recorded projection repairs.
+  repair-metadata [task-id] [--dry-run]                   Preview or repair Core-derived metadata for discovered active, legacy, and archived Tasks.
 
 Execution and workspace rules:
   - Without --execute, run only previews the next action.
   - --execute delegates one prepared Work Item to aiw turn.
   - Automated execution uses an isolated .wt/<task-id> worktree by default.
   - --primary is an explicit opt-out and only works for Tasks bound to the primary workspace.
-  - supervise start commits and locally merges accepted isolated Tasks, then cleans verified merged resources.
+  - --provider NAME and --model MODEL override the configured AI selection for run execution or supervisor start; both also accept --provider=NAME and --model=MODEL.
+  - --primary requires --execute. Supervisor provider/model overrides are accepted only with supervise start.
+  - supervise start commits and locally merges accepted isolated Tasks, then cleans verified merged resources and clears the current worktree binding while retaining delivery history.
   - Manual run does not deliver; push and archive remain separate operations.
   - Each Work Item has a default automatic Attempt limit of 3; retry-policy accepts 1 through 5.
   - Exhaustion blocks only that Work Item, clears its prepared request, and releases its lease.
@@ -1017,6 +1002,9 @@ Execution and workspace rules:
     approved Verification Plan; it never accepts a command, argv, directory, environment, or network override.
   - focused-test requires an explicit, digest-bound human authorization. It stops and opens a Gate
     when authorization is missing or stale, or the runtime cannot enforce network: deny.
+  - retry-policy accepts a limit from 1 through 5; reopen and force-close require a non-empty reason.
+  - delivery-failed joins all detail arguments after <stage> into the failure detail.
+  - repair-metadata accepts at most one Task ID; --dry-run previews changes without applying them.
 
 Examples:
   aiw workflow plan payment-retry

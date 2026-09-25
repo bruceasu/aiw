@@ -133,7 +133,7 @@ func TestArchiveTaskSyncsLinkedSpecsIntoGlobalSpecs(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(taskx.TaskDir("T-1"), "specs", "file-operations", "spec.md"), sourceSpec, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(taskx.TaskDir("T-1"), "tasks.md"), []byte("# TODO\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(taskx.TaskDir("T-1"), "tasks.md"), []byte("## TODO\n\n- [x] 1.1 Sync the linked specification.\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	meta := taskx.TaskMeta{
@@ -143,6 +143,9 @@ func TestArchiveTaskSyncsLinkedSpecsIntoGlobalSpecs(t *testing.T) {
 		Created: taskx.Today(),
 		Updated: taskx.Today(),
 		Specs:   []string{"file-operations"},
+		WorkspaceKind: "primary",
+		Worktree: ".",
+		Delivery: "unmanaged",
 	}
 	if err := taskx.WriteTaskMeta(taskx.TaskMetaPath("T-1"), meta); err != nil {
 		t.Fatal(err)

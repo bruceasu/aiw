@@ -1,10 +1,32 @@
 # `workflow supervise` 当前执行流程
 
+## 默认执行路径与协议版本
+
+当前新 Task 默认使用 **schema 9**。下图和本文常规命令描述这条已接通的 CLI
+路径。源码另有 schema 10 持久化多阶段协议，但只有受控宿主、授权服务、预算服务
+及平台证据齐备后才能通过受管迁移启用；`supervise start` 不负责启用它。
+
+```mermaid
+flowchart TD
+    A[准备上下文] --> B[为 Coder 选择模型]
+    B --> C[Coder 实现]
+    C --> D[Supervisor 编译]
+    D -- 失败且未达上限 --> C
+    D -- 第三次失败或目标不可用 --> P[Gate / 暂停]
+    D -- 通过 --> E[记录 outcome / 同步清单]
+    E --> F{还有可执行项?}
+    F -- 有 --> A
+    F -- 无 --> G{满足本地交付条件?}
+    G -- 是 --> H[提交 / 合并父分支 / 清理]
+    G -- 否 --> P
+```
+
 本文描述当前源码。`supervise` 是前台、单 Task、顺序执行的循环：派发受管 Agent
 turn，解析结构化结果，执行编译和有界修复，最后在满足条件时完成本地 Git
 交付。它不自动 push、发布 PR 或 archive。
 
-完整多角色架构的目标和已接通范围见[多角色交接](multi-actor-turn-handoff.md)。
+Tester、受控测试 Runner、Verifier 和知识生成不属于默认循环中的必经自动步骤。
+schema 10 的实现与启用边界见下方专节；总体流程见[自动编码](auto-coding.md)。
 
 ## Quick start：从新 Task 开始
 
@@ -129,14 +151,15 @@ Profile 必须同时包含非空 `provider` 和 `model`；缺失或不完整时�
 `[ai]`。配置加载和环境覆盖由 `internal/ai/config.go` 负责。
 
 默认映射为 `analysis=fast`、`coder/tester=balanced`、`verifier=reasoning`。
-**当前 supervise 实际读取路由计划中的 `coder` 项**，尚未按角色自动调度全部
-Actor。没有按难度或失败次数自动升级模型的机制。
+**默认 schema 9 supervise 实际读取路由计划中的 `coder` 项**，尚未按角色自动
+调度全部 Actor，也不按失败次数升级模型。schema 10 另有按 Actor 记账的模型
+路由和升级服务，不能把它的能力当作默认 CLI 行为。
 
 新请求将 Profile、provider、model 和无密钥摘要存入 `AISelection`；启动时的
 CLI 覆盖在生成快照时应用。执行与编译修复复用该选择，修改配置或重启时传入其他
 模型不会覆盖已有请求。普通 `turn`、`chat` 和 CZ 保留各自已有的解析方式。
 
-`.ai/<task-id>/routing-plan.json` 同时保存 Compile Plan。supervise 准备请求时
+`.ai/tasks/<task-id>/routing-plan.json` 同时保存 Compile Plan。supervise 准备请求时
 冻结计划，恢复和修复不重新读取可变计划。缺少计划会打开 `compile-plan-missing`
 Gate；需按诊断处理 Gate，生成计划并准备新请求，不能只修改文件就继续旧请求。
 
@@ -177,6 +200,11 @@ flowchart TD
 `completed`、`blocked` 或 `no-progress` 的结构化 JSON；普通文本或无效结构按
 no-progress 处理。结果不完整或绑定不符时暂停，保留诊断。
 
+原始输出先按精确请求归档为 execution report。若请求带有冻结的
+`InputReference`，还要校验 implementation report 的请求身份、输入摘要、变更
+引用和各事实章节；报告无效时最多准备一次报告补充，仍无效则打开
+`report-manual-review` Gate。报告校验通过本身不代表 Work Item 已被接受。
+
 勾选 `tasks.md` 不会绕过活跃的受管编译、阻塞状态或未清除的编译失败。
 编译通过并关闭 Attempt 后，由清单同步决定 Work Item 完成及后续调度。
 
@@ -198,6 +226,25 @@ Agent 不自行编译或运行测试；supervisor 执行冻结的 Compile Plan�
 普通重试默认上限为 3，可通过 `retry-policy` 在 1–5 之间设置。处理相关 Gate
 后，使用 `reopen` 显式恢复 blocked Work Item；非耗尽的普通计数不会因此清零。
 
+### 监督 Agent 的限定 Git 查询
+
+每个通过当前工作区预检后才会派发的监督 Agent 请求，都包含限定到该工作树的只读
+Git 查询前缀。它等价于：
+
+```powershell
+git -c "safe.directory=<当前预检确认的规范工作树>" -C "<同一规范工作树>" status
+```
+
+其中目录必须来自本次请求的预检结果；不要从旧 handoff、先前 Attempt 或环境变量
+推断路径。前缀仅用于 `status`、分支和 diff 等原有只读查询，**不**授权
+`git config`、提交、分支、索引或其他 Git 写入，也不改变 Agent 的文件编辑范围。
+普通实现项和 scope-review 项都会得到该查询说明；后者仍额外保留只能修改所选
+checkbox 的编辑限制。
+
+若预检没有给出恰好一个与当前工作树匹配的 `safe.directory`，派发会在调用
+provider 前失败并保留 `workspace-access` 诊断。不要用 `safe.directory=*`、
+`git config --global` 或额外目录信任来绕过该失败。
+
 ### 可选测试与 lease
 
 没有 Verification Plan 时，可选 focused-verification Work Item 会记录 waived，
@@ -207,7 +254,7 @@ Agent 不自行编译或运行测试；supervisor 执行冻结的 Compile Plan�
 Supervisor 持有唯一 lease，在 Agent 执行期间输出心跳和续租，编译之后也会
 续租。`stop` 保留任务、请求和证据；不能将它视为立即杀死正在运行的子进程。
 
-## 本地交付与冲突
+## 默认 schema 9 的本地交付与冲突
 
 没有可执行 Work Item、执行完成、验证为 passed/waived/not-required，且无阻塞
 Gate、待处理请求、写入 lease 或投影修复时，隔离 Task 可进入 `localMergeDelivery`。
@@ -223,13 +270,14 @@ Gate、待处理请求、写入 lease 或投影修复时，隔离 Task 可进入
 
 | 路径 | 用途 |
 |---|---|
-| `.ai/<task-id>/state.json`、`events.jsonl` | Work Item、Attempt、Gate、请求快照、lease、审计事件 |
-| `.ai/<task-id>/routing-plan.json` | 角色路由和 Compile Plan |
-| `.ai/<task-id>/artifacts/handoff.md` | 当前工作交接 |
-| `.ai/<task-id>/artifacts/compiler-repair.md` | 编译修复指引 |
-| `.ai/<task-id>/compile-diagnostics/` | 编译命令、退出码和诊断 |
-| `.ai/<task-id>/reports/attempts/` | 不可变失败记录 |
-| `.ai/<task-id>/reports/latest-failure.md` | 原因、可重试性、责任方、下一步和证据引用 |
+| `.ai/tasks/<task-id>/state.json`、`events.jsonl` | Work Item、Attempt、Gate、请求快照、lease、审计事件 |
+| `.ai/tasks/<task-id>/task.toml` | Task 生命周期元数据；旧 OpenSpec 目录内元数据仅作兼容读取 |
+| `.ai/tasks/<task-id>/routing-plan.json` | 角色路由和 Compile Plan |
+| `.ai/tasks/<task-id>/artifacts/handoff.md` | 当前工作交接 |
+| `.ai/tasks/<task-id>/artifacts/compiler-repair.md` | 编译修复指引 |
+| `.ai/tasks/<task-id>/compile-diagnostics/` | 编译命令、退出码和诊断 |
+| `.ai/tasks/<task-id>/reports/attempts/` | 不可变失败记录 |
+| `.ai/tasks/<task-id>/reports/latest-failure.md` | 原因、可重试性、责任方、下一步和证据引用 |
 | `.ai/sessions/<session-id>/` | Session 状态、提示词、输出和线程信息 |
 | `openspec/changes/<task-id>/tasks.md` | 人工清单与 Workflow 投影 |
 
@@ -243,6 +291,51 @@ aiw workflow repair payment-retry
 `report` 只读取报告，不初始化状态，也无需逐个查看 Session outputs。
 `recover` 恢复持久化状态事件，`repair` 修复投影；它们不重新执行 Agent。
 处理 Gate 后应根据诊断决定是否 reopen 和重新 start。
+
+若 `state.json` 缺失，`start` 仅在存在有效、ID 匹配的持久 Task 元数据时初始化
+非活跃投影。change 目录或 migration marker 不能替代元数据，也不能恢复丢失的
+Attempt 历史。`status` 不执行这种初始化。
+
+## schema 10：已实现的受控协议与启用边界
+
+`internal/workflow/execution_protocol.go` 定义阶段
+`coder → report-validation → compile → tester → test-run → acceptance → accepted`。
+Coder 完成只结束实现阶段；Tester 使用独立 Session 和测试路径写入范围，测试
+Runner 只执行冻结 manifest。结果需绑定请求、输入、Session turn 和 lease generation。
+
+这条路径需要受控宿主接入 `ExecutionServices`，并提供授权、预算、结果及接受
+校验和平台启用证据。`JournaledVerificationHost` 还要求完整的执行边界；缺少
+宿主、网络隔离或独立断言审查能力时拒绝执行，不降级成普通 shell。
+
+**当前通用 CLI 的 `NextRunnerOutcome` 对 schema 10 返回 blocked，要求受控阶段
+适配器，并禁用旧派发。** 因此不能靠再次 `supervise start` 运行完整多角色链路，
+也不能手改 `schema_version` 启用。命令面没有通用的迁移、grant 或解除 Stop 操作。
+
+| 事项 | schema 10 行为 |
+|---|---|
+| 明确 Stop | 即使没有前台 Supervisor 也持久保存；重启不解除，不代表在途进程已退出 |
+| 结果未知 | 通过原执行器只读对账，保留请求、预留额度和写入权；缺输出不能证明未派发 |
+| 已保存结果 | 校验后消费原结果，不重新调用模型或测试命令 |
+| 预算 | 按 Actor/生成请求记账；升级使用配置中的不同模型顺序，重启不刷新额度 |
+| 旧预算不明 | 保留未知状态并要求人工决策，不归零，也不伪记耗尽 |
+| 本地交付 | 要求冻结计划、精确授权及受控交付宿主；旧 `local-merge` 被拒绝 |
+| 清理 | 独立授权，并要求已记录合并和 sealed-source 证据；不自动撤销冲突或强删资源 |
+
+基础设施恢复、实现/测试修复、报告补充各有自己的边界，不能用默认 schema 9 的
+`retry-policy` 或 `reopen` 说明替代。下方故障操作示例面向默认 schema 9；遇到
+durable/controlled-adapter 提示时，应处理受控宿主接入或原请求对账。
+
+辅助宿主可处理 Verifier、Task memory 和项目知识的持久队列，保存等待或未知状态；
+它不是持续轮询守护进程，也不是默认循环必然启动的步骤。配置、能力证据和明确
+Task 授权不足会记录 host gap。可用维护入口包括：
+
+```powershell
+aiw workflow auxiliary inventory
+aiw workflow knowledge show payment-retry
+```
+
+`auxiliary policy`、`initialize`、`settle` 和 `knowledge review/import` 属于显式
+维护操作，不启用 schema 10，不授予模型或测试执行权限。
 
 ## 出现问题时如何处理
 
@@ -265,16 +358,22 @@ aiw workflow diagnose payment-retry
 1. 用 `aiw wt status payment-retry`、`aiw wt list` 检查 Task 的工作树路径和注册信息。
 2. 若目录仍存在而注册信息损坏，按诊断使用 `aiw wt repair`；若目录丢失，先恢复或
    修复 Task 绑定，不要直接删除 Task 重建。
-3. 在正确用户和路径下确认 Git 可访问后，再解决 Gate 并启动：
+3. 确认执行环境已使用包含限定 Git 查询指令的修复版本，并只对当前预检确认的
+   规范工作树验证该只读查询；保留原始失败报告。不要使用旧 handoff 的目录，也不要
+   修改持久 Git 配置。
+4. 验证成功后，先解决对应 Gate；若历史 Agent outcome 已将 Work Item 标为
+   `blocked`，再显式 reopen 该项，最后才启动监督：
 
 ```powershell
 aiw workflow gate payment-retry workspace-access resolved
+aiw workflow reopen payment-retry wi-0001 "已在当前预检工作树验证限定 Git 查询"
 aiw workflow supervise payment-retry start
 ```
 
-这个 preflight Gate 通常没有把 Work Item 本身置为 blocked，因此不应盲目调用
-`reopen`。若错误再次出现，新的 preflight 会重新阻塞；不要用全局
-`safe.directory=*` 绕过路径检查。
+初始 preflight Gate 通常没有把 Work Item 本身置为 `blocked`；此时跳过 `reopen`，
+不要为了套用示例而执行它。代码更新、清单同步、Gate 解析都不会自动恢复历史项、
+清除原始失败证据或启动新 Session。若错误再次出现，保留新诊断并停止；不要扩大
+目录信任或循环重试。
 
 ### 场景 2：Agent 报 blocked，例如等待依赖或业务决策
 
@@ -393,11 +492,22 @@ aiw workflow skip-focused-test payment-retry "本次不运行可选聚焦测试�
 
 ## 实现位置与验证范围
 
-- `internal/commands/task/workflow_supervisor.go`：循环、结构化结果、本地交付入口。
+- `internal/commands/task/workflow_supervisor.go`：命令入口、执行接线和终端状态展示。
+- `internal/workflow/execution/`：Supervisor 循环、Session 结构化结果、编译修复和交付条件判断。
+- `internal/taskx/workflow_artifacts.go`、`workflow_handoff.go`、`supervised_git.go`：Task 清单、交接工件和工作树预检。
 - `internal/commands/task/workflow_commands.go`：路由、请求准备、派发。
-- `internal/commands/task/workflow_compile.go`：冻结计划、编译与修复交接。
+- `internal/workflow/execution/compile.go`：冻结计划、编译与修复编排。
 - `internal/commands/task/local_delivery.go`：本地交付和冲突保留。
 - `internal/workflow/attempts.go`、`compile.go`、`failure_report.go`：重试、编译结果和报告。
+- `internal/workflow/execution_protocol.go`、`protocol_store.go`、`execution_stop.go`：schema 10 启用边界、条件提交与 Stop。
+- `internal/workflow/execution/stages.go`、`verification_host.go`、`local_delivery.go`：受控阶段、结果对账与授权交付。
+
+### TODO 与 Verification
+
+- [x] 对照命令解析、默认调度、协议启用和交付拒绝分支更新说明。
+- [x] 区分 schema 9 默认路径与 schema 10 受控服务，保留故障恢复操作指引。
+
+%% 本次仅核对源码；真实宿主隔离、外部模型和持久化平台能力未在本次文档更新中运行验证。
 
 上述 Gate 去重、结果分类、编译计数和报告读取有自动化回归用例。替身测试验证
 受管状态和调用逻辑，不代表真实 Windows ownership 拒绝、外部模型或实际 Git

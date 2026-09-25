@@ -18,6 +18,7 @@ const (
 )
 
 type Status struct {
+	archived bool
 	SchemaVersion int                    `json:"schema_version"`
 	Session       SessionInfo            `json:"session"`
 	Backend       BackendInfo            `json:"backend"`

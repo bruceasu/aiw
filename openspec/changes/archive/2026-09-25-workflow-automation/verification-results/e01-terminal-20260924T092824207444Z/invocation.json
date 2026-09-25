@@ -1,0 +1,5 @@
+{
+  "scope": "One original five-test E01 run from the operator terminal",
+  "authorization_context": "Operator explicitly invoked this bounded E01 test runner; no product grant is implied",
+  "product_runner_grant": false
+}

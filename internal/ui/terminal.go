@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/chzyer/readline"
 )
 
 type Terminal struct {
@@ -13,6 +15,15 @@ type Terminal struct {
 
 func NewTerminal(out io.Writer) Terminal {
 	return Terminal{out: out, colored: supportsColor(out)}
+}
+
+func (t Terminal) Interactive() bool {
+	file, ok := t.out.(*os.File)
+	return ok && readline.IsTerminal(int(file.Fd()))
+}
+
+func (t Terminal) ColorEnabled() bool {
+	return t.colored
 }
 
 func (t Terminal) Section(title string) {
@@ -57,6 +68,5 @@ func supportsColor(out io.Writer) bool {
 	if !ok {
 		return false
 	}
-	info, err := file.Stat()
-	return err == nil && info.Mode()&os.ModeCharDevice != 0
+	return readline.IsTerminal(int(file.Fd())) && terminalSupportsANSI(file)
 }

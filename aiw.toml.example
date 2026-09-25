@@ -62,19 +62,6 @@
 # Shared fallback command for CLI providers.
 # command = "codex"
 
-# Different CLI agents can use different models per invocation:
-# aiw turn <task-id> --provider codex --model <codex-model>
-# aiw turn <task-id> --provider copilot --model <copilot-model>
-# The same --provider/--model options are available for aiw chat.
-# For Session execution, each non-empty field resolves independently:
-# CLI override > stored Session backend/model > shared AI configuration.
-# One-call overrides do not change the stored Session backend/model.
-# Changing only --provider does not select a separate model for that provider;
-# pass --model as well when the agents need different models.
-#
-# Not supported in this file: codex_model, copilot_model, or [agents.<name>]
-# model mappings. Codex and Copilot currently use the shared model above.
-# codex_command and copilot_command select commands, not separate models.
 
 # Provider-specific values override generic model/base_url/api_key values.
 # Leave unused settings commented out. These values are examples, not secrets.
@@ -102,16 +89,24 @@
 # AIW_LLM_BASE_URL and AIW_LLM_API_KEY override the resolved values.
 
 [ai.profiles.fast]
-provider = "copilot"
-model = "your-fast-model"
+provider = "codex"
+model = "gpt-6-luna"
+level = 1
+
+[ai.profiles.normal]
+provider = "codex"
+model = "gpt-5.6-terra"
+level = 2
 
 [ai.profiles.balanced]
 provider = "codex"
-model = "your-coding-model"
+model = "gpt-5.6-sol"
+level = 3
 
 [ai.profiles.reasoning]
 provider = "codex"
-model = "your-reasoning-model"
+model = "gpt-6-astra"
+level = 4
 
 # Managed Workflow AI Profiles. They affect only `aiw workflow supervise`;
 # other AI commands continue to use the global [ai] configuration above.

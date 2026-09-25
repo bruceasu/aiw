@@ -1,0 +1,18 @@
+{
+  "source": "user conversation",
+  "reply": "???????????",
+  "scope": "Continue diagnosing path-query permission failure; one same-command offline test after path diagnostics; no ACL changes, elevation or containment bypass",
+  "command": [
+    "go",
+    "test",
+    "./internal/workflow",
+    "-run",
+    "^(TestDurableUnknownAndStopRetainWriter|TestDurableResultReplayConsumesOnceAndKeepsAttempt|TestDurablePendingTailRecoveryKeepsRevision)$",
+    "-count=1",
+    "-timeout=60s",
+    "-vet=off",
+    "-json"
+  ],
+  "recorded_at": "2026-09-24T07:21:14.266653+00:00",
+  "product_runner_grant": false
+}

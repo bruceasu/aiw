@@ -25,6 +25,8 @@ const (
 // verification stage. Its outcome is deliberately separate from ActorResult
 // status: recording a failed report succeeds and must not block delivery.
 type VerifierReport struct {
+	Snapshot *ActorReference `json:"snapshot,omitempty"`
+	Coverage []VerifierCoverage `json:"coverage,omitempty"`
 	SchemaVersion int             `json:"schema_version"`
 	TaskID        TaskID          `json:"task_id"`
 	WorkItemID    WorkItemID      `json:"work_item_id"`
@@ -36,13 +38,20 @@ type VerifierReport struct {
 }
 
 func (r VerifierReport) Validate() error {
-	if r.SchemaVersion != VerifierReportSchemaVersion || r.TaskID == "" || r.WorkItemID == "" || r.AttemptID == "" || !validVerifierOutcome(r.Outcome) || strings.TrimSpace(r.Summary) == "" || strings.TrimSpace(r.RecordedAt) == "" {
+	if (r.SchemaVersion != VerifierReportSchemaVersion && r.SchemaVersion != 2) || r.TaskID == "" || r.WorkItemID == "" || r.AttemptID == "" || !validVerifierOutcome(r.Outcome) || strings.TrimSpace(r.Summary) == "" || strings.TrimSpace(r.RecordedAt) == "" {
 		return fmt.Errorf("verifier report requires schema, Task, Work Item, Attempt, outcome, summary, and recorded time")
 	}
 	for index, finding := range r.Findings {
 		if strings.TrimSpace(finding) == "" {
 			return fmt.Errorf("verifier finding %d is empty", index)
 		}
+	}
+	if r.SchemaVersion == 2 {
+		if r.Snapshot == nil || r.Snapshot.Kind != "verifier-snapshot" || !validProtocolReference(*r.Snapshot) { return fmt.Errorf("Verifier v2 report needs its fixed snapshot") }
+		if _, err := time.Parse(time.RFC3339, r.RecordedAt); err != nil { return fmt.Errorf("Verifier record time is invalid: %w", err) }
+		outcome, err := verifierCoverageOutcome(r.Coverage)
+		if err != nil { return err }
+		if outcome != r.Outcome { return fmt.Errorf("Verifier outcome does not follow its coverage evidence") }
 	}
 	return nil
 }

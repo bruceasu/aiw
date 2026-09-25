@@ -1,0 +1,36 @@
+{
+  "command": [
+    "go",
+    "test",
+    "./internal/workflow",
+    "-run",
+    "^(TestAuxiliarySourceTracksMaterialFactsOnly|TestAuxiliaryJobIdentitySharedAcrossSponsors|TestAuxiliaryOversizeInputIsUnavailableWithoutTruncation)$",
+    "-count=1",
+    "-timeout=60s",
+    "-vet=off",
+    "-json"
+  ],
+  "cwd": "C:\\Users\\svictor\\workspace\\tools\\aiw\\.wt\\workflow-automation",
+  "started_at": "2026-09-25T00:57:44.414955+00:00",
+  "environment_overrides": {
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local",
+    "GOCACHE": "C:\\Users\\svictor\\workspace\\tools\\aiw\\.wt\\workflow-automation\\.ai\\compile-cache\\go"
+  },
+  "temporary_environment": {
+    "TMP": "C:\\Users\\svictor\\AppData\\Local\\Temp",
+    "TEMP": "C:\\Users\\svictor\\AppData\\Local\\Temp",
+    "TMPDIR": null
+  },
+  "input_manifest_sha256": "e4108f66f58de97d0083d291a92adb622f520ba81c43d20ed1b41d023e7843ce",
+  "plan_reference": "../../e05-source-verification-plan.md",
+  "plan_sha256": "45ada446d607f0a8d781ae0385255a8b9b0cc516a994801bda86b3f235f7e793",
+  "toolchain": "go version go1.25.1 windows/amd64",
+  "toolchain_error": "",
+  "exit_code": 0,
+  "ended_at": "2026-09-25T00:57:44.972711+00:00",
+  "changed_inputs": [],
+  "stdout.jsonl_sha256": "ff8901bb927320c773430c3ff6d8963521d1849c64265fb1e6624b72d1ee33a0",
+  "stderr.txt_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

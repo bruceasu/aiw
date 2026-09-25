@@ -1,0 +1,19 @@
+{"Time":"2026-09-24T12:26:45.57906+09:00","Action":"start","Package":"aiw/internal/workflow"}
+{"Time":"2026-09-24T12:26:45.6646524+09:00","Action":"run","Package":"aiw/internal/workflow","Test":"TestDurableUnknownAndStopRetainWriter"}
+{"Time":"2026-09-24T12:26:45.6656904+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestDurableUnknownAndStopRetainWriter","Output":"=== RUN   TestDurableUnknownAndStopRetainWriter\n"}
+{"Time":"2026-09-24T12:26:45.7464034+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestDurableUnknownAndStopRetainWriter","Output":"    protocol_windows_test.go:66: migrate fixture execution: Access is denied.\n"}
+{"Time":"2026-09-24T12:26:45.7554699+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestDurableUnknownAndStopRetainWriter","Output":"--- FAIL: TestDurableUnknownAndStopRetainWriter (0.09s)\n"}
+{"Time":"2026-09-24T12:26:45.7554699+09:00","Action":"fail","Package":"aiw/internal/workflow","Test":"TestDurableUnknownAndStopRetainWriter","Elapsed":0.09}
+{"Time":"2026-09-24T12:26:45.7560272+09:00","Action":"run","Package":"aiw/internal/workflow","Test":"TestDurableResultReplayConsumesOnceAndKeepsAttempt"}
+{"Time":"2026-09-24T12:26:45.7560272+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestDurableResultReplayConsumesOnceAndKeepsAttempt","Output":"=== RUN   TestDurableResultReplayConsumesOnceAndKeepsAttempt\n"}
+{"Time":"2026-09-24T12:26:45.8661294+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestDurableResultReplayConsumesOnceAndKeepsAttempt","Output":"    protocol_windows_test.go:78: migrate fixture execution: Access is denied.\n"}
+{"Time":"2026-09-24T12:26:45.8682639+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestDurableResultReplayConsumesOnceAndKeepsAttempt","Output":"--- FAIL: TestDurableResultReplayConsumesOnceAndKeepsAttempt (0.11s)\n"}
+{"Time":"2026-09-24T12:26:45.8682639+09:00","Action":"fail","Package":"aiw/internal/workflow","Test":"TestDurableResultReplayConsumesOnceAndKeepsAttempt","Elapsed":0.11}
+{"Time":"2026-09-24T12:26:45.8682639+09:00","Action":"run","Package":"aiw/internal/workflow","Test":"TestDurablePendingTailRecoveryKeepsRevision"}
+{"Time":"2026-09-24T12:26:45.8682639+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestDurablePendingTailRecoveryKeepsRevision","Output":"=== RUN   TestDurablePendingTailRecoveryKeepsRevision\n"}
+{"Time":"2026-09-24T12:26:45.9396925+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestDurablePendingTailRecoveryKeepsRevision","Output":"    protocol_windows_test.go:94: migrate fixture execution: Access is denied.\n"}
+{"Time":"2026-09-24T12:26:45.9417698+09:00","Action":"output","Package":"aiw/internal/workflow","Test":"TestDurablePendingTailRecoveryKeepsRevision","Output":"--- FAIL: TestDurablePendingTailRecoveryKeepsRevision (0.07s)\n"}
+{"Time":"2026-09-24T12:26:45.9417698+09:00","Action":"fail","Package":"aiw/internal/workflow","Test":"TestDurablePendingTailRecoveryKeepsRevision","Elapsed":0.07}
+{"Time":"2026-09-24T12:26:45.9417698+09:00","Action":"output","Package":"aiw/internal/workflow","Output":"FAIL\n"}
+{"Time":"2026-09-24T12:26:45.944123+09:00","Action":"output","Package":"aiw/internal/workflow","Output":"FAIL\taiw/internal/workflow\t0.363s\n"}
+{"Time":"2026-09-24T12:26:45.944123+09:00","Action":"fail","Package":"aiw/internal/workflow","Elapsed":0.368}

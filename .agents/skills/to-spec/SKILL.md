@@ -21,7 +21,7 @@ specification or publish externally unless the user explicitly asks.
 
    The AIW Task and OpenSpec change are one managed unit. Before continuing,
    establish and record the same normalized Task ID in both locations:
-  `.ai/<task-id>/task.toml` and the matching OpenSpec change directory.
+  `.ai/tasks/<task-id>/task.toml` and the matching OpenSpec change directory.
   The `task.toml` must be the AIW lifecycle record, not an OpenSpec-owned
   specification artifact, and must retain the Task's status, branch,
    worktree, parent branch, and Session fields when those fields exist. Do not proceed with
@@ -48,9 +48,12 @@ specification or publish externally unless the user explicitly asks.
    in a `## Design Readiness` section. `BLOCKED` must retain its `%%` question
    and prevents a handoff to implementation.
 
-2. Sketch out the seams at which you're going to test the feature. Existing seams should be preferred to new ones. Use the highest seam possible. If new seams are needed, propose them at the highest point you can. The fewer seams across the codebase, the better - the ideal number is one.
-
-Check with the user that these seams match their expectations.
+2. Identify how the changed behavior can be observed and verified. Prefer an
+   existing test or inspection seam that covers the user-visible outcome. Record
+   any new seam only when the current ones cannot verify a material requirement.
+   Ask the user only when the choice would materially change behavior, scope,
+   cost, or an unresolved design decision. Planning a check does not authorize
+   running it.
 
 3. Write or update the applicable OpenSpec artifacts using the template below.
    A successful `to-spec` run must leave this minimum artifact set in the
@@ -64,7 +67,7 @@ Check with the user that these seams match their expectations.
      Verification sections or equivalent records.
 
    The AIW lifecycle record and runtime artifacts belong under
-   `.ai/<task-id>/`, including `task.toml`, handoff documents, and
+   `.ai/tasks/<task-id>/`, including `task.toml`, handoff documents, and
    lineage data. They are not OpenSpec change artifacts.
 
    **Creation semantics:** with the `spec-driven` OpenSpec backend, `aiw new
@@ -74,7 +77,7 @@ Check with the user that these seams match their expectations.
    can remain unavailable until the proposal exists. In that state, continue
    by obtaining `openspec instructions` and writing the required proposal,
    design, capability specs, and checklist. Treat creation as blocked only if
-   the same task ID cannot be found in both `.ai/<task-id>/task.toml` and
+   the same task ID cannot be found in both `.ai/tasks/<task-id>/task.toml` and
    `openspec/changes/<task-id>/`, or if AIW reports an actual creation/linking
    error.
 
@@ -105,7 +108,9 @@ Check with the user that these seams match their expectations.
    goal, and planning status. Do not create the implementation worktree during
    specification work. The resulting `tasks.md` is the checklist source that
    `/implement` will resolve; do not leave implementation work only in the
-   proposal or design.
+   proposal or design. If its items are already ordered and actionable, hand
+   the selected item directly to `/implement`. Use `/to-tickets` only when
+   item size, prerequisites, or verification boundaries still need refinement.
 
    Once the required artifacts and ID checks pass, report planning Evidence and
    unresolved Gates before handing the Task to `/implement`. Do not commit or
@@ -144,7 +149,9 @@ The solution to the problem, from the user's perspective.
 
 ## User Stories
 
-A LONG, numbered list of user stories. Each user story should be in the format of:
+A numbered list only as long as needed to cover the important user-visible
+scenarios. Each story should use this format when it helps clarify the actor
+and outcome:
 
 1. As an <actor>, I want a <feature>, so that <benefit>
 

@@ -145,11 +145,11 @@ must not retain a final distributable artifact, and `build*` scripts are not
 compile scripts. Running tests, final-artifact builds, type checks, formatters,
 linters, vet, or verification scripts requires an explicit user instruction.
 
-After development is complete, ask once whether the user wants one focused test
-command run. Include the exact command, scope, and expected duration. Default to
-not testing when the user declines or does not respond.
-
-Broader test or build scope requires separate approval.
+After development, report which tests were not run. When a focused test
+would add useful evidence, give one optional command with scope and expected
+duration; do not ask solely because implementation finished. Run tests only
+under the repository's runtime authorization rules. Broader tests or builds
+require separate approval.
 
 ## Completion
 

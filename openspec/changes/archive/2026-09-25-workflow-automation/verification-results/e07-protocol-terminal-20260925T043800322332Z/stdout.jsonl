@@ -1,0 +1,20 @@
+{"Time":"2026-09-25T13:38:01.1212469+09:00","Action":"start","Package":"aiw/internal/notification"}
+{"Time":"2026-09-25T13:38:01.1511022+09:00","Action":"run","Package":"aiw/internal/notification","Test":"TestStrictNotificationProtocolRejectsAmbiguousResults"}
+{"Time":"2026-09-25T13:38:01.1511022+09:00","Action":"output","Package":"aiw/internal/notification","Test":"TestStrictNotificationProtocolRejectsAmbiguousResults","Output":"=== RUN   TestStrictNotificationProtocolRejectsAmbiguousResults\n"}
+{"Time":"2026-09-25T13:38:01.1511022+09:00","Action":"output","Package":"aiw/internal/notification","Test":"TestStrictNotificationProtocolRejectsAmbiguousResults","Output":"--- PASS: TestStrictNotificationProtocolRejectsAmbiguousResults (0.00s)\n"}
+{"Time":"2026-09-25T13:38:01.1516319+09:00","Action":"pass","Package":"aiw/internal/notification","Test":"TestStrictNotificationProtocolRejectsAmbiguousResults","Elapsed":0}
+{"Time":"2026-09-25T13:38:01.1516319+09:00","Action":"run","Package":"aiw/internal/notification","Test":"TestStrictNotificationProtocolAcceptsAttemptOnly"}
+{"Time":"2026-09-25T13:38:01.1516319+09:00","Action":"output","Package":"aiw/internal/notification","Test":"TestStrictNotificationProtocolAcceptsAttemptOnly","Output":"=== RUN   TestStrictNotificationProtocolAcceptsAttemptOnly\n"}
+{"Time":"2026-09-25T13:38:01.1516319+09:00","Action":"output","Package":"aiw/internal/notification","Test":"TestStrictNotificationProtocolAcceptsAttemptOnly","Output":"--- PASS: TestStrictNotificationProtocolAcceptsAttemptOnly (0.00s)\n"}
+{"Time":"2026-09-25T13:38:01.1516319+09:00","Action":"pass","Package":"aiw/internal/notification","Test":"TestStrictNotificationProtocolAcceptsAttemptOnly","Elapsed":0}
+{"Time":"2026-09-25T13:38:01.1516319+09:00","Action":"run","Package":"aiw/internal/notification","Test":"TestStrictNotificationConfigProtocol"}
+{"Time":"2026-09-25T13:38:01.1516319+09:00","Action":"output","Package":"aiw/internal/notification","Test":"TestStrictNotificationConfigProtocol","Output":"=== RUN   TestStrictNotificationConfigProtocol\n"}
+{"Time":"2026-09-25T13:38:01.1516319+09:00","Action":"output","Package":"aiw/internal/notification","Test":"TestStrictNotificationConfigProtocol","Output":"--- PASS: TestStrictNotificationConfigProtocol (0.00s)\n"}
+{"Time":"2026-09-25T13:38:01.1516319+09:00","Action":"pass","Package":"aiw/internal/notification","Test":"TestStrictNotificationConfigProtocol","Elapsed":0}
+{"Time":"2026-09-25T13:38:01.1516319+09:00","Action":"run","Package":"aiw/internal/notification","Test":"TestNotificationOutputBounds"}
+{"Time":"2026-09-25T13:38:01.1516319+09:00","Action":"output","Package":"aiw/internal/notification","Test":"TestNotificationOutputBounds","Output":"=== RUN   TestNotificationOutputBounds\n"}
+{"Time":"2026-09-25T13:38:01.1516319+09:00","Action":"output","Package":"aiw/internal/notification","Test":"TestNotificationOutputBounds","Output":"--- PASS: TestNotificationOutputBounds (0.00s)\n"}
+{"Time":"2026-09-25T13:38:01.1516319+09:00","Action":"pass","Package":"aiw/internal/notification","Test":"TestNotificationOutputBounds","Elapsed":0}
+{"Time":"2026-09-25T13:38:01.1516319+09:00","Action":"output","Package":"aiw/internal/notification","Output":"PASS\n"}
+{"Time":"2026-09-25T13:38:01.1537859+09:00","Action":"output","Package":"aiw/internal/notification","Output":"ok  \taiw/internal/notification\t0.033s\n"}
+{"Time":"2026-09-25T13:38:01.1537859+09:00","Action":"pass","Package":"aiw/internal/notification","Elapsed":0.033}

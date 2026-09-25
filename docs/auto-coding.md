@@ -1,441 +1,243 @@
-# AIW `workflow supervise` 自动编码流程
+# AIW 自动编码流程
 
-本文档说明当前 AIW 自动编码流程的实际工作方式，包括
-`workflow supervise` 的生命周期、Agent/LLM 调用、Skills 使用、工作区隔离、
-协同约束、暂停条件和恢复方式。
+本文按当前源码说明自动编码入口和执行边界。详细操作及故障处理见
+[Supervise 使用指南](supervise.md)。
 
-## 1. 适用范围
+## 1. 当前可用范围
 
-`workflow supervise` 用于在一个已经建立的 AIW Task 上，持续执行多个受控的
-Work Item。它不是无限制的自动编程循环，也不是后台调度器。
+`aiw workflow` 与 `aiw task workflow` 使用同一入口。`supervise` 是前台、单 Task、
+顺序执行的循环，每轮派发一个有界 Agent turn。
 
-AIW 将以下职责分开：
+**新 Task 默认仍使用 schema 9。** 源码另有 schema 10 持久化多阶段协议，需要
+受管迁移、受控宿主和平台证据；普通 `supervise start` 不启用它。
 
-| 组件 | 负责内容 |
+| 能力 | 默认 schema 9 CLI | schema 10 受控协议 |
+|---|---|---|
+| 实现 | Coder、结构化 outcome、编译及有界修复 | 独立阶段、冻结输入、精确请求和结果绑定 |
+| 测试 | 单独授权的 focused-test 试点 | 独立 Tester、冻结测试 manifest、受控 Runner |
+| 模型 | coder Profile 快照；修复复用，不自动升级 | 按 Actor 记账，按配置中的不同模型顺序升级 |
+| Stop | 停止当前 Supervisor lease | 持久保存，重启不解除 |
+| 交付 | 条件满足时提交、合并父分支并清理 | 冻结计划、精确授权、受控宿主及独立清理授权 |
+
+通用 `NextRunnerOutcome` 对 schema 10 返回 blocked，要求受控阶段适配器，禁用
+旧派发；旧本地交付也被拒绝。不能通过手改 `schema_version` 启用这些能力。
+
+## 2. 状态与职责
+
+| 组件 | 职责 |
 |---|---|
-| AIW Task | Task ID、分支、worktree、Session 和 handoff 生命周期 |
-| OpenSpec | proposal、design、spec、`tasks.md` 等人工维护的工程输入 |
-| Workflow Core | Work Item、Attempt、Gate、Evidence、写入租约和运行状态 |
-| Supervisor | 前台循环、租约、下一步判断和暂停/恢复 |
-| Session | 单次 Agent turn 的输入、输出、记忆和事件 |
-| 外部 Agent CLI | 实际读取上下文、编辑代码和返回结果 |
+| AIW Task | 生命周期、工作区、分支、父分支和 Session 关联 |
+| OpenSpec | proposal、design、spec、人工清单及完成条件 |
+| Workflow Core | Work Item、Attempt、Gate、Evidence、lease 和执行事实 |
+| Supervisor | 顺序调度、Session 观察、编译修复及默认路径的本地交付 |
+| Session / Agent CLI | 单次模型执行的上下文、输出、事件及原生线程 |
+| 受控宿主 | schema 10 执行边界、结果凭据、对账和授权副作用 |
 
-正常链路如下：
+不要手改状态文件或仅勾选清单来替代 Core 的受管状态转换。
 
-```text
-Requirement
-  -> approved Task
-  -> OpenSpec artifacts
-  -> Work Items
-  -> prepared Attempt
-  -> one bounded Agent turn
-  -> Session result
-  -> Evidence / Gate
-  -> next Work Item or human decision
-```
+## 3. 启动前准备
 
-## 2. 启动前准备
-
-### 2.1 创建或确认 Task
-
-普通 Task 通过 AIW 创建：
+以下示例在仓库根目录运行。先安装 AIW、Git、所选 Agent CLI，并完成 CLI 认证。
 
 ```powershell
 aiw init
 aiw new payment-retry
+aiw show payment-retry
+aiw context payment-retry
 ```
 
-Requirement 驱动的工作应先完成需求批准和 promotion：
+补齐 `openspec/changes/payment-retry/` 的需求、设计和 `tasks.md`。Work Item 来自
+清单，应有明确范围和完成条件。若 Requirement promotion 已生成 Task，使用现有任务。
+
+先审阅并提交需要带入工作树的工件和代码，让父工作区干净，再运行：
 
 ```powershell
-aiw requirement chat payment-retry
-aiw requirement approve payment-retry APPROVED --by alice --reason "scope approved"
-aiw requirement promote payment-retry --task payment-retry
+aiw wt add payment-retry
+aiw workflow plan payment-retry
+aiw workflow recommend-routing payment-retry
+aiw wt status payment-retry
 ```
 
-Task 至少应有：
-
-```text
-openspec/changes/<task-id>/
-├── proposal.md       # 如果该变更有 proposal
-├── design.md         # 如果存在设计决策
-├── tasks.md          # 编号化实现清单
-└── specs/            # 相关能力规格
-```
-
-`tasks.md` 是 Work Item 的来源。Workflow Core 会将尚未完成的清单项同步为可执行
-Work Item，并依据依赖、Gate 和历史 Attempt 选择下一项。
-
-### 2.2 检查计划
-
-先生成或同步计划，再预览下一步：
+自动执行默认使用 `.wt/<task-id>/`；supervise 也能按默认规则准备隔离工作树。
+`recommend-routing` 保存路由和 Compile Plan，可调用共享 AI provider；失败时使用
+确定性默认路由。Requirement promotion 会调用该入口；已有计划时按需重新推荐。
 
 ```powershell
-aiw task workflow plan payment-retry
-aiw task workflow sync payment-retry
-aiw task workflow advance payment-retry
-aiw task workflow run payment-retry
+aiw workflow supervise payment-retry start --provider codex --model your-model
 ```
 
-`advance` 只准备一个 Attempt-bound 请求，不启动模型。
+**默认路径满足交付条件后会提交、合并到记录的 `parent_branch`，并清理已合并工作树
+和分支。** 它不自动 push、发布 PR 或 archive。
 
-`run` 默认也是预览操作；它只计算下一步并投影状态，不创建 Agent turn。
-
-## 3. Supervisor 的启动与停止
-
-启动前台监督循环：
+另一终端可观察或停止：
 
 ```powershell
-aiw task workflow supervise payment-retry start
+aiw workflow supervise payment-retry status
+aiw workflow report payment-retry
+aiw workflow diagnose payment-retry
+aiw workflow supervise payment-retry stop
 ```
 
-查看状态：
+`stop` 不证明在途 Agent 或编译进程已退出。结果未知时先核实原进程和请求，不能
+立即启动第二个写入者。schema 10 的 Stop 持久保存，重新 start 不解除。
 
-```powershell
-aiw task workflow supervise payment-retry status
+### 单步与预览
+
+| 命令 | 实际作用 |
+|---|---|
+| `aiw workflow run payment-retry` | 不调用 Agent，但可能准备并持久化请求，不是纯只读 |
+| `aiw workflow advance payment-retry` | 准备 Attempt-bound 请求，不调用模型 |
+| `aiw workflow run payment-retry --execute` | 执行一步，不包含完整监督编译修复和自动交付循环 |
+| `aiw workflow run payment-retry --execute --primary` | 显式使用主工作区，仅限 Task 已绑定主工作区 |
+
+`--primary` 不是 supervise 参数。准备 supervise 时不要用 `advance` 或 `run` 预热
+请求；让 supervise 在计划就绪后冻结请求。旧请求不会随计划文件或 CLI 模型参数
+变化而更新。纯观察使用 `show`、`status`、`diagnose`、`report`。
+
+## 4. 默认监督循环
+
+```mermaid
+flowchart TD
+    A[取得 Supervisor lease] --> B[同步清单 / 检查阻塞]
+    B --> C[Git preflight / 准备请求]
+    C --> D[冻结模型和计划 / Agent turn]
+    D --> E[核对 Session / 归档输出]
+    E --> F{结构化 outcome}
+    F -- completed --> G[执行 Compile Plan]
+    F -- blocked --> P[Gate / 暂停]
+    F -- no-progress --> R[普通重试计数]
+    R -- 未耗尽 --> B
+    R -- 耗尽 --> P
+    G -- 失败且未达上限 --> H[同一 Attempt 修复]
+    H --> B
+    G -- 第三次失败或目标不可用 --> P
+    G -- 成功 --> I[记录 outcome / 同步清单]
+    I --> B
+    B -- 无可执行项 --> J{满足交付条件?}
+    J -- 是 --> K[提交 / 合并 / 验证 / 清理]
+    J -- 否 --> P
 ```
 
-停止当前 Supervisor：
+- 初始 Git preflight 失败产生 `workspace-access` Gate，不创建新 Attempt、不消耗重试。
+- Session 必须完成且有最终输出；Task、Work Item、Attempt 和 Session turn 必须匹配。
+- 原始输出先归档为 execution report。普通无效 outcome 按 no-progress 处理。
+- 带冻结输入的请求还校验 implementation report 的身份、输入摘要、变更引用和事实
+  章节；最多补充一次报告，仍无效则进入 `report-manual-review`。
+- 普通 no-progress 默认上限 3，`retry-policy` 可设为 1–5；blocked 不增加该计数。
+- 连续第三次编译失败停止自动修复，即初次失败后最多两次修复 turn。编译成功清零；
+  修复保留 Attempt、工作树、模型及计划。
+- Agent 不自行编译或测试；Supervisor 编译器执行冻结目标，不调用模型。
 
-```powershell
-aiw task workflow supervise payment-retry stop
-```
+缺少冻结计划或目标不可用会打开 Gate。编译按变更路径选目标，共享或无法映射的
+变更回退全部计划目标。勾选清单不绕过活跃编译、阻塞或未清除的编译失败。
 
-Supervisor 运行在当前终端进程中。关闭终端、发送中断或进程异常退出后，不应直接
-启动第二个 Supervisor；先查看状态和诊断结果。
-
-## 4. Supervisor 每轮的实际流程
-
-Supervisor 启动后会：
-
-1. 从 `.ai/<task-id>/state.json` 加载 Workflow 状态。
-2. 获取该 Task 唯一的 Supervisor lease，默认有效期约为一分钟。
-3. 检查未解决的 projection repair；存在时先尝试修复，修复失败则暂停。
-4. 同步 `tasks.md` 与 Workflow Core 的 Work Item 投影。
-5. 计算 `workflow.NextRunnerOutcome`。
-6. 如果当前状态允许执行，则续租并调用一次：
-
-   ```text
-   run --execute
-     -> runBoundedTaskTurn
-     -> aiw turn <task-id> --supervised
-   ```
-
-7. 等待该 Agent turn 返回，并读取对应 Session 结果。
-8. 将 Session 结果记录为 Attempt Outcome 和 Evidence。
-9. 更新 Workflow 状态及 OpenSpec/Task 的投影。
-10. 重新评估下一步，而不是重复使用刚刚完成的 prepared request。
-11. 记录 Supervisor observation。
-12. 遇到 Gate、阻塞、无可执行 Work Item 或 repair-required 时暂停。
-
-监督循环每轮只允许一个受控 Agent turn。它不会把多个 Agent turn 并行发起到
-同一个 Task。
-
-## 5. 工作区与写入协同
-
-### 5.1 默认隔离 worktree
-
-自动执行默认使用隔离 worktree：
-
-```text
-.wt/<task-id>/
-```
-
-如果需要明确在主工作区执行，必须显式指定：
-
-```powershell
-aiw task workflow run payment-retry --execute --primary
-```
-
-`--primary` 不能脱离 `--execute` 单独使用。Supervisor 启动时没有主工作区
-默认切换行为，仍遵守自动执行的隔离策略。
-
-### 5.2 写入租约
-
-Workflow Core 为当前 Attempt 持有 write lease，用于防止两个写入型 Agent 同时
-修改同一个工作区。以下情况会阻止继续执行：
-
-- 当前工作区已有活动的写入 Attempt；
-- Task 的 isolated worktree 丢失或绑定无效；
-- Session 仍在运行；
-- Supervisor lease 已被其他进程持有；
-- 状态文件或事件投影需要恢复。
-
-Supervisor 自身也有唯一 lease。模型调用可能超过 lease 的初始有效期，因此
-Supervisor 会在提交 Session 结果前续租，确保结果仍由当前监督进程提交。
-
-### 5.3 并行协同边界
-
-AIW 的自动流程不是多 Agent 并行编程模型。协同方式是：
-
-```text
-Supervisor
-  -> 一个 Attempt
-  -> 一个 Session / Agent turn
-  -> 持久化 Evidence
-  -> 下一轮再选择下一个 Work Item
-```
-
-工程 Skill 可以按任务需要使用受控 sub-agent，但 sub-agent 只能执行有界的静态
-分析、代码定位或独立实现片段；不得自行运行测试、构建流程、网络操作、提交、
-归档或 worktree 操作。主 Agent 负责集成和生命周期变更。
-
-## 6. LLM 调用方式
-
-### 6.1 Provider 入口
-
-`aiw turn` 会根据 Session 和 Provider 配置调用外部 CLI。当前共享的 Provider
-配置同时服务于：
-
-- `aiw ask`
-- Managed Workflow turn
-- CZ 提交向导
-
-Supervisor 启动时可以临时指定 Provider 和模型：
-
-```powershell
-aiw task workflow supervise payment-retry start `
-  --provider copilot `
-  --model gpt-5.6
-```
-
-`--provider` 和 `--model` 只对 `start` 有效。
-
-也可以在配置文件中设置默认值：
+## 5. 模型、上下文和 Skills
 
 ```toml
 [ai]
-provider = "copilot"
-model = "gpt-5.6"
-codex_command = "codex"
-copilot_command = "copilot"
+provider = "codex"
+model = "your-default-model"
+
+[ai.profiles.balanced]
+provider = "codex"
+model = "your-coding-model"
 ```
 
-配置优先级和命令支持的 Provider 取决于当前 AIW 配置实现；环境变量
-`OPENAI_API_KEY`、`OPENAI_MODEL`、`OPENAI_BASE_URL` 可用于 OpenAI 兼容 Provider。
+Profile 配在 `[ai.profiles.<name>]`，必须包含 provider 和 model；不完整时回退全局
+`[ai]`。默认映射为 `analysis=fast`、`coder/tester=balanced`、`verifier=reasoning`。
+默认监督只读取 coder。新请求保存 `AISelection`，启动覆盖在冻结时应用；恢复及
+编译修复复用快照，不因重启而换模型。schema 10 另有按 Actor 记账的路由与升级服务。
 
-### 6.2 单次 Agent turn
+执行通过 `aiw turn <task-id> --supervised` 进入 Session 和外部 Agent CLI，使用 Task
+工件、所选 Work Item、handoff 及运行上下文，不进入交互式 `chat`。
 
-Supervisor 不直接拼接并执行任意 Shell 命令，也不直接管理模型对话。它将受控
-请求交给：
+Skills 提供 Agent 方法指引，不授予测试、Git 写入或生命周期权限。默认循环不会
+因为安装 `tdd` 或 `code-review` 就自动运行测试或审查。schema 10 另有 Skill manifest
+及冻结上下文支持，应以实际请求包含的选择为准。
+
+监督请求的只读 Git 前缀限定到本次预检确认的工作树：
 
 ```text
-aiw turn
-  -> Session backend
-  -> Codex CLI 或 Copilot CLI
-  -> Session output
-  -> Attempt Outcome / Evidence
+git -c "safe.directory=<verified-worktree>" -C "<verified-worktree>" status
 ```
 
-Agent turn 会读取：
+它不授权持久 Git 配置或 Git 写入。不要使用 `safe.directory=*` 或旧 handoff 的目录。
 
-- Task 的 `task.toml`；
-- 当前 OpenSpec proposal、design、spec 和 `tasks.md`；
-- 当前选中的 Work Item；
-- Task-local `artifacts/handoff.md`；
-- 当前 Session 的 instructions 和 memory；
-- 相关历史 Evidence 和 Gate。
+## 6. 验证、交付与辅助工作
 
-Agent 的目标是完成一个 Work Item，而不是自行决定整个 Task 的完成、发布或归档。
-
-### 6.3 输出持久化
-
-Session 输出保存到：
-
-```text
-.ai/sessions/<session-id>/
-├── status.json
-├── events.jsonl
-└── outputs/
-    ├── 0001-live.jsonl
-    ├── 0001-final.txt
-    ├── 0001-events.jsonl
-    └── 0001-stderr.log
-```
-
-`0001-live.jsonl` 用于 Supervisor 前台显示运行进度；最终结果、事件和标准错误
-分别保存在对应文件中。模型输出是可审阅 Evidence，不等于自动通过 Gate。
-
-## 7. Skills 的加载和使用
-
-### 7.1 AIW 不在 Supervisor 层直接执行 Skill
-
-`workflow supervise` 本身不读取或执行 `SKILL.md`。Skill 必须先安装到项目的
-`.agents/skills/`，或者由宿主 Agent 使用用户级 `~/.agents/skills/` 目录发现：
+默认 focused-test 是独立授权试点，计划位于
+`openspec/changes/<task-id>/artifacts/verification-plan.json`。授权绑定归一化计划摘要，
+选择只能引用已批准 check ID。授权缺失/过期或无法强制 `network: deny` 时，在启动
+进程前停止。命令本身不授予权限：
 
 ```powershell
-aiw skills install implement
-aiw skills install tdd
-aiw skills install code-review
+aiw workflow focused-test payment-retry attempt-123
 ```
 
-安装后的 Skill 是 Agent 可读取的工作流说明，不是 Supervisor 的内置插件。
-自动执行时，managed handoff 会要求 Agent 遵循 `implement` Skill；该 Skill
-允许宿主 Agent 根据当前 Work Item 隐式选择它。`tdd` 和 `code-review` 仍然
-不会被 `implement` 或 Supervisor 自动调用。
+没有 Verification Plan 时，默认 supervise 可 waived 可选 focused verification。
+**waived 不等于测试通过**，也不代表完整 Tester/Runner 链路已执行。
 
-### 7.2 推荐 Skill
+默认本地交付要求隔离 Task 执行完成，验证为 passed/waived/not-required，且无阻塞
+Gate、待处理请求、写入 lease 或投影修复。交付检查父分支，提交、合并、核实祖先
+关系，再清理资源。冲突时保留原 Task 工作树作为候选，提供人工处理指引，不自动
+调用 `resolving-merge-conflicts` Skill。
 
-#### `implement`
+schema 10 的阶段为
+`coder → report-validation → compile → tester → test-run → acceptance → accepted`。
+它要求受控宿主、精确授权、预算及平台启用证据；Tester 使用独立 Session，Runner
+执行冻结 manifest。缺隔离能力或独立断言审查则拒绝执行，不降级到普通 shell。
+旧 `local-merge` 和清理路径被禁用；受控清理需要独立授权和 sealed-source 证据。
 
-这是自动编码最主要的工程 Skill，负责：
-
-- 解析一个 Task 和一个 Work Item；
-- 读取对应 OpenSpec 输入；
-- 检查 Design Readiness；
-- 在 Task 声明的工作区实施最小完整修改；
-- 更新 checklist、TODO、Verification 和 `%%` 风险；
-- 报告 Evidence、未解决 Gate 和下一步；
-- 修改后执行 compile-only 检查：优先使用 `scripts/` 或仓库根目录中的
-  `compile` 脚本；没有脚本时使用语言级编译命令；
-- 编译失败时修复实现并重新 compile，无法解决时报告阻塞；
-- 不自动提交、合并、推送、归档、运行测试或执行广义 build 流程。
-
-#### `tdd`
-
-`tdd` 是显式选择的测试先行 Skill。它不会被 `implement` 或 Supervisor 自动
-调用。只有用户或明确的 Agent 流程要求测试先行时才应使用，并且运行测试仍需
-明确授权。
-
-#### `code-review`
-
-`code-review` 用于实现后的 Standards/Spec 审查，也不是自动回调。需要在
-Workflow 暂停或实现完成后由人类明确选择。
-
-#### `handoff`
-
-`handoff` 用于把当前对话、Task、Work Item、Attempt、Evidence 和 Gate 压缩成
-可由新 Agent 继续使用的文档。它不会完成 Attempt、释放 lease 或推进 Task 状态。
-
-### 7.3 Skill 边界
-
-自动编码时，Skill 应遵守以下边界：
-
-- 不创建第二套 Task tracker；
-- 不直接修改 AIW 生命周期状态；
-- 不伪造 Attempt、Evidence、Gate 或 lease；
-- 不自动运行测试、广义 build、格式化、Lint、vet、网络或发布操作；
-- 允许且要求执行 compile-only 检查：先查找 `scripts/` 和仓库根目录的
-  `compile`、`compile.bat`、`compile.cmd` 或 `compile.ps1`；不得把
-  `build.bat` 等综合构建脚本当作 compile；无脚本时使用语言级编译命令；
-- compile 失败时将编译器输出作为修复输入并重试，仍失败则报告 `BLOCKED`；
-- 不自动执行 Git commit、merge、push、branch 删除或 archive；
-- 缺少关键事实时写 `%% NEEDS_INPUT`，无法安全继续时报告 `BLOCKED` 或
-  `INCOMPLETE`。
-
-## 8. Gate、Evidence 和暂停机制
-
-Supervisor 不会自行解决以下问题：
-
-- 需求尚未批准或 promotion；
-- Design Readiness 未通过；
-- 需要人工决定的设计、权限、迁移或发布问题；
-- 测试或构建授权缺失；
-- Focused Test 授权过期；
-- Session 返回失败或不完整结果；
-- write lease、worktree 或 projection repair 异常；
-- Attempt 达到重试上限；
-- 没有依赖满足的下一个 Work Item。
-
-常见暂停结果包括：
-
-```text
-gate
-blocked
-repair-required
-runner-paused
-no-work
-```
-
-Agent 输出只能作为 Evidence。只有在 Evidence 满足规则、Gate 被人工
-`resolved` 或 `waived`，并且 Workflow Core 允许时，Work Item 才能完成。
-
-## 9. 失败、诊断和恢复
-
-Supervisor 出错后，先执行：
+源码还支持 Verifier、Task memory、项目知识及通知相关持久事实与辅助工作。辅助
+宿主需要明确配置、Task 授权和能力证据，缺失时记录等待/host gap。它运行有界队列，
+不是常驻调度器；下列维护命令不启用 schema 10：
 
 ```powershell
-aiw task workflow diagnose payment-retry
-aiw task workflow supervise payment-retry status
+aiw workflow auxiliary inventory
+aiw workflow knowledge show payment-retry
 ```
 
-根据诊断结果再选择：
+## 7. 持久化与恢复
+
+| 路径 | 内容 |
+|---|---|
+| `.ai/tasks/<task-id>/task.toml` | 规范 Task 元数据；兼容读取旧 OpenSpec 目录内元数据 |
+| `.ai/tasks/<task-id>/state.json`、`events.jsonl` | Workflow 状态、事件、请求、Gate 和 lease |
+| `.ai/tasks/<task-id>/routing-plan.json` | 路由与 Compile Plan |
+| `.ai/tasks/<task-id>/artifacts/handoff.md` | 当前交接 |
+| `.ai/tasks/<task-id>/artifacts/compiler-repair.md` | 编译修复指引 |
+| `.ai/tasks/<task-id>/compile-diagnostics/` | 编译命令、退出码和诊断 |
+| `.ai/tasks/<task-id>/reports/latest-failure.md` | 最近未解决失败的原因、证据和下一步 |
+| `.ai/sessions/<session-id>/` | Session 状态、事件、提示词和 outputs |
+| `openspec/changes/<task-id>/tasks.md` | 人工清单和 Core 生成投影 |
 
 ```powershell
-aiw task workflow recover payment-retry
-aiw task workflow repair payment-retry
-aiw wt repair
+aiw workflow diagnose payment-retry
+aiw workflow report payment-retry
+# 仅在诊断要求恢复事件或修复投影时使用：
+aiw workflow recover payment-retry
+aiw workflow repair payment-retry
 ```
 
-处理原则：
+`recover` 补齐待恢复事件，`repair` 修复投影；都不重跑 Agent，不自动消除业务 Gate。
+schema 9 的 blocked 项需处理相关 Gate 后显式 `reopen`。
 
-1. 不要立即启动第二个 Supervisor。
-2. 不要手动删除 `.ai/<task-id>/state.json` 或 Session 输出。
-3. 保留失败 Attempt 和 Session 结果，以便审计。
-4. 先修复状态、worktree 或 projection，再恢复 Supervisor。
-5. Session 结果未知时，不要创建第二个 Attempt 覆盖原结果。
+`start` 仅从有效且 ID 匹配的 Task 元数据初始化缺失的非活跃投影，不能恢复丢失的
+Attempt 历史。change 目录或 migration marker 不能替代元数据，`status` 不做初始化。
 
-如果 Attempt 失败，Supervisor 会记录失败结果并按 retry policy 暂停或继续。
-默认每个 Work Item 最多尝试三次；可通过受控 Workflow 命令为单个 Work Item
-设置一到五次的上限：
+schema 10 的 Stop、预算和已用授权跨重启保留；旧预算不能重建时保持未知，要求
+人工决策。结果未知先通过原执行器只读对账，保留请求和写入权；已保存结果可消费
+而无需重跑。不要删除状态文件、清零计数或回退 schema 来绕开暂停。
 
-```powershell
-aiw workflow retry-policy payment-retry wi-0001 3
-```
+## 8. TODO 与 Verification
 
-达到上限后不会静默重试，也不会把 Work Item 标记为完成。需要明确理由后才能
-reopen。
+- [x] 对照命令解析、默认 Runner、Supervisor、Session 和编译修复路径更新说明。
+- [x] 区分默认 schema 9 与需受控宿主启用的 schema 10。
+- [x] 更新交付副作用、持久 Stop、报告校验和辅助工作边界。
 
-## 10. 自动化不会替代的人工操作
+实现入口：`internal/commands/task/workflow_commands.go`、`workflow_supervisor.go`；
+默认编排：`internal/workflow/execution/supervisor.go`、`session.go`、`compile.go`、
+`delivery.go`；协议边界：`internal/workflow/execution_protocol.go`、`runner.go`、
+`execution/stages.go`、`execution/verification_host.go`、`execution/local_delivery.go`。
 
-Supervisor 不会自动：
-
-- 批准或 promotion Requirement；
-- 解决 Gate 或授权验证；
-- 运行测试、构建、迁移或广泛验证；
-- 提交、推送、合并、删除分支或发布外部变更；
-- 创建后台 Scheduler；
-- 将 `aiw done` 或 `aiw archive` 当作 Git 已交付。
-
-一个完整的交付流程仍需人工审阅：
-
-```text
-Supervisor 完成 Work Items
-  -> 检查 Evidence / Gate / Verification
-  -> 必要时执行一次授权验证
-  -> 人工审查 diff
-  -> 单独授权 Git delivery
-  -> 合并、清理和 archive
-```
-
-## 11. 推荐的完整示例
-
-```powershell
-# 1. 准备 Task 和 OpenSpec
-aiw new payment-retry
-aiw task workflow plan payment-retry
-aiw task workflow sync payment-retry
-
-# 2. 预览下一步，不启动 LLM
-aiw task workflow run payment-retry
-
-# 3. 明确选择 Provider/Model 后启动前台 Supervisor
-aiw task workflow supervise payment-retry start `
-  --provider copilot `
-  --model gpt-5.6
-
-# 4. 另一个终端查看状态
-aiw task workflow supervise payment-retry status
-
-# 5. 如果暂停，先诊断和修复
-aiw task workflow diagnose payment-retry
-aiw task workflow recover payment-retry
-
-# 6. Supervisor 完成后，人工审阅并单独处理 Git delivery
-aiw show payment-retry
-git status
-```
-
-默认建议先使用 `run` 预览，再使用 `supervise start`。不要把 Supervisor 当作
-无边界的自动发布系统；它的核心目标是把一个 Task 拆成可审计、可暂停、可恢复
-的单步 Agent 执行。
+%% 本次文档更新仅静态核对源码，未运行 Agent、编译、测试、真实 Git 交付或协议迁移。

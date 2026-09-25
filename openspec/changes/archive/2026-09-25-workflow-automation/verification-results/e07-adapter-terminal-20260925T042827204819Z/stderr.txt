@@ -1,0 +1,9 @@
+test_child_protocol_and_environment_only_credential (__main__.ManagedNotificationTests) ... ok
+test_frozen_target_and_protocol_reject_before_dispatch (__main__.ManagedNotificationTests) ... ok
+test_tls_redirect_and_attempt_only_response (__main__.ManagedNotificationTests) ... ok
+test_typed_errors_and_http_classification (__main__.ManagedNotificationTests) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.040s
+
+OK

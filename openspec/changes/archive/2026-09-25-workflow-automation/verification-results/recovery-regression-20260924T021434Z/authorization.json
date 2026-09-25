@@ -1,0 +1,7 @@
+{
+  "source": "User reply: confirm, continue; in response to the two recovery regression tests approval request",
+  "plan_sha256": "0d9cbfdaa5176adbb7bbcf9cb2c38715bd7b30ea58250e505ae18f4a0adfde7b",
+  "scope": "One focused command selecting only the two named recovery regression tests; one rerun only after a relevant fix or environment change",
+  "recorded_at": "20260924T021434Z",
+  "product_runner_grant": false
+}

@@ -172,6 +172,9 @@ const (
 // Durable Task identity and OpenSpec content are supplied by adapters.
 type RuntimeState struct {
 	SchemaVersion     int             `json:"schema_version"`
+	StateRevision     uint64          `json:"state_revision,omitempty"`
+	CommitID          string          `json:"commit_id,omitempty"`
+	Protocol          *ExecutionProtocol `json:"execution_protocol,omitempty"`
 	Task              TaskReference   `json:"task"`
 	Planning          PlanningState   `json:"planning"`
 	Delivery          DeliveryState   `json:"delivery"`
@@ -198,6 +201,7 @@ type RuntimeState struct {
 // Plugin process starts, so workflow transition completion does not depend on
 // a transient Plugin invocation.
 type Notification struct {
+	Managed          *NotificationMessage `json:"managed,omitempty"`
 	ID               NotificationID    `json:"id"`
 	Topic            string            `json:"topic"`
 	Payload          json.RawMessage   `json:"payload"`
@@ -268,6 +272,7 @@ type AutomationState struct {
 	Cursor            AutomationCursor      `json:"cursor,omitempty"`
 	PreparedRequest   *PreparedAgentRequest `json:"prepared_request,omitempty"`
 	ProjectionRepairs []ProjectionRepair    `json:"projection_repairs,omitempty"`
+	ReportSupplements []string               `json:"report_supplements,omitempty"`
 	Supervisor        SupervisorState       `json:"supervisor,omitempty"`
 }
 
@@ -295,6 +300,10 @@ type AutomationCursor struct {
 // PreparedAgentRequest is an Attempt-bound request for an existing managed
 // agent adapter. Creating it never starts a model turn.
 type PreparedAgentRequest struct {
+	InputReference *ActorReference `json:"input_reference,omitempty"`
+	// ReportOrigin retains the generation identity during its one read-only
+	// report turn. The allowance is recorded separately and survives Attempts.
+	ReportOrigin *PreparedAgentRequest `json:"report_origin,omitempty"`
 	TaskID     TaskID     `json:"task_id"`
 	WorkItemID WorkItemID `json:"work_item_id"`
 	AttemptID  AttemptID  `json:"attempt_id"`
@@ -327,6 +336,7 @@ type PreparedAgentRequest struct {
 // SupervisedCompileState is frozen with the prepared request. A nil Plan is
 // a legacy request, never permission to discover another compiler at runtime.
 type SupervisedCompileState struct {
+	Inputs *ValidationInputs `json:"inputs,omitempty"`
 	Plan *CompilePlan `json:"plan,omitempty"`
 	PlanReference ActorReference `json:"plan_reference"`
 	Request *CompilerRequest `json:"request,omitempty"`
@@ -363,6 +373,7 @@ type TaskReference struct {
 }
 
 type WorkItem struct {
+	AcceptedReference *ActorReference `json:"accepted_reference,omitempty"`
 	ID                  WorkItemID         `json:"id"`
 	Checklist           ChecklistReference `json:"checklist"`
 	Title               string             `json:"title"`
@@ -486,6 +497,8 @@ type Evidence struct {
 // WriteLease serializes state-changing work in one Task workspace. A lease is
 // always tied to an Attempt so a recovered runtime state can explain its owner.
 type WriteLease struct {
+	RequestID  string    `json:"request_id,omitempty"`
+	Generation uint64    `json:"generation,omitempty"`
 	AttemptID  AttemptID `json:"attempt_id"`
 	Workspace  string    `json:"workspace"`
 	AcquiredAt string    `json:"acquired_at"`

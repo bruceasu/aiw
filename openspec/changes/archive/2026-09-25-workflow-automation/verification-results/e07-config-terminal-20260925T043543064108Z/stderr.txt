@@ -1,0 +1,9 @@
+test_console_dispatch_rechecks_actual_configuration (__main__.NotificationConfigTests.test_console_dispatch_rechecks_actual_configuration) ... ok
+test_invalid_real_toml_configuration_is_rejected (__main__.NotificationConfigTests.test_invalid_real_toml_configuration_is_rejected) ... ok
+test_missing_and_disabled_configuration_never_ready (__main__.NotificationConfigTests.test_missing_and_disabled_configuration_never_ready) ... ok
+test_real_config_identity_credentials_and_ca (__main__.NotificationConfigTests.test_real_config_identity_credentials_and_ca) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.075s
+
+OK

@@ -1,0 +1,30 @@
+{
+  "command": [
+    "go",
+    "test",
+    "./internal/workflow",
+    "-run",
+    "^(TestGenerationBudgetDeduplicatesDelayedDefectsAcrossRestart|TestGenerationBudgetReservationsAndEscalationLimits)$",
+    "-count=1",
+    "-timeout=60s",
+    "-vet=off",
+    "-json"
+  ],
+  "cwd": "C:\\Users\\svictor\\workspace\\tools\\aiw\\.wt\\workflow-automation",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "environment": {
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local",
+    "GOCACHE": "C:\\Users\\svictor\\workspace\\tools\\aiw\\.wt\\workflow-automation\\.ai\\compile-cache\\go"
+  },
+  "input_manifest_sha256": "c7076ba43ea76cfefb47673583f5d19c500008eb78730eb8cff68a840ab2e869",
+  "started_at": "2026-09-24T01:07:10.559481+00:00",
+  "toolchain": "go version go1.25.1 windows/amd64",
+  "toolchain_error": "",
+  "exit_code": 0,
+  "ended_at": "2026-09-24T01:07:16.419929+00:00",
+  "changed_inputs": [],
+  "stdout_sha256": "8ac5560c8ee8abc9a3e0da29799a4d4d6ef3f732c17c1f7333b7ab4c23028adc",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

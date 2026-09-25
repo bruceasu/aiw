@@ -75,16 +75,19 @@ resolved worktree, report its path and stop.
 ## Complete Development
 
 Update the selected checklist item, TODO, Verification, and remaining `%%`
-risks or questions. Synchronize the coarse AIW Task status without overwriting
-OpenSpec-owned content.
+risks or questions. Synchronize Work Item progress and the coarse AIW Task
+summary through the managed adapter without overwriting OpenSpec-owned content.
+Completing one checklist item does not complete the AIW Task.
 
-Perform one static review of the changed paths and mark Task completion
-separately from Git delivery. Do not automatically commit, merge, push, remove
-a worktree, delete a branch, synchronize, or archive. If the user explicitly
-requests Git delivery, validate the recorded `parent_branch` and preserve all
-resources on failure.
+Perform one static review of the changed paths. Report selected Work Item
+completion separately from AIW Task completion and Git delivery. Mark the Task
+complete only when all checklist items and Verification are complete and the
+lifecycle transition is authorized. Do not automatically commit, merge, push,
+remove a worktree, delete a branch, sync specs, or archive. If the user
+explicitly requests Git delivery, validate the recorded `parent_branch` and
+preserve all resources on failure.
 
-After development is complete, ask once whether the user wants one focused test
-command run. Show the exact command, scope, and expected duration. Default to no
-test when the user declines or does not respond. Ask again before broader tests
-or builds.
+Report tests not run and, when useful, one optional focused test command with
+its scope and expected duration. Do not ask solely because implementation
+finished. Run tests only under the repository's runtime authorization rules;
+ask before widening to broader tests or builds.

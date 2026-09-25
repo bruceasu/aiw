@@ -1,0 +1,37 @@
+{
+  "command": [
+    "go",
+    "test",
+    "./internal/notification",
+    "-run",
+    "^(TestNotificationPythonConsoleRoundTrip|TestNotificationPythonRejectsChangedScript|TestNotificationPythonCancelledContext)$",
+    "-count=1",
+    "-timeout=60s",
+    "-vet=off",
+    "-json"
+  ],
+  "cwd": "C:\\Users\\svictor\\workspace\\tools\\aiw\\.wt\\workflow-automation",
+  "started_at": "2026-09-25T04:42:05.343276+00:00",
+  "environment_overrides": {
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local",
+    "GOCACHE": "C:\\Users\\svictor\\workspace\\tools\\aiw\\.wt\\workflow-automation\\.ai\\compile-cache\\go",
+    "PATH": "D:\\green\\python3.12;c:\\Users\\svictor\\AppData\\Roaming\\Code\\User\\globalStorage\\github.copilot-chat\\debugCommand;c:\\Users\\svictor\\AppData\\Roaming\\Code\\User\\globalStorage\\github.copilot-chat\\copilotCli;C:\\\\green\\\\jdk25.0.1_8\\bin;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program Files\\dotnet\\;C:\\Program Files (x86)\\Yarn\\bin\\;C:\\Users\\svictor\\AppData\\Local\\Programs\\Git\\cmd;c:\\green\\nvm;C:\\green\\nodejs;%GOPATH%\\bin;C:\\Program Files\\Amazon\\SessionManagerPlugin\\bin\\;C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files\\TortoiseGit\\bin;C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\;C:\\Program Files\\Amazon\\AWSCLIV2\\;C:\\Python39;C:\\Python39\\Scripts;C:\\Program Files\\nodejs\\;C:\\green;C:\\green\\bin;C:\\green\\jdk1.8.0_202\\bin;c:\\green\\nvm;C:\\green\\nodejs;C:\\green\\go\\bin;C:\\green\\tcc;C:\\green\\putty;C:\\green\\tbs;C:\\green\\tbs\\toolkits\\linux-tools\\bin;C:\\green\\acli;C:\\green\\asu-jobs;C:\\green\\auto-test;C:\\green\\aiw;C:\\green\\crypto-man;C:\\green\\quick;C:\\green\\Neovim\\bin;c:\\green\\fxtf-tools;c:\\green\\fxtf-tools\\dbquery;c:\\green\\fxtf-tools\\password-helper;C:\\green\\fxtf-tools\\customer-file-encrypt;C:\\green\\fxtf-tools\\dbquery;c:\\green\\pgsql-schema-sync;C:\\green\\db-clients\\mysql_8\\win;C:\\green\\db-clients\\postgresql\\win\\14;c:\\green\\delete-jar-inner-files;c:\\green\\opencc1.0.1;c:\\green\\OpenSSL-3.0.5_win32;C:\\green\\send-mail-via-message;C:\\green\\spring-3.2.5\\bin;C:\\green\\mongo-client;C:\\green\\tangram-cli;C:\\green\\nginx;C:\\green\\pandoc-2.11.2;C:\\green\\emacs-29.2\\bin;C:\\green\\plantUML;c:\\green\\plantUML\\bin;C:\\green\\sql2pojo;C:\\green\\apache-ant-1.10.15\\bin;C:\\green\\apache-maven-3.9.12\\bin;C:\\green\\apache-jmeter-2.13\\bin;C:\\green\\redis-windows-latest;C:\\green\\flyway-12.0.0;C:\\green\\upx-5.0.1-win64;C:\\green\\jdt-language-server\\bin;C:\\Users\\svictor\\.local\\bin;C:\\Users\\svictor\\.bun\\bin;C:\\Users\\svictor\\.dotnet\\tools;C:\\Users\\svictor\\go\\bin;C:\\Users\\svictor\\scoop\\shims;C:\\Users\\svictor\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\svictor\\AppData\\Local\\Programs\\Microsoft VS Code\\bin;C:\\Users\\svictor\\AppData\\Local\\Microsoft\\WinGet\\Packages\\JesseDuffield.lazygit_Microsoft.Winget.Source_8wekyb3d8bbwe;C:\\Users\\svictor\\AppData\\Local\\Microsoft\\WinGet\\Packages\\BurntSushi.ripgrep.MSVC_Microsoft.Winget.Source_8wekyb3d8bbwe\\ripgrep-15.1.0-x86_64-pc-windows-msvc;C:\\Users\\svictor\\AppData\\Local\\Microsoft\\WinGet\\Packages\\sharkdp.fd_Microsoft.Winget.Source_8wekyb3d8bbwe\\fd-v10.4.2-x86_64-pc-windows-msvc;C:\\Users\\svictor\\AppData\\Local\\Microsoft\\WinGet\\Packages\\oschwartz10612.Poppler_Microsoft.Winget.Source_8wekyb3d8bbwe\\poppler-25.07.0\\Library\\bin;;c:\\Users\\svictor\\.vscode\\extensions\\ms-python.debugpy-2026.6.0-win32-x64\\bundled\\scripts\\noConfigScripts"
+  },
+  "temporary_environment": {
+    "TMP": "C:\\Users\\svictor\\AppData\\Local\\Temp",
+    "TEMP": "C:\\Users\\svictor\\AppData\\Local\\Temp",
+    "TMPDIR": null
+  },
+  "input_manifest_sha256": "352b9e6a3f787ee208e91d90be85c622aedf99c5320914e375a032a85a9d808a",
+  "plan_reference": "../../e07-process-verification-plan.md",
+  "plan_sha256": "916883525ca7a266c4b131f42a5290336f39520a5a288bf6fc7cfaf0b1682497",
+  "toolchain": "go version go1.25.1 windows/amd64",
+  "toolchain_error": "",
+  "exit_code": 0,
+  "ended_at": "2026-09-25T04:42:06.381335+00:00",
+  "changed_inputs": [],
+  "stdout.jsonl_sha256": "07e1f6c3c3374c96d475051888208497ae83214ae137e64fbd569664cd7a0aca",
+  "stderr.txt_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

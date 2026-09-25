@@ -1,0 +1,30 @@
+{
+  "command": [
+    "go",
+    "test",
+    "./internal/workflow",
+    "-run",
+    "^(TestDurableUnknownAndStopRetainWriter|TestDurableResultReplayConsumesOnceAndKeepsAttempt|TestDurablePendingTailRecoveryKeepsRevision)$",
+    "-count=1",
+    "-timeout=60s",
+    "-vet=off",
+    "-json"
+  ],
+  "cwd": "C:\\Users\\svictor\\workspace\\tools\\aiw\\.wt\\workflow-automation",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "environment": {
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local",
+    "GOCACHE": "C:\\Users\\svictor\\workspace\\tools\\aiw\\.wt\\workflow-automation\\.ai\\compile-cache\\go"
+  },
+  "input_manifest_sha256": "20cfc09648d47dcf6f0a05417a437e322ba6365a1c169344b77a476e4e1b314a",
+  "started_at": "2026-09-24T02:57:38.122722+00:00",
+  "toolchain": "go version go1.25.1 windows/amd64",
+  "toolchain_error": "",
+  "exit_code": 1,
+  "ended_at": "2026-09-24T02:57:39.378357+00:00",
+  "changed_inputs": [],
+  "stdout_sha256": "ba48542c80d258bbeefd924b1a84cc183d0a38491f4fbea65dad6e1ae7be6746",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

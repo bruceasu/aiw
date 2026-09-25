@@ -28,6 +28,11 @@ type RunnerOutcome struct {
 // NextRunnerOutcome prioritizes durable blockers ahead of execution. The
 // caller synchronizes checklist references before using this function.
 func NextRunnerOutcome(state RuntimeState) RunnerOutcome {
+	if state.SchemaVersion == DurableSchemaVersion {
+		if state.Protocol == nil || state.Protocol.Stop != nil { return RunnerOutcome{Kind: RunnerBlocked, Detail: "durable execution is stopped or unavailable"} }
+		if err := requireNoStageInFlight(state); err != nil { return RunnerOutcome{Kind: RunnerBlocked, Detail: err.Error()} }
+		return RunnerOutcome{Kind: RunnerBlocked, Detail: "durable execution requires the controlled stage adapter; legacy dispatch is disabled"}
+	}
 	for index := range state.Automation.ProjectionRepairs {
 		repair := &state.Automation.ProjectionRepairs[index]
 		if repair.ResolvedAt == "" {

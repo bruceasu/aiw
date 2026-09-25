@@ -1,0 +1,12 @@
+{"ImportPath":"aiw/internal/taskx.test","Action":"build-output","Output":"# aiw/internal/taskx\n"}
+{"ImportPath":"aiw/internal/taskx.test","Action":"build-output","Output":"internal\\taskx\\checklist_test.go:71:29: expected at most 2 expressions\n"}
+{"ImportPath":"aiw/internal/taskx.test","Action":"build-fail"}
+{"Time":"2026-09-24T11:14:35.0344823+09:00","Action":"start","Package":"aiw/internal/taskx"}
+{"Time":"2026-09-24T11:14:35.0344823+09:00","Action":"output","Package":"aiw/internal/taskx","Output":"FAIL\taiw/internal/taskx [setup failed]\n"}
+{"Time":"2026-09-24T11:14:35.0344823+09:00","Action":"fail","Package":"aiw/internal/taskx","Elapsed":0,"FailedBuild":"aiw/internal/taskx.test"}
+{"ImportPath":"aiw/internal/commands/task [aiw/internal/commands/task.test]","Action":"build-output","Output":"# aiw/internal/commands/task [aiw/internal/commands/task.test]\n"}
+{"ImportPath":"aiw/internal/commands/task [aiw/internal/commands/task.test]","Action":"build-output","Output":"internal\\commands\\task\\archive_test.go:159:23: store.SetDelivery undefined (type *session.Store has no field or method SetDelivery)\n"}
+{"ImportPath":"aiw/internal/commands/task [aiw/internal/commands/task.test]","Action":"build-fail"}
+{"Time":"2026-09-24T11:14:35.2551687+09:00","Action":"start","Package":"aiw/internal/commands/task"}
+{"Time":"2026-09-24T11:14:35.2551687+09:00","Action":"output","Package":"aiw/internal/commands/task","Output":"FAIL\taiw/internal/commands/task [build failed]\n"}
+{"Time":"2026-09-24T11:14:35.2551687+09:00","Action":"fail","Package":"aiw/internal/commands/task","Elapsed":0,"FailedBuild":"aiw/internal/commands/task [aiw/internal/commands/task.test]"}

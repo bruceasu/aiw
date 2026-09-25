@@ -19,6 +19,90 @@ func LoadConfig() (Config, error) {
 	return configFromValues(values), nil
 }
 
+// LoadGlobalConfig resolves only the canonical [ai] settings and runtime
+// environment overrides. Callers with their own configuration section can use
+// it as a lower-priority fallback without inheriting legacy [cz] values.
+func LoadGlobalConfig() (Config, error) {
+	values, err := loadConfigValues()
+	if err != nil {
+		return Config{}, err
+	}
+	for key := range values {
+		if !strings.HasPrefix(key, "ai.") {
+			delete(values, key)
+		}
+	}
+	return configFromValues(values), nil
+}
+
+// LoadConfigForProvider resolves global [ai] settings for an already selected
+// provider. Generic connection settings belong to the configured global
+// provider, so they are discarded when the caller selected a different one.
+func LoadConfigForProvider(name string) (Config, error) {
+	values, err := loadConfigValues()
+	if err != nil {
+		return Config{}, err
+	}
+	for key := range values {
+		if !strings.HasPrefix(key, "ai.") {
+			delete(values, key)
+		}
+	}
+	globalProvider := normalize(firstValue(values, "ai.provider", "ai.llm_provider"))
+	selectedProvider := normalize(name)
+	if globalProvider != selectedProvider {
+		delete(values, "ai.model")
+		delete(values, "ai.llm_model")
+		delete(values, "ai.base_url")
+		delete(values, "ai.llm_base_url")
+		delete(values, "ai.api_key")
+		delete(values, "ai.llm_api_key")
+		delete(values, "ai.command")
+	}
+	values["ai.provider"] = selectedProvider
+	cfg := configFromValues(values)
+	if cfg.Name != "" && cfg.Name != "auto" {
+		applyProviderDefaults(&cfg)
+	}
+	return cfg, nil
+}
+
+// LoadFastProfileConfig resolves the optional global fast profile as an
+// isolated provider selection. Profile-scoped settings are copied onto a
+// temporary [ai] view so top-level connection settings cannot leak into it.
+func LoadFastProfileConfig() (Config, bool, error) {
+	values, err := loadConfigValues()
+	if err != nil {
+		return Config{}, false, err
+	}
+	const prefix = "ai.profiles.fast."
+	provider := strings.TrimSpace(values[prefix+"provider"])
+	model := strings.TrimSpace(values[prefix+"model"])
+	if provider == "" || model == "" {
+		return Config{}, false, nil
+	}
+	profileValues := map[string]string{"ai.provider": provider, "ai.model": model}
+	allowed := map[string]bool{
+		"base_url": true, "llm_base_url": true, "api_key": true, "llm_api_key": true,
+		"command": true, "codex_command": true, "copilot_command": true,
+		"openai_base_url": true, "openai_api_key": true,
+		"gemini_base_url": true, "gemini_api_key": true,
+		"ollama_base_url": true, "ollama_api_key": true,
+		"llamacpp_base_url": true, "llamacpp_api_key": true,
+	}
+	for key, value := range values {
+		if !strings.HasPrefix(key, prefix) {
+			continue
+		}
+		suffix := strings.TrimPrefix(key, prefix)
+		if allowed[suffix] {
+			profileValues["ai."+suffix] = value
+		}
+	}
+	cfg := configFromValues(profileValues)
+	return cfg, true, nil
+}
+
 // Profile is a named provider and model pair used by Managed Workflow routing.
 // It deliberately excludes credentials and transport settings, which continue
 // to resolve through the existing global AI configuration.
@@ -187,6 +271,15 @@ func mergeConfigFile(values map[string]string, path string) error {
 			continue
 		}
 		key := strings.TrimSpace(parts[0])
+		if section == "ai.artifact_generation" && key == "profiles" {
+			raw := strings.TrimSpace(parts[1])
+			for !artifactArrayClosed(raw) && scanner.Scan() {
+				raw += "\n" + scanner.Text()
+				if len(raw) > 64*1024 { return fmt.Errorf("artifact generation profile list exceeds 64 KiB") }
+			}
+			values[section+"."+key] = raw
+			continue
+		}
 		value, ok := parseConfigValue(strings.TrimSpace(parts[1]))
 		if !ok || !isAIConfigKey(key) {
 			continue
@@ -200,7 +293,7 @@ func mergeConfigFile(values map[string]string, path string) error {
 }
 
 func isAIConfigSection(section string) bool {
-	return section == "ai" || section == "cz" ||
+	return section == "ai" || section == "cz" || section == "ai.artifact_generation" ||
 		(strings.HasPrefix(section, "ai.profiles.") && strings.TrimSpace(strings.TrimPrefix(section, "ai.profiles.")) != "")
 }
 

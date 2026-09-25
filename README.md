@@ -13,6 +13,8 @@ AIW is a workflow-first CLI for organizing work, preserving task state, and expo
 * Output task-specific context prompts
 * Create and maintain long-lived specification documents
 * Archive completed tasks
+* Run bounded foreground supervision with frozen model and compile plans
+* Inspect durable execution, recovery, and auxiliary knowledge state
 
 ## Directory Structure
 
@@ -33,9 +35,9 @@ repo/
 Notes:
 
 * `AGENTS.md` and `.github/copilot-instructions.md` are created only if they do not already exist.
-* Canonical Task metadata and runtime state live under `.ai/<task-id>/`.
+* Canonical Task metadata and runtime state live under `.ai/tasks/<task-id>/`.
   OpenSpec proposal, design, specs, and checklists live under
-  `openspec/changes/<task-id>/`. Legacy metadata remains readable.
+  `openspec/changes/<task-id>/`. The compatible `tasks.toml` filename remains readable.
 
 ## Build and Installation
 
@@ -57,7 +59,7 @@ aiw help [command|topic]
 
 aiw init [--no-setup] [--prompts] [--merge] [--force] [--template <name>]
 aiw new <task-id> [--allow-unrelated-dirty] [--backend auto|openspec|native]
-aiw list
+aiw list [--all]
 aiw show <task-id>
 aiw status <task-id> <status>
 aiw done <task-id>
@@ -87,9 +89,10 @@ aiw decision <task-id>
 aiw spec <spec-id>
 aiw turn <task-id> [--handoff PATH] [--provider NAME] [--model MODEL] [--takeover] [--yes]
 aiw chat <task-id> [--handoff PATH] [--provider NAME] [--model MODEL] [--takeover] [--yes]
-aiw workflow <operation> <task-id>
+aiw workflow <operation> <task-id> [arguments/options]
+aiw workflow repair-metadata [task-id] [--dry-run]
 aiw workspace <operation> <task-id>
-aiw task workflow <plan|sync|advance|run|supervise|recommend-routing|report|repair|attempt|evidence|gate|complete|diagnose|recover> <task-id>
+aiw task workflow <operation> <task-id> [arguments/options]
 aiw task workflow run <task-id> [--execute] [--primary] [--provider NAME] [--model MODEL]
 aiw task workflow supervise <task-id> <start|status|stop> [--provider NAME] [--model MODEL]
 aiw completion <powershell|bash|zsh|fish>
@@ -113,6 +116,49 @@ See [AIW Ask](docs/usage/aiw-ask.md) for safe usage guidance, chat controls,
 private session storage, and provider limitations.
 
 ## Common Workflows
+
+### List Tasks
+
+Run `aiw list` to show active Tasks, sorted by Task ID, with three fields:
+Task ID, Workflow status, and the actual OpenSpec Change path. Use
+`aiw list --all` (also `aiw task list --all`) to include archived Tasks and
+insert an `ACTIVE`/`ARCHIVED` field before the path. Archiving does not replace
+the Workflow status: an archived Task can still show `DONE` or `CANCELLED`.
+
+Columns grow to fit complete IDs and statuses, with at least two spaces
+between fields. Interactive terminals show `TASK / STATUS / PATH` headers;
+`--all` adds `ARCHIVE`. Empty results print nothing. Pipes and redirected files
+receive aligned data rows without headers or ANSI escapes. Supported terminals
+color statuses: green for done, gray for draft/cancelled and the archive marker,
+cyan for ready/running, yellow for waiting, and red for errors/blocked states.
+Unknown states retain their text and default color. Nonempty `NO_COLOR`,
+`TERM=dumb`, or unconfirmed ANSI capability disables color.
+
+Discovery combines Change directories with `.ai/tasks/<task-id>/`, legacy
+`.ai/<task-id>/`, and the supported archive roots. It does not recurse
+into sessions, evidence, or arbitrary runtime directories. `task.toml` takes
+precedence over the compatible `tasks.toml` filename. Unique historical Tasks
+whose Change was archived but whose runtime directory stayed active are hidden
+by default; `--all` shows their real archived Change path without moving them.
+An explicit `aiw archive <task-id>` can finish pairing their stored records.
+Conflicting identities or multiple archive matches are reported rather than
+silently selecting a record.
+
+If a Task has runtime data but no Change record, its path field shows
+`规格已删除`. Missing individual Markdown files do not mark the Change deleted.
+For uniquely identified Tasks in the selected list scope, AIW/Workflow Core
+recreates only missing runtime files and reports this minimal reconstruction
+on stderr. Existing valid data is preserved; lost execution history, workspace
+bindings, and completion results are not guessed. Archived records are repaired
+in their archive location, and the default list does not repair hidden archives.
+Repeated listing leaves complete records unchanged.
+
+Corrupt records, read failures, identity conflicts, and failed reconstruction
+produce diagnostics and a nonzero exit code while other valid Tasks continue
+to appear. A Task whose runtime summary cannot be read shows `RUNTIME_ERROR`.
+Scripts must check the exit code before treating stdout as a complete list.
+Listing does not create Attempts or leases, dispatch agents, move directories,
+or recreate missing specifications or Sessions.
 
 ### Start a normal Task
 
@@ -342,7 +388,7 @@ Requirement Management preserves the human requirement discussion before it
 becomes an engineering Task. Start with `aiw requirement chat [requirement-id]`:
 it creates or resumes a durable Flow Session, selects the smallest useful
 discussion phase, and asks for confirmation before each durable action.
-Records are stored under `requirements/<requirement-id>/`; promotion requires
+Records are stored under `docs/requirements/<requirement-id>/`; promotion requires
 an explicit `APPROVED` decision and creates or reuses one AIW Task with
 `artifacts/requirement-handoff.md`.
 
@@ -358,9 +404,12 @@ the lifecycle, commands, examples, recovery behavior, and Skill integration.
 
 Use `$requirement-management` when you want an AI conversation to lead the
 Requirement workflow. It starts or resumes `aiw requirement chat`, selects the
-needed finance discussion or deep discovery, and prepares durable actions for
+generic discovery or an applicable finance method, and prepares durable actions for
 explicit confirmation. Users do not need to remember artifact types, paths, or
 CLI parameters.
+
+Question quality is reviewed separately from automated contract tests. See the
+[three fixed human-review cases](docs/usage/requirement-discovery-review.md).
 
 Install the canonical repository Skill into the current project's managed Skill
 location when needed:
@@ -480,6 +529,25 @@ opt-out:
 aiw task workflow run daily-withdrawal-report --execute --primary
 ```
 
+Both workflow entry points dispatch `plan`, `sync`, `advance`, `run`,
+`supervise`, `recommend-routing`, `attempt`, `evidence`, `gate`,
+`skip-focused-test`, `complete`, `retry-policy`, `reopen`, `force-close`,
+`focused-test`, `delivery`, `local-merge`, `delivery-failed`, `report`,
+`diagnose`, `recover`, and `repair`. `repair-metadata` is a special form:
+`aiw workflow repair-metadata [task-id] [--dry-run]` (also available under
+`aiw task workflow`). Run and `supervise ... start` accept `--provider NAME`
+and `--model MODEL`; `run` also accepts `--execute` and `--primary`, and
+`--primary` requires `--execute`. Supervisor overrides apply only to `start`.
+
+For example, delivery failures record their stage and detail, while the
+focused-test operation takes an Attempt ID:
+
+```text
+aiw workflow delivery-failed payment-retry merge "conflict in parent branch"
+aiw task workflow focused-test payment-retry attempt-123
+aiw workflow repair-metadata payment-retry --dry-run
+```
+
 `--primary` is rejected without `--execute`; preview commands never create a
 worktree.
 
@@ -489,6 +557,10 @@ is preserved. A second write-capable Attempt for the same workspace is refused
 while its lease is active.
 
 ### Supervised bounded execution
+
+New Tasks currently default to **schema 9**. The commands below use its
+Coder/compile/repair loop. The implemented schema 10 protocol requires a
+controlled host and managed activation; `supervise start` does not enable it.
 
 For a long-running local loop, start supervision explicitly. Supervisor
 execution uses the same isolated-worktree default:
@@ -510,21 +582,80 @@ failures stop repair; a successful compile resets the separate counter.
 Generate routing before starting a manually created Task. Requirement
 promotion invokes `recommend-routing` automatically. A missing frozen Compile
 Plan opens a Gate and requires a fresh prepared request after planning.
+Do not prewarm a supervise run with `advance` or `run`: those commands can
+persist a request before the supervised Compile Plan is frozen. Use `status`,
+`diagnose`, and `report` for observation. `--primary` belongs to single-step
+`run --execute`, not to `supervise`.
 
 When an isolated Task completes execution and satisfies validation and Gate
 checks, supervise automatically commits its changes, merges into its recorded
 parent branch, verifies ancestry, and removes the merged Task worktree and
 branch. It does not push or archive. Delivery failures preserve recovery
-information. See [Supervise](docs/supervise.md) for the loop, recovery commands,
-and conflict handling, and [multi-actor status](docs/multi-actor-turn-handoff.md)
-for the distinction between implemented paths and architectural targets.
+information. This automatic delivery describes the default schema 9 path.
+See [Supervise](docs/supervise.md) for operation and recovery, and
+[automatic coding](docs/auto-coding.md) for state ownership and execution boundaries.
 
 Named models are defined under `[ai.profiles.<name>]` with `provider` and
 `model`. Default routes are `analysis=fast`, `coder/tester=balanced`, and
 `verifier=reasoning`; the current supervised dispatcher selects the `coder`
 route. Missing or incomplete Profiles fall back to global `[ai]`. New requests
 snapshot the resolved choice, including `start --provider/--model` overrides;
-recovery and compiler repairs reuse it. There is no automatic model escalation.
+recovery and compiler repairs reuse it. The default schema 9 dispatcher does
+not escalate models automatically.
+
+Raw Session output is archived before interpretation. Requests with frozen
+input references additionally require a matching implementation report,
+including input identity, change references, and explicit fact sections.
+An invalid report can receive one report-only supplement; a further failure
+opens `report-manual-review`. A saved report alone does not accept the Work Item.
+
+### Durable multi-stage protocol (schema 10)
+
+The Core implements `coder -> report-validation -> compile -> tester ->
+test-run -> acceptance -> accepted`. Tester uses an independent Session and
+test-path write scope; the Runner consumes a frozen test manifest. Controlled
+execution requires authorization, result and acceptance validators, budget
+services, and platform activation evidence. Missing host isolation or assertion
+review capability fails closed.
+
+**This is not the default CLI execution loop.** The generic Runner blocks
+schema 10 with a controlled-stage-adapter diagnostic and disables legacy
+dispatch. There is no general CLI migration, grant, or Stop-clear command;
+changing `schema_version` manually does not enable execution.
+
+* Explicit `supervise stop` persists even without a foreground lease. Restart
+  does not clear it or prove that an in-flight process exited.
+* Unknown results must be reconciled through the original executor. Saved
+  results can be consumed without replaying the model or command.
+* Actor generation and repair budgets survive restart. Configured distinct
+  model tiers support escalation; unknown historical budgets remain unknown.
+* Local delivery requires a frozen, grant-bound plan and controlled host.
+  Legacy `local-merge` is rejected. Cleanup needs its own grant and sealed
+  source evidence; conflicts are preserved without implicit abort or reset.
+
+Supervisor `status` also exposes protocol revision, budget-known state, Stop
+reason, item phases, in-flight requests, recovery counts, and auxiliary gaps.
+The ordinary retry/reopen instructions below describe schema 9, not a way to
+reset these durable budgets or bypass Stop.
+
+### Auxiliary work and knowledge
+
+The controlled auxiliary host drains persisted Verifier, Task memory, and
+project knowledge jobs within a bounded run. It preserves waiting and unknown
+work for a later managed launch; it is not a polling daemon. Explicit Task
+authorization, reviewed provider capability evidence, and host configuration
+are required. Missing capabilities remain visible as host gaps.
+
+```text
+aiw workflow auxiliary inventory
+aiw workflow knowledge show <task-id>
+```
+
+Explicit maintenance also includes `auxiliary policy <file>`,
+`auxiliary initialize`, `auxiliary settle`, and
+`knowledge review|import <task-id> <root> <file>`. These operations do not enable
+schema 10 or authorize model/test execution. Inspect their help before changing
+policy or publishing a knowledge review.
 
 ### Evidence, completion, and recovery
 
@@ -552,9 +683,14 @@ These commands do not replay an external agent turn. A pending Gate or missing
 Evidence remains a blocker until the required human decision or authorized
 validation is recorded.
 
+If runtime state is missing, `supervise start` can initialize an inactive
+projection only from valid, ID-matching Task metadata. A change directory or
+migration marker cannot restore missing Attempt history. `status` does not
+initialize missing state.
+
 ### Retry limits and terminal cancellation
 
-Each Work Item has an automatic Attempt limit of three by default. The operator
+In the default schema 9 path, each Work Item has an automatic Attempt limit of three. The operator
 may set a limit from one through five, but only for that Work Item:
 
 ```powershell
@@ -604,7 +740,7 @@ Automatic development is deliberately bounded. AIW does not automatically:
 
 Use `aiw task workflow run` to preview the next action and
 `aiw task workflow run --execute` or `supervise ... start` only with the
-appropriate authorization. Supervise includes compile validation and automatic
+appropriate authorization. Default schema 9 supervision includes compile validation and automatic
 local delivery for eligible isolated Tasks; ordinary `aiw done` does not itself
 perform that delivery. Task completion and verified Git delivery remain distinct
 states. Review the parent branch before pushing.
@@ -828,9 +964,11 @@ Creates:
 
 ```text
 openspec/changes/<task-id>/
-|-- task.toml
 |-- tasks.md
 `-- notes.md
+
+.ai/tasks/<task-id>/
+`-- task.toml
 ```
 
 Default metadata:
@@ -1274,9 +1412,9 @@ the missing discovery location instead of showing stale commands.
 Requirement records remain independent from implementation and can be moved out of the active directory when their decision lifecycle is complete:
 
 ```text
-requirements/<id>/              active
-requirements/archive/<id>/      completed and archived
-requirements/cancelled/<id>/    cancelled and retained
+docs/requirements/<id>/              active
+docs/requirements/archive/<id>/      completed and archived
+docs/requirements/cancelled/<id>/    cancelled and retained
 ```
 
 Use `aiw requirement archive <id> --reason <reason> [--by <actor>]` for `DECIDED`, `APPROVED`, or `PROMOTED` requirements. Options may appear in either order; when `--by` is omitted, AIW uses the current OS user. Use the same form for `aiw requirement cancel`. `aiw requirement list` shows active records; add `--all`, `--archived`, or `--cancelled` to query history. `show` continues to resolve records by ID after they move.

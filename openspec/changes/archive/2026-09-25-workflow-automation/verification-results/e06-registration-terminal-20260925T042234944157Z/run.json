@@ -1,0 +1,36 @@
+{
+  "command": [
+    "go",
+    "test",
+    "./internal/workflow",
+    "-run",
+    "^(TestKnowledgeAcceptedRegistrationDeduplicatesAfterRestart|TestKnowledgePartialDraftPublishesDurablyThenAdvances)$",
+    "-count=1",
+    "-timeout=60s",
+    "-vet=off",
+    "-json"
+  ],
+  "cwd": "C:\\Users\\svictor\\workspace\\tools\\aiw\\.wt\\workflow-automation",
+  "started_at": "2026-09-25T04:22:35.009920+00:00",
+  "environment_overrides": {
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local",
+    "GOCACHE": "C:\\Users\\svictor\\workspace\\tools\\aiw\\.wt\\workflow-automation\\.ai\\compile-cache\\go"
+  },
+  "temporary_environment": {
+    "TMP": "C:\\Users\\svictor\\AppData\\Local\\Temp",
+    "TEMP": "C:\\Users\\svictor\\AppData\\Local\\Temp",
+    "TMPDIR": null
+  },
+  "input_manifest_sha256": "322623c3f1c156d61fc37da3033c7efe78426c7f278473739fa7c66d8eaf0601",
+  "plan_reference": "../../e06-registration-verification-plan.md",
+  "plan_sha256": "c90d618ad9ce9f11e28ffa4433546a3904b1a3a72f44dc90cca02dd660593dd0",
+  "toolchain": "go version go1.25.1 windows/amd64",
+  "toolchain_error": "",
+  "exit_code": 0,
+  "ended_at": "2026-09-25T04:22:41.689677+00:00",
+  "changed_inputs": [],
+  "stdout.jsonl_sha256": "d1e6261a8c9753fa1a22c8630e395521fe5ea0234235e20569ee1743ba146a61",
+  "stderr.txt_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

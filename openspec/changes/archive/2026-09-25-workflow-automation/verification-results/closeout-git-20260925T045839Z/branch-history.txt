@@ -1,0 +1,3 @@
+< 53cbcb7 docs(config): 精简 AI 提供方与模型配置示例注释
+< a7387b2 docs(cz): 添加配置优先级变更提案与设计
+< d361334 command-help-consistency

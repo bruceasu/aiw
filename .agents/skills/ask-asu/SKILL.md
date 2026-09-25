@@ -27,7 +27,7 @@ description: 在整个 AIW/OpenSpec 开发流程中提供阶段建议，并路�
 
 - **新想法、问题不清或需求冲突**：先澄清问题、受众、成功条件和范围；推荐 `requirement-management`。复杂或跨域决策可用 `wayfinder`。
 - **缺陷、报错或性能退化**：先以 `triage` 分类；问题难以定位时用 `diagnosing-bugs`，并把运行时复现作为需显式授权的后续步骤。
-- **需求已稳定但尚未可实施**：确认一个 AIW Task 与一个 OpenSpec change 的生命周期映射；设计、规格和任务拆分依次推荐 `fd-workflow` / `to-spec` / `to-tickets`。
+- **需求已稳定但尚未可实施**：确认一个 AIW Task 与一个 OpenSpec change 的生命周期映射；按实际缺口推荐 `fd-workflow`、`to-spec` 或 `to-tickets`，跳过已有且充分的工件。
 - **需求或设计中的领域语言不稳定**：先使用 `domain-modeling` 固化术语、实体关系和边界，再继续需求或 OpenSpec 设计。
 - **准备编码**：确认选中的 `tasks.md` 条目、工作区和授权边界；推荐 `implement`。只有明确要求测试先行时才推荐 `tdd`。
 - **实现中或实现后**：建议检查变更是否覆盖当前 checklist、静态证据和未决 Gate；测试、构建、格式化和评审均须用户明确授权。用户明确要求审查时才推荐 `code-review`。
@@ -37,14 +37,18 @@ description: 在整个 AIW/OpenSpec 开发流程中提供阶段建议，并路�
 
 ## AIW / OpenSpec 主流程
 
+以下是按需路由，不要求每个 Task 重新执行已满足的阶段。只有缺少会影响当前工作的决策或工件时，才回到相应阶段。
+
 1. 使用 `requirement-management` 处理新需求、模糊需求或待决的业务/技术选择。
 2. Requirement 获批后，将其提升为一个 AIW Task；该步骤创建或复用 Task 及其初始 OpenSpec 规划工件。
 3. 若 Task 仍缺设计、提案、能力规格或任务轮廓，使用 `/fd-workflow` 或 `/to-spec`；所需工件和 ID 一致性未满足前，流程仍不完整。
-4. 使用 `/to-tickets` 在 `tasks.md` 中形成有序的实现切片。
+4. 若 `tasks.md` 的条目粒度、依赖或验证边界仍不清楚，使用 `/to-tickets` 深化；已有可执行条目时直接进入 `/implement`。
 5. 在 Task 工作区内使用 `/implement` 完成一个选中的条目；受管自动执行可使用 `aiw task workflow run|supervise <task-id>`，但只有用户明确授权执行时才建议实际运行。
-6. 开发后询问一次用户是否要运行一个聚焦测试命令；默认不测试。
+6. 开发后报告未运行的测试及适用时的一个可选聚焦命令；运行测试遵守仓库的运行授权规则，不因实现结束而例行提问。
 7. 仅在用户明确要求评审时使用 `/code-review`。
 8. 全部 checklist 完成后，报告派生的 Workflow 摘要、Evidence、未关闭 Gate 和用户请求的下一状态转换。Git 交付、归档、合并、清理及删除分支均须单独授权。
+
+已关联 AIW Task 的变更使用 `/implement` 一次处理一个选中条目；不要用 OpenSpec 自带的批量 apply Skill 绕过受管 Work Item 和 Task 状态。
 
 保持共享目标、分支、工作树、交付和归档生命周期的 checklist 在同一 AIW Task 内；仅在生命周期独立且用户同意后拆分为另一个 AIW Task 与 OpenSpec change。
 

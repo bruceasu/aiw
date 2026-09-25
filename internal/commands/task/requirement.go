@@ -35,20 +35,15 @@ func DispatchRequirement(args []string) error {
 	case "chat":
 		return dispatchRequirementChat(args[1:])
 	case "new":
-		if len(args) < 2 || len(args) > 3 {
-			return errors.New("usage: aiw requirement new <id> [title]")
-		}
-		title := args[1]
-		if len(args) == 3 {
-			title = args[2]
-		}
-		meta, err := requirement.Create(args[1], title)
+		action, err := parseRequirementCreation(args[1:])
+		if err != nil { return err }
+		meta, err := createRequirementAction(action)
 		if err != nil {
 			return err
 		}
 		if sessionID := os.Getenv("AIW_REQUIREMENT_SESSION"); sessionID != "" {
 			if _, err := requirement.BindConversation(meta.ID, sessionID); err != nil {
-				return err
+				return fmt.Errorf("Requirement %s was created but Session binding failed; do not repeat creation: %w", meta.ID, err)
 			}
 		}
 		fmt.Println("created requirement:", meta.ID)
@@ -87,12 +82,12 @@ func isRequirementHelpFlag(arg string) bool { return arg == "--help" || arg == "
 func requirementSubcommandUsage(command string) (string, bool) {
 	usages := map[string]string{
 		"chat":         "usage: aiw requirement chat [requirement-id] [--provider NAME] [--model MODEL]\n",
-		"new":          "usage: aiw requirement new <id> [title]\n",
+		"new":          requirementNewUsage + "\n",
 		"show":         "usage: aiw requirement show <id>\n",
 		"capture":      "usage: aiw requirement capture <id> <artifact> --file <path>\n",
 		"approve":      "usage: aiw requirement approve <id> <APPROVED|DEFERRED|REJECTED> --by <actor> --reason <reason>\n",
 		"promote":      "usage: aiw requirement promote <id> --task <task-id>\n",
-		"prepare-spec": "usage: aiw requirement prepare-spec <id>\n",
+		"prepare-spec": "usage: aiw requirement prepare-spec <id> [--candidate <path> | --regenerate]\n",
 		"archive":      "usage: aiw requirement archive <id> --by <actor> --reason <reason>\n",
 		"cancel":       "usage: aiw requirement cancel <id> --by <actor> --reason <reason>\n",
 		"list":         "usage: aiw requirement list [--all|--archived|--cancelled]\n",
@@ -105,18 +100,20 @@ const requirementUsage = `usage: aiw requirement <command> ...
 
 commands:
   chat [id] [--provider NAME] [--model MODEL]
-  new <id> [title]
+  new <slug> [title]                  Auto-number a new Requirement.
+  new --id <id> [title]               Create an exact ID for compatibility.
   show <id>
   capture <id> <artifact> --file <path>
   approve <id> <APPROVED|DEFERRED|REJECTED> --by <actor> --reason <reason>
 	promote <id> --task <task-id>
-  prepare-spec <id>
+  prepare-spec <id> [--candidate <path> | --regenerate]
   archive <id> --by <actor> --reason <reason>
   cancel <id> --by <actor> --reason <reason>
   list [--all|--archived|--cancelled]
 `
 
 type requirementChatPlan struct {
+	RequirementID string
 	SessionID string
 	Phase     string
 	Provider  string
@@ -124,6 +121,8 @@ type requirementChatPlan struct {
 }
 
 type requirementPendingAction struct {
+	AutoNumber          bool   `json:"auto_number,omitempty"`
+	Facts []string `json:"facts,omitempty"`
 	Kind                string `json:"kind"`
 	RequirementID       string `json:"requirement_id"`
 	Title               string `json:"title,omitempty"`
@@ -166,6 +165,7 @@ func chatRequirement(args []string) error {
 func requirementChatLoop(plan requirementChatPlan) error {
 	store := session.NewStore("")
 	reader := bufio.NewReader(os.Stdin)
+	var displayedAction string
 	for {
 		fmt.Print("> ")
 		line, err := reader.ReadString('\n')
@@ -183,10 +183,21 @@ func requirementChatLoop(plan requirementChatPlan) error {
 			continue
 		}
 		if isRequirementConversationConfirmation(line) {
-			if err := confirmRequirementAction(store, plan.SessionID); err != nil {
+			pending, readErr := store.ReadArtifact(plan.SessionID, "pending-requirement-action.json")
+			if readErr != nil || displayedAction == "" || pending != displayedAction {
+				fmt.Println("No unchanged, displayed checkpoint to confirm. Please describe the action again.")
+				continue
+			}
+			var action requirementPendingAction
+			if err := json.Unmarshal([]byte(pending), &action); err != nil { return err }
+			if plan.RequirementID != "" && action.RequirementID != plan.RequirementID { return errors.New("checkpoint targets another Requirement") }
+			createdID, err := confirmRequirementAction(store, plan.SessionID)
+			if err != nil {
 				return err
 			}
-			continue
+			plan.RequirementID = createdID
+			displayedAction = ""
+			line = "The human confirmed the displayed action. Reload the Requirement and assess the remaining gaps."
 		}
 		switch line {
 		case "/exit":
@@ -201,10 +212,12 @@ func requirementChatLoop(plan requirementChatPlan) error {
 		}
 		fmt.Println("AI is processing your request...")
 		turnCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		result, runErr := session.ExecuteTurnWithOverrides(turnCtx, store, plan.SessionID, plan.Phase, line, plan.Provider, plan.Model, false)
+		result, runErr := runRequirementDiscovery(turnCtx, store, plan, line)
 		cancel()
-		if result.FinalOutput != "" {
-			fmt.Println(result.FinalOutput)
+		if runErr == nil {
+			plan.Phase = result.Phase
+			printRequirementDiscovery(result)
+			displayedAction, runErr = displayRequirementCheckpoint(store, plan)
 		}
 		if runErr != nil || err == io.EOF {
 			return runErr
@@ -227,18 +240,18 @@ func prepareRequirementAction(args []string) error {
 	action := requirementPendingAction{Kind: args[0]}
 	switch action.Kind {
 	case "new":
-		if len(args) < 2 || len(args) > 3 || !requirement.ValidID(args[1]) {
-			return errors.New("usage: aiw requirement chat prepare new <id> [title]")
-		}
-		action.RequirementID, action.Title = args[1], args[1]
-		if len(args) == 3 {
-			action.Title = args[2]
-		}
+		var err error
+		action, err = parseRequirementCreation(args[1:])
+		if err != nil { return err }
 	case "capture":
-		if len(args) != 5 || args[3] != "--file" {
+		if (len(args) != 5 && len(args) != 7) || args[3] != "--file" {
 			return errors.New("usage: aiw requirement chat prepare capture <id> <artifact> --file <path>")
 		}
 		action.RequirementID, action.Artifact, action.Source = args[1], args[2], args[4]
+		if len(args) == 7 {
+			if args[5] != "--facts-json" || len(args[6]) > 32768 { return errors.New("invalid facts-json") }
+			if err := json.Unmarshal([]byte(args[6]), &action.Facts); err != nil { return err }
+		}
 	case "approve":
 		if len(args) != 7 || args[3] != "--by" || args[5] != "--reason" {
 			return errors.New("usage: aiw requirement chat prepare approve <id> <decision> --by <actor> --reason <reason>")
@@ -272,31 +285,33 @@ func prepareRequirementAction(args []string) error {
 	return nil
 }
 
-func confirmRequirementAction(store *session.Store, sessionID string) error {
+func confirmRequirementAction(store *session.Store, sessionID string) (string, error) {
 	content, err := store.ReadArtifact(sessionID, "pending-requirement-action.json")
 	if err != nil {
-		return errors.New("no pending Requirement action")
+		return "", errors.New("no pending Requirement action")
 	}
 	var action requirementPendingAction
 	if err := json.Unmarshal([]byte(content), &action); err != nil || action.Kind == "" {
-		return errors.New("no pending Requirement action")
+		return "", errors.New("no pending Requirement action")
 	}
 	switch action.Kind {
 	case "new":
-		meta, err := requirement.Create(action.RequirementID, action.Title)
+		meta, err := createRequirementAction(action)
 		if err != nil {
-			return err
+			return "", err
 		}
 		if _, err := requirement.BindConversation(meta.ID, sessionID); err != nil {
-			return err
+			return "", fmt.Errorf("Requirement %s was created but Session binding failed; do not repeat creation: %w", meta.ID, err)
 		}
+		action.RequirementID = meta.ID
+		fmt.Println("created requirement:", meta.ID)
 	case "capture":
-		if _, _, err := requirement.Capture(action.RequirementID, action.Artifact, action.Source); err != nil {
-			return err
+		if err := confirmRequirementCapture(store, sessionID, action); err != nil {
+			return "", err
 		}
 	case "approve":
-		if _, err := requirement.Approve(action.RequirementID, action.Decision, action.By, action.Reason); err != nil {
-			return err
+		if err := confirmRequirementApproval(store, sessionID, content, action); err != nil {
+			return "", err
 		}
 	case "promote":
 		args := []string{action.RequirementID, "--task", action.TaskID}
@@ -304,27 +319,27 @@ func confirmRequirementAction(store *session.Store, sessionID string) error {
 			args = append(args, "--allow-unrelated-dirty")
 		}
 		if err := promoteRequirement(args); err != nil {
-			return err
+			return "", err
 		}
 	case "archive":
 		if _, err := requirement.Archive(action.RequirementID, action.By, action.Reason); err != nil {
-			return err
+			return "", err
 		}
 	case "cancel":
 		if _, err := requirement.Cancel(action.RequirementID, action.By, action.Reason); err != nil {
-			return err
+			return "", err
 		}
 	default:
-		return fmt.Errorf("unsupported pending requirement action: %s", action.Kind)
+		return "", fmt.Errorf("unsupported pending requirement action: %s", action.Kind)
 	}
 	if err := store.WriteArtifact(sessionID, "pending-requirement-action.json", []byte("{}")); err != nil {
-		return err
+		return "", fmt.Errorf("Requirement action completed for %s but pending cleanup failed; do not repeat the action: %w", action.RequirementID, err)
 	}
 	if err := store.AppendMemory(sessionID, fmt.Sprintf("Confirmed Requirement action: %s for %s", action.Kind, action.RequirementID)); err != nil {
-		return err
+		return "", fmt.Errorf("Requirement action completed for %s but Session memory update failed; do not repeat the action: %w", action.RequirementID, err)
 	}
 	fmt.Printf("Confirmed Requirement action: %s\n", action.Kind)
-	return nil
+	return action.RequirementID, nil
 }
 
 func prepareRequirementChat(args []string) (requirementChatPlan, error) {
@@ -388,7 +403,7 @@ func prepareRequirementChat(args []string) (requirementChatPlan, error) {
 	if _, err := store.Update(sessionID, func(status *session.Status) error { status.Session.CurrentPhase = phase; return nil }); err != nil {
 		return requirementChatPlan{}, err
 	}
-	return requirementChatPlan{SessionID: sessionID, Phase: phase, Provider: provider, Model: model}, nil
+	return requirementChatPlan{RequirementID: id, SessionID: sessionID, Phase: phase, Provider: provider, Model: model}, nil
 }
 
 func requirementConversationPhase(meta requirement.Meta) (string, error) {
@@ -407,24 +422,18 @@ func requirementConversationPhase(meta requirement.Meta) (string, error) {
 			return "deep-discovery", nil
 		}
 	}
-	if _, ok := meta.Artifacts["problem-brief"]; !ok {
-		return "intake", nil
-	}
-	if _, ok := meta.Artifacts["requirement-plan"]; !ok {
-		return "synthesis", nil
-	}
-	if meta.Status == "DECIDED" {
-		return "human-decision", nil
-	}
-	return "synthesis", nil
+	// Only a fresh semantic assessment may choose synthesis, never file existence.
+	return "intake", nil
 }
 
 func requirementConversationInstructions() string {
 	return `You are the AIW Requirement Management conversation orchestrator.
 
-Guide the human through one requirement at a time. Select the smallest missing discussion step: finance requirement intake, value assessment, metric brief, engineering options, or requirement synthesis. Do not require the human to name a Skill, artifact type, file path, or CLI parameter. When an artifact has a blocking ambiguity, conflict, irreversible decision, or %% NEEDS_INPUT, conduct deep discovery and merge the conclusion into the affected Requirement Artifact. Do not create ADRs at this stage.
+Guide the human through one requirement at a time. Use the generic discovery baseline and only the domain methods actually loaded in the current input. Follow the current call's JSON response contract. Do not require the human to name a Skill, artifact type, file path, or CLI parameter. Keep conflicts and missing decisions explicit. Do not create ADRs at this stage.
 
 Treat every durable action as a confirmation checkpoint. Before creating a Requirement, capturing an artifact, recording APPROVED, DEFERRED, or REJECTED, or promoting a Task, show the action, target, content summary, and write scope. Prepare the action with aiw requirement chat prepare, then ask the human to type confirm or 确认 in the active conversation. Do not invoke a durable Requirement operation before that confirmation. The active conversation sets AIW_REQUIREMENT_SESSION, so confirmed new Requirements link to this Session. For capture, prepare the artifact source yourself; the human must not need to construct a path or command.
+
+For a new Requirement, prepare new with a lowercase slug such as add-chat-support. The host adds a REQ number only after confirmation. Do not guess the next number. Use --id only when the human asks for an exact ID. After creation, use the full ID returned by the host.
 
 Promotion is separate from implementation: it creates or reuses one AIW Task and its requirement handoff. Do not generate OpenSpec prose, start implementation, or make release decisions.`
 }
@@ -468,6 +477,15 @@ func promoteRequirement(args []string) error {
 	if meta.Promotion.TaskID != "" && meta.Promotion.TaskID != taskID {
 		return fmt.Errorf("requirement already links to task %s", meta.Promotion.TaskID)
 	}
+	if meta.Promotion.Status == "SPEC_DRAFTED" {
+		accepted, err := openspecgen.HasAcceptedCandidate(taskx.RuntimeTaskDir(taskID), reqID, taskID)
+		if err != nil { return err }
+		if !accepted {
+			return errors.New("historical SPEC_DRAFTED Requirement has no accepted generation evidence; review its OpenSpec content before recovery")
+		}
+		fmt.Printf("requirement %s already has accepted generated OpenSpec artifacts\n", reqID)
+		return nil
+	}
 	if meta.Promotion.TaskID == "" && !fsx.Exists(taskx.RuntimeTaskDir(taskID)) {
 		if err := newTask(taskID, allowUnrelatedDirty); err != nil {
 			return err
@@ -492,16 +510,10 @@ func promoteRequirement(args []string) error {
 	if err := writeRequirementHandoff(meta, snapshot); err != nil {
 		return err
 	}
-	if err := prepareOpenSpecArtifactsShared(meta, snapshot); err != nil {
+	if err := prepareOpenSpecArtifactsShared(meta, openspecgen.PreparationOptions{}); err != nil {
 		return err
 	}
-	if err := runWorkflowCommand([]string{"recommend-routing", taskID}); err != nil {
-		return fmt.Errorf("recommend Task routing: %w", err)
-	}
-	meta, err = requirement.CompletePromotion(reqID, taskID)
-	if err != nil {
-		return err
-	}
+	if err := completeAcceptedPromotion(reqID, taskID); err != nil { return err }
 	fmt.Printf("requirement %s promoted to task %s\n", reqID, taskID)
 	return nil
 }
@@ -547,67 +559,72 @@ func prepareOpenSpecArtifacts(meta requirement.Meta, artifacts []requirement.Art
 	return nil
 }
 
-func prepareOpenSpecArtifactsShared(meta requirement.Meta, artifacts []requirement.Artifact) error {
-	plan := ""
-	for _, artifact := range artifacts {
-		if artifact.Kind != "requirement-plan" {
-			continue
-		}
-		b, err := os.ReadFile(filepath.FromSlash(artifact.Path))
-		if err != nil {
+func prepareOpenSpecArtifactsShared(meta requirement.Meta, options openspecgen.PreparationOptions) error {
+	options.Accept = func(request requirement.GenerationRequest, record *requirement.GenerationRecord, hooks openspecgen.ApplyHooks) error {
+			_, err := openspecgen.AcceptCandidate(filepath.Join("openspec", "changes", meta.Promotion.TaskID), request, record, openspecgen.AcceptanceHooks{
+				ApplyHooks: hooks,
+				SyncChecklist: func() error { return ensureChecklistMapping(meta.Promotion.TaskID) },
+			})
 			return err
-		}
-		plan = string(b)
 	}
-	if plan == "" {
-		return errors.New("promoted Requirement has no requirement-plan artifact")
+	result, err := openspecgen.PrepareCandidate(context.Background(), taskx.RuntimeTaskDir(meta.Promotion.TaskID), meta.ID, meta.Promotion.TaskID, options)
+	if result.RequestPath != "" {
+		fmt.Printf("generation %s: %s\nrequest: %s\ncandidate: %s\nresult: %s\n", result.Request.RequestID, result.Record.State, result.RequestPath, result.CandidatePath, result.ResultPath)
 	}
-	generated, err := openspecgen.Render(openspecgen.Input{Title: meta.Title, Requirement: plan, Capability: "requirement-management"})
-	if err != nil {
-		return err
+	if err != nil { return err }
+	if result.Record.State == requirement.GenerationAccepted { return nil }
+	if result.Record.State == requirement.GenerationAwaitingAgent {
+		return fmt.Errorf("OpenSpec generation incomplete: submit a candidate with aiw requirement prepare-spec %s --candidate %q", meta.ID, filepath.ToSlash(result.CandidatePath))
 	}
-	if err := openspecgen.Validate(generated); err != nil {
-		return err
-	}
-	created, err := openspecgen.WriteMissing(filepath.Join("openspec", "changes", meta.Promotion.TaskID), generated)
-	if err != nil {
-		return err
-	}
-	for _, path := range created {
-		if path == "tasks.md" {
-			if err := ensureChecklistMapping(meta.Promotion.TaskID); err != nil {
-				return fmt.Errorf("synchronize generated Work Items: %w", err)
-			}
-			break
-		}
-	}
-	_, err = openspecgen.ValidateWithCLI(context.Background(), meta.Promotion.TaskID)
-	return err
+	return fmt.Errorf("OpenSpec generation is incomplete: state=%s; inspect %s", result.Record.State, result.ResultPath)
 }
 
 func prepareRequirementSpec(args []string) error {
-	if len(args) != 1 || !requirement.ValidID(args[0]) {
-		return errors.New("usage: aiw requirement prepare-spec <id>")
-	}
-	meta, err := requirement.Read(args[0])
+	id, options, err := parsePrepareSpecArgs(args)
+	if err != nil { return err }
+	meta, err := requirement.Read(id)
 	if err != nil {
 		return err
 	}
 	if meta.Promotion.TaskID == "" {
 		return errors.New("requirement has not been promoted to a Task")
 	}
-	snapshot, err := requirement.ArtifactSnapshot(args[0])
-	if err != nil {
-		return err
+	if meta.Promotion.Status == "SPEC_DRAFTED" {
+		accepted, err := openspecgen.HasAcceptedCandidate(taskx.RuntimeTaskDir(meta.Promotion.TaskID), meta.ID, meta.Promotion.TaskID)
+		if err != nil { return err }
+		if !accepted {
+			return errors.New("historical SPEC_DRAFTED Requirement has no accepted generation evidence; review its OpenSpec content before recovery")
+		}
+		fmt.Printf("requirement %s already has accepted generated OpenSpec artifacts\n", meta.ID)
+		return nil
 	}
-	if err := writeRequirementHandoff(meta, snapshot); err != nil {
-		return err
+	if err := prepareOpenSpecArtifactsShared(meta, options); err != nil { return err }
+	return completeAcceptedPromotion(meta.ID, meta.Promotion.TaskID)
+}
+
+func completeAcceptedPromotion(requirementID, taskID string) error {
+	// Advisory routing is intentionally non-blocking. recommend-routing falls
+	// back to deterministic defaults when no LLM is configured; an unexpected
+	// routing persistence failure remains visible without downgrading accepted
+	// artifact content back to an incomplete promotion.
+	if err := runWorkflowCommand([]string{"recommend-routing", taskID}); err != nil {
+		fmt.Fprintf(os.Stderr, "routing recommendation unavailable for task %s: %v\n", taskID, err)
 	}
-	if err := prepareOpenSpecArtifactsShared(meta, snapshot); err != nil {
-		return err
+	_, err := requirement.CompletePromotion(requirementID, taskID)
+	return err
+}
+
+func parsePrepareSpecArgs(args []string) (string, openspecgen.PreparationOptions, error) {
+	var options openspecgen.PreparationOptions
+	usage := errors.New("usage: aiw requirement prepare-spec <id> [--candidate <path> | --regenerate]")
+	if len(args) == 0 || !requirement.ValidID(args[0]) || args[0] == "." || args[0] == ".." { return "", options, usage }
+	if len(args) == 1 { return args[0], options, nil }
+	if len(args) == 2 && args[1] == "--regenerate" { options.Regenerate = true; return args[0], options, nil }
+	if len(args) == 3 && args[1] == "--candidate" && strings.TrimSpace(args[2]) != "" && !strings.HasPrefix(args[2], "--") {
+		options.CandidatePath = args[2]
+		return args[0], options, nil
 	}
-	fmt.Printf("requirement %s OpenSpec artifacts prepared\n", meta.ID)
-	return nil
+	return "", options, usage
 }
 
 func parseTerminalArgs(args []string, command string) (string, string, string, error) {

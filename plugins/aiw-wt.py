@@ -3,9 +3,9 @@
 aiw-wt plugin: Python implementation of worktree commands mirroring Go `wt`.
 Supports: add, rm, list, prune, lock, unlock, repair, ignore
 
-This plugin uses the same conventions as the Go code: task metadata under
-.ai/<id>/task.toml, with .ai/tasks/<id>/ as a legacy location and tasks.toml
-as a legacy filename fallback.
+This plugin uses the same conventions as the Go code: active Task metadata and
+runtime state live under .ai/tasks/<id>/. The old .ai/<id>/ location is rejected
+with a manual-relocation diagnostic; tasks.toml remains a legacy filename fallback.
 """
 import os
 import shutil
@@ -83,8 +83,8 @@ def resolve_root():
 
 ROOT = resolve_root()
 CHANGES_DIR = ROOT / "openspec" / "changes"
-RUNTIME_TASKS_DIR = ROOT / ".ai"
-LEGACY_RUNTIME_TASKS_DIR = RUNTIME_TASKS_DIR / "tasks"
+RUNTIME_TASKS_DIR = ROOT / ".ai" / "tasks"
+LEGACY_RUNTIME_TASKS_DIR = ROOT / ".ai"
 WORKTREE_DIR = Path(".wt")
 
 
@@ -134,9 +134,13 @@ def task_dir(task_id):
 def task_meta_path(task_id):
     task_dir = RUNTIME_TASKS_DIR / task_id
     legacy_task_dir = LEGACY_RUNTIME_TASKS_DIR / task_id
-    if not task_dir.exists() and legacy_task_dir.exists():
-        task_dir = legacy_task_dir
-        print(f"warning: using legacy task metadata directory {legacy_task_dir}; migrate it to {RUNTIME_TASKS_DIR / task_id}", file=sys.stderr)
+    if task_dir.exists() and legacy_task_dir.exists():
+        raise RuntimeError(f"Task {task_id} has conflicting active and legacy runtime directories")
+    if legacy_task_dir.exists():
+        raise RuntimeError(
+            f"Task {task_id} remains at legacy path {legacy_task_dir}; "
+            f"stop AIW writers and manually relocate it to {task_dir}"
+        )
     primary = task_dir / "task.toml"
     legacy = task_dir / "tasks.toml"
     if primary.exists():

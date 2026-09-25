@@ -38,6 +38,20 @@ Capture intended definition, formula, unit, time semantics, refresh expectation,
 
 ## Output
 
+### When loaded by Requirement Management
+
+Apply this method only to the financial domain identified in the supplied
+context. The current host JSON contract overrides the Markdown template below;
+use the template only for a requested draft or standalone discussion.
+Use loaded source bodies and exact references. Do not load sibling Skills or
+linked materials, invent missing evidence, or treat capture as confirmation.
+Ask only the highest-impact open questions; keep conflicts and proposed
+conclusions separate from host-confirmed fragments. Report missing evidence
+without claiming readiness. The host owns persistence and human checkpoints.
+This method does not authorize tests, external calls, or lifecycle operations.
+
+### Draft artifact
+
 ```markdown
 # Requirement Artifact
 

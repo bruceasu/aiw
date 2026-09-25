@@ -104,7 +104,7 @@ func TestRequirementSubcommandHelpDoesNotCreateRequirement(t *testing.T) {
 			if err := DispatchRequirement([]string{"new", flag}); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := os.Stat(filepath.Join("requirements", flag)); !os.IsNotExist(err) {
+			if _, err := os.Stat(filepath.Join(requirement.Root, flag)); !os.IsNotExist(err) {
 				t.Fatalf("help flag created a Requirement: %v", err)
 			}
 		})
@@ -126,7 +126,7 @@ func TestRequirementHandoffIsIdempotentAndLeavesRecoverableStateOnFailure(t *tes
 		Approval:  requirement.Approval{Status: "APPROVED", By: "owner", At: "2026-09-08T00:00:00Z"},
 		Promotion: requirement.Promotion{Status: "TASK_CREATED", TaskID: "target"},
 	}
-	artifacts := []requirement.Artifact{{Kind: "requirement-plan", Path: "requirements/approved/requirement-plan.md", Digest: "digest"}}
+	artifacts := []requirement.Artifact{{Kind: "requirement-plan", Path: "docs/requirements/approved/requirement-plan.md", Digest: "digest"}}
 	if err := writeRequirementHandoff(meta, artifacts); err != nil {
 		t.Fatal(err)
 	}
@@ -183,7 +183,7 @@ func TestPrepareRequirementChatCreatesUnboundConversation(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(".ai", "sessions", plan.SessionID, "status.json")); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat("requirements"); !os.IsNotExist(err) {
+	if _, err := os.Stat(requirement.Root); !os.IsNotExist(err) {
 		t.Fatalf("new chat created a requirement directory: %v", err)
 	}
 }
@@ -247,7 +247,7 @@ func TestRequirementConversationConfirmationUsesPlainLanguage(t *testing.T) {
 	}
 }
 
-func TestPreparedRequirementActionNeedsExplicitConfirmation(t *testing.T) {
+func TestRequirementNumberingChatNeedsExplicitConfirmation(t *testing.T) {
 	previous, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
@@ -278,14 +278,21 @@ func TestPreparedRequirementActionNeedsExplicitConfirmation(t *testing.T) {
 	if _, err := requirement.Read("chat-created"); !os.IsNotExist(err) {
 		t.Fatalf("prepared action wrote Requirement before confirmation: %v", err)
 	}
-	if err := confirmRequirementAction(store, "conversation"); err != nil {
+	if _, err := os.Stat(filepath.Join(".ai", "requirements", "sequence")); !os.IsNotExist(err) {
+		t.Fatalf("prepare consumed a number: %v", err)
+	}
+	createdID, err := confirmRequirementAction(store, "conversation")
+	if err != nil {
 		t.Fatal(err)
 	}
-	meta, err := requirement.Read("chat-created")
+	if createdID != "REQ00001-chat-created" { t.Fatalf("unexpected confirmed ID: %s", createdID) }
+	meta, err := requirement.Read(createdID)
 	if err != nil || meta.Conversation.SessionID != "conversation" {
 		t.Fatalf("confirmation did not create and bind Requirement: %#v %v", meta, err)
 	}
-	if err := confirmRequirementAction(store, "conversation"); err == nil {
+	memory, err := store.ReadText("conversation", "memory.md")
+	if err != nil || !strings.Contains(memory, createdID) { t.Fatalf("memory lost actual ID: %s (%v)", memory, err) }
+	if _, err := confirmRequirementAction(store, "conversation"); err == nil {
 		t.Fatal("expected second confirmation refusal")
 	}
 }

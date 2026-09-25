@@ -71,27 +71,40 @@ Give each item an explicit order and acceptance criteria. Represent ordinary
 dependencies through task order and wording in `tasks.md`; do not invent
 external blocking links for work that shares one AIW task and worktree.
 
+For a nontrivial item, identify the existing requirement/acceptance criteria
+and design decisions that constrain it, plus the observable evidence that
+would show it is complete. Reference stable IDs when the OpenSpec artifacts
+already provide them; do not create a second WP ID or invent IDs for older
+changes. Include compatibility, migration, rollback, security, or operability
+work only when the change actually requires it. A planned test or check does
+not authorize running it.
+
 **Wide refactors are the exception to vertical slicing.** A **wide refactor** is one mechanical change — rename a column, retype a shared symbol — whose **blast radius** fans across the whole codebase, so a single edit breaks thousands of call sites at once and no vertical slice can land green. Don't force it into a tracer bullet; sequence it as **expand–contract**. First expand: add the new form beside the old so nothing breaks. Then migrate the call sites over in batches sized by blast radius (per package, per directory), each batch its own ticket blocked by the expand, keeping CI green batch to batch because the old form still exists. Finally contract: delete the old form once no caller remains, in a ticket blocked by every migrate batch. When even the batches can't stay green alone, keep the sequence but let them share an integration branch that all block a final integrate-and-verify ticket — green is promised only there.
 
-### 4. Quiz the user
+### 4. Resolve material choices
 
-Present the proposed breakdown as a numbered list. For each ticket, show:
+When sizing, prerequisites, or scope have materially different valid options,
+present the affected items as a numbered list. For each, show:
 
 - **Title**: short descriptive name
 - **Order / prerequisites**: which earlier task items gate this one
 - **What it delivers**: the end-to-end behaviour this ticket makes work
 
-Ask the user:
+Ask only for the decision needed to choose between those options, such as:
 
 - Does the granularity feel right? (too coarse / too fine)
 - Are the prerequisites correct — does each item depend only on work that genuinely gates it?
 - Should any tickets be merged or split further?
 
-Iterate until the user approves the breakdown.
+When the accepted spec and design determine a bounded breakdown, use best
+judgment and continue to `tasks.md` without a separate approval round. Record
+an unresolved material decision as `%% NEEDS_INPUT: ...`; do not mark an
+affected item ready by assumption. A new AIW Task or independent delivery
+boundary still requires the approval described below.
 
-### 5. Write the approved task breakdown
+### 5. Write the task breakdown
 
-Write the approved items as numbered checklist entries in the current change's
+Write the resolved items as numbered checklist entries in the current change's
 `tasks.md`, ordered by prerequisite. Keep them under the current AIW Task when
 they share its worktree and lifecycle.
 
@@ -111,6 +124,10 @@ tests.
 **What to build:** the end-to-end behaviour this ticket makes work, from the user's perspective — not a layer-by-layer implementation list.
 
 **Prerequisites:** earlier task numbers that gate this item, or "None — can start immediately".
+
+**Relevant spec/design:** existing requirement, acceptance-criterion, or design/ADR references when they constrain this item.
+
+**Verification intent:** observable behavior or evidence needed to complete this item; record execution authorization separately.
 
 - [ ] Acceptance criterion 1
 - [ ] Acceptance criterion 2

@@ -9,7 +9,7 @@ Use this contract for engineering Skills in an AIW/OpenSpec repository.
 - OpenSpec owns proposal, design, capability specs, and the detailed
   implementation checklist in `tasks.md`.
 - Workflow Core owns Work Items, Attempts, Gates, Evidence, write leases, and
-  derived execution/validation/readiness state in `.ai/<task-id>/`.
+  derived execution/validation/readiness state in `.ai/tasks/<task-id>/`.
 - GitHub and GitLab are optional projections used only on explicit request.
 
 Do not create a second task tracker or let OpenSpec lifecycle state override the
@@ -66,7 +66,7 @@ aiw new <task-id> --backend auto
 
 This creates the AIW lifecycle record and delegates proposal/spec artifact
 creation to OpenSpec when available. The resulting runtime record MUST be stored
-at `.ai/<task-id>/task.toml` with the Task ID, status, branch,
+at `.ai/tasks/<task-id>/task.toml` with the Task ID, status, branch,
 worktree, `parent_branch`, and Session mapping.
 
 Do not use `openspec new change <task-id>` directly for a managed change. That
@@ -154,11 +154,11 @@ must not retain a final distributable artifact, and `build*` scripts are not
 compile scripts. Running tests, final-artifact builds, type checks, formatters,
 linters, vet, or verification scripts requires an explicit user instruction.
 
-After development is complete, ask once whether the user wants one focused test
-command run. Include the exact command, scope, and expected duration. Default to
-not testing when the user declines or does not respond.
-
-Broader test or build scope requires separate approval.
+After development, report which tests were not run. When a focused test
+would add useful evidence, give one optional command with scope and expected
+duration; do not ask solely because implementation finished. Run tests only
+under the repository's runtime authorization rules. Broader tests or builds
+require separate approval.
 
 ## Completion
 

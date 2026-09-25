@@ -1,0 +1,36 @@
+{
+  "command": [
+    "go",
+    "test",
+    "./internal/workflow",
+    "-run",
+    "^(TestValidationInputsTrackContentAndDiscovery|TestReportSectionsDistinguishMissingEmptyAndUnknown|TestImplementationReportBindsGenerationAndChangedBytes|TestLegacyEvidenceDoesNotCreateValidationOrAuthorization|TestUnknownScriptEnvironmentCannotReusePassedEvidence)$",
+    "-count=1",
+    "-timeout=60s",
+    "-vet=off",
+    "-json"
+  ],
+  "cwd": "C:\\Users\\svictor\\workspace\\tools\\aiw\\.wt\\workflow-automation",
+  "started_at": "2026-09-24T09:28:24.316020+00:00",
+  "environment_overrides": {
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local",
+    "GOCACHE": "C:\\Users\\svictor\\workspace\\tools\\aiw\\.wt\\workflow-automation\\.ai\\compile-cache\\go"
+  },
+  "temporary_environment": {
+    "TMP": "C:\\Users\\svictor\\AppData\\Local\\Temp",
+    "TEMP": "C:\\Users\\svictor\\AppData\\Local\\Temp",
+    "TMPDIR": null
+  },
+  "input_manifest_sha256": "24f8275eaa5b3a41d85e09ceaac379b3235ad51e502df3336ca763440fccfa2e",
+  "plan_reference": "../../e01-input-verification-plan.md",
+  "plan_sha256": "f11f20bc0d2a6443502f718f5d226cb587c18ccc8a2a767756cb0d39e2a3356c",
+  "toolchain": "go version go1.25.1 windows/amd64",
+  "toolchain_error": "",
+  "exit_code": 0,
+  "ended_at": "2026-09-24T09:28:25.464615+00:00",
+  "changed_inputs": [],
+  "stdout.jsonl_sha256": "ba6ce1df72f59de1ae1093170f8620de3731860845b31beb0518eb8957003a04",
+  "stderr.txt_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

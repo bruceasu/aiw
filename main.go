@@ -12,6 +12,9 @@ import (
 	help "aiw/internal/commands/help"
 	sessioncmd "aiw/internal/commands/session"
 	taskcmd "aiw/internal/commands/task"
+	"aiw/internal/workflow"
+	"aiw/internal/workflow/execution"
+	"aiw/internal/session"
 
 	plug "aiw/internal/plugin"
 )
@@ -30,6 +33,15 @@ const (
 )
 
 func main() {
+	workflow.ConfigureAuxiliaryStore = execution.ConfigureProductionAuxiliary
+	session.TaskMemoryProjection = execution.ProjectSessionTaskMemory
+	if len(os.Args) > 1 && os.Args[1] == "--auxiliary-root" {
+		if err := execution.RunAuxiliaryHelper(os.Args[1:]); err != nil {
+			fmt.Fprintln(os.Stderr, "auxiliary:", err)
+			os.Exit(1)
+		}
+		return
+	}
 	if len(os.Args) < 2 {
 		help.Dispatch([]string{})
 		return

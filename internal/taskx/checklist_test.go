@@ -68,7 +68,7 @@ func TestProjectWorkflowChecklistCompletionChangesOnlyMappedEntry(t *testing.T) 
 }
 
 func TestProjectWorkflowChecklistCompletionRejectsAmbiguousOrDeletedItem(t *testing.T) {
-	for name, content, number, code := range map[string]struct {
+	for name, tc := range map[string]struct {
 		content string
 		number  string
 		code    string
@@ -78,19 +78,19 @@ func TestProjectWorkflowChecklistCompletionRejectsAmbiguousOrDeletedItem(t *test
 	} {
 		t.Run(name, func(t *testing.T) {
 			path := filepath.Join(t.TempDir(), "tasks.md")
-			if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			if err := os.WriteFile(path, []byte(tc.content), 0o644); err != nil {
 				t.Fatal(err)
 			}
-			err := ProjectWorkflowChecklistCompletion(path, number)
+			err := ProjectWorkflowChecklistCompletion(path, tc.number)
 			var projectionErr *ChecklistProjectionError
-			if !errors.As(err, &projectionErr) || projectionErr.Code != code {
-				t.Fatalf("projection error = %#v, want code %q", err, code)
+			if !errors.As(err, &projectionErr) || projectionErr.Code != tc.code {
+				t.Fatalf("projection error = %#v, want code %q", err, tc.code)
 			}
 			after, readErr := os.ReadFile(path)
 			if readErr != nil {
 				t.Fatal(readErr)
 			}
-			if strings.TrimSpace(string(after)) != strings.TrimSpace(content) {
+			if strings.TrimSpace(string(after)) != strings.TrimSpace(tc.content) {
 				t.Fatalf("rejected projection changed checklist: %q", after)
 			}
 		})

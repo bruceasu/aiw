@@ -1,0 +1,36 @@
+{
+  "command": [
+    "go",
+    "test",
+    "./internal/workflow",
+    "-run",
+    "^(TestGrantLogRejectsAmbiguousOrMissingDecisionFields|TestGrantDenialInvalidatesOldApprovalAndRequiresExplicitReplacement|TestGrantScopeChangeCannotReuseApproval)$",
+    "-count=1",
+    "-timeout=60s",
+    "-vet=off",
+    "-json"
+  ],
+  "cwd": "C:\\Users\\svictor\\workspace\\tools\\aiw\\.wt\\workflow-automation",
+  "started_at": "2026-09-24T09:16:25.064146+00:00",
+  "environment_overrides": {
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local",
+    "GOCACHE": "C:\\Users\\svictor\\workspace\\tools\\aiw\\.wt\\workflow-automation\\.ai\\compile-cache\\go"
+  },
+  "temporary_environment": {
+    "TMP": "C:\\Users\\svictor\\AppData\\Local\\Temp",
+    "TEMP": "C:\\Users\\svictor\\AppData\\Local\\Temp",
+    "TMPDIR": null
+  },
+  "input_manifest_sha256": "7d2b8f9fc1faa9e5a528c51cdae7987b2060dac0e4924eff6c013ed06dcfce2a",
+  "plan_reference": "../../e03-grant-verification-plan.md",
+  "plan_sha256": "5cf77bc2779f7eb58d985f3989b5e3d5a414e6de8ad37727148d65a5f9b56d5a",
+  "toolchain": "go version go1.25.1 windows/amd64",
+  "toolchain_error": "",
+  "exit_code": 0,
+  "ended_at": "2026-09-24T09:16:26.232036+00:00",
+  "changed_inputs": [],
+  "stdout.jsonl_sha256": "3bf7e4af5fff582ec330a3b0d0632eb10ef184a4522513d1b83e7bb02896249d",
+  "stderr.txt_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

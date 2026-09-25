@@ -6,10 +6,10 @@ import (
 	"aiw/internal/workflow"
 )
 
-// WorkflowRuntimeFromMeta is the only compatibility mapping from durable
-// task.toml metadata to the local Workflow Core projection. Metadata records
-// a Task summary, not live process ownership, so no Attempt or write lease is
-// inferred here.
+// WorkflowRuntimeFromMeta initializes only a missing local Workflow Core
+// projection from durable task.toml compatibility metadata. Existing Core
+// records remain authoritative; metadata is never used to overwrite their
+// status, delivery, process ownership, Attempt, or write lease.
 func WorkflowRuntimeFromMeta(meta TaskMeta) workflow.RuntimeState {
 	return workflow.NewCompatibleRuntime(
 		workflow.TaskReference{

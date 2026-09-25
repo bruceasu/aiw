@@ -1,0 +1,19 @@
+{
+  "source": "user conversation",
+  "reply": "confirm",
+  "scope": "One same-command offline diagnostic run after fourteen migration error contexts; no elevation or live Task migration",
+  "command": [
+    "go",
+    "test",
+    "./internal/workflow",
+    "-run",
+    "^(TestDurableUnknownAndStopRetainWriter|TestDurableResultReplayConsumesOnceAndKeepsAttempt|TestDurablePendingTailRecoveryKeepsRevision)$",
+    "-count=1",
+    "-timeout=60s",
+    "-vet=off",
+    "-json"
+  ],
+  "recorded_at": "2026-09-24T07:02:27.592064+00:00",
+  "plan_sha256": "aafb6ed54df31c04f28198a0511a5151da54509590900054c2416de805cd6724",
+  "product_runner_grant": false
+}

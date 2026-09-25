@@ -1,0 +1,16 @@
+{"Time":"2026-09-25T13:46:23.1898864+09:00","Action":"start","Package":"aiw/internal/notification"}
+{"Time":"2026-09-25T13:46:23.2220747+09:00","Action":"run","Package":"aiw/internal/notification","Test":"TestNotificationOriginalSnapshotBinding"}
+{"Time":"2026-09-25T13:46:23.2220747+09:00","Action":"output","Package":"aiw/internal/notification","Test":"TestNotificationOriginalSnapshotBinding","Output":"=== RUN   TestNotificationOriginalSnapshotBinding\n"}
+{"Time":"2026-09-25T13:46:23.3667661+09:00","Action":"output","Package":"aiw/internal/notification","Test":"TestNotificationOriginalSnapshotBinding","Output":"--- PASS: TestNotificationOriginalSnapshotBinding (0.14s)\n"}
+{"Time":"2026-09-25T13:46:23.3667661+09:00","Action":"pass","Package":"aiw/internal/notification","Test":"TestNotificationOriginalSnapshotBinding","Elapsed":0.14}
+{"Time":"2026-09-25T13:46:23.3667661+09:00","Action":"run","Package":"aiw/internal/notification","Test":"TestNotificationDisabledProcessConfiguration"}
+{"Time":"2026-09-25T13:46:23.3667661+09:00","Action":"output","Package":"aiw/internal/notification","Test":"TestNotificationDisabledProcessConfiguration","Output":"=== RUN   TestNotificationDisabledProcessConfiguration\n"}
+{"Time":"2026-09-25T13:46:23.515085+09:00","Action":"output","Package":"aiw/internal/notification","Test":"TestNotificationDisabledProcessConfiguration","Output":"--- PASS: TestNotificationDisabledProcessConfiguration (0.15s)\n"}
+{"Time":"2026-09-25T13:46:23.515085+09:00","Action":"pass","Package":"aiw/internal/notification","Test":"TestNotificationDisabledProcessConfiguration","Elapsed":0.15}
+{"Time":"2026-09-25T13:46:23.515085+09:00","Action":"run","Package":"aiw/internal/notification","Test":"TestNotificationRequestRejectedBeforeProcess"}
+{"Time":"2026-09-25T13:46:23.515085+09:00","Action":"output","Package":"aiw/internal/notification","Test":"TestNotificationRequestRejectedBeforeProcess","Output":"=== RUN   TestNotificationRequestRejectedBeforeProcess\n"}
+{"Time":"2026-09-25T13:46:23.5266485+09:00","Action":"output","Package":"aiw/internal/notification","Test":"TestNotificationRequestRejectedBeforeProcess","Output":"--- PASS: TestNotificationRequestRejectedBeforeProcess (0.01s)\n"}
+{"Time":"2026-09-25T13:46:23.5269907+09:00","Action":"pass","Package":"aiw/internal/notification","Test":"TestNotificationRequestRejectedBeforeProcess","Elapsed":0.01}
+{"Time":"2026-09-25T13:46:23.5269907+09:00","Action":"output","Package":"aiw/internal/notification","Output":"PASS\n"}
+{"Time":"2026-09-25T13:46:23.5295841+09:00","Action":"output","Package":"aiw/internal/notification","Output":"ok  \taiw/internal/notification\t0.340s\n"}
+{"Time":"2026-09-25T13:46:23.5295841+09:00","Action":"pass","Package":"aiw/internal/notification","Elapsed":0.34}

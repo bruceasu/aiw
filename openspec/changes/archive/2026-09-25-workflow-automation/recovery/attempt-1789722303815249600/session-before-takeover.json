@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "session": {
+    "id": "workflow-automation",
+    "title": "workflow-automation",
+    "state": "running",
+    "created_at": "2026-09-17T10:19:34Z",
+    "updated_at": "2026-09-18T09:05:04Z",
+    "current_phase": "handoff",
+    "last_turn": 8
+  },
+  "backend": {
+    "name": "codex",
+    "thread_id": "01a0b3aa-3efe-7bd3-90f2-5b5a22bc852e"
+  },
+  "workspace": {
+    "path": "C:\\Users\\svictor\\workspace\\tools\\aiw\\.wt\\workflow-automation"
+  },
+  "instructions": {
+    "file": "instructions.md",
+    "memory_file": "memory.md"
+  },
+  "execution": {
+    "phase": "handoff",
+    "last_exit_code": 0,
+    "last_started_at": "2026-09-18T09:05:04Z",
+    "last_completed_at": "2026-09-18T08:58:24Z"
+  },
+  "result": {
+    "status": "completed",
+    "final_output_file": "outputs/0008-final.txt"
+  },
+  "task": {
+    "schema_version": 1,
+    "task_id": "workflow-automation",
+    "work_item_id": "wi-0007",
+    "attempt_id": "attempt-1789722303815249600",
+    "handoff": "C:\\Users\\svictor\\workspace\\tools\\aiw\\.ai\\workflow-automation\\artifacts\\handoff.md",
+    "handoff_hash": "01eee80cbe417e4fffcfe6dec964463af44ae807b89126d7c5e829f9f789aa9a",
+    "handoff_status": "pending",
+    "handoff_created_at": "2026-09-18T09:05:04Z",
+    "parent_thread": "01a0b3aa-3efe-7bd3-90f2-5b5a22bc852e",
+    "parent_state": "active",
+    "child_state": "starting"
+  }
+}

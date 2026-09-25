@@ -94,16 +94,18 @@ func listAll() error {
 	fmt.Print("Core workflow:\n" +
 		"  init [--no-setup] [--prompts] [--merge] [--force] [--template <name>]\n" +
 		"  new <task-id>             Create a task/change.\n" +
-		"  list                      List tasks under openspec/changes.\n" +
+		"  list [--all]              List active tasks; --all includes archives.\n" +
 		"  show <task-id>            Print tasks.md.\n" +
 		"  status <task-id> <s>      Update task status.\n" +
 		"  done <task-id>            Shortcut for: status <task-id> DONE.\n" +
 		"  archive <task-id> [opts]  Archive a completed task/change (sync, validate, repair).\n" +
-		"  workflow <op> <task-id>   Run workflow execution and delivery operations.\n" +
-		"  workspace <op> <task-id>  Manage task workspace state.\n" +
+		"  workflow <op> <task-id>   Run managed workflow operations (also: task workflow).\n" +
+		"  workspace bind <task-id> --primary  Bind the Task to the primary workspace.\n" +
 		"  context <task-id>         Show files to read before implementing.\n" +
 		"  decision <task-id>        Create design.md for a task.\n" +
-		"  spec <spec-id>            Create a long-lived spec under openspec/specs.\n\n")
+		"  spec <spec-id>            Create a long-lived spec under openspec/specs.\n" +
+		"  requirement <...>         Manage requirement intake and promotion.\n" +
+		"  turn|chat <task-id>       Start or continue a Task agent session.\n\n")
 
 	fmt.Print("Worktree:\n" +
 		"  wt add <task-id> [base]   Explicitly isolate a task in a worktree.\n" +
@@ -122,8 +124,7 @@ func listAll() error {
 		"  ask <prompt>               Ask the built-in LLM for AIW guidance.\n" +
 		"  prompts <...>             Generate or merge prompt files.\n" +
 		"  completion <shell>        Generate shell completion scripts.\n" +
-		"  task agent <...>          Fresh-agent handoff and lineage tools.\n" +
-		"  cxs <...>                 Inspect and resume Codex CLI sessions.\n" +
+		"  task turn|chat <task-id>  Start or continue a Task agent session.\n" +
 		"  session <...>             Manage persisted AIW Sessions.\n\n")
 
 	fmt.Print("Plugins:\n" +
@@ -135,7 +136,9 @@ func listAll() error {
 	fmt.Print("Examples:\n" +
 		"  aiw init --prompts --template go\n" +
 		"  aiw new payment-retry\n" +
-		"  aiw cxs exec --last \"continue latest session\"\n\n")
+		"  aiw workflow plan payment-retry\n" +
+		"  aiw task workflow run payment-retry --execute\n" +
+		"  aiw task turn payment-retry\n\n")
 
 	pls, err := listPlugins()
 	if err != nil || len(pls) == 0 {
@@ -362,7 +365,7 @@ func builtinHelpShort(name string) string {
 	case "new":
 		return "create a new change"
 	case "list":
-		return "list changes"
+		return "list active tasks; --all includes archives"
 	case "show":
 		return "show change tasks"
 	case "status":
@@ -393,7 +396,7 @@ func builtinUsageText(name string) (string, bool) {
 	case "new":
 		return "usage: aiw new <task-id> [--allow-unrelated-dirty]\n", true
 	case "list":
-		return "usage: aiw list\n", true
+		return "usage: aiw list [--all]\n", true
 	case "show":
 		return "usage: aiw show <task-id>\n", true
 	case "status":

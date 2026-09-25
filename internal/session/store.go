@@ -27,6 +27,7 @@ func (s *Store) path(id string, names ...string) string {
 	return filepath.Join(append([]string{s.sessionDir(id)}, names...)...)
 }
 func (s *Store) lock(id string) (*os.File, error) {
+	if err := s.requireWritable(id); err != nil { return nil, err }
 	if err := os.MkdirAll(filepath.Join(s.Root, "locks"), 0o755); err != nil {
 		return nil, err
 	}
@@ -61,9 +62,10 @@ func atomicWrite(path string, data []byte) error {
 }
 
 func (s *Store) Create(id, title, workspace, backend, model, instructions string) (Status, error) {
-	if strings.TrimSpace(id) == "" || strings.ContainsAny(id, `/\\`) {
+	if !validSessionID(id) {
 		return Status{}, errors.New("invalid session id")
 	}
+	if _, err := s.Resolve(id); err == nil { return Status{}, errors.New("session already exists") } else if !errors.Is(err, ErrSessionNotFound) { return Status{}, err }
 	dir := s.sessionDir(id)
 	if _, err := os.Stat(dir); err == nil {
 		return Status{}, errors.New("session already exists")
@@ -90,24 +92,22 @@ func (s *Store) Create(id, title, workspace, backend, model, instructions string
 	if err := atomicWrite(filepath.Join(dir, "events.jsonl"), nil); err != nil {
 		return Status{}, err
 	}
-	if err := s.Save(status); err != nil {
+	if err := s.saveActive(status); err != nil {
 		return Status{}, err
 	}
 	return status, nil
 }
 
 func (s *Store) Load(id string) (Status, error) {
-	b, err := os.ReadFile(s.path(id, "status.json"))
-	if err != nil {
-		return Status{}, err
-	}
-	var status Status
-	if err := json.Unmarshal(b, &status); err != nil {
-		return Status{}, fmt.Errorf("decode session status: %w", err)
-	}
-	return status, nil
+	location, err := s.Resolve(id)
+	return location.Status, err
 }
 func (s *Store) Save(status Status) error {
+	if status.archived { return errors.New("archived session is read-only") }
+	if err := s.requireWritable(status.Session.ID); err != nil { return err }
+	return s.saveActive(status)
+}
+func (s *Store) saveActive(status Status) error {
 	status.Session.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 	b, err := json.MarshalIndent(status, "", "  ")
 	if err != nil {
@@ -134,7 +134,9 @@ func (s *Store) Update(id string, fn func(*Status) error) (Status, error) {
 	return status, nil
 }
 func (s *Store) ReadText(id, name string) (string, error) {
-	b, err := os.ReadFile(s.path(id, name))
+	path, err := s.readPath(id, name)
+	if err != nil { return "", err }
+	b, err := os.ReadFile(path)
 	return string(b), err
 }
 func (s *Store) ReadArtifact(id, name string) (string, error) {
@@ -144,6 +146,7 @@ func (s *Store) ReadArtifact(id, name string) (string, error) {
 	return s.ReadText(id, filepath.Join("artifacts", name))
 }
 func (s *Store) WriteArtifact(id, name string, content []byte) error {
+	if err := s.requireWritable(id); err != nil { return err }
 	if filepath.Base(name) != name {
 		return errors.New("invalid artifact name")
 	}
@@ -163,6 +166,7 @@ func (s *Store) AppendMemory(id, text string) error {
 	return err
 }
 func (s *Store) SavePrompt(id string, turn int, phase, prompt string) error {
+	if err := s.requireWritable(id); err != nil { return err }
 	sum := sha256.Sum256([]byte(prompt))
 	name := fmt.Sprintf("%04d-%s-%s.md", turn, safeName(phase), hex.EncodeToString(sum[:])[:8])
 	return atomicWrite(s.path(id, "prompts", name), []byte(prompt))
@@ -183,6 +187,7 @@ func safeName(value string) string {
 	return b.String()
 }
 func (s *Store) AppendEvent(id string, event interface{}) error {
+	if err := s.requireWritable(id); err != nil { return err }
 	b, err := json.Marshal(event)
 	if err != nil {
 		return err
@@ -195,4 +200,7 @@ func (s *Store) AppendEvent(id string, event interface{}) error {
 	_, err = f.Write(append(b, '\n'))
 	return err
 }
-func (s *Store) Delete(id string) error { return os.RemoveAll(s.sessionDir(id)) }
+func (s *Store) Delete(id string) error {
+	if err := s.requireWritable(id); err != nil { return err }
+	return os.RemoveAll(s.sessionDir(id))
+}

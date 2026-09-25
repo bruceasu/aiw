@@ -1,0 +1,5 @@
+{
+  "scope": "One original four-test E07 protocol run from the operator terminal",
+  "authorization_context": "Execution requires explicit operator approval for this bounded E07 protocol group; the runner does not verify approval and implies no product grant",
+  "product_runner_grant": false
+}

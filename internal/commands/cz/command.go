@@ -195,16 +195,41 @@ func loadCzConfig(opts czOptions) (Config, error) {
 		return cfg, err
 	}
 
-	finalizeConfig(&cfg)
-	// Global [ai] settings are canonical. The ai package also reads legacy
-	// provider fields from [cz] for compatibility with existing projects.
-	if global, err := ai.LoadConfig(); err != nil {
-		return cfg, err
-	} else if global.Name != "" {
-		cfg.LLMProvider = global.Name
+	// Resolve global [ai] values as a fallback, then restore explicit [cz]
+	// provider/model values. Runtime environment values remain authoritative.
+	czProvider := strings.TrimSpace(cfg.LLMProvider)
+	czModel := strings.TrimSpace(cfg.LLMModel)
+	czBaseURL := strings.TrimSpace(cfg.APIBaseURL)
+	czAPIKey := strings.TrimSpace(cfg.APIKey)
+	czCodexCommand := strings.TrimSpace(cfg.CodexCommand)
+	czCopilotCommand := strings.TrimSpace(cfg.CopilotCommand)
+	var fastProfile *ai.Config
+	if czProvider == "" && czModel == "" && strings.TrimSpace(os.Getenv("AIW_LLM_PROVIDER")) == "" {
+		if profile, found, err := ai.LoadFastProfileConfig(); err != nil {
+			return cfg, err
+		} else if found {
+			fastProfile = &profile
+			cfg.LLMProvider = profile.Name
+			cfg.LLMModel = profile.Model
+			cfg.APIBaseURL = profile.BaseURL
+			cfg.APIKey = profile.APIKey
+			cfg.CodexCommand = profile.CodexCommand
+			cfg.CopilotCommand = profile.CopilotCommand
+		}
+	}
+	if fastProfile == nil {
+		global, err := ai.LoadGlobalConfig()
+		if err != nil {
+			return cfg, err
+		}
+		if global.Name != "" {
+			cfg.LLMProvider = global.Name
+		}
 		cfg.LLMModel = global.Model
-		cfg.APIBaseURL = global.BaseURL
-		cfg.APIKey = global.APIKey
+		if global.Name != "" {
+			cfg.APIBaseURL = global.BaseURL
+			cfg.APIKey = global.APIKey
+		}
 		if global.Command != "" {
 			if global.Name == "codex" || global.Name == "codex-cli" {
 				cfg.CodexCommand = global.Command
@@ -214,6 +239,63 @@ func loadCzConfig(opts czOptions) (Config, error) {
 			}
 		}
 	}
+	if czProvider != "" {
+		cfg.LLMProvider = czProvider
+	}
+	if czModel != "" {
+		cfg.LLMModel = czModel
+	}
+	if provider := strings.TrimSpace(os.Getenv("AIW_LLM_PROVIDER")); provider != "" {
+		cfg.LLMProvider = provider
+	}
+	// Re-resolve transport settings only after the effective provider is known.
+	// Preserve explicit generic [cz] connection values, while provider-specific
+	// [cz] values continue to win in finalizeConfig below.
+	selected := ai.Config{}
+	if fastProfile != nil {
+		selected = *fastProfile
+	} else if globalSelected, err := ai.LoadConfigForProvider(cfg.LLMProvider); err != nil {
+		return cfg, err
+	} else {
+		selected = globalSelected
+	}
+	if czModel == "" && selected.Model != "" {
+		cfg.LLMModel = selected.Model
+	}
+	provider := strings.ToLower(strings.TrimSpace(cfg.LLMProvider))
+	providerModelEnv := map[string]string{
+		"openai": "OPENAI_MODEL", "gemini": "GEMINI_MODEL", "ollama": "OLLAMA_MODEL",
+		"llama.cpp": "LLAMACPP_MODEL", "llamacpp": "LLAMACPP_MODEL", "llama-cpp": "LLAMACPP_MODEL",
+	}[provider]
+	if providerModelEnv != "" {
+		if model := strings.TrimSpace(os.Getenv(providerModelEnv)); model != "" {
+			cfg.LLMModel = model
+		}
+	}
+	if model := strings.TrimSpace(os.Getenv("AIW_LLM_MODEL")); model != "" {
+		cfg.LLMModel = model
+	}
+	cfg.APIBaseURL = selected.BaseURL
+	cfg.APIKey = selected.APIKey
+	if selected.CodexCommand != "" {
+		cfg.CodexCommand = selected.CodexCommand
+	}
+	if selected.CopilotCommand != "" {
+		cfg.CopilotCommand = selected.CopilotCommand
+	}
+	if czBaseURL != "" {
+		cfg.APIBaseURL = czBaseURL
+	}
+	if czAPIKey != "" {
+		cfg.APIKey = czAPIKey
+	}
+	if czCodexCommand != "" {
+		cfg.CodexCommand = czCodexCommand
+	}
+	if czCopilotCommand != "" {
+		cfg.CopilotCommand = czCopilotCommand
+	}
+	finalizeConfig(&cfg)
 	return cfg, nil
 }
 
@@ -612,8 +694,10 @@ func DraftFromLLMWithSelector(cfg Config, selector func(Config, []Draft) (Draft,
 		}
 		hist, _ := util.RunAndWaitForOuput("git", "log", "--oneline", "-n", "5")
 
-		if len(diff) > 4000 {
-			diff = diff[:4000] + "\n... (truncated)"
+		const maxDiffRunes = 1000
+		diffRunes := []rune(diff)
+		if len(diffRunes) > maxDiffRunes {
+			diff = string(diffRunes[:maxDiffRunes]) + "\n... (truncated)"
 		}
 		typeList := make([]string, 0, len(cfg.Types))
 		for _, t := range cfg.Types {

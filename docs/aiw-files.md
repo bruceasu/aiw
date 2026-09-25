@@ -31,7 +31,7 @@ openspec/changes/<task-id>/
 ├── tasks.md
 └── notes.md
 
-.ai/<task-id>/
+.ai/tasks/<task-id>/
 ├── task.toml
 ├── state.json
 └── events.jsonl
@@ -41,7 +41,7 @@ openspec/changes/<task-id>/
 
 - `tasks.md`：人工维护的目标、范围、任务清单和验证项。
 - `notes.md`：临时发现、调试和实验记录。
-- `.ai/<task-id>/task.toml`：Task 元数据、分支、worktree、Session 等信息。
+- `.ai/tasks/<task-id>/task.toml`：Task 元数据、分支、worktree、Session 等信息。
 - `state.json`：Workflow Core 的运行状态、Work Items、Attempts、Gates 和 Evidence。
 - `events.jsonl`：Workflow 状态事件日志。
 
@@ -52,10 +52,20 @@ openspec/changes/<task-id>/
 | `aiw decision <task-id>` | `openspec/changes/<task-id>/design.md` |
 | `aiw spec <spec-id>` | `openspec/specs/<spec-id>/spec.toml`、`spec.md` |
 | `aiw turn <task-id>` | `openspec/changes/<task-id>/artifacts/handoff.md`、`agent-lineage.json` |
-| `Workflow Runner` | `.ai/<task-id>/artifacts/handoff.md` |
+| `Workflow Runner` | `.ai/tasks/<task-id>/artifacts/handoff.md` |
 | `aiw archive` | 将 Change 移动到 `openspec/changes/archive/` |
 
-这里的 Workflow Runner handoff 是运行时生成的 Attempt-bound managed context，属于 `.ai/`；不要与 Session handoff（`.ai/sessions/<session-id>/artifacts/handoff.md`）或 OpenSpec 的业务交接产物混淆。
+这里的 Workflow Runner handoff 是运行时生成的 Attempt-bound managed context，属于 `.ai/tasks/<task-id>/`；不要与 Session handoff（`.ai/sessions/<session-id>/artifacts/handoff.md`）或 OpenSpec 的业务交接产物混淆。
+### 当前活动 Task 的一次性手工路径调整
+
+本次改版完成后，仅对当前唯一活动 Task 做一次调整；已归档 Task 不移动。按此顺序操作：
+
+1. 先停止旧版 AIW/`go run` 程序，再停止该 Task 的 Supervisor；确认没有活动 Attempt、写租约或其他 AIW 写入者。
+2. 确认 `.ai/<task-id>/` 是唯一源记录，`.ai/tasks/<task-id>/` 除 `migrated-to` 标记外没有 Task 数据；身份或内容冲突时停止，不覆盖任何一侧。
+3. 将目标目录的 `migrated-to` 标记备份到目标目录之外，确认目标目录为空后移除空目录，再把整个 `.ai/<task-id>/` 移到 `.ai/tasks/<task-id>/`。
+4. 核对 `task.toml` 的 Task ID、`state.json`、`events.jsonl` 的身份和事件序号，以及 reports、artifacts 等目录均完整；用新版 AIW 做只读状态核对。核验通过前保留标记备份。
+
+不重建 Task、不改写运行状态或事件历史。归档位置继续使用 `.ai/archive/<date>-<task-id>/`；这不是通用迁移命令或批量迁移流程。
 
 Requirement promotion 还可能补充 OpenSpec 标准文件：
 
@@ -152,7 +162,7 @@ Focused Test 试验功能使用以下文件：
 ```text
 openspec/changes/<task-id>/artifacts/verification-plan.json
 
-.ai/<task-id>/artifacts/
+.ai/tasks/<task-id>/artifacts/
 ├── focused-test-selection.json
 ├── focused-test-result.json
 └── focused-test-output.txt

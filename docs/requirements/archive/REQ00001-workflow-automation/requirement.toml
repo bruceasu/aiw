@@ -1,0 +1,31 @@
+id = "REQ00001-workflow-automation"
+title = "自动化开发工作流"
+status = "ARCHIVED"
+created = "2026-09-17"
+updated = "2026-09-25"
+revision = 8
+
+[approval]
+status = "APPROVED"
+by = "svictor"
+at = "2026-09-17T11:22:41+09:00"
+reason = "用户在本会话明确 approve，批准当前已捕获的 Requirement Plan（revision 3），包括已确认的 AI 授权与 grant 记录、Git 本地操作和 AIW 清理边界、aiw-notify 文本通知与网络失败一分钟后重发一次的策略；所列工程细化在对应能力实施前完成。本次批准不包含推广或实施授权。"
+source_digest = ""
+
+[promotion]
+status = "SPEC_DRAFTED"
+task_id = "workflow-automation"
+
+[conversation]
+session_id = ""
+
+[terminal]
+by = "PC124\\CodexSandboxOffline"
+at = "2026-09-25T14:25:57+09:00"
+reason = "Archived at the user's explicit request"
+
+[artifact]
+requirement-plan = "docs/requirements/REQ00001-workflow-automation/requirement-plan.md"
+
+[digest]
+requirement-plan = "bd207d6ce3e175d1beef552409ee46e848f24ccccc13006b249a1b7528822296"

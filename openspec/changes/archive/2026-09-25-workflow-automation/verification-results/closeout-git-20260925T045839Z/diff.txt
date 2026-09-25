@@ -1,0 +1,3121 @@
+diff --git a/aiw.toml.example b/aiw.toml.example
+index 12bce52..f566dea 100644
+--- a/aiw.toml.example
++++ b/aiw.toml.example
+@@ -62,6 +62,19 @@
+ # Shared fallback command for CLI providers.
+ # command = "codex"
+ 
++# Different CLI agents can use different models per invocation:
++# aiw turn <task-id> --provider codex --model <codex-model>
++# aiw turn <task-id> --provider copilot --model <copilot-model>
++# The same --provider/--model options are available for aiw chat.
++# For Session execution, each non-empty field resolves independently:
++# CLI override > stored Session backend/model > shared AI configuration.
++# One-call overrides do not change the stored Session backend/model.
++# Changing only --provider does not select a separate model for that provider;
++# pass --model as well when the agents need different models.
++#
++# Not supported in this file: codex_model, copilot_model, or [agents.<name>]
++# model mappings. Codex and Copilot currently use the shared model above.
++# codex_command and copilot_command select commands, not separate models.
+ 
+ # Provider-specific values override generic model/base_url/api_key values.
+ # Leave unused settings commented out. These values are examples, not secrets.
+diff --git a/internal/commands/task/agent.go b/internal/commands/task/agent.go
+index b4fe139..1237491 100644
+--- a/internal/commands/task/agent.go
++++ b/internal/commands/task/agent.go
+@@ -226,6 +226,15 @@ func runTaskAgentWithEnvironment(args []string, environment []string) error {
+ 		prompt += instruction
+ 		prompt += "\n\nWhen you finish, return exactly one JSON object (no Markdown) with outcome=completed, blocked, or no-progress; include detail and, for blocked, blocked_category=workspace-access, authorization, dependency, validation, or unknown. Do not claim completed unless you updated the authored checklist."
+ 	}
++	var frozen *session.FrozenTurn
++	if opts.Supervised {
++		frozen, err = prepareFrozenAgentContext(id, handoff, prompt, store, status)
++		if err != nil {
++			_, gateErr := workflow.NewStore("").OpenCompilerGate(workflow.TaskID(id), workItemID, "execution-input-unavailable", err.Error())
++			return errors.Join(err, gateErr)
++		}
++		if frozen != nil && args[0] == "chat" { return errors.New("frozen supervised inputs require a bounded turn") }
++	}
+ 	if args[0] == "chat" {
+ 		result, runErr := session.ExecuteInteractiveWithOverridesAndEnvironment(context.Background(), store, meta.Session, "handoff", prompt, opts.Provider, opts.Model, true, environment)
+ 		if err := finalizeInteractiveAgent(id, metaPath, meta, store, lineage, attemptID, result, runErr, opts.Supervised); err != nil {
+@@ -234,7 +243,16 @@ func runTaskAgentWithEnvironment(args []string, environment []string) error {
+ 		fmt.Printf("Task %s chat completed: %s\n", id, lineage.ChildThread)
+ 		return nil
+ 	}
+-	result, err := session.ExecuteTurnWithOverridesAndEnvironment(context.Background(), store, meta.Session, "handoff", prompt, opts.Provider, opts.Model, true, environment)
++	var result session.TurnResult
++	if frozen != nil {
++		state, loadErr := workflow.NewStore("").Load(workflow.TaskID(id))
++		if loadErr != nil { return loadErr }
++		if state.Automation.PreparedRequest == nil { return errors.New("frozen input lost its prepared request") }
++		if _, dispatchErr := workflow.NewStore("").DispatchPreparedAgentRequest(workflow.TaskID(id), state.Automation.PreparedRequest.AttemptID); dispatchErr != nil { return dispatchErr }
++		result, err = session.ExecuteFrozenTurn(context.Background(), store, meta.Session, "handoff", *frozen, opts.Provider, opts.Model, environment)
++	} else {
++		result, err = session.ExecuteTurnWithOverridesAndEnvironment(context.Background(), store, meta.Session, "handoff", prompt, opts.Provider, opts.Model, true, environment)
++	}
+ 	if err != nil {
+ 		if !opts.Supervised {
+ 			_, _ = workflow.NewStore("").RecordAttemptOutcome(workflow.TaskID(id), attemptID, false)
+@@ -535,6 +553,13 @@ func startManagedAttempt(id string, meta taskx.TaskMeta) (workflow.AttemptID, er
+ 		}
+ 	}
+ 	if workflow.HasMappedWorkItems(state) {
++		// Direct turn/takeover can enter without a Supervisor sync. Refresh the
++		// authored dependencies before selecting a new owner, while preserving
++		// the prepared and running Attempt reuse paths above.
++		state, err = taskx.SyncWorkflowChecklist(id, store)
++		if err != nil {
++			return "", fmt.Errorf("synchronize managed Task %s before selection: %w", id, err)
++		}
+ 		item, err := workflow.SelectReadyMappedWorkItem(state)
+ 		if err != nil {
+ 			return "", fmt.Errorf("managed Task %s has no executable mapped Work Item: %w", id, err)
+diff --git a/internal/commands/task/archive_test.go b/internal/commands/task/archive_test.go
+index c052940..c5afb7f 100644
+--- a/internal/commands/task/archive_test.go
++++ b/internal/commands/task/archive_test.go
+@@ -141,7 +141,7 @@ func TestPairedArchiveBackendsPreserveThreeTreesAndRetry(t *testing.T) {
+ func TestPairedArchiveRepairsCleanedMergedTaskAcrossBackends(t *testing.T) {
+ 	for _, backend := range []string{"native", "openspec"} {
+ 		t.Run(backend, func(t *testing.T) {
+-			store := archiveTestFixture(t)
++			archiveTestFixture(t)
+ 			meta, err := taskx.ReadTaskMeta(".ai/paired/task.toml")
+ 			if err != nil {
+ 				t.Fatal(err)
+@@ -156,7 +156,7 @@ func TestPairedArchiveRepairsCleanedMergedTaskAcrossBackends(t *testing.T) {
+ 			if err := os.WriteFile(".ai/paired/task.toml", append(mustReadArchiveTestFile(t, ".ai/paired/task.toml"), []byte("operator_tag = \"keep-me\"\n")...), 0o644); err != nil {
+ 				t.Fatal(err)
+ 			}
+-			if _, err := store.SetDelivery("paired", workflow.DeliveryMerged); err != nil {
++			if _, err := workflow.NewStore(".ai").SetDelivery("paired", workflow.DeliveryMerged); err != nil {
+ 				t.Fatal(err)
+ 			}
+ 			if backend == "openspec" {
+diff --git a/internal/commands/task/local_delivery.go b/internal/commands/task/local_delivery.go
+index b79b265..6f49a43 100644
+--- a/internal/commands/task/local_delivery.go
++++ b/internal/commands/task/local_delivery.go
+@@ -28,6 +28,7 @@ func localMergeDelivery(id string, meta taskx.TaskMeta, store *workflow.Store, m
+ 	if err != nil {
+ 		return err
+ 	}
++	if state.SchemaVersion == workflow.DurableSchemaVersion { return fmt.Errorf("durable delivery requires a frozen managed plan; legacy local-merge is disabled") }
+ 	summary := workflow.DeriveSummary(state)
+ 	if summary.Execution != workflow.ExecutionCompleted {
+ 		return fmt.Errorf("local-merge requires all Work Items to be completed")
+@@ -81,6 +82,7 @@ func localMergeDelivery(id string, meta taskx.TaskMeta, store *workflow.Store, m
+ // after Core has recorded a successful merge. A previous metadata or branch
+ // cleanup failure must not make an already merged Task impossible to recover.
+ func resumeMergedDeliveryCleanup(id string, meta taskx.TaskMeta, store *workflow.Store, state workflow.RuntimeState) error {
++	if state.SchemaVersion == workflow.DurableSchemaVersion { return fmt.Errorf("durable cleanup requires its own grant and sealed-source evidence") }
+ 	if _, err := taskx.WriteWorkflowSummary(taskx.ResolveTaskMetaPath(id), state); err != nil {
+ 		return recordLocalDeliveryFailure(store, id, "cleanup-metadata", err)
+ 	}
+diff --git a/internal/commands/task/workflow_commands.go b/internal/commands/task/workflow_commands.go
+index 2424cf3..1e52763 100644
+--- a/internal/commands/task/workflow_commands.go
++++ b/internal/commands/task/workflow_commands.go
+@@ -23,6 +23,8 @@ import (
+ )
+ 
+ func runWorkflowCommand(args []string) error {
++	if len(args) > 0 && args[0] == "knowledge" { return execution.RunKnowledgeCommand(args[1:]) }
++	if len(args) > 0 && args[0] == "auxiliary" { return execution.RunAuxiliaryMaintenance(args[1:]) }
+ 	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
+ 		printWorkflowHelp()
+ 		return nil
+@@ -406,8 +408,8 @@ func runWorkflowWithOverrides(id string, execute, supervised, primary bool, prov
+ 		if err := execution.EnsureSupervisedCompilePlan(store, outcome.Request); err != nil {
+ 			return err
+ 		}
+-		if _, err := store.DispatchPreparedAgentRequest(workflow.TaskID(id), outcome.Request.AttemptID); err != nil {
+-			return err
++		if state.SchemaVersion < 10 {
++			if _, err := store.DispatchPreparedAgentRequest(workflow.TaskID(id), outcome.Request.AttemptID); err != nil { return err }
+ 		}
+ 		if outcome.Request.Handoff != "" {
+ 			args := []string{"turn", id, "--supervised", "--handoff", outcome.Request.Handoff}
+@@ -934,6 +936,15 @@ Typical flow:
+   3. aiw workflow run <task-id> --execute
+                                          Execute one prepared Work Item.
+ 
++Auxiliary maintenance (does not enable schema 10):
++  auxiliary inventory                Print a bounded local inventory for review.
++  knowledge show <task>               Show versioned entries, coverage and review todo.
++  knowledge review <task> <root> <file>  Review an exact version at a human terminal.
++  knowledge import <task> <root> <file>  Preserve selected human text as a candidate.
++  auxiliary policy <file>            Install a reviewed versioned R3 policy.
++  auxiliary initialize               Consume .ai/auxiliary-inventory.json once.
++  auxiliary settle                   Refresh storage without resetting model usage.
++
+ Plan and execute:
+   plan <task-id>                       Create or reconcile Work Items from tasks.md.
+   sync <task-id>                       Synchronize checklist completion into Workflow Core.
+diff --git a/internal/commands/task/workflow_supervisor.go b/internal/commands/task/workflow_supervisor.go
+index 5a90484..f0e3009 100644
+--- a/internal/commands/task/workflow_supervisor.go
++++ b/internal/commands/task/workflow_supervisor.go
+@@ -56,10 +56,26 @@ func runWorkflowSupervisor(args []string) (runErr error) {
+ 	case "status":
+ 		printSupervisorStatus(state)
+ 		printSupervisorRuntimeStatus(state)
++		if p := state.Protocol; p != nil {
++			fmt.Printf("Durable execution: revision=%d budget-known=%t stopped=%t\n", state.StateRevision, p.BudgetKnown, p.Stop != nil)
++			if p.Stop != nil { fmt.Printf("Stop reason: %s\n", p.Stop.Reason) }
++			for _, item := range p.Items { fmt.Printf("%s: phase=%s request=%s\n", item.WorkItemID, item.Phase, item.CurrentRequest) }
++			for _, request := range p.Requests { if !request.Consumed && request.Dispatch != "not-dispatched" { fmt.Printf("In flight: %s observation=%s executor=%s\n", request.Request.ID, request.Dispatch, request.Executor) } }
++			for _, recovery := range p.Recoveries { fmt.Printf("Recovery %s/%s: remaining=%d\n", recovery.WorkItemID, recovery.Phase, 2-len(recovery.Requests)) }
++			if a := p.Auxiliary; a != nil {
++				if a.HostGap != "" { fmt.Printf("Auxiliary host gap: %s\n", a.HostGap) }
++				fmt.Printf("Auxiliary sources: consumed=%d total=%d\n", a.Cursor, len(a.Sources))
++				for _, job := range a.Jobs { fmt.Printf("Auxiliary %s/%s: state=%s recovery-used=%t reason=%s\n", job.Kind, job.Key, job.State, job.RecoveryUsed, job.Reason) }
++			}
++		}
+ 		return nil
+ 	case "start":
+ 		return startWorkflowSupervisor(id, provider, model, store, state)
+ 	case "stop":
++		if state.SchemaVersion == workflow.DurableSchemaVersion {
++			_, err := store.RequestExecutionStop(workflow.TaskID(id), state.StateRevision, "Explicit supervisor Stop", "task workflow supervise stop")
++			return err
++		}
+ 		if state.Automation.Supervisor.LeaseID == "" {
+ 			return nil
+ 		}
+@@ -74,6 +90,7 @@ func runWorkflowSupervisor(args []string) (runErr error) {
+ // foreground Supervisor with CLI reporting callbacks.
+ func startWorkflowSupervisor(id, provider, model string, store *workflow.Store,
+ 	state workflow.RuntimeState) error {
++	store.ResumeAuxiliaryHost(workflow.TaskID(id))
+ 	if state.Delivery == workflow.DeliveryMerged || state.Delivery == workflow.DeliveryDiscarded {
+ 		printSupervisorStatus(state)
+ 		return nil
+diff --git a/internal/notification/plugin.go b/internal/notification/plugin.go
+index f3f1efd..150a985 100644
+--- a/internal/notification/plugin.go
++++ b/internal/notification/plugin.go
+@@ -1,56 +1,134 @@
+-// Package notification adapts the durable Workflow outbox to the Python
+-// aiw-notify Plugin protocol.
++// Package notification implements the project-local aiw-notify v2 adapter.
+ package notification
+ 
+ import (
++	"bytes"
+ 	"context"
++	"crypto/sha256"
++	"encoding/hex"
+ 	"encoding/json"
++	"errors"
+ 	"fmt"
++	"io"
++	"os"
++	"os/exec"
++	"path/filepath"
+ 	"strings"
++	"time"
++	"unicode/utf8"
+ 
+-	"aiw/internal/plugin"
+ 	"aiw/internal/workflow"
+ )
+ 
+-const notifyPluginName = "notify"
++type PluginDispatcher struct { ProjectRoot string }
+ 
+-// PluginDispatcher dispatches persisted outbox records through aiw-notify.
+-// Plugin discovery remains centralized in the existing AIW plugin mechanism.
+-type PluginDispatcher struct{}
++// Updated with reviewed bundled sources. Unknown local variants fail closed;
++// no script is overwritten or silently replaced with a global installation.
++const notifySourceDigest = "91e414c50dda8a91e3e526d697ca116a0c01c198d47e7297fb3afff8c00fb243"
++const teamsSourceDigest = "601c9b87bb4300b341fa11c8ba30ccbe16818f87cde4470d9eb4777b0732010f"
+ 
+-type pluginResponse struct {
+-	NotificationID string `json:"notification_id"`
+-	Status         string `json:"status"`
+-	Receipt        string `json:"receipt"`
++type boundedOutput struct { bytes.Buffer; overflow bool }
++func (b *boundedOutput) Write(p []byte) (int, error) {
++	n := len(p)
++	remaining := 64*1024-b.Len()
++	if len(p) > remaining { p = p[:remaining]; b.overflow = true }
++	_, _ = b.Buffer.Write(p)
++	return n, nil
+ }
+ 
+-func (PluginDispatcher) Dispatch(ctx context.Context, notification workflow.Notification) (string, error) {
+-	if err := ctx.Err(); err != nil {
+-		return "", err
+-	}
+-	path, err := plugin.DiscoverPlugin(notifyPluginName)
+-	if err != nil {
+-		return "", fmt.Errorf("discover aiw-notify Plugin: %w", err)
+-	}
+-	payload, err := json.Marshal(notification)
+-	if err != nil {
+-		return "", fmt.Errorf("encode notification: %w", err)
+-	}
+-	output, code, err := plugin.ExecPluginWithInput(path, []string{"dispatch", "--json"}, map[string]string{
+-		"AIW_NOTIFICATION_ID": string(notification.ID),
+-	}, payload)
+-	if err != nil {
+-		return "", err
+-	}
+-	if code != 0 {
+-		return "", fmt.Errorf("aiw-notify Plugin exited with code %d", code)
+-	}
+-	var response pluginResponse
+-	if err := json.Unmarshal(output, &response); err != nil {
+-		return "", fmt.Errorf("decode aiw-notify Plugin response: %w", err)
++func supportedScript(root, name, expected string) (string, error) {
++	canonical, err := filepath.EvalSymlinks(root)
++	if err != nil { return "", errors.New("notification project unavailable") }
++	path, err := filepath.EvalSymlinks(filepath.Join(canonical, "plugins", name))
++	if err != nil { return "", errors.New("notification script unavailable") }
++	rel, err := filepath.Rel(canonical, path)
++	if err != nil || filepath.IsAbs(rel) || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) { return "", errors.New("notification script outside project") }
++	f, err := os.Open(path)
++	if err != nil { return "", errors.New("notification script unavailable") }
++	defer f.Close()
++	body, err := io.ReadAll(io.LimitReader(f, 256*1024+1))
++	if err != nil || len(body) > 256*1024 { return "", errors.New("notification script unavailable") }
++	// Source checkout line ending conversion does not change supported code.
++	body = bytes.ReplaceAll(body, []byte("\r\n"), []byte("\n"))
++	sum := sha256.Sum256(body)
++	if hex.EncodeToString(sum[:]) != expected { return "", errors.New("unsupported notification script version") }
++	return path, nil
++}
++
++func strictResult(raw []byte, target any) error {
++	if !utf8.Valid(raw) || len(raw) > 64*1024 { return errors.New("notification protocol") }
++	// Reject duplicate/missing fields and null booleans before typed decoding.
++	scan := json.NewDecoder(bytes.NewReader(raw))
++	token, err := scan.Token()
++	if err != nil || token != json.Delim('{') { return errors.New("notification protocol") }
++	seen := map[string]bool{}
++	for scan.More() {
++		token, err := scan.Token()
++		key, ok := token.(string)
++		if err != nil || !ok || seen[key] { return errors.New("notification protocol") }
++		seen[key] = true
++		var value json.RawMessage
++		if scan.Decode(&value) != nil || (bytes.Equal(value, []byte("null")) && key != "http_status") { return errors.New("notification protocol") }
+ 	}
+-	if response.NotificationID != string(notification.ID) || response.Status != "accepted" || strings.TrimSpace(response.Receipt) == "" {
+-		return "", fmt.Errorf("aiw-notify Plugin returned an invalid dispatch receipt")
++	want := 8
++	if _, ok := target.(*workflow.NotificationConfig); ok { want = 5 }
++	if len(seen) != want { return errors.New("notification protocol") }
++	decoder := json.NewDecoder(bytes.NewReader(raw))
++	decoder.DisallowUnknownFields()
++	if err := decoder.Decode(target); err != nil { return errors.New("notification protocol") }
++	if decoder.Decode(new(any)) != io.EOF { return errors.New("notification protocol") }
++	return nil
++}
++
++func (p PluginDispatcher) invoke(parent context.Context, operation string, request any, target any) error {
++	root, err := filepath.Abs(p.ProjectRoot)
++	if err != nil || p.ProjectRoot == "" { return errors.New("notification project required") }
++	script, err := supportedScript(root, "aiw-notify.py", notifySourceDigest)
++	if err != nil { return err }
++	if _, err := supportedScript(root, "send_teams_msg.py", teamsSourceDigest); err != nil { return err }
++	body, err := json.Marshal(request)
++	if err != nil || len(body) > 64*1024 { return errors.New("notification request limit") }
++	ctx, cancel := context.WithTimeout(parent, 45*time.Second)
++	defer cancel()
++	command := exec.CommandContext(ctx, "python", "-I", script, operation, "--json")
++	command.Dir = root
++	command.Stdin = bytes.NewReader(body)
++	var output, diagnostics boundedOutput
++	command.Stdout, command.Stderr = &output, &diagnostics
++	command.WaitDelay = time.Second
++	if err := command.Run(); err != nil { return errors.New("notification process result unknown") }
++	if output.overflow || diagnostics.overflow { return errors.New("notification output limit") }
++	return strictResult(output.Bytes(), target)
++}
++
++func (p PluginDispatcher) Preflight(ctx context.Context, n workflow.Notification) (workflow.NotificationConfig, error) {
++	var config workflow.NotificationConfig
++	err := p.invoke(ctx, "preflight", map[string]int{"schema_version": 2}, &config)
++	if err == nil && config.Enabled && n.Managed != nil && n.Managed.Config.ConfigReference == "" && len(n.Managed.ConfigSnapshot) == 64 {
++		f, readErr := os.Open(filepath.Join(p.ProjectRoot, "aiw.toml"))
++		if readErr != nil { return config, errors.New("notification original configuration unavailable") }
++		body, readErr := io.ReadAll(io.LimitReader(f, 64*1024+1))
++		_ = f.Close()
++		sum := sha256.Sum256(body)
++		if readErr != nil || len(body) > 64*1024 || hex.EncodeToString(sum[:]) != n.Managed.ConfigSnapshot { return config, errors.New("notification original configuration changed") }
+ 	}
+-	return response.Receipt, nil
++	if err == nil && config.Enabled && (config.ConfigReference == "" || config.TargetReference == "" || (config.Channel != "console" && config.Channel != "teams")) { err = errors.New("notification configuration invalid") }
++	return config, err
++}
++
++func (p PluginDispatcher) Send(ctx context.Context, n workflow.Notification) workflow.NotificationResult {
++	unknown := workflow.UnknownNotificationResult(n)
++	if n.Managed == nil { return unknown }
++	m := n.Managed
++	request := map[string]any{"schema_version": 2, "notification_id": n.ID, "attempt_id": unknown.AttemptID, "content_digest": m.ContentDigest, "text": m.Text, "channel": m.Config.Channel, "target_reference": m.Config.TargetReference, "config_reference": m.Config.ConfigReference}
++	var result workflow.NotificationResult
++	if err := p.invoke(ctx, "dispatch", request, &result); err != nil || !workflow.ValidNotificationResult(n, result) { return unknown }
++	if m.Config.Channel == "console" && result.Outcome == "attempted" { _, _ = fmt.Fprintln(os.Stderr, m.Text) }
++	return result
++}
++
++func (p PluginDispatcher) Dispatch(ctx context.Context, n workflow.Notification) (string, error) {
++	result := p.Send(ctx, n)
++	if result.Outcome != "attempted" { return "", errors.New("notification attempt failed") }
++	return "local-attempt", nil
+ }
+diff --git a/internal/session/execute.go b/internal/session/execute.go
+index 2f20d47..dece04a 100644
+--- a/internal/session/execute.go
++++ b/internal/session/execute.go
+@@ -11,6 +11,18 @@ import (
+ 	"aiw/internal/ai"
+ )
+ 
++// TaskMemoryProjection is installed by the executable composition root. It
++// appends Task-owned facts to this turn only; human Session memory is untouched.
++var TaskMemoryProjection func(string) (string, error)
++
++func projectTaskMemory(status Status, memory string) (string, error) {
++	if TaskMemoryProjection == nil || status.Task == nil || status.Task.TaskID == "" { return memory, nil }
++	projection, err := TaskMemoryProjection(status.Task.TaskID)
++	if err != nil { return "", err }
++	if projection != "" { memory += "\n\n"+projection }
++	return memory, nil
++}
++
+ func ExecuteTurn(ctx context.Context, store *Store, id, phase, prompt, backendName, model string, forceNew bool) (TurnResult, error) {
+ 	return ExecuteTurnWithOverrides(ctx, store, id, phase, prompt, backendName, model, forceNew)
+ }
+@@ -25,6 +37,28 @@ func ExecuteTurnWithOverrides(ctx context.Context, store *Store, id, phase, prom
+ // and process-local environment overrides without persisting them in Session
+ // state.
+ func ExecuteTurnWithOverridesAndEnvironment(ctx context.Context, store *Store, id, phase, prompt, providerOverride, modelOverride string, forceNew bool, environment []string) (TurnResult, error) {
++	return executeTurn(ctx, store, id, phase, prompt, providerOverride, modelOverride, forceNew, environment, nil)
++}
++
++// FrozenTurn is the exact, Task-owned input selected before dispatch. It
++// prevents a later Session memory update from changing the bound request.
++type FrozenTurn struct {
++	Prompt string
++	Instructions string
++	Memory string
++	ExpectedTurn int
++	ReadOnly bool
++}
++
++func ExecuteFrozenTurn(ctx context.Context, store *Store, id, phase string, frozen FrozenTurn, provider, model string, environment []string) (TurnResult, error) {
++	return executeTurn(ctx, store, id, phase, frozen.Prompt, provider, model, true, environment, &frozen)
++}
++
++func ComposePrompt(instructions, memory, phase, prompt string) string {
++	return fmt.Sprintf("[Persistent Execution Instructions]\n\n%s\n\n[Session Memory]\n\n%s\n\n[Current Phase]\n\n%s\n\n[Current Task]\n\n%s\n", strings.TrimSpace(instructions), strings.TrimSpace(memory), phase, strings.TrimSpace(prompt))
++}
++
++func executeTurn(ctx context.Context, store *Store, id, phase, prompt, providerOverride, modelOverride string, forceNew bool, environment []string, frozen *FrozenTurn) (TurnResult, error) {
+ 	status, err := store.Load(id)
+ 	if err != nil {
+ 		return TurnResult{}, err
+@@ -35,13 +69,17 @@ func ExecuteTurnWithOverridesAndEnvironment(ctx context.Context, store *Store, i
+ 	if strings.TrimSpace(prompt) == "" {
+ 		return TurnResult{}, fmt.Errorf("prompt is empty")
+ 	}
+-	instructions, err := store.ReadText(id, status.Instructions.File)
+-	if err != nil {
+-		return TurnResult{}, err
+-	}
+-	memory, err := store.ReadText(id, status.Instructions.MemoryFile)
+-	if err != nil {
+-		return TurnResult{}, err
++	var instructions, memory string
++	if frozen != nil {
++		if frozen.ExpectedTurn != status.Session.LastTurn+1 { return TurnResult{}, fmt.Errorf("frozen input does not match the next Session turn") }
++		instructions, memory = frozen.Instructions, frozen.Memory
++	} else {
++		instructions, err = store.ReadText(id, status.Instructions.File)
++		if err != nil { return TurnResult{}, err }
++		memory, err = store.ReadText(id, status.Instructions.MemoryFile)
++		if err != nil { return TurnResult{}, err }
++		memory, err = projectTaskMemory(status, memory)
++		if err != nil { return TurnResult{}, err }
+ 	}
+ 	if phase == "" {
+ 		phase = status.Session.CurrentPhase
+@@ -49,7 +87,8 @@ func ExecuteTurnWithOverridesAndEnvironment(ctx context.Context, store *Store, i
+ 			phase = "interactive"
+ 		}
+ 	}
+-	composed := fmt.Sprintf("[Persistent Execution Instructions]\n\n%s\n\n[Session Memory]\n\n%s\n\n[Current Phase]\n\n%s\n\n[Current Task]\n\n%s\n", strings.TrimSpace(instructions), strings.TrimSpace(memory), phase, strings.TrimSpace(prompt))
++	composed := ComposePrompt(instructions, memory, phase, prompt)
++	if frozen != nil { composed = frozen.Prompt }
+ 	turn := status.Session.LastTurn + 1
+ 	if err := store.SavePrompt(id, turn, phase, composed); err != nil {
+ 		return TurnResult{}, err
+@@ -74,7 +113,7 @@ func ExecuteTurnWithOverridesAndEnvironment(ctx context.Context, store *Store, i
+ 	}); err != nil {
+ 		return TurnResult{}, err
+ 	}
+-	result, runErr := backend.Generate(ctx, TurnRequest{SessionID: id, Prompt: composed, Workspace: status.Workspace.Path, ThreadID: status.Backend.ThreadID, Instructions: instructions, Memory: memory, Phase: phase, TurnNumber: turn, OutputDir: store.sessionDir(id) + "/outputs", ForceNewThread: forceNew, Environment: environment})
++	result, runErr := backend.Generate(ctx, TurnRequest{SessionID: id, Prompt: composed, Workspace: status.Workspace.Path, ThreadID: status.Backend.ThreadID, Instructions: instructions, Memory: memory, Phase: phase, TurnNumber: turn, OutputDir: store.sessionDir(id) + "/outputs", ForceNewThread: forceNew, Environment: environment, ReadOnly: frozen != nil && frozen.ReadOnly})
+ 	if runErr != nil && result.ExitCode == 0 {
+ 		result.ExitCode = 1
+ 	}
+@@ -132,6 +171,8 @@ func ExecuteInteractiveWithOverridesAndEnvironment(ctx context.Context, store *S
+ 	if err != nil { return TurnResult{}, err }
+ 	memory, err := store.ReadText(id, status.Instructions.MemoryFile)
+ 	if err != nil { return TurnResult{}, err }
++	memory, err = projectTaskMemory(status, memory)
++	if err != nil { return TurnResult{}, err }
+ 	if phase == "" { phase = status.Session.CurrentPhase; if phase == "" { phase = "interactive" } }
+ 	composed := fmt.Sprintf("[Persistent Execution Instructions]\n\n%s\n\n[Session Memory]\n\n%s\n\n[Current Phase]\n\n%s\n\n[Current Task]\n\n%s\n", strings.TrimSpace(instructions), strings.TrimSpace(memory), phase, strings.TrimSpace(prompt))
+ 	turn := status.Session.LastTurn + 1
+diff --git a/internal/taskx/checklist_test.go b/internal/taskx/checklist_test.go
+index 4edcdc1..3ec87ee 100644
+--- a/internal/taskx/checklist_test.go
++++ b/internal/taskx/checklist_test.go
+@@ -68,7 +68,7 @@ func TestProjectWorkflowChecklistCompletionChangesOnlyMappedEntry(t *testing.T)
+ }
+ 
+ func TestProjectWorkflowChecklistCompletionRejectsAmbiguousOrDeletedItem(t *testing.T) {
+-	for name, content, number, code := range map[string]struct {
++	for name, tc := range map[string]struct {
+ 		content string
+ 		number  string
+ 		code    string
+@@ -78,19 +78,19 @@ func TestProjectWorkflowChecklistCompletionRejectsAmbiguousOrDeletedItem(t *test
+ 	} {
+ 		t.Run(name, func(t *testing.T) {
+ 			path := filepath.Join(t.TempDir(), "tasks.md")
+-			if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
++			if err := os.WriteFile(path, []byte(tc.content), 0o644); err != nil {
+ 				t.Fatal(err)
+ 			}
+-			err := ProjectWorkflowChecklistCompletion(path, number)
++			err := ProjectWorkflowChecklistCompletion(path, tc.number)
+ 			var projectionErr *ChecklistProjectionError
+-			if !errors.As(err, &projectionErr) || projectionErr.Code != code {
+-				t.Fatalf("projection error = %#v, want code %q", err, code)
++			if !errors.As(err, &projectionErr) || projectionErr.Code != tc.code {
++				t.Fatalf("projection error = %#v, want code %q", err, tc.code)
+ 			}
+ 			after, readErr := os.ReadFile(path)
+ 			if readErr != nil {
+ 				t.Fatal(readErr)
+ 			}
+-			if strings.TrimSpace(string(after)) != strings.TrimSpace(content) {
++			if strings.TrimSpace(string(after)) != strings.TrimSpace(tc.content) {
+ 				t.Fatalf("rejected projection changed checklist: %q", after)
+ 			}
+ 		})
+diff --git a/internal/taskx/workflow_artifacts.go b/internal/taskx/workflow_artifacts.go
+index 836d1f1..3f46fe6 100644
+--- a/internal/taskx/workflow_artifacts.go
++++ b/internal/taskx/workflow_artifacts.go
+@@ -129,7 +129,7 @@ func RepairWorkflowChecklist(id string) (workflow.RuntimeState, error) {
+ 	}
+ 	candidates := make([]workflow.ChecklistCandidate, len(items))
+ 	for index, item := range items {
+-		candidates[index] = workflow.ChecklistCandidate{Item: item.Number, Title: item.Title, Completed: item.Completed}
++		candidates[index] = workflow.ChecklistCandidate{Item: item.Number, Title: item.Title, Completed: item.Completed, DependsOn: item.DependsOn}
+ 	}
+ 	return store.RepairChecklist(workflow.TaskID(id), candidates)
+ }
+diff --git a/internal/workflow/compat.go b/internal/workflow/compat.go
+index 93114b5..96db2d7 100644
+--- a/internal/workflow/compat.go
++++ b/internal/workflow/compat.go
+@@ -36,6 +36,10 @@ func NewCompatibleRuntime(task TaskReference, planning PlanningState, delivery D
+ func (s *Store) EnsureCompatible(state RuntimeState) (RuntimeState, error) {
+ 	loaded, err := s.Load(state.Task.ID)
+ 	if err == nil {
++		if loaded.SchemaVersion == DurableSchemaVersion {
++			if _, err := os.Stat(s.path(state.Task.ID, runtimeEventsFile)); err != nil { return RuntimeState{}, err }
++			return loaded, nil
++		}
+ 		if err := s.ensureEventLog(state.Task.ID); err != nil {
+ 			return RuntimeState{}, err
+ 		}
+diff --git a/internal/workflow/execution/compile.go b/internal/workflow/execution/compile.go
+index caca822..a4a93b5 100644
+--- a/internal/workflow/execution/compile.go
++++ b/internal/workflow/execution/compile.go
+@@ -36,8 +36,13 @@ func compileSupervisedOutcome(id string, store *workflow.Store, request *workflo
+ 			return outcome, false, err
+ 		}
+ 		result = &compiled
++		if request.Compile != nil { request.Compile.Result = result }
+ 	}
+ 	if result.Status == workflow.ActorResultAccepted {
++		if err := requireApplicableCompile(store, request); err != nil {
++			_, gateErr := store.OpenCompilerGate(request.TaskID, request.WorkItemID, "compile-inputs-stale", err.Error())
++			return outcome, false, errors.Join(err, gateErr)
++		}
+ 		return outcome, false, nil
+ 	}
+ 	if result.Status == workflow.ActorResultBlocked {
+@@ -77,6 +82,7 @@ func compileSupervisedOutcome(id string, store *workflow.Store, request *workflo
+ 	current.Compile.RepairPending = true
+ 	current.CompilerResult = nil
+ 	current.DispatchedAt = ""
++	current.InputReference, current.ReportOrigin = nil, nil
+ 	current.ExpectedSessionTurn = status.Session.LastTurn + 1
+ 	current.Handoff = handoff
+ 	_, err = store.RecordAutomation(request.TaskID, state.Automation.PlanFingerprint, workflow.AutomationCursor{Result: string(workflow.RunnerPrepared), Detail: "compiler repair"}, current)
+@@ -143,6 +149,15 @@ func prepareSupervisedCompilerRequest(id string, store *workflow.Store, request
+ 		ImplementationReport: workflow.ActorReference{Kind: "implementation-report", Path: outcome.EvidenceReference, SHA256: hex.EncodeToString(digest[:])},
+ 		Plan: compile.Plan, PlanReference: compile.PlanReference, ChangedPaths: paths, CompileRoot: root,
+ 	}
++	if request.InputReference != nil {
++		inputs, err := captureCompileInputs(request)
++		if err != nil { return err }
++		ref, err := store.PersistValidationInputs(*request, inputs)
++		if err != nil { return err }
++		compile.Inputs = &inputs
++		compile.Request.Inputs = []workflow.ActorReference{ref}
++		compile.Request.ID += "-" + inputs.Digest()
++	}
+ 	compile.Result, compile.RepairPending = nil, false
+ 	request.CompilerResult = nil
+ 	return saveSupervisedCompileRequest(store, request)
+diff --git a/internal/workflow/execution/delivery.go b/internal/workflow/execution/delivery.go
+index f49bad0..e726b04 100644
+--- a/internal/workflow/execution/delivery.go
++++ b/internal/workflow/execution/delivery.go
+@@ -1,6 +1,7 @@
+ package execution
+ 
+ import (
++	"fmt"
+ 	"aiw/internal/taskx"
+ 	"aiw/internal/workflow"
+ )
+@@ -13,6 +14,7 @@ func (s Supervisor) DeliverCompleted(id string) (bool, error) {
+ 	if err != nil {
+ 		return false, err
+ 	}
++	if state.SchemaVersion == workflow.DurableSchemaVersion { return false, fmt.Errorf("durable delivery requires the grant-bound managed action runner") }
+ 	summary := workflow.DeriveSummary(state)
+ 	if summary.Execution != workflow.ExecutionCompleted ||
+ 		(summary.Validation != workflow.ValidationPassed && summary.Validation != workflow.ValidationNotRequired && summary.Validation != workflow.ValidationWaived) ||
+diff --git a/internal/workflow/execution/session.go b/internal/workflow/execution/session.go
+index 1f12539..1007358 100644
+--- a/internal/workflow/execution/session.go
++++ b/internal/workflow/execution/session.go
+@@ -1,13 +1,16 @@
+ package execution
+ 
+ import (
++	"encoding/json"
+ 	"fmt"
++	"path/filepath"
+ 
+ 	"aiw/internal/session"
+ 	"aiw/internal/workflow"
+ )
+ 
+-// recordSupervisorSessionOutcome reads validated Session output; it does not persist an outcome.
++// recordSupervisorSessionOutcome archives the exactly bound response before
++// interpreting it. Saving a report does not accept or complete the Work Item.
+ func recordSupervisorSessionOutcome(store *workflow.Store, request *workflow.PreparedAgentRequest) (workflow.SupervisedOutcome, error) {
+ 	if request == nil || request.SessionID == "" {
+ 		return workflow.SupervisedOutcome{}, fmt.Errorf("managed Session binding is required")
+@@ -30,17 +33,51 @@ func recordSupervisorSessionOutcome(store *workflow.Store, request *workflow.Pre
+ 	if err != nil {
+ 		return workflow.SupervisedOutcome{}, err
+ 	}
+-	return normalizeSupervisorSessionOutcome(parseSupervisedOutcome(output, reference)), nil
++	if store == nil {
++		return workflow.SupervisedOutcome{}, fmt.Errorf("workflow Store is required to preserve the execution report")
++	}
++	report, err := store.PersistExecutionReport(*request, reference, output)
++	if err != nil {
++		return workflow.SupervisedOutcome{}, fmt.Errorf("preserve execution report: %w", err)
++	}
++	archived := filepath.ToSlash(filepath.Join(".ai", string(request.TaskID), report.Path))
++	if request.InputReference != nil {
++		var reported agentSupervisedOutcome
++		if err := json.Unmarshal([]byte(output), &reported); err != nil { return workflow.SupervisedOutcome{}, &reportValidationError{reason: err.Error()} }
++		if err := workflow.ValidateSupervisedOutcome(workflow.SupervisedOutcome{Kind: reported.Outcome, BlockedCategory: reported.BlockedCategory, Detail: reported.Detail, EvidenceReference: archived}); err != nil { return workflow.SupervisedOutcome{}, &reportValidationError{reason: err.Error()} }
++		root := request.Workspace
++		if !filepath.IsAbs(root) { root = filepath.Join(filepath.Dir(store.Root), filepath.FromSlash(root)) }
++		structured, err := workflow.ValidateImplementationReport(output, *request, root)
++		if err != nil {
++			return workflow.SupervisedOutcome{}, &reportValidationError{reason: err.Error()}
++		}
++		origin := request
++		if request.ReportOrigin != nil { origin = request.ReportOrigin }
++		var input workflow.ExecutionInput
++		if err := store.ReadExecutionArtifact(request.TaskID, *origin.InputReference, &input); err != nil { return workflow.SupervisedOutcome{}, err }
++		if err := workflow.ValidateReportChanges(structured, input.WorkspaceInputs, root); err != nil { return workflow.SupervisedOutcome{}, &reportValidationError{reason: err.Error()} }
++	}
++	return normalizeSupervisorSessionOutcome(parseSupervisedOutcome(output, archived)), nil
+ }
+ 
+-// validateSupervisorSessionResult rejects a different Attempt or an older turn.
++type reportValidationError struct { reason string }
++func (e *reportValidationError) Error() string { return "implementation report invalid: " + e.reason }
++
++// validateSupervisorSessionResult rejects a different execution, including a
++// later turn in the same Session. Session latest is not a request identity.
+ func validateSupervisorSessionResult(status session.Status, request *workflow.PreparedAgentRequest) error {
+-	if status.Task == nil || status.Task.AttemptID != string(request.AttemptID) {
++	if request == nil || request.TaskID == "" || request.WorkItemID == "" || request.AttemptID == "" || request.SessionID == "" {
++		return fmt.Errorf("session-result-stale: exact managed request binding is required")
++	}
++	if status.Task == nil || status.Task.TaskID != string(request.TaskID) || status.Task.WorkItemID != string(request.WorkItemID) || status.Task.AttemptID != string(request.AttemptID) || status.Session.ID != request.SessionID {
+ 		return fmt.Errorf("session-result-stale: Session %s has no completed result for Attempt %s", request.SessionID, request.AttemptID)
+ 	}
+-	if request.ExpectedSessionTurn > 0 && status.Session.LastTurn < request.ExpectedSessionTurn {
++	if request.ExpectedSessionTurn <= 0 || status.Session.LastTurn != request.ExpectedSessionTurn {
+ 		return fmt.Errorf("session-result-stale: Session %s is at turn %d, expected turn %d for Attempt %s", request.SessionID, status.Session.LastTurn, request.ExpectedSessionTurn, request.AttemptID)
+ 	}
++	if status.Result.FinalOutputFile != fmt.Sprintf("outputs/%04d-final.txt", request.ExpectedSessionTurn) {
++		return fmt.Errorf("session-result-stale: final output does not name the expected turn")
++	}
+ 	return nil
+ }
+ 
+diff --git a/internal/workflow/execution/supervisor.go b/internal/workflow/execution/supervisor.go
+index c33676c..dffc644 100644
+--- a/internal/workflow/execution/supervisor.go
++++ b/internal/workflow/execution/supervisor.go
+@@ -3,6 +3,7 @@
+ package execution
+ 
+ import (
++	"errors"
+ 	"fmt"
+ 	"time"
+ 
+@@ -70,7 +71,7 @@ func (s Supervisor) Start(id, provider, model string, state workflow.RuntimeStat
+ 				failed, loadErr := store.Load(workflow.TaskID(id))
+ 				// Compiler preparation and repair errors retain their Attempt;
+ 				// only an ordinary Agent runner failure consumes no-progress.
+-				if loadErr == nil && failed.Automation.PreparedRequest != nil && !hasPendingSupervisedCompile(failed.Automation.PreparedRequest) {
++				if loadErr == nil && failed.SchemaVersion < 10 && failed.Automation.PreparedRequest != nil && !hasPendingSupervisedCompile(failed.Automation.PreparedRequest) {
+ 					outcome := workflow.SupervisedOutcome{Kind: workflow.SupervisedOutcomeNoProgress, Detail: err.Error(), EvidenceReference: "supervisor runner error"}
+ 					if failed, loadErr = store.RecordSupervisedOutcome(workflow.TaskID(id), failed.Automation.PreparedRequest.AttemptID, outcome); loadErr == nil {
+ 						_ = s.Report(id, failed)
+@@ -92,6 +93,13 @@ func (s Supervisor) Start(id, provider, model string, state workflow.RuntimeStat
+ 				}
+ 				outcome, outcomeErr := recordSupervisorSessionOutcome(store, request)
+ 				if outcomeErr != nil {
++					var reportErr *reportValidationError
++					if errors.As(outcomeErr, &reportErr) {
++						if request.ReportOrigin == nil {
++							if _, err := store.PrepareReportSupplement(request.TaskID, *request, reportErr.Error()); err == nil { continue }
++						}
++						_, _ = store.OpenCompilerGate(request.TaskID, request.WorkItemID, "report-manual-review", reportErr.Error())
++					}
+ 					_, _ = store.PauseSupervisor(workflow.TaskID(id), leaseID, "session-result-unknown", outcomeErr.Error(), time.Now().UTC().Add(30*time.Second))
+ 					return outcomeErr
+ 				}
+diff --git a/internal/workflow/model.go b/internal/workflow/model.go
+index 00c3886..86e24b9 100644
+--- a/internal/workflow/model.go
++++ b/internal/workflow/model.go
+@@ -172,6 +172,9 @@ const (
+ // Durable Task identity and OpenSpec content are supplied by adapters.
+ type RuntimeState struct {
+ 	SchemaVersion     int             `json:"schema_version"`
++	StateRevision     uint64          `json:"state_revision,omitempty"`
++	CommitID          string          `json:"commit_id,omitempty"`
++	Protocol          *ExecutionProtocol `json:"execution_protocol,omitempty"`
+ 	Task              TaskReference   `json:"task"`
+ 	Planning          PlanningState   `json:"planning"`
+ 	Delivery          DeliveryState   `json:"delivery"`
+@@ -198,6 +201,7 @@ type RuntimeState struct {
+ // Plugin process starts, so workflow transition completion does not depend on
+ // a transient Plugin invocation.
+ type Notification struct {
++	Managed          *NotificationMessage `json:"managed,omitempty"`
+ 	ID               NotificationID    `json:"id"`
+ 	Topic            string            `json:"topic"`
+ 	Payload          json.RawMessage   `json:"payload"`
+@@ -268,6 +272,7 @@ type AutomationState struct {
+ 	Cursor            AutomationCursor      `json:"cursor,omitempty"`
+ 	PreparedRequest   *PreparedAgentRequest `json:"prepared_request,omitempty"`
+ 	ProjectionRepairs []ProjectionRepair    `json:"projection_repairs,omitempty"`
++	ReportSupplements []string               `json:"report_supplements,omitempty"`
+ 	Supervisor        SupervisorState       `json:"supervisor,omitempty"`
+ }
+ 
+@@ -295,6 +300,10 @@ type AutomationCursor struct {
+ // PreparedAgentRequest is an Attempt-bound request for an existing managed
+ // agent adapter. Creating it never starts a model turn.
+ type PreparedAgentRequest struct {
++	InputReference *ActorReference `json:"input_reference,omitempty"`
++	// ReportOrigin retains the generation identity during its one read-only
++	// report turn. The allowance is recorded separately and survives Attempts.
++	ReportOrigin *PreparedAgentRequest `json:"report_origin,omitempty"`
+ 	TaskID     TaskID     `json:"task_id"`
+ 	WorkItemID WorkItemID `json:"work_item_id"`
+ 	AttemptID  AttemptID  `json:"attempt_id"`
+@@ -327,6 +336,7 @@ type PreparedAgentRequest struct {
+ // SupervisedCompileState is frozen with the prepared request. A nil Plan is
+ // a legacy request, never permission to discover another compiler at runtime.
+ type SupervisedCompileState struct {
++	Inputs *ValidationInputs `json:"inputs,omitempty"`
+ 	Plan *CompilePlan `json:"plan,omitempty"`
+ 	PlanReference ActorReference `json:"plan_reference"`
+ 	Request *CompilerRequest `json:"request,omitempty"`
+@@ -363,6 +373,7 @@ type TaskReference struct {
+ }
+ 
+ type WorkItem struct {
++	AcceptedReference *ActorReference `json:"accepted_reference,omitempty"`
+ 	ID                  WorkItemID         `json:"id"`
+ 	Checklist           ChecklistReference `json:"checklist"`
+ 	Title               string             `json:"title"`
+@@ -486,6 +497,8 @@ type Evidence struct {
+ // WriteLease serializes state-changing work in one Task workspace. A lease is
+ // always tied to an Attempt so a recovered runtime state can explain its owner.
+ type WriteLease struct {
++	RequestID  string    `json:"request_id,omitempty"`
++	Generation uint64    `json:"generation,omitempty"`
+ 	AttemptID  AttemptID `json:"attempt_id"`
+ 	Workspace  string    `json:"workspace"`
+ 	AcquiredAt string    `json:"acquired_at"`
+diff --git a/internal/workflow/notification.go b/internal/workflow/notification.go
+index 742497c..316ba86 100644
+--- a/internal/workflow/notification.go
++++ b/internal/workflow/notification.go
+@@ -3,168 +3,254 @@ package workflow
+ import (
+ 	"context"
+ 	"encoding/json"
++	"errors"
+ 	"fmt"
+ 	"reflect"
+ 	"strings"
+ 	"time"
++	"unicode/utf8"
+ )
+ 
+-// NotificationDispatcher is implemented by the adapter that invokes the
+-// aiw-notify Plugin. Workflow Core owns only the durable outbox protocol.
++// Legacy adapters remain source-compatible, but cannot dispatch managed text.
+ type NotificationDispatcher interface {
+-	Dispatch(context.Context, Notification) (receipt string, err error)
++	Dispatch(context.Context, Notification) (string, error)
+ }
+ 
+-// EnqueueNotification persists an immutable notification before any Plugin is
+-// allowed to receive it. Repeating the same ID is idempotent only when its
+-// topic and payload match the original record.
+-func (s *Store) EnqueueNotification(id TaskID, notification Notification) (RuntimeState, error) {
+-	if err := validateNotificationRequest(notification); err != nil {
+-		return RuntimeState{}, err
+-	}
++type ManagedNotificationDispatcher interface {
++	Preflight(context.Context, Notification) (NotificationConfig, error)
++	Send(context.Context, Notification) NotificationResult
++}
++
++type NotificationConfig struct {
++	Enabled bool `json:"enabled"`
++	Ready bool `json:"ready"`
++	Channel string `json:"channel"`
++	TargetReference string `json:"target_reference"`
++	ConfigReference string `json:"config_reference"`
++}
++
++type NotificationResult struct {
++	SchemaVersion int `json:"schema_version"`
++	NotificationID NotificationID `json:"notification_id"`
++	AttemptID string `json:"attempt_id"`
++	ContentDigest string `json:"content_digest"`
++	Attempted bool `json:"attempted"`
++	Outcome string `json:"outcome"`
++	ErrorCode string `json:"error_code"`
++	HTTPStatus *int `json:"http_status"`
++}
++
++type NotificationAttempt struct {
++	ID string `json:"id"`
++	ReservedAt string `json:"reserved_at"`
++	ObservedAt string `json:"observed_at,omitempty"`
++	RetryDueAt string `json:"retry_due_at,omitempty"`
++	Result *NotificationResult `json:"result,omitempty"`
++}
++
++type NotificationMessage struct {
++	Version int `json:"version"`
++	FactID string `json:"fact_id"`
++	ContentDigest string `json:"content_digest"`
++	Text string `json:"text"`
++	GateID GateID `json:"gate_id,omitempty"`
++	Related NotificationID `json:"related,omitempty"`
++	Config NotificationConfig `json:"config"`
++	ConfigSnapshot string `json:"config_snapshot,omitempty"`
++	Attempts []NotificationAttempt `json:"attempts,omitempty"`
++	RetryDueAt string `json:"retry_due_at,omitempty"`
++	LastOutcome string `json:"last_outcome,omitempty"`
++}
++
++func (s *Store) notificationUpdate(id TaskID, change func(*RuntimeState) error) (RuntimeState, error) {
+ 	state, err := s.Load(id)
+-	if err != nil {
+-		return RuntimeState{}, err
++	if err != nil { return RuntimeState{}, err }
++	if state.SchemaVersion == DurableSchemaVersion {
++		return s.updateWithEvent(id, &state.StateRevision, Event{Type: "protocol.notification"}, change)
+ 	}
+-	for _, existing := range state.Notifications {
+-		if existing.ID != notification.ID {
+-			continue
+-		}
+-		if existing.Topic != notification.Topic || !jsonEqual(existing.Payload, notification.Payload) {
+-			return RuntimeState{}, fmt.Errorf("notification id %s is already bound to different content", notification.ID)
++	return s.UpdateWithEvent(id, Event{Type: "notification.updated"}, change)
++}
++
++func (s *Store) EnqueueNotification(id TaskID, n Notification) (RuntimeState, error) {
++	if err := validateNotificationRequest(n); err != nil { return RuntimeState{}, err }
++	return s.notificationUpdate(id, func(state *RuntimeState) error {
++		for _, old := range state.Notifications {
++			if n.Managed != nil && old.Managed != nil && old.Managed.FactID == n.Managed.FactID {
++				// Rendering changes and replacement IDs cannot create a new
++				// budget for the same source fact. A substantive update needs
++				// its own immutable source identity and related notification.
++				return errProtocolNoChange
++			}
++			if old.ID != n.ID { continue }
++			if old.Topic != n.Topic || !jsonEqual(old.Payload, n.Payload) { return errors.New("notification identity already bound") }
++			return errProtocolNoChange
+ 		}
+-		return state, nil
+-	}
+-	now := time.Now().UTC().Format(time.RFC3339)
+-	notification.State = NotificationPending
+-	notification.CreatedAt = now
+-	notification.UpdatedAt = now
+-	notification.DispatchAttempts = 0
+-	notification.LastError = ""
+-	notification.Receipt = ""
+-	return s.UpdateWithEvent(id, Event{Type: "notification.enqueued", Detail: string(notification.ID)}, func(state *RuntimeState) error {
+-		state.Notifications = append(state.Notifications, notification)
++		n.CreatedAt = time.Now().UTC().Format(time.RFC3339)
++		n.UpdatedAt, n.State, n.DispatchAttempts = n.CreatedAt, NotificationPending, 0
++		n.LastError, n.Receipt = "", ""
++		if n.Managed != nil { n.Managed.Attempts = nil; n.Managed.RetryDueAt = ""; n.Managed.LastOutcome = "" }
++		state.Notifications = append(state.Notifications, n)
+ 		return nil
+ 	})
+ }
+ 
+-// PrepareNotificationDispatch records the attempt before an external Plugin
+-// starts. Failed records consume only the notification retry budget; an
+-// initial pending dispatch consumes no retry.
++func notificationActive(state RuntimeState, n Notification) bool {
++	if n.Managed == nil { return false }
++	if n.Managed.GateID == "" { return true }
++	for _, gate := range state.Gates { if gate.ID == n.Managed.GateID { return gate.State == GateOpen } }
++	return false
++}
++
+ func (s *Store) PrepareNotificationDispatch(id TaskID, notificationID NotificationID) (RuntimeState, Notification, error) {
+-	if notificationID == "" {
+-		return RuntimeState{}, Notification{}, fmt.Errorf("notification id is required")
+-	}
+ 	var prepared Notification
+-	state, err := s.UpdateWithEvent(id, Event{Type: "notification.dispatch-prepared", Detail: string(notificationID)}, func(state *RuntimeState) error {
+-		for index := range state.Notifications {
+-			notification := &state.Notifications[index]
+-			if notification.ID != notificationID {
+-				continue
+-			}
+-			if notification.State == NotificationDispatching {
+-				return fmt.Errorf("notification %s already has a dispatch in progress; recover it first", notificationID)
+-			}
+-			if notification.State == NotificationDelivered {
+-				return fmt.Errorf("notification %s is already delivered", notificationID)
+-			}
+-			if notification.State != NotificationPending && notification.State != NotificationFailed {
+-				return fmt.Errorf("notification %s cannot be dispatched from %s", notificationID, notification.State)
++	state, err := s.notificationUpdate(id, func(state *RuntimeState) error {
++		if state.Protocol != nil && state.Protocol.Stop != nil { return errors.New("notification dispatch stopped") }
++		for i := range state.Notifications {
++			n := &state.Notifications[i]
++			if n.ID != notificationID { continue }
++			m := n.Managed
++			if m == nil || !m.Config.Enabled || !m.Config.Ready || !notificationActive(*state, *n) { return errors.New("notification is not eligible") }
++			if n.State != NotificationPending && n.State != "waiting" && n.State != NotificationFailed { return errors.New("notification already settled or in flight") }
++			if n.DispatchAttempts >= 2 { return errors.New("notification attempt limit reached") }
++			if m.LastOutcome != "" && m.LastOutcome != "network_failure" && m.LastOutcome != "configuration_failure" { return errors.New("notification result is terminal") }
++			if n.State == NotificationFailed && m.LastOutcome != "network_failure" { return errors.New("non-network failure cannot be retried") }
++			if n.DispatchAttempts > 0 {
++				due, err := time.Parse(time.RFC3339, m.RetryDueAt)
++				if m.LastOutcome != "network_failure" || err != nil || time.Now().Before(due) { return errors.New("notification retry is not due") }
+ 			}
+-			if notification.State == NotificationFailed {
+-				counter := &state.OperationalRetries.Notification
+-				if counter.Used >= counter.MaxAttempts {
+-					return fmt.Errorf("notification retry limit of %d is exhausted", counter.MaxAttempts)
+-				}
+-				counter.Used++
+-			}
+-			notification.State = NotificationDispatching
+-			notification.DispatchAttempts++
+-			notification.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+-			notification.LastError = ""
+-			prepared = *notification
++			n.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
++			m.Attempts = append(m.Attempts, NotificationAttempt{ID: fmt.Sprintf("%s:%d", n.ID, len(m.Attempts)+1), ReservedAt: n.UpdatedAt})
++			m.RetryDueAt = ""
++			n.DispatchAttempts++
++			n.State, n.LastError = NotificationDispatching, ""
++			prepared = *n
+ 			return nil
+ 		}
+-		return fmt.Errorf("unknown notification %s", notificationID)
++		return errors.New("unknown notification")
+ 	})
+ 	return state, prepared, err
+ }
+ 
+-// CompleteNotificationDispatch records the Plugin result. A failed dispatch
+-// leaves only this outbox item eligible for a later independent retry.
+-func (s *Store) CompleteNotificationDispatch(id TaskID, notificationID NotificationID, receipt, failure string) (RuntimeState, error) {
+-	if notificationID == "" {
+-		return RuntimeState{}, fmt.Errorf("notification id is required")
+-	}
+-	if strings.TrimSpace(receipt) == "" && strings.TrimSpace(failure) == "" {
+-		return RuntimeState{}, fmt.Errorf("notification receipt or failure is required")
++func UnknownNotificationResult(n Notification) NotificationResult {
++	r := NotificationResult{SchemaVersion: 2, NotificationID: n.ID, Attempted: true, Outcome: "unknown", ErrorCode: "protocol"}
++	if n.Managed != nil {
++		r.ContentDigest = n.Managed.ContentDigest
++		if count := len(n.Managed.Attempts); count > 0 { r.AttemptID = n.Managed.Attempts[count-1].ID }
+ 	}
+-	if strings.TrimSpace(receipt) != "" && strings.TrimSpace(failure) != "" {
+-		return RuntimeState{}, fmt.Errorf("notification cannot succeed and fail together")
+-	}
+-	eventType := "notification.dispatch-failed"
+-	if receipt != "" {
+-		eventType = "notification.delivered"
++	return r
++}
++
++func ValidNotificationResult(n Notification, r NotificationResult) bool {
++	if n.Managed == nil || len(n.Managed.Attempts) == 0 { return false }
++	if r.SchemaVersion != 2 || r.NotificationID != n.ID || r.ContentDigest != n.Managed.ContentDigest || r.AttemptID != n.Managed.Attempts[len(n.Managed.Attempts)-1].ID { return false }
++	if r.HTTPStatus != nil && (*r.HTTPStatus < 100 || *r.HTTPStatus > 599) { return false }
++	switch r.ErrorCode { case "", "configuration", "permission", "network", "service", "protocol", "timeout", "tls": default: return false }
++	switch r.Outcome {
++	case "attempted", "network_failure", "service_failure": return r.Attempted
++	case "configuration_failure", "permission_failure": return true
++	case "unknown": return r.Attempted
++	default: return false
+ 	}
+-	return s.UpdateWithEvent(id, Event{Type: eventType, Detail: string(notificationID)}, func(state *RuntimeState) error {
+-		for index := range state.Notifications {
+-			notification := &state.Notifications[index]
+-			if notification.ID != notificationID {
+-				continue
+-			}
+-			if notification.State != NotificationDispatching {
+-				return fmt.Errorf("notification %s is not dispatching", notificationID)
++}
++
++func (s *Store) ObserveNotification(id TaskID, notificationID NotificationID, result NotificationResult) (RuntimeState, error) {
++	return s.notificationUpdate(id, func(state *RuntimeState) error {
++		for i := range state.Notifications {
++			n := &state.Notifications[i]
++			if n.ID != notificationID { continue }
++			if n.Managed == nil || n.State != NotificationDispatching { return errors.New("notification is not dispatching") }
++			m := n.Managed
++			if !ValidNotificationResult(*n, result) { result = UnknownNotificationResult(*n) }
++			m.Attempts[len(m.Attempts)-1].Result = &result
++			m.Attempts[len(m.Attempts)-1].ObservedAt = time.Now().UTC().Format(time.RFC3339Nano)
++			m.LastOutcome = result.Outcome
++			m.RetryDueAt = ""
++			n.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
++			n.State, n.LastError = NotificationFailed, result.ErrorCode
++			if result.Outcome == "attempted" { n.State = "attempted" }
++			if result.Outcome == "unknown" { n.State = "unknown" }
++			if !result.Attempted {
++				n.DispatchAttempts--
++				// A pre-send failure releases its reservation, never prior usage.
++				// Only absent configuration is waiting; permission denial is terminal.
++				if result.Outcome == "configuration_failure" && n.DispatchAttempts == 0 { n.State = "waiting" }
+ 			}
+-			notification.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+-			if receipt != "" {
+-				notification.State = NotificationDelivered
+-				notification.Receipt = receipt
+-			} else {
+-				notification.State = NotificationFailed
+-				notification.LastError = failure
++			if result.Outcome == "network_failure" && n.DispatchAttempts == 1 {
++				m.RetryDueAt = time.Now().UTC().Add(time.Minute).Format(time.RFC3339Nano)
++				m.Attempts[len(m.Attempts)-1].RetryDueAt = m.RetryDueAt
+ 			}
+ 			return nil
+ 		}
+-		return fmt.Errorf("unknown notification %s", notificationID)
++		return errors.New("unknown notification")
+ 	})
+ }
+ 
+-// RecoverNotificationDispatch makes an interrupted Plugin invocation
+-// retryable. Its stable ID is retained because the Plugin may have received it
+-// before the process stopped.
++// Old receipt callers cannot turn an acknowledgement into delivery evidence.
++func (s *Store) CompleteNotificationDispatch(id TaskID, notificationID NotificationID, receipt, failure string) (RuntimeState, error) {
++	state, err := s.Load(id)
++	if err != nil { return state, err }
++	for _, n := range state.Notifications { if n.ID == notificationID { return s.ObserveNotification(id, notificationID, UnknownNotificationResult(n)) } }
++	return state, errors.New("unknown notification")
++}
++
+ func (s *Store) RecoverNotificationDispatch(id TaskID, notificationID NotificationID) (RuntimeState, error) {
+-	return s.CompleteNotificationDispatch(id, notificationID, "", "Plugin dispatch interrupted; retry with the same notification id")
++	return s.CompleteNotificationDispatch(id, notificationID, "", "")
+ }
+ 
+-// DispatchNotification is the adapter-facing outbox flow. It never reruns the
+-// completed workflow transition that created the notification.
+ func (s *Store) DispatchNotification(ctx context.Context, id TaskID, notificationID NotificationID, dispatcher NotificationDispatcher) (RuntimeState, error) {
+-	if dispatcher == nil {
+-		return RuntimeState{}, fmt.Errorf("notification dispatcher is required")
+-	}
+-	_, notification, err := s.PrepareNotificationDispatch(id, notificationID)
+-	if err != nil {
+-		return RuntimeState{}, err
+-	}
+-	receipt, dispatchErr := dispatcher.Dispatch(ctx, notification)
+-	if dispatchErr != nil {
+-		return s.CompleteNotificationDispatch(id, notificationID, "", dispatchErr.Error())
+-	}
+-	return s.CompleteNotificationDispatch(id, notificationID, receipt, "")
++	managed, ok := dispatcher.(ManagedNotificationDispatcher)
++	if !ok { return RuntimeState{}, errors.New("managed notification adapter required") }
++	return s.SendNotification(ctx, id, notificationID, managed)
+ }
+ 
+-func validateNotificationRequest(notification Notification) error {
+-	if notification.ID == "" || strings.TrimSpace(notification.Topic) == "" {
+-		return fmt.Errorf("notification id and topic are required")
++func (s *Store) SendNotification(ctx context.Context, id TaskID, notificationID NotificationID, dispatcher ManagedNotificationDispatcher) (RuntimeState, error) {
++	state, err := s.Load(id)
++	if err != nil { return state, err }
++	var n Notification
++	for _, candidate := range state.Notifications { if candidate.ID == notificationID { n = candidate; break } }
++	if n.Managed == nil { return state, errors.New("legacy notification cannot be replayed") }
++	config, preflightErr := dispatcher.Preflight(ctx, n)
++	state, err = s.notificationUpdate(id, func(current *RuntimeState) error {
++		for i := range current.Notifications {
++			item := &current.Notifications[i]
++			if item.ID != notificationID { continue }
++			if item.State == NotificationDispatching || item.State == "attempted" || item.State == "unknown" || item.State == "cancelled" { return errors.New("notification already settled or in flight") }
++			if preflightErr != nil { item.LastError = "configuration"; return nil }
++			if !notificationActive(*current, *item) || (!config.Enabled && item.Managed.GateID == "") { item.State = "cancelled"; return nil }
++			if !config.Enabled || !config.Ready { item.State = "waiting"; item.LastError = "configuration"; return nil }
++			fixed := item.Managed.Config
++			if fixed.ConfigReference != "" && (fixed.ConfigReference != config.ConfigReference || fixed.TargetReference != config.TargetReference || fixed.Channel != config.Channel) { item.State = "waiting"; item.LastError = "configuration"; return nil }
++			item.Managed.Config = config
++			item.LastError = ""
++			return nil
++		}
++		return errors.New("unknown notification")
++	})
++	if err != nil || preflightErr != nil { return state, errors.Join(err, preflightErr) }
++	for _, item := range state.Notifications { if item.ID == notificationID && (item.State == "cancelled" || item.LastError != "") { return state, nil } }
++	if err := ctx.Err(); err != nil { return state, err }
++	_, n, err = s.PrepareNotificationDispatch(id, notificationID)
++	if err != nil { return state, err }
++	// Recheck Stop, validity and the exact reservation immediately before launch.
++	current, err := s.Load(id)
++	if err != nil { return state, err }
++	if (current.Protocol != nil && current.Protocol.Stop != nil) || !notificationActive(current, n) {
++		r := UnknownNotificationResult(n); r.Attempted, r.Outcome, r.ErrorCode = false, "permission_failure", "permission"
++		return s.ObserveNotification(id, notificationID, r)
+ 	}
+-	if !json.Valid(notification.Payload) {
+-		return fmt.Errorf("notification payload must be valid JSON")
++	return s.ObserveNotification(id, notificationID, dispatcher.Send(ctx, n))
++}
++
++func validateNotificationRequest(n Notification) error {
++	if n.ID == "" || strings.TrimSpace(n.Topic) == "" || !json.Valid(n.Payload) { return errors.New("notification id, topic and JSON payload required") }
++	if n.Managed != nil {
++		m := n.Managed
++		if m.Version != 2 || m.FactID == "" || m.Text == "" || !utf8.ValidString(m.Text) || len(m.Text) > 16*1024 || m.ContentDigest != contentDigest([]byte(m.Text)) { return errors.New("invalid managed notification content") }
+ 	}
+ 	return nil
+ }
+ 
+ func jsonEqual(left, right json.RawMessage) bool {
+-	var leftValue any
+-	var rightValue any
+-	return json.Unmarshal(left, &leftValue) == nil && json.Unmarshal(right, &rightValue) == nil && reflect.DeepEqual(leftValue, rightValue)
++	var a, b any
++	return json.Unmarshal(left, &a) == nil && json.Unmarshal(right, &b) == nil && reflect.DeepEqual(a, b)
+ }
+diff --git a/internal/workflow/notification_test.go b/internal/workflow/notification_test.go
+index 72fd3f3..6f8d043 100644
+--- a/internal/workflow/notification_test.go
++++ b/internal/workflow/notification_test.go
+@@ -3,50 +3,92 @@ package workflow
+ import (
+ 	"context"
+ 	"encoding/json"
+-	"errors"
+ 	"testing"
++	"time"
+ )
+ 
+ type notificationDispatcherStub struct {
+ 	calls int
+-	err   error
++	outcome string
++	config NotificationConfig
+ }
+ 
+-func (d *notificationDispatcherStub) Dispatch(_ context.Context, notification Notification) (string, error) {
++func (d *notificationDispatcherStub) Dispatch(context.Context, Notification) (string, error) { panic("legacy dispatch must not run") }
++func (d *notificationDispatcherStub) Preflight(context.Context, Notification) (NotificationConfig, error) { return d.config, nil }
++func (d *notificationDispatcherStub) Send(_ context.Context, n Notification) NotificationResult {
+ 	d.calls++
+-	if d.err != nil {
+-		return "", d.err
+-	}
+-	return "receipt-" + string(notification.ID), nil
++	r := UnknownNotificationResult(n)
++	r.Outcome, r.ErrorCode = d.outcome, ""
++	return r
+ }
+ 
+-func TestDispatchNotificationFailureRetriesOnlyOutboxRecord(t *testing.T) {
++func notificationFixture(t *testing.T) (*Store, Notification, *notificationDispatcherStub) {
++	t.Helper()
+ 	store := NewStore(t.TempDir())
+-	if _, err := store.Create(compatibleState()); err != nil {
+-		t.Fatal(err)
+-	}
+-	notification := Notification{ID: "notification-1", Topic: "workflow.completed", Payload: json.RawMessage(`{"task":"task-1"}`)}
+-	if _, err := store.EnqueueNotification("task-1", notification); err != nil {
+-		t.Fatal(err)
+-	}
+-	dispatcher := &notificationDispatcherStub{err: errors.New("Plugin unavailable")}
+-	failed, err := store.DispatchNotification(context.Background(), "task-1", notification.ID, dispatcher)
+-	if err != nil {
+-		t.Fatal(err)
+-	}
+-	if dispatcher.calls != 1 || failed.Notifications[0].State != NotificationFailed || failed.OperationalRetries.Notification.Used != 0 {
+-		t.Fatalf("first dispatch state = %+v", failed)
+-	}
+-	dispatcher.err = nil
+-	delivered, err := store.DispatchNotification(context.Background(), "task-1", notification.ID, dispatcher)
+-	if err != nil {
+-		t.Fatal(err)
+-	}
+-	got := delivered.Notifications[0]
+-	if dispatcher.calls != 2 || got.State != NotificationDelivered || got.Receipt != "receipt-notification-1" {
+-		t.Fatalf("retry result = %+v, calls=%d", got, dispatcher.calls)
+-	}
+-	if delivered.OperationalRetries.Notification.Used != 1 || delivered.OperationalRetries.Delivery.Used != 0 || delivered.OperationalRetries.Recovery.Used != 0 {
+-		t.Fatalf("retry accounting was not independent: %+v", delivered.OperationalRetries)
++	if _, err := store.Create(compatibleState()); err != nil { t.Fatal(err) }
++	n := Notification{ID: "notification-1", Topic: "workflow.completed", Payload: json.RawMessage(`{"fact":"complete"}`), Managed: &NotificationMessage{Version: 2, FactID: "complete", Text: "Task completed", ContentDigest: contentDigest([]byte("Task completed"))}}
++	if _, err := store.EnqueueNotification("task-1", n); err != nil { t.Fatal(err) }
++	d := &notificationDispatcherStub{outcome: "network_failure", config: NotificationConfig{Enabled: true, Ready: true, Channel: "console", TargetReference: "target", ConfigReference: "config"}}
++	return store, n, d
++}
++
++func TestNotificationNetworkRetryKeepsDeadlineAndMessageBudget(t *testing.T) {
++	store, n, dispatcher := notificationFixture(t)
++	before := time.Now()
++	state, err := store.DispatchNotification(context.Background(), "task-1", n.ID, dispatcher)
++	if err != nil { t.Fatal(err) }
++	first := state.Notifications[0]
++	due, err := time.Parse(time.RFC3339, first.Managed.RetryDueAt)
++	if err != nil || due.Before(before.Add(time.Minute)) || first.DispatchAttempts != 1 { t.Fatalf("invalid retry reservation: %+v", first) }
++	reloaded := NewStore(store.Root)
++	if _, err := reloaded.DispatchNotification(context.Background(), "task-1", n.ID, dispatcher); err == nil { t.Fatal("early retry permitted") }
++	state, err = reloaded.Load("task-1")
++	if err != nil { t.Fatal(err) }
++	if state.Notifications[0].Managed.RetryDueAt != first.Managed.RetryDueAt || dispatcher.calls != 1 { t.Fatal("restart reset deadline or sent early") }
++	// Advance the saved deadline instead of sleeping or using real transports.
++	if _, err := reloaded.notificationUpdate("task-1", func(s *RuntimeState) error { s.Notifications[0].Managed.RetryDueAt = time.Now().Add(-time.Second).UTC().Format(time.RFC3339); return nil }); err != nil { t.Fatal(err) }
++	state, err = reloaded.DispatchNotification(context.Background(), "task-1", n.ID, dispatcher)
++	if err != nil { t.Fatal(err) }
++	if state.Notifications[0].DispatchAttempts != 2 || state.Notifications[0].Managed.RetryDueAt != "" || state.OperationalRetries.Notification.Used != 0 { t.Fatal("message budget not independent") }
++	if _, err := reloaded.DispatchNotification(context.Background(), "task-1", n.ID, dispatcher); err == nil || dispatcher.calls != 2 { t.Fatal("third send permitted") }
++}
++
++func TestNotificationOtherResultsNeverRetry(t *testing.T) {
++	for _, outcome := range []string{"unknown", "permission_failure", "service_failure", "configuration_failure", "attempted"} {
++		t.Run(outcome, func(t *testing.T) {
++			store, n, d := notificationFixture(t)
++			d.outcome = outcome
++			state, err := store.DispatchNotification(context.Background(), "task-1", n.ID, d)
++			if err != nil { t.Fatal(err) }
++			if state.Notifications[0].Managed.RetryDueAt != "" || state.Notifications[0].State == NotificationDelivered { t.Fatal("unexpected retry or delivery claim") }
++			if _, err := store.DispatchNotification(context.Background(), "task-1", n.ID, d); err == nil || d.calls != 1 { t.Fatal("non-network result retried") }
++		})
+ 	}
+ }
++
++func TestNotificationDisabledAndFrozenTarget(t *testing.T) {
++	store, n, d := notificationFixture(t)
++	d.config.Ready = false
++	state, err := store.DispatchNotification(context.Background(), "task-1", n.ID, d)
++	if err != nil || state.Notifications[0].DispatchAttempts != 0 || d.calls != 0 { t.Fatal("missing configuration consumed attempt") }
++	d.config.Ready = true
++	if _, err := store.DispatchNotification(context.Background(), "task-1", n.ID, d); err != nil { t.Fatal(err) }
++	d.config.ConfigReference = "changed-target"
++	state, err = store.DispatchNotification(context.Background(), "task-1", n.ID, d)
++	if err != nil || state.Notifications[0].Managed.Config.ConfigReference != "config" || d.calls != 1 { t.Fatal("frozen target replaced") }
++	d.config.Enabled = false
++	state, err = store.DispatchNotification(context.Background(), "task-1", n.ID, d)
++	if err != nil || state.Notifications[0].State != "cancelled" { t.Fatal("disabled completion not cancelled") }
++	d.config.Enabled = true
++	if _, err := store.DispatchNotification(context.Background(), "task-1", n.ID, d); err == nil || d.calls != 1 { t.Fatal("historical completion replayed") }
++}
++
++func TestNotificationInterruptedResultIsUnknown(t *testing.T) {
++	store, n, d := notificationFixture(t)
++	if _, err := store.notificationUpdate("task-1", func(s *RuntimeState) error { s.Notifications[0].Managed.Config = d.config; return nil }); err != nil { t.Fatal(err) }
++	if _, _, err := store.PrepareNotificationDispatch("task-1", n.ID); err != nil { t.Fatal(err) }
++	state, err := store.RecoverNotificationDispatch("task-1", n.ID)
++	if err != nil { t.Fatal(err) }
++	if state.Notifications[0].State != "unknown" || state.Notifications[0].DispatchAttempts != 1 { t.Fatal("unknown reservation released") }
++	if _, err := store.DispatchNotification(context.Background(), "task-1", n.ID, d); err == nil || d.calls != 0 { t.Fatal("interrupted send retried") }
++}
+diff --git a/internal/workflow/runner.go b/internal/workflow/runner.go
+index 871e392..88b3f41 100644
+--- a/internal/workflow/runner.go
++++ b/internal/workflow/runner.go
+@@ -28,6 +28,11 @@ type RunnerOutcome struct {
+ // NextRunnerOutcome prioritizes durable blockers ahead of execution. The
+ // caller synchronizes checklist references before using this function.
+ func NextRunnerOutcome(state RuntimeState) RunnerOutcome {
++	if state.SchemaVersion == DurableSchemaVersion {
++		if state.Protocol == nil || state.Protocol.Stop != nil { return RunnerOutcome{Kind: RunnerBlocked, Detail: "durable execution is stopped or unavailable"} }
++		if err := requireNoStageInFlight(state); err != nil { return RunnerOutcome{Kind: RunnerBlocked, Detail: err.Error()} }
++		return RunnerOutcome{Kind: RunnerBlocked, Detail: "durable execution requires the controlled stage adapter; legacy dispatch is disabled"}
++	}
+ 	for index := range state.Automation.ProjectionRepairs {
+ 		repair := &state.Automation.ProjectionRepairs[index]
+ 		if repair.ResolvedAt == "" {
+diff --git a/internal/workflow/state.go b/internal/workflow/state.go
+index 5ae8453..0ece06e 100644
+--- a/internal/workflow/state.go
++++ b/internal/workflow/state.go
+@@ -57,9 +57,12 @@ var attemptTransitions = map[AttemptState]map[AttemptState]bool{
+ }
+ 
+ func ValidateRuntimeState(state RuntimeState) error {
+-	if state.SchemaVersion != SchemaVersion {
++	if state.SchemaVersion != SchemaVersion && state.SchemaVersion != DurableSchemaVersion {
+ 		return fmt.Errorf("unsupported workflow schema version: %d", state.SchemaVersion)
+ 	}
++	if state.SchemaVersion == DurableSchemaVersion {
++		if err := validateExecutionProtocol(state); err != nil { return err }
++	} else if state.Protocol != nil { return fmt.Errorf("execution protocol cannot be enabled on a legacy schema") }
+ 	workItems := make(map[WorkItemID]struct{}, len(state.WorkItems))
+ 	for _, item := range state.WorkItems {
+ 		if item.ID == "" {
+@@ -307,6 +310,10 @@ func validateNotifications(notifications []Notification) error {
+ 		if notification.DispatchAttempts < 0 {
+ 			return fmt.Errorf("notification %s has negative dispatch attempts", notification.ID)
+ 		}
++		if notification.Managed != nil {
++			if err := validateManagedNotification(notification); err != nil { return err }
++			continue
++		}
+ 		switch notification.State {
+ 		case NotificationPending:
+ 			if notification.DispatchAttempts != 0 {
+@@ -316,7 +323,7 @@ func validateNotifications(notifications []Notification) error {
+ 			if notification.DispatchAttempts == 0 {
+ 				return fmt.Errorf("notification %s has no dispatch attempt", notification.ID)
+ 			}
+-		case NotificationDelivered:
++		case NotificationDelivered, "legacy-local-ack":
+ 			if notification.DispatchAttempts == 0 || strings.TrimSpace(notification.Receipt) == "" {
+ 				return fmt.Errorf("delivered notification %s requires an attempt and receipt", notification.ID)
+ 			}
+diff --git a/internal/workflow/store.go b/internal/workflow/store.go
+index 0ad300e..70110f1 100644
+--- a/internal/workflow/store.go
++++ b/internal/workflow/store.go
+@@ -2,6 +2,7 @@ package workflow
+ 
+ import (
+ 	"bufio"
++	"bytes"
+ 	"encoding/json"
+ 	"errors"
+ 	"fmt"
+@@ -27,9 +28,14 @@ const (
+ // not read or write OpenSpec artifacts; Task/OpenSpec adapters own that seam.
+ type Store struct {
+ 	Root string
++	ExecutionServices *ExecutionServices
++	DeliveryServices *DeliveryServices
++	AuxiliaryServices *AuxiliaryServices
+ }
+ 
+ type Event struct {
++	CommitID      string     `json:"commit_id,omitempty"`
++	StateRevision uint64     `json:"state_revision,omitempty"`
+ 	SchemaVersion int        `json:"schema_version"`
+ 	Sequence      uint64     `json:"sequence"`
+ 	Type          string     `json:"type"`
+@@ -39,17 +45,28 @@ type Event struct {
+ 	Detail        string     `json:"detail,omitempty"`
+ }
+ 
++// ConfigureAuxiliaryStore is installed once by the executable composition root.
++// Library users retain explicit service injection; constructing a Store does not
++// start a process, initialize resources, or enable a protocol migration.
++var ConfigureAuxiliaryStore func(*Store)
++
+ func NewStore(root string) *Store {
+ 	if strings.TrimSpace(root) == "" {
+ 		root = filepath.Join(repo.Root(), defaultRuntimeRoot)
+ 	}
+-	return &Store{Root: root}
++	store := &Store{Root: root}
++	if ConfigureAuxiliaryStore != nil { ConfigureAuxiliaryStore(store) }
++	return store
+ }
+ 
+ func (s *Store) Create(state RuntimeState) (RuntimeState, error) {
+ 	if err := validateTaskID(state.Task.ID); err != nil {
+ 		return RuntimeState{}, err
+ 	}
++	if state.SchemaVersion == DurableSchemaVersion { return RuntimeState{}, errors.New("durable execution requires the managed migration boundary") }
++	lock, err := s.lock(state.Task.ID)
++	if err != nil { return RuntimeState{}, err }
++	defer unlock(lock)
+ 	if err := normalizeRuntimeState(&state); err != nil {
+ 		return RuntimeState{}, err
+ 	}
+@@ -96,6 +113,11 @@ func (s *Store) loadFromDir(id TaskID, dir string) (RuntimeState, error) {
+ 	if err := json.Unmarshal(b, &state); err != nil {
+ 		return RuntimeState{}, fmt.Errorf("decode workflow state: %w", err)
+ 	}
++	if state.SchemaVersion == DurableSchemaVersion {
++		decoder := json.NewDecoder(bytes.NewReader(b))
++		decoder.DisallowUnknownFields()
++		if err := decoder.Decode(&state); err != nil { return RuntimeState{}, fmt.Errorf("preserve unsupported durable state: %w", err) }
++	}
+ 	if state.Task.ID != id {
+ 		return RuntimeState{}, fmt.Errorf("workflow state id mismatch: %s", state.Task.ID)
+ 	}
+@@ -109,10 +131,16 @@ func (s *Store) loadFromDir(id TaskID, dir string) (RuntimeState, error) {
+ }
+ 
+ func normalizeRuntimeState(state *RuntimeState) error {
++	for i := range state.Notifications {
++		n := &state.Notifications[i]
++		if n.Managed == nil && n.State == NotificationDelivered { n.State = "legacy-local-ack" }
++	}
+ 	switch state.SchemaVersion {
+ 	case 1, 2, 3, 4, 5, 6, 7, 8:
+ 		state.SchemaVersion = SchemaVersion
+ 	case SchemaVersion:
++	case DurableSchemaVersion:
++		return validateExecutionProtocol(*state)
+ 	default:
+ 		return fmt.Errorf("unsupported workflow schema version: %d", state.SchemaVersion)
+ 	}
+@@ -144,6 +172,7 @@ func (s *Store) update(id TaskID, change func(*RuntimeState) error) (RuntimeStat
+ 	if err != nil {
+ 		return RuntimeState{}, err
+ 	}
++	if state.SchemaVersion == DurableSchemaVersion { return RuntimeState{}, errors.New("durable state requires an ordered conditional commit") }
+ 	if err := change(&state); err != nil {
+ 		return RuntimeState{}, err
+ 	}
+@@ -164,11 +193,21 @@ func (s *Store) update(id TaskID, change func(*RuntimeState) error) (RuntimeStat
+ // appends that exact event, then records the confirmed sequence. Recovery can
+ // therefore replay only a persisted event and never repeat a caller action.
+ func (s *Store) UpdateWithEvent(id TaskID, event Event, change func(*RuntimeState) error) (RuntimeState, error) {
++	return s.updateWithEvent(id, nil, event, change)
++}
++
++func (s *Store) updateWithEvent(id TaskID, expected *uint64, event Event, change func(*RuntimeState) error) (RuntimeState, error) {
+ 	lock, err := s.lock(id)
+ 	if err != nil {
+ 		return RuntimeState{}, err
+ 	}
+-	defer unlock(lock)
++	startAuxiliary := false
++	defer func() {
++		unlock(lock)
++		// A projection failure cannot roll back acceptance. Persisted source
++		// facts remain discoverable at the next managed startup.
++		if startAuxiliary { s.startAuxiliaryHost(id) }
++	}()
+ 	if err := s.migrateLegacyLocked(id); err != nil {
+ 		return RuntimeState{}, err
+ 	}
+@@ -180,22 +219,51 @@ func (s *Store) UpdateWithEvent(id TaskID, event Event, change func(*RuntimeStat
+ 	if state.PendingEvent != nil {
+ 		return RuntimeState{}, fmt.Errorf("workflow Task has pending event %d; recover it before another transition", state.PendingEvent.Sequence)
+ 	}
++	if expected != nil && state.StateRevision != *expected { return RuntimeState{}, errors.New("workflow state revision changed; reconcile before retry") }
++	if state.SchemaVersion == DurableSchemaVersion {
++		if !isSystemLock(lock) || expected == nil || !strings.HasPrefix(event.Type, "protocol.") { return RuntimeState{}, errors.New("durable execution requires a conditional protocol transition and system lock") }
++		events, err := s.readEvents(id)
++		if err != nil { return RuntimeState{}, err }
++		if uint64(len(events)) != state.LastEventSequence { return RuntimeState{}, errors.New("durable event history is incomplete") }
++		for i, recorded := range events { if recorded.Sequence != uint64(i+1) { return RuntimeState{}, errors.New("durable event sequence is inconsistent") } }
++		if len(events) == 0 || events[len(events)-1].CommitID != state.CommitID || events[len(events)-1].StateRevision != state.StateRevision { return RuntimeState{}, errors.New("event history does not confirm the current state revision") }
++	}
++	originalSchema, originalRevision := state.SchemaVersion, state.StateRevision
+ 	if err := change(&state); err != nil {
++		if errors.Is(err, errProtocolNoChange) { return s.Load(id) }
+ 		return RuntimeState{}, err
+ 	}
++	if state.SchemaVersion != originalSchema || state.StateRevision != originalRevision { return RuntimeState{}, errors.New("transition cannot replace the schema or commit revision") }
++	if state.SchemaVersion == DurableSchemaVersion {
++		previousSources := 0
++		previousNotifications := len(state.Notifications)
++		if state.Protocol != nil && state.Protocol.Auxiliary != nil { previousSources = len(state.Protocol.Auxiliary.Sources) }
++		captureAuxiliarySource(&state)
++		s.captureNotificationFacts(&state)
++		startAuxiliary = state.Protocol != nil && state.Protocol.Auxiliary != nil && len(state.Protocol.Auxiliary.Sources) > previousSources
++		startAuxiliary = startAuxiliary || len(state.Notifications) > previousNotifications
++	}
+ 	if strings.TrimSpace(event.Type) == "" {
+ 		return RuntimeState{}, errors.New("workflow event type is required")
+ 	}
+-	event.SchemaVersion = SchemaVersion
++	if state.Task.ID != id { return RuntimeState{}, errors.New("workflow Task ID cannot change") }
++	event.SchemaVersion = state.SchemaVersion
+ 	event.Sequence = state.LastEventSequence + 1
++	if state.SchemaVersion == DurableSchemaVersion {
++		state.StateRevision++
++		state.CommitID = fmt.Sprintf("%s-%d", id, state.StateRevision)
++		event.CommitID, event.StateRevision = state.CommitID, state.StateRevision
++	}
+ 	if event.At == "" {
+ 		event.At = time.Now().UTC().Format(time.RFC3339)
+ 	}
+ 	state.PendingEvent = &event
+ 	if err := ValidateRuntimeState(state); err != nil {
++		startAuxiliary = false
+ 		return RuntimeState{}, err
+ 	}
+ 	if err := s.save(state); err != nil {
++		startAuxiliary = false
+ 		return RuntimeState{}, err
+ 	}
+ 	if err := s.appendEvent(event, id); err != nil {
+@@ -218,9 +286,9 @@ func (s *Store) appendEvent(event Event, id TaskID) error {
+ 	if err != nil {
+ 		return err
+ 	}
+-	defer f.Close()
+-	_, err = f.Write(append(b, '\n'))
+-	return err
++	n, writeErr := f.Write(append(b, '\n'))
++	if writeErr == nil && n != len(b)+1 { writeErr = errors.New("short workflow event write") }
++	return errors.Join(writeErr, f.Sync(), f.Close())
+ }
+ 
+ // ensureEventLog completes runtime bootstrap after an interrupted initial
+@@ -253,16 +321,22 @@ func (s *Store) RecoverPendingEvent(id TaskID) (RuntimeState, error) {
+ 	if state.PendingEvent == nil {
+ 		return state, nil
+ 	}
++	if state.SchemaVersion == DurableSchemaVersion && !isSystemLock(lock) { return RuntimeState{}, errors.New("durable recovery requires the migrated Task lock") }
+ 	pending := *state.PendingEvent
+ 	if pending.Sequence != state.LastEventSequence+1 || pending.Sequence == 0 {
+ 		return RuntimeState{}, fmt.Errorf("pending event sequence %d cannot follow confirmed sequence %d", pending.Sequence, state.LastEventSequence)
+ 	}
+ 	events, err := s.readEvents(id)
+ 	if err != nil {
+-		return RuntimeState{}, err
++		if repairErr := s.repairPendingTail(id, state); repairErr != nil { return RuntimeState{}, errors.Join(err, repairErr) }
++		events, err = s.readEvents(id)
++		if err != nil { return RuntimeState{}, err }
+ 	}
+ 	found := false
++	var sequence uint64
+ 	for _, existing := range events {
++		sequence++
++		if state.SchemaVersion == DurableSchemaVersion && (existing.Sequence != sequence || existing.Sequence > pending.Sequence) { return RuntimeState{}, errors.New("event history conflicts with pending commit") }
+ 		if existing.Sequence != pending.Sequence {
+ 			continue
+ 		}
+@@ -271,6 +345,7 @@ func (s *Store) RecoverPendingEvent(id TaskID) (RuntimeState, error) {
+ 		}
+ 		found = true
+ 	}
++	if state.SchemaVersion == DurableSchemaVersion && !found && sequence != state.LastEventSequence { return RuntimeState{}, errors.New("confirmed event history is incomplete") }
+ 	if !found {
+ 		if err := s.appendEvent(pending, id); err != nil {
+ 			return RuntimeState{}, err
+@@ -293,6 +368,13 @@ func (s *Store) readEvents(id TaskID) ([]Event, error) {
+ 		return nil, err
+ 	}
+ 	defer f.Close()
++	info, err := f.Stat()
++	if err != nil { return nil, err }
++	if info.Size() > 0 {
++		last := []byte{0}
++		if _, err := f.ReadAt(last, info.Size()-1); err != nil { return nil, err }
++		if last[0] != '\n' { return nil, errors.New("workflow event log has an incomplete tail") }
++	}
+ 	var events []Event
+ 	scanner := bufio.NewScanner(f)
+ 	for scanner.Scan() {
+@@ -363,7 +445,14 @@ func (s *Store) lock(id TaskID) (*os.File, error) {
+ 	if err := os.MkdirAll(filepath.Join(s.Root, runtimeLocksDir), 0o755); err != nil {
+ 		return nil, err
+ 	}
+-	return os.OpenFile(filepath.Join(s.Root, runtimeLocksDir, string(id)+".lock"), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
++	path := filepath.Join(s.Root, runtimeLocksDir, string(id)+".lock")
++	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0o600)
++	if err == nil || !errors.Is(err, os.ErrExist) { return file, err }
++	file, err = os.OpenFile(path, os.O_RDWR, 0)
++	if err != nil { return nil, err }
++	if !isSystemLock(file) { _ = file.Close(); return nil, errors.New("legacy or incomplete Task lock requires managed reconciliation") }
++	if err := systemTaskLock(file); err != nil { _ = file.Close(); return nil, err }
++	return file, nil
+ }
+ 
+ // TaskLocked reports whether a Core writer currently holds the Task lock. It
+@@ -373,14 +462,14 @@ func (s *Store) TaskLocked(id TaskID) (bool, error) {
+ 	if err := validateTaskID(id); err != nil {
+ 		return false, err
+ 	}
+-	_, err := os.Stat(filepath.Join(s.Root, runtimeLocksDir, string(id)+".lock"))
+-	if err == nil {
+-		return true, nil
+-	}
++	file, err := os.OpenFile(filepath.Join(s.Root, runtimeLocksDir, string(id)+".lock"), os.O_RDWR, 0)
+ 	if errors.Is(err, os.ErrNotExist) {
+ 		return false, nil
+ 	}
+-	return false, err
++	if err != nil { return false, err }
++	if !isSystemLock(file) { _ = file.Close(); return true, nil }
++	if err := systemTaskLock(file); err != nil { _ = file.Close(); return true, nil }
++	return false, systemTaskUnlock(file)
+ }
+ 
+ // AcquireTaskLock serializes a metadata repair with all Workflow Core state
+@@ -390,9 +479,8 @@ func (s *Store) AcquireTaskLock(id TaskID) (func() error, error) {
+ 	if err != nil {
+ 		return nil, err
+ 	}
+-	path := file.Name()
+ 	return func() error {
+-		return errors.Join(file.Close(), os.Remove(path))
++		return releaseTaskLock(file)
+ 	}, nil
+ }
+ 
+@@ -402,6 +490,7 @@ func (s *Store) save(state RuntimeState) error {
+ 	if err != nil {
+ 		return err
+ 	}
++	if state.SchemaVersion == DurableSchemaVersion { return durableWrite(s.path(state.Task.ID, runtimeStateFile), append(b, '\n')) }
+ 	return atomicWrite(s.path(state.Task.ID, runtimeStateFile), append(b, '\n'))
+ }
+ 
+@@ -525,7 +614,7 @@ func (s *Store) markLegacyMigrated(legacy, canonical string) error {
+ }
+ 
+ func validateTaskID(id TaskID) error {
+-	if strings.TrimSpace(string(id)) == "" || strings.ContainsAny(string(id), `/\\`) {
++	if strings.TrimSpace(string(id)) == "" || id == "." || id == ".." || strings.ContainsAny(string(id), `/\\`) {
+ 		return errors.New("invalid workflow Task ID")
+ 	}
+ 	return nil
+@@ -564,12 +653,7 @@ func atomicWrite(path string, data []byte) error {
+ }
+ 
+ func unlock(file *os.File) {
+-	if file == nil {
+-		return
+-	}
+-	name := file.Name()
+-	_ = file.Close()
+-	_ = os.Remove(name)
++	_ = releaseTaskLock(file)
+ }
+ 
+ func findAttempt(attempts []Attempt, id AttemptID) (Attempt, bool) {
+diff --git a/internal/workflow/verifier.go b/internal/workflow/verifier.go
+index 74ab381..77a5cf8 100644
+--- a/internal/workflow/verifier.go
++++ b/internal/workflow/verifier.go
+@@ -25,6 +25,8 @@ const (
+ // verification stage. Its outcome is deliberately separate from ActorResult
+ // status: recording a failed report succeeds and must not block delivery.
+ type VerifierReport struct {
++	Snapshot *ActorReference `json:"snapshot,omitempty"`
++	Coverage []VerifierCoverage `json:"coverage,omitempty"`
+ 	SchemaVersion int             `json:"schema_version"`
+ 	TaskID        TaskID          `json:"task_id"`
+ 	WorkItemID    WorkItemID      `json:"work_item_id"`
+@@ -36,7 +38,7 @@ type VerifierReport struct {
+ }
+ 
+ func (r VerifierReport) Validate() error {
+-	if r.SchemaVersion != VerifierReportSchemaVersion || r.TaskID == "" || r.WorkItemID == "" || r.AttemptID == "" || !validVerifierOutcome(r.Outcome) || strings.TrimSpace(r.Summary) == "" || strings.TrimSpace(r.RecordedAt) == "" {
++	if (r.SchemaVersion != VerifierReportSchemaVersion && r.SchemaVersion != 2) || r.TaskID == "" || r.WorkItemID == "" || r.AttemptID == "" || !validVerifierOutcome(r.Outcome) || strings.TrimSpace(r.Summary) == "" || strings.TrimSpace(r.RecordedAt) == "" {
+ 		return fmt.Errorf("verifier report requires schema, Task, Work Item, Attempt, outcome, summary, and recorded time")
+ 	}
+ 	for index, finding := range r.Findings {
+@@ -44,6 +46,13 @@ func (r VerifierReport) Validate() error {
+ 			return fmt.Errorf("verifier finding %d is empty", index)
+ 		}
+ 	}
++	if r.SchemaVersion == 2 {
++		if r.Snapshot == nil || r.Snapshot.Kind != "verifier-snapshot" || !validProtocolReference(*r.Snapshot) { return fmt.Errorf("Verifier v2 report needs its fixed snapshot") }
++		if _, err := time.Parse(time.RFC3339, r.RecordedAt); err != nil { return fmt.Errorf("Verifier record time is invalid: %w", err) }
++		outcome, err := verifierCoverageOutcome(r.Coverage)
++		if err != nil { return err }
++		if outcome != r.Outcome { return fmt.Errorf("Verifier outcome does not follow its coverage evidence") }
++	}
+ 	return nil
+ }
+ 
+diff --git a/main.go b/main.go
+index bbf34d0..24cdb3e 100644
+--- a/main.go
++++ b/main.go
+@@ -12,6 +12,9 @@ import (
+ 	help "aiw/internal/commands/help"
+ 	sessioncmd "aiw/internal/commands/session"
+ 	taskcmd "aiw/internal/commands/task"
++	"aiw/internal/workflow"
++	"aiw/internal/workflow/execution"
++	"aiw/internal/session"
+ 
+ 	plug "aiw/internal/plugin"
+ )
+@@ -30,6 +33,15 @@ const (
+ )
+ 
+ func main() {
++	workflow.ConfigureAuxiliaryStore = execution.ConfigureProductionAuxiliary
++	session.TaskMemoryProjection = execution.ProjectSessionTaskMemory
++	if len(os.Args) > 1 && os.Args[1] == "--auxiliary-root" {
++		if err := execution.RunAuxiliaryHelper(os.Args[1:]); err != nil {
++			fmt.Fprintln(os.Stderr, "auxiliary:", err)
++			os.Exit(1)
++		}
++		return
++	}
+ 	if len(os.Args) < 2 {
+ 		help.Dispatch([]string{})
+ 		return
+diff --git a/openspec/changes/command-help-consistency/.openspec.yaml b/openspec/changes/command-help-consistency/.openspec.yaml
+deleted file mode 100644
+index f2cbbe6..0000000
+--- a/openspec/changes/command-help-consistency/.openspec.yaml
++++ /dev/null
+@@ -1,2 +0,0 @@
+-schema: spec-driven
+-created: 2026-09-18
+diff --git a/openspec/changes/command-help-consistency/design.md b/openspec/changes/command-help-consistency/design.md
+deleted file mode 100644
+index cfb32f6..0000000
+--- a/openspec/changes/command-help-consistency/design.md
++++ /dev/null
+@@ -1,45 +0,0 @@
+-## Context
+-
+-当前 AIW 的公开命令由多个分派器和帮助文本分别维护。workflow 的实际 operation 已包含 routing、failure reporting、delivery、focused test 和 metadata repair 等路径，但帮助与补全没有始终同步；README 也保留了较早的命令摘要。该问题属于 CLI 表面一致性问题，不需要新的运行时抽象。
+-
+-## Goals / Non-Goals
+-
+-**Goals:**
+-
+-- 让帮助输出完整列出当前公开命令、子命令形式和重要选项。
+-- 让 README 的命令摘要与示例反映实际源码支持的入口。
+-- 让 Shell 补全至少覆盖所有公开 workflow operation。
+-- 通过检查避免帮助、补全和 README 再次静默落后。
+-
+-**Non-Goals:**
+-
+-- 不重构命令分派器。
+-- 不改变命令名称、参数解析、执行流程或错误语义。
+-- 不为内部函数或仅供测试使用的路径创建新的公开命令。
+-- 不引入文档生成依赖或网络步骤。
+-
+-## Decisions
+-
+-1. **源码行为是唯一真相。** 实现时以顶层/Task/workflow 分派、参数校验和补全定义为事实来源，逐项核对帮助与 README；不能根据旧 README 推断命令是否存在。
+-
+-2. **保持现有帮助结构。** 在现有分类和命令别名下补齐内容，保留 `aiw workflow` 与 `aiw task workflow` 两种入口，不引入新的帮助框架。
+-
+-3. **至少覆盖公开 operation 和选项。** workflow 帮助必须包含所有用户可直接调用的 operation，包括 `delivery-failed`、`report`、`local-merge`、focused-test、metadata repair 等；`supervise` 必须说明启动时支持的 provider/model 覆盖选项。
+-
+-4. **补全与文档同步核对。** 补全列表必须覆盖公开 workflow operation；README 的摘要和示例必须使用真实入口与真实参数。对仅用于内部恢复或自动流程的命令，若仍对 CLI 公开，也必须明确决定是记录、隐藏还是收回；本 change 默认按现有可调用入口记录。
+-
+-5. **设计准备度：FD_NOT_REQUIRED。** 这是窄范围、可逆的帮助和文档一致性修复，源码边界、兼容性策略和验证 seam 已明确，不存在需要独立 Feature Design 的未决架构选择。
+-
+-## Risks / Trade-offs
+-
+-- [新增命令再次遗漏文档] → 增加命令集合与帮助/补全/README 的一致性检查，并在 checklist 中要求覆盖所有入口。
+-- [README 示例与参数校验不一致] → 对示例中的 operation、参数顺序和选项做静态逐项核对；不新增未经源码支持的示例。
+-- [内部命令是否应公开存在边界] → 本 change 不改变公开性；对现有可通过 CLI 分派的 operation 按公开命令处理，并在实现中保留备注供后续产品决策。
+-
+-## Migration Plan
+-
+-无需迁移。修改帮助、补全、README 和检查后即可随 CLI 一起发布；回滚只需恢复这些文档/帮助变更，不涉及运行时数据。
+-
+-## Open Questions
+-
+-无。
+diff --git a/openspec/changes/command-help-consistency/proposal.md b/openspec/changes/command-help-consistency/proposal.md
+deleted file mode 100644
+index 3609fea..0000000
+--- a/openspec/changes/command-help-consistency/proposal.md
++++ /dev/null
+@@ -1,25 +0,0 @@
+-## Why
+-
+-AIW 的命令帮助、Shell 补全和 README 已经落后于实际命令分派代码，尤其是 workflow 相关命令存在遗漏或参数说明不完整。用户因此无法仅依靠帮助或 README 发现可用操作，且不同入口可能给出相互矛盾的命令表面。
+-
+-## What Changes
+-
+-- 对照命令分派、参数校验和实际支持的选项，补齐并校正顶层、Task 和 workflow 帮助文本。
+-- 补齐 workflow 的命令补全集合及其参数提示所依赖的命令名。
+-- 更新 README 中的命令摘要、示例和 workflow 说明，使其与源码支持的命令和选项一致。
+-- 增加静态/行为检查，防止新增公开命令再次只更新源码而遗漏帮助或 README。
+-- 不改变任何命令的执行语义、参数兼容性或持久化行为。
+-
+-## Capabilities
+-
+-### New Capabilities
+-
+-- `command-help-consistency`: 保证公开 CLI 命令、帮助、补全和 README 的命令表面一致。
+-
+-### Modified Capabilities
+-
+-无。现有 CLI 运行时能力不变，本 change 只补齐其用户可见说明和一致性检查。
+-
+-## Impact
+-
+-影响 CLI 帮助渲染、Task/workflow 命令补全、README 命令文档及其相关测试。不会引入依赖、改变公共命令行为或修改稳定运行时数据结构。
+diff --git a/openspec/changes/command-help-consistency/specs/command-help-consistency/spec.md b/openspec/changes/command-help-consistency/specs/command-help-consistency/spec.md
+deleted file mode 100644
+index f1b461c..0000000
+--- a/openspec/changes/command-help-consistency/specs/command-help-consistency/spec.md
++++ /dev/null
+@@ -1,39 +0,0 @@
+-## ADDED Requirements
+-
+-### Requirement: CLI help reflects the public command surface
+-
+-AIW MUST expose help text whose command names, aliases, subcommand forms, argument shapes, and documented options match the commands accepted by the source-code dispatch and validation paths.
+-
+-#### Scenario: Workflow help lists every callable operation
+-
+-- **WHEN** a user requests workflow help through either supported workflow entry point
+-- **THEN** the help lists every publicly dispatchable workflow operation, including planning, execution, recovery, delivery, focused-test, routing, reporting, and metadata-repair operations
+-
+-#### Scenario: Workflow option documentation matches parsing
+-
+-- **WHEN** a workflow command accepts command-line options
+-- **THEN** help documents the supported options and their constraints, including execution, primary-workspace, provider/model, and dry-run options where applicable
+-
+-#### Scenario: Task and top-level help remain consistent
+-
+-- **WHEN** a user requests top-level or Task help
+-- **THEN** the listed commands and example invocations refer only to supported commands and use the same workflow entry points and naming as the dispatcher
+-
+-### Requirement: README and shell completion match the CLI surface
+-
+-AIW MUST keep README command summaries/examples and shell completion command lists aligned with the source-code command surface and the canonical help output.
+-
+-#### Scenario: README workflow documentation is complete
+-
+-- **WHEN** a user follows the workflow command summary or examples in README
+-- **THEN** each referenced command and option is accepted by the CLI, and the summary does not omit a publicly callable workflow operation that is required for command discovery
+-
+-#### Scenario: Completion exposes documented workflow commands
+-
+-- **WHEN** a user requests completion after `workflow` or `task workflow`
+-- **THEN** completion offers the same public workflow operation names represented in help, without stale or invented names
+-
+-#### Scenario: Consistency regression is detected
+-
+-- **WHEN** a public command or supported option is added or changed without updating the related help, completion, or README inventory
+-- **THEN** the repository's consistency check fails with an actionable indication of the missing or mismatched surface
+diff --git a/openspec/changes/command-help-consistency/tasks.md b/openspec/changes/command-help-consistency/tasks.md
+deleted file mode 100644
+index 603df41..0000000
+--- a/openspec/changes/command-help-consistency/tasks.md
++++ /dev/null
+@@ -1,31 +0,0 @@
+-## 1. Inventory and contract
+-
+-- [ ] 1.1 Build a complete inventory from the top-level, Task, workflow, validation, and completion dispatch code, including aliases, argument forms, and options.
+-- [ ] 1.2 Record the inventory as the implementation reference and identify any intentionally internal-but-callable operations, with no command behavior changes.
+-
+-## 2. Help and completion alignment
+-
+-- [ ] 2.1 Update top-level and Task help summaries/examples so their command names and workflow entry points match the dispatcher.
+-- [ ] 2.2 Update workflow help to include every callable operation and accurate argument/option descriptions, including delivery-failed, provider/model overrides, focused-test, and repair-metadata.
+-- [ ] 2.3 Update workflow shell completion definitions to cover the complete public operation inventory and remove stale omissions.
+-
+-## 3. README alignment
+-
+-- [ ] 3.1 Update README command summaries, workflow examples, and option descriptions to match the source inventory and help output.
+-- [ ] 3.2 Review nearby workflow documentation for stale command names or unsupported invocation forms and correct only the affected references.
+-
+-## 4. Verification
+-
+-- [ ] 4.1 Add or update focused checks that detect drift between the source command inventory, help output, completion list, and README command references.
+-- [ ] 4.2 Perform static review of the final diff and confirm no runtime command behavior, API, dependency, or persistence changes were introduced.
+-
+-## TODO
+-
+-- Confirm the final inventory includes all publicly dispatchable top-level, Task, and workflow commands.
+-- Confirm README examples use supported argument order and option names.
+-
+-## Verification
+-
+-- Static source-to-help/completion/README comparison.
+-- Focused command-surface consistency check, if authorized during implementation.
+-- No implementation or runtime validation is performed by this specification task.
+diff --git a/openspec/changes/cz-config-priority/.openspec.yaml b/openspec/changes/cz-config-priority/.openspec.yaml
+deleted file mode 100644
+index f2cbbe6..0000000
+--- a/openspec/changes/cz-config-priority/.openspec.yaml
++++ /dev/null
+@@ -1,2 +0,0 @@
+-schema: spec-driven
+-created: 2026-09-18
+diff --git a/openspec/changes/cz-config-priority/design.md b/openspec/changes/cz-config-priority/design.md
+deleted file mode 100644
+index 20ecd30..0000000
+--- a/openspec/changes/cz-config-priority/design.md
++++ /dev/null
+@@ -1,65 +0,0 @@
+-## Context
+-
+-`cz` 当前先读取项目、AIW_ROOT 和可执行文件附近的 `cz` 配置，但随后调用共享 AI 配置解析；只要共享 `[ai]` 有 provider，就会覆盖 `cz` 已解析的 provider/model。共享解析器本身也把 `[ai]` 放在 `[cz]` 之前，因此 `[cz]` 实际上只是历史兼容回退。
+-
+-`cz` 的用途是从 staged diff 提取提交摘要，模型需求通常低于 managed workflow。用户需要在不改变全局 AI 工作流配置的情况下，为 `cz` 选择独立模型。
+-
+-## Goals / Non-Goals
+-
+-**Goals:**
+-
+-- 让 `cz` 的 provider/model 能独立于全局 `[ai]` 配置生效。
+-- 保持 CLI 显式选项和运行时环境覆盖的能力。
+-- 对 generic 与 provider-specific model 配置提供确定、可测试的优先级。
+-- 保持现有没有 `[cz]` 配置时的兼容行为。
+-
+-**Non-Goals:**
+-
+-- 不改变 `cz` 的命令名称、交互流程、commit message 格式或提交行为。
+-- 不修改 managed workflow 的 routing/profile 选择。
+-- 不重新设计所有 API key、base URL、command 等连接参数的配置体系；只在 provider/model 解析所需范围内保持一致。
+-- 不引入新的配置文件格式或依赖。
+-
+-## Decisions
+-
+-1. **Provider/model 选择优先级固定为：**
+-
+-   `CLI --provider/--model` > 运行时环境覆盖 > `[cz]` provider/model > `[ai]` provider/model > provider 默认值。
+-
+-   CLI 选项必须继续覆盖文件和环境解析结果。现有环境变量仍作为显式运行时覆盖，不因本 change 降级到文件配置之后。
+-
+-2. **`cz` 的 provider 选择独立于全局 provider。** 当 `[cz].provider` 有效时，`cz` 使用它；只有 `[cz]` 未提供 provider 时才回退到 `[ai].provider`。provider-specific model 解析必须以最终选定的 provider 为准。
+-
+-3. **Model 选择遵循同层优先。** 对最终 provider，`[cz]` 对应的 provider-specific model（如适用）优先于 `[cz].model`，然后回退到 `[ai]` 对应的 provider-specific model、`[ai].model`，最后使用 provider 默认模型。环境变量和 CLI 在此顺序之上覆盖最终结果。
+-
+-4. **连接配置保持兼容。** provider、model 的选择不能导致 API key、base URL 或 CLI command 被错误地绑定到另一 provider；实现应复用现有 provider-specific fallback 和默认值逻辑，并只调整必要的合并顺序。
+-
+-5. **设计准备度：FD_NOT_REQUIRED。** 这是局部配置优先级调整，目标、优先级和兼容边界已由用户确认，不涉及新的系统边界、持久化、权限或并发设计。
+-
+-## Risks / Trade-offs
+-
+-- [现有项目依赖 `[ai]` 覆盖 `[cz]`] → 只有明确配置 `[cz]` 时才改变行为；没有 `[cz]` 时保持全局回退，并增加回归测试。
+-- [provider 与 endpoint/credential 来源不一致] → 以最终 provider 重新应用对应的 provider-specific 配置和默认值，测试 provider/model 组合而非只测试单字段。
+-- [环境变量语义被误解] → 在配置文档和测试中明确 CLI、环境变量、`[cz]`、`[ai]` 的顺序。
+-
+-## Migration Plan
+-
+-无需数据迁移。现有仅使用 `[ai]` 的项目行为保持不变；需要独立 `cz` 模型的项目新增 `[cz]` provider/model 即可。回滚只需恢复配置合并逻辑和相关测试/文档。
+-
+-## Open Questions
+-
+-无。
+-## Additional Decision: global fast profile precedence
+-
+-When no higher-priority `cz` or runtime override supplies a provider/model,
+-global configuration is resolved in this order:
+-
+-1. `ai.profiles.fast` provider/model values;
+-2. top-level `ai.provider` and `ai.model` values;
+-3. the selected provider's defaults.
+-
+-The fast profile is treated as an atomic global fallback selection: provider,
+-model, and any profile-scoped connection settings must be resolved together so
+-that `cz` does not combine a fast-profile model with unrelated top-level
+-provider settings. If `ai.profiles.fast` is absent, resolution falls back to
+-the top-level global values.
+diff --git a/openspec/changes/cz-config-priority/proposal.md b/openspec/changes/cz-config-priority/proposal.md
+deleted file mode 100644
+index 8a73933..0000000
+--- a/openspec/changes/cz-config-priority/proposal.md
++++ /dev/null
+@@ -1,33 +0,0 @@
+-## Why
+-
+-`cz` 主要生成和整理 Conventional Commit 摘要，通常不需要与通用 AI 工作流相同的高能力模型。当前实现会在全局 `[ai]` 配置存在时覆盖 `[cz]` 的 provider/model，使用户无法为 `cz` 单独选择更快或更低成本的模型。
+-
+-## What Changes
+-
+-- 调整 `cz` 的 provider/model 配置解析优先级，使 `[cz]` 优先于全局 `[ai]` 回退配置。
+-- 保留 CLI `--provider` 与 `--model` 的显式覆盖能力。
+-- 保留现有环境变量作为运行时覆盖机制，并明确其与 CLI、文件配置的优先级。
+-- 保留 provider 默认模型作为最终回退。
+-- 增加配置优先级测试与文档说明，覆盖 generic 和 provider-specific model 配置。
+-- 不改变 `cz` 的提交摘要生成、交互确认、提交或 provider 调用协议。
+-
+-## Capabilities
+-
+-### New Capabilities
+-
+-- `cz-configuration-priority`: 为 `cz` 定义独立且可预测的 provider/model 配置优先级。
+-
+-### Modified Capabilities
+-
+-无。现有 CLI capability 的运行入口不变；本 change 增加并明确 `cz` 的配置解析契约。
+-
+-## Impact
+-
+-影响 `cz` 配置加载和共享 AI 配置解析之间的合并逻辑，以及相关单元测试和配置文档。无需新增依赖、迁移数据或改变命令参数。
+-## Clarification: global fast profile fallback
+-
+-When `cz` falls back to global AI configuration, it MUST first use the
+-`ai.profiles.fast` profile when that profile is configured. Only when the fast
+-profile is not configured should it use the top-level `ai.provider` and
+-`ai.model` values. This keeps `cz` lightweight by default while preserving the
+-existing provider/model fallback.
+diff --git a/openspec/changes/cz-config-priority/specs/cz-configuration-priority/spec.md b/openspec/changes/cz-config-priority/specs/cz-configuration-priority/spec.md
+deleted file mode 100644
+index 72e0d6c..0000000
+--- a/openspec/changes/cz-config-priority/specs/cz-configuration-priority/spec.md
++++ /dev/null
+@@ -1,70 +0,0 @@
+-## ADDED Requirements
+-
+-### Requirement: cz-specific provider and model configuration takes precedence
+-
+-The `cz` command MUST resolve its provider and model independently from the global AI workflow when explicit `cz` configuration exists. The effective precedence MUST be CLI overrides, runtime environment overrides, `cz` configuration, global `ai` configuration, and provider defaults, in that order.
+-
+-#### Scenario: cz provider overrides global provider
+-
+-- **WHEN** `[cz].provider` and `[ai].provider` are both configured and no higher-priority override is present
+-- **THEN** `cz` MUST invoke the provider configured by `[cz].provider`
+-
+-#### Scenario: cz model overrides global model
+-
+-- **WHEN** `[cz].model` and `[ai].model` are both configured and no higher-priority override is present
+-- **THEN** `cz` MUST use the model configured by `[cz].model`
+-
+-#### Scenario: global configuration remains the fallback
+-
+-- **WHEN** `cz` does not configure a provider or model and `[ai]` provides one
+-- **THEN** `cz` MUST use the applicable `[ai]` provider/model before applying provider defaults
+-
+-### Requirement: explicit runtime overrides remain authoritative
+-
+-The `cz` command MUST preserve explicit CLI and runtime environment overrides above file-based `cz` and `ai` configuration.
+-
+-#### Scenario: CLI provider and model override files
+-
+-- **WHEN** the user supplies `--provider` and/or `--model`
+-- **THEN** the supplied values MUST be used regardless of `[cz]` or `[ai]` file values
+-
+-#### Scenario: environment overrides file configuration
+-
+-- **WHEN** an applicable provider/model environment override is present and no CLI override is supplied
+-- **THEN** the environment value MUST take precedence over `[cz]` and `[ai]` file values
+-
+-### Requirement: provider-specific model resolution is consistent
+-
+-When the selected provider has provider-specific model settings, `cz` MUST resolve the setting for that selected provider without mixing credentials or endpoints from a different provider selection.
+-
+-#### Scenario: selected provider uses its cz-specific model
+-
+-- **WHEN** `[cz].provider` selects a provider and its provider-specific `[cz]` model is configured
+-- **THEN** `cz` MUST use that provider-specific `cz` model before generic or global model fallbacks
+-
+-#### Scenario: missing cz model falls back safely
+-
+-- **WHEN** `[cz]` selects a provider but provides no usable model
+-- **THEN** `cz` MUST fall back to the applicable global model and then the selected provider's default model without changing the selected provider
+-
+-### Requirement: global fast profile is preferred over top-level global values
+-
+-When `cz` has no higher-priority provider/model override, it MUST prefer the
+-global `ai.profiles.fast` profile over top-level `ai.provider` and `ai.model`.
+-If the fast profile is not configured, `cz` MUST use the top-level global
+-values before applying provider defaults.
+-
+-#### Scenario: configured fast profile overrides global top-level values
+-
+-- **WHEN** `ai.profiles.fast` and top-level `ai.provider` or `ai.model` are both configured and no `cz`, CLI, or environment override is present
+-- **THEN** `cz` MUST use the provider and model resolved from `ai.profiles.fast`
+-
+-#### Scenario: absent fast profile falls back to top-level global values
+-
+-- **WHEN** `ai.profiles.fast` is not configured and top-level `ai.provider` and/or `ai.model` is configured
+-- **THEN** `cz` MUST use the applicable top-level global value before applying provider defaults
+-
+-#### Scenario: fast profile resolution does not mix global connection settings
+-
+-- **WHEN** `ai.profiles.fast` is selected as the global fallback
+-- **THEN** `cz` MUST resolve the profile's provider, model, and profile-scoped connection settings as one selection and MUST NOT mix them with unrelated top-level provider settings
+diff --git a/openspec/changes/cz-config-priority/tasks.md b/openspec/changes/cz-config-priority/tasks.md
+deleted file mode 100644
+index 047a21e..0000000
+--- a/openspec/changes/cz-config-priority/tasks.md
++++ /dev/null
+@@ -1,24 +0,0 @@
+-## 1. Configuration resolution
+-
+-- [ ] 1.1 Map the existing `cz` and shared AI configuration layers, including CLI flags, environment variables, generic values, provider-specific values, and defaults.
+-- [ ] 1.2 Implement the agreed provider/model precedence so explicit `cz` configuration overrides global `[ai]` fallback without changing command behavior.
+-- [ ] 1.3 Ensure the final provider's model, endpoint, credentials, and command settings are not mixed with another provider's selection.
+-- [ ] 1.4 Prefer global `ai.profiles.fast` over top-level `ai.provider` and `ai.model` when `cz` has no higher-priority override, with a safe fallback when the profile is absent.
+-
+-## 2. Verification and documentation
+-
+-- [ ] 2.1 Add focused tests for CLI override, environment override, `[cz]` over `[ai]`, global fallback, provider-specific model fallback, and provider defaults.
+-- [ ] 2.4 Add focused tests for configured and absent `ai.profiles.fast`, including profile-scoped provider/model and connection settings.
+-- [ ] 2.2 Update user-facing configuration documentation with the exact precedence and a lightweight-model example for `cz`.
+-- [ ] 2.3 Review the final diff statically to confirm managed workflow configuration and unrelated `cz` behavior remain unchanged.
+-
+-## TODO
+-
+-- Confirm tests cover both generic `[cz].provider/model` and provider-specific model keys.
+-- Confirm existing projects with only `[ai]` configuration retain their previous behavior.
+-
+-## Verification
+-
+-- Static review of configuration merge and provider selection paths.
+-- Focused configuration-resolution tests during implementation.
+-- No implementation or runtime validation is performed by this specification task.
+diff --git a/openspec/changes/workflow-automation/design.md b/openspec/changes/workflow-automation/design.md
+index 64f14a9..c2647c9 100644
+--- a/openspec/changes/workflow-automation/design.md
++++ b/openspec/changes/workflow-automation/design.md
+@@ -6,7 +6,17 @@ ## Context
+ 
+ 当前基线：Workflow Core 持有 Work Item/Attempt/Gate/证据和写租约；execution 负责监督与派发；Session 保存 prompt/turn/输出；Task metadata 在 `.ai/<id>/`，OpenSpec 清单在 change 目录。现有 `Store.UpdateWithEvent` 和原子写工具是集成入口，但不能据其名称推定跨文件事务已成立。
+ 
+-本设计是需求驱动的工程方案，状态为 **BLOCKED（部分工程闭合项待完成）**，使用 fd-workflow 受管模式。阻塞只针对下方注明的实施范围；不是新增业务问题或要求用户重新确认这些文档。
++本设计是需求驱动的工程方案，使用 fd-workflow 受管模式。用户于 2026-09-18 选择 R1 方案 A：本机磁盘优先、保留文件 Store、分阶段恢复；随后选择先闭合 R2，再授权按建议补齐 R3/R4。R1–R4 设计现已闭合；对应 Core Gate 仍须凭静态证据受管处理。实现依赖、运行验证和启用条件独立保留。
++
++## Design Readiness
++
++**FD_APPLIED（R1–R4；E01–E08 的设计输入）**。方案 A 已固定 R1 的持久化适配层、系统锁、兼容协议；其余见 [R2 授权契约](r2-authorization-design.md)、[R3 资源政策](r3-resource-design.md)、[R4 通知适配](r4-notification-design.md)。Task ID 与 change ID 均为 `workflow-automation`。规格更新位于既有 `.wt/workflow-automation`；Task 元数据及 Core 运行记录由主仓库 `.ai/workflow-automation/` 共享，不在 worktree 复制。设计闭合不代表实现完成、测试通过或对应 Core Gate 已自动解除。
++
++用户已确认复用 Store 和受管执行入口，以恢复后的可观察状态、派发和预算作为验证边界。R2–R4 延续该边界，完成工程契约后同步设计证据；不授权运行测试、真实通知或 Git 交付。E02→E03→E04 的联合启用及 E05 先于 E06/E07/E08 后台消费的依赖保持。既有编号 checklist 和 Work Item 映射不变。
++
++%% VALIDATION_PENDING: 方案 A 以当前 Windows 本机磁盘为实施和验证基线；网络盘、NAS、云同步目录没有相同可靠性承诺。目标卷、目录同步能力及真实故障恢复须在启用前取得证据；不能以用户选择 A 推定当前目录的实际介质已验证。
++
++工作区静态对账：`task.toml.worktree/workspace_kind` 由 Task metadata 所有，Core 的 `workspace_binding` 保留已登记的路径与父分支；二者均指向既有 isolated worktree。`WorkflowRuntimeFromMeta` 只初始化缺失 Core，`RecordWorkspaceBinding` 不回写最初的 TaskReference，因此其中的 primary 是历史初始化值，不能单独据此改绑工作区。2026-09-18 的 `aiw task workflow diagnose workflow-automation` 仅报告 R1 Gate，未报告 workspace-binding-invalid。本轮保留原运行记录，以 metadata 与受管绑定共同校验实际写入路径；不通过手改 JSON 消除展示差异。
+ 
+ ## Goals / Non-Goals
+ 
+@@ -118,14 +128,105 @@ ## Migration and Rollout
+ 
+ ## Engineering Readiness
+ 
++### R1 持久提交与版本兼容方案
++
++#### 当前代码证据与职责
++
++静态基线为本 worktree 的 `internal/workflow/store.go`、`model.go`、`automation.go`、`execution/session.go` 和 `internal/repo/root.go`：
++
++- `UpdateWithEvent` 已在 Task 锁内保存含 PendingEvent 的状态、追加事件、再确认序号；`RecoverPendingEvent` 只恢复原事件，不重做调用者操作。保留这一入口和包边界。
++- `atomicWrite` 使用临时文件、Close 和 Rename，`appendEvent` 使用追加写；两者尚无显式 Sync，不能据此认定掉电后的持久顺序成立。事件逐行解析也不等于已经支持截断尾部恢复。
++- 当前 schema 为 9；1–8 的归一化只是升级版本值及补默认值，不能据此补造新授权、预算或请求身份。
++- 当前派发标记与实际执行结果是不同事实；Session 校验允许较新的 turn。新协议必须按精确阶段请求绑定结果，不能仅凭 DispatchedAt 或 Session latest 接受结果。
++- 文件锁采用排他创建；文件锁残留与工作区写租约分别处理。不能仅凭超时、锁文件存在或前台退出判断旧执行器已终止。
++
++Core 是阶段、请求、租约、Stop、预算、接受事实及消费游标的权威；grant.md 是授权依据，报告、输入清单和结果是有摘要的不可变工件。事件日志保留审计事实，但当前 Event 不包含完整状态差量，不能从它擅自重建丢失的整个状态。Session、task.toml 展示及 OpenSpec checkbox 均不是执行成功依据。
++
++#### 最小数据契约
++
++拟将运行状态从 schema 9 升至 10；实际实现若基线已有其他版本变更，必须先显式协调版本，不能复用含义不同的版本号。结构版本与每次提交递增的 state_revision 分开。新协议至少保存：
++
++| 记录 | 必需绑定与用途 |
++| --- | --- |
++| 状态提交 | schema_version、state_revision、commit_id、预期前版本、PendingEvent 和已确认事件序号；恢复同一提交不再次递增逻辑版本 |
++| 阶段请求 | stage_request_id、Task/Work Item/Attempt、精确 Session/turn、角色、workspace、输入摘要、模型选择、计划与 grant 条目版本、lease generation |
++| 派发事实 | intent、执行器身份、observation、未派发/已派发/未知结论及依据；未知不是失败 |
++| 预算账 | 预算类别、固定归属键、请求 ID、预留/消费/释放与归因依据；有效失败和调用额度分开记账 |
++| 工件引用 | 工件类型、不可变 ID、内容摘要、来源版本及读取状态；路径或 latest 不构成身份 |
++| 接受与辅助 | 接受/完成事实 ID、固定输入引用、辅助去重键、来源账本归属、恢复账、消费游标和条件发布版本 |
++
++grant.md 保留完整批准与拒绝历史，每个条目版本不可变；状态保存条目 ID/摘要、计划和政策版本，索引只作投影。记录格式和真实目标检查由 R2 定义，R1 固定顺序：授权条目可靠落盘在前，Core 提交该精确引用在后，执行前再核验。单纯保存一条同意不构成派发许可，拒绝和失效记录不能因索引陈旧而被忽略。
++
++#### 写入与提交顺序
++
++方案 A 的平台接缝固定如下，作为 E01/E02 的实施输入，不再要求先完成实现验证才能写代码：
++
++- 在 workflow 包内部封装持久替换与 Task 锁适配层，继续由 Store 调用；不增加数据库或改变外部 CLI。Windows 使用现有依赖中的系统调用包装，优先复用已经声明的 `golang.org/x/sys`，不为本方案下载或升级依赖。
++- 持久替换采用同目录临时文件 Write → File.Sync → Close → Windows MoveFileExW 的 REPLACE_EXISTING / WRITE_THROUGH 替换 → 重新打开目标并 Sync / Close。事件追加也要检查 Write、Sync 和 Close 的错误。不得跨卷复制或先删除原文件；替换后的错误属于提交结果未知，必须对账。WRITE_THROUGH 或目标 Sync 不能单独冒充所有文件系统的目录持久性证明，目标卷的实际能力作为启用证据核定，能力不足则停用新持久执行协议。
++- Task 锁改为稳定锁文件上的 Windows LockFileEx 排他锁，使用非阻塞竞争语义；锁拥有者持有句柄，离开临界区时 UnlockFileEx 并关闭。文件本身不因释放锁而删除；取得系统锁才代表排他，文件存在不代表进程仍在运行。源码写租约保持独立，不随文件锁释放而清除。
++- 从旧 O_EXCL 协议迁移只在受管维护边界进行：先禁止旧协议的新写入，证明旧 Store 写入者已经退出，再在原排他范围内记录锁协议版本并切换；不能把遗留锁直接按新协议打开后就视为已取得旧写入者的权利。不明旧锁、旧版本写入者或在途源码执行均先对账。新协议保留稳定锁文件，使旧 O_EXCL 写入入口失败关闭，不能混用两套锁。
++- E01 可以实现工件、身份与输入版本契约，但新接受、自动派发和迁移启用仍受 E01–E04 一致性边界及实际验证证据约束。其他平台保持既有行为；未经等价能力验证，不启用本方案的新可靠性承诺。
++
++1. 在同一 Task 排他范围内检查预期 state_revision、未决提交、Stop、请求身份、写入权和授权。初次创建、迁移及修复也必须经过同一排他边界，不能绕开 Store。状态变更回调不执行外部副作用。
++2. 先写输入、grant 或结果工件：同一目标目录临时文件，完整写入并同步，关闭后以平台已验证的替换原语发布，再完成该平台所需的目录项持久化。任何一步失败或提交结果未知均不报告可靠保存，不允许以删除旧文件后重命名作为降级实现。
++3. 以一个状态提交同时保存关联的阶段、预算、租约、结果引用或消费游标及 PendingEvent。状态替换也遵循上述落盘契约；不能将多次独立文件写称为跨文件事务。
++4. 追加并同步同一个事件，再可靠保存已确认序号并清除 PendingEvent。恢复只补齐同一个 commit_id；发生错误时调用者先重新读取并对账，不能假定提交未发生而重新派发。
++5. 仅在所需提交已可靠完成、当前授权及 Stop 等前置条件成立时请求执行器启动。外部启动不能与文件写原子化；意图与实际启动之间的窗口一律通过观察和对账处理，不宣称外部 exactly-once。
++
++Task 文件锁只保护短时记录更新，不跨整个 Agent 运行持有。源码写入权由持久租约及请求 generation 控制；恢复进程不得仅删除残留锁后转交源码写入权。清除残留锁需要验证原锁拥有者及进程代际已终止，并在排他恢复入口重新检查；无法证明则等待，不使用 PID 或锁龄单独判定。执行器仍可能在途时，即使文件锁已安全恢复，源码租约也保持。
++
++#### 崩溃窗口与恢复矩阵
++
++| 中断窗口 | 唯一允许的恢复行为 |
++| --- | --- |
++| 临时工件未完整发布 | 不建立引用、不派发；保留已存在旧工件及故障事实 |
++| 工件或 grant 已发布，Core 未引用 | 按请求和摘要识别未引用工件；不得据此自动接受或执行 |
++| 新状态与 PendingEvent 已落盘，事件未落盘 | 恢复同一事件；不再执行状态变更回调、计次或外部操作 |
++| 事件已落盘，确认状态未落盘 | 核对序号、commit_id 和内容，确认已有事件，不重复追加或推进版本 |
++| 事件存在截断尾部或同序号冲突 | 保留原文件并阻止相关推进；只有可证明为末尾未完成写且与唯一 PendingEvent 对应时，才通过受管修复从完整前缀重建；冲突、中段损坏及无法证明的缺口不猜测 |
++| 派发意图已落盘，执行器观察未知 | 保留预留和源码租约，对账同一请求；不得把未知当成未派发或有效失败 |
++| 有据确认未派发 | 在原请求账上释放预留；重新满足 Stop、授权、租约和预算条件后才可派发 |
++| 有据确认已派发 | 去重消费对应调用额度；有效失败仅在结果和归因成立后计入模型/修复账 |
++| 结果已保存，Core 未消费 | 验证精确请求、输入版本、摘要和终态；一次提交结果引用、归因、预算变化及消费标记，不重跑执行器 |
++| Core 已消费结果，Session/展示投影未更新 | 从 Core 修复投影，不再次消费；迟到的不同输入结果只保存历史 |
++| 接受/完成已提交，辅助队列未登记 | 按持久来源事实与固定键补登记，登记和游标推进在同一次来源 Task 提交中完成；不撤销接受 |
++| Stop 或预算事实保存时返回未知 | 对账当前提交；禁止靠重启解除 Stop、刷新额度或重做副作用 |
++
++辅助恢复账归属原始来源 Task：同一操作类型、不可变来源身份和输入摘要只指向一份账。其他 Task 引用该来源时携带 source_owner_task_id 与固定键，不复制恢复余额；原账不可读则标记辅助不可用，不能以新 Task 建立零计次替代账。来源 Task 的受管存储保存该账及持久来源事实，Session 或 worktree 清理不能删除仍被引用的权威事实。跨 Task 发布只提交可重建引用，执行额度只在来源账本中预留和消费；不以两个 Task 文件同时成功为前提。此处冻结恢复所有权，具体调度仍属于 E05。
++
++#### 兼容、迁移与回退
++
++- 旧 schema 1–9 先只读解析，保留原字节、来源版本和摘要；不得在 Load 时将缺失的新字段填成有效授权、零失败或已接受。
++- 迁移前先处理旧 PendingEvent、在途事实及持久 Stop，再在 Task 锁内生成 schema 10 状态。旧快照先可靠保存；新提交引用迁移来源和固定迁移 ID。中断后恢复同一迁移，不重复创建运行事实。
++- 旧已用/consumed 授权保持已用，适用旧结果按当前输入和证据规则复用；仅缺报告使用原请求的一次补交，不能借迁移新增额度。无来源证明的预算保留 unknown，集中形成 Task 级缺口，不能伪造零余额或耗尽。
++- 不识别的未来 schema、授权字段或必需记录版本保持原件并禁止相关写入/派发；不通过 JSON 忽略字段后重新序列化丢弃未知事实。grant 的确定性解析仍依 R2。
++- 旧二进制不得写新格式；回退先停止新派发并对账，保留新事实，不能恢复旧快照继续执行以绕过已用预算或新接受规则。
++- E01/E02/E03/E04 的新接受与预算规则一同启用；E05 的来源登记和恢复协议先于辅助消费者。分组开发不表示可单独启用半套接受规则。
++
++#### 验证方案与 R1 闭合条件
++
++用户确认的边界为 Store 提交/恢复和受管执行入口，复用现有恢复测试所在接缝，不为测试扩张公共 API。计划使用可控存储故障与执行器替身检查外部行为：恢复前后同一身份、最多一次事实消费、未知时不重复派发、正确余额、Stop 持续有效及兼容后不新增权限。已有测试名称只能作为实现参考，本轮没有执行，也不能据此证明掉电恢复。
++
++实施时需覆盖矩阵每个提交窗口、重复恢复、迟到结果、旧已用授权、未知预算和未来版本拒写，追踪 AC01/AC02/AC05/AC06/AC08/AC19 与 AX02/AX03。进程故障注入和目标平台持久化验证另记实际命令及授权；不把内存替身测试等同于文件系统可靠性证明。
++
++R1 设计闭合条件已由方案 A 满足：持久替换、锁协议迁移、能力不足时停写及崩溃矩阵均已明确。E01 承接不可变工件、精确身份/输入版本、报告补交和旧结果适用性；E02 承接 Store 持久提交、锁/租约与派发恢复；E04 承接预算去重；E05 承接来源账与消费游标。既有 checklist 的编号和验收范围不变。通过 AIW 同步并记录静态设计证据后可将 `supervised-unknown-wi-0001` 按 resolved 处理，不按 waived 绕过需求。
++
++实际启用另须取得矩阵和平台持久化的验证证据；这是实施后的验收条件，不反向阻止已就绪 E01 的代码开发。R2 的 grant 解析未完成前不能启用新执行链；R3/R4 仍约束各自能力。不启动自动合并的 supervise，单项实现完成也不自动运行测试或 Git 交付。
++
++## Risks / Trade-offs
++
++R1 继续使用现有文件 Store，减少迁移范围，但每次提交需要多次持久写；性能优化不能跳过授权或预算的可靠保存。未知结果优先等待会降低自动继续的比例，这是避免重复写入和重复消费的明确取舍。平台原语与锁接缝已经选定，其实际文件系统行为、旧协议迁移和故障恢复仍待实施验证，不能将设计闭合标为运行通过。
++
++### 工程闭合项汇总
++
+ | 闭合项 | 受影响范围 | 工程需补齐的具体证据 |
+ | --- | --- | --- |
+-| R1 持久提交/版本兼容 | E01/E02/E04/E05 | 对照当前 Store 原子边界，列出状态、grant、派发、计次、结果引用和消费游标每个崩溃窗口的恢复行为；冻结最小 schema/version 兼容规则 |
+-| R2 授权与执行服务集成 | E03/交付 | 固定 grant.md 编码/解析和校验接口、真实链接检查时点、旧固定/consumed 计划处理及受管 cleanup 入口契约 |
+-| R3 资源上限参数 | E05/E06/E08 | 基于已有模型/输入尺寸给出 token、单批/Task 累计、存储硬上限及依据；必需输入不可截断，超额停可选项，空间不足停受影响写入，不自动删证据 |
+-| R4 Teams adapter 本地契约 | E07 | 对照现有且可能有用户改动的插件/脚本，确定输入传递、凭据引用、错误分类和兼容边界；不要求虚构远端查询/回执能力 |
++| R1 持久提交/版本兼容 | E01/E02/E04/E05 | 设计已闭合：方案 A 固定 Windows 本机磁盘适配层、系统锁及旧锁迁移、崩溃矩阵与 schema 10 兼容；受管同步/证据后可解除对应设计 Gate，实际验证仍是新协议启用条件 |
++| R2 授权与执行服务集成 | E02/E03/交付，E04 预算接缝 | 设计已闭合：见 R2 工程决策；严格 grant 编码、确定性判定、真实目标重检、旧授权兼容和分步 cleanup 均已固定；实现与验证仍待对应工作项完成 |
++| R3 资源上限参数 | E05/E06/E08；共享宿主约束 E07 | 设计已闭合：资源附件固定输入/输出 token 和字节、历史单批/累计、队列/并发/时限、Task/项目存储及未知能力处理；未声称具体模型已满足能力或参数已实测 |
++| R4 Teams adapter 本地契约 | E07 | 设计已闭合：通知附件固定显式项目配置、版本化 stdin/结果、环境凭据、验证 TLS、错误分类及旧回执迁移；真实目标配置/发送验证仍是启用条件 |
+ 
+-这些是工程执行的具体闭合项，不是新的用户确认。无须为了工件补全重新批准 Requirement 或重新 promote；只有发现已确认行为、权限或成本边界必须改变才请求用户决定。R1/R2 涉及的对应实现未闭合前不得启动；R3/R4 仅限制依赖它们的能力。
++这些是工程执行的具体闭合项，不是新的用户确认。无须为了工件补全重新批准 Requirement 或重新 promote；只有发现已确认行为、权限或成本边界必须改变才请求用户决定。R1–R4 设计闭合后允许按依赖顺序实施，实际启用仍须满足迁移、接受、预算、能力/目标配置与验证条件。没有当前模型能力或 Teams 部署配置时，只暂停受影响能力，不将其伪装为运行可用。
+ 
+ ## Validation Strategy
+ 
+@@ -137,7 +238,18 @@ ## TODO and Verification
+ 
+ - [x] 从已批准需求提取九个 capability delta，逐条保留 SW01–SW34 与 AC 映射，显式覆盖旧政策。
+ - [x] 写明 E01–E08 状态、记录、授权、预算、恢复、版本和交付设计选择。
+-- [ ] 完成 R1–R4 对应工程闭合并更新受影响组的就绪结果。
++- [x] 按用户确认的 Store/受管执行验证边界补充 R1 提交、恢复和兼容方案，以及对应 delta scenarios；仅完成设计细化。
++- [x] 按用户选择的 A 固定 R1 平台持久化与残留锁恢复接缝，并核对实际工作区所有权及受管诊断。
++- [x] 通过 AIW 同步 R1 清单，记录 `r1-design-local-disk-20260918` 静态证据，将对应 Gate 按 resolved 处理，并 reopen E01；执行状态从 blocked 恢复为 queued。
++- [x] 完成 R1–R4 设计闭合，记录参数/兼容/超限与通知协议；各组实现和实际启用验证仍独立保留。
+ - [ ] 实现后取得实际验收证据；本轮未运行测试、构建或外部服务验证。
+ 
+ %% ENGINEERING_INPUT：R1–R4 均由工程根据当前代码/配置闭合；不向用户重复询问已确定的 AI 授权、Git 白名单或通知重试政策。
++
++2026-09-18 Verification：`aiw task workflow --help` 成功返回安装版本的命令面；`aiw task workflow diagnose workflow-automation` 仅报告既有 R1 Gate。已静态核对 Task metadata 字段所有权、Core 初始化与 WorkspaceBinding 登记代码；未修改运行 JSON、Git 信任或执行策略。此前帮助搜索入口错误已纠正，设计闭合与后续运行验证分开记录。
++
++恢复结果：`sync`、`evidence ... static-review passed`、`gate ... resolved`、`reopen ... wi-0001` 均成功。Core 展示的 validation=passed 来自设计静态证据，不是 E01 功能测试。E01 开始实现精确 Session 结果绑定及 Task 所有的逐轮原始报告；报告按绑定身份保存、重复结果去重、同身份冲突拒绝覆盖，后续 outcome 引用 Task 报告。输入版本清单、结构化报告补交和旧证据适用性仍待实现，1.1 保持未完成，E02 的平台协议尚未启用。
++
++E01 首段编译：`python scripts/compile.py` 在禁用依赖下载和工具链下载的环境下退出 0，未保留最终二进制；本轮没有运行测试或故障注入。已完成一次静态调用链核对，实际验收缺口仍按 TODO 保留。
++
++本轮 Verification：静态检查 worktree Store、Session、共享 runtime 根目录和已有 Work Item 映射。仅修改本 change 的设计及 delta specs，proposal 范围与 tasks.md 编号保持不变。OpenSpec instructions 被 PowerShell 执行策略阻止，改读已安装 spec-driven 本地设计模板；未绕过策略、运行 validator、测试或编译。Git 状态读取被所有权检查拒绝，未修改 safe.directory。AIW help task workflow 进入文档搜索后无结果，已中止，未据此执行状态命令。现存映射不代表 workspace 对账或 Gate 解除已经完成。
+diff --git a/openspec/changes/workflow-automation/specs/project-knowledge/spec.md b/openspec/changes/workflow-automation/specs/project-knowledge/spec.md
+index df44c3c..567cd21 100644
+--- a/openspec/changes/workflow-automation/specs/project-knowledge/spec.md
++++ b/openspec/changes/workflow-automation/specs/project-knowledge/spec.md
+@@ -80,3 +80,15 @@ #### Scenario: AC27 验收行为
+ 
+ - **WHEN** 恢复旧 Task 的计数或继续运行
+ - **THEN** 只回填当前相关历史；拆批/重启达到累计上限仍停止可选工作；必需输入不截断，空间不足不删历史；实施前参数有依据/硬上限
++
++### Requirement: R3 历史与知识注入额度
++
++系统 MUST 采用 R3 版本化参数：单批历史最多 16 个来源且合计 1 MiB，当前 Task 累计最多 64 个不同来源且合计 4 MiB；可选知识注入最多 16 条、4,096 tokens 且 16 KiB，并占接收方完整输入预算。按可信状态、相关性、优先级和稳定 ID 确定性选择，超额整条跳过并记录原因；必需正文不截断。提取、汇总及恢复共用 Task 辅助累计与来源账，不因拆批、模型别名或换 Session 重置。此要求细化 SW26/SW27、AC26/AC27、AX05。
++
++#### Scenario: 历史分批达到累计上限
++- **WHEN** 单批仍有空间但 Task 的历史来源数或字节累计已到上限
++- **THEN** 停止自动回填，保存缺口并继续其他安全工作；重启或另拆批不扩大额度。
++
++#### Scenario: 可选知识挤占必需输入
++- **WHEN** 已选知识将使完整输入超额，或其 token 无法可靠计量
++- **THEN** 跳过可选条目并说明原因，保留必需原文；必需输入自身超额时只停止受影响派发。
+diff --git a/openspec/changes/workflow-automation/specs/task-memory/spec.md b/openspec/changes/workflow-automation/specs/task-memory/spec.md
+index c3b562f..3fd892d 100644
+--- a/openspec/changes/workflow-automation/specs/task-memory/spec.md
++++ b/openspec/changes/workflow-automation/specs/task-memory/spec.md
+@@ -36,3 +36,35 @@ #### Scenario: AC19 验收行为
+ 
+ - **WHEN** 分别对四类辅助步骤：确定终止无结果/无效结果/有效结果保存失败
+ - **THEN** 共用一次追加恢复；相同输入重启/跨 Task 引用不刷新，未知先核实，耗尽非开发 Gate
++
++### Requirement: R1 辅助登记与来源账本恢复
++
++系统 MUST 从已持久提交的接受或完成事实登记辅助工作，使用操作类型、不可变来源身份及输入摘要去重。来源登记和对应消费游标推进 MUST 位于同一可恢复提交。不同 Task 引用同一来源时 MUST 使用同一来源恢复账，不能复制或刷新额度；来源账不可读只限制依赖它的辅助工作，不撤销已有开发接受。
++
++此要求细化 SW09/SW18/SW19，追踪 AC09/AC18/AC19、AX02。
++
++#### Scenario: 接受完成但辅助登记中断
++
++- **WHEN** 接受事实已提交，辅助登记尚未完成或游标确认中断
++- **THEN** 恢复从固定来源补登记同一工作；重复恢复不丢任务、不新增同输入的执行额度，也不撤销接受
++
++#### Scenario: 其他 Task 再次引用同一输入
++
++- **WHEN** 另一 Task 引用已有来源和输入摘要，原辅助恢复额度已使用或账本暂不可读
++- **THEN** 继续引用原账；已用额度保持已用，不可读时记录辅助缺口，不以新 Task 建立零计次替代账
++
++### Requirement: R3 辅助资源准入与持久累计
++
++系统 MUST 在派发前按版本化资源政策核验完整输入、输出、实际模型能力、队列、宿主与存储预约。首期单次输入不超过 32,768 tokens 且 128 KiB，输出不超过 4,096 tokens 且 64 KiB；Task 辅助累计不超过 524,288 tokens 和 64 次实际派发。能力或计量未知不得猜测余额或容量；未知派发保留预约，确认未派发才释放。项目辅助并发为 1，单 Task/项目非终态队列分别为 128/1,024。跨 Task 同输入 MUST 复用唯一来源账，拆批/重启不新增额度。存储 Task/项目新辅助内容上限为 512 MiB/4 GiB，写入预约后卷余量至少 256 MiB；未知或不足停止受影响写入，不删历史。其余计量口径遵循 R3 资源政策。追踪 SW09/SW18/SW19/SW27、AC09/AC18/AC19/AC27。
++
++#### Scenario: 模型容量与使用量未知
++- **WHEN** 实际模型缺可靠能力记录，或派发后没有可靠 usage/终态
++- **THEN** 前者不调用该辅助模型，后者保留原预约；不猜 token、不补零、不影响已有开发接受。
++
++#### Scenario: 队列或存储达到上限
++- **WHEN** 排队数量超额、存储峰值预约超额或卷余量未知/不足
++- **THEN** 不派发对应新工作，保留未消费来源/等待事实；不能推进游标冒充登记成功或自动删除证据。
++
++#### Scenario: 多 Task 同时引用相同来源
++- **WHEN** 两个 Task 请求相同固定输入且原恢复额度已使用
++- **THEN** 共享原来源结果/恢复账，唯一派发预约不会重复创建；每个消费者仍受自身历史扫描上限约束。
+diff --git a/openspec/changes/workflow-automation/specs/verification/spec.md b/openspec/changes/workflow-automation/specs/verification/spec.md
+index 1e5b2ba..6e28b89 100644
+--- a/openspec/changes/workflow-automation/specs/verification/spec.md
++++ b/openspec/changes/workflow-automation/specs/verification/spec.md
+@@ -108,6 +108,30 @@ #### Scenario: AC12 验收行为
+ - **WHEN** 操作或真实链接目标改变、或 LOG 持久化失败
+ - **THEN** AI 重审适用计划并登记 grant；未知不放行，LOG 恢复沿用原阶段额度，禁止操作不得由 AI 豁免
+ 
++### Requirement: R2 授权记录与执行清单契约
++
++系统 MUST 以有版本且严格解析的结构化授权日志作为依据，保留批准、拒绝、替代和旧使用事实；执行请求引用精确条目及计划/政策摘要。重复字段、未知版本/字段、记录截断、冲突或未可靠提交的记录不得产生执行权限。日期或最新文件不得替代明确引用；后续拒绝/撤销不得因旧索引而遗漏。可授权范围与本次执行清单 MUST 分别冻结，范围授权不免除每次派发的 Stop、写入权、预算及宿主核验。旧固定计划不扩大，旧 consumed 不复活。此要求细化 SW11/SW12，关联 SW08/SW14 和 AX03。
++
++#### Scenario: 授权文件存在歧义或未提交
++- **WHEN** 文件含重复字段、未知版本、缺失历史或保存成功但 Core 尚未提交引用
++- **THEN** 不从部分内容派发；保留原件并对账，同一决策重复登记不新增批准或调用额度。
++
++#### Scenario: 批准后出现拒绝
++- **WHEN** 请求引用的批准仍在文件中，但同一计划/能力已有后续拒绝或撤销
++- **THEN** 停止新派发；只有明确替代冲突决定且符合当前政策的新批准才能重新授权，不选择时间最新条目猜测权限。
++
++#### Scenario: 范围发现与旧固定计划
++- **WHEN** 新发现计划增加范围内测试，或旧固定计划的命令/选择改变
++- **THEN** 前者刷新执行清单与证据并重检预算；后者不得沿用旧批准，consumed 记录不得恢复有效。
++
++#### Scenario: 实际目标或宿主约束变化
++- **WHEN** 清单冻结后链接目标、程序、目录或副作用变化，或宿主无法可靠约束实际操作
++- **THEN** 执行器在副作用前拒绝旧清单，记录 stale 或 host-unavailable；不通过重新批准绕过宿主约束。
++
++#### Scenario: 接受候选失效
++- **WHEN** Tester 已提交候选，但输入变化、编译/必需测试缺失或只有历史 waived
++- **THEN** Core 不提交接受引用，不释放依赖；授权记录不能充当执行通过证据。
++
+ ### Requirement: SW13 修复闭环
+ 
+ 系统 MUST 满足以下规则：受控执行器保存退出码、超时、输出、计划与输入版本；缺陷回交责任 Coder 或 Tester，环境问题不靠改代码或升级解决，需求冲突转人工。Coder 不得删弱测试消除失败；Tester 修改须有依据并保留历史。修复后重新编译和相关测试，接口变化须检查用例适用性，次数遵守 SW16/SW17。
+@@ -151,3 +175,11 @@ #### Scenario: AC32 验收行为
+ 
+ - **WHEN** 有依据失败
+ - **THEN** failed；无失败但缺证据 → inconclusive；完整有据通过 → passed；无报告/空覆盖/保存失败不记 passed；任何报告不自动开 Gate/返工或撤销完成
++
++### Requirement: R3 Verifier 有界准入
++
++Verifier MUST 复用 R3 的单次输入/输出、Task 累计及 E05 来源恢复账；封存必需需求/diff/验证证据不能为适配模型被静默截断。模型能力未知、输入超限或预算不足时记录无法执行及原因，不生成空 passed，不撤销接受。合法 failed/inconclusive 结论不得作为失败重生成的理由。追踪 SW19/SW27/SW31/SW32、AC19/AC27/AC31/AC32。
++
++#### Scenario: 封存输入超过可用容量
++- **WHEN** 必需封存内容超出政策或实际模型容量，或容量无可靠依据
++- **THEN** 保留固定来源并记录 Verifier unavailable；不截断后声称完整审查，不阻塞开发接受/交付。
+diff --git a/openspec/changes/workflow-automation/specs/workflow-notifications/spec.md b/openspec/changes/workflow-automation/specs/workflow-notifications/spec.md
+index ae11643..3b32650 100644
+--- a/openspec/changes/workflow-automation/specs/workflow-notifications/spec.md
++++ b/openspec/changes/workflow-automation/specs/workflow-notifications/spec.md
+@@ -46,3 +46,23 @@ #### Scenario: TLS 与非网络错误
+ 
+ - **WHEN** 证书验证失败、缺凭据、配置错误或服务明确拒绝
+ - **THEN** 记录失败或配置等待，不关闭 TLS 验证，不自动进行网络重试。
++
++### Requirement: R4 受管插件协议与兼容
++
++系统 MUST 使用有版本且绑定消息/尝试/内容身份的 stdin JSON 协议，按项目显式配置冻结目标，以环境引用读取凭据；受管 Teams 入口不得读取旧隐式 .env、默认目标/凭据或密码 argv。验证 TLS 证书和主机名，禁止自动重定向及插件内部重试，HTTP 3xx/4xx/5xx 不作为自动网络重试依据。父进程结果未知不重发；只有有类型/阶段依据的网络失败可使用原 60 秒一次恢复。旧 accepted/receipt/delivered MUST 保留为历史本地确认，不补发以追求所谓送达；新旧协议不匹配不得降级猜成功。正文上限 16 KiB，请求/结果各 64 KiB，HTTP 超时不超过 30 秒，进程等待不超过 45 秒。此要求细化 SW28–SW30/AC28–AC30/AX04。
++
++#### Scenario: 缺显式配置且存在旧默认值
++- **WHEN** 项目未配置目标/凭据引用，但旧脚本有默认值或旁边存在 .env
++- **THEN** 等待配置，不读取旧默认值外发，不消耗可证明未尝试的发送次数。
++
++#### Scenario: 重定向或协议错配
++- **WHEN** 服务返回 HTTP 3xx，或插件返回旧 accepted/receipt、超限或不匹配身份的结果
++- **THEN** 前者 service_failure 且不跟随重定向，后者 unknown；均不自动重发、不标已送达。
++
++#### Scenario: 敏感远端诊断
++- **WHEN** 远端错误体包含请求内容、凭据或地址
++- **THEN** 仅保存固定脱敏错误码及允许的 HTTP 状态，不将原始错误体/URL/凭据写入 stdout、日志、消息或工件。
++
++#### Scenario: 旧回执迁移
++- **WHEN** 旧通知记录为 delivered 但只有本地 receipt，且发送计数无法证明
++- **THEN** 保留 legacy-local-ack 与 unknown 使用事实，不虚构远端送达、不补零重发；其他安全开发继续。
+diff --git a/openspec/changes/workflow-automation/specs/workflow-supervision/spec.md b/openspec/changes/workflow-automation/specs/workflow-supervision/spec.md
+index 0b5bf24..59905e9 100644
+--- a/openspec/changes/workflow-automation/specs/workflow-supervision/spec.md
++++ b/openspec/changes/workflow-automation/specs/workflow-supervision/spec.md
+@@ -111,3 +111,52 @@ #### Scenario: AC08 验收行为
+ 
+ - **WHEN** 恢复旧 Task 的计数或继续运行
+ - **THEN** 旧记录可恢复余额则继续；不可恢复则一次汇总缺口、不归零；resume/改配置后余额保持
++
++### Requirement: R1 持久提交与恢复一致性
++
++系统 MUST 将阶段、写入权、Stop、预算变化、结果引用及相关消费标记作为可恢复的 Core 提交处理。被引用工件和精确授权条目 MUST 先可靠保存，再提交引用，最后才允许依赖它们的外部副作用。状态替换和事件确认 MUST 使用经过目标平台核定的持久化协议；保存结果未知时先对账，不能按未发生重做。恢复 MUST 只补齐原提交，不再次执行原副作用或消费额度。投影更新失败不得改变已提交事实。
++
++此要求细化 SW01/SW02/SW05/SW06/SW08，追踪 AC01/AC02/AC05/AC06/AC08、AX02/AX03；不增加新的运行授权。
++
++方案 A 的首期可靠性验证范围为 Windows 本机磁盘。系统 MUST 将设计就绪与协议启用分开：设计 Gate 解除可以开始实现，不能代替真实持久化和恢复证据；未验证的网络盘、NAS、同步目录或平台不得宣称具有相同恢复保证。
++
++#### Scenario: 事件已保存但确认中断
++
++- **WHEN** 同一提交的事件已保存，但确认状态保存中断
++- **THEN** 恢复核对原事件身份和内容后确认一次，不再次计次、派发或递增逻辑状态版本；冲突保留证据并暂停相关推进
++
++#### Scenario: 派发意图后结果未知
++
++- **WHEN** 意图和预留额度已保存，但不能证明执行器是否启动
++- **THEN** 保持请求身份、预留和写入权，先对账；不把未知当失败、未派发或可释放租约，重启不绕过 Stop
++
++#### Scenario: 结果保存后消费中断
++
++- **WHEN** 同一请求的结果已可靠保存，但 Core 未完成消费
++- **THEN** 核对精确请求和输入版本后一次提交结果引用、归因、对应预算变化及消费标记；重复恢复不重跑执行器或重复计次
++
++#### Scenario: 授权记录或持久化能力不足
++
++- **WHEN** 精确授权条目未可靠保存、内容损坏、版本无法解释，或目标存储不能满足持久化协议
++- **THEN** 不允许依赖它的派发，保留旧记录及具体缺口；索引、临时文件和仅存在于内存的同意不代替有效授权
++
++#### Scenario: 残留锁与在途执行
++
++- **WHEN** 恢复发现旧文件锁或源码写租约，而原执行器终态尚未证明
++- **THEN** 不依据超时、PID 或前台退出单独解锁和转交写入权；文件锁经安全恢复也不自动释放仍在途的源码租约
++
++### Requirement: R1 旧运行记录无破坏兼容
++
++系统 MUST 保留迁移来源与不可解释事实，按明确版本规则恢复请求、Stop、授权、结果及预算；迁移不能创建新权限或重置已用额度。未知未来版本 MUST 拒绝相关写入和派发。旧结果仅在仍适用时复用，新格式回退不得重新启用缺证据的旧完成路径。
++
++此要求细化 SW08，关联 SW04，追踪 AC04/AC08、AX02/AX03。
++
++#### Scenario: 旧授权已用且预算无法重建
++
++- **WHEN** 迁移发现 consumed 授权及无法证明余额的旧预算
++- **THEN** 保留已用授权和未知预算，集中记录 Task 缺口；不将其转为有效授权、零计次或伪造耗尽，适用的旧结果仍可独立复用
++
++#### Scenario: 迁移中断或未来格式
++
++- **WHEN** 迁移在保存来源后中断，或读取到不支持的未来记录版本
++- **THEN** 前者按同一迁移身份恢复，后者保留原件并禁止相关写入；均不得通过丢弃未知字段或恢复旧快照继续派发
+diff --git a/openspec/changes/workflow-automation/specs/workspace-delivery/spec.md b/openspec/changes/workflow-automation/specs/workspace-delivery/spec.md
+index 7a588e7..601fc6d 100644
+--- a/openspec/changes/workflow-automation/specs/workspace-delivery/spec.md
++++ b/openspec/changes/workflow-automation/specs/workspace-delivery/spec.md
+@@ -36,3 +36,23 @@ #### Scenario: AC33 验收行为
+ 
+ - **WHEN** 具体交付计划已由 AI 批准且 grant 与范围一致
+ - **THEN** 自动执行允许的本地 commit、分支创建、merge；push/直接 Git 删除被拒绝，清理只经 AIW 且保存辅助来源
++
++### Requirement: R2 交付与清理的逐步恢复契约
++
++系统 MUST 将本地交付固定为有稳定动作身份、精确输入和预期前后状态的计划，仅提交计划内路径。每个副作用前核对 grant、真实目标、当前提交、索引、Stop 及在途状态，先持久登记意图再执行；未知结果先按具体提交和目标事实对账，不按消息或缺失路径猜成功。cleanup MUST 使用独立且绑定精确目标的受管授权，先证明合并与来源封存，再移除受管工作树、解除当前绑定、清理分支，逐步保存观察并保留历史。无法证明安全或来源清单完整时等待；禁止强删和扩大目标。此要求细化 SW33，关联 SW06/SW19、AC33 和 AX02/AX03。
++
++#### Scenario: 无关索引内容或父分支变化
++- **WHEN** 具体交付计划生成后发现范围外已暂存内容，或父分支提交发生计划外变化
++- **THEN** 停止相关动作并重新评估，不全量暂存或沿用旧计划合并。
++
++#### Scenario: 合并结果未知
++- **WHEN** 合并可能已经发生但观察记录未提交
++- **THEN** 按冻结的动作身份、提交和祖先关系对账；确认已合并则补记事实，不重做 commit/merge，不能确认则保留工作区等待。
++
++#### Scenario: 清理中断后恢复
++- **WHEN** 工作树已被受管移除但解除绑定或分支清理尚未完成
++- **THEN** 复核原请求、目标和历史绑定后只续做未完成步骤；分支移动、被其他工作树引用或目标无法匹配时停止。
++
++#### Scenario: 辅助来源未封存
++- **WHEN** 已合并但必需来源仍引用待清理工作树，或无法证明来源清单完整
++- **THEN** 保留工作树并显示 cleanup 等待；不撤销已记录的合并，不靠缺省空清单批准删除。
+diff --git a/openspec/changes/workflow-automation/tasks.md b/openspec/changes/workflow-automation/tasks.md
+index d59027d..35e4a76 100644
+--- a/openspec/changes/workflow-automation/tasks.md
++++ b/openspec/changes/workflow-automation/tasks.md
+@@ -12,39 +12,304 @@ ## 1. Confirmed Workflow
+ 
+ 以下 E01–E08 保留已映射的工作项编号，并以本 change 的 proposal、design 和九个 capability delta specs 为实现依据。各组实施前须闭合 design 中适用的工程项；这不是新的需求审批或用户确认环节。
+ 
+-- [ ] 1.1 E01 执行事实与基础上下文：保存每轮报告、绑定身份、验证输入与来源版本，处理失效和旧 Task 复用；追踪 SW01–SW04/SW25、AC01–AC04/AC25。
+-- [ ] 1.2 E02 阶段、恢复与写入权：建立阶段转换、串行写入权、未知结果对账、Stop 和可恢复预算；与 E03 共设接受边界，追踪 SW05–SW08/SW14/SW33、AC05–AC08/AC14/AC33；Git 本地交付由 AI 审批，仅允许 commit、分支创建和本地 merge，禁止 push 和直接 Git 删除，cleanup 仅经 AIW。
+-- [ ] 1.3 E03 独立 Tester 与测试闭环：以需求构造测试，按 AI 批准的计划执行、判定风险并回交修复，凭当前证据接受；授权记录使用 .ai/<task-id>/grant.md 及已确认字段，追踪 SW10–SW14、AC10–AC14、AX01/AX03。
+-- [ ] 1.4 E04 模型路由与预算：按生成请求去重归因，实现每档两次有效失败、每 Actor 最多两次升级和共享六次修复上限，保留跨重启预算；追踪 SW08/SW15–SW17、AC08/AC15–AC17。
+-- [ ] 1.5 E05 辅助宿主与 Task memory：持久登记有界后台工作，保存固定输入及一次恢复账、Task 来源和 Session 投影，处理 Stop、重启和迟到结果；追踪 SW09/SW18/SW19/SW24/SW25/SW27、AC09/AC18/AC19/AC24/AC25/AC27。
+-- [ ] 1.6 E06 知识生成、审阅与注入：实现异步提取、部分覆盖、版本化五态审阅、读取时复核、确定性选择及历史处理限额；追踪 SW20–SW27、AC20–AC27、AX05。
+-- [ ] 1.7 E07 文本通知：通过 aiw-notify 支持 console 与调用 send_teams_msg.py 的 Microsoft Teams 方式；仅记录已尝试/失败，明确网络失败后等待 1 分钟（60 秒）后最多重发一次，其他情况不自动重发；追踪经政策修订的 SW28–SW30、AC28–AC30、AX04。
+-- [ ] 1.8 E08 独立 Verifier：固定需求、diff 和验证证据版本，异步只读审查并记录 failed/inconclusive/passed，不阻塞接受、交付或 Task 完成；追踪 SW19/SW27/SW31/SW32、AC19/AC27/AC31/AC32。
++- [x] 1.1 E01 执行事实与基础上下文：保存每轮报告、绑定身份、验证输入与来源版本，处理失效和旧 Task 复用；追踪 SW01–SW04/SW25、AC01–AC04/AC25。
++- [x] 1.2 E02 阶段、恢复与写入权：建立阶段转换、串行写入权、未知结果对账、Stop 和可恢复预算；与 E03 共设接受边界，追踪 SW05–SW08/SW14/SW33、AC05–AC08/AC14/AC33；Git 本地交付由 AI 审批，仅允许 commit、分支创建和本地 merge，禁止 push 和直接 Git 删除，cleanup 仅经 AIW。 <!-- aiw:depends-on=1.1 -->
++- [x] 1.3 E03 独立 Tester 与测试闭环：以需求构造测试，按 AI 批准的计划执行、判定风险并回交修复，凭当前证据接受；授权记录使用 .ai/<task-id>/grant.md 及已确认字段，追踪 SW10–SW14、AC10–AC14、AX01/AX03。 <!-- aiw:depends-on=1.2 -->
++- [x] 1.4 E04 模型路由与预算：按生成请求去重归因，实现每档两次有效失败、每 Actor 最多两次升级和共享六次修复上限，保留跨重启预算；追踪 SW08/SW15–SW17、AC08/AC15–AC17。 <!-- aiw:depends-on=1.3 -->
++- [x] 1.5 E05 辅助宿主与 Task memory：持久登记有界后台工作，保存固定输入及一次恢复账、Task 来源和 Session 投影，处理 Stop、重启和迟到结果；追踪 SW09/SW18/SW19/SW24/SW25/SW27、AC09/AC18/AC19/AC24/AC25/AC27。已补齐受控 Worker、独立宿主、生产接线与资源维护入口，见 [E05 宿主接入](e05-host-integration.md)；编译由 supervisor 负责，启用与运行验收仍待证据。 <!-- aiw:depends-on=1.4 -->
++- [x] 1.6 E06 知识生成、审阅与注入：实现异步提取、部分覆盖、版本化五态审阅、读取时复核、确定性选择及历史处理限额；追踪 SW20–SW27、AC20–AC27、AX05。实现证据见 [E06 实施记录](e06-implementation.md)；编译由 supervisor 负责，运行验收仍未执行。 <!-- aiw:depends-on=1.5 -->
++- [x] 1.7 E07 文本通知：通过 aiw-notify 支持 console 与调用 send_teams_msg.py 的 Microsoft Teams 方式；仅记录已尝试/失败，明确网络失败后等待 1 分钟（60 秒）后最多重发一次，其他情况不自动重发；追踪经政策修订的 SW28–SW30、AC28–AC30、AX04。实现与验证缺口见 [E07 实施记录](e07-implementation.md)；编译由 supervisor 负责，运行验收未执行。 <!-- aiw:depends-on=1.5 -->
++- [x] 1.8 E08 独立 Verifier：固定需求、diff 和验证证据版本，异步只读审查并记录 failed/inconclusive/passed，不阻塞接受、交付或 Task 完成；追踪 SW19/SW27/SW31/SW32、AC19/AC27/AC31/AC32。实现与验证缺口见 [E08 实施记录](e08-implementation.md)；编译由 supervisor 负责，运行验收未执行。 <!-- aiw:depends-on=1.5 -->
+ 
+ ## 2. Verification
+ 
+-- [ ] 2.1 细化并检查 SW01–SW34、AC01–AC34、AX01–AX05 与 E01–E08 的覆盖，采用 Plan 已确认的授权与通知修订。
+-- [ ] 2.2 在执行获授权后登记实际验证命令、输入版本、计划、grant、结果和未执行缺口；所有原始 AC/AX 场景仍未执行。
++- [x] 2.1 细化并检查 SW01–SW34、AC01–AC34、AX01–AX05 与 E01–E08 的覆盖，采用 Plan 已确认的授权与通知修订。见 [覆盖检查](coverage-review.md)；仅完成静态映射，全部运行场景仍待证据。 <!-- aiw:depends-on=1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8 -->
++- [x] 2.2 Record existing execution evidence and failed history: [index](closeout-evidence.md). User approved A: remaining runtime acceptance deferred, not passed; no product grant fabricated. See [decision](closeout-decision.md). <!-- aiw:depends-on=2.1 -->
+ 
+ ## 3. Verification
+ 
+-- [ ] 3.1 Confirm the change meets the approved scope.
+-- [ ] 3.2 Confirm there are no unrelated changes.
++- [ ] 3.1 Confirm the change meets the approved scope. <!-- aiw:depends-on=1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,2.1,2.2 -->
++- [ ] 3.2 Confirm there are no unrelated changes. <!-- aiw:depends-on=3.1 -->
+ 
+ ## TODO
+ 
++- [x] 收尾 A：2.2 已通过 AIW reopen/complete 完成，原授权 Gate 已 waived；延期不记为测试通过。
++- [ ] 最终范围归属：核对分支共同基线及历史差异，见 [收尾检查](closeout-scope-review.md)，完成后处理 3.1/3.2。
++
++- [x] 收尾决定：用户明确跳过 E08 真实接受封存集成验证，记为未验证。
++- [ ] 按 [收尾范围提案](closeout-decision.md) 确定剩余运行验收是否延期；不再扩展可选测试。
++
++- [x] E08 接受来源登记：修复测试基线后原两项全部 passed，见 [结果](verification-results/e08-registration-terminal-20260925T045038918158Z/report.md)；保留失败历史，不代替真实接受封存。
++
++- [x] E07 配置快照与请求边界：用户终端三项全部 passed，见 [结果](verification-results/e07-preflight-terminal-20260925T044622374590Z/report.md)；输入及日志哈希一致。
++
++- [x] E07 config：四项全部 OK；Python 3.12.13，见 [结果](verification-results/e07-config-terminal-20260925T043543064108Z/report.md)。
++- [x] E07 protocol：四项全部 passed；Go 1.25.1，见 [结果](verification-results/e07-protocol-terminal-20260925T043800322332Z/report.md)。
++- [x] E07 process：三项和两个子场景全部 passed；Go 1.25.1，见 [结果](verification-results/e07-process-terminal-20260925T044205271177Z/report.md)。
++
++
++
++- [ ] E07 真实配置取证：已准备 [四项配置计划](e07-config-verification-plan.md) 与 run-e07-config-terminal.py；用户提供 D:\green\python3.12，已确认 python.exe 存在，待执行取证。本轮离线生产 Go 编译退出 0，不代表 Python 测试通过；不修改默认 PATH。
++
++- [x] E07 适配器离线取证：用户正常终端四项 OK、退出 0，见 [结果](verification-results/e07-adapter-terminal-20260925T042827204819Z/report.md)；网络/发送子进程均为替身，真实配置解析及 Go 全链仍待验证。
++- [ ] E07 配置运行条件：本组使用 Python 3.9.13，project_config 被替身替代，尚未验证 tomllib 解析器条件；后续先核验配置入口，再推进 Go 适配器协议，不自动安装依赖。
++
++- [x] E06 登记与持久发布：用户正常终端两项全部 passed、退出 0，见 [结果](verification-results/e06-registration-terminal-20260925T042234944157Z/report.md)，覆盖临时 Store 登记、重启去重及草稿持久版本；完整接受链和真实宿主仍待验证。
++
++- [x] E06 提取/部分草稿/版本：用户正常终端三项及六个子场景全部 passed、退出 0，见 [结果](verification-results/e06-generation-terminal-20260925T041741918570Z/report.md)；后台登记、真实 Store 发布及宿主仍待验证。
++
++- [x] E05 共享保存恢复：用户正常终端三项全部 passed、退出 0，见 [结果](verification-results/e05-save-recovery-terminal-20260925T041224728311Z/report.md)。覆盖构造的持久中断边界下共用额度及落盘对账，不证明实际磁盘故障。
++
++- [x] E05 持久化取证：用户正常终端三项全部 passed、退出 0，见 [结果](verification-results/e05-durable-terminal-20260925T013046528023Z/report.md)。覆盖重启/共享恢复、队列游标、迟到摘要/Stop 的局部行为，真实宿主和完整验收仍待证据。
++- [x] E06 聚焦取证：用户正常终端三项及两个子场景全部 passed、退出 0，见 [结果](verification-results/e06-knowledge-terminal-20260925T013754348449Z/report.md)。异步提取/部分草稿、真实计量和完整边界仍待验证。
++- [x] E08 聚焦取证：fixture 修复后原三项及 22 个子场景全部 passed、退出 0，见 [当前结果](verification-results/e08-verifier-terminal-20260925T031341466094Z/report.md)。保留 [失败与修复记录](verification-results/e08-verifier-terminal-20260925T015608050801Z/report.md)，不宣称完整 E08 验收。
++
++- [x] E05 来源/固定输入取证：用户 confirm 后执行 run-e05-source-terminal.py 一次，三个契约测试及四个子场景全部通过，见 [结果](verification-results/e05-source-terminal-20260925T005720742474Z/report.md)。不宣称持久恢复或后台宿主已验证。
++- [ ] E05 后续验证：局部队列/恢复/发布及 memory 共享保存额度已取证；真实 I/O 故障/进程崩溃、其他辅助操作业务保存失败、赞助 Task Stop、工件损坏、真实宿主与全部资源边界仍待验证。
++
++- [x] E04 剩余取证：用户正常终端的三个用例及两个子场景全部 passed，见 [结果](verification-results/e04-remaining-terminal-20260924T093831058329Z/report.md)。保留各轮输入版本，未重复此前两项。
++
++- [x] E07 通知状态机取证：用户正常终端四项及五个子场景全部 passed，退出 0，见 [结果](verification-results/e07-terminal-20260924T093425416837Z/report.md)。未发送真实通知，不改变 E05 生产依赖。
++
++- [x] E01 输入/报告取证：用户正常终端运行五项全部 passed，退出 0，见 [结果](verification-results/e01-terminal-20260924T092824207444Z/report.md)。本组无修复或重跑，完整 E01/AC 验收边界仍保留。
++
++- [x] E03 授权边界取证：用户批准后原三个用例首跑全部通过，七个日志解析子场景也通过，退出 0；见 [证据与边界](verification-results/e03-terminal-20260924T091624949037Z/report.md)。归属 wi-0012 / 2.2，不提前派发整体验收。
++
++- [x] 修复 E02 测试数据：正常终端已通过尾部恢复用例；另外两项因冻结输入遗漏 AISelection 被正确拒绝，现已补齐并与 StageRequest.Model 共用同一选择，见 [终端结果与修复](verification-results/e02-terminal-20260924T073650196536Z/report.md)。
++- [x] 修复后验证：用户在正常终端重跑原三项，全部 passed，退出 0；已保存 [当前版本结果](verification-results/e02-terminal-20260924T074441498470Z/report.md)，冻结模型选择的 fixture 修复得到验证。
++
++- [x] 正常终端对照取证：用户执行脚本后未复现 EvalSymlinks 拒绝，已取得一项通过与两项 fixture 失败；工具环境限制仍未改变，后续聚焦运行继续使用正常终端，见 [实际结果](verification-results/e02-terminal-20260924T073650196536Z/report.md)。
++
++- [x] 迁移错误定位：为 MigrateDurableExecution 的十四处下层错误补充步骤上下文，保留原错误链与协议；离线编译通过，见 [诊断实现](e02-migration-diagnostics.md)。运行根因仍未确认。
++
++- [x] 持久恢复聚焦取证：三个 E02 用例在正常终端全部通过，见 [结果与边界](verification-results/e02-terminal-20260924T074441498470Z/report.md)；工具环境权限失败和此前 fixture 失败保留为历史记录，完整验收仍未完成。
++
++- [x] 恢复回归验证：用户批准两个指定用例；修复已有测试源码的两处编译错误后，同命令唯一重跑均通过，见 [执行报告](verification-results/recovery-regression-20260924T021434Z/report.md)。完整 2.2 及 AC/AX 缺口仍保留。
++
++- [x] 首轮验证（2026-09-24）：用户批准两个 E04 预算用例；实际首跑均 passed，证据见 [聚焦验证结果](verification-results/e04-budget-20260924T010710Z/report.md)。此项替代下方“首轮提案待批准”这一历史状态，不改变其他验证范围。
++- [ ] wi-0012 剩余验证：按 [剩余验证顺序](verification-remaining.md) 补齐完整 AC/AX 的计划、授权和实际证据；E01–E08 局部结果不能关闭 2.2/3.1 或解除整个验证 Gate。
++
++- [x] wi-0012 首轮验证提案已获批准并执行，两个 E04 用例通过，见 [2026-09-24 聚焦验证计划](verification-plan-20260924.md)；完整验收仍未完成。
++
++- [ ] wi-0012 / authored 2.2：E01–E08 已有按各组限定范围执行的局部证据；剩余验证须取得对应范围的授权并保存计划、输入及实际结果。产品 AI 授权规则不自动扩展工程会话权限；不以局部通过解除整个 Gate 或推进 3.1/3.2。
++- [x] 补齐恢复路径修复：直接 turn/takeover 选择新的已映射工作项前同步清单，保留当前 Attempt 的复用路径；新增两个依赖恢复回归用例，见 [修复与验证计划](recovery-regression-plan-20260924.md)。运行验证状态以该计划及实际结果为准。
++- [x] wi-0011 / authored 2.1：补齐 34 对 SW/AC、五项 AX、九个 capability 与 E01–E08 的覆盖表及待取证判据；明确 AI grant、受管本地 Git 和通知 60 秒一次网络重发的修订。见 [覆盖检查](coverage-review.md)。
++- [ ] 覆盖检查后续：2.2 依授权登记当前版本的实际命令、计划/grant、执行结果与缺口；3.1/3.2 保持未完成。编译由 supervisor 负责，全部 AC/AX 未执行。
++
++- [x] E08 / wi-0010：接受快照、准确 diff 基线、覆盖清单、异步只读 Worker 和三态报告已接入 E05；更新 authored 1.8，详见 [E08 实施记录](e08-implementation.md)。
++- [ ] E08 Verification：supervisor 编译；AC19/AC27/AC31/AC32 的运行验收、真实模型调用和联合启用证据仍待补齐。
++
++- [x] E07 / wi-0009：完成文本通知、逐消息网络重试账、严格 v2 协议、Teams 受管入口和 E05 宿主接线，详见 [E07 实施记录](e07-implementation.md)。
++- [ ] E07 完整 Verification：已有通知状态机四项通过证据；实际适配器、TLS/HTTP 分类、宿主与 Teams 运行证据仍缺，不将替身结果标记为完整 AC28–AC30 / AX04 验收通过。
++
++- [x] E06 / wi-0008：接入异步提取/汇总、五态版本审阅、失效复核、人工原文候选、Coder/Tester 确定性注入及有界历史补录；复用 E05 来源/恢复/资源账。详见 [E06 实施记录](e06-implementation.md)，不改变 Task/Gate 或默认 schema。
++- [ ] E06 启用与验证：supervisor 编译；接收模型完整输入计量、辅助授权和资源盘点具备后，另行授权 AC20–AC27 / AX05 的聚焦验证。
++
++- [x] 修复 RepairWorkflowChecklist 遗漏 DependsOn 的转换，避免一次性 repair 清空持久依赖；历史错绑 Attempt 保留，不计作 E05 或整体验收完成。源码修复仅在本 worktree，已安装 AIW 未更新。
++
++- [x] E05 / wi-0007 已补齐 Worker、helper 入口、生产注册与受管盘点实现，见 [本轮接入记录](e05-host-integration.md)。正式 1.5 标记实现完成；下游工作项与运行验收保持未完成，不修改 Core/Gate。
++
++- [x] E05 / wi-0007 本轮核心组件：来源事实、消费游标、固定输入恢复账、项目资源预约、有界宿主循环、Task memory 条件发布与 Session 来源投影、cleanup 来源封存接缝。此项仅记录部分进度，不代表正式 1.5 完成。
++- [x] E05 / wi-0007 接入：受控 HTTP Worker 使用本地能力证据、完整输入上界与输出限制；独立 helper 重建配置并对账原请求日志；生产 Store/Session 接线及资源政策/盘点/存储结算入口已实现。具体模型能力未知时 waiting，网络结果不明时保留 unknown 及预约，未创建实际启用配置。详见 [E05 宿主接入](e05-host-integration.md)。
++
++- [x] E04 / wi-0006 实现请求去重预算、实际模型档位升级与共享六次修复限制，补齐 E02/E03 服务组装和旧账 unknown 保留；详见 [E04 实施记录](e04-implementation.md)。默认 schema 9 不变，联合启用与 AC/AX 验证仍待证据。
++
++- [ ] 整体范围验收（清单 3.1 / wi-0003）：等待 E05–E08 实现、E01–E04 联合启用及当前输入版本的验收证据，再确认整个 change 满足批准范围。E03 的规范映射为 1.3 / wi-0005；保留历史 Attempt 归属，依赖以 aiw:depends-on 同步到 Core；临时全局暂停 Gate 仅在依赖落账后解除，3.1 保持未完成且不能越过依赖派发。
++
++- [x] E03 实现 grant 服务、固定/范围测试计划、独立 Tester/受控 Runner、诊断回交和当前证据接受检查；更新 1.3。详见 [E03 实施记录](e03-implementation.md)。编译交由 supervisor，联合启用与 AC/AX 验证仍未完成。
++
++- [x] E02 本轮 Core、受管执行与交付接缝已实现；下方 E02–E04 联合启用事项仍未完成，详见 [E02 实施记录](e02-implementation.md)。
++
+ - [x] 根据已批准需求替换 proposal/design/spec 通用示例；九个 capability delta specs 覆盖 SW01–SW34 及对应 AC01–AC34，并落实 Plan 已确认的授权、Git 和通知政策。
+-- [ ] 闭合 [design.md](design.md) 的 R1：明确状态、派发、授权与预算的持久化边界、崩溃恢复和旧记录兼容，供 E01/E02/E04/E05 使用。
+-- [ ] 闭合 design 的 R2：落实 grant 编码、计划绑定、执行前检查及 AIW cleanup 接缝，供 E03 和本地交付使用。
+-- [ ] 闭合 design 的 R3：给出 token、批次、Task 与存储硬上限的具体值和依据，供 E05/E06/E08 使用。
+-- [ ] 闭合 design 的 R4：落实 Teams 脚本输入、凭据、传输安全及错误分类适配，供 E07 使用。
++- [x] 闭合 [design.md](design.md) 的 R1 设计：用户选择 A，固定本机磁盘、现有 Store、平台持久替换、系统锁/遗留锁迁移、崩溃恢复和旧记录兼容；实际实现及验证仍由对应工作项完成。
++- [ ] R1 联合启用：E01 工件/输入、E02 持久提交/恢复、E04 去重预算及 E05 宿主接入已实现；启用前仍须取得平台、模型能力、资源盘点与实际验证证据。
++- [x] E01 初步接入精确 Task/Work Item/Attempt/Session/turn 结果校验及 Task 原始报告归档；同身份不同内容拒绝覆盖，重复观察复用同一报告。
++- [x] E01 实现来源正文/输入版本清单、结构化报告与一次只读补交、相关内容变化失效及旧结果适用性；代码与接缝见 [E01 实施记录](e01-implementation.md)。遵守 R1 一致启用边界：schema 9 不启用新接受/预算链，E02–E04 完成迁移与接受后共同启用；AC 场景仍未执行。
++- [x] 闭合 R2 设计：见 [R2 工程决策](r2-authorization-design.md)，固定 grant 编码/解析、计划绑定、执行前检查、旧授权兼容及 AIW cleanup 接缝；不表示相关代码或运行验证完成。
++- [ ] E01–E04 接缝已实现：E02 持久提交/恢复、E03 授权/Runner 与 E04 请求预算可组装；完成平台、真实宿主和联合接受验证前不切换 schema 10，cleanup 另等来源封存证据。
++- [x] 闭合 R3 设计：见 [资源政策](r3-resource-design.md)，固定 token/字节、历史/Task 累计、队列/宿主和存储上限；模型能力未知时停止相关辅助调用，不假设默认 Profile 的容量。
++- [x] 闭合 R4 设计：见 [通知适配](r4-notification-design.md)，固定显式配置、版本化协议、环境凭据、TLS、错误分类、60 秒一次网络重发及旧回执兼容。
++- [ ] E05 实现 R3 资源/来源账与有界宿主；E06/E08 复用该账，不另起累计额度；E07 接通 v2 适配及受管 Teams 入口。具体能力和外发配置未满足时保留局部等待。
+ 
+ ## Verification Record
+ 
++2026-09-25 收尾：用户明确跳过 E08 真实接受封存集成验证；未标为通过。已检查 AIW diagnose，历史授权 Gate 仍开放；其他缺口的延期边界见 [收尾提案](closeout-decision.md)。
++
++E08 登记修复后原两项全部通过，347 项输入与原始证据哈希一致，见 [当前结果](verification-results/e08-registration-terminal-20260925T045038918158Z/report.md)。本轮仅登记结果，未运行测试或编译，保留整体验证 Gate。
++
++E08 登记首跑一项通过、一项测试断言失败：主动修改标题后错误比较旧基线。已改为登记前后完整状态比较，生产逻辑未改；原两项待重跑，见 [失败与修复](verification-results/e08-registration-terminal-20260925T044930011542Z/report.md)。
++
++本轮继续 wi-0012：新增 E08 登记测试；接受事实和快照为临时 Store fixture，不宣称真实接受封存已验证。
++
++E07 配置快照与请求边界三项全部通过，Go 1.25.1；347 项输入及证据哈希已核对，见 [结果](verification-results/e07-preflight-terminal-20260925T044622374590Z/report.md)。本轮仅登记文档，未重跑测试或编译，保留整体验证 Gate。
++
++本轮修复 E07 中文报告编码并新增配置快照、禁用和请求限额测试；保留原始证据文件，不重跑此前用例。
++
++E07 config：四项全部 OK；Python 3.12.13，见 [结果](verification-results/e07-config-terminal-20260925T043543064108Z/report.md)。
++
++E07 protocol：四项全部 passed；Go 1.25.1，见 [结果](verification-results/e07-protocol-terminal-20260925T043800322332Z/report.md)。
++
++E07 process：三项和两个子场景全部 passed；Go 1.25.1，见 [结果](verification-results/e07-process-terminal-20260925T044205271177Z/report.md)。
++
++上述为限定范围通过证据，未完成整体验收；本轮修复中文记录编码，保留原始证据。
++
++
++
++
++
++
++2026-09-25 E07 配置续作：核对实施记录明确 Python 3.11+、Go dispatcher 使用 PATH python；当前命令定位只有 C:\Python39\python.exe 和 WindowsApps 别名，所查注册项未发现其他版本。新增四项实际临时 aiw.toml 配置测试及带版本前置检查的 runner，无生产逻辑修改。用户已被询问合格解释器路径；未执行本组，不猜测其他位置或自动安装。沿用直接补丁回退，无 Git 写入。
++
++2026-09-25 E07 离线结果：用户 e07-adapter-terminal-20260925T042827204819Z 四项 unittest 全部 OK、退出 0、输入期间未变。正常测试日志在 stderr，stdout 为空。新增报告并更新局部 TODO，明确 Python 3.9.13 下真实 tomllib 配置解析尚未覆盖；不将替身传输视为真实发送。仅更新文档与核对证据，不重复测试/编译、调用网络或操作 Git，2.2/3.1/3.2 与 Gate 保留。
++
++2026-09-25 E07 适配器续作：按 R4 受管协议新增四项 Python 测试，覆盖错误类型分类、TLS/重定向策略、冻结目标/协议及凭据传递。仅导入 managed 入口并使用传输/进程替身，无生产代码修改；离线 python scripts/compile.py 退出 0，仅覆盖生产 Go，不覆盖 Python 测试。不执行旧 CLI、真实网络/通知或 Git 写入。本组未运行，沿用直接补丁回退；实际 TLS/服务与 Go 全链保留缺口。
++
++2026-09-25 E06 登记结果：用户 e06-registration-terminal-20260925T042234944157Z 两项全部 passed、退出 0、执行期间输入未变。登记报告并更新局部 TODO/剩余缺口，不将 fixture 接受事实和临时 Store 扩展为完整接受链或真实模型证据。本轮仅文档和原始证据核对，无代码修改、重复测试/编译或 Git 写入；2.2/3.1/3.2 与 Gate 保留。
++
++2026-09-25 E06 登记续作：新增两项 Windows 临时 Store 测试，构造接受来源后调用真实登记/观察/发布入口，验证重启去重及部分草稿持久版本。接受链和真实宿主明确在范围外，无生产逻辑修改；离线 python scripts/compile.py 退出 0，不覆盖新增测试源码，尚未执行测试。沿用直接补丁回退，无 Git 写入。
++
++2026-09-25 E06 生成结果：用户 e06-generation-terminal-20260925T041741918570Z 三项及六个子场景全部 passed、退出 0，执行期间输入未变化。登记结果报告、更新局部 TODO 和剩余缺口；不将内存发布转换扩展为异步登记或真实 Store/宿主证据。本轮仅文档及证据核对，未修改代码、重复测试/编译或操作 Git，2.2/3.1/3.2 与 Gate 保留。
++
++2026-09-25 E06 生成续作：仍选 wi-0012 / 2.2，按 SW20/SW21/SW23 新增三个内存状态测试，覆盖无新增契约、完整部分覆盖、草稿不可变及生成版本不继承确认；直接调用既有校验和发布转换，不改生产逻辑。离线 python scripts/compile.py 退出 0，不覆盖新增测试源码。后台登记及真实 Store/宿主路径保留缺口。本组测试尚未运行；沿用直接补丁回退，没有 Git 写入。
++
++2026-09-25 E05 共享保存恢复结果：用户 e05-save-recovery-terminal-20260925T041224728311Z 三项全部 passed、退出 0、输入期间未变。新增结果报告，更新局部 TODO 与剩余缺口，保留构造中断状态和真实故障的区别。本轮仅登记文档及核对证据，不重复运行测试或编译，不修改生产代码或 Gate；2.2/3.1/3.2 保持未完成。
++
++2026-09-25 E05 共享恢复续作：仍选 wi-0012 / 2.2。核对 PublishAuxiliaryOutput、内容寻址保存及 Store 提交顺序后，新增三项 Windows 临时 Store 测试；通过受控 fixture 持久重建发布预约/输出落盘的中断边界，再调用真实发布入口。未修改生产代码或增设故障钩子；离线 python scripts/compile.py 退出 0，不覆盖测试源码。真实 I/O 失败与进程崩溃保持待证，未运行本组测试。沿用 aiw patch 内部 Git apply 不可用时的直接补丁回退，无 Git 写入。
++
++2026-09-25 E08 重跑结果：用户 e08-verifier-terminal-20260925T031341466094Z 退出 0，三项及 22 个子场景全部 passed；输入期间未变，原始计划/清单/输出哈希已核对。将 E08 局部 TODO 标完成并保留首次失败与 fixture 修复历史；补充剩余验证排序，纠正“仅两个 E04 用例”这一过时当前描述。仅更新文档，无新增代码或测试运行，不重复编译，不改 Gate/Attempt/lease，不执行 Git 写入。2.2/3.1/3.2 仍未完成。
++
++2026-09-25 E08 首跑诊断：用户结果 e08-verifier-terminal-20260925T015608050801Z 退出 1。结论规则组十个子场景通过；固定报告及两个负面发布子场景均报 null is not a contract value。核对 strictJSON 和 Verifier 数组契约，定位 verifierTestRow 未初始化空切片。仅初始化 Evidence/Gaps 为 []，不改生产解析或断言；修复后离线 python scripts/compile.py 退出 0，不覆盖测试文件。失败原始证据保留，等待正常终端原三项一次重跑，不扩大授权或清除 Gate。
++
++2026-09-25 E06 结果与 E08 续作：用户返回 e06-knowledge-terminal-20260925T013754348449Z，三项及两个历史额度子场景全部 passed、退出 0、输入未变化。保留冻结计划/输出并新增结果报告。继续同一 wi-0012，按 E08 固定输入及 report-only 规格新增三项 Windows 测试和单次取证入口；离线 python scripts/compile.py 退出 0，仅覆盖生产代码。未修改生产逻辑、当前项目账本或 Gate，E08 本组尚未执行；沿用直接补丁回退，无 Git 写入。
++
++2026-09-25 E05 持久化结果与 E06 续作：用户返回 e05-durable-terminal-20260925T013046528023Z，三项测试全部通过、退出 0、输入期间未变。保留原始计划与输出，新增结果报告。继续同一 wi-0012，按既有 E06 规格新增三项 Windows 临时 Store 测试及取证入口，无生产逻辑修改；离线 python scripts/compile.py 退出 0，不覆盖测试源码。E06 本组尚未执行，授权不从 E05 扩展。完整 AC/AX 与 E08 等缺口保留；沿用直接补丁回退，未执行 Git 写入。
++
++2026-09-25 E05 持久化续作：仍选 wi-0012 / 2.2。依据现有规格在 Windows 测试文件中新增三项真实临时 Store 用例，授权/能力/盘点/容量明确使用测试替身，观察工件内容由回调复核。准备冻结输入及输出的单次脚本；离线 python scripts/compile.py 退出 0，仅编译生产代码，新增测试尚未执行。未改生产代码或实际项目资源账，未扩大既有测试授权。模型与保存恢复共享、崩溃窗口、真实宿主及其余硬限额保留未验证；沿用直接补丁回退，没有 Git 写入。
++
++2026-09-25 E05 聚焦结果：用户 confirm 授权后在既有 worktree 执行 run-e05-source-terminal.py 一次，证据 e05-source-terminal-20260925T005720742474Z，退出 0，三项及四个子场景全部 passed。Go 1.25.1 windows/amd64；离线、-vet=off，执行期间输入未变。保留冻结计划、输入清单与原始输出；授权来自本会话，不伪造产品 Runner grant。本轮仅登记文档，未改生产代码、扩大测试、运行真实宿主/模型/网络或 Git 写入；2.2 与 Gate 保留待完整证据。
++
++2026-09-24 E04 后续结果与 E05 续作：用户 e04-remaining-terminal-20260924T093831058329Z 原三项及两个子场景通过，退出 0。按既有 E05 规格新增来源实质变化、跨 sponsor 标识和超限全文三个测试，无生产代码修改。离线 compile.py 退出 0，不覆盖测试源码；准备单次取证脚本。未执行 E05 测试、网络、真实宿主或 Git 写入；通过记录与未执行范围分别保留。
++
++E07 结果登记后，静态核对 E04 尚未执行的三个已有用例及其内存/JSON/路由替身边界，准备精确计划和单次终端取证脚本；没有执行本组或扩大到全包，没有修改生产代码或重复编译。
++
++2026-09-24 E07 通知结果：用户提供 e07-terminal-20260924T093425416837Z，四个用例及五个子场景均 passed，退出 0，输入未变。核对原始输出、计划和输入摘要；本组无源码修复、重跑或真实通知调用。同步局部清单并保留完整 Gate，见 [E07 证据](verification-results/e07-terminal-20260924T093425416837Z/report.md)。
++
++2026-09-24 E01 输入/报告结果：用户提供 e01-terminal-20260924T092824207444Z，原五项全部 passed，退出 0，运行期间输入未变。保存结果报告并核对输入、计划和输出摘要，未重复测试、编译或修改生产代码，不解除整体 Gate。详见 [E01 证据](verification-results/e01-terminal-20260924T092824207444Z/report.md)。
++
++继续准备 E07：静态核对 notification_test.go 的临时 Store、替身发送器、冻结目标、重试/未知结果断言和 R4 规则，准备固定四项的终端取证入口。仅更新验证工件，没有执行本组测试、通知程序、网络、生产迁移或编译；结果待另行执行后登记。
++
++2026-09-24 继续 wi-0012：E03 授权用例通过后，选择 E01 输入/报告的五个已有用例，核对内容发现、字段状态、turn/内容绑定、旧证据与工具链适用性断言。准备固定范围正常终端取证脚本及计划，避免在已知路径受限的工具环境重复试跑。仅变更 worktree 验证工件；未运行新测试、编译、网络、Git 写入或迁移真实 Task，Gate 保留。见 [E01 聚焦计划](e01-input-verification-plan.md)。
++
++2026-09-24 E03 授权聚焦验证：用户 confirm 后执行 run-e03-terminal.py 一次，固定三个用例全部 passed，七个日志解析子场景均 passed，退出 0。工具环境本次未触发路径权限失败；保存批准计划快照、输入清单、环境/时间/退出码、JSON 输出及会话授权来源。无源码修复、重跑、额外编译或范围扩展；不生成产品 grant、不解除 Gate。详见 [E03 执行报告](verification-results/e03-terminal-20260924T091624949037Z/report.md)。
++
++2026-09-24 转入 E03 授权验证准备：继续使用既有 Task/worktree，核对 wi-0012 Gate 与 3.1/3.2 依赖，选取 grant_log_test.go 的三个已有授权用例；静态核对日志解析、拒绝/替代与目标变更断言。新增精确计划及取证脚本，尚未运行本组测试；不重开 E03 实现、不新建 Attempt、不解除 Gate、不改生产授权行为。见 [E03 聚焦计划](e03-grant-verification-plan.md)。
++
++2026-09-24 E02 修复后终端结果：用户提供 e02-terminal-20260924T074441498470Z，实际退出 0；原三个用例均 passed，stdout/stderr 与输入摘要按原记录核对，执行期间输入未变。更新局部 TODO、覆盖记录与报告，不重跑测试或编译；未更新安装版、解除 Gate 或完成整项验收。详见 [通过证据](verification-results/e02-terminal-20260924T074441498470Z/report.md)。
++
++2026-09-24 E02 正常终端结果：已核对用户提供目录的原始记录，原三项中尾部恢复 passed，另两项因 frozen Actor input differs 失败。静态定位 fixture 未设置 AISelection，而请求 Model 非空；仅在 worktree 补齐共享选择，保留全部断言与生产校验。离线 compile.py 退出 0，不覆盖修改后测试源码；尚未重跑。已保存 [结果与修复依据](verification-results/e02-terminal-20260924T073650196536Z/report.md)，未解除 Gate 或接受整项。
++
++2026-09-24 E02 根路径诊断：用户授权继续处理，增加根/目标/正文错误上下文，离线 compile.py 通过。原三项测试首跑与仅调整子进程 TMP/TEMP 到 worktree 后的一次重跑均退出 1，定位到根路径 EvalSymlinks 的 Access is denied；两次源码摘要一致且运行期间输入无变化。保留全部证据，未变更 ACL、提权、联网或迁移真实 Task。已准备未执行的正常终端取证脚本，详见 [根路径诊断记录](verification-results/e02-recovery-20260924T025737Z/path-diagnosis-report.md)，Gate 与完整验收缺口保留。
++
++2026-09-24 E02 迁移内部诊断运行：用户 confirm 批准同命令一次，三个用例均在 read activation artifact 返回 Access is denied，退出 1；输入未变化，原始输出另存 migration-diagnostic-run。静态追踪 ReadExecutionArtifact/confinedFile 和本机 Go 的 EvalSymlinks/toNorm/normBase，目录查询权限为疑点而非已证实根因。没有再次测试、源码改动、重复编译、改环境、提权、网络或真实 Task 迁移；保留 Gate 和未完成清单，见 [详细证据](verification-results/e02-recovery-20260924T025737Z/migration-diagnostic-run/report.md)。
++
++2026-09-24 E02 迁移诊断实现：用户确认后，仅在 worktree 的 MigrateDurableExecution 增加十四处分步错误包装，保留 %w 错误链、返回状态及原有调用/提交顺序。离线 python scripts/compile.py 退出 0；未运行第三次测试、真实 Task 迁移、网络、Git 写入或最终制品构建。旧失败结果保留；新的诊断信息尚无运行证据，详见 [诊断实现与下一步](e02-migration-diagnostics.md)。
++
++2026-09-24 E02 诊断重跑：用户明确批准权限失败后的同环境同命令重跑一次，三个用例均失败，退出 1；新增错误上下文将失败缩小到 MigrateDurableExecution，之前的 fixture 创建、锁准备/获取和激活工件保存已成功。运行期间输入未改变，原始结果另存 rerun-1，未覆盖首跑；未执行第三次测试、提权、网络或真实 Task 迁移。本轮仅补录文档，未改生产代码，无重复编译；保持 Gate 与未完成项。
++
++2026-09-24 E02 聚焦验证：获用户 confirm, continue 授权后执行计划中同一命令一次，退出 1，三个用例均在 fixture 初始化阶段 Access is denied，输入摘要未变化。保留授权、计划快照、命令/环境、时间及原始输出；补充两个 fixture 的九处错误上下文，未改变测试断言。离线 python scripts/compile.py 退出 0（不覆盖测试源码）；按权限失败规则未重跑、未提权或换环境。根因未确认，Gate 和 2.2/3.1/3.2 保留；详细结果见 [E02 首跑记录](verification-results/e02-recovery-20260924T025737Z/report.md)。
++
++2026-09-24 wi-0012 续作：核对 Task 元数据、worktree HEAD、设计就绪度、现有 Gate 和三个 Windows 持久恢复测试。补齐精确命令、判据、临时 Store 范围和取证要求，修正当前 2.2 的过时“全部未执行”描述；历史记录保留。仅修改 worktree 验证工件，没有新增生产实现或执行测试/编译/网络/Git 写操作。E01–E08 的勾选仍仅为实现记录，2.2/3.1/3.2 保持未完成；当前授权 Gate 保留。
++
++2026-09-24 恢复回归实际执行：用户再次确认后运行 recovery-regression-plan-20260924.md 的唯一聚焦命令。首跑 exit 1、无用例执行，发现 checklist_test.go 的四变量 range 及 archive_test.go 对 session.Store 调用 SetDelivery 的编译错误；最小修复为结构体字段访问及正确的 workflow Store，保留原断言。仅重跑一次，两个指定恢复用例均 passed、exit 0，stderr 为空，输入运行期间无变化。失败与成功原始输出、精确 argv、环境、工具链、输入摘要及用户授权保存在 verification-results/recovery-regression-20260924T021434Z/。未执行两个包的其他用例、完整 AC/AX、网络、Git 或最终制品构建；没有重新运行无关 E04 用例。安装版 AIW 尚未更新，现有 2.2 Gate 不因两项局部通过自动解除。
++
++2026-09-24 自动修复续作：用户要求自动修正问题并继续实现。按 implement 流程修复直接接管未先同步 authored 依赖的调用路径，并新增清单 repair 保留依赖/身份/一次性语义及新 Attempt 正确绑定的回归用例。使用直接补丁工具，因为 aiw patch 依赖 Git apply 而本轮未授权 Git 写入。修复不改变既有已准备或运行中的 Attempt，不手改真实 Core/租约，不重新运行已通过且未受本次改动影响的 E04 两个测试。清理了 TODO 中过期的“未批准/全部禁止测试”说明。新的两个恢复用例属于不同测试范围，运行需要明确授权；编译与结果随后登记。
++
++本次修复的 compile-only：禁用 Go 依赖及工具链下载，`python scripts/compile.py` 退出 0，临时制品已由脚本清理；静态检查确认调用顺序、依赖传递和清单 12 个唯一编号。新的两个回归测试尚未运行，不能以编译主程序成功代替测试源码编译或测试通过。代码修复仅在 worktree，未更新安装版 AIW、启动 Supervisor 或解除 wi-0012 的剩余授权 Gate。可审阅的精确后续命令见 recovery-regression-plan-20260924.md。
++
++2026-09-24：用户“confirm, continue”仅批准 verification-plan-20260924.md 的两个 E04 用例。按原精确 go test 参数执行一次，关闭依赖/工具链下载、关闭 vet，使用 worktree 本地缓存；退出 0，两个明确测试均 passed，stderr 为空，输入摘要运行前后一致。保存原批准计划、会话授权、模块/源码/规格输入清单、工具链、实际命令/环境/时间和 JSON 输出。报告见 verification-results/e04-budget-20260924T010710Z/report.md。未扩大范围或重跑，未执行完整 AC/AX、最终制品构建、网络或 Git 操作；没有运行产品 Runner 或伪造 grant。保留 wi-0012 Gate 及正式 2.2 未完成；Core 仅登记本轮有限用户授权，command Evidence 不绕过其授权 Gate 校验。
++
++2026-09-18 wi-0012 / attempt-1789728912870964500：仅完成验证缺口登记，2.2 保持未完成。静态核对 handoff、Task metadata、Core Work Item 映射、proposal、design readiness、verification delta/stable spec 和 coverage-review；当前路径及分支匹配既有 isolated Task。仅编辑本文件的 authored 2.2 说明、TODO 和本记录，保留清单依赖及其他工作区改动，不修改 Core、Gate 或 Task 状态。aiw patch 帮助已读取；该入口使用 Git apply，与本轮只读 Git 边界不符，采用直接文件补丁。
++
++| 证据范围 | 已观察事实 | 适用性与缺口 |
++| --- | --- | --- |
++| 历史 wi-0011 supervisor 编译摘要 | 主仓库 `.ai/workflow-automation/compile-diagnostics/wi-0011-2026-09-18T10-55-11.4573509Z.json` 保存 adapter.kind=`plan`、name=`request-compile-plan`、command 为空、exit_code=`0`、diagnostics=`null`、recorded_at=`2026-09-18T10:55:11.4573509Z`。 | 仅转录已有摘要，不声称本轮执行编译。该文件未提供具体 argv、工作目录、完整输入摘要、冻结计划正文或 grant 引用；不能由退出码推定 AC/AX 通过或当前版本适用。 |
++| 本轮 wi-0012 编译 | 本 Agent 未运行；按当前 handoff 由 supervisor 负责冻结 Compile Plan 及有界修复。 | 当前 Attempt 的编译结果尚未提供，不能代填退出码或通过状态。 |
++| AC01–AC34、AX01–AX05 | coverage-review 逐项判据及历史实施记录均保留未执行；本轮未运行任何场景。 | 状态为未执行，不是 passed、failed、waived 或 N/A。实际命令/目录、阶段请求、输入版本、工具链/宿主、计划/政策/grant、本次发现清单、时间、退出码和输出引用均待受管执行取证。 |
++
++实际命令仅为本地 Get-Content、Get-ChildItem、rg、PowerShell JSON 只读筛选、aiw patch --help，以及指定 safe.directory/-C 前缀的 git status --short --branch；编辑后仅做一次指定前缀的 git diff -- openspec/changes/workflow-automation/tasks.md 静态核对。首次中文读取显示异常后改用显式 UTF-8；历史编译摘要首次误定位到 artifacts，按实际 compile-diagnostics 路径纠正读取一次。没有运行测试、编译、最终制品构建、格式化、lint、vet、验证脚本、网络、模型、通知或 Git 写操作。
++
++%% WI0012_AUTHORIZATION_PENDING：本轮明确禁止测试，产品的 AI 计划审批不构成工程运行授权。2.2 所需实际 AC/AX 证据不能靠文档编辑生成；由 supervisor 安排获授权的受管取证并提供精确引用后继续登记。本轮不申请扩大权限、不伪造 grant、不解除 Gate、不勾选 2.2，也不确认整体范围或无关改动检查已完成。
++
++2026-09-18 wi-0011 / attempt-1789728545423365800：完成 authored 2.1 的静态覆盖检查；新增 [覆盖检查](coverage-review.md)，逐项关联 SW01–SW34 / AC01–AC34、AX01–AX05、九个 delta spec、E01–E08 实施记录和待取证场景。明确历史验收矩阵中的人工逐计划审批、三次通知/幂等前提按 Plan 修订解释；不修改历史来源或稳定规格。更新 2.1、TODO 与本记录，保留 2.2/3.1/3.2 未完成及 Core/Gate/Task/worktree。执行本地读取、rg、aiw patch 帮助与指定前缀只读 Git，直接文件补丁回退及一次编辑后静态核查；未运行编译、测试、构建、格式化、网络、模型、通知或 Git 写操作。supervisor 编译与全部 AC/AX 运行证据仍待提供。
++
++2026-09-18 E08 / wi-0010 / attempt-1789727915907036500：完成接受版本封存、按固定来源派发独立 Verifier、覆盖/依据/缺口校验和报告保存，更新 authored 1.8、TODO 与实施记录。一次静态差异核查覆盖接受、资源预约、辅助来源/宿主/Worker 和发布路径；编译明确交由 supervisor，未运行测试、构建、格式化、网络、模型或 Git 写操作。保留真实 Task/worktree、Core/Gate 和其他未完成清单；1.8 勾选仅表示实现完成，详见 [E08 验证记录](e08-implementation.md)。
++
++%% E08_ACTIVATION_PENDING：辅助能力、授权、存储盘点和 schema 10 联合启用仍须实际证据；超限/缺少固定来源显示 unavailable，不产生空 passed，不撤销接受或阻断交付。所有对应 AC 场景未执行。
++
++2026-09-18 E06 / wi-0008 / attempt-1789725422735098500：完成实现并更新 authored 1.6、TODO 与实施记录。一次静态检查核对 Core 映射、CLI 差异、来源/队列/审阅/注入接缝；发现并修正 schema 10 条件提交与 Tester 可选来源降级问题，修正后仅按补丁文本核对。仅执行本地读取、帮助和指定前缀的只读 Git；没有运行编译、测试、构建、格式化、网络、宿主、模型或 Git 写操作。编译交给 supervisor；所有相关 AC/AX 仍未执行，详见 [E06 验证记录](e06-implementation.md)。
++
++%% E06_ACTIVATION_PENDING：本地能力记录必须另外证明接收方完整输入计量；缺失时跳过可选知识。历史和资源缺口不自动补零/扩额、不撤销开发接受。本轮不解除 Gate、不切换 schema，也不宣称 E07/E08 或 Task 整体完成。
++
++2026-09-18 E05 / wi-0007 / attempt-1789723715632420700：完成受控 Worker、独立 helper、生产注册、资源政策与盘点/结算入口、普通 Session/Tester 来源投影和冻结输入原始工件复核。更新 authored 1.5 与 TODO；没有修改 Task/Core/Gate、迁移 schema 或执行配置。静态证据与限制见 [E05 宿主接入](e05-host-integration.md)。实际命令仅本地读取、rg/文件定位和用户指定前缀的只读 Git；直接补丁工具写入源文件及文档。编译明确交由当前 supervisor；未执行任何测试、制品构建、格式化、lint/vet、网络、模型、通知、后台宿主或资源维护命令。所有 E05 AC/AX 场景仍未运行。
++
++2026-09-18 恢复链路缺陷：turn 9 返回归属冲突，Session 已 active，旧 Attempt 已结束且无写租约。静态追踪确认 workflow_artifacts.go 的普通 sync 传递 DependsOn，而 RepairWorkflowChecklist 未传递；Core repair 将其解释为空依赖，且保留旧 PlanFingerprint，导致之后同指纹 sync 不重建依赖。此次补齐 repair 字段传递；当前真实运行记录通过受管 plan 强制按同一清单重建依赖，保留 ID 与历史，不手改 JSON。编译及恢复命令结果另记，未授权测试或最终制品构建。
++
++实际验证及恢复更正：`python scripts/compile.py` 退出 0，GOPROXY/GOSUMDB 关闭、GOTOOLCHAIN=local，临时产物由脚本清理。一次编辑后静态检查确认两处转换均传递 DependsOn，同时发现安装版 `plan` 也走同指纹短路，并未如预期重建依赖。因此将 3.1 已有的传递前置条件显式写为 E01–E08、2.1、2.2 的直接依赖，语义不变，刷新清单指纹；随后 sync 退出 0。非执行 run 正确准备 E05 / wi-0007 / attempt-1789723715632420700，确认调度不再选取 3.1；repair 退出 0，为该原请求补齐编译计划。此前一次性 checklist repair 已登记完成，后续 repair 不再重复清单导入。未从工具环境派发模型请求，Session 保持可运行状态；由用户终端的 Supervisor 消费此已准备请求。源代码修复尚未安装到 C:/green/aiw/aiw.exe；不能将当前状态修复说成已安装版本升级。未运行测试、最终制品构建、格式化、网络或 Git 写操作。
++
++2026-09-18 E05 / wi-0007 / attempt-1789720672532536600：**INCOMPLETE（dependency）**。已加入 Core 来源/队列/资源/恢复/发布组件、宿主循环和来源封存校验，但真实受控 Worker、独立 helper 入口及生产组装尚缺，因此正式 1.5 保持未勾选。未修改当前 Task/Core/Gate/租约或默认 schema 9，未操作 Git 写入。执行一次静态命令批次，读取受影响接缝并检查已有差异；指定 safe.directory 前缀的 `git diff --check` 未报告空白错误，仅有 LF/CRLF 提示。该命令不覆盖未跟踪新文件，且后续局部修正与本实施记录未再运行检查；新文件按补丁文本静态检查。编译由 supervisor 负责，本执行者未运行编译、测试、制品构建、formatter、lint、vet、验证脚本或网络操作。所有 E05 AC/AX 均未执行。证据和继续路径见 [E05 实施记录](e05-implementation.md)。
++
++%% E05_ACTIVATION_PENDING：受控 Worker 与独立 helper 的生产接入已补齐；真实本地能力证据、显式授权配置、凭据及历史盘点仍须在启用时满足，Profile 别名不能替代证明。编译由 supervisor 执行；不解除 Gate，不把静态实现或 schema 10 未启用视为运行验收通过。
++
++2026-09-18 E04 / wi-0006 / attempt-1789718088692918200：实现请求预算账、固定模型路由、生成归因与 E02/E03 服务组装；1.4 勾选仅为实现完成。保留现有 Task/worktree/Core/Gates，不启用 schema 10、不改写历史 Attempt。实际验证与未执行缺口见 [E04 实施记录](e04-implementation.md)；所有 AC/AX 仍未执行。
++
++E04 最终源码 Verification：禁用网络/工具链下载后执行 `python scripts/compile.py`，退出 0；进行一次静态批次，核对预算/路由源码、阶段接缝和清单，`git diff --check -- openspec/changes/workflow-automation/tasks.md` 未报告空白错误，仅提示既有 LF/CRLF 转换。未执行测试、最终制品构建、formatter、lint、vet 或运行验收。新增测试代码不包含在该 compile-only 检查中。
++
++2026-09-18 wi-0003 / attempt-1789698959531607000 范围核对：**BLOCKED（dependency）**。本轮 handoff 指定 wi-0003；只读读取 Core 确认其 checklist.item 为 3.1，标题为 “Confirm the change meets the approved scope.”，不能按编号猜作 E03 或 E04。proposal 要求 E01–E08，当前 authored 1.4–1.8、2.1/2.2 未完成；design 要求 E01–E04 一致启用，既有 E03 记录仍列出生产注册、预算/迁移及运行验证缺口。因此 3.1 保持未勾选，不以局部实现或编译代替整体验收。
++
++%% WORK_ITEM_MAPPING：2026-09-18 对账确认 Core 映射为 wi-0003 → 3.1（整体验收）、wi-0005 → 1.3（E03）、wi-0006 → 1.4（E04）。历史 E03 执行确实登记在 wi-0003 的 attempt-1789697370140599800 下，不能据此把 wi-0003 重映射为 E03，也不能把该 Attempt 的证据追溯迁移到 wi-0005。1.3 已勾选且 wi-0005 completed 仅是当前清单/Core 状态，不补造 E03 的正确归属执行或验收证据。历史报告原文保留，并附本次更正；后续受管调度须按清单语义和依赖选择 E04，不能根据 wi 编号猜测 E 序号。
++
++2026-09-18 清单恢复 Verification：静态读取 worktree 清单与主工作区 Core，发现 TODO 的复选框再次以 3.1 开头，与正式验收项重号。将 TODO 改为描述性前缀，保留全部 12 个正式清单编号、完成标记和 Core 身份；历史 E03 记录追加映射更正，不改原 Attempt。此修复仅消除清单解析阻塞，不表示 E04–E08、联合启用或 AC/AX 已完成。后续通过 AIW sync 对账，仅在解析成功后处理重复编号 Gate；整体验收依赖 Gate 保留。未修改代码或手写 Core 状态，未运行编译、测试、构建、网络或 Git 操作。
++
++本轮实际恢复结果：一次编辑后静态检查得到 12 个正式编号、0 个重复；`aiw task workflow sync workflow-automation` 与 `aiw task workflow gate workflow-automation checklist-reconciliation-duplicate-checklist-number resolved` 均退出 0。解析 Gate 已解除，唯一开放 Gate 为 supervised-dependency-wi-0003，Workflow 仍 BLOCKED / execution blocked；E04 / wi-0006 为 ready。已读取 workflow 帮助和 diagnose；当前帮助未提供显式按 Work Item 选择 run 的参数或依赖编辑入口。没有启动 supervisor、重开整体验收项或操作过期租约。下一步应处理受管调度的顺序/依赖表达，使 E04–E08 和验证先于整体验收；仅解除解析 Gate 不等于自动执行已恢复。两次源码定位使用了不正确的路径，未产生源码分析结论；后续以 rg --files 定位到 internal/workflow 和 internal/taskx，仅取得符号位置，不据此宣称调度根因已证实。
++
++本轮验证仅为静态范围与依赖核对：读取 handoff、Task/Core、proposal、design、tasks、相关 capability delta 和 E03 记录；执行本地 Get-Content/Get-ChildItem/Get-Command、rg、指定 safe.directory 前缀的 git status，以及 aiw patch --help。一次默认编码的 JSON 读取失败后改用 UTF-8 成功，未修改运行记录。仅直接编辑本文件 TODO/Verification，以保持本轮 Git 只读约束；编译留给 supervisor，未运行测试、构建、formatter、lint、vet、validator、网络或 Git 写操作。尚缺剩余实现、联合启用和当前证据，建议 supervisor 先核对工作项映射并调度未完成依赖，再重新派发 3.1。
++
++2026-09-18 E03 / wi-0003 Verification：完成授权日志/尾部锚点、不可变执行清单、独立 Session Tester、受控测试执行与输出保存、按请求恢复、一次只读归因及接受候选服务；Tester 后重新编译，Coder 不得改弱测试。新增 grant 聚焦测试代码但未运行。静态核对字段、引用、Core 条件提交与宿主调用路径；编译由 supervisor 运行冻结 Compile Plan，本执行者未运行编译、测试、最终制品构建、formatter、lint、vet、validator 或网络命令。保留真实 Task/worktree、Core 状态和 Gate；1.3 勾选仅表示本工作项实现完成。证据位置、实际命令及启用缺口见 E03 实施记录。
++
++%% E03_ACTIVATION_PENDING：默认 schema 9 不变。E03 提供 VerificationService.Connect、JournaledVerificationHost 和受管派发/归因入口；生产注册须同时连接 E04 预算/迁移、原 Coder/Compiler 宿主、真实隔离边界与决策/断言审阅权威，并取得平台及授权/接受验证证据。缺失提供方返回 host-unavailable，不启用无约束替代执行。所有 AC/AX 仍未执行。
++
+ 本次补齐的是需求推广工件，不是功能实现。SW/AC 的覆盖及来源优先级可以静态核对；AC01–AC34、AX01–AX05 均未执行，以上编号实现与验收工作项保持未完成。AX04 按已批准通知政策解释：无查询/回执/可靠幂等仍允许明确网络失败后等待 60 秒重发一次，未知结果及其他失败不自动重发。
+ 
++2026-09-18：用户选择方案 A，R1 设计闭合且 E01 具备设计输入；受管同步、设计证据及 Gate 处理以 AIW 实际结果为准。已检查安装版本帮助与诊断，诊断仅显示原 R1 Gate。没有将设计闭合计作功能完成或运行验收，R2–R4 保持未闭合。
++
++恢复命令已成功：sync、记录 `r1-design-local-disk-20260918` 静态证据、resolve 原 Gate、reopen wi-0001。E01 已 ready，执行已 queued；validation=passed 仅为设计静态证据。E01 本轮代码仅覆盖精确结果身份和逐轮原始报告保存，1.1 未勾选，不将阶段性进展视为完整验收。
++
++代码静态核对覆盖请求生成的预期 turn、Session 输出命名、Task 报告保存和后续 outcome 引用。已执行 `python scripts/compile.py`，退出码 0；设置 GOPROXY=off、GOSUMDB=off、GOTOOLCHAIN=local，未下载依赖，脚本清理临时可执行文件。未运行测试、formatter、linter、OpenSpec validator 或最终制品构建；编译通过不代表恢复场景已验证。
++
+ ## Notes
+ 
++2026-09-18 E02 / wi-0002 Verification：完成本轮 Core 与受管执行接缝，更新 1.2 和 TODO；保留 E03–E08、全部 AC/AX 和 Task 总体验收未完成。新增 Windows 聚焦测试代码但未运行。编译由 supervisor 执行冻结 Compile Plan，本执行者未运行编译、测试、最终制品构建、formatter、lint、vet、validator、网络或 Git 写操作。静态证据与实际命令见 [E02 实施记录](e02-implementation.md)。未修改真实运行状态、锁协议、Task 元数据或 Core Gate。
++
++%% E02_ACTIVATION_PENDING：schema 9 仍为默认；新增 schema 10 路径只有受管维护、E01–E04 服务和精确平台/授权/接受证据齐备后才能迁移。当前没有注册生产 ExecutionServices/DeliveryServices，不能启动新链。E03 接授权/结果/接受与宿主核验，E04 接迁移/预算，E05 接完整来源封存。实现勾选不代表当前代码编译成功或 AC05–AC08/AC14/AC33 已执行。
++
++2026-09-18 E01 本轮 Verification：已更新 1.1 及对应 TODO；新增聚焦测试代码，未运行。验证由 supervisor 执行冻结 Compile Plan，本执行者未运行编译、测试、格式化、lint、vet、最终制品构建或网络命令。本轮静态检查范围为工件写入、来源加载、只读补交、内容适用性及其调用方，不将历史编译结果作为本轮结果。详细命令与启用缺口见实施记录。
++
++%% ACTIVATION_PENDING：E01 新输入/报告接缝在 schema 10 边界后，未切换当前 schema 9；E02 仍须实现持久提交、锁协议与迁移，E02/E03 产生 Core 接受引用，E04 接入请求预算后才能一致启用。1.1 的实现勾选不代表 AC01–AC04/AC25 运行通过或整个 Task 已完成。
++
+ %% PROMOTION：保留初次创建时已映射的验证项 3.1/3.2 及原文。编号整理产生的 checklist-identifier-deleted-wi-0003/wi-0004 仅在恢复映射后按 resolved 处理，不豁免功能验收。
+-%% DESIGN_PENDING：实际需求工件已补齐；design 的 R1–R4 是由工程继续闭合的具体实施输入，不要求用户再次批准既定需求。受这些未闭合项影响的部分不得提前实施。
++%% IMPLEMENTATION_PENDING：R1–R4 设计已闭合；E02–E08 实现、2.1/2.2 和 3.1/3.2 仍未完成。按依赖实施并取得当前输入版本的实际证据，不以设计静态通过替代功能通过。
++
++2026-09-18 R2 Verification：以当前 Store、VerificationPlan、FocusedTestAuthorization、ExecuteFocusedTest 和 localMergeDelivery/resumeMergedDeliveryCleanup 为静态依据，补齐严格授权日志、计划/执行清单、真实目标与宿主复核、旧 consumed 兼容、E02/E03/E04 接受/预算责任及清理恢复场景。proposal 范围未变，稳定 specs 未改；既有编号与 E02 未完成状态保留。本轮仅设计修改，未运行编译、测试、validator、网络或 Git 操作。
++
++2026-09-18 R2 对账：AIW diagnose 确认唯一开放 Gate 为 supervised-dependency-wi-0002。读取 Core 时 E01 Work Item 与 Attempt 已 completed，E02 Attempt 已 failed 且无写入租约；无需手工结束 E01 或释放租约。E01 当前版本的实际编译/AC 证据仍须单独核对，不将历史 validation=passed 解释为本次通过。设计完成后的 sync、静态证据及 Gate 恢复以实际命令结果为准。
++
++2026-09-18 R2 恢复结果：`aiw task workflow sync workflow-automation`、登记 `r2-authorization-design-20260918`（wi-0002 / static-review / passed）、`gate workflow-automation supervised-dependency-wi-0002 resolved`、`reopen workflow-automation wi-0002 <R2 design closure reason>` 均退出 0。E01 authored/core 均 completed；E02 authored=open、core=ready；Workflow 为 DRAFT、execution=queued、delivery=pending，无开放 Gate。validation=passed 包含设计静态证据，不表示功能测试通过。未创建新 Attempt、启动 supervise 或执行 E02 代码。本轮结构检查确认必需工件存在、Task/change ID 一致及 12 个编号映射保留；OpenSpec CLI 曾被执行策略阻止，本轮未重试或绕过。
+ %% SOURCE_PRECEDENCE：初始测试与 Git 计划由 AI 授权；grant 路径和字段遵循 Plan；禁止 push 与直接 Git 删除，cleanup 仅经 AIW；通知仅明确网络失败时等待 60 秒后重发一次。
++
++2026-09-18 R3/R4 Verification：用户授权按建议继续补齐剩余设计。静态核对 Profile 字段、默认 routing-plan、需求工件尺寸、aiw-notify/Go 调用方和 Teams 脚本的 TLS、参数解析及错误输出；未读取环境凭据或 .env。新增资源/通知附件及四个 capability 的场景，既有编号和范围保持。实际仅执行本地读取、rg、文件尺寸统计与补丁编辑；不运行编译（本轮无代码实现）、测试、validator、网络或 Git 操作。OpenSpec CLI 先前被执行策略阻止，未重试或绕过。AIW 同步与设计证据结果另记，不将旧 validation=passed 当作 AC/AX 已执行。
++
++2026-09-18 R3/R4 同步结果：一次静态结构检查确认九个相关工件存在、Task ID 正确、12 个编号映射保留且当时无开放 Gate。`aiw task workflow sync workflow-automation` 及四次 `evidence ... static-review passed` 均退出 0：r3-resource-e05-20260918 → wi-0007，r3-resource-e06-20260918 → wi-0008，r3-resource-e08-20260918 → wi-0010，r4-notification-e07-20260918 → wi-0009。同步返回 E02 core=running、Workflow IN_PROGRESS/execution=running/delivery=pending；本轮未启动执行器、创建 Attempt 或操作租约。该状态是现有受管流程的新观察，不是 R3/R4 功能完成。设计参数和协议尚待实现，实际模型能力、Teams 配置及 AC/AX 验证缺口按附件保留。
++
++2026-09-18 调度恢复 TODO / Verification：已静态定位到 SelectReadyMappedWorkItem 按 Core 保存顺序选取 ready 项，NextRunnerOutcome 先返回任一开放 Gate。原清单没有声明依赖，历史较早创建的 3.1/3.2 因此会先于 E04 被选择。使用现有解析器支持的 aiw:depends-on 注释补齐实现与验证依赖：E01→E02→E03→E04→E05，E06/E07/E08 依赖 E05，2.1 依赖全部 E 项，2.2→3.1→3.2 依次执行。保留原 12 个编号、ID、完成标记和历史执行归属；未修改调度源码或稳定规格。先经 AIW sync 落账并检查依赖，再将临时 supervised-dependency-wi-0003 Gate 转为持久依赖约束后解除、受管 reopen 3.1；这不接受 3.1，也不豁免验收。用户已要求 fix it and continue，后续采用单步 run，不启动包含自动 Git 交付的 supervise start。实际恢复结果另记。
++
++调度恢复实际结果：sync 退出 0；一次编辑后静态检查确认全部依赖已持久保存，3.1→wi-0012、3.2→wi-0003，E04→wi-0005，且当时无写租约或已准备请求。随后 gate resolved、reopen wi-0003（附依赖转移原因）及 run 预备均退出 0；Core 正确选中 E04 / wi-0006，创建 attempt-1789718088692918200，3.1/3.2 仍未完成。执行 `aiw task workflow run workflow-automation --execute` 退出 1，停在工作区协调预检：`read Task worktree branch: read current branch: exit status 128`。没有证据表明该 E04 请求已实际派发；不能把预备后的 core=running 当成 Agent 已执行。当前命令未返回 Git stderr，历史所有权失败仅作可能原因；不重试等价命令、不修改信任配置或绕过权限。保留已准备 Attempt 供后续受管恢复，不手改 Core/租约。修复仅为清单依赖与记录，无源码修改，因此未编译；未运行测试、最终构建或网络命令，未执行 Git 写入。`run --help` 被 CLI 解释为 Task ID 并报路径不存在；使用已读取的 workflow 总帮助确定正式 run 语法。
+diff --git a/plugins/aiw-notify.py b/plugins/aiw-notify.py
+index 9831aec..cdd92c1 100644
+--- a/plugins/aiw-notify.py
++++ b/plugins/aiw-notify.py
+@@ -1,59 +1,174 @@
+ #!/usr/bin/env python3
+-"""Persisted-notification dispatch Plugin protocol for AIW."""
++"""Versioned, bounded text attempts. Core alone owns retry policy."""
+ 
+ import argparse
++import hashlib
+ import json
++import os
++from pathlib import Path
++import re
++import subprocess
+ import sys
+-
++from urllib.parse import urlsplit
+ 
+ META = {
+     "name": "aiw-notify",
+-    "short": "dispatch a persisted workflow notification",
+-    "description": "Accept one persisted notification from Workflow Core and return an idempotency receipt.",
+-    "commands": ["dispatch"],
+-    "readOnly": True,
++    "short": "attempt a persisted text notification",
++    "description": "Attempt console or explicit HTTPS Teams text; no delivery receipt or internal retry.",
++    "commands": ["dispatch", "preflight"],
++    "readOnly": False,
+     "mutatesFiles": False,
+     "requiresConfirmation": False,
+     "outputFormat": "json",
+ }
+ 
++LIMIT = 64 * 1024
++FIELDS = {"schema_version", "notification_id", "attempt_id", "content_digest", "text", "channel", "target_reference", "config_reference"}
++CONFIG_FIELDS = {"schema_version", "enabled", "channel", "target_id", "teams_url", "credential_env", "ca_file", "sender", "timeout_seconds"}
++
++
++def unique_object(pairs):
++    value = {}
++    for key, item in pairs:
++        if key in value:
++            raise ValueError("protocol")
++        value[key] = item
++    return value
++
++
++def decode(raw):
++    if len(raw) > LIMIT:
++        raise ValueError("protocol")
++    return json.loads(raw.decode("utf-8"), object_pairs_hook=unique_object)
++
++
++def digest(raw):
++    return hashlib.sha256(raw).hexdigest()
+ 
+-def dispatch(as_json: bool) -> int:
+-    if not as_json:
+-        raise SystemExit("use: aiw notify dispatch --json")
+-    try:
+-        notification = json.load(sys.stdin)
+-    except json.JSONDecodeError as exc:
+-        print(json.dumps({"status": "rejected", "error": f"invalid JSON: {exc}"}))
+-        return 2
+-    notification_id = notification.get("id")
+-    topic = notification.get("topic")
+-    payload = notification.get("payload")
+-    if not isinstance(notification_id, str) or not notification_id or not isinstance(topic, str) or not topic or payload is None:
+-        print(json.dumps({"status": "rejected", "error": "id, topic, and payload are required"}))
+-        return 2
+ 
+-    # Delivery providers can replace this Plugin while retaining the stable ID
+-    # as their idempotency key. The bundled implementation is intentionally a
+-    # deterministic local acknowledgement and performs no network activity.
+-    print(json.dumps({
+-        "notification_id": notification_id,
+-        "status": "accepted",
+-        "receipt": f"aiw-notify:{notification_id}",
+-    }, ensure_ascii=False))
+-    return 0
++def project_config():
++    import tomllib
++    root = Path.cwd().resolve()
++    path = root / "aiw.toml"
++    empty = {"enabled": False, "ready": False, "channel": "", "target_reference": "", "config_reference": ""}
++    if not path.is_file():
++        return {}, empty
++    with path.open("rb") as stream:
++        raw = stream.read(LIMIT + 1)
++    if len(raw) > LIMIT:
++        raise ValueError("configuration")
++    config = tomllib.loads(raw.decode("utf-8")).get("notifications")
++    if config is None:
++        return {}, empty
++    if not isinstance(config, dict) or set(config) - CONFIG_FIELDS or type(config.get("schema_version")) is not int or config["schema_version"] != 1 or type(config.get("enabled", False)) is not bool:
++        raise ValueError("configuration")
++    if not config.get("enabled", False):
++        return config, empty
++    channel = config.get("channel")
++    if channel not in ("console", "teams"):
++        raise ValueError("configuration")
++    normalized = {"schema_version": 1, "channel": channel, "target_id": config.get("target_id", "console" if channel == "console" else ""), "teams_url": config.get("teams_url", ""), "credential_env": config.get("credential_env", ""), "ca_file": config.get("ca_file", ""), "sender": config.get("sender", ""), "timeout_seconds": config.get("timeout_seconds", 30)}
++    if any(not isinstance(normalized[key], str) for key in normalized if key not in ("schema_version", "timeout_seconds")):
++        raise ValueError("configuration")
++    timeout = normalized["timeout_seconds"]
++    if type(timeout) is not int or not 1 <= timeout <= 30 or not normalized["target_id"]:
++        raise ValueError("configuration")
++    ready = True
++    ca_digest = ""
++    if channel == "teams":
++        endpoint = urlsplit(normalized["teams_url"])
++        if endpoint.scheme != "https" or not endpoint.hostname or endpoint.username or endpoint.password or endpoint.query or endpoint.fragment or any(ch.isspace() for ch in normalized["teams_url"]):
++            raise ValueError("configuration")
++        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", normalized["credential_env"]):
++            raise ValueError("configuration")
++        ready = bool(os.environ.get(normalized["credential_env"]))
++        if normalized["ca_file"]:
++            ca = (root / normalized["ca_file"]).resolve(strict=True)
++            with ca.open("rb") as stream:
++                ca_bytes = stream.read(1024 * 1024 + 1)
++            if len(ca_bytes) > 1024 * 1024:
++                raise ValueError("configuration")
++            normalized["ca_file"] = str(ca)
++            ca_digest = digest(ca_bytes)
++    canonical = json.dumps({**normalized, "ca_digest": ca_digest}, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
++    reference = digest(canonical)
++    return normalized, {"enabled": True, "ready": ready, "channel": channel, "target_reference": digest((channel + ":" + normalized["target_id"] + ":" + normalized["teams_url"] + ":" + ca_digest).encode("utf-8")), "config_reference": reference}
+ 
+ 
+-def main() -> int:
++def result(request, outcome, attempted, error_code="", status=None):
++    return {"schema_version": 2, "notification_id": request.get("notification_id", ""), "attempt_id": request.get("attempt_id", ""), "content_digest": request.get("content_digest", ""), "attempted": attempted, "outcome": outcome, "error_code": error_code, "http_status": status}
++
++
++def valid_request(request):
++    if not isinstance(request, dict) or set(request) != FIELDS or type(request["schema_version"]) is not int or request["schema_version"] != 2:
++        return False
++    if any(not isinstance(request[key], str) for key in FIELDS - {"schema_version"}):
++        return False
++    raw = request["text"].encode("utf-8")
++    return bool(request["notification_id"] and request["attempt_id"] and raw and len(raw) <= 16 * 1024 and digest(raw) == request["content_digest"])
++
++
++def managed_dispatch(request):
++    if not valid_request(request):
++        return result(request if isinstance(request, dict) else {}, "configuration_failure", False, "protocol")
++    try:
++        config, reference = project_config()
++        if not reference["enabled"] or not reference["ready"] or any(request[key] != reference[key] for key in ("channel", "config_reference", "target_reference")):
++            return result(request, "configuration_failure", False, "configuration")
++    except Exception:
++        return result(request, "configuration_failure", False, "configuration")
++    if reference["channel"] == "console":
++        try:
++            print(request["text"], file=sys.stderr, flush=True)
++            return result(request, "attempted", True)
++        except Exception:
++            return result(request, "unknown", True, "protocol")
++    child = {"schema_version": 1, "notification_id": request["notification_id"], "attempt_id": request["attempt_id"], "text": request["text"], "endpoint": config["teams_url"], "credential_env": config["credential_env"], "ca_file": config["ca_file"], "sender": config["sender"], "timeout_seconds": config["timeout_seconds"]}
++    allowed = {"SYSTEMROOT", "WINDIR", "PATH", "TEMP", "TMP", "LANG", "LC_ALL"}
++    environment = {key: value for key, value in os.environ.items() if key.upper() in allowed}
++    environment[config["credential_env"]] = os.environ[config["credential_env"]]
++    script = Path.cwd().resolve() / "plugins" / "send_teams_msg.py"
++    try:
++        response = subprocess.run([sys.executable, "-I", str(script), "--managed-json"], input=json.dumps(child, ensure_ascii=False).encode("utf-8"), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, cwd=Path.cwd(), env=environment, timeout=35, check=False)
++        data = decode(response.stdout)
++        expected = {"schema_version", "notification_id", "attempt_id", "attempted", "outcome", "error_code", "http_status"}
++        if response.returncode != 0 or not isinstance(data, dict) or set(data) != expected or data["schema_version"] != 1 or data["notification_id"] != request["notification_id"] or data["attempt_id"] != request["attempt_id"] or type(data["attempted"]) is not bool:
++            raise ValueError("protocol")
++        if data["outcome"] not in ("attempted", "network_failure", "configuration_failure", "permission_failure", "service_failure", "unknown") or data["error_code"] not in ("", "configuration", "permission", "network", "service", "protocol", "timeout", "tls"):
++            raise ValueError("protocol")
++        status = data["http_status"]
++        if status is not None and (type(status) is not int or not 100 <= status <= 599):
++            raise ValueError("protocol")
++        return result(request, data["outcome"], data["attempted"], data["error_code"], status)
++    except PermissionError:
++        return result(request, "permission_failure", False, "permission")
++    except Exception:
++        return result(request, "unknown", True, "protocol")
++
++
++def main():
+     parser = argparse.ArgumentParser(prog="aiw-notify")
+-    sub = parser.add_subparsers(dest="command")
+-    dispatch_parser = sub.add_parser("dispatch")
+-    dispatch_parser.add_argument("--json", action="store_true")
++    parser.add_argument("command", choices=("dispatch", "preflight"))
++    parser.add_argument("--json", action="store_true", required=True)
+     args = parser.parse_args()
+-    if args.command == "dispatch":
+-        return dispatch(args.json)
+-    parser.error("use: aiw-notify dispatch --json")
+-    return 2
++    try:
++        request = decode(sys.stdin.buffer.read(LIMIT + 1))
++        if args.command == "preflight":
++            if request != {"schema_version": 2}:
++                raise ValueError("protocol")
++            _, value = project_config()
++        elif isinstance(request, dict) and "schema_version" not in request:
++            # v1 is a historical local acknowledgement only. It never sends.
++            if not isinstance(request.get("id"), str) or not request["id"] or not request.get("topic") or "payload" not in request:
++                raise ValueError("protocol")
++            value = {"notification_id": request["id"], "status": "accepted", "receipt": "aiw-notify:" + request["id"]}
++        else:
++            value = managed_dispatch(request)
++        print(json.dumps(value, ensure_ascii=False))
++        return 0
++    except Exception:
++        print('{"error_code":"configuration"}')
++        return 2
+ 
+ 
+ if __name__ == "__main__":
+diff --git a/plugins/send_teams_msg.py b/plugins/send_teams_msg.py
+index 788bf8d..e7aafa8 100644
+--- a/plugins/send_teams_msg.py
++++ b/plugins/send_teams_msg.py
+@@ -324,5 +324,83 @@ def main() -> None:
+     print(result)
+ 
+ 
++def managed_main():
++    """Explicit text-only protocol, isolated from legacy defaults and .env."""
++    import errno
++    import socket
++    from urllib.parse import urlsplit
++
++    request = {}
++    attempted = False
++
++    def emit(outcome, code="", status=None):
++        print(json.dumps({"schema_version": 1, "notification_id": request.get("notification_id", ""), "attempt_id": request.get("attempt_id", ""), "attempted": attempted, "outcome": outcome, "error_code": code, "http_status": status}))
++
++    class NoRedirect(urllib.request.HTTPRedirectHandler):
++        def redirect_request(self, req, fp, code, msg, headers, newurl):
++            return None
++
++    def unique(pairs):
++        data = {}
++        for key, value in pairs:
++            if key in data:
++                raise ValueError("protocol")
++            data[key] = value
++        return data
++
++    try:
++        raw = sys.stdin.buffer.read(64 * 1024 + 1)
++        if len(raw) > 64 * 1024:
++            raise ValueError("protocol")
++        request = json.loads(raw.decode("utf-8"), object_pairs_hook=unique)
++        fields = {"schema_version", "notification_id", "attempt_id", "text", "endpoint", "credential_env", "ca_file", "sender", "timeout_seconds"}
++        if not isinstance(request, dict):
++            request = {}
++            raise ValueError("protocol")
++        if set(request) != fields or type(request["schema_version"]) is not int or request["schema_version"] != 1:
++            raise ValueError("protocol")
++        if any(not isinstance(request[key], str) for key in fields - {"schema_version", "timeout_seconds"}):
++            raise ValueError("protocol")
++        if not request["text"] or len(request["text"].encode("utf-8")) > 16 * 1024 or type(request["timeout_seconds"]) is not int or not 1 <= request["timeout_seconds"] <= 30:
++            raise ValueError("protocol")
++        endpoint = urlsplit(request["endpoint"])
++        if endpoint.scheme != "https" or not endpoint.hostname or endpoint.username or endpoint.password or endpoint.query or endpoint.fragment or any(ch.isspace() for ch in request["endpoint"]):
++            raise ValueError("configuration")
++        credential = os.environ.get(request["credential_env"])
++        if not credential:
++            raise ValueError("configuration")
++        tls = ssl.create_default_context(cafile=request["ca_file"] or None)
++        # Ignore implicit proxy configuration and never follow redirects.
++        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect(), urllib.request.HTTPSHandler(context=tls))
++        body = json.dumps({"from": request["sender"], "content": request["text"], "ePassword": credential}, ensure_ascii=False).encode("utf-8")
++        outgoing = urllib.request.Request(request["endpoint"], data=body, headers={"Content-Type": "application/json; charset=utf-8"}, method="POST")
++        attempted = True
++        with opener.open(outgoing, timeout=request["timeout_seconds"]) as response:
++            status = response.status
++            # Never read, print or persist remote response bodies.
++            emit("attempted" if 200 <= status < 300 else "service_failure", "" if 200 <= status < 300 else "service", status)
++    except urllib.error.HTTPError as exc:
++        emit("permission_failure" if exc.code in (401, 403) else "service_failure", "permission" if exc.code in (401, 403) else "service", exc.code)
++        exc.close()
++    except Exception as exc:
++        cause = exc.reason if isinstance(exc, urllib.error.URLError) else exc
++        if isinstance(cause, ssl.SSLCertVerificationError):
++            emit("configuration_failure", "tls")
++        elif isinstance(cause, PermissionError):
++            emit("permission_failure", "permission")
++        elif isinstance(cause, (socket.gaierror, ConnectionRefusedError, ConnectionResetError)) or (isinstance(cause, OSError) and cause.errno in (errno.ENETUNREACH, errno.EHOSTUNREACH)):
++            emit("network_failure", "network")
++        elif not attempted:
++            emit("configuration_failure", "configuration")
++        else:
++            # Timeout phase is not provable here; never guess network failure.
++            emit("unknown", "timeout" if isinstance(cause, TimeoutError) else "protocol")
++    return 0
++
++
++if __name__ == "__main__" and sys.argv[1:] == ["--managed-json"]:
++    raise SystemExit(managed_main())
++
++
+ if __name__ == "__main__":
+     main()

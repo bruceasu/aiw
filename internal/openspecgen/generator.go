@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"aiw/internal/requirement"
 )
 
 // ValidateWithCLI runs OpenSpec validation when an executable is available.
@@ -29,18 +31,27 @@ type Input struct {
 	Title       string
 	Requirement string
 	Capability  string
+	Candidate   *requirement.GenerationCandidate
+	Request     *requirement.GenerationRequest
 }
 
 // Artifact is a canonical OpenSpec file produced by the renderer.
 type Artifact struct {
 	Path    string
 	Content []byte
+	Coverage []requirement.GenerationCoverage
 }
 
 // Render returns the schema-shaped artifact set without touching the file
 // system. Callers decide whether to preserve existing files and how to report
 // validation or partial-write failures.
 func Render(input Input) ([]Artifact, error) {
+	if input.Candidate != nil || input.Request != nil {
+		if input.Candidate == nil || input.Request == nil {
+			return nil, fmt.Errorf("generation request and candidate are both required")
+		}
+		return RenderCandidate(*input.Request, *input.Candidate)
+	}
 	if input.Title == "" || input.Requirement == "" || input.Capability == "" {
 		return nil, fmt.Errorf("title, requirement, and capability are required")
 	}
@@ -98,7 +109,16 @@ func Validate(artifacts []Artifact) error {
 		return fmt.Errorf("no OpenSpec artifacts")
 	}
 	seen := make(map[string]bool, len(artifacts))
+	specs := 0
 	for _, artifact := range artifacts {
+		if err := validateArtifactPath(artifact.Path); err != nil {
+			return err
+		}
+		key := strings.ToLower(artifact.Path)
+		if seen[key] {
+			return fmt.Errorf("duplicate artifact target: %s", artifact.Path)
+		}
+		seen[key] = true
 		seen[artifact.Path] = true
 		content := string(artifact.Content)
 		switch {
@@ -111,6 +131,7 @@ func Validate(artifacts []Artifact) error {
 				return fmt.Errorf("design.md is missing required sections")
 			}
 		case strings.HasPrefix(artifact.Path, "specs/") && strings.HasSuffix(artifact.Path, "/spec.md"):
+			specs++
 			if !strings.Contains(content, "## ADDED Requirements") && !strings.Contains(content, "## MODIFIED Requirements") && !strings.Contains(content, "## REMOVED Requirements") && !strings.Contains(content, "## RENAMED Requirements") {
 				return fmt.Errorf("%s has no delta sections", artifact.Path)
 			}
@@ -131,6 +152,9 @@ func Validate(artifacts []Artifact) error {
 			return fmt.Errorf("missing required artifact: %s", required)
 		}
 	}
+	if specs == 0 {
+		return fmt.Errorf("at least one capability spec is required")
+	}
 	return nil
 }
 
@@ -138,7 +162,18 @@ func Validate(artifacts []Artifact) error {
 // Existing files are intentionally left untouched so retries are safe.
 func WriteMissing(root string, artifacts []Artifact) ([]string, error) {
 	created := []string{}
+	if err := Validate(artifacts); err != nil {
+		return created, err
+	}
 	for _, artifact := range artifacts {
+		if err := validateTarget(root, artifact.Path); err != nil {
+			return created, err
+		}
+	}
+	for _, artifact := range artifacts {
+		if err := validateTarget(root, artifact.Path); err != nil {
+			return created, err
+		}
 		path := filepath.Join(root, filepath.FromSlash(artifact.Path))
 		if _, err := os.Stat(path); err == nil {
 			continue
@@ -148,9 +183,14 @@ func WriteMissing(root string, artifacts []Artifact) ([]string, error) {
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			return created, err
 		}
-		if err := os.WriteFile(path, artifact.Content, 0o644); err != nil {
+		file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		if err != nil {
 			return created, err
 		}
+		_, writeErr := file.Write(artifact.Content)
+		closeErr := file.Close()
+		if writeErr != nil { return created, writeErr }
+		if closeErr != nil { return created, closeErr }
 		created = append(created, artifact.Path)
 	}
 	return created, nil

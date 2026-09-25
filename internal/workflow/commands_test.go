@@ -331,6 +331,27 @@ func TestReconcileChecklistKeepsWorkItemIDsAcrossRenameAndReorder(t *testing.T) 
 	}
 }
 
+func TestSyncChecklistDoesNotOpenGateForCancelledWorkItem(t *testing.T) {
+	store := NewStore(t.TempDir())
+	state := compatibleState()
+	state.WorkItems = []WorkItem{{
+		ID: "wi-0001", Checklist: ChecklistReference{Item: "2.1"}, Title: "removed work", State: WorkItemCancelled,
+	}}
+	if _, err := store.Create(state); err != nil {
+		t.Fatal(err)
+	}
+	updated, err := store.SyncChecklist("task-1", nil, "cancelled-item-removed")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updated.WorkItems[0].State != WorkItemCancelled {
+		t.Fatalf("cancelled Work Item changed state: %s", updated.WorkItems[0].State)
+	}
+	if len(updated.Gates) != 0 {
+		t.Fatalf("removed cancelled Work Item created a Gate: %#v", updated.Gates)
+	}
+}
+
 func TestSyncChecklistMapsExplicitDependenciesToWorkItemIDs(t *testing.T) {
 	store := NewStore(t.TempDir())
 	if _, err := store.Create(compatibleState()); err != nil {

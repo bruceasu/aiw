@@ -2,6 +2,7 @@ package workflow
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"aiw/internal/repo"
+	"aiw/internal/taskpath"
 )
 
 const (
@@ -20,16 +22,20 @@ const (
 	runtimeStateFile   = "state.json"
 	runtimeEventsFile  = "events.jsonl"
 	legacyMigrationFile = "migrated-to"
-	legacyMigrationPendingFile = ".migration-pending"
 )
 
 // Store persists local, high-churn Workflow Core state. It deliberately does
 // not read or write OpenSpec artifacts; Task/OpenSpec adapters own that seam.
 type Store struct {
 	Root string
+	ExecutionServices *ExecutionServices
+	DeliveryServices *DeliveryServices
+	AuxiliaryServices *AuxiliaryServices
 }
 
 type Event struct {
+	CommitID      string     `json:"commit_id,omitempty"`
+	StateRevision uint64     `json:"state_revision,omitempty"`
 	SchemaVersion int        `json:"schema_version"`
 	Sequence      uint64     `json:"sequence"`
 	Type          string     `json:"type"`
@@ -39,17 +45,29 @@ type Event struct {
 	Detail        string     `json:"detail,omitempty"`
 }
 
+// ConfigureAuxiliaryStore is installed once by the executable composition root.
+// Library users retain explicit service injection; constructing a Store does not
+// start a process, initialize resources, or enable a protocol migration.
+var ConfigureAuxiliaryStore func(*Store)
+
 func NewStore(root string) *Store {
 	if strings.TrimSpace(root) == "" {
 		root = filepath.Join(repo.Root(), defaultRuntimeRoot)
 	}
-	return &Store{Root: root}
+	store := &Store{Root: root}
+	if ConfigureAuxiliaryStore != nil { ConfigureAuxiliaryStore(store) }
+	return store
 }
 
 func (s *Store) Create(state RuntimeState) (RuntimeState, error) {
 	if err := validateTaskID(state.Task.ID); err != nil {
 		return RuntimeState{}, err
 	}
+	if err := s.legacyTaskError(state.Task.ID); err != nil { return RuntimeState{}, err }
+	if state.SchemaVersion == DurableSchemaVersion { return RuntimeState{}, errors.New("durable execution requires the managed migration boundary") }
+	lock, err := s.lock(state.Task.ID)
+	if err != nil { return RuntimeState{}, err }
+	defer unlock(lock)
 	if err := normalizeRuntimeState(&state); err != nil {
 		return RuntimeState{}, err
 	}
@@ -78,10 +96,9 @@ func (s *Store) Load(id TaskID) (RuntimeState, error) {
 	if err := validateTaskID(id); err != nil {
 		return RuntimeState{}, err
 	}
+	if err := s.legacyTaskError(id); err != nil { return RuntimeState{}, err }
 	dir := s.taskDir(id)
-	if _, err := os.Stat(filepath.Join(dir, runtimeStateFile)); errors.Is(err, os.ErrNotExist) {
-		dir = s.legacyTaskDir(id)
-	} else if err != nil {
+	if _, err := os.Stat(filepath.Join(dir, runtimeStateFile)); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return RuntimeState{}, err
 	}
 	return s.loadFromDir(id, dir)
@@ -96,6 +113,11 @@ func (s *Store) loadFromDir(id TaskID, dir string) (RuntimeState, error) {
 	if err := json.Unmarshal(b, &state); err != nil {
 		return RuntimeState{}, fmt.Errorf("decode workflow state: %w", err)
 	}
+	if state.SchemaVersion == DurableSchemaVersion {
+		decoder := json.NewDecoder(bytes.NewReader(b))
+		decoder.DisallowUnknownFields()
+		if err := decoder.Decode(&state); err != nil { return RuntimeState{}, fmt.Errorf("preserve unsupported durable state: %w", err) }
+	}
 	if state.Task.ID != id {
 		return RuntimeState{}, fmt.Errorf("workflow state id mismatch: %s", state.Task.ID)
 	}
@@ -109,10 +131,16 @@ func (s *Store) loadFromDir(id TaskID, dir string) (RuntimeState, error) {
 }
 
 func normalizeRuntimeState(state *RuntimeState) error {
+	for i := range state.Notifications {
+		n := &state.Notifications[i]
+		if n.Managed == nil && n.State == NotificationDelivered { n.State = "legacy-local-ack" }
+	}
 	switch state.SchemaVersion {
 	case 1, 2, 3, 4, 5, 6, 7, 8:
 		state.SchemaVersion = SchemaVersion
 	case SchemaVersion:
+	case DurableSchemaVersion:
+		return validateExecutionProtocol(*state)
 	default:
 		return fmt.Errorf("unsupported workflow schema version: %d", state.SchemaVersion)
 	}
@@ -136,7 +164,7 @@ func (s *Store) update(id TaskID, change func(*RuntimeState) error) (RuntimeStat
 		return RuntimeState{}, err
 	}
 	defer unlock(lock)
-	if err := s.migrateLegacyLocked(id); err != nil {
+	if err := s.rejectLegacyTask(id); err != nil {
 		return RuntimeState{}, err
 	}
 
@@ -144,6 +172,7 @@ func (s *Store) update(id TaskID, change func(*RuntimeState) error) (RuntimeStat
 	if err != nil {
 		return RuntimeState{}, err
 	}
+	if state.SchemaVersion == DurableSchemaVersion { return RuntimeState{}, errors.New("durable state requires an ordered conditional commit") }
 	if err := change(&state); err != nil {
 		return RuntimeState{}, err
 	}
@@ -164,12 +193,22 @@ func (s *Store) update(id TaskID, change func(*RuntimeState) error) (RuntimeStat
 // appends that exact event, then records the confirmed sequence. Recovery can
 // therefore replay only a persisted event and never repeat a caller action.
 func (s *Store) UpdateWithEvent(id TaskID, event Event, change func(*RuntimeState) error) (RuntimeState, error) {
+	return s.updateWithEvent(id, nil, event, change)
+}
+
+func (s *Store) updateWithEvent(id TaskID, expected *uint64, event Event, change func(*RuntimeState) error) (RuntimeState, error) {
 	lock, err := s.lock(id)
 	if err != nil {
 		return RuntimeState{}, err
 	}
-	defer unlock(lock)
-	if err := s.migrateLegacyLocked(id); err != nil {
+	startAuxiliary := false
+	defer func() {
+		unlock(lock)
+		// A projection failure cannot roll back acceptance. Persisted source
+		// facts remain discoverable at the next managed startup.
+		if startAuxiliary { s.startAuxiliaryHost(id) }
+	}()
+	if err := s.rejectLegacyTask(id); err != nil {
 		return RuntimeState{}, err
 	}
 
@@ -180,22 +219,51 @@ func (s *Store) UpdateWithEvent(id TaskID, event Event, change func(*RuntimeStat
 	if state.PendingEvent != nil {
 		return RuntimeState{}, fmt.Errorf("workflow Task has pending event %d; recover it before another transition", state.PendingEvent.Sequence)
 	}
+	if expected != nil && state.StateRevision != *expected { return RuntimeState{}, errors.New("workflow state revision changed; reconcile before retry") }
+	if state.SchemaVersion == DurableSchemaVersion {
+		if !isSystemLock(lock) || expected == nil || !strings.HasPrefix(event.Type, "protocol.") { return RuntimeState{}, errors.New("durable execution requires a conditional protocol transition and system lock") }
+		events, err := s.readEvents(id)
+		if err != nil { return RuntimeState{}, err }
+		if uint64(len(events)) != state.LastEventSequence { return RuntimeState{}, errors.New("durable event history is incomplete") }
+		for i, recorded := range events { if recorded.Sequence != uint64(i+1) { return RuntimeState{}, errors.New("durable event sequence is inconsistent") } }
+		if len(events) == 0 || events[len(events)-1].CommitID != state.CommitID || events[len(events)-1].StateRevision != state.StateRevision { return RuntimeState{}, errors.New("event history does not confirm the current state revision") }
+	}
+	originalSchema, originalRevision := state.SchemaVersion, state.StateRevision
 	if err := change(&state); err != nil {
+		if errors.Is(err, errProtocolNoChange) { return s.Load(id) }
 		return RuntimeState{}, err
+	}
+	if state.SchemaVersion != originalSchema || state.StateRevision != originalRevision { return RuntimeState{}, errors.New("transition cannot replace the schema or commit revision") }
+	if state.SchemaVersion == DurableSchemaVersion {
+		previousSources := 0
+		previousNotifications := len(state.Notifications)
+		if state.Protocol != nil && state.Protocol.Auxiliary != nil { previousSources = len(state.Protocol.Auxiliary.Sources) }
+		captureAuxiliarySource(&state)
+		s.captureNotificationFacts(&state)
+		startAuxiliary = state.Protocol != nil && state.Protocol.Auxiliary != nil && len(state.Protocol.Auxiliary.Sources) > previousSources
+		startAuxiliary = startAuxiliary || len(state.Notifications) > previousNotifications
 	}
 	if strings.TrimSpace(event.Type) == "" {
 		return RuntimeState{}, errors.New("workflow event type is required")
 	}
-	event.SchemaVersion = SchemaVersion
+	if state.Task.ID != id { return RuntimeState{}, errors.New("workflow Task ID cannot change") }
+	event.SchemaVersion = state.SchemaVersion
 	event.Sequence = state.LastEventSequence + 1
+	if state.SchemaVersion == DurableSchemaVersion {
+		state.StateRevision++
+		state.CommitID = fmt.Sprintf("%s-%d", id, state.StateRevision)
+		event.CommitID, event.StateRevision = state.CommitID, state.StateRevision
+	}
 	if event.At == "" {
 		event.At = time.Now().UTC().Format(time.RFC3339)
 	}
 	state.PendingEvent = &event
 	if err := ValidateRuntimeState(state); err != nil {
+		startAuxiliary = false
 		return RuntimeState{}, err
 	}
 	if err := s.save(state); err != nil {
+		startAuxiliary = false
 		return RuntimeState{}, err
 	}
 	if err := s.appendEvent(event, id); err != nil {
@@ -218,9 +286,9 @@ func (s *Store) appendEvent(event Event, id TaskID) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	_, err = f.Write(append(b, '\n'))
-	return err
+	n, writeErr := f.Write(append(b, '\n'))
+	if writeErr == nil && n != len(b)+1 { writeErr = errors.New("short workflow event write") }
+	return errors.Join(writeErr, f.Sync(), f.Close())
 }
 
 // ensureEventLog completes runtime bootstrap after an interrupted initial
@@ -243,7 +311,7 @@ func (s *Store) RecoverPendingEvent(id TaskID) (RuntimeState, error) {
 		return RuntimeState{}, err
 	}
 	defer unlock(lock)
-	if err := s.migrateLegacyLocked(id); err != nil {
+	if err := s.rejectLegacyTask(id); err != nil {
 		return RuntimeState{}, err
 	}
 	state, err := s.Load(id)
@@ -253,16 +321,22 @@ func (s *Store) RecoverPendingEvent(id TaskID) (RuntimeState, error) {
 	if state.PendingEvent == nil {
 		return state, nil
 	}
+	if state.SchemaVersion == DurableSchemaVersion && !isSystemLock(lock) { return RuntimeState{}, errors.New("durable recovery requires the migrated Task lock") }
 	pending := *state.PendingEvent
 	if pending.Sequence != state.LastEventSequence+1 || pending.Sequence == 0 {
 		return RuntimeState{}, fmt.Errorf("pending event sequence %d cannot follow confirmed sequence %d", pending.Sequence, state.LastEventSequence)
 	}
 	events, err := s.readEvents(id)
 	if err != nil {
-		return RuntimeState{}, err
+		if repairErr := s.repairPendingTail(id, state); repairErr != nil { return RuntimeState{}, errors.Join(err, repairErr) }
+		events, err = s.readEvents(id)
+		if err != nil { return RuntimeState{}, err }
 	}
 	found := false
+	var sequence uint64
 	for _, existing := range events {
+		sequence++
+		if state.SchemaVersion == DurableSchemaVersion && (existing.Sequence != sequence || existing.Sequence > pending.Sequence) { return RuntimeState{}, errors.New("event history conflicts with pending commit") }
 		if existing.Sequence != pending.Sequence {
 			continue
 		}
@@ -271,6 +345,7 @@ func (s *Store) RecoverPendingEvent(id TaskID) (RuntimeState, error) {
 		}
 		found = true
 	}
+	if state.SchemaVersion == DurableSchemaVersion && !found && sequence != state.LastEventSequence { return RuntimeState{}, errors.New("confirmed event history is incomplete") }
 	if !found {
 		if err := s.appendEvent(pending, id); err != nil {
 			return RuntimeState{}, err
@@ -293,6 +368,13 @@ func (s *Store) readEvents(id TaskID) ([]Event, error) {
 		return nil, err
 	}
 	defer f.Close()
+	info, err := f.Stat()
+	if err != nil { return nil, err }
+	if info.Size() > 0 {
+		last := []byte{0}
+		if _, err := f.ReadAt(last, info.Size()-1); err != nil { return nil, err }
+		if last[0] != '\n' { return nil, errors.New("workflow event log has an incomplete tail") }
+	}
 	var events []Event
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
@@ -345,11 +427,24 @@ func (s *Store) ReleaseWriteLease(id TaskID, attemptID AttemptID) (RuntimeState,
 }
 
 func (s *Store) taskDir(id TaskID) string {
-	return filepath.Join(s.Root, string(id))
+	return taskpath.ActiveTaskDir(s.Root, string(id))
 }
 
 func (s *Store) legacyTaskDir(id TaskID) string {
-	return filepath.Join(s.Root, runtimeTasksDir, string(id))
+	return taskpath.LegacyTaskDir(s.Root, string(id))
+}
+
+func (s *Store) legacyTaskError(id TaskID) error {
+	if err := taskpath.ValidateID(string(id)); err != nil { return err }
+	marker := filepath.Join(s.taskDir(id), legacyMigrationFile)
+	if _, err := os.Lstat(marker); err == nil {
+		return fmt.Errorf("workflow Task %s has a migration marker at %s; stop AIW writers and manually relocate the complete Task directory to %s", id, marker, s.taskDir(id))
+	} else if !errors.Is(err, os.ErrNotExist) { return err }
+	path := s.legacyTaskDir(id)
+	if _, err := os.Lstat(path); err == nil {
+		return fmt.Errorf("workflow Task %s remains at legacy path %s; stop AIW writers and manually relocate it to %s", id, path, s.taskDir(id))
+	} else if !errors.Is(err, os.ErrNotExist) { return err }
+	return nil
 }
 
 func (s *Store) path(id TaskID, names ...string) string {
@@ -363,7 +458,43 @@ func (s *Store) lock(id TaskID) (*os.File, error) {
 	if err := os.MkdirAll(filepath.Join(s.Root, runtimeLocksDir), 0o755); err != nil {
 		return nil, err
 	}
-	return os.OpenFile(filepath.Join(s.Root, runtimeLocksDir, string(id)+".lock"), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	path := filepath.Join(s.Root, runtimeLocksDir, string(id)+".lock")
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0o600)
+	if err == nil || !errors.Is(err, os.ErrExist) { return file, err }
+	file, err = os.OpenFile(path, os.O_RDWR, 0)
+	if err != nil { return nil, err }
+	if !isSystemLock(file) { _ = file.Close(); return nil, errors.New("legacy or incomplete Task lock requires managed reconciliation") }
+	if err := systemTaskLock(file); err != nil { _ = file.Close(); return nil, err }
+	return file, nil
+}
+
+// TaskLocked reports whether a Core writer currently holds the Task lock. It
+// is intended for read-only repair previews; callers that will write must use
+// AcquireTaskLock to avoid a check-then-write race.
+func (s *Store) TaskLocked(id TaskID) (bool, error) {
+	if err := validateTaskID(id); err != nil {
+		return false, err
+	}
+	file, err := os.OpenFile(filepath.Join(s.Root, runtimeLocksDir, string(id)+".lock"), os.O_RDWR, 0)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil { return false, err }
+	if !isSystemLock(file) { _ = file.Close(); return true, nil }
+	if err := systemTaskLock(file); err != nil { _ = file.Close(); return true, nil }
+	return false, systemTaskUnlock(file)
+}
+
+// AcquireTaskLock serializes a metadata repair with all Workflow Core state
+// writers. The returned release function must be called after the repair.
+func (s *Store) AcquireTaskLock(id TaskID) (func() error, error) {
+	file, err := s.lock(id)
+	if err != nil {
+		return nil, err
+	}
+	return func() error {
+		return releaseTaskLock(file)
+	}, nil
 }
 
 func (s *Store) save(state RuntimeState) error {
@@ -372,130 +503,18 @@ func (s *Store) save(state RuntimeState) error {
 	if err != nil {
 		return err
 	}
+	if state.SchemaVersion == DurableSchemaVersion { return durableWrite(s.path(state.Task.ID, runtimeStateFile), append(b, '\n')) }
 	return atomicWrite(s.path(state.Task.ID, runtimeStateFile), append(b, '\n'))
 }
 
-// migrateLegacyLocked promotes the complete legacy Task aggregate only while
-// the Task's exclusive state lock is held. A rename keeps state, events,
-// handoffs, and adapter-owned payloads together. The migration event follows
-// the same pending-event protocol as ordinary transitions, so an interruption
-// can be recovered without replaying a caller action.
-func (s *Store) migrateLegacyLocked(id TaskID) error {
-	canonical := s.taskDir(id)
-	legacy := s.legacyTaskDir(id)
-	if _, err := os.Stat(filepath.Join(canonical, runtimeStateFile)); err == nil {
-		if _, err := s.loadFromDir(id, canonical); err != nil {
-			return err
-		}
-		if _, err := os.Stat(filepath.Join(canonical, legacyMigrationPendingFile)); err == nil {
-			if err := s.recoverMigrationEvent(id); err != nil {
-				return err
-			}
-			if err := s.recordMigrationEvent(id); err != nil {
-				return err
-			}
-			if err := os.Remove(filepath.Join(canonical, legacyMigrationPendingFile)); err != nil && !errors.Is(err, os.ErrNotExist) {
-				return err
-			}
-		}
-		return s.markLegacyMigrated(legacy, canonical)
-	} else if !errors.Is(err, os.ErrNotExist) {
-		return err
-	}
-	if _, err := os.Stat(filepath.Join(legacy, runtimeStateFile)); errors.Is(err, os.ErrNotExist) {
-		return nil
-	} else if err != nil {
-		return err
-	}
-	if err := atomicWrite(filepath.Join(legacy, legacyMigrationPendingFile), []byte("pending\n")); err != nil {
-		return err
-	}
-	if err := os.Rename(legacy, canonical); err != nil {
-		return fmt.Errorf("migrate legacy workflow Task %s: %w", id, err)
-	}
-	if err := s.recordMigrationEvent(id); err != nil {
-		return err
-	}
-	if err := os.Remove(filepath.Join(canonical, legacyMigrationPendingFile)); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return err
-	}
-	return s.markLegacyMigrated(legacy, canonical)
-}
-
-func (s *Store) recordMigrationEvent(id TaskID) error {
-	state, err := s.loadFromDir(id, s.taskDir(id))
-	if err != nil {
-		return err
-	}
-	if state.PendingEvent != nil {
-		return fmt.Errorf("legacy workflow Task %s has pending event %d; recover it before migration", id, state.PendingEvent.Sequence)
-	}
-	events, err := s.readEvents(id)
-	if err != nil {
-		return err
-	}
-	for _, existing := range events {
-		if existing.Type == "runtime.migrated" && existing.Detail == "from .ai/tasks" {
-			return nil
-		}
-	}
-	event := Event{SchemaVersion: SchemaVersion, Sequence: state.LastEventSequence + 1, Type: "runtime.migrated", At: time.Now().UTC().Format(time.RFC3339), Detail: "from .ai/tasks"}
-	state.PendingEvent = &event
-	if err := s.save(state); err != nil {
-		return err
-	}
-	if err := s.appendEvent(event, id); err != nil {
-		return err
-	}
-	state.LastEventSequence = event.Sequence
-	state.PendingEvent = nil
-	return s.save(state)
-}
-
-func (s *Store) recoverMigrationEvent(id TaskID) error {
-	state, err := s.loadFromDir(id, s.taskDir(id))
-	if err != nil {
-		return err
-	}
-	if state.PendingEvent == nil {
-		return nil
-	}
-	pending := *state.PendingEvent
-	if pending.Type != "runtime.migrated" || pending.Sequence != state.LastEventSequence+1 {
-		return fmt.Errorf("legacy workflow Task %s has unrelated pending event; recover it before migration", id)
-	}
-	events, err := s.readEvents(id)
-	if err != nil {
-		return err
-	}
-	found := false
-	for _, existing := range events {
-		if existing.Sequence == pending.Sequence {
-			if existing != pending {
-				return fmt.Errorf("migration event sequence %d conflicts with event history", pending.Sequence)
-			}
-			found = true
-		}
-	}
-	if !found {
-		if err := s.appendEvent(pending, id); err != nil {
-			return err
-		}
-	}
-	state.LastEventSequence = pending.Sequence
-	state.PendingEvent = nil
-	return s.save(state)
-}
-
-func (s *Store) markLegacyMigrated(legacy, canonical string) error {
-	if err := os.MkdirAll(legacy, 0o755); err != nil {
-		return err
-	}
-	return atomicWrite(filepath.Join(legacy, legacyMigrationFile), []byte(canonical+"\n"))
+// rejectLegacyTask keeps normal Core reads and writes from migrating old
+// runtime records implicitly. The explicit storage command owns data moves.
+func (s *Store) rejectLegacyTask(id TaskID) error {
+	return s.legacyTaskError(id)
 }
 
 func validateTaskID(id TaskID) error {
-	if strings.TrimSpace(string(id)) == "" || strings.ContainsAny(string(id), `/\\`) {
+	if strings.TrimSpace(string(id)) == "" || id == "." || id == ".." || strings.ContainsAny(string(id), `/\\`) {
 		return errors.New("invalid workflow Task ID")
 	}
 	return nil
@@ -534,12 +553,7 @@ func atomicWrite(path string, data []byte) error {
 }
 
 func unlock(file *os.File) {
-	if file == nil {
-		return
-	}
-	name := file.Name()
-	_ = file.Close()
-	_ = os.Remove(name)
+	_ = releaseTaskLock(file)
 }
 
 func findAttempt(attempts []Attempt, id AttemptID) (Attempt, bool) {

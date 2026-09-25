@@ -33,9 +33,26 @@ Describe options rather than prescribing implementation. Cover boundaries, depen
 - Do not write code, migrations, deployment plans, OpenSpec design files, or implementation tasks. After user confirmation, AIW Requirement Management may capture this artifact; this Skill must not invoke capture.
 - Do not promise backward compatibility, permissions, audit retention, or data contracts without evidence.
 - Do not produce release `GO`/`NO_GO` conclusions.
+- Separate business blockers from engineering choices that could wait. State
+  each proposed postponement and its reason; only explicit human confirmation
+  accepts it. Do not reclassify unresolved business rules as non-blocking design.
 - Use `%%` for unknown contracts, owners, security requirements, and risks; recommend one next discussion stage without invoking it.
 
 ## Output
+
+### When loaded by Requirement Management
+
+Apply this method only to the financial domain identified in the supplied
+context. The current host JSON contract overrides the Markdown template below;
+use the template only for a requested draft or standalone discussion.
+Use loaded source bodies and exact references. Do not load sibling Skills or
+linked materials, invent missing evidence, or treat capture as confirmation.
+Ask only the highest-impact open questions; keep conflicts and proposed
+conclusions separate from host-confirmed fragments. Report missing evidence
+without claiming readiness. The host owns persistence and human checkpoints.
+This method does not authorize tests, external calls, or lifecycle operations.
+
+### Draft artifact
 
 ```markdown
 # Requirement Artifact
@@ -58,5 +75,6 @@ Describe options rather than prescribing implementation. Cover boundaries, depen
 ## Permission and Audit Considerations
 ## Failure and Operational Considerations
 ## Open Questions
+## Proposed Design Postponements and Reasons
 ## Suggested Next Stage
 ```

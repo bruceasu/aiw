@@ -275,7 +275,16 @@ aiw task workflow run payment-retry --execute --primary
 aiw task workflow diagnose payment-retry
 aiw task workflow repair payment-retry
 aiw task workflow recover payment-retry
+aiw task workflow focused-test payment-retry attempt-123
+aiw task workflow delivery-failed payment-retry merge "conflict in parent branch"
+aiw task workflow repair-metadata payment-retry --dry-run
 ```
+
+`run` accepts `--execute`, `--primary`, `--provider NAME`, and `--model MODEL`;
+`--primary` requires `--execute`. `supervise` accepts provider/model overrides
+only with `start`. `focused-test` takes an Attempt ID and requires its
+Task-specific authorization. `delivery-failed` takes a stage and detail;
+`repair-metadata` takes an optional Task ID and `--dry-run`.
 
 ### 4.2 自动开发前的检查清单
 
