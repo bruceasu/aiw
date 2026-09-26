@@ -53,8 +53,8 @@ aiw context payment-retry
 
 ```powershell
 aiw wt add payment-retry
-aiw workflow plan payment-retry
-aiw workflow recommend-routing payment-retry
+aiw wf plan payment-retry
+aiw wf recommend-routing payment-retry
 aiw wt status payment-retry
 ```
 
@@ -68,7 +68,7 @@ supervise Compile Plan 的请求。让 supervise 在生成计划后准备自己�
 ### 3. 启动前台循环
 
 ```powershell
-aiw workflow supervise payment-retry start --provider codex --model your-model
+aiw wf supervise payment-retry start --provider codex --model your-model
 ```
 
 如果已在 `[ai]` 或 Profile 中配置模型，可省略两个覆盖参数。该终端会持续显示
@@ -78,8 +78,8 @@ aiw workflow supervise payment-retry start --provider codex --model your-model
 ### 4. 在另一终端查看进度
 
 ```powershell
-aiw workflow supervise payment-retry status
-aiw workflow report payment-retry
+aiw wf supervise payment-retry status
+aiw wf report payment-retry
 aiw show payment-retry
 ```
 
@@ -100,14 +100,14 @@ git log -3 --oneline
 ## 常规用法 Usage
 
 ```powershell
-aiw workflow recommend-routing payment-retry
-aiw workflow supervise payment-retry start --provider codex --model your-model
-aiw workflow supervise payment-retry status
-aiw workflow report payment-retry
-aiw workflow supervise payment-retry stop
+aiw wf recommend-routing payment-retry
+aiw wf supervise payment-retry start --provider codex --model your-model
+aiw wf supervise payment-retry status
+aiw wf report payment-retry
+aiw wf supervise payment-retry stop
 ```
 
-`aiw workflow` 与 `aiw task workflow` 使用同一入口。`--provider`、`--model`
+`aiw wf` 与 `aiw wf` 使用同一入口。`--provider`、`--model`
 只用于 `supervise ... start`。执行默认使用隔离工作树；`run --execute --primary`
 是单步执行的显式选项，不是 supervise 参数。启动 supervise 会进入包括本地交付
 在内的自动流程。
@@ -118,12 +118,12 @@ Task 也应先生成路由与 Compile Plan。推荐器可调用全局 AI provide
 
 | 目的 | 命令 | 注意事项 |
 |---|---|---|
-| 只预览下一步 | `aiw workflow run payment-retry` | 不启动 Agent，但可能准备并持久化请求；不是完全只读 |
-| 执行一个 Work Item | `aiw workflow run payment-retry --execute` | 不自动交付；不等同于 supervise 的编译修复循环 |
-| 显式在主工作区执行一步 | `aiw workflow run payment-retry --execute --primary` | Task 必须绑定主工作区 |
-| 请求停止循环 | `aiw workflow supervise payment-retry stop` | 保留状态；确认在途进程结束后再启动新循环 |
-| 处理问题后继续 | `aiw workflow supervise payment-retry start` | 保留已有请求快照；不会自动清除 Gate |
-| 调整普通重试上限 | `aiw workflow retry-policy payment-retry wi-0001 3` | 范围 1–5；不改变三次编译失败上限 |
+| 只预览下一步 | `aiw wf run payment-retry` | 不启动 Agent，但可能准备并持久化请求；不是完全只读 |
+| 执行一个 Work Item | `aiw wf run payment-retry --execute` | 不自动交付；不等同于 supervise 的编译修复循环 |
+| 显式在主工作区执行一步 | `aiw wf run payment-retry --execute --primary` | Task 必须绑定主工作区 |
+| 请求停止循环 | `aiw wf supervise payment-retry stop` | 保留状态；确认在途进程结束后再启动新循环 |
+| 处理问题后继续 | `aiw wf supervise payment-retry start` | 保留已有请求快照；不会自动清除 Gate |
+| 调整普通重试上限 | `aiw wf retry-policy payment-retry wi-0001 3` | 范围 1–5；不改变三次编译失败上限 |
 
 如果目标是只读观察，使用 `show`、`status`、`diagnose`、`report`。
 如果随后要切换到 supervise，不要把单步预览或执行产生的旧请求当作已经配置好
@@ -282,10 +282,10 @@ Gate、待处理请求、写入 lease 或投影修复时，隔离 Task 可进入
 | `openspec/changes/<task-id>/tasks.md` | 人工清单与 Workflow 投影 |
 
 ```powershell
-aiw workflow report payment-retry
-aiw workflow diagnose payment-retry
-aiw workflow recover payment-retry
-aiw workflow repair payment-retry
+aiw wf report payment-retry
+aiw wf diagnose payment-retry
+aiw wf recover payment-retry
+aiw wf repair payment-retry
 ```
 
 `report` 只读取报告，不初始化状态，也无需逐个查看 Session outputs。
@@ -330,8 +330,8 @@ durable/controlled-adapter 提示时，应处理受控宿主接入或原请求�
 Task 授权不足会记录 host gap。可用维护入口包括：
 
 ```powershell
-aiw workflow auxiliary inventory
-aiw workflow knowledge show payment-retry
+aiw wf auxiliary inventory
+aiw wf knowledge show payment-retry
 ```
 
 `auxiliary policy`、`initialize`、`settle` 和 `knowledge review/import` 属于显式
@@ -342,9 +342,9 @@ aiw workflow knowledge show payment-retry
 ### 先判断属于哪一层
 
 ```powershell
-aiw workflow supervise payment-retry status
-aiw workflow report payment-retry
-aiw workflow diagnose payment-retry
+aiw wf supervise payment-retry status
+aiw wf report payment-retry
+aiw wf diagnose payment-retry
 ```
 
 记下实际 Work Item ID、Attempt ID、Gate ID、错误原因和 `next action`。
@@ -365,9 +365,9 @@ aiw workflow diagnose payment-retry
    `blocked`，再显式 reopen 该项，最后才启动监督：
 
 ```powershell
-aiw workflow gate payment-retry workspace-access resolved
-aiw workflow reopen payment-retry wi-0001 "已在当前预检工作树验证限定 Git 查询"
-aiw workflow supervise payment-retry start
+aiw wf gate payment-retry workspace-access resolved
+aiw wf reopen payment-retry wi-0001 "已在当前预检工作树验证限定 Git 查询"
+aiw wf supervise payment-retry start
 ```
 
 初始 preflight Gate 通常没有把 Work Item 本身置为 `blocked`；此时跳过 `reopen`，
@@ -381,9 +381,9 @@ aiw workflow supervise payment-retry start
 先补齐明确的接口定义或完成前置工作，并更新任务工件，再执行：
 
 ```powershell
-aiw workflow gate payment-retry supervised-dependency-wi-0001 resolved
-aiw workflow reopen payment-retry wi-0001 "接口定义已确认并更新任务工件"
-aiw workflow supervise payment-retry start
+aiw wf gate payment-retry supervised-dependency-wi-0001 resolved
+aiw wf reopen payment-retry wi-0001 "接口定义已确认并更新任务工件"
+aiw wf supervise payment-retry start
 ```
 
 必须先处理该 Work Item 和 Task 级的所有相关 Gate。只重复 start 不会消除阻塞；
@@ -397,8 +397,8 @@ aiw workflow supervise payment-retry start
 先检查报告引用的最近输出，缩小清单范围或修正交接指引；有实际改变后再恢复：
 
 ```powershell
-aiw workflow reopen payment-retry wi-0001 "已拆清实现步骤并修正输出要求"
-aiw workflow supervise payment-retry start
+aiw wf reopen payment-retry wi-0001 "已拆清实现步骤并修正输出要求"
+aiw wf supervise payment-retry start
 ```
 
 示例以没有其他未解决 Gate 为前提。不要只提高 retry-policy 后重复相同失败。
@@ -417,11 +417,11 @@ aiw workflow supervise payment-retry start
 ```powershell
 # 将此值替换为 diagnose 输出中的实际 Gate ID；多个 Gate 逐个处理。
 $gateId = 'compiler-repair-limit-wi-0001'
-aiw workflow gate payment-retry $gateId resolved
-aiw workflow diagnose payment-retry
+aiw wf gate payment-retry $gateId resolved
+aiw wf diagnose payment-retry
 # 确认相关 Gate 均已解决，且 Work Item 为 blocked 后：
-aiw workflow reopen payment-retry wi-0001 "已修正编译错误，等待重新编译确认"
-aiw workflow supervise payment-retry start
+aiw wf reopen payment-retry wi-0001 "已修正编译错误，等待重新编译确认"
+aiw wf supervise payment-retry start
 ```
 
 Gate 也可能按 Attempt 命名，且另有 `supervised-validation-*`；不能只复制示例
@@ -433,9 +433,9 @@ Gate 也可能按 Attempt 命名，且另有 `supervised-validation-*`；不能�
 compile-only 脚本，确认它在 Task 工作树中可用，再重新生成和审阅计划：
 
 ```powershell
-aiw workflow recommend-routing payment-retry
-aiw workflow diagnose payment-retry
-aiw workflow supervise payment-retry status
+aiw wf recommend-routing payment-retry
+aiw wf diagnose payment-retry
+aiw wf supervise payment-retry status
 ```
 
 新计划不会更新已经冻结的请求。若旧请求仍持有 Attempt/写入 lease，当前命令
@@ -451,9 +451,9 @@ aiw workflow supervise payment-retry status
 如果诊断明确指出有待恢复事件或投影失败，分别使用：
 
 ```powershell
-aiw workflow recover payment-retry
-aiw workflow repair payment-retry
-aiw workflow supervise payment-retry status
+aiw wf recover payment-retry
+aiw wf repair payment-retry
+aiw wf supervise payment-retry status
 ```
 
 仅执行诊断要求的恢复操作。Session 完成状态、Attempt 或 turn 不匹配时，应查看
@@ -472,7 +472,7 @@ aiw workflow supervise payment-retry status
 所有相关 Gate 已处理、Task 已满足交付条件后，可显式重试本地交付：
 
 ```powershell
-aiw workflow local-merge payment-retry "Complete payment retry"
+aiw wf local-merge payment-retry "Complete payment retry"
 ```
 
 这条命令会提交、合并和清理，不是预览。若合并已经成功但清理失败，先核实祖先
@@ -485,17 +485,17 @@ aiw workflow local-merge payment-retry "Complete payment retry"
 处理具体原因。可选测试确实决定不运行时，可以明确记录跳过：
 
 ```powershell
-aiw workflow skip-focused-test payment-retry "本次不运行可选聚焦测试，已记录验证范围"
+aiw wf skip-focused-test payment-retry "本次不运行可选聚焦测试，已记录验证范围"
 ```
 
 该命令只用于可选 focused verification，不是绕过必需验证或业务 Gate 的方法。
 
 ## 实现位置与验证范围
 
-- `internal/commands/task/workflow_supervisor.go`：命令入口、执行接线和终端状态展示。
+- `internal/workflow/cli/supervisor.go`：命令入口、执行接线和终端状态展示。
 - `internal/workflow/execution/`：Supervisor 循环、Session 结构化结果、编译修复和交付条件判断。
-- `internal/taskx/workflow_artifacts.go`、`workflow_handoff.go`、`supervised_git.go`：Task 清单、交接工件和工作树预检。
-- `internal/commands/task/workflow_commands.go`：路由、请求准备、派发。
+- `internal/task/workflow/`、`internal/task/supervised_git.go`：Task 清单、交接工件和工作树预检。
+- `internal/workflow/cli/command.go`：路由、请求准备、派发。
 - `internal/workflow/execution/compile.go`：冻结计划、编译与修复编排。
 - `internal/commands/task/local_delivery.go`：本地交付和冲突保留。
 - `internal/workflow/attempts.go`、`compile.go`、`failure_report.go`：重试、编译结果和报告。

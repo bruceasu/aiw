@@ -29,5 +29,5 @@ Redact any sensitive information, such as API keys, passwords, or personally ide
 If the user passed arguments, treat them as a description of what the next session will focus on and tailor the doc accordingly.
 
 Do not start a new Thread automatically. When the user explicitly asks to hand
-off execution, use `aiw turn <task-id>` so AIW preserves the Task,
+off execution, use `aiw wf run <task-id> --execute` so AIW preserves the Task,
 worktree, Session, lease, and lineage.

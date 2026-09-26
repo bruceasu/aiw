@@ -5,7 +5,7 @@
 Refactor the current CLI into the structure:
 
 ```text
-main -> internal/commands/* -> internal/*
+cmd/* -> plugins -> internal/*
 ```
 
 and rebuild the top-level `aiw cz` capability within the new architecture.
@@ -13,13 +13,13 @@ and rebuild the top-level `aiw cz` capability within the new architecture.
 The implementation is divided into two phases:
 
 1. Complete command structure migration.
-2. Gradually rebuild a TUI + AI experience inside `internal/commands/cz` that approaches the reference project's UX.
+2. Gradually rebuild a TUI + AI experience inside `internal/cz` that approaches the reference project's UX.
 
 ---
 
 ## Confirmed Constraints
 
-* `cz` resides in `internal/commands/cz`
+* `cz` resides in `cmd/aiw-cz` and is launched through `plugins/aiw-cz`
 * `git`, `wt`, and `tcc` reside in:
 
   * `internal/commands/git`
@@ -43,17 +43,17 @@ The following structural migration has already been completed:
 * `internal/commands/wt` now handles worktree commands
 * `internal/commands/tcc` now handles tcc commands
 * `internal/commands/git` now handles git shortcut commands
-* `internal/commands/cz` has completed the initial linear-version migration
+* `internal/cz` contains the standalone Conventional Commit implementation
 * Initial shared utilities have been extracted into:
 
   * `internal/envx`
   * `internal/gitx`
-  * `internal/taskx`
+  * `internal/task`
   * `internal/fsx`
 
 The current focus is now limited to:
 
-1. Further splitting the internal structure of `internal/commands/cz`
+1. Further splitting the internal structure of `internal/cz`
 2. Introducing a real searchable TUI
 3. Completing advanced `cz` functionality and documentation
 
@@ -74,7 +74,7 @@ aiw/
    ├─ envx/
    ├─ fsx/
    ├─ gitx/
-   ├─ taskx/
+   ├─ task/
    ├─ textx/
    └─ cmdx/
 ```

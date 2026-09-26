@@ -9,8 +9,8 @@ import (
 func TestVerificationPlanDigestIgnoresCheckAndEnvironmentOrder(t *testing.T) {
 	first := validVerificationPlan()
 	first.Checks = append(first.Checks, VerificationCheck{
-		CheckID:             "taskx-tests",
-		Argv:                []string{"go", "test", "./internal/taskx"},
+		CheckID:             "task-tests",
+		Argv:                []string{"go", "test", "./internal/task"},
 		WorkingDirectory:    ".",
 		TimeoutSeconds:      60,
 		ExpectedExitCode:    0,
@@ -131,6 +131,32 @@ func TestSelectCompileAdapterPrefersCompileScriptThenGo(t *testing.T) {
 	}
 	if adapter.Kind != "script" || adapter.Name != "scripts/compile.py" {
 		t.Fatalf("adapter with script = %+v, want compile script", adapter)
+	}
+}
+
+func TestSelectAndResolveMavenCompileAdapter(t *testing.T) {
+	workspace := t.TempDir()
+	if err := os.WriteFile(filepath.Join(workspace, "pom.xml"), []byte("<project/>\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	adapter, err := SelectCompileAdapter(workspace)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if adapter.Kind != "maven" || adapter.Name != "maven-compile" || adapter.Command != "mvn" {
+		t.Fatalf("Maven adapter = %+v", adapter)
+	}
+	if !reflect.DeepEqual(adapter.Args, []string{"-DskipTests", "compile"}) {
+		t.Fatalf("Maven adapter args = %v", adapter.Args)
+	}
+
+	resolved, err := ResolveCompileTarget(workspace, CompileTarget{Name: adapter.Name, Kind: adapter.Kind, PathOwners: []string{"."}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved.Kind != "maven" || resolved.Command != "mvn" || !reflect.DeepEqual(resolved.Args, adapter.Args) {
+		t.Fatalf("resolved Maven adapter = %+v", resolved)
 	}
 }
 

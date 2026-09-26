@@ -171,7 +171,7 @@ aiw skills adopt
 aiw new payment-retry
 aiw show payment-retry
 aiw context payment-retry
-aiw chat payment-retry
+aiw wf run payment-retry --execute
 ```
 
 推荐节奏：
@@ -180,7 +180,7 @@ aiw chat payment-retry
 需求讨论
   -> aiw new
   -> aiw context
-  -> aiw chat
+  -> aiw wf run --execute
   -> 人工确认设计
   -> 编辑代码
   -> git status
@@ -191,10 +191,10 @@ aiw chat payment-retry
 需要持久化需求讨论时：
 
 ```powershell
-aiw requirement chat daily-report
-aiw requirement show daily-report
-aiw requirement approve daily-report APPROVED --by alice --reason "scope approved"
-aiw requirement promote daily-report --task daily-report
+aiw req chat daily-report
+aiw req show daily-report
+aiw req approve daily-report APPROVED --by alice --reason "scope approved"
+aiw req promote daily-report --task daily-report
 ```
 
 ### 3.3 交互式 Session
@@ -252,32 +252,32 @@ aiw archive payment-retry --cleanup-wt --delete-branch
 
 ```powershell
 aiw new payment-retry
-aiw task workflow plan payment-retry
-aiw task workflow advance payment-retry
-aiw task workflow run payment-retry
+aiw wf plan payment-retry
+aiw wf advance payment-retry
+aiw wf run payment-retry
 ```
 
 第一次 `run` 是预览。确认 Work Item、权限和目标目录后，才执行：
 
 ```powershell
-aiw task workflow run payment-retry --execute
+aiw wf run payment-retry --execute
 ```
 
 自动执行默认使用隔离 Worktree。只有明确需要修改父工作区时才使用：
 
 ```powershell
-aiw task workflow run payment-retry --execute --primary
+aiw wf run payment-retry --execute --primary
 ```
 
 每次完成一个 Work Item 后检查：
 
 ```powershell
-aiw task workflow diagnose payment-retry
-aiw task workflow repair payment-retry
-aiw task workflow recover payment-retry
-aiw task workflow focused-test payment-retry attempt-123
-aiw task workflow delivery-failed payment-retry merge "conflict in parent branch"
-aiw task workflow repair-metadata payment-retry --dry-run
+aiw wf diagnose payment-retry
+aiw wf repair payment-retry
+aiw wf recover payment-retry
+aiw wf focused-test payment-retry attempt-123
+aiw wf delivery-failed payment-retry merge "conflict in parent branch"
+aiw wf repair-metadata payment-retry --dry-run
 ```
 
 `run` accepts `--execute`, `--primary`, `--provider NAME`, and `--model MODEL`;
@@ -314,14 +314,14 @@ Task-specific authorization. `delivery-failed` takes a stage and detail;
 先查看诊断：
 
 ```powershell
-aiw task workflow diagnose payment-retry
+aiw wf diagnose payment-retry
 aiw show payment-retry
 ```
 
 处理对应 Gate 后再继续：
 
 ```powershell
-aiw task workflow advance payment-retry
+aiw wf advance payment-retry
 ```
 
 不要使用强制完成绕过未解决 Gate。
@@ -329,8 +329,8 @@ aiw task workflow advance payment-retry
 ### 5.3 Agent 中断或 Session 失效
 
 ```powershell
-aiw task workflow recover payment-retry
-aiw task workflow repair payment-retry
+aiw wf recover payment-retry
+aiw wf repair payment-retry
 aiw session status
 aiw session list
 ```

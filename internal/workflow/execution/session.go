@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"aiw/internal/session"
-	"aiw/internal/taskx"
+	"aiw/internal/task"
 	"aiw/internal/workflow"
 )
 
@@ -69,8 +69,8 @@ func recordSupervisorSessionOutcome(store *workflow.Store, request *workflow.Pre
 // .ai/tasks/<id>; constructing this from RuntimeTaskDir keeps the reference in
 // sync with Store.path instead of relying on the removed legacy .ai/<id> layout.
 func executionReportEvidencePath(taskID workflow.TaskID, reportPath string) (string, error) {
-	reportFile := filepath.Join(taskx.RuntimeTaskDir(string(taskID)), filepath.FromSlash(reportPath))
-	root, err := filepath.Abs(taskx.RuntimeRoot())
+	reportFile := filepath.Join(task.RuntimeTaskDir(string(taskID)), filepath.FromSlash(reportPath))
+	root, err := filepath.Abs(task.RuntimeRoot())
 	if err != nil {
 		return "", err
 	}

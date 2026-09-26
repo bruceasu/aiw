@@ -25,8 +25,8 @@
 入口（占位参数由操作者替换，不在本文自动执行）：
 
 ```powershell
-aiw requirement chat --provider <provider> --model <model>
-aiw requirement chat <requirement-id> --provider <provider> --model <model>
+aiw req chat --provider <provider> --model <model>
+aiw req chat <requirement-id> --provider <provider> --model <model>
 ```
 
 案例 A 使用新会话；B/C 使用各自独立的评审 Requirement。

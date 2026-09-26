@@ -1,6 +1,8 @@
 package task
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const (
 	promptsDir  = "docs/agent-templates"
@@ -25,12 +27,6 @@ func DispatchTopLevel(name string, args []string) error {
 		args = routedArgs
 	}
 	switch name {
-	case "workflow":
-		return runWorkflowCommand(args)
-	case "turn", "chat":
-		return runTaskAgent(append([]string{name}, args...))
-	case "requirement":
-		return DispatchRequirement(args)
 	case "init":
 		opts, err := parseInitOptions(args)
 		if err != nil {
@@ -112,19 +108,15 @@ func printTaskHelp() {
 		"  context <task-id>\n" +
 		"  decision <task-id>\n" +
 		"  spec <spec-id>\n" +
-		"  requirement <...>\n" +
 		"  prompts [options]\n\n" +
 		"Execution:\n" +
-		"  turn|chat <task-id> [--handoff PATH] [--provider NAME] [--model MODEL] [--takeover] [--yes]\n" +
-		"  workflow <operation> <task-id>\n" +
 		"  workspace bind <task-id> --primary\n\n" +
 		"Examples:\n" +
 		"  aiw task new payment-retry\n" +
-		"  aiw task turn payment-retry\n" +
-		"  aiw task workflow plan payment-retry\n" +
-		"  aiw task workflow run payment-retry --execute\n" +
+		"  aiw wf plan payment-retry\n" +
+		"  aiw wf run payment-retry --execute\n" +
 		"  aiw task workspace bind payment-retry --primary\n\n" +
-		"Use `aiw workflow --help` for workflow operations.\n")
+		"Use `aiw wf --help` for workflow operations.\n")
 }
 
 func parseNewArgs(args []string) (string, bool, error) {

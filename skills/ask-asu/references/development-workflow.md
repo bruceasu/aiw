@@ -42,12 +42,12 @@
 | 改变 Task 状态 | `aiw status <task-id> <status>`、`aiw done <task-id>` | 需要明确状态转换请求 |
 | 归档 | `aiw archive <task-id>` | 完成不代表合并或发布；归档需单独授权 |
 | 管理隔离工作树 | `aiw wt add|status|list|lock|unlock|repair ...` | 仅在隔离确有必要且已授权时；不得用 raw Git worktree 绕过 |
-| 单次会话交接 | `aiw turn <task-id>` | 用户明确要求继续/交接时使用；保留 Session 与 lineage |
-| 规划或同步 Workflow Core | `aiw task workflow plan|sync|advance <task-id>` | 会改变受管状态时需要授权 |
-| 预览或执行下一个工作项 | `aiw task workflow run <task-id>`；`--execute` | 无 `--execute` 用于预览；执行需明确授权，默认隔离工作树 |
-| 持续监督 | `aiw task workflow supervise <task-id> start|status|stop` | `start`/`stop` 是状态性操作，需明确授权 |
-| 诊断和修复受管状态 | `aiw task workflow diagnose|recover|repair <task-id>` | `diagnose` 用于检查；`recover`/`repair` 需明确授权 |
-| Evidence、Gate、Work Item | `aiw task workflow evidence|gate|complete ...` | 仅记录真实证据和获批决定，不能伪造结果 |
+| 单次会话交接 | `aiw wf run <task-id> --execute` | 用户明确要求继续/交接时使用；保留 Session 与 lineage |
+| 规划或同步 Workflow Core | `aiw wf plan|sync|advance <task-id>` | 会改变受管状态时需要授权 |
+| 预览或执行下一个工作项 | `aiw wf run <task-id>`；`--execute` | 无 `--execute` 用于预览；执行需明确授权，默认隔离工作树 |
+| 持续监督 | `aiw wf supervise <task-id> start|status|stop` | `start`/`stop` 是状态性操作，需明确授权 |
+| 诊断和修复受管状态 | `aiw wf diagnose|recover|repair <task-id>` | `diagnose` 用于检查；`recover`/`repair` 需明确授权 |
+| Evidence、Gate、Work Item | `aiw wf evidence|gate|complete ...` | 仅记录真实证据和获批决定，不能伪造结果 |
 
 ## 建议原则
 

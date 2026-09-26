@@ -10,7 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"aiw/internal/taskx"
+	"aiw/internal/task"
+	taskworkflow "aiw/internal/task/workflowadapter"
 	"aiw/internal/workflow"
 )
 
@@ -27,13 +28,13 @@ func listTestWorkspace(t *testing.T) {
 	}
 }
 
-func writeListTestMeta(t *testing.T, path, id, status string) taskx.TaskMeta {
+func writeListTestMeta(t *testing.T, path, id, status string) task.TaskMeta {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	meta := taskx.TaskMeta{ID: id, Type: "task", Status: status, Worktree: ".", WorkspaceKind: "primary", Delivery: "unmanaged"}
-	if err := taskx.WriteTaskMeta(path, meta); err != nil {
+	meta := task.TaskMeta{ID: id, Type: "task", Status: status, Worktree: ".", WorkspaceKind: "primary", Delivery: "unmanaged"}
+	if err := task.WriteTaskMeta(path, meta); err != nil {
 		t.Fatal(err)
 	}
 	return meta
@@ -105,13 +106,13 @@ func TestListCommandDiscoversMetadataAndWorkflowStatus(t *testing.T) {
 	done := writeListTestMeta(t, ".ai/z-done/task.toml", "z-done", "TODO")
 	draft := writeListTestMeta(t, ".ai/a-draft/task.toml", "a-draft", "READY")
 	store := workflow.NewStore(".ai")
-	doneState := taskx.WorkflowRuntimeFromMeta(done)
+	doneState := taskworkflow.WorkflowRuntimeFromMeta(done)
 	doneState.Planning = workflow.PlanningReady
 	doneState.WorkItems = []workflow.WorkItem{{ID: "wi-0001", State: workflow.WorkItemCompleted}}
 	if _, err := store.Create(doneState); err != nil {
 		t.Fatal(err)
 	}
-	draftState := taskx.WorkflowRuntimeFromMeta(draft)
+	draftState := taskworkflow.WorkflowRuntimeFromMeta(draft)
 	draftState.Planning = workflow.PlanningDraft
 	if _, err := store.Create(draftState); err != nil {
 		t.Fatal(err)
@@ -223,14 +224,14 @@ func TestListCommandMetadataErrorsContinueAndDoNotExecute(t *testing.T) {
 	}
 	// Valid rows on both sides of the failures prove enumeration continues.
 	ready := writeListTestMeta(t, ".ai/a-valid/task.toml", "a-valid", "READY")
-	state := taskx.WorkflowRuntimeFromMeta(ready)
+	state := taskworkflow.WorkflowRuntimeFromMeta(ready)
 	state.Planning = workflow.PlanningReady
 	state.WorkItems = []workflow.WorkItem{{ID: "wi-0001", State: workflow.WorkItemReady}}
 	if _, err := workflow.NewStore(".ai").Create(state); err != nil {
 		t.Fatal(err)
 	}
 	z := writeListTestMeta(t, ".ai/z-valid/task.toml", "z-valid", "TODO")
-	if _, err := workflow.NewStore(".ai").Create(taskx.WorkflowRuntimeFromMeta(z)); err != nil { t.Fatal(err) }
+	if _, err := workflow.NewStore(".ai").Create(taskworkflow.WorkflowRuntimeFromMeta(z)); err != nil { t.Fatal(err) }
 	writeListTestMeta(t, ".ai/k-runtime/task.toml", "k-runtime", "TODO")
 	if err := os.WriteFile(".ai/k-runtime/state.json", []byte("{"), 0o644); err != nil {
 		t.Fatal(err)
@@ -258,7 +259,7 @@ func TestListCommandWorkflowErrorReportsFailureWithoutOverwriting(t *testing.T) 
 		t.Fatal(err)
 	}
 	z := writeListTestMeta(t, ".ai/z-valid/task.toml", "z-valid", "TODO")
-	if _, err := workflow.NewStore(".ai").Create(taskx.WorkflowRuntimeFromMeta(z)); err != nil { t.Fatal(err) }
+	if _, err := workflow.NewStore(".ai").Create(taskworkflow.WorkflowRuntimeFromMeta(z)); err != nil { t.Fatal(err) }
 	before := listRuntimeSnapshot(t)
 	stdout, stderr, err := captureListCommand(t)
 	if err == nil || !strings.Contains(stderr, "a-runtime") || !strings.Contains(stdout, "RUNTIME_ERROR") || !strings.Contains(stdout, "z-valid") {

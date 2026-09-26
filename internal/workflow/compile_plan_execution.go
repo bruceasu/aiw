@@ -61,6 +61,11 @@ func ResolveCompileTarget(workspace string, target CompileTarget) (CompileAdapte
 			return CompileAdapter{}, errors.New("built-in Go adapter requires go.mod; add a repository compile script for nested modules")
 		}
 		return CompileAdapter{Kind: "go", Name: target.Name, Command: "go", Args: []string{"build", "-o", os.DevNull, "./..."}}, nil
+	case "maven":
+		if info, err := os.Stat(filepath.Join(workspace, "pom.xml")); err != nil || info.IsDir() {
+			return CompileAdapter{}, errors.New("built-in Maven adapter requires pom.xml; add a repository compile script for nested modules")
+		}
+		return CompileAdapter{Kind: "maven", Name: target.Name, Command: "mvn", Args: []string{"-DskipTests", "compile"}}, nil
 	default:
 		return CompileAdapter{}, fmt.Errorf("no built-in adapter for %q; add or repair a repository compile script", target.Kind)
 	}

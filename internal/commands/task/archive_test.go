@@ -13,7 +13,8 @@ import (
 
 	sessioncmd "aiw/internal/commands/session"
 	"aiw/internal/session"
-	"aiw/internal/taskx"
+	"aiw/internal/task"
+	taskworkflow "aiw/internal/task/workflowadapter"
 	"aiw/internal/workflow"
 )
 
@@ -27,7 +28,7 @@ func init() {
 	if len(os.Args) != 4 || os.Args[1] != "archive" || os.Args[2] != "--yes" { return }
 	id := os.Args[3]
 	if id != "paired" { os.Exit(91) }
-	name := taskx.Today() + "-" + id
+	name := task.Today() + "-" + id
 	if mode == "wrong-date" { name = "2000-01-01-" + id }
 	if mode == "no-move" { os.Exit(0) }
 	target := filepath.Join("openspec", "changes", "archive", name)
@@ -73,8 +74,8 @@ func archiveTestFixture(t *testing.T) *session.Store {
 	t.Setenv("AIW_SESSION_ROOT", root)
 	meta := writeListTestMeta(t, ".ai/paired/task.toml", "paired", "CANCELLED")
 	meta.Session, meta.Delivery = "different-session", "discarded"
-	if err := taskx.WriteTaskMeta(".ai/paired/task.toml", meta); err != nil { t.Fatal(err) }
-	if _, err := workflow.NewStore(".ai").Create(taskx.WorkflowRuntimeFromMeta(meta)); err != nil { t.Fatal(err) }
+	if err := task.WriteTaskMeta(".ai/paired/task.toml", meta); err != nil { t.Fatal(err) }
+	if _, err := workflow.NewStore(".ai").Create(taskworkflow.WorkflowRuntimeFromMeta(meta)); err != nil { t.Fatal(err) }
 	archiveTestWrite(t, "openspec/changes/paired/tasks.md", "## TODO\n\n- [x] 1.1 Preserve the records.\n")
 	archiveTestWrite(t, ".ai/paired/artifacts/evidence.txt", "original evidence\n")
 	store := session.NewStore(root)
@@ -114,7 +115,7 @@ func TestPairedArchiveBackendsPreserveThreeTreesAndRetry(t *testing.T) {
 			store := archiveTestFixture(t)
 			selected := backend
 			if backend == "auto-fallback" { selected = "auto" } else if backend != "native" { archiveTestBackend(t, "success") }
-			name := taskx.Today() + "-paired"
+			name := task.Today() + "-paired"
 			sources := []string{"openspec/changes/paired", ".ai/paired", ".ai/sessions/different-session"}
 			targets := []string{"openspec/changes/archive/" + name, ".ai/archive/" + name, ".ai/sessions/archive/" + name + "/different-session"}
 			before := make([]map[string]string, len(sources))
@@ -142,7 +143,7 @@ func TestPairedArchiveRepairsCleanedMergedTaskAcrossBackends(t *testing.T) {
 	for _, backend := range []string{"native", "openspec"} {
 		t.Run(backend, func(t *testing.T) {
 			archiveTestFixture(t)
-			meta, err := taskx.ReadTaskMeta(".ai/paired/task.toml")
+			meta, err := task.ReadTaskMeta(".ai/paired/task.toml")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -150,7 +151,7 @@ func TestPairedArchiveRepairsCleanedMergedTaskAcrossBackends(t *testing.T) {
 			meta.Delivery = string(workflow.DeliveryMerged)
 			meta.Worktree = ""
 			meta.WorkspaceKind = "unassigned"
-			if err := taskx.WriteTaskMeta(".ai/paired/task.toml", meta); err != nil {
+			if err := task.WriteTaskMeta(".ai/paired/task.toml", meta); err != nil {
 				t.Fatal(err)
 			}
 			if err := os.WriteFile(".ai/paired/task.toml", append(mustReadArchiveTestFile(t, ".ai/paired/task.toml"), []byte("operator_tag = \"keep-me\"\n")...), 0o644); err != nil {
@@ -165,7 +166,7 @@ func TestPairedArchiveRepairsCleanedMergedTaskAcrossBackends(t *testing.T) {
 			if stderr, err := archiveTestRun(t, backend); err != nil {
 				t.Fatalf("archive: %v / %s", err, stderr)
 			}
-			name := taskx.Today() + "-paired"
+			name := task.Today() + "-paired"
 			archivedMeta := filepath.Join(".ai", "archive", name, "task.toml")
 			content := string(mustReadArchiveTestFile(t, archivedMeta))
 			for _, field := range []string{"status = \"DONE\"", "delivery = \"merged\"", "workspace_kind = \"unassigned\"", "operator_tag = \"keep-me\""} {
@@ -234,11 +235,11 @@ func TestPairedArchiveCompensationFailureReportsSurvivingPaths(t *testing.T) {
 	}
 	_, err := archiveTestRun(t, "native")
 	if err == nil { t.Fatal("expected compensation failure") }
-	for _, part := range []string{"session move failed", "runtime restore failed", "inspect both paths", "retry archive", taskx.Today()+"-paired"} {
+	for _, part := range []string{"session move failed", "runtime restore failed", "inspect both paths", "retry archive", task.Today()+"-paired"} {
 		if !strings.Contains(err.Error(), part) { t.Fatalf("missing %q: %v", part, err) }
 	}
 	archiveTestAbsent(t, ".ai/paired")
-	for _, path := range []string{"openspec/changes/paired/tasks.md", ".ai/archive/"+taskx.Today()+"-paired/artifacts/evidence.txt", ".ai/sessions/different-session/status.json"} {
+	for _, path := range []string{"openspec/changes/paired/tasks.md", ".ai/archive/"+task.Today()+"-paired/artifacts/evidence.txt", ".ai/sessions/different-session/status.json"} {
 		if _, err := os.Stat(path); err != nil { t.Fatalf("lost %s: %v", path, err) }
 	}
 }
@@ -287,15 +288,15 @@ func TestPairedArchiveEligibilityAndTargetsRemainProtected(t *testing.T) {
 	for _, problem := range []string{"nonterminal", "unknown-workspace", "undiscarded", "finalize-primary", "runtime-target", "spec-target", "missing-meta"} {
 		t.Run(problem, func(t *testing.T) {
 			archiveTestFixture(t)
-			meta, err := taskx.ReadTaskMeta(".ai/paired/task.toml"); if err != nil { t.Fatal(err) }
+			meta, err := task.ReadTaskMeta(".ai/paired/task.toml"); if err != nil { t.Fatal(err) }
 			switch problem {
 			case "nonterminal": meta.Status = "TODO"
 			case "unknown-workspace": meta.WorkspaceKind, meta.Worktree = "unknown", ""
 			case "undiscarded": meta.Delivery = "unmanaged"
-			case "runtime-target": archiveTestWrite(t, ".ai/archive/"+taskx.Today()+"-paired/keep", "existing target")
-			case "spec-target": archiveTestWrite(t, "openspec/changes/archive/"+taskx.Today()+"-paired/keep", "existing target")
+			case "runtime-target": archiveTestWrite(t, ".ai/archive/"+task.Today()+"-paired/keep", "existing target")
+			case "spec-target": archiveTestWrite(t, "openspec/changes/archive/"+task.Today()+"-paired/keep", "existing target")
 			}
-			if err := taskx.WriteTaskMeta(".ai/paired/task.toml", meta); err != nil { t.Fatal(err) }
+			if err := task.WriteTaskMeta(".ai/paired/task.toml", meta); err != nil { t.Fatal(err) }
 			if problem == "missing-meta" { if err := os.Remove(".ai/paired/task.toml"); err != nil { t.Fatal(err) } }
 			before := listRuntimeSnapshot(t)
 			change := archiveTestTree(t, "openspec/changes/paired")
@@ -341,13 +342,13 @@ func TestPairedArchiveSessionPreflightRefusesBeforeMoving(t *testing.T) {
 				archiveTestWrite(t, ".ai/archive/different-session/status.json", string(data))
 			case "task-lock": archiveTestWrite(t, ".ai/locks/paired.lock", "occupied")
 			case "session-lock": archiveTestWrite(t, ".ai/locks/different-session.lock", "occupied")
-			case "target-conflict": archiveTestWrite(t, ".ai/sessions/archive/"+taskx.Today()+"-paired/different-session/keep", "do not overwrite")
+			case "target-conflict": archiveTestWrite(t, ".ai/sessions/archive/"+task.Today()+"-paired/different-session/keep", "do not overwrite")
 			case "duplicate-active-binding", "duplicate-legacy-binding", "duplicate-archived-binding":
 				path := ".ai/other/task.toml"
 				if problem == "duplicate-legacy-binding" { path = ".ai/tasks/other/tasks.toml" }
 				if problem == "duplicate-archived-binding" { path = ".ai/archive/2000-01-01-other/task.toml" }
 				meta := writeListTestMeta(t, path, "other", "TODO"); meta.Session = "different-session"
-				if err := taskx.WriteTaskMeta(path, meta); err != nil { t.Fatal(err) }
+				if err := task.WriteTaskMeta(path, meta); err != nil { t.Fatal(err) }
 			}
 			before := listRuntimeSnapshot(t)
 			change := archiveTestTree(t, "openspec/changes/paired")
@@ -395,15 +396,15 @@ func TestPairedArchiveMissingSessionAndSpecification(t *testing.T) {
 			case "session": if err := store.Delete("different-session"); err != nil { t.Fatal(err) }
 			case "specification": if err := os.RemoveAll("openspec/changes/paired"); err != nil { t.Fatal(err) }
 			case "unbound":
-				meta, err := taskx.ReadTaskMeta(".ai/paired/task.toml"); if err != nil { t.Fatal(err) }; meta.Session = ""
-				if err := taskx.WriteTaskMeta(".ai/paired/task.toml", meta); err != nil { t.Fatal(err) }
+				meta, err := task.ReadTaskMeta(".ai/paired/task.toml"); if err != nil { t.Fatal(err) }; meta.Session = ""
+				if err := task.WriteTaskMeta(".ai/paired/task.toml", meta); err != nil { t.Fatal(err) }
 			}
 			stderr, err := archiveTestRun(t, "native")
 			if err != nil { t.Fatal(err) }
-			if missing == "session" && !strings.Contains(stderr, "会话记录缺失") { t.Fatalf("missing warning: %s", stderr) }
+			if missing == "session" && strings.Contains(stderr, "会话记录缺失") { t.Fatalf("optional Session produced a missing-record warning: %s", stderr) }
 			if missing == "specification" && !strings.Contains(stderr, "规格已删除") { t.Fatalf("missing warning: %s", stderr) }
 			archiveTestAbsent(t, ".ai/paired")
-			if missing == "session" || missing == "unbound" { archiveTestAbsent(t, ".ai/sessions/archive/"+taskx.Today()+"-paired/different-session") }
+			if missing == "session" || missing == "unbound" { archiveTestAbsent(t, ".ai/sessions/archive/"+task.Today()+"-paired/different-session") }
 		})
 	}
 }

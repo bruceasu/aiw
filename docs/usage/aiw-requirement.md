@@ -4,7 +4,7 @@
 
 Requirement Management 用于保存需求讨论的结果，并在人工明确批准后，受控地把它交接给 AIW Task。它位于需求讨论与 OpenSpec 工程规格之间：讨论 Skill 产出草案，Requirement 保存捕获内容和人工决策；保存草稿不代表其中每条断言已确认，promotion 才会创建或复用工程 Task。
 
-它不会自动批准需求、自动开始实现或发布。promotion 会创建或复用 Task，并通过共享生成器建立受批准范围约束的 OpenSpec 候选；只有候选被检查、保护式写入并 accepted 后，promotion 才可推进为 `SPEC_DRAFTED`。`awaiting-agent`、`validating` 和失败诊断都是可恢复的未完成状态。OpenSpec CLI 仅用于可选的额外校验。
+它不会自动批准需求、自动开始实现或发布。promotion 会创建或复用 Task，写入 handoff，并强制委托 OpenSpec CLI 创建对应 change。AIW 不生成 proposal、design、spec 或 tasks；OpenSpec CLI 不可用时 promotion 失败并保留可恢复状态。
 
 ## 生命周期与边界
 
@@ -19,7 +19,7 @@ DRAFT -> DISCOVERED -> DECIDED -> APPROVED -> PROMOTED
 - 首次 capture 将 `DRAFT` 变为 `DISCOVERED`。
 - capture `requirement-plan` 后，`DISCOVERED` 变为 `DECIDED`。
 - 只有 `DECIDED` Requirement 可以被人工 `APPROVED`。
-- `promote` 创建或复用一个 AIW Task，并建立生成请求。无模型配置时它输出 Agent 交接；候选处于 `awaiting-agent`、`validating` 或失败状态时不得宣称 `SPEC_DRAFTED`。只有 accepted 候选才推进该状态。
+- `promote` 创建或复用一个 AIW Task，调用 OpenSpec CLI 创建 change，并建立 handoff 与 Workflow 映射。OpenSpec CLI 失败时不得宣称 `SPEC_DRAFTED`。
 - `DEFERRED` 和 `REJECTED` 不可直接 promotion；当前版本没有重新打开命令，需等待未来的显式 revision 流程。
 
 直接 CLI 的创建、capture 和 approve 将正式工件写入 `docs/requirements/<requirement-id>/`，计数、备份和临时文件写入 `.ai/requirements/`，不会创建 Task、OpenSpec change、Session、worktree 或分支。聊天适配器还会保存 Session 证据及确认检查点。
@@ -30,10 +30,10 @@ DRAFT -> DISCOVERED -> DECIDED -> APPROVED -> PROMOTED
 
 ```powershell
 # 新需求：创建可恢复的 Requirement Conversation
-aiw requirement chat
+aiw req chat
 
 # 已有需求：恢复其 Conversation
-aiw requirement chat daily-withdrawal-report
+aiw req chat daily-withdrawal-report
 ```
 
 Conversation 默认使用通用发现基线，只有金融领域的相关缺口才选择金融方法，不强制跑完固定阶段。每轮装载实际来源与方法，生成覆盖评估，再选择最多三个高影响问题；冲突优先。每次创建、capture、审批或 promotion 前，宿主展示目标、内容摘要和写入范围。AI 只能准备待执行动作；人类在会话中输入 `confirm` 或“确认”后，适配器才执行。
@@ -67,7 +67,7 @@ latest 指针指向最新轮；实际 prompt/output 保存在同一 Session 下�
 
 ### 自动编号与旧 ID
 
-新建需求默认只需提供小写英文短名，例如 `aiw requirement new add-chat-support "Chat support"`。
+新建需求默认只需提供小写英文短名，例如 `aiw req new add-chat-support "Chat support"`。
 首次分配会输出 `REQ00001-add-chat-support`；后续 show、capture、approve、chat、promote 使用输出的完整 ID。
 短名由小写字母或数字片段以单个连字符连接。数字至少五位，超过五位时自然扩展；标题变化不改变 ID。
 
@@ -84,67 +84,41 @@ latest 指针指向最新轮；实际 prompt/output 保存在同一 Session 下�
 
 ```powershell
 # 1. 创建 Requirement
-aiw requirement new --id daily-withdrawal-report "Daily withdrawal report"
+aiw req new --id daily-withdrawal-report "Daily withdrawal report"
 
 # 2. 查看当前状态
-aiw requirement show daily-withdrawal-report
+aiw req show daily-withdrawal-report
 
 # 3. 捕获已由人确认的需求方案
-aiw requirement capture daily-withdrawal-report requirement-plan --file .\drafts\requirement-plan.md
+aiw req capture daily-withdrawal-report requirement-plan --file .\drafts\requirement-plan.md
 
 # 4. 由明确负责人记录批准决定
-aiw requirement approve daily-withdrawal-report APPROVED --by svictor --reason "Scope and metrics are confirmed"
+aiw req approve daily-withdrawal-report APPROVED --by svictor --reason "Scope and metrics are confirmed"
 
 # 5. 提升为工程 Task
-aiw requirement promote daily-withdrawal-report --task daily-withdrawal-report-implementation
+aiw req promote daily-withdrawal-report --task daily-withdrawal-report-implementation
 ```
 
 如果 promotion 需要新建 Task，且工作区存在未提交改动，AIW 会检查脏路径。目标 Task/Change 目录有脏改动时始终拒绝；全部为无关改动时默认继续。不要手动编辑 Requirement 元数据绕过该保护。
 
-## OpenSpec 候选配置与接续
+## OpenSpec 委托
 
-生成器只使用 `[ai.artifact_generation]` 显式列出的 profile，按顺序尝试且不探测其他 provider。凭据继续使用环境变量或现有 provider 配置，不要写入 `aiw.toml`。
-
-```toml
-[ai.artifact_generation]
-profiles = ["artifact-primary", "artifact-fallback"]
-
-[ai.profiles.artifact-primary]
-provider = "openai"
-model = "your-primary-model"
-
-[ai.profiles.artifact-fallback]
-provider = "gemini"
-model = "your-fallback-model"
-```
-
-将 `profiles` 设为 `[]`、没有可用 profile，或候选被拒绝时，AIW 保留同一已批准范围、Task 和生成请求，并输出交接文件；这不是 promotion 成功。按下面方式接续：
-
-```powershell
-# 继续当前请求：生成配置可用时尝试模型；否则显示 Agent 候选路径
-aiw requirement prepare-spec daily-withdrawal-report
-
-# 将 Agent 按交接格式生成的候选提交给同一请求
-aiw requirement prepare-spec daily-withdrawal-report --candidate .\.ai\requirement-artifact-generation\generation\<request-id>\candidate.json
-
-# 仅在明确放弃当前候选并建立新请求时使用
-aiw requirement prepare-spec daily-withdrawal-report --regenerate
-```
-
-`--candidate` 会重验批准来源、冻结目标和人工内容保护；通过后才写正式工件并 accepted。不要重新运行 `promote` 来绕过 awaiting-agent、validating 或候选拒绝，也不要把交接文件、候选 JSON 或预创建的 tasks.md 当作 accepted 证据。
+Requirement promotion 不接受 AIW 内置生成器或模型 profile。`aiw req promote`
+会通过 `new --backend openspec` 委托 OpenSpec 创建 change；随后直接使用
+OpenSpec 的命令和 Skill 完成 proposal、design、spec 和 tasks。OpenSpec CLI
+不可用或创建失败时，AIW 保留 Requirement、Task 和 handoff，并返回可恢复的错误。
 
 ## 命令参考
 
 | 命令 | 作用 | 写入范围 |
 | --- | --- | --- |
-| `aiw requirement chat [id]` | 创建或恢复 Requirement Conversation | AIW Session；已有 Requirement 会保存 Session 引用 |
-| `aiw requirement new <slug> [title]` | 自动编号并创建 Requirement | `docs/requirements/<完整ID>/`、共享编号记录 |
-| `aiw requirement new --id <id> [title]` | 精确创建兼容 ID | `docs/requirements/<id>/`，数字 ID 同时更新编号记录 |
-| `aiw requirement show <id>` | 输出 Requirement、审批和 promotion 状态 | 无 |
-| `aiw requirement capture <id> <artifact> --file <path>` | 从明确给定的文件复制一个讨论产物 | Requirement 目录及元数据 |
-| `aiw requirement approve <id> <decision> --by <actor> --reason <reason>` | 记录批准、延期或拒绝，并追加决策日志 | Requirement 目录 |
-| `aiw requirement promote <id> --task <task-id>` | 创建或复用一个 AIW Task，并写入交接文件 | Requirement、Task 交接工件 |
-| `aiw requirement prepare-spec <id> [--candidate <path> \| --regenerate]` | 接续当前生成请求、提交 Agent 候选或明确建立新请求 | Generation 记录；仅 accepted 后写入正式 OpenSpec 工件 |
+| `aiw req chat [id]` | 创建或恢复 Requirement Conversation | AIW Session；已有 Requirement 会保存 Session 引用 |
+| `aiw req new <slug> [title]` | 自动编号并创建 Requirement | `docs/requirements/<完整ID>/`、共享编号记录 |
+| `aiw req new --id <id> [title]` | 精确创建兼容 ID | `docs/requirements/<id>/`，数字 ID 同时更新编号记录 |
+| `aiw req show <id>` | 输出 Requirement、审批和 promotion 状态 | 无 |
+| `aiw req capture <id> <artifact> --file <path>` | 从明确给定的文件复制一个讨论产物 | Requirement 目录及元数据 |
+| `aiw req approve <id> <decision> --by <actor> --reason <reason>` | 记录批准、延期或拒绝，并追加决策日志 | Requirement 目录 |
+| `aiw req promote <id> --task <task-id>` | 创建或复用 Task，委托 OpenSpec 创建 change，并写入交接文件 | Requirement、Task 交接工件 |
 
 `id` 和 `task-id` 只允许字母、数字、`-`、`_`、`.`。
 
@@ -181,7 +155,7 @@ promotion 成功后，Task 目录会有：
 openspec/changes/<task-id>/artifacts/requirement-handoff.md
 ```
 
-handoff 只引用已批准产物及其摘要，包含批准范围、非目标、风险和待决问题的结构化段落；随后共享生成器会准备 OpenSpec 的 proposal、design、spec 和 tasks 内容，并保留已有人工文件。
+handoff 只引用已批准产物及其摘要，包含批准范围、非目标、风险和待决问题的结构化段落；随后由 OpenSpec 负责 proposal、design、spec 和 tasks 内容。
 
 ## 重试与变更处理
 
@@ -199,7 +173,7 @@ handoff 只引用已批准产物及其摘要，包含批准范围、非目标、
 
 1. 用对应 Skill 讨论并得到草案。
 2. 人工确认草案内容。
-3. 用 `aiw requirement capture` 保存文件；直接 capture 本身不创建聊天的片段确认记录。
+3. 用 `aiw req capture` 保存文件；直接 capture 本身不创建聊天的片段确认记录。
 4. 用 `approve` 记录决策人和原因。
 5. 用 `promote` 创建工程交接。
 6. 在 Task 中按既有 OpenSpec workflow 创建 proposal、design、spec 和实现清单。
@@ -236,14 +210,14 @@ docs/requirements/cancelled/<id>/
 ```
 
 ```powershell
-aiw requirement archive <id> --reason "Decision is complete"
-aiw requirement cancel <id> --reason "No longer needed"
+aiw req archive <id> --reason "Decision is complete"
+aiw req cancel <id> --reason "No longer needed"
 
 `--by <actor>` is optional, may appear in either order, and defaults to the current OS user.
-aiw requirement list
-aiw requirement list --archived
-aiw requirement list --cancelled
-aiw requirement list --all
+aiw req list
+aiw req list --archived
+aiw req list --cancelled
+aiw req list --all
 ```
 
 Archive is available for `DECIDED`, `APPROVED`, and `PROMOTED` Requirements. The original artifacts and decision log are preserved, and read operations continue to accept the Requirement ID.

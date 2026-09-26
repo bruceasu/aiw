@@ -148,10 +148,10 @@ Session 证据 MUST 保留实际装载的方法、来源版本和缺失清单，
 
 本规格已按 improve-requirement-management 的增量要求合并，保留代码基线中的具体校验规则；运行证据及未验证项见对应归档清单。
 
-- [上下文](../../../internal/requirement/context.go)、[路径与预算](../../../internal/requirement/context_sources.go)、[方法选择](../../../internal/requirement/context_methods.go)。
-- [覆盖校验](../../../internal/requirement/coverage.go)、[问题排序](../../../internal/requirement/questions.go)、[对话编排](../../../internal/requirement/conversation.go)。
-- [恢复](../../../internal/requirement/conversation_history.go)、[就绪检查](../../../internal/requirement/readiness.go)。
-- [聊天接入与捕获检查点](../../../internal/commands/task/requirement_discovery.go)、[批准检查点](../../../internal/commands/task/requirement_readiness.go)。
-- [领域回归材料](../../../internal/requirement/conversation_regression_test.go)、[命令回归材料](../../../internal/commands/task/requirement_regression_test.go)；本次未执行。
+- [上下文](../../../internal/req/domain/context.go)、[路径与预算](../../../internal/req/domain/context_sources.go)、[方法选择](../../../internal/req/domain/context_methods.go)。
+- [覆盖校验](../../../internal/req/domain/coverage.go)、[问题排序](../../../internal/req/domain/questions.go)、[对话编排](../../../internal/req/domain/conversation.go)。
+- [恢复](../../../internal/req/domain/conversation_history.go)、[就绪检查](../../../internal/req/domain/readiness.go)。
+- [聊天接入与捕获检查点](../../../cmd/aiw-req/requirement_discovery.go)、[批准检查点](../../../cmd/aiw-req/requirement_readiness.go)。
+- [领域回归材料](../../../internal/req/domain/conversation_regression_test.go)、[命令回归材料](../../../cmd/aiw-req/requirement_regression_test.go)；本次未执行。
 
 %% 引用有效、JSON 合法和问题排序正确，不证明模型找全了业务缺口；专业质量仍需人工评审。

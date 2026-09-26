@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"aiw/internal/taskx"
+	"aiw/internal/task"
 )
 
 func TestParseInitOptionsRequiresPromptsWhenUsingTemplate(t *testing.T) {
@@ -31,7 +31,7 @@ func TestInitWorkspaceRunsOfficialSetupAfterBaseInitialization(t *testing.T) {
 		if !baseAgentsCreated {
 			t.Fatal("expected setup to receive base AGENTS creation state")
 		}
-		if _, err := os.Stat(taskx.ChangesDir); err != nil {
+		if _, err := os.Stat(task.ChangesDir); err != nil {
 			t.Fatalf("base initialization did not complete before setup: %v", err)
 		}
 	}
@@ -80,11 +80,11 @@ func TestParseNewArgsRejectsRetiredDirtyBypass(t *testing.T) {
 	}
 }
 
-func TestDispatchTopLevelUsesCanonicalAgentCommands(t *testing.T) {
+func TestDispatchTopLevelRejectsRemovedAgentCommands(t *testing.T) {
 	for _, name := range []string{"turn", "chat"} {
 		err := DispatchTopLevel(name, nil)
-		if err == nil || !strings.Contains(err.Error(), "aiw turn|chat") {
-			t.Fatalf("DispatchTopLevel(%q) error = %v, want canonical usage", name, err)
+		if err == nil || !strings.Contains(err.Error(), "unknown task command") {
+			t.Fatalf("DispatchTopLevel(%q) error = %v, want removed command error", name, err)
 		}
 	}
 	if err := DispatchTopLevel("agent", []string{"next"}); err == nil {
@@ -124,30 +124,30 @@ func TestArchiveTaskSyncsLinkedSpecsIntoGlobalSpecs(t *testing.T) {
 	defer os.Chdir(oldWD)
 
 	sourceSpec := []byte("# Demo Spec\nsource version\n")
-	if err := os.MkdirAll(filepath.Join(taskx.TaskDir("T-1"), "specs", "file-operations"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(task.TaskDir("T-1"), "specs", "file-operations"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(taskx.SpecsDir, 0o755); err != nil {
+	if err := os.MkdirAll(task.SpecsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(taskx.TaskDir("T-1"), "specs", "file-operations", "spec.md"), sourceSpec, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(task.TaskDir("T-1"), "specs", "file-operations", "spec.md"), sourceSpec, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(taskx.TaskDir("T-1"), "tasks.md"), []byte("## TODO\n\n- [x] 1.1 Sync the linked specification.\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(task.TaskDir("T-1"), "tasks.md"), []byte("## TODO\n\n- [x] 1.1 Sync the linked specification.\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	meta := taskx.TaskMeta{
+	meta := task.TaskMeta{
 		ID:      "T-1",
 		Type:    "task",
 		Status:  "DONE",
-		Created: taskx.Today(),
-		Updated: taskx.Today(),
+		Created: task.Today(),
+		Updated: task.Today(),
 		Specs:   []string{"file-operations"},
 		WorkspaceKind: "primary",
 		Worktree: ".",
 		Delivery: "unmanaged",
 	}
-	if err := taskx.WriteTaskMeta(taskx.TaskMetaPath("T-1"), meta); err != nil {
+	if err := task.WriteTaskMeta(task.TaskMetaPath("T-1"), meta); err != nil {
 		t.Fatal(err)
 	}
 
@@ -155,7 +155,7 @@ func TestArchiveTaskSyncsLinkedSpecsIntoGlobalSpecs(t *testing.T) {
 		t.Fatalf("archive task: %v", err)
 	}
 
-	got, err := os.ReadFile(filepath.Join(taskx.SpecsDir, "ai-support", "spec.md"))
+	got, err := os.ReadFile(filepath.Join(task.SpecsDir, "ai-support", "spec.md"))
 	if err != nil {
 		t.Fatalf("read synced global spec: %v", err)
 	}

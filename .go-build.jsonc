@@ -2,8 +2,8 @@
   // Output binary name prefix.
   "projectName": "aiw",
 
-  // Go build entry package/file. If empty: main.go (if exists) else "."
-  "entry": ".",
+  // Go build entry package/file for the root executable.
+  "entry": "./cmd/aiw",
 
   // Build artifact directory.
   "outputDir": "bin",

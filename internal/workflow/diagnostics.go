@@ -63,7 +63,7 @@ func (s *Store) Diagnose(id TaskID) ([]Diagnostic, error) {
 		diagnostics = append(diagnostics, Diagnostic{
 			Code:    "retry-limit-exhausted",
 			Message: message,
-			Repair:  fmt.Sprintf("review the output, then run: aiw task workflow reopen %s %s <reason>", id, item.ID),
+			Repair:  fmt.Sprintf("review the output, then run: aiw wf reopen %s %s <reason>", id, item.ID),
 		})
 	}
 	for _, gate := range state.Gates {
@@ -77,7 +77,7 @@ func (s *Store) Diagnose(id TaskID) ([]Diagnostic, error) {
 		diagnostics = append(diagnostics, Diagnostic{
 			Code:    "gate-open",
 			Message: fmt.Sprintf("gate %s (%s) is open%s: %s", gate.ID, gate.Kind, diagnosticWorkItemSuffix(gate.WorkItemID), reason),
-			Repair:  fmt.Sprintf("review the gate reason, then run: aiw task workflow gate %s %s resolved|waived", id, gate.ID),
+			Repair:  fmt.Sprintf("review the gate reason, then run: aiw wf gate %s %s resolved|waived", id, gate.ID),
 		})
 	}
 	for _, repair := range state.Automation.ProjectionRepairs {

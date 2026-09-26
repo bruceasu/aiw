@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"aiw/internal/taskx"
+	"aiw/internal/task"
 	"aiw/internal/workflow"
 )
 
@@ -110,7 +110,7 @@ func WriteFocusedTestSelection(taskID string, selection workflow.VerificationPla
 	if strings.TrimSpace(taskID) == "" {
 		return fmt.Errorf("task ID is required")
 	}
-	path := taskx.VerificationSelectionPath(taskID)
+	path := task.VerificationSelectionPath(taskID)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("create focused-test selection artifact directory: %w", err)
 	}

@@ -43,7 +43,7 @@ description: 在整个 AIW/OpenSpec 开发流程中提供阶段建议，并路�
 2. Requirement 获批后，将其提升为一个 AIW Task；该步骤创建或复用 Task 及其初始 OpenSpec 规划工件。
 3. 若 Task 仍缺设计、提案、能力规格或任务轮廓，使用 `/fd-workflow` 或 `/to-spec`；所需工件和 ID 一致性未满足前，流程仍不完整。
 4. 若 `tasks.md` 的条目粒度、依赖或验证边界仍不清楚，使用 `/to-tickets` 深化；已有可执行条目时直接进入 `/implement`。
-5. 在 Task 工作区内使用 `/implement` 完成一个选中的条目；受管自动执行可使用 `aiw task workflow run|supervise <task-id>`，但只有用户明确授权执行时才建议实际运行。
+5. 在 Task 工作区内使用 `/implement` 完成一个选中的条目；受管自动执行可使用 `aiw wf run|supervise <task-id>`，但只有用户明确授权执行时才建议实际运行。
 6. 开发后报告未运行的测试及适用时的一个可选聚焦命令；运行测试遵守仓库的运行授权规则，不因实现结束而例行提问。
 7. 仅在用户明确要求评审时使用 `/code-review`。
 8. 全部 checklist 完成后，报告派生的 Workflow 摘要、Evidence、未关闭 Gate 和用户请求的下一状态转换。Git 交付、归档、合并、清理及删除分支均须单独授权。

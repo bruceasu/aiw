@@ -271,15 +271,6 @@ func mergeConfigFile(values map[string]string, path string) error {
 			continue
 		}
 		key := strings.TrimSpace(parts[0])
-		if section == "ai.artifact_generation" && key == "profiles" {
-			raw := strings.TrimSpace(parts[1])
-			for !artifactArrayClosed(raw) && scanner.Scan() {
-				raw += "\n" + scanner.Text()
-				if len(raw) > 64*1024 { return fmt.Errorf("artifact generation profile list exceeds 64 KiB") }
-			}
-			values[section+"."+key] = raw
-			continue
-		}
 		value, ok := parseConfigValue(strings.TrimSpace(parts[1]))
 		if !ok || !isAIConfigKey(key) {
 			continue
@@ -293,7 +284,7 @@ func mergeConfigFile(values map[string]string, path string) error {
 }
 
 func isAIConfigSection(section string) bool {
-	return section == "ai" || section == "cz" || section == "ai.artifact_generation" ||
+	return section == "ai" || section == "cz" ||
 		(strings.HasPrefix(section, "ai.profiles.") && strings.TrimSpace(strings.TrimPrefix(section, "ai.profiles.")) != "")
 }
 

@@ -1,8 +1,8 @@
 package task
 
-import "aiw/internal/taskx"
+import "aiw/internal/task"
 
 // preflightSupervisedGitWorkspace delegates binding checks to the Task adapter.
-func preflightSupervisedGitWorkspace(meta taskx.TaskMeta) ([]string, error) {
-	return taskx.PreflightSupervisedGitWorkspace(meta)
+func preflightSupervisedGitWorkspace(meta task.TaskMeta) ([]string, error) {
+	return task.PreflightSupervisedGitWorkspace(meta)
 }

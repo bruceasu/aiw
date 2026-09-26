@@ -10,10 +10,15 @@ __pycache__/
 backup.log
 release/
 ref/
-plugins/aiw-cz/cz
+plugins/aiw-cz/aiw-cz.exe
+plugins/aiw-cz/aiw-cz
+plugins/aiw-wf/aiw-wf.exe
+plugins/aiw-wf/aiw-wf
+plugins/aiw-req/aiw-req.exe
+plugins/aiw-req/aiw-req
 .ai/
 .scratch/
-授权.bat
+grant.bat
 HEAD.zip
 fd-init.md
 fd-workflow-codex-copilot.zip

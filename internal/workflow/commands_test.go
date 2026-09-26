@@ -263,7 +263,7 @@ func TestDiagnoseReportsPreparedRequestAndOpenGate(t *testing.T) {
 	if len(diagnostics) != 2 { t.Fatalf("unexpected diagnostics: %#v", diagnostics) }
 	if diagnostics[0].Code != "agent-request-prepared" { t.Fatalf("first diagnostic: %#v", diagnostics[0]) }
 	if diagnostics[1].Code != "gate-open" { t.Fatalf("second diagnostic: %#v", diagnostics[1]) }
-	if diagnostics[1].Repair != "review the gate reason, then run: aiw task workflow gate task-1 gate-auth resolved|waived" { t.Fatalf("gate repair: %q", diagnostics[1].Repair) }
+	if diagnostics[1].Repair != "review the gate reason, then run: aiw wf gate task-1 gate-auth resolved|waived" { t.Fatalf("gate repair: %q", diagnostics[1].Repair) }
 }
 
 func TestForceCloseCancelsActiveAttemptAndClearsExecutionOwnership(t *testing.T) {

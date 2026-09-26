@@ -2,7 +2,7 @@
 
 ## 状态
 
-提案；尚未实现 `aiw requirement` 命令或修改相关 Skill。
+提案；尚未实现 `aiw req` 命令或修改相关 Skill。
 
 ## 目标
 
@@ -162,17 +162,17 @@ status = "NOT_STARTED" # NOT_STARTED | TASK_CREATED | SPEC_DRAFTED | COMPLETE
 task_id = ""
 ```
 
-## `aiw requirement` 的最小命令集
+## `aiw req` 的最小命令集
 
 该命令组是未来实现目标，不是本文档创建的现有 CLI。
 
 | 命令 | 作用 | 写入边界 |
 |---|---|---|
-| `aiw requirement new <id>` | 创建 Requirement 目录与最小元数据 | 仅 `docs/requirements/<id>/` |
-| `aiw requirement show <id>` | 查看状态、产物索引、批准和 promotion | 只读 |
-| `aiw requirement capture <id> <artifact>` | 保存经用户确认的 Requirement Artifact | 仅对应 Requirement Markdown 文件 |
-| `aiw requirement approve <id>` | 记录人工批准、延期或拒绝 | 仅 `requirement.toml` 和 `decision-log.md` |
-| `aiw requirement promote <id> --task <task-id>` | 创建或关联受管 Task，并生成交接输入 | Requirement 元数据、AIW Task 和交接工件 |
+| `aiw req new <id>` | 创建 Requirement 目录与最小元数据 | 仅 `docs/requirements/<id>/` |
+| `aiw req show <id>` | 查看状态、产物索引、批准和 promotion | 只读 |
+| `aiw req capture <id> <artifact>` | 保存经用户确认的 Requirement Artifact | 仅对应 Requirement Markdown 文件 |
+| `aiw req approve <id>` | 记录人工批准、延期或拒绝 | 仅 `requirement.toml` 和 `decision-log.md` |
+| `aiw req promote <id> --task <task-id>` | 创建或关联受管 Task，委托 OpenSpec 创建 change，并生成交接输入 | Requirement 元数据、AIW Task 和交接工件 |
 
 `capture` 不运行 Skill，也不解释需求内容；它只保存明确给出的产物。Skill 的输出与 Requirement 文件之间不应存在隐式写入。
 
@@ -186,17 +186,17 @@ APPROVED Requirement
   -> create or resolve AIW Task
   -> record Task link and source-artifact digests
   -> write requirement handoff for the Task
-  -> request OpenSpec proposal/spec generation
-  -> record the resulting OpenSpec artifact links
+  -> delegate OpenSpec change creation to the OpenSpec CLI
+  -> record the Task and OpenSpec change association
 ```
 
-完成后的需求状态是 `PROMOTED`；Task 的实现和交付状态仍只由 AIW Workflow 管理。`SPEC_DRAFTED` 只表示受批准范围约束的候选已 accepted 并写入正式 OpenSpec 工件；`awaiting-agent`、`validating`、候选拒绝或交接文件存在都仍是 promotion 未完成。`COMPLETE` 也不描述代码是否完成。
+完成后的需求状态是 `PROMOTED`；Task 的实现和交付状态仍只由 AIW Workflow 管理。`SPEC_DRAFTED` 表示 OpenSpec CLI 已创建对应 change 且清单映射完成；OpenSpec CLI 失败或交接文件存在但 change 未创建，都仍是 promotion 未完成。`COMPLETE` 也不描述代码是否完成。
 
 ### Promotion 的幂等和失败恢复
 
 - 同一 Requirement 默认只能关联一个活动 Task；再次 promote 必须返回已关联的 Task，而不是创建第二个 Task。
-- 如果 Task 已创建但 OpenSpec 工件尚未生成，重复执行必须从 `TASK_CREATED` 恢复。
-- 如果交接已生成但 OpenSpec 生成尚未 accepted，保留交接、候选和失败原因，并停在 `TASK_CREATED`；使用 `prepare-spec --candidate` 接续同一批准范围，只有 accepted 后才到 `SPEC_DRAFTED`。不得删除 Task、重跑 promotion 或覆盖已有 OpenSpec 内容。
+- 如果 Task 已创建但 OpenSpec change 尚未完成，重复执行必须从 `TASK_CREATED` 恢复。
+- 如果 OpenSpec CLI 失败，保留 Requirement、Task 和 handoff，报告 CLI 错误；不得生成替代工件、删除 Task 或重复创建第二个 Task。
 - Requirement 产物在 promotion 后发生变化时，记录为新的 Requirement 版本；不得静默覆写已经交给 Task 的版本。后续同步应创建显式的变更请求或新的 promotion revision。
 - `REJECTED`、`DEFERRED` 或未批准的 Requirement 不得 promotion，除非人类先改变批准状态并留下 decision-log 记录。
 
@@ -224,7 +224,7 @@ promotion 必须先建立受管 AIW Task，再由 AIW 协调 OpenSpec 后端。�
 | `Engineering Options` | design 的输入，不是已批准设计 |
 | `Requirement Plan` | proposal 的验收条件、风险与交接上下文 |
 
-具体权限模型、OpenSpec 生成器选择和 Requirement 版本摘要算法仍属于后续 `aiw requirement` 的独立设计。
+具体权限模型、OpenSpec 生成器选择和 Requirement 版本摘要算法仍属于后续 `aiw req` 的独立设计。
 
 ## Requirement 到 Task 的交接契约
 
@@ -287,7 +287,7 @@ requirement-capture
 2. 改造并重命名前五个需求阶段 Skill；统一阶段、输入、输出、局部状态与 handoff。
 3. 将发布 Skill 移出需求链路，仅保留已实现变更的发布门禁职责。
 4. 为新 Skill 集补充静态结构校验与迁移说明。
-5. 在 Skill 契约稳定后，再设计 `aiw requirement` 的数据模型、CLI 和 promotion 适配器。
+5. 在 Skill 契约稳定后，再设计 `aiw req` 的数据模型、CLI 和 promotion 适配器。
 
 ## 非目标
 

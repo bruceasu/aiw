@@ -9,7 +9,7 @@ AIW MUST expose help text whose command names, aliases, subcommand forms, argume
 
 #### Scenario: Workflow help lists every callable operation
 
-- **WHEN** a user requests workflow help through either supported workflow entry point
+- **WHEN** a user requests workflow help through `aiw wf`
 - **THEN** the help lists every publicly dispatchable workflow operation, including planning, execution, recovery, delivery, focused-test, routing, reporting, and metadata-repair operations
 
 #### Scenario: Workflow option documentation matches parsing
@@ -33,7 +33,7 @@ AIW MUST keep README command summaries/examples and shell completion command lis
 
 #### Scenario: Completion exposes documented workflow commands
 
-- **WHEN** a user requests completion after `workflow` or `task workflow`
+- **WHEN** a user requests completion after `wf`
 - **THEN** completion offers the same public workflow operation names represented in help, without stale or invented names
 
 #### Scenario: Consistency regression is detected
