@@ -189,7 +189,7 @@ list 和 list --all MUST 按本次输出内容的可见宽度对齐列，列间�
 
 ### Requirement: Task 关联 Session 归档与查询
 
-Task archive MUST 按真实 Session 绑定归档会话到 `.ai/sessions/archive/<date>-<task-id>/<session-id>/`，保留 Session 身份、原状态和历史内容。系统 MUST 检查活动、旧版及归档 Task 的重复绑定，并核对 Session 的 Task 关联。归档 Session MUST 能通过 Task 关联的既有只读接口查询，MUST NOT 被继续执行或写入。无关独立会话 MUST NOT 被移动。
+Task archive MUST 将存在且可定位的真实 Session 绑定归档到 `.ai/sessions/archive/<date>-<task-id>/<session-id>/`，保留 Session 身份、原状态和历史内容。Session 是可选 Task 附件；未绑定或无法定位时，系统 MUST NOT 为归档创建占位 Session，也不得因此阻塞 Task 归档。存在 Session 时，系统 MUST 检查活动、旧版及归档 Task 的重复绑定，并核对 Session 的 Task 关联。归档 Session MUST 能通过 Task 关联的既有只读接口查询，MUST NOT 被继续执行或写入。无关独立会话 MUST NOT 被移动。
 
 #### Scenario: Session ID 与 Task ID 不同
 
@@ -202,11 +202,11 @@ Task archive MUST 按真实 Session 绑定归档会话到 `.ai/sessions/archive/
 - **WHEN** Session 为 running、仍有执行/写入占用，或存在重复绑定及身份冲突
 - **THEN** 在任何归档移动前拒绝操作并报告原因
 
-#### Scenario: Session 缺失
+#### Scenario: Session 可选且缺失
 
-- **WHEN** 有绑定但活动及合法归档位置均找不到对应 Session
-- **THEN** 提示“会话记录缺失”，继续处理规格及运行目录归档，不伪造会话历史
-- **AND** 无绑定时无需会话移动；权限错误及损坏记录不得被当作缺失跳过
+- **WHEN** Task 未绑定 Session，或绑定的 Session 在活动及合法归档位置均找不到
+- **THEN** 不创建占位 Session、不输出缺失错误，并继续处理规格及运行目录归档
+- **AND** 存在且可定位的 Session 才执行绑定校验和会话归档；权限错误及损坏记录不得被当作缺失跳过
 
 #### Scenario: 归档后只读查询
 
@@ -367,6 +367,6 @@ Task 列表 MUST 支持现有规范路径、旧 `.ai/tasks/<id>/` 位置及 task
 ## 实现依据
 
 - [命令入口](../../../internal/commands/task/command.go)、[生命周期](../../../internal/commands/task/workflow.go)、[创建预检](../../../internal/commands/task/creation_preflight.go)。
-- [后端选择](../../../internal/commands/task/backend.go)、[元数据路径](../../../internal/taskx/meta.go)、[兼容映射](../../../internal/taskx/workflow.go)。
+- [后端选择](../../../internal/commands/task/backend.go)、[元数据路径](../../../internal/task/meta.go)、[兼容映射](../../../internal/task/workflow/workflow.go)。
 - [摘要派生](../../../internal/workflow/state.go)、[运行兼容](../../../internal/workflow/compat.go)。
 - [创建预检回归材料](../../../internal/commands/task/creation_preflight_test.go)；本次未执行。

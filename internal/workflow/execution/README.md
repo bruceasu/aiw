@@ -5,7 +5,7 @@
 compile repair sequencing, and delivery eligibility. It does not import command
 packages or terminal UI.
 
-`taskx` owns Task metadata, workspace resolution, checklist adaptation, and
+`task` owns Task metadata, workspace resolution, checklist adaptation, and
 handoff artifacts. Its dependency remains directed toward Workflow Core.
 `commands/task` constructs execution dependencies and renders terminal output.
 
@@ -13,7 +13,7 @@ handoff artifacts. Its dependency remains directed toward Workflow Core.
 
 - [x] Move the Supervisor loop and outcome consumption into execution.
 - [x] Move frozen-plan compile and repair orchestration into execution.
-- [x] Move Task checklist, workspace preflight, and handoff operations into taskx.
+- [x] Move Task checklist, workspace preflight, and handoff operations into task.
 - [x] Keep terminal rendering in commands/task.
 - [x] Move outcome, compile repair, and scoped Git environment tests with their implementation.
 - [ ] Migrate the shared single-step Runner behind Supervisor.RunStep.

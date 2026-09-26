@@ -12,7 +12,8 @@ import (
 	"time"
 
 	"aiw/internal/session"
-	"aiw/internal/taskx"
+	"aiw/internal/task"
+	taskworkflow "aiw/internal/task/workflowadapter"
 	"aiw/internal/workflow"
 )
 
@@ -68,7 +69,7 @@ func compileSupervisedOutcome(id string, store *workflow.Store, request *workflo
 	if err := EnsureSupervisedCompilePlan(store, current); err != nil {
 		return outcome, false, err
 	}
-	handoff, err := taskx.WriteCompilerRepairHandoff(id, current, result, failures)
+	handoff, err := taskworkflow.WriteCompilerRepairHandoff(id, current, result, failures)
 	if err != nil {
 		return outcome, false, err
 	}
@@ -115,20 +116,20 @@ func prepareSupervisedCompilerRequest(id string, store *workflow.Store, request 
 	}
 	root := request.Workspace
 	if !filepath.IsAbs(root) {
-		root = filepath.Join(taskx.RuntimeRoot(), filepath.FromSlash(root))
+		root = filepath.Join(task.RuntimeRoot(), filepath.FromSlash(root))
 	}
-	meta, err := taskx.ReadTaskMeta(taskx.ResolveTaskMetaPath(id))
+	meta, err := task.ReadTaskMeta(task.ResolveTaskMetaPath(id))
 	if err != nil {
 		return err
 	}
 	if meta.Worktree != request.Workspace {
 		return fmt.Errorf("compiler workspace differs from the recorded Task worktree")
 	}
-	environment, err := taskx.PreflightSupervisedGitWorkspace(meta)
+	environment, err := task.PreflightSupervisedGitWorkspace(meta)
 	if err != nil {
 		return err
 	}
-	content, err := os.ReadFile(filepath.Join(taskx.RuntimeRoot(), filepath.FromSlash(outcome.EvidenceReference)))
+	content, err := os.ReadFile(filepath.Join(task.RuntimeRoot(), filepath.FromSlash(outcome.EvidenceReference)))
 	if err != nil {
 		return err
 	}

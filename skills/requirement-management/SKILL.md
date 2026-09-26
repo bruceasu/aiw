@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Requirement Management Conversation
 
-Start or resume one Requirement with `aiw requirement chat [requirement-id]`.
+Start or resume one Requirement with `aiw req chat [requirement-id]`.
 Use for requirement discovery and human decisions, not implementation or release.
 The Requirement domain builds context, selects methods, checks coverage, and
 derives discussion advice. Session stores evidence; the CLI displays questions
@@ -71,7 +71,7 @@ artifacts as described below; this does not grant Design Readiness.
    choices, correctness, scope, and goals. State the known evidence, missing
    decision, and impact. Give alternatives only with evidence and trade-offs.
    Do not repeat settled questions without changed evidence or a conflict.
-4. Prepare only requested draft actions through `aiw requirement chat prepare`.
+4. Prepare only requested draft actions through `aiw req chat prepare`.
    The host displays the action, target, summary, and scope, then accepts
    `confirm` or `确认`. Never execute the durable operation yourself.
    Capture without --facts-json saves a draft only. With --facts-json, propose

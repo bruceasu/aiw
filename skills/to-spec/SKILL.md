@@ -86,7 +86,7 @@ specification or publish externally unless the user explicitly asks.
    `tasks.md`. Do not publish to GitHub or GitLab as part of this Skill.
 
    Whenever this Skill creates or materially updates `tasks.md`, run the
-   managed Task synchronization command `aiw task workflow sync <task-id>`
+   managed Task synchronization command `aiw wf sync <task-id>`
    before reporting completion. This creates or updates the Workflow Core Work
    Item mapping while preserving OpenSpec-owned checklist prose; it MUST NOT
    create an Attempt, claim a lease, advance, or complete work. Treat a failed
@@ -119,10 +119,10 @@ specification or publish externally unless the user explicitly asks.
 
 ## Artifact generation contract
 
-Use the active `spec-driven` schema as the source of truth. When the OpenSpec
-CLI is available, obtain artifact instructions before writing and run its
-validator after writing. When it is unavailable, use the repository's shared
-AIW renderer/templates and still produce the same structure:
+Use the active `spec-driven` schema as the source of truth. Use the OpenSpec
+CLI and its instructions as the only artifact authority. If the CLI is
+unavailable, stop and report that OpenSpec is required; do not use an AIW
+renderer or fallback templates. OpenSpec owns:
 
 - `proposal.md` with `## Why` and `## What Changes`;
 - `design.md` with the design sections required by the schema;
@@ -130,12 +130,13 @@ AIW renderer/templates and still produce the same structure:
   `### Requirement:`, normative `MUST`/`SHALL` text, and `#### Scenario:` blocks;
 - `tasks.md` with `- [ ] X.Y` numbered checklist items.
 
-Do not report the change as ready when local structural validation fails. The
-CLI is optional for availability, but schema conformance is not optional.
+Do not report the change as ready when OpenSpec validation fails. The CLI is
+required; schema conformance is not optional.
 
-For a promoted Requirement, use the managed adapter `aiw requirement
-prepare-spec <requirement-id>` so to-spec and promotion share the same renderer
-and preservation behavior. Do not maintain a second template in this Skill.
+For a promoted Requirement, use `aiw req promote <requirement-id> --task
+<task-id>` only to establish the Requirement-to-Task handoff. Continue with
+OpenSpec for proposal, design, specs, and tasks. Do not maintain an AIW
+renderer or a second template in this Skill.
 
 <spec-template>
 

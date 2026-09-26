@@ -109,7 +109,7 @@ def print_merge_conflict_guidance(task_id):
     print("  3. Do not rerun `aiw wt pull` after that commit.", file=stream)
     print(file=stream)
     print(terminal_style("Next commands", "1;36", stream), file=stream)
-    print("  " + terminal_style(f"aiw task workflow delivery {task_id} merged", "36", stream), file=stream)
+    print("  " + terminal_style(f"aiw wf delivery {task_id} merged", "36", stream), file=stream)
     print("  " + terminal_style(f"aiw archive {task_id} --cleanup-wt --delete-branch", "36", stream), file=stream)
 
 
@@ -309,7 +309,7 @@ def discard(task_id, yes=False):
         print("discard completed, but the aiw executable was not found to record delivery", file=sys.stderr)
         return 2
     if run_cmd([binary, "task", "workflow", "delivery", task_id, "discarded"]) != 0:
-        print("discard completed, but delivery recording failed; run `aiw task workflow delivery " + task_id + " discarded`", file=sys.stderr)
+        print("discard completed, but delivery recording failed; run `aiw wf delivery " + task_id + " discarded`", file=sys.stderr)
         return 2
     print(f"delivery: discarded {branch}")
     return 0
@@ -835,7 +835,7 @@ def pull(task_id, conflict_handoff=False):
         print("merge completed, but the aiw executable was not found to record delivery", file=sys.stderr)
         return 2
     if run_cmd([binary, "task", "workflow", "delivery", task_id, "merged"]) != 0:
-        print("merge completed, but delivery recording failed; run `aiw task workflow delivery " + task_id + " merged`", file=sys.stderr)
+        print("merge completed, but delivery recording failed; run `aiw wf delivery " + task_id + " merged`", file=sys.stderr)
         return 2
     print(f"delivery: merged {branch} into {parent}")
     print(f"next: aiw archive {task_id} --cleanup-wt --delete-branch")

@@ -2,7 +2,7 @@
 
 Use `aiw skills` to list, discover, adopt, and safely install canonical AIW Skills.
 
-This release installs one Portable Skill at a time. It uses the standard
+The installer supports individual Skills and `--all` installation. It uses the standard
 `.agents/skills` target at project scope by default and supports the shared
 user-level `.agents/skills` target with `--scope user`. Managed reinstall,
 adoption, and discovery are supported for both scopes.

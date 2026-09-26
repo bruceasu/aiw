@@ -6,7 +6,8 @@ import (
 	"strings"
 
 	"aiw/internal/gitx"
-	"aiw/internal/taskx"
+	"aiw/internal/task"
+	taskworkflow "aiw/internal/task/workflowadapter"
 	"aiw/internal/workflow"
 )
 
@@ -22,8 +23,8 @@ func newWorkspaceCoordinator(store *workflow.Store) WorkspaceCoordinator {
 	return WorkspaceCoordinator{store: store}
 }
 
-func (c WorkspaceCoordinator) Prepare(id string, meta taskx.TaskMeta) error {
-	if resolvedWorkspaceKind(meta) != "isolated" || !verifiedTaskWorktree(meta) {
+func (c WorkspaceCoordinator) Prepare(id string, meta task.TaskMeta) error {
+	if resolvedWorkspaceKind(meta) != "isolated" || !taskworkflow.VerifiedTaskWorktree(meta) {
 		return fmt.Errorf("Task %s requires a verified isolated worktree", id)
 	}
 	parent, err := gitx.PrimaryWorktree()
@@ -38,7 +39,7 @@ func (c WorkspaceCoordinator) Prepare(id string, meta taskx.TaskMeta) error {
 	if err != nil {
 		return fmt.Errorf("resolve Task worktree: %w", err)
 	}
-	expected := filepath.Join(parent, taskx.WorktreeDir, id)
+	expected := filepath.Join(parent, task.WorktreeDir, id)
 	if !strings.EqualFold(filepath.Clean(worktree), filepath.Clean(expected)) {
 		return fmt.Errorf("Task %s worktree %s does not match managed path %s", id, worktree, expected)
 	}

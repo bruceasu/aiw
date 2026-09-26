@@ -1,95 +1,100 @@
-# CLI 与扩展入口
+# CLI 涓庢墿灞曞叆鍙?
 
 ## Purpose
 
-固定 AIW 原生命令、初始化、插件扩展及独立问答/提交辅助入口的公共行为。插件各自的完整业务语义不在本基线枚举范围内。
+鍥哄畾 AIW 鍘熺敓鍛戒护銆佸垵濮嬪寲銆佹彃浠舵墿灞曞強鐙珛闂瓟/鎻愪氦杈呭姪鍏ュ彛鐨勫叕鍏辫涓恒€傛彃浠跺悇鑷殑瀹屾暣涓氬姟璇箟涓嶅湪鏈熀绾挎灇涓捐寖鍥村唴銆?
 
 ## Requirements
 
-### Requirement: 内置与插件分派
+### Requirement: 鍐呯疆涓庢彃浠跺垎娲?
 
-主入口 MUST 优先处理内置命令；Task 命令支持顶层入口及 `task <command>` 路径。未知顶层名称 MUST 尝试发现 `aiw-<name>` 插件。wt MUST 经插件入口执行。
+涓诲叆鍙?MUST 浼樺厛澶勭悊鍐呯疆鍛戒护锛汿ask 鍛戒护鏀寔椤跺眰鍏ュ彛鍙?`task <command>` 璺緞銆傛湭鐭ラ《灞傚悕绉?MUST 灏濊瘯鍙戠幇 `aiw-<name>` 鎻掍欢銆倃t MUST 缁忔彃浠跺叆鍙ｆ墽琛屻€?
 
-#### Scenario: 调用工作流命令
+#### Scenario: 璋冪敤宸ヤ綔娴佸懡浠?
+
+- **WHEN** 使用 `aiw wf ...`
+- **THEN** 命令进入 Workflow facade，并统一分派到 Task workflow。
+
+#### Scenario: 璋冪敤澶栭儴鎵╁睍
+
+- **WHEN** 椤跺眰鍛戒护娌℃湁鍐呯疆澶勭悊鍣ㄤ笖鍙戠幇浜嗗搴旀彃浠?
+- **THEN** 绯荤粺鎶婂墿浣欏弬鏁颁氦缁欐彃浠舵墽琛岋紝骞朵紶鍏ユ彃浠跺悕绉般€佽矾寰勫拰 AIW 璋冪敤鐜銆?
+
+#### Scenario: 旧工作流入口已移除
 
 - **WHEN** 使用 `aiw workflow ...` 或 `aiw task workflow ...`
-- **THEN** 两者进入同一 Task workflow 分派。
+- **THEN** AIW 拒绝调用并提示使用 `aiw wf ...`。
 
-#### Scenario: 调用外部扩展
+### Requirement: 鎻掍欢鍙戠幇涓庡瓙杩涚▼缁撴灉
 
-- **WHEN** 顶层命令没有内置处理器且发现了对应插件
-- **THEN** 系统把剩余参数交给插件执行，并传入插件名称、路径和 AIW 调用环境。
+鎻掍欢鍙戠幇 MUST 鎼滅储鍙墽琛屾枃浠舵梺鍜屽綋鍓嶇洰褰曠殑 plugins锛堝惈涓€绾у瓙鐩綍锛夛紝浠ュ強 PATH 涓婂尮閰嶅悕绉扮殑鍊欓€夛紝骞舵寜鎵╁睍鍚嶄紭鍏堢骇閫夊彇銆傛墽琛?MUST 浣跨敤瀵瑰簲瑙ｉ噴鍣ㄦ垨鍙墽琛屾枃浠讹紝杩炴帴鏍囧噯杈撳叆杈撳嚭锛屽苟灏嗗惎鍔ㄩ敊璇垨闈為浂閫€鍑轰綔涓哄け璐ュ弽棣堛€?
 
-### Requirement: 插件发现与子进程结果
+#### Scenario: 鎻掍欢鍚姩澶辫触
 
-插件发现 MUST 搜索可执行文件旁和当前目录的 plugins（含一级子目录），以及 PATH 上匹配名称的候选，并按扩展名优先级选取。执行 MUST 使用对应解释器或可执行文件，连接标准输入输出，并将启动错误或非零退出作为失败反馈。
+- **WHEN** 鎻掍欢瑙ｉ噴鍣ㄤ笉瀛樺湪鎴栧瓙杩涚▼鏃犳硶鍚姩
+- **THEN** AIW 鎶ュ憡鎵ц閿欒锛岃€屼笉鏄妸璋冪敤瑙嗕负鎴愬姛銆?
 
-#### Scenario: 插件启动失败
+### Requirement: 鍩虹鍒濆鍖栦笌鍙€夎缃?
 
-- **WHEN** 插件解释器不存在或子进程无法启动
-- **THEN** AIW 报告执行错误，而不是把调用视为成功。
+init MUST 鍒涘缓 OpenSpec銆乀ask 杩愯鐩綍銆佸伐浣滄爲鍙婄浉鍏虫寚浠ょ洰褰曪紝骞朵粎鍦ㄧ己澶辨椂鐢熸垚鍩虹鎸囦护鏂囦欢銆傚彲閫?prompts 鍚屾鎸夋樉寮忛€夐」鎵ц锛涘畼鏂?setup 鎻掍欢涓嶅彲鐢ㄦ垨澶辫触 MUST 缁欏嚭鎻愮ず骞跺厑璁稿熀纭€鍒濆鍖栦繚鐣欍€?
 
-### Requirement: 基础初始化与可选设置
+#### Scenario: 宸叉湁椤圭洰鎸囦护
 
-init MUST 创建 OpenSpec、Task 运行目录、工作树及相关指令目录，并仅在缺失时生成基础指令文件。可选 prompts 同步按显式选项执行；官方 setup 插件不可用或失败 MUST 给出提示并允许基础初始化保留。
+- **WHEN** 鎵ц鍩虹 init 涓斿熀纭€鎸囦护鏂囦欢宸茬粡瀛樺湪
+- **THEN** write-if-missing 璺緞涓嶈鐩栬鏂囦欢銆?
 
-#### Scenario: 已有项目指令
+#### Scenario: 瀹樻柟 setup 涓嶅彲鐢?
 
-- **WHEN** 执行基础 init 且基础指令文件已经存在
-- **THEN** write-if-missing 路径不覆盖该文件。
+- **WHEN** 鏈烦杩?setup锛屼絾鏃犳硶鍙戠幇鎴栬繍琛屽畼鏂规彃浠?
+- **THEN** 绯荤粺鎶ュ憡璇ユ儏鍐碉紝缁х画淇濈暀宸插畬鎴愮殑鍩虹鍒濆鍖栥€?
 
-#### Scenario: 官方 setup 不可用
+### Requirement: ask 鐨勭郴缁熸彁绀轰笌璺緞杈圭晫
 
-- **WHEN** 未跳过 setup，但无法发现或运行官方插件
-- **THEN** 系统报告该情况，继续保留已完成的基础初始化。
+ask MUST 鎸夊懡浠よ鏂囨湰銆佸懡浠よ鏂囦欢銆佷釜浜?`~/.aiw/ask/config.toml` 鐨勯『搴忚В鏋愮郴缁熸彁绀恒€傛樉寮忓懡浠よ鏂囦欢鍙洿鎺ユ巿鏉冭鍙栵紱涓汉閰嶇疆寮曠敤鐨勫閮ㄦ枃浠?MUST 閫氳繃宸ヤ綔鍖恒€佷釜浜?ask 鐩綍銆乤llow-path 鎴栦氦浜掔‘璁よ幏寰楄鍙€?
 
-### Requirement: ask 的系统提示与路径边界
+#### Scenario: 闈炰氦浜掕鍙栧閮ㄩ厤缃枃浠?
 
-ask MUST 按命令行文本、命令行文件、个人 `~/.aiw/ask/config.toml` 的顺序解析系统提示。显式命令行文件可直接授权读取；个人配置引用的外部文件 MUST 通过工作区、个人 ask 目录、allow-path 或交互确认获得许可。
+- **WHEN** 閰嶇疆寮曠敤鐨勭郴缁熸彁绀烘枃浠朵綅浜庨粯璁よ寖鍥村锛屼笖娌℃湁 allow-path
+- **THEN** 闈炰氦浜掕皟鐢ㄨ繑鍥炴巿鏉冮敊璇紝涓嶉潤榛樿鍙栬鏂囦欢銆?
 
-#### Scenario: 非交互读取外部配置文件
+### Requirement: ask 鐨勭粨鏋勫寲缁撴灉
 
-- **WHEN** 配置引用的系统提示文件位于默认范围外，且没有 allow-path
-- **THEN** 非交互调用返回授权错误，不静默读取该文件。
+ask MUST 鍚戝叡浜?AI 灞傝姹?ReadOnly 妯″紡骞舵牎楠屽搷搴?schema_version銆乻tatus銆乧apability 鍜?safety 绛夊凡瀹炵幇瀛楁銆傛棤鏁?JSON銆佹棤鏁堢姸鎬佹垨缂哄皯蹇呴渶瀵硅薄 MUST 淇濆瓨閿欒璁板綍骞惰繑鍥炲け璐ャ€?
 
-### Requirement: ask 的结构化结果
+#### Scenario: 杩斿洖鏃犳晥鍥炵瓟
 
-ask MUST 向共享 AI 层请求 ReadOnly 模式并校验响应 schema_version、status、capability 和 safety 等已实现字段。无效 JSON、无效状态或缺少必需对象 MUST 保存错误记录并返回失败。
+- **WHEN** 妯″瀷杈撳嚭鏃犳硶閫氳繃 ask 鍝嶅簲鏍￠獙
+- **THEN** 绯荤粺淇濈暀璇婃柇锛屼笉鑳藉皢鏃犳晥鍐呭鎵撳嵃涓烘甯告垚鍔熷洖绛斻€?
 
-#### Scenario: 返回无效回答
+### Requirement: cz 鐨勬殏瀛樺尯涓庡闃?
 
-- **WHEN** 模型输出无法通过 ask 响应校验
-- **THEN** 系统保留诊断，不能将无效内容打印为正常成功回答。
+cz MUST 鍦ㄧ敓鎴愭彁浜よ崏绋垮墠瑕佹眰瀛樺湪 staged changes銆傚畠 MUST 鏀寔 LLM 鑽夌鎴栦氦浜掑悜瀵硷紝骞舵妸鑽夌浜ょ粰 ReviewAndCommit 娴佺▼鍚庡啀璋冪敤鎻愪氦鍑芥暟銆?
 
-### Requirement: cz 的暂存区与审阅
+#### Scenario: 娌℃湁鏆傚瓨鏀瑰姩
 
-cz MUST 在生成提交草稿前要求存在 staged changes。它 MUST 支持 LLM 草稿或交互向导，并把草稿交给 ReviewAndCommit 流程后再调用提交函数。
+- **WHEN** staged changes 涓虹┖
+- **THEN** cz 杩斿洖闇€瑕佸厛 git add 鐨勯敊璇紝涓嶇敓鎴愭彁浜ゃ€?
 
-#### Scenario: 没有暂存改动
+### Requirement: Git export 瀵煎嚭鎻愪氦寮曠敤
 
-- **WHEN** staged changes 为空
-- **THEN** cz 返回需要先 git add 的错误，不生成提交。
+git export MUST 璋冪敤 `git archive --format=zip` 瀵煎嚭鎸囧畾 Git ref锛屾湭鎸囧畾鏃朵娇鐢?HEAD銆傚鍑哄唴瀹?MUST 鏉ヨ嚜璇ュ紩鐢ㄧ殑鎻愪氦鏍戯紝鑰屼笉鏄湭鎻愪氦鐨勫伐浣滃尯淇敼銆?
 
-### Requirement: Git export 导出提交引用
+#### Scenario: 瀵煎嚭榛樿寮曠敤
 
-git export MUST 调用 `git archive --format=zip` 导出指定 Git ref，未指定时使用 HEAD。导出内容 MUST 来自该引用的提交树，而不是未提交的工作区修改。
+- **WHEN** 涓嶆寚瀹?ref 鎵ц export
+- **THEN** 瀵煎嚭褰撳墠 HEAD 鐨勫唴瀹广€?
 
-#### Scenario: 导出默认引用
+#### Scenario: 鎸囧畾鍏朵粬鍒嗘敮銆佹爣绛炬垨鎻愪氦
 
-- **WHEN** 不指定 ref 执行 export
-- **THEN** 导出当前 HEAD 的内容。
+- **WHEN** 鎻愪緵鍙В鏋愮殑 Git ref
+- **THEN** 瀵煎嚭璇?ref锛屾棤闇€鎶婂伐浣滃尯鍒囨崲鍒拌鍒嗘敮銆?
 
-#### Scenario: 指定其他分支、标签或提交
+## 瀹炵幇渚濇嵁
 
-- **WHEN** 提供可解析的 Git ref
-- **THEN** 导出该 ref，无需把工作区切换到该分支。
+- [涓诲叆鍙(../../../main.go)銆乕Task 鍒嗘淳](../../../internal/commands/task/command.go)銆?
+- [鎻掍欢鍙戠幇](../../../internal/plugin/discover.go)銆乕鎻掍欢鎵ц](../../../internal/plugin/exec.go)銆乕鍒濆鍖朷(../../../internal/commands/task/init.go)銆?
+- [ask 閰嶇疆](../../../internal/commands/ask/config.go)銆乕璺緞绛栫暐](../../../internal/commands/ask/path_policy.go)銆乕闂瓟鎵ц](../../../internal/commands/ask/command.go)銆?
+- [cz](../../../internal/cz/command.go)銆乕Git export](../../../plugins/aiw-git/git-export.py)銆?
+- [ask 鍥炲綊鏉愭枡](../../../internal/commands/ask/command_test.go)锛涙湰娆℃湭鎵ц銆?
 
-## 实现依据
-
-- [主入口](../../../main.go)、[Task 分派](../../../internal/commands/task/command.go)。
-- [插件发现](../../../internal/plugin/discover.go)、[插件执行](../../../internal/plugin/exec.go)、[初始化](../../../internal/commands/task/init.go)。
-- [ask 配置](../../../internal/commands/ask/config.go)、[路径策略](../../../internal/commands/ask/path_policy.go)、[问答执行](../../../internal/commands/ask/command.go)。
-- [cz](../../../internal/commands/cz/command.go)、[Git export](../../../plugins/aiw-git/git-export.py)。
-- [ask 回归材料](../../../internal/commands/ask/command_test.go)；本次未执行。
-
-%% ReadOnly 是传给 provider 的执行配置；外部 CLI 的实际文件访问隔离仍取决于其实现，allow-path 不能被泛化为所有后端的严格读取白名单。
+%% ReadOnly 鏄紶缁?provider 鐨勬墽琛岄厤缃紱澶栭儴 CLI 鐨勫疄闄呮枃浠惰闂殧绂讳粛鍙栧喅浜庡叾瀹炵幇锛宎llow-path 涓嶈兘琚硾鍖栦负鎵€鏈夊悗绔殑涓ユ牸璇诲彇鐧藉悕鍗曘€?

@@ -5,7 +5,7 @@
 
 ## 1. 当前可用范围
 
-`aiw workflow` 与 `aiw task workflow` 使用同一入口。`supervise` 是前台、单 Task、
+`aiw wf` 与 `aiw wf` 使用同一入口。`supervise` 是前台、单 Task、
 顺序执行的循环，每轮派发一个有界 Agent turn。
 
 **新 Task 默认仍使用 schema 9。** 源码另有 schema 10 持久化多阶段协议，需要
@@ -53,8 +53,8 @@ aiw context payment-retry
 
 ```powershell
 aiw wt add payment-retry
-aiw workflow plan payment-retry
-aiw workflow recommend-routing payment-retry
+aiw wf plan payment-retry
+aiw wf recommend-routing payment-retry
 aiw wt status payment-retry
 ```
 
@@ -63,7 +63,7 @@ aiw wt status payment-retry
 确定性默认路由。Requirement promotion 会调用该入口；已有计划时按需重新推荐。
 
 ```powershell
-aiw workflow supervise payment-retry start --provider codex --model your-model
+aiw wf supervise payment-retry start --provider codex --model your-model
 ```
 
 **默认路径满足交付条件后会提交、合并到记录的 `parent_branch`，并清理已合并工作树
@@ -72,10 +72,10 @@ aiw workflow supervise payment-retry start --provider codex --model your-model
 另一终端可观察或停止：
 
 ```powershell
-aiw workflow supervise payment-retry status
-aiw workflow report payment-retry
-aiw workflow diagnose payment-retry
-aiw workflow supervise payment-retry stop
+aiw wf supervise payment-retry status
+aiw wf report payment-retry
+aiw wf diagnose payment-retry
+aiw wf supervise payment-retry stop
 ```
 
 `stop` 不证明在途 Agent 或编译进程已退出。结果未知时先核实原进程和请求，不能
@@ -85,10 +85,10 @@ aiw workflow supervise payment-retry stop
 
 | 命令 | 实际作用 |
 |---|---|
-| `aiw workflow run payment-retry` | 不调用 Agent，但可能准备并持久化请求，不是纯只读 |
-| `aiw workflow advance payment-retry` | 准备 Attempt-bound 请求，不调用模型 |
-| `aiw workflow run payment-retry --execute` | 执行一步，不包含完整监督编译修复和自动交付循环 |
-| `aiw workflow run payment-retry --execute --primary` | 显式使用主工作区，仅限 Task 已绑定主工作区 |
+| `aiw wf run payment-retry` | 不调用 Agent，但可能准备并持久化请求，不是纯只读 |
+| `aiw wf advance payment-retry` | 准备 Attempt-bound 请求，不调用模型 |
+| `aiw wf run payment-retry --execute` | 执行一步，不包含完整监督编译修复和自动交付循环 |
+| `aiw wf run payment-retry --execute --primary` | 显式使用主工作区，仅限 Task 已绑定主工作区 |
 
 `--primary` 不是 supervise 参数。准备 supervise 时不要用 `advance` 或 `run` 预热
 请求；让 supervise 在计划就绪后冻结请求。旧请求不会随计划文件或 CLI 模型参数
@@ -148,7 +148,7 @@ Profile 配在 `[ai.profiles.<name>]`，必须包含 provider 和 model；不完
 默认监督只读取 coder。新请求保存 `AISelection`，启动覆盖在冻结时应用；恢复及
 编译修复复用快照，不因重启而换模型。schema 10 另有按 Actor 记账的路由与升级服务。
 
-执行通过 `aiw turn <task-id> --supervised` 进入 Session 和外部 Agent CLI，使用 Task
+执行通过 `aiw wf run <task-id> --execute` 进入 Session 和外部 Agent CLI，使用 Task
 工件、所选 Work Item、handoff 及运行上下文，不进入交互式 `chat`。
 
 Skills 提供 Agent 方法指引，不授予测试、Git 写入或生命周期权限。默认循环不会
@@ -171,7 +171,7 @@ git -c "safe.directory=<verified-worktree>" -C "<verified-worktree>" status
 进程前停止。命令本身不授予权限：
 
 ```powershell
-aiw workflow focused-test payment-retry attempt-123
+aiw wf focused-test payment-retry attempt-123
 ```
 
 没有 Verification Plan 时，默认 supervise 可 waived 可选 focused verification。
@@ -193,8 +193,8 @@ schema 10 的阶段为
 不是常驻调度器；下列维护命令不启用 schema 10：
 
 ```powershell
-aiw workflow auxiliary inventory
-aiw workflow knowledge show payment-retry
+aiw wf auxiliary inventory
+aiw wf knowledge show payment-retry
 ```
 
 ## 7. 持久化与恢复
@@ -212,11 +212,11 @@ aiw workflow knowledge show payment-retry
 | `openspec/changes/<task-id>/tasks.md` | 人工清单和 Core 生成投影 |
 
 ```powershell
-aiw workflow diagnose payment-retry
-aiw workflow report payment-retry
+aiw wf diagnose payment-retry
+aiw wf report payment-retry
 # 仅在诊断要求恢复事件或修复投影时使用：
-aiw workflow recover payment-retry
-aiw workflow repair payment-retry
+aiw wf recover payment-retry
+aiw wf repair payment-retry
 ```
 
 `recover` 补齐待恢复事件，`repair` 修复投影；都不重跑 Agent，不自动消除业务 Gate。
@@ -235,7 +235,7 @@ schema 10 的 Stop、预算和已用授权跨重启保留；旧预算不能重�
 - [x] 区分默认 schema 9 与需受控宿主启用的 schema 10。
 - [x] 更新交付副作用、持久 Stop、报告校验和辅助工作边界。
 
-实现入口：`internal/commands/task/workflow_commands.go`、`workflow_supervisor.go`；
+实现入口：`internal/workflow/cli/command.go`、`internal/workflow/cli/supervisor.go`；
 默认编排：`internal/workflow/execution/supervisor.go`、`session.go`、`compile.go`、
 `delivery.go`；协议边界：`internal/workflow/execution_protocol.go`、`runner.go`、
 `execution/stages.go`、`execution/verification_host.go`、`execution/local_delivery.go`。

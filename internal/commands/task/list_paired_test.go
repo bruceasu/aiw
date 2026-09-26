@@ -11,7 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"aiw/internal/taskx"
+	"aiw/internal/task"
+	taskworkflow "aiw/internal/task/workflowadapter"
 	"aiw/internal/ui"
 	"aiw/internal/workflow"
 )
@@ -31,9 +32,9 @@ func TestListReconstructsOnlyMissingRuntimeAndIsIdempotent(t *testing.T) {
 				if missing == "legacy-state" { filename = "tasks.toml" }
 				meta := writeListTestMeta(t, dir+"/"+filename, id, "TODO")
 				meta.Branch, meta.ParentBranch, meta.Session = "original-branch", "original-parent", "original-session"
-				if err := taskx.WriteTaskMeta(dir+"/"+filename, meta); err != nil { t.Fatal(err) }
+				if err := task.WriteTaskMeta(dir+"/"+filename, meta); err != nil { t.Fatal(err) }
 				if missing == "metadata" {
-					state := taskx.WorkflowRuntimeFromMeta(meta)
+					state := taskworkflow.WorkflowRuntimeFromMeta(meta)
 					state.Planning = workflow.PlanningReady
 					state.WorkItems = []workflow.WorkItem{{ID: "wi-0001", State: workflow.WorkItemCompleted}}
 					if _, err := workflow.NewStore(".ai").Create(state); err != nil { t.Fatal(err) }
@@ -53,8 +54,8 @@ func TestListReconstructsOnlyMissingRuntimeAndIsIdempotent(t *testing.T) {
 			state, err := workflow.LoadFromDirectory(dir, workflow.TaskID(id))
 			if err != nil { t.Fatal(err) }
 			if len(state.Attempts) != 0 || state.WriteLease != nil || len(state.Evidence) != 0 { t.Fatalf("repair fabricated execution: %+v", state) }
-			metaPath, err := taskx.MetadataPathInDirectory(dir); if err != nil { t.Fatal(err) }
-			meta, err := taskx.ReadTaskMeta(metaPath); if err != nil { t.Fatal(err) }
+			metaPath, err := task.MetadataPathInDirectory(dir); if err != nil { t.Fatal(err) }
+			meta, err := task.ReadTaskMeta(metaPath); if err != nil { t.Fatal(err) }
 			if missing == "directory" || missing == "legacy-directory-files" {
 				if meta.Branch != "" || meta.ParentBranch != "" || meta.Session != "" || meta.WorkspaceKind != "unassigned" { t.Fatalf("guessed bindings: %+v", meta) }
 			}
@@ -99,7 +100,7 @@ func TestListArchivedWorkflowStatusAndSortedColumns(t *testing.T) {
 	listTestWorkspace(t)
 	for _, id := range []string{"z-active", "a-archived"} {
 		meta := writeListTestMeta(t, ".ai/"+id+"/task.toml", id, "TODO")
-		state := taskx.WorkflowRuntimeFromMeta(meta)
+		state := taskworkflow.WorkflowRuntimeFromMeta(meta)
 		state.Planning = workflow.PlanningReady
 		state.WorkItems = []workflow.WorkItem{{ID: "wi-0001", State: workflow.WorkItemCompleted}}
 		if _, err := workflow.NewStore(".ai").Create(state); err != nil { t.Fatal(err) }
@@ -126,7 +127,7 @@ func TestListConflictsAreDiagnosedWithoutRepair(t *testing.T) {
 		t.Run(conflict, func(t *testing.T) {
 			listTestWorkspace(t)
 			meta := writeListTestMeta(t, ".ai/conflict/task.toml", "conflict", "TODO")
-			if _, err := workflow.NewStore(".ai").Create(taskx.WorkflowRuntimeFromMeta(meta)); err != nil { t.Fatal(err) }
+			if _, err := workflow.NewStore(".ai").Create(taskworkflow.WorkflowRuntimeFromMeta(meta)); err != nil { t.Fatal(err) }
 			switch conflict {
 			case "duplicate-runtime": writeListTestMeta(t, ".ai/tasks/conflict/tasks.toml", "conflict", "TODO")
 			case "active-and-archive":
@@ -158,7 +159,7 @@ func TestListConflictsAreDiagnosedWithoutRepair(t *testing.T) {
 func TestListPreservesCancelledArchivedWorkflow(t *testing.T) {
 	listTestWorkspace(t)
 	meta := writeListTestMeta(t, ".ai/cancelled/task.toml", "cancelled", "TODO")
-	state := taskx.WorkflowRuntimeFromMeta(meta)
+	state := taskworkflow.WorkflowRuntimeFromMeta(meta)
 	state.Cancellation = &workflow.Cancellation{Reason: "Discarded by owner", Delivery: workflow.DeliveryDiscarded}
 	state.Delivery = workflow.DeliveryDiscarded
 	if _, err := workflow.NewStore(".ai").Create(state); err != nil { t.Fatal(err) }

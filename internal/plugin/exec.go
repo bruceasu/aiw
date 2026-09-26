@@ -31,11 +31,7 @@ func ExecPlugin(path string, args []string, env map[string]string) (int, error) 
 	cmd.Stdin = os.Stdin
 
 	// build environment
-	finalEnv := os.Environ()
-	for k, v := range env {
-		finalEnv = append(finalEnv, fmt.Sprintf("%s=%s", k, v))
-	}
-	cmd.Env = finalEnv
+	cmd.Env = mergeEnvironment(os.Environ(), env)
 
 	err = cmd.Run()
 	if err == nil {
@@ -65,11 +61,7 @@ func ExecPluginWithInput(path string, args []string, env map[string]string, inpu
 	cmd.Stdin = bytes.NewReader(input)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	finalEnv := os.Environ()
-	for key, value := range env {
-		finalEnv = append(finalEnv, fmt.Sprintf("%s=%s", key, value))
-	}
-	cmd.Env = finalEnv
+	cmd.Env = mergeEnvironment(os.Environ(), env)
 	if err := cmd.Run(); err == nil {
 		return stdout.Bytes(), 0, nil
 	} else if exitErr, ok := err.(*exec.ExitError); ok {
@@ -80,6 +72,30 @@ func ExecPluginWithInput(path string, args []string, env map[string]string, inpu
 	} else {
 		return stdout.Bytes(), -1, fmt.Errorf("run plugin: %w: %s", err, stderr.String())
 	}
+}
+
+// mergeEnvironment preserves the parent environment while making explicit
+// plugin variables authoritative. Duplicate keys are avoided for predictable
+// behavior across Windows and Unix process launchers.
+func mergeEnvironment(base []string, overrides map[string]string) []string {
+	result := append([]string(nil), base...)
+	positions := make(map[string]int, len(result)+len(overrides))
+	for i, entry := range result {
+		key, _, ok := strings.Cut(entry, "=")
+		if ok {
+			positions[key] = i
+		}
+	}
+	for key, value := range overrides {
+		entry := fmt.Sprintf("%s=%s", key, value)
+		if i, ok := positions[key]; ok {
+			result[i] = entry
+			continue
+		}
+		positions[key] = len(result)
+		result = append(result, entry)
+	}
+	return result
 }
 
 func buildPluginCommand(path string, args []string) (*exec.Cmd, error) {

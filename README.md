@@ -42,13 +42,41 @@ Notes:
 ## Build and Installation
 
 ```bash
-go build -o aiw .
+go build -o aiw ./cmd/aiw
 ```
 
 Windows executable:
 
 ```powershell
 .\aiw.exe init
+```
+
+The workflow CLI is distributed as the `aiw-wf` plugin. Build both Windows
+and Linux workflow binaries into `plugins/aiw-wf` with:
+
+```bat
+build.bat wf
+```
+
+`build.bat plugins` and `build.bat all` also build the workflow binaries before
+copying the plugin tree to the install directory. The command is:
+
+```text
+aiw wf <operation> ...
+```
+
+Requirement Management is also distributed as the `aiw-req` plugin.
+Build its Windows and Linux binaries into `plugins/aiw-req` with:
+
+```bat
+build.bat req
+```
+
+The Conventional Commit wizard is distributed as the `aiw-cz` plugin. Build
+its Windows and Linux binaries into `plugins/aiw-cz` with:
+
+```bat
+build.bat cz
 ```
 
 ## Commands
@@ -63,14 +91,18 @@ aiw list [--all]
 aiw show <task-id>
 aiw status <task-id> <status>
 aiw done <task-id>
-aiw archive <task-id> [--push] [--cleanup-wt] [--delete-branch] [--finalize] [--force]
+aiw archive <task-id> [--push] [--cleanup-wt] [--delete-branch] [--force]
 
-aiw requirement new <requirement-id> [title]
-aiw requirement chat [requirement-id] [--provider NAME] [--model MODEL]
-aiw requirement show <requirement-id>
-aiw requirement capture <requirement-id> <artifact> --file <path>
-aiw requirement approve <requirement-id> <APPROVED|DEFERRED|REJECTED> --by <actor> --reason <reason>
-aiw requirement promote <requirement-id> --task <task-id>
+aiw req new <slug> [title]
+aiw req new --id <requirement-id> [title]
+aiw req chat [requirement-id] [--provider NAME] [--model MODEL]
+aiw req list [--all|--archived|--cancelled]
+aiw req show <requirement-id>
+aiw req capture <requirement-id> <artifact> --file <path>
+aiw req approve <requirement-id> <APPROVED|DEFERRED|REJECTED> --by <actor> --reason <reason>
+aiw req promote <requirement-id> --task <task-id>
+aiw req archive <requirement-id> --reason <reason> [--by <actor>]
+aiw req cancel <requirement-id> --reason <reason> [--by <actor>]
 
 aiw wt add <task-id> [base-branch]
 aiw wt rm <task-id> [--delete-branch] [--force]
@@ -87,16 +119,22 @@ aiw wt ignore
 aiw context <task-id>
 aiw decision <task-id>
 aiw spec <spec-id>
-aiw turn <task-id> [--handoff PATH] [--provider NAME] [--model MODEL] [--takeover] [--yes]
-aiw chat <task-id> [--handoff PATH] [--provider NAME] [--model MODEL] [--takeover] [--yes]
-aiw workflow <operation> <task-id> [arguments/options]
-aiw workflow repair-metadata [task-id] [--dry-run]
+aiw wf <operation> <task-id> [arguments/options]
+aiw wf repair-metadata [task-id] [--dry-run]
 aiw workspace <operation> <task-id>
-aiw task workflow <operation> <task-id> [arguments/options]
-aiw task workflow run <task-id> [--execute] [--primary] [--provider NAME] [--model MODEL]
-aiw task workflow supervise <task-id> <start|status|stop> [--provider NAME] [--model MODEL]
+aiw wf run <task-id> [--execute] [--primary] [--provider NAME] [--model MODEL]
+aiw wf supervise <task-id> <start|status|stop> [--provider NAME] [--model MODEL]
 aiw completion <powershell|bash|zsh|fish>
-aiw session <status|list|get|finish|archive|delete|memory|handoff>
+aiw session status <task-id>
+aiw session list
+aiw session get <task-id>
+aiw session finish <task-id>
+aiw session archive <task-id>
+aiw session delete <task-id> --yes
+aiw session memory <append|show> <task-id> [TEXT]
+aiw session handoff [show] <task-id> [focus]
+
+aiw skills <list|discover|adopt|install|sync> [options]
 
 aiw ask [--chat|--resume] [--system-prompt TEXT] [--system-prompt-file FILE] [--allow-path PATH] "PROMPT"
 
@@ -105,12 +143,14 @@ aiw prompts [template] [--merge] [--force]
 
 aiw tcc [args...]       # TCC wrapper with automatic include/lib defaults
 aiw git <subcommand>    # run: aiw git help
+aiw cxs <subcommand>   # inspect and resume Codex CLI sessions
+aiw github <subcommand> # GitHub Issues and PRs
+aiw cz <subcommand>    # Conventional Commit wizard
+aiw exec-java [args...] # run a Java main class through Maven
 ```
 
-Every built-in command accepts `-h`/`--help` where detailed command help is
-available. Use `aiw help <command>` for the same overview from the top-level
-help router. Unknown commands are resolved as plugins and use the same
-`aiw <plugin> --help` convention.
+Use `aiw --help` or `aiw help <command>` for command discovery. Plugins provide
+their own detailed help through `aiw <plugin> --help`.
 
 See [AIW Ask](docs/usage/aiw-ask.md) for safe usage guidance, chat controls,
 private session storage, and provider limitations.
@@ -261,30 +301,30 @@ Use the managed workflow when implementation should be prepared, evidenced,
 and executed one bounded step at a time:
 
 ```powershell
-aiw workflow plan payment-retry
-aiw workflow advance payment-retry
-aiw workflow run payment-retry
+aiw wf plan payment-retry
+aiw wf advance payment-retry
+aiw wf run payment-retry
 ```
 
 The first `run` is a preview. Execute one authorized step with:
 
 ```powershell
-aiw workflow run payment-retry --execute
+aiw wf run payment-retry --execute
 ```
 
 AIW uses an isolated worktree by default for an executing step. Use
 `--primary` only when you explicitly intend to run in the parent workspace:
 
 ```powershell
-aiw workflow run payment-retry --execute --primary
+aiw wf run payment-retry --execute --primary
 ```
 
 Inspect a blocked or interrupted workflow with:
 
 ```powershell
-aiw workflow diagnose payment-retry
-aiw workflow recover payment-retry
-aiw workflow repair payment-retry
+aiw wf diagnose payment-retry
+aiw wf recover payment-retry
+aiw wf repair payment-retry
 ```
 
 ### Preserve a requirement before creating a Task
@@ -293,10 +333,10 @@ Use Requirement Management when the request still needs clarification,
 business approval, metric definition, or engineering option review:
 
 ```powershell
-aiw requirement chat daily-withdrawal-report
-aiw requirement show daily-withdrawal-report
-aiw requirement approve daily-withdrawal-report APPROVED --by alice --reason "scope approved"
-aiw requirement promote daily-withdrawal-report --task daily-withdrawal-report
+aiw req chat daily-withdrawal-report
+aiw req show daily-withdrawal-report
+aiw req approve daily-withdrawal-report APPROVED --by alice --reason "scope approved"
+aiw req promote daily-withdrawal-report --task daily-withdrawal-report
 ```
 
 Promotion requires an explicit approval and creates or reuses the linked Task.
@@ -385,7 +425,7 @@ Configure a specific executable with `AIW_OPENSPEC_BIN`.
 ## Requirement Management
 
 Requirement Management preserves the human requirement discussion before it
-becomes an engineering Task. Start with `aiw requirement chat [requirement-id]`:
+becomes an engineering Task. Start with `aiw req chat [requirement-id]`:
 it creates or resumes a durable Flow Session, selects the smallest useful
 discussion phase, and asks for confirmation before each durable action.
 Records are stored under `docs/requirements/<requirement-id>/`; promotion requires
@@ -403,7 +443,7 @@ the lifecycle, commands, examples, recovery behavior, and Skill integration.
 ### Use the Requirement Management Skill
 
 Use `$requirement-management` when you want an AI conversation to lead the
-Requirement workflow. It starts or resumes `aiw requirement chat`, selects the
+Requirement workflow. It starts or resumes `aiw req chat`, selects the
 generic discovery or an applicable finance method, and prepares durable actions for
 explicit confirmation. Users do not need to remember artifact types, paths, or
 CLI parameters.
@@ -422,60 +462,20 @@ Examples:
 
 ```text
 $requirement-management I need a daily withdrawal report.
-aiw requirement chat daily-withdrawal-report
+aiw req chat daily-withdrawal-report
 ```
 
 The conversation shows a confirmation checkpoint before it creates, captures,
 approves, defers, rejects, or promotes. Confirm a displayed action with
-`confirm` or `确认`; the lower-level `aiw requirement ...`
+`confirm` or `确认`; the lower-level `aiw req ...`
 commands remain available for scripts and automation.
-
-## Sequential agent handoff
-
-`aiw turn <task-id>` consumes a handoff and starts one bounded Agent turn.
-If the Task already exists, its Session, branch, and worktree are reused. If it
-does not exist, AIW creates them from a handoff:
-
-```text
-handoff -> Task -> Session -> branch/worktree -> fresh Thread
-```
-
-Usage:
-
-```text
-aiw turn <task-id> [--handoff PATH] [--provider NAME] [--model MODEL] [--takeover] [--yes]
-```
-
-An existing Task normally needs metadata like:
-
-```toml
-session = "TASK-123"
-worktree = ".wt/TASK-123"
-```
-
-The command acquires a per-task lease, resolves handoff sources in the order
-`--handoff`, Task artifact, and Session artifact, and starts a fresh Codex
-Thread. New Tasks copy the handoff into their own `artifacts/handoff.md`.
-Lineage is recorded in `openspec/changes/<task-id>/agent-lineage.json`.
-Running Sessions are refused unless `--takeover` is explicit. Invalid Task IDs
-require confirmation with `--yes` and an interactive `y` response.
-Use Workflow diagnostics to inspect the recorded Attempt and Session
-transition. `aiw chat <task-id>` starts an interactive Codex or Copilot CLI in
-the Task worktree and returns when that CLI exits.
-
-This workflow is sequential. Use `aiw wt` to give parallel agents separate
-worktrees and sessions. `aiw session` is the AIW Core Session inspection and
-handoff surface;
-`aiw cxs` remains focused on native Codex session navigation.
-`task.toml` is canonical; `tasks.toml` is a legacy fallback.
 
 ## Automatic development workflow
 
 AIW separates Task orchestration from AI Session execution:
 
-* `aiw task workflow` owns the managed Task plan, Work Items, Attempts, Gates,
+* `aiw wf` owns the managed Task plan, Work Items, Attempts, Gates,
   Evidence, write leases, recovery, and derived progress.
-* `aiw turn` hands one selected Work Item to a fresh or resumed Session.
 * `aiw session` manages persisted AIW Sessions, their memory, handoffs, and backend resume IDs.
 * OpenSpec owns proposal, design, capability specs, and the human-authored
   checklist in `tasks.md`.
@@ -494,17 +494,17 @@ Start with a Task whose `tasks.md` contains numbered checklist items. For a
 requirement-led change, use Requirement Management first:
 
 ```text
-aiw requirement chat daily-withdrawal-report
-aiw requirement approve daily-withdrawal-report APPROVED --by alice --reason "scope approved"
-aiw requirement promote daily-withdrawal-report --task daily-withdrawal-report
+aiw req chat daily-withdrawal-report
+aiw req approve daily-withdrawal-report APPROVED --by alice --reason "scope approved"
+aiw req promote daily-withdrawal-report --task daily-withdrawal-report
 ```
 
 Prepare and inspect the managed execution plan:
 
 ```text
-aiw task workflow plan daily-withdrawal-report
+aiw wf plan daily-withdrawal-report
 aiw show daily-withdrawal-report
-aiw task workflow advance daily-withdrawal-report
+aiw wf advance daily-withdrawal-report
 ```
 
 `advance` selects one dependency-satisfied Work Item and prepares one
@@ -512,30 +512,30 @@ Attempt-bound agent request. It does not start a model. Preview the same
 bounded step with:
 
 ```text
-aiw task workflow run daily-withdrawal-report
+aiw wf run daily-withdrawal-report
 ```
 
 Execute exactly one managed agent turn only when that is authorized. Automated
 execution creates or reuses an isolated `.wt/<task-id>` worktree by default:
 
 ```text
-aiw task workflow run daily-withdrawal-report --execute
+aiw wf run daily-withdrawal-report --execute
 ```
 
 To deliberately execute in the verified primary workspace, use the explicit
 opt-out:
 
 ```text
-aiw task workflow run daily-withdrawal-report --execute --primary
+aiw wf run daily-withdrawal-report --execute --primary
 ```
 
-Both workflow entry points dispatch `plan`, `sync`, `advance`, `run`,
+The workflow facade dispatches `plan`, `sync`, `advance`, `run`,
 `supervise`, `recommend-routing`, `attempt`, `evidence`, `gate`,
 `skip-focused-test`, `complete`, `retry-policy`, `reopen`, `force-close`,
 `focused-test`, `delivery`, `local-merge`, `delivery-failed`, `report`,
 `diagnose`, `recover`, and `repair`. `repair-metadata` is a special form:
-`aiw workflow repair-metadata [task-id] [--dry-run]` (also available under
-`aiw task workflow`). Run and `supervise ... start` accept `--provider NAME`
+`aiw wf repair-metadata [task-id] [--dry-run]`. Run and `supervise ... start`
+accept `--provider NAME`
 and `--model MODEL`; `run` also accepts `--execute` and `--primary`, and
 `--primary` requires `--execute`. Supervisor overrides apply only to `start`.
 
@@ -543,17 +543,17 @@ For example, delivery failures record their stage and detail, while the
 focused-test operation takes an Attempt ID:
 
 ```text
-aiw workflow delivery-failed payment-retry merge "conflict in parent branch"
-aiw task workflow focused-test payment-retry attempt-123
-aiw workflow repair-metadata payment-retry --dry-run
+aiw wf delivery-failed payment-retry merge "conflict in parent branch"
+aiw wf focused-test payment-retry attempt-123
+aiw wf repair-metadata payment-retry --dry-run
 ```
 
 `--primary` is rejected without `--execute`; preview commands never create a
 worktree.
 
 The Runner creates a minimal Task-local `artifacts/handoff.md` when needed and
-hands the selected Work Item to `aiw turn`. Existing handoff content
-is preserved. A second write-capable Attempt for the same workspace is refused
+hands the selected Work Item to the internal Agent adapter. Existing handoff
+content is preserved. A second write-capable Attempt for the same workspace is refused
 while its lease is active.
 
 ### Supervised bounded execution
@@ -566,10 +566,10 @@ For a long-running local loop, start supervision explicitly. Supervisor
 execution uses the same isolated-worktree default:
 
 ```text
-aiw workflow recommend-routing daily-withdrawal-report
-aiw task workflow supervise daily-withdrawal-report start
-aiw task workflow supervise daily-withdrawal-report status
-aiw task workflow supervise daily-withdrawal-report stop
+aiw wf recommend-routing daily-withdrawal-report
+aiw wf supervise daily-withdrawal-report start
+aiw wf supervise daily-withdrawal-report status
+aiw wf supervise daily-withdrawal-report stop
 ```
 
 Supervisor dispatches sequential, non-interactive Agent turns. A completed
@@ -647,8 +647,8 @@ authorization, reviewed provider capability evidence, and host configuration
 are required. Missing capabilities remain visible as host gaps.
 
 ```text
-aiw workflow auxiliary inventory
-aiw workflow knowledge show <task-id>
+aiw wf auxiliary inventory
+aiw wf knowledge show <task-id>
 ```
 
 Explicit maintenance also includes `auxiliary policy <file>`,
@@ -664,19 +664,19 @@ declare the work complete. Use the managed workflow commands to record the
 result and satisfy explicit preconditions:
 
 ```text
-aiw task workflow evidence <task-id> <evidence-id> <work-item-id> <kind> <state> [reference]
-aiw task workflow gate <task-id> <gate-id> <resolved|waived>
-aiw task workflow complete <task-id> <work-item-id>
+aiw wf evidence <task-id> <evidence-id> <work-item-id> <kind> <state> [reference]
+aiw wf gate <task-id> <gate-id> <resolved|waived>
+aiw wf complete <task-id> <work-item-id>
 ```
 
 When a transition or projection is interrupted, inspect and repair the durable
 record before continuing:
 
 ```text
-aiw task workflow diagnose <task-id>
-aiw task workflow report <task-id>
-aiw task workflow recover <task-id>
-aiw task workflow repair <task-id>
+aiw wf diagnose <task-id>
+aiw wf report <task-id>
+aiw wf recover <task-id>
+aiw wf repair <task-id>
 ```
 
 These commands do not replay an external agent turn. A pending Gate or missing
@@ -694,7 +694,7 @@ In the default schema 9 path, each Work Item has an automatic Attempt limit of t
 may set a limit from one through five, but only for that Work Item:
 
 ```powershell
-aiw workflow retry-policy daily-withdrawal-report wi-0001 3
+aiw wf retry-policy daily-withdrawal-report wi-0001 3
 ```
 
 Only structured no-progress outcomes consume this limit in supervise; blocked
@@ -709,14 +709,14 @@ Items. A blocked outcome must have its relevant Gates resolved before explicit
 reopening; a non-exhausted ordinary retry count is preserved:
 
 ```powershell
-aiw workflow reopen daily-withdrawal-report wi-0001 "validation authorization granted"
+aiw wf reopen daily-withdrawal-report wi-0001 "validation authorization granted"
 ```
 
 When a managed Task must stop without fabricating completion, use a reasoned
 force-close with an explicit delivery outcome:
 
 ```powershell
-aiw workflow force-close daily-withdrawal-report discarded "superseded by a replacement task"
+aiw wf force-close daily-withdrawal-report discarded "superseded by a replacement task"
 ```
 
 Force-close cancels managed Attempts, releases execution ownership, and records
@@ -738,8 +738,8 @@ Automatic development is deliberately bounded. AIW does not automatically:
 * push, publish pull requests, or archive after supervised local delivery;
 * create a background scheduler.
 
-Use `aiw task workflow run` to preview the next action and
-`aiw task workflow run --execute` or `supervise ... start` only with the
+Use `aiw wf run` to preview the next action and
+`aiw wf run --execute` or `supervise ... start` only with the
 appropriate authorization. Default schema 9 supervision includes compile validation and automatic
 local delivery for eligible isolated Tasks; ordinary `aiw done` does not itself
 perform that delivery. Task completion and verified Git delivery remain distinct
@@ -761,7 +761,7 @@ network override. The controlled runner reads that stored selection and runs
 the Plan entry in the owning Attempt worktree:
 
 ```text
-aiw task workflow focused-test <task-id> <attempt-id>
+aiw wf focused-test <task-id> <attempt-id>
 ```
 
 The command does not grant authorization. Invalid Plan or selection data, and
@@ -820,7 +820,8 @@ pipeline as canonical Skill installs. Run `aiw skills --help` for complete
 constraints and JSON automation options.
 
 Canonical Skill packages are maintained in the repository-root `skills/`
-directory. Release layouts keep `skills/` beside `program/` and `plugins/`.
+directory. Release layouts keep `skills/`, `cmd/`, and `plugins/` together;
+reusable implementation packages live under `internal/`.
 `aiw-install-skill` is deprecated; use `aiw skills install` for both canonical
 names and local bundle sources.
 
@@ -912,14 +913,22 @@ create a missing user configuration file or directory.
 
 ## Environment Variables
 
-The following variables are injected into plugin processes:
+Plugin processes inherit the parent environment, including provider settings
+such as `AIW_LLM_*`, `OPENAI_*`, and `AIW_PYTHON`. AIW also injects or
+overrides the following variables:
 
 | Variable                | Description                                |
 | ----------------------- | ------------------------------------------ |
 | `AIW_PLUGIN_NAME`       | Plugin name without the `aiw-` prefix      |
 | `AIW_PLUGIN_PATH`       | Absolute path to the executed plugin       |
 | `AIW_CMDLINE`           | Original command line after the subcommand |
-| `AIW_HOME` / `AIW_ROOT` | AIW configuration or installation root     |
+| `AIW_HOME`              | Parent home directory (`HOME` or `USERPROFILE`) |
+| `AIW_ROOT`              | Directory containing the root `aiw` executable |
+| `AIW_WORKSPACE`         | Working directory from which the plugin was launched |
+
+Configuration files are not copied into the plugin environment. The plugin
+keeps the inherited working directory and resolves project `aiw.toml` or
+`.aiw.toml` there; user and provider environment variables remain inherited.
 
 ## Example
 
@@ -1382,26 +1391,15 @@ aiw skills --help
 
 For full `aiw cxs` usage, see `docs/usage/aiw-cxs.md`.
 
-## Available Plugins
+## Built-in and Plugin Commands
 
-Plugins are discovered beside the `aiw` executable. The repository currently
-ships these common entry points as external plugins:
-
-| Command | Purpose | Detailed help |
-| --- | --- | --- |
-| `aiw wt` | Create and maintain task worktrees | `aiw wt --help` |
-| `aiw git` | Git helpers and discoverable Git subcommands | `aiw git help` |
-| `aiw session` | Persisted Session inspection and native resume-ID lookup | `aiw session --help` |
-| `aiw cxs` | Auxiliary inspection and continuation for Codex CLI sessions | `aiw cxs --help` |
-| `aiw skills` | List and install canonical Skills | `aiw skills --help` |
-| `aiw exec-java` | Run a Java main class through Maven in single- or multi-module projects | `aiw exec-java --help` |
-| `aiw github` | Read and publish GitHub Issues and PRs | `aiw github --help` |
-| `aiw cz` | Run the Conventional Commit wizard | `aiw cz --help` |
-| `aiw tcc` | Compile or run Tiny C Compiler programs | `aiw tcc --help` |
-
-Plugin HELP is intentionally generated by each plugin so its examples stay
-next to the parser. If a plugin is not installed, the top-level help reports
-the missing discovery location instead of showing stale commands.
+Task lifecycle, Requirement Management, Workflow, Worktree, Session, prompt,
+completion, and `ask` commands are exposed through their documented `aiw`
+entry points. Other commands are executable plugins discovered beside the
+`aiw` binary; their availability depends on the installed plugin set. Plugin
+help is owned by each plugin, so use `aiw <plugin> --help` for its current
+arguments and options. If a plugin is missing, `aiw` reports that it could not
+discover the corresponding executable.
 
 
 
@@ -1417,4 +1415,4 @@ docs/requirements/archive/<id>/      completed and archived
 docs/requirements/cancelled/<id>/    cancelled and retained
 ```
 
-Use `aiw requirement archive <id> --reason <reason> [--by <actor>]` for `DECIDED`, `APPROVED`, or `PROMOTED` requirements. Options may appear in either order; when `--by` is omitted, AIW uses the current OS user. Use the same form for `aiw requirement cancel`. `aiw requirement list` shows active records; add `--all`, `--archived`, or `--cancelled` to query history. `show` continues to resolve records by ID after they move.
+Use `aiw req archive <id> --reason <reason> [--by <actor>]` for `DECIDED`, `APPROVED`, or `PROMOTED` requirements. Options may appear in either order; when `--by` is omitted, AIW uses the current OS user. Use the same form for `aiw req cancel`. `aiw req list` shows active records; add `--all`, `--archived`, or `--cancelled` to query history. `show` continues to resolve records by ID after they move.

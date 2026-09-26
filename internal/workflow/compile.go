@@ -87,8 +87,9 @@ func (ExecCompileCommandRunner) Run(ctx context.Context, workspace string, adapt
 }
 
 // SelectCompileAdapter prefers explicit compile scripts in a fixed order. If
-// none exists, the registered Go adapter is the narrowest local compiler for
-// this repository. No test or package/build script is ever selected.
+// none exists, registered language adapters provide the narrowest local
+// compiler for this repository. No test or package/build script is ever
+// selected.
 func SelectCompileAdapter(workspace string) (CompileAdapter, error) {
 	if strings.TrimSpace(workspace) == "" { return CompileAdapter{}, errors.New("compile workspace is required") }
 	for _, relative := range []string{"scripts/compile.py", "scripts/compile.bat", "scripts/compile.cmd", "scripts/compile.ps1", "scripts/compile.sh", "compile.py", "compile.bat", "compile.cmd", "compile.ps1", "compile.sh"} {
@@ -100,6 +101,9 @@ func SelectCompileAdapter(workspace string) (CompileAdapter, error) {
 	if info, err := os.Stat(filepath.Join(workspace, "go.mod")); err == nil && !info.IsDir() {
 		return CompileAdapter{Kind: "go", Name: "go-build", Command: "go", Args: []string{"build", "./..."}}, nil
 	} else if err != nil && !errors.Is(err, os.ErrNotExist) { return CompileAdapter{}, fmt.Errorf("inspect Go module: %w", err) }
+	if info, err := os.Stat(filepath.Join(workspace, "pom.xml")); err == nil && !info.IsDir() {
+		return CompileAdapter{Kind: "maven", Name: "maven-compile", Command: "mvn", Args: []string{"-DskipTests", "compile"}}, nil
+	} else if err != nil && !errors.Is(err, os.ErrNotExist) { return CompileAdapter{}, fmt.Errorf("inspect Maven project: %w", err) }
 	return CompileAdapter{}, errors.New("no registered compile adapter or compile script found")
 }
 

@@ -300,7 +300,7 @@ supervise MUST 保留顺序主流程和持久归属，并支持有界辅助宿�
 
 - [清单同步](../../../internal/workflow/commands.go)、[调度选择](../../../internal/workflow/runner.go)、[工作项选择](../../../internal/workflow/selection.go)。
 - [Attempt 与 outcome](../../../internal/workflow/attempts.go)、[失败报告](../../../internal/workflow/failure_report.go)。
-- [请求准备与派发](../../../internal/commands/task/workflow_commands.go)、[前台循环](../../../internal/workflow/execution/supervisor.go)。
+- [请求准备与派发](../../../internal/workflow/cli/command.go)、[前台循环](../../../internal/workflow/execution/supervisor.go)。
 - [Session 绑定校验](../../../internal/workflow/execution/session.go)、[outcome 解析](../../../internal/workflow/execution/outcome.go)。
 - [清单回归材料](../../../internal/workflow/commands_test.go)、[outcome 回归材料](../../../internal/workflow/execution/outcome_test.go)；本次未执行。
 

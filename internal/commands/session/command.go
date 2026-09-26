@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	storex "aiw/internal/session"
-	"aiw/internal/taskx"
+	"aiw/internal/task"
 )
 
 // Dispatch exposes persisted Session operations only. Task Workflow and
@@ -118,16 +118,16 @@ func get(store *storex.Store, args []string) error {
 }
 
 func taskSessionID(taskID string, stores ...*storex.Store) (string, error) {
-	locations, err := taskx.DiscoverTaskLocations()
+	locations, err := task.DiscoverTaskLocations()
 	if err != nil { return "", err }
-	var meta taskx.TaskMeta
+	var meta task.TaskMeta
 	found := false
 	for _, location := range locations {
 		if location.ID != taskID { continue }
 		if err := errors.Join(location.Problems...); err != nil { return "", err }
-		path, pathErr := taskx.MetadataPathInDirectory(location.RuntimeDir)
+		path, pathErr := task.MetadataPathInDirectory(location.RuntimeDir)
 		if pathErr != nil { return "", pathErr }
-		meta, err = taskx.ReadTaskMeta(path)
+		meta, err = task.ReadTaskMeta(path)
 		found = true
 		break
 	}

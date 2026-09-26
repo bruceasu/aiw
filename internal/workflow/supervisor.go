@@ -25,10 +25,11 @@ func (s *Store) StartSupervisor(id TaskID, leaseID string) (RuntimeState, error)
 			}
 			}
 		}
-		state.Automation.Supervisor.LeaseID = leaseID
+	state.Automation.Supervisor.LeaseID = leaseID
 		state.Automation.Supervisor.StartedAt = now.Format(time.RFC3339)
 		state.Automation.Supervisor.LeaseExpiresAt = now.Add(supervisorLeaseTTL).Format(time.RFC3339)
 		state.Automation.Supervisor.StoppedAt = ""
+		state.Automation.Supervisor.RetryAfter = ""
 		return nil
 	})
 }

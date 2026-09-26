@@ -3,12 +3,12 @@ package execution
 import (
 	"fmt"
 
-	"aiw/internal/taskx"
+	"aiw/internal/task"
 	"aiw/internal/workflow"
 )
 
 func captureCompileInputs(request *workflow.PreparedAgentRequest) (workflow.ValidationInputs, error) {
-	root, err := taskx.ExecutionWorkspace(request.Workspace)
+	root, err := task.ExecutionWorkspace(request.Workspace)
 	if err != nil { return workflow.ValidationInputs{}, err }
 	if request.Compile == nil || request.Compile.Plan == nil { return workflow.ValidationInputs{}, fmt.Errorf("compile input plan is missing") }
 	bindings, err := workflow.CompileInputBindings(request.Compile.Plan)

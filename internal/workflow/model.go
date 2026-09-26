@@ -287,6 +287,7 @@ type SupervisorState struct {
 	RetryAfter    string `json:"retry_after,omitempty"`
 	Result        string `json:"result,omitempty"`
 	Detail        string `json:"detail,omitempty"`
+	RemediationRounds int `json:"remediation_rounds,omitempty"`
 }
 
 // AutomationCursor describes the last bounded orchestration result. It is an

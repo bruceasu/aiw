@@ -1,13 +1,15 @@
 // Package execution coordinates managed Workflow execution and its adapters.
-// Workflow Core owns state transitions; taskx owns Task artifacts and bindings.
+// Workflow Core owns state transitions; task owns Task artifacts and bindings.
 package execution
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
 
-	"aiw/internal/taskx"
+	"aiw/internal/task"
+	taskworkflow "aiw/internal/task/workflowadapter"
 	"aiw/internal/workflow"
 )
 
@@ -18,9 +20,10 @@ import (
 type Supervisor struct {
 	Store     *workflow.Store
 	RunStep   func(id string, execute bool, provider, model string) error
-	Merge     func(id string, meta taskx.TaskMeta, store *workflow.Store, message string) error
+	Merge     func(id string, meta task.TaskMeta, store *workflow.Store, message string) error
 	Report    func(id string, state workflow.RuntimeState) error
 	Delivered func(id, parentBranch string)
+	Analyzer  RemediationAnalyzer
 }
 
 // Start owns one foreground supervisor lease and preserves the ordering of
@@ -55,7 +58,7 @@ func (s Supervisor) Start(id, provider, model string, state workflow.RuntimeStat
 		return err
 	}
 	for {
-		if _, err := taskx.SyncWorkflowChecklist(id, store); err != nil {
+		if _, err := taskworkflow.SyncWorkflowChecklist(id, store); err != nil {
 			return err
 		}
 		updated, err := store.Load(workflow.TaskID(id))
@@ -72,8 +75,22 @@ func (s Supervisor) Start(id, provider, model string, state workflow.RuntimeStat
 				// Compiler preparation and repair errors retain their Attempt;
 				// only an ordinary Agent runner failure consumes no-progress.
 				if loadErr == nil && failed.SchemaVersion < 10 && failed.Automation.PreparedRequest != nil && !hasPendingSupervisedCompile(failed.Automation.PreparedRequest) {
+					attemptID := failed.Automation.PreparedRequest.AttemptID
 					outcome := workflow.SupervisedOutcome{Kind: workflow.SupervisedOutcomeNoProgress, Detail: err.Error(), EvidenceReference: "supervisor runner error"}
-					if failed, loadErr = store.RecordSupervisedOutcome(workflow.TaskID(id), failed.Automation.PreparedRequest.AttemptID, outcome); loadErr == nil {
+					if failed, loadErr = store.RecordSupervisedOutcome(workflow.TaskID(id), attemptID, outcome); loadErr == nil {
+						handled, remediationErr := s.remediateRunnerFailure(id, failed, attemptID, outcome)
+						if remediationErr != nil {
+							_, _ = store.PauseSupervisor(workflow.TaskID(id), leaseID, "remediation-paused", remediationErr.Error(), time.Now().UTC().Add(30*time.Second))
+							return remediationErr
+						}
+						if handled {
+							continue
+						}
+						if pending, pendingErr := store.Load(workflow.TaskID(id)); pendingErr == nil && pending.Automation.Cursor.Result == "awaiting-human" {
+							_ = s.Report(id, pending)
+							_, pauseErr := store.PauseSupervisor(workflow.TaskID(id), leaseID, "awaiting-human", pending.Automation.Cursor.Detail, time.Now().UTC().Add(24*time.Hour))
+							return pauseErr
+						}
 						_ = s.Report(id, failed)
 					}
 				}
@@ -167,9 +184,41 @@ func (s Supervisor) Start(id, provider, model string, state workflow.RuntimeStat
 	}
 }
 
+func (s Supervisor) remediateRunnerFailure(id string, state workflow.RuntimeState, attemptID workflow.AttemptID, outcome workflow.SupervisedOutcome) (bool, error) {
+	if s.Analyzer == nil {
+		return false, s.pauseForHumanRemediation(workflow.TaskID(id), state, attemptID, outcome, nil)
+	}
+	report, err := workflow.BuildRemediationReportForOutcome(state, attemptID, outcome, state.Automation.Supervisor.RemediationRounds)
+	if err != nil { return false, err }
+	diagnosis, err := s.Analyzer.Analyze(context.Background(), report.Problem, report.Options)
+	if err != nil {
+		return false, s.pauseForHumanRemediation(workflow.TaskID(id), state, attemptID, outcome, nil)
+	}
+	report.Diagnosis = &diagnosis
+	retryAllowed := false
+	for _, option := range report.Options { if option.Action == workflow.RemediationActionRetryWorkItem { retryAllowed = true; break } }
+	if report.Round < workflow.MaxAutomaticRemediationRounds && retryAllowed && (diagnosis.RecommendedAction == workflow.RemediationActionRetryWorkItem || diagnosis.RecommendedAction == workflow.RemediationActionResumeSupervisor) && outcome.Kind == workflow.SupervisedOutcomeNoProgress {
+		report.Status = workflow.RemediationAutoResolved
+		report.Attempts = []workflow.RemediationAttempt{{Action: diagnosis.RecommendedAction, Outcome: "continuing", Detail: diagnosis.Reason, RecordedAt: time.Now().UTC().Format(time.RFC3339)}}
+		if _, err := s.Store.PersistRemediationReport(state, report); err != nil { return false, err }
+		_, err = s.Store.RecordRemediationAutoRetry(workflow.TaskID(id), report.ProblemID, diagnosis.Reason)
+		return err == nil, err
+	}
+	return false, s.pauseForHumanRemediation(workflow.TaskID(id), state, attemptID, outcome, &diagnosis)
+}
+
+func (s Supervisor) pauseForHumanRemediation(id workflow.TaskID, state workflow.RuntimeState, attemptID workflow.AttemptID, outcome workflow.SupervisedOutcome, diagnosis *workflow.RemediationDiagnosis) error {
+	report, err := workflow.BuildRemediationReportForOutcome(state, attemptID, outcome, state.Automation.Supervisor.RemediationRounds)
+	if err != nil { return err }
+	report.Status = workflow.RemediationAwaitingHuman
+	report.Diagnosis = diagnosis
+	_, err = s.Store.AwaitRemediation(id, report)
+	return err
+}
+
 // repair synchronizes Task artifacts before reporting the repaired state.
 func (s Supervisor) repair(id string) error {
-	state, err := taskx.RepairWorkflowChecklist(id)
+	state, err := taskworkflow.RepairWorkflowChecklist(id)
 	if err != nil {
 		return err
 	}

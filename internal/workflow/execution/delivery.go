@@ -2,7 +2,7 @@ package execution
 
 import (
 	"fmt"
-	"aiw/internal/taskx"
+	"aiw/internal/task"
 	"aiw/internal/workflow"
 )
 
@@ -23,11 +23,11 @@ func (s Supervisor) DeliverCompleted(id string) (bool, error) {
 		workflow.NextRunnerOutcome(state).Kind != workflow.RunnerNoWork {
 		return false, nil
 	}
-	meta, err := taskx.ReadTaskMeta(taskx.ResolveTaskMetaPath(id))
+	meta, err := task.ReadTaskMeta(task.ResolveTaskMetaPath(id))
 	if err != nil {
 		return false, err
 	}
-	if taskx.ResolvedWorkspaceKind(meta) != "isolated" {
+	if task.ResolvedWorkspaceKind(meta) != "isolated" {
 		return false, nil
 	}
 	if err := s.Merge(id, meta, store, "Complete Task "+id); err != nil {

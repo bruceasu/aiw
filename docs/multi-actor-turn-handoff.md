@@ -11,7 +11,7 @@ instructions are in [Supervise](supervise.md).
 
 | Capability | Current supervised path |
 | --- | --- |
-| Agent dispatch | Sequential `aiw turn --supervised`, bound to one Work Item, Attempt, workspace, expected Session turn, and dispatch marker. |
+| Agent dispatch | Sequential `aiw wf supervise ... start`, bound to one Work Item, Attempt, workspace, expected Session turn, and dispatch marker. |
 | Actor roles | Role contracts and helpers exist. The dispatcher does not yet execute the full Analysis → Coder → Tester → Verifier pipeline. |
 | Model routing | `[ai.profiles.<name>]` defines provider/model pairs. Recommendation stores actor mappings in `routing-plan.json`; dispatch currently selects `coder`. |
 | Compile | A completed structured Agent outcome runs the request's frozen Compile Plan before the Attempt closes. |
@@ -58,14 +58,14 @@ candidate for review. `resolving-merge-conflicts` is guidance at this boundary,
 not an automatically dispatched turn. The separate `wt pull --conflict-handoff`
 proposal flow is not used by supervise's local delivery.
 
-Source entry points: `internal/commands/task/workflow_supervisor.go`,
-`workflow_commands.go`, `workflow_compile.go`, and `local_delivery.go`;
+Source entry points: `internal/workflow/cli/supervisor.go`,
+`internal/workflow/cli/command.go`, `workflow_compile.go`, and `local_delivery.go`;
 configuration lives in `internal/ai/config.go`, durable state in
 `internal/workflow/`. This documentation update used static inspection only.
 
 ## Purpose
 
-The remaining sections define the target behavior of `aiw task workflow supervise`.
+The remaining sections define the target behavior of `aiw wf supervise`.
 It is the requirement source for later OpenSpec proposals, designs, capability
 specifications, and implementation tasks. It does not describe the current
 implementation beyond the map above and does not authorize a running supervisor to assume that an
@@ -957,7 +957,7 @@ Human recovery:
 3. Stage the resolved paths (including intended deletions), confirm
    `git diff --name-only --diff-filter=U` is empty, and commit the pending merge.
 4. Return to the primary workspace, review the result, and explicitly run
-   `aiw workflow local-merge <task-id> "Complete Task <task-id>"`.
+   `aiw wf local-merge <task-id> "Complete Task <task-id>"`.
 5. Delivery rechecks the latest recorded parent branch and its clean-workspace
    preconditions. Only a verified successful merge permits Task resource cleanup.
 

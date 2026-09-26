@@ -51,7 +51,6 @@ openspec/changes/<task-id>/
 |---|---|
 | `aiw decision <task-id>` | `openspec/changes/<task-id>/design.md` |
 | `aiw spec <spec-id>` | `openspec/specs/<spec-id>/spec.toml`、`spec.md` |
-| `aiw turn <task-id>` | `openspec/changes/<task-id>/artifacts/handoff.md`、`agent-lineage.json` |
 | `Workflow Runner` | `.ai/tasks/<task-id>/artifacts/handoff.md` |
 | `aiw archive` | 将 Change 移动到 `openspec/changes/archive/` |
 
@@ -81,7 +80,7 @@ openspec/changes/<task-id>/
 
 ## 3. Requirement 文件
 
-执行 `aiw requirement new <requirement-id>` 后，默认生成：
+执行 `aiw req new <requirement-id>` 后，默认生成：
 
 ```text
 requirements/<requirement-id>/

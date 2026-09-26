@@ -9,7 +9,7 @@ import (
 
 	"aiw/internal/fsx"
 	"aiw/internal/plugin"
-	"aiw/internal/taskx"
+	"aiw/internal/task"
 )
 
 const officialSetupPlugin = "setup-project"
@@ -24,12 +24,12 @@ type InitOptions struct {
 
 func initWorkspace(opts InitOptions) error {
 	dirs := []string{
-		taskx.OpenspecDir,
-		taskx.ChangesDir,
-		taskx.SpecsDir,
-		taskx.ArchiveDir,
-		taskx.RuntimeTasksPath(),
-		taskx.WorktreeDir,
+		task.OpenspecDir,
+		task.ChangesDir,
+		task.SpecsDir,
+		task.ArchiveDir,
+		task.RuntimeTasksPath(),
+		task.WorktreeDir,
 		filepath.Dir(copilotFile),
 	}
 	for _, d := range dirs {
@@ -44,7 +44,7 @@ func initWorkspace(opts InitOptions) error {
 	if _, err := writeIfMissing(copilotFile, copilotTemplate()); err != nil {
 		return err
 	}
-	if err := taskx.EnsureWorktreeIgnored(); err != nil {
+	if err := task.EnsureWorktreeIgnored(); err != nil {
 		return err
 	}
 	if opts.WithPrompts {

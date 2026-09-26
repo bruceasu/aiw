@@ -14,6 +14,7 @@ import (
 
 	"aiw/internal/fsx"
 	plug "aiw/internal/plugin"
+	"aiw/internal/version"
 )
 
 var executablePathFn = os.Executable
@@ -85,7 +86,7 @@ func listAllJSON() error {
 }
 
 func listAll() error {
-	fmt.Print("aiw - workflow-first task and AI tooling\n\n" +
+	fmt.Print("aiw " + version.Label() + " - workflow-first task and AI tooling\n\n" +
 		"Usage:\n" +
 		"  aiw <command> [args...]\n" +
 		"  aiw --help\n" +
@@ -99,13 +100,12 @@ func listAll() error {
 		"  status <task-id> <s>      Update task status.\n" +
 		"  done <task-id>            Shortcut for: status <task-id> DONE.\n" +
 		"  archive <task-id> [opts]  Archive a completed task/change (sync, validate, repair).\n" +
-		"  workflow <op> <task-id>   Run managed workflow operations (also: task workflow).\n" +
+		"  wf <op> <task-id>         Run managed workflow operations.\n" +
 		"  workspace bind <task-id> --primary  Bind the Task to the primary workspace.\n" +
 		"  context <task-id>         Show files to read before implementing.\n" +
 		"  decision <task-id>        Create design.md for a task.\n" +
 		"  spec <spec-id>            Create a long-lived spec under openspec/specs.\n" +
-		"  requirement <...>         Manage requirement intake and promotion.\n" +
-		"  turn|chat <task-id>       Start or continue a Task agent session.\n\n")
+		"  req <...>                 Manage Requirement intake and promotion.\n\n")
 
 	fmt.Print("Worktree:\n" +
 		"  wt add <task-id> [base]   Explicitly isolate a task in a worktree.\n" +
@@ -124,7 +124,6 @@ func listAll() error {
 		"  ask <prompt>               Ask the built-in LLM for AIW guidance.\n" +
 		"  prompts <...>             Generate or merge prompt files.\n" +
 		"  completion <shell>        Generate shell completion scripts.\n" +
-		"  task turn|chat <task-id>  Start or continue a Task agent session.\n" +
 		"  session <...>             Manage persisted AIW Sessions.\n\n")
 
 	fmt.Print("Plugins:\n" +
@@ -136,9 +135,9 @@ func listAll() error {
 	fmt.Print("Examples:\n" +
 		"  aiw init --prompts --template go\n" +
 		"  aiw new payment-retry\n" +
-		"  aiw workflow plan payment-retry\n" +
-		"  aiw task workflow run payment-retry --execute\n" +
-		"  aiw task turn payment-retry\n\n")
+		"  aiw wf plan payment-retry\n" +
+		"  aiw wf run payment-retry --execute\n" +
+		"\n")
 
 	pls, err := listPlugins()
 	if err != nil || len(pls) == 0 {
@@ -313,11 +312,7 @@ func showPluginHelp(name string) error {
 	if err != nil {
 		return errors.New("plugin not found")
 	}
-	code, err := plug.ExecPlugin(path, []string{"-h"}, map[string]string{
-		"AIW_PLUGIN_NAME": name,
-		"AIW_PLUGIN_PATH": path,
-		"AIW_CMDLINE":     "help " + name,
-	})
+	code, err := plug.ExecPlugin(path, []string{"-h"}, plug.InvocationEnvironment(name, path, "help "+name))
 	if err != nil {
 		return fmt.Errorf("running plugin help: %w", err)
 	}
@@ -414,7 +409,7 @@ func builtinUsageText(name string) (string, bool) {
 	case "prompts":
 		return "usage: aiw prompts [list|<template>] [--merge] [--force]\n", true
 	case "task":
-		return "usage: aiw <turn|chat> <task-id> [--handoff PATH] [--provider NAME] [--model MODEL]\n", true
+		return "usage: aiw task <command> [args...]\n", true
 	default:
 		return "", false
 	}

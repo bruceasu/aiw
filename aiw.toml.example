@@ -1,4 +1,4 @@
-﻿# AIW configuration template
+# AIW configuration template
 # Supported project file names: aiw.toml or .aiw.toml.
 # Loading rules differ by section; there is no single global priority order.
 # Shared AI reads project, AIW_ROOT, then executable-directory files. Later
@@ -108,7 +108,7 @@ provider = "codex"
 model = "gpt-6-astra"
 level = 4
 
-# Managed Workflow AI Profiles. They affect only `aiw workflow supervise`;
+# Managed Workflow AI Profiles. They affect only `aiw wf supervise`;
 # other AI commands continue to use the global [ai] configuration above.
 # Each selected Profile must provide both a provider and a model. Missing or
 # incomplete Profiles fall back to [ai].
