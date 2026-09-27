@@ -75,6 +75,16 @@ Attempt. Token and monetary limits are independently evaluated. If either
 known value reaches its limit, Workflow Core opens an authorization gate and
 pauses new budget-consuming dispatches until a human decision is recorded.
 
+Initial Token and per-currency monetary limits are read from the application
+configuration and snapshotted into the Task budget when Schema 10 accounting
+is initialized for that Task. Later configuration changes do not rewrite an
+existing Task's baseline. For each budget dimension, the cumulative amount of
+human-approved increases is capped at 100% of that Task's initial limit; the
+resulting limit can therefore never exceed twice its initial value. This cap
+is shared by all approvals and cannot be reset by a repeated approval. A
+default 30% proposal is capped at the remaining allowance. Explicit replacement
+limits are accepted only when they stay within the same cumulative ceiling.
+
 The default approval proposal increases both limits by 30%. A human decision
 may provide different new limits. Approvals may repeat and each decision is
 recorded with actor, time, previous limits, new limits, reason, and source

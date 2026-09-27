@@ -43,6 +43,27 @@ including every WorkItem and Attempt. Token and monetary limits MUST be
 evaluated independently. Call count MAY be reported as an auxiliary metric but
 MUST NOT replace either primary budget.
 
+Initial Token and per-currency monetary limits MUST be read from application
+configuration and snapshotted into the Task when Schema 10 accounting is
+initialized. For each dimension, the cumulative human-approved increase MUST
+NOT exceed 100% of its initial configured limit, so the effective limit MUST
+NOT exceed twice the initial limit. Repeated approvals share this ceiling. A
+default increase proposal MUST be capped at the remaining allowance, and an
+explicit override MUST be rejected if it exceeds the ceiling.
+
+#### Scenario: Initialize a Task budget from configuration
+
+- **WHEN** a Task enters Schema 10 accounting
+- **THEN** AIW copies the configured initial Token and per-currency monetary
+  limits into that Task's budget baseline
+
+#### Scenario: Repeated overrides reach the cumulative ceiling
+
+- **WHEN** prior approvals have already increased a budget by its initial
+  amount
+- **THEN** AIW rejects any further increase to that dimension, including an
+  increase included in a repeated approval
+
 #### Scenario: Usage crosses one budget
 
 - **WHEN** cumulative known Token or monetary usage reaches its Task limit
