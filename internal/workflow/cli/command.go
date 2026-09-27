@@ -688,6 +688,22 @@ func advanceWorkflow(id string, meta task.TaskMeta, store *workflow.Store, super
 			return workflow.RuntimeState{}, err
 		}
 	}
+	if strings.TrimSpace(meta.Session) == "" {
+		path := task.ResolveTaskMetaPath(id)
+		content, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return workflow.RuntimeState{}, fmt.Errorf("read Task Session binding: %w", readErr)
+		}
+		currentMeta, readErr := task.ReadTaskMeta(path)
+		if readErr != nil || currentMeta.ID != id || currentMeta.Session != "" || currentMeta.Worktree != meta.Worktree {
+			return workflow.RuntimeState{}, fmt.Errorf("Task Session binding changed before preparation; inspect metadata before retrying")
+		}
+		updated, _ := task.ReplaceTaskMetaField(content, "session", id)
+		if err := task.WriteTaskMetaAtomically(path, updated); err != nil {
+			return workflow.RuntimeState{}, fmt.Errorf("bind Task Session before preparation: %w", err)
+		}
+		meta.Session = id
+	}
 	sessionStatus, err := session.NewStore("").Load(meta.Session)
 	if errors.Is(err, session.ErrSessionNotFound) && meta.Session == id {
 		if err = os.MkdirAll(filepath.Join(task.RuntimeTaskDir(id), "artifacts"), 0o755); err == nil {
@@ -1052,6 +1068,14 @@ func reportWorkflowState(meta task.TaskMeta, state workflow.RuntimeState) error 
 	}
 	reportFocusedTestStatus(state, &terminal)
 	reportOpenGates(state, &terminal)
+	if state.Automation.Cursor.Result == "awaiting-human" {
+		if _, report, err := workflow.NewStore("").ReadPendingRemediation(state.Task.ID); err == nil {
+			printRemediationChoices(report)
+		} else {
+			terminal.Section("Human action")
+			terminal.Field("status", "pending report unavailable: "+err.Error())
+		}
+	}
 	printDeliveryGuidance(meta, state)
 	return nil
 }
@@ -1168,6 +1192,17 @@ func repairWorkflowState(id string) error {
 				}
 			} else if sessionErr != nil {
 				return sessionErr
+			}
+		}
+	}
+	current, err = store.Load(workflow.TaskID(id))
+	if err != nil {
+		return err
+	}
+	for _, repair := range current.Automation.ProjectionRepairs {
+		if repair.ResolvedAt == "" {
+			if _, err := taskworkflow.RetryChecklistProjection(id, store, repair); err != nil {
+				return err
 			}
 		}
 	}

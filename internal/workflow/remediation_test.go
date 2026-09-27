@@ -47,6 +47,111 @@ func TestRemediationProblemIdentityIsStableAndEvidenceBound(t *testing.T) {
 	}
 }
 
+func TestGateRemediationRequiresExplicitHumanDecision(t *testing.T) {
+	state := NewCompatibleRuntime(TaskReference{ID: "task-1", Workspace: ".", Kind: WorkspacePrimary}, PlanningReady, DeliveryUnmanaged)
+	state.LastEventSequence = 7
+	gate := Gate{ID: "review-wi-0001", WorkItemID: "wi-0001", Kind: GateDecision, State: GateOpen, Reason: "human decision required"}
+	report, err := BuildRemediationReportForGate(state, gate)
+	if err != nil { t.Fatal(err) }
+	if report.Problem.GateID != gate.ID || report.Status != RemediationAwaitingHuman || report.ProblemID == "" {
+		t.Fatalf("Gate report lost identity: %+v", report)
+	}
+	for _, option := range report.Options {
+		if option.Action == RemediationActionResolveGate || option.Action == RemediationActionWaiveGate {
+			if !option.RequiresApproval { t.Fatalf("Gate decision lacks explicit approval: %+v", option) }
+		}
+	}
+	if _, err := BuildRemediationReportForGate(state, Gate{ID: UsageBudgetGateID, State: GateOpen}); err == nil {
+		t.Fatal("usage budget Gate must use budget approval")
+	}
+}
+
+func TestUnknownSessionRemediationBindsDispatchedTurn(t *testing.T) {
+	state := NewCompatibleRuntime(TaskReference{ID: "task-1", Workspace: ".", Kind: WorkspacePrimary}, PlanningReady, DeliveryUnmanaged)
+	state.LastEventSequence = 7
+	request := PreparedAgentRequest{TaskID: "task-1", WorkItemID: "wi-0001", AttemptID: "attempt-1", SessionID: "session-1", ExpectedSessionTurn: 3, DispatchedAt: "2026-09-27T00:00:00Z"}
+	report, err := BuildRemediationReportForUnknownSession(state, request, "result incomplete")
+	if err != nil { t.Fatal(err) }
+	if report.Problem.SessionID != request.SessionID || report.Problem.SessionTurn != 3 || report.Problem.AttemptID != request.AttemptID || len(report.Options) != 2 { t.Fatalf("unknown result lost request binding: %+v", report) }
+	request.DispatchedAt = ""
+	if _, err := BuildRemediationReportForUnknownSession(state, request, "result incomplete"); err == nil { t.Fatal("undispatched request must not offer result re-observation") }
+}
+
+func TestRepeatedAwaitRemediationPreservesHumanResponse(t *testing.T) {
+	store, _, report := newAwaitingRemediationFixture(t)
+	response := []byte(`{"option_id":"human-review","operator":"operator-1"}`)
+	writeRemediationResponse(t, store, report, response)
+	restarted := NewRemediationReport(report.Problem, nil, RemediationAwaitingHuman, report.Round, report.Options)
+	if _, err := store.AwaitRemediation("task-1", restarted); err != nil { t.Fatal(err) }
+	path := filepath.Join(store.Root, "tasks", "task-1", filepath.FromSlash(report.HumanResponsePath))
+	content, err := os.ReadFile(path)
+	if err != nil { t.Fatal(err) }
+	if string(content) != string(response) { t.Fatalf("repeated await replaced human response: %q", content) }
+	_, pending, err := store.ReadPendingRemediation("task-1")
+	if err != nil || pending.ReportDigest != report.ReportDigest { t.Fatalf("report identity changed: %+v, %v", pending, err) }
+}
+
+func TestGateDecisionFinishesLegacyPartialTransition(t *testing.T) {
+	store, report, response := gateRemediationFixture(t, false)
+	if _, err := store.ResolveGate("task-1", report.Problem.GateID, GateResolved); err != nil { t.Fatal(err) }
+	updated, err := store.ApplyGateRemediationResponse("task-1", response)
+	if err != nil { t.Fatal(err) }
+	if updated.Gates[0].State != GateResolved || updated.WorkItems[0].State != WorkItemReady || updated.Automation.Cursor.Result != "remediation-response-consumed" {
+		t.Fatalf("legacy partial Gate decision not reconciled: %+v", updated)
+	}
+}
+
+func TestGateDecisionKeepsItemBlockedForAnotherOpenGate(t *testing.T) {
+	store, _, response := gateRemediationFixture(t, true)
+	updated, err := store.ApplyGateRemediationResponse("task-1", response)
+	if err != nil { t.Fatal(err) }
+	if updated.Gates[0].State != GateResolved || updated.Gates[1].State != GateOpen || updated.WorkItems[0].State != WorkItemBlocked || updated.Automation.Cursor.Result != "remediation-response-consumed" {
+		t.Fatalf("Gate decision bypassed another open Gate: %+v", updated)
+	}
+}
+
+func TestInterruptedGateDecisionRecoversCoupledStateOnce(t *testing.T) {
+	store, report, _ := gateRemediationFixture(t, false)
+	before, err := store.Load("task-1")
+	if err != nil { t.Fatal(err) }
+	pending := Event{SchemaVersion: before.SchemaVersion, Sequence: before.LastEventSequence + 1, Type: "remediation.gate-decision", WorkItemID: "wi-0001", Detail: string(report.Problem.GateID) + ":resolve-gate", At: "2026-09-27T00:00:00Z"}
+	if _, err := store.update("task-1", func(state *RuntimeState) error {
+		state.Gates[0].State = GateResolved
+		state.WorkItems[0].State = WorkItemReady
+		state.Automation.Cursor = AutomationCursor{Result: "remediation-response-consumed", Detail: remediationCursorKey(report), RecordedAt: pending.At}
+		state.Automation.Supervisor.Result = "remediation-response-consumed"
+		state.PendingEvent = &pending
+		return nil
+	}); err != nil { t.Fatal(err) }
+	recovered, err := store.RecoverPendingEvent("task-1")
+	if err != nil { t.Fatal(err) }
+	if recovered.PendingEvent != nil || recovered.LastEventSequence != pending.Sequence || recovered.Gates[0].State != GateResolved || recovered.WorkItems[0].State != WorkItemReady || recovered.Automation.Cursor.Result != "remediation-response-consumed" {
+		t.Fatalf("interrupted decision lost coupled state: %+v", recovered)
+	}
+	again, err := store.RecoverPendingEvent("task-1")
+	if err != nil || again.LastEventSequence != recovered.LastEventSequence { t.Fatalf("recovery duplicated event: %+v, %v", again, err) }
+}
+
+func gateRemediationFixture(t *testing.T, anotherGate bool) (*Store, RemediationReport, RemediationResponse) {
+	t.Helper()
+	store := NewStore(t.TempDir())
+	state := compatibleState()
+	state.WorkItems = []WorkItem{{ID: "wi-0001", Title: "blocked", State: WorkItemBlocked}, {ID: "wi-0002", Title: "other", State: WorkItemReady}}
+	state.Gates = []Gate{{ID: "review-wi-0001", WorkItemID: "wi-0001", Kind: GateDecision, State: GateOpen, Reason: "review required"}}
+	if anotherGate { state.Gates = append(state.Gates, Gate{ID: "second-wi-0001", WorkItemID: "wi-0001", Kind: GateDecision, State: GateOpen, Reason: "second review"}) }
+	if _, err := store.Create(state); err != nil { t.Fatal(err) }
+	if _, err := store.SetRetryPolicy("task-1", "wi-0002", RetryPolicy{MaxAttempts: 3}); err != nil { t.Fatal(err) }
+	state, err := store.Load("task-1")
+	if err != nil { t.Fatal(err) }
+	report, err := BuildRemediationReportForGate(state, state.Gates[0])
+	if err != nil { t.Fatal(err) }
+	if _, err := store.AwaitRemediation("task-1", report); err != nil { t.Fatal(err) }
+	_, report, err = store.ReadPendingRemediation("task-1")
+	if err != nil { t.Fatal(err) }
+	response := RemediationResponse{SchemaVersion: RemediationSchemaVersion, ProblemID: report.ProblemID, ReportDigest: report.ReportDigest, OptionID: "resolve-gate", Operator: "operator-1", RiskConfirmed: true, Note: "root cause fixed", RecordedAt: "2026-09-27T00:00:00Z"}
+	return store, report, response
+}
+
 func TestPersistRemediationReportIsIdempotentAndPreservesConflicts(t *testing.T) {
 	store, state, report := newAwaitingRemediationFixture(t)
 

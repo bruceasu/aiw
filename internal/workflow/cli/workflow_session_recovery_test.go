@@ -63,6 +63,24 @@ func TestAdvanceWorkflowCreatesMissingTaskSessionAndReusesPreparedRequest(t *tes
 	}
 }
 
+func TestAdvanceWorkflowBindsOptionalSessionBeforeAttempt(t *testing.T) {
+	meta, store := workflowSessionRecoveryFixture(t, "")
+	first, err := advanceWorkflow(meta.ID, meta, store, false, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	bound, err := task.ReadTaskMeta(task.TaskMetaPath(meta.ID))
+	if err != nil || bound.Session != meta.ID {
+		t.Fatalf("Task Session binding = %+v, error = %v", bound, err)
+	}
+	if first.Automation.PreparedRequest == nil || first.Automation.PreparedRequest.SessionID != meta.ID || len(first.Attempts) != 1 {
+		t.Fatalf("prepared request did not use bound Session: %+v", first.Automation)
+	}
+	if _, err := session.NewStore("").Load(meta.ID); err != nil {
+		t.Fatalf("created managed Session: %v", err)
+	}
+}
+
 func TestAdvanceWorkflowDoesNotRebuildNonMissingSessionErrors(t *testing.T) {
 	for _, tc := range []struct {
 		name      string

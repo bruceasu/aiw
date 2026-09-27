@@ -110,6 +110,33 @@ func ProjectAcceptedWorkItem(id string, store *workflowcore.Store, state workflo
 	return err
 }
 
+// RetryChecklistProjection retries only the recorded accepted Work Item writeback.
+// A successful retry closes that exact repair; failures leave it pending.
+func RetryChecklistProjection(id string, store *workflowcore.Store, repair workflowcore.ProjectionRepair) (workflowcore.RuntimeState, error) {
+	if !strings.HasPrefix(repair.Target, "tasks.md/") {
+		return workflowcore.RuntimeState{}, fmt.Errorf("unsupported projection repair target %q", repair.Target)
+	}
+	state, err := store.Load(workflowcore.TaskID(id))
+	if err != nil {
+		return workflowcore.RuntimeState{}, err
+	}
+	pending := false
+	for _, existing := range state.Automation.ProjectionRepairs {
+		if existing.EventSequence == repair.EventSequence && existing.Target == repair.Target && existing.ResolvedAt == "" {
+			pending = true
+			break
+		}
+	}
+	if !pending {
+		return workflowcore.RuntimeState{}, fmt.Errorf("projection repair is no longer pending: %s", repair.Target)
+	}
+	workItemID := workflowcore.WorkItemID(strings.TrimPrefix(repair.Target, "tasks.md/"))
+	if err := ProjectAcceptedWorkItem(id, store, state, workItemID); err != nil {
+		return workflowcore.RuntimeState{}, err
+	}
+	return store.ResolveProjectionRepair(workflowcore.TaskID(id), repair.EventSequence, repair.Target)
+}
+
 // RepairWorkflowChecklist repairs runtime projection from the Task's authored checklist.
 func RepairWorkflowChecklist(id string) (workflowcore.RuntimeState, error) {
 	meta, err := task.ReadTaskMeta(task.ResolveTaskMetaPath(id))

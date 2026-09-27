@@ -6,6 +6,10 @@
 路径。源码另有 schema 10 持久化多阶段协议，但只有受控宿主、授权服务、预算服务
 及平台证据齐备后才能通过受管迁移启用；`supervise start` 不负责启用它。
 
+Task 建立时可以没有 Session；首次准备受管 Agent 请求时，Workflow 先将同名
+Session 绑定写入 Task 元数据，再创建或读取 Session，成功后才创建 Attempt。
+其他 Session ID 缺失、损坏或已归档时保持原有诊断，不自动重建。
+
 ```mermaid
 flowchart TD
     A[准备上下文] --> B[为 Coder 选择模型]
@@ -195,6 +199,24 @@ flowchart TD
 
 ### 结果与完成条件
 
+已派发请求即使 Runner 报错，也先核对原 Session/turn；只有绑定的 Session
+结果报告 no-progress 才计入该预算。结果仍未知时保留 Attempt 和写入租约。
+人工 Gate 答复会在一个可恢复的状态事件中完成 Gate 转换、适用时重开 WorkItem
+和答复消费；若其他 Gate 仍开放，WorkItem 保持 blocked。
+
+`aiw wf supervise <task-id> status` 会区分重试资格时间与实际调度：到期不代表
+后台已经自动重启。状态输出会给出待填写的答复文件或手动 `start` 下一步。
+
+`tasks.md` 暂时读取失败时，Supervisor 最多重试两次读取；仍失败则保存
+`checklist-paused` 原因并暂停，不将其算作 Agent no-progress，也不新建 Attempt。
+清单解析冲突和权限错误不会自动重试或跳过。修复原文件后再执行
+`aiw wf supervise <task-id> start`。这不改变 OpenSpec 清单作为当前规划来源的约定。
+
+已派发请求的 Session 结果暂时未知时，Supervisor 有界重读同一 Session；仍未知
+则写入绑定原 Attempt、Session 和 turn 的人工答复文件。选择 `resume-supervisor`
+后只重新观察原请求；绑定或写入租约已变化时答复保留待人工检查，不派发第二次
+模型调用。
+
 派发前保存 `DispatchedAt` 和预期 Session turn。读取结果时检查 Session 完成
 状态、最终输出文件、Attempt 绑定及 turn，避免消费旧输出。Agent 必须返回
 `completed`、`blocked` 或 `no-progress` 的结构化 JSON；普通文本或无效结构按
@@ -290,6 +312,16 @@ aiw wf repair payment-retry
 
 `report` 只读取报告，不初始化状态，也无需逐个查看 Session outputs。
 `recover` 恢复持久化状态事件，`repair` 修复投影；它们不重新执行 Agent。
+`supervise start` 遇到已完成 Work Item 的 `tasks.md` 写回修复记录时，会重试该写回；
+确认成功后关闭对应记录并继续处理后续 Work Item。写回失败时保留记录并暂停。
+`continue/resume` 选择 `repair-projection` 或 `repair-session` 时只执行修复；修复失败
+保留答复供重试，成功后提示下一条 `supervise start` 命令。
+Schema 9 `supervise` 遇到非预算 Gate 时，会在
+`.ai/tasks/<task-id>/reports/remediation/` 写入带风险说明的报告和 `.response.json`
+答复模板；填写 `option_id`、`operator`、`risk_confirmed`，确认或豁免 Gate 时还须
+填写 `note`，再运行 `aiw wf continue <task-id>`。`continue` 只处理报告中绑定的
+Gate 和 WorkItem；`supervise start` 遇到待答复报告时只显示选项，不派发新 Agent。
+预算 Gate 仍须通过 `aiw wf budget` 的授权命令处理。
 处理 Gate 后应根据诊断决定是否 reopen 和重新 start。
 
 若 `state.json` 缺失，`start` 仅在存在有效、ID 匹配的持久 Task 元数据时初始化
@@ -508,6 +540,7 @@ aiw wf skip-focused-test payment-retry "本次不运行可选聚焦测试，已�
 - [x] 区分 schema 9 默认路径与 schema 10 受控服务，保留故障恢复操作指引。
 
 %% 本次仅核对源码；真实宿主隔离、外部模型和持久化平台能力未在本次文档更新中运行验证。
+%% 本轮 Gate 恢复聚焦测试已通过独立的 `.ai/tmp/go-tests/` 缓存运行；Execution/CLI 的新增用例仍未运行，不以 compile-only 代替测试证据。
 
 上述 Gate 去重、结果分类、编译计数和报告读取有自动化回归用例。替身测试验证
 受管状态和调用逻辑，不代表真实 Windows ownership 拒绝、外部模型或实际 Git

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"aiw/internal/task"
@@ -42,60 +43,65 @@ func (s Supervisor) Start(id, provider, model string, state workflow.RuntimeStat
 	if err != nil {
 		return err
 	}
+	repairedProjection := false
 	for _, repair := range current.Automation.ProjectionRepairs {
 		if repair.ResolvedAt != "" {
 			continue
 		}
-		if err := s.repair(id); err != nil {
-			_, _ = store.RecordSupervisorObservation(workflow.TaskID(id), leaseID, current.LastEventSequence, "repair-paused", repair.Target)
+		if err := s.repair(id, repair); err != nil {
+			_, _ = store.PauseSupervisor(workflow.TaskID(id), leaseID, "repair-paused", err.Error(), time.Now().UTC().Add(30*time.Second))
 			return err
 		}
 		current, err = store.Load(workflow.TaskID(id))
 		if err != nil {
 			return err
 		}
-		_, err = store.RecordSupervisorObservation(workflow.TaskID(id), leaseID, current.LastEventSequence, "repair-resolved", repair.Target)
-		return err
+		if _, err = store.RecordSupervisorObservation(workflow.TaskID(id), leaseID, current.LastEventSequence, "repair-resolved", repair.Target); err != nil {
+			return err
+		}
+		repairedProjection = true
 	}
 	for {
-		if _, err := taskworkflow.SyncWorkflowChecklist(id, store); err != nil {
-			return err
+		if err := syncSupervisorChecklist(id, store); err != nil {
+			// A transient source read is not an Agent outcome. Preserve the
+			// current Attempt and lease instead of consuming no-progress.
+			if _, pauseErr := store.PauseSupervisor(workflow.TaskID(id), leaseID, "checklist-paused", err.Error(), time.Now().UTC().Add(30*time.Second)); pauseErr != nil {
+				return fmt.Errorf("checklist sync: %w; pause supervisor: %v", err, pauseErr)
+			}
+			return nil
 		}
 		updated, err := store.Load(workflow.TaskID(id))
 		if err != nil || updated.Automation.Supervisor.LeaseID != leaseID {
 			return err
 		}
-		if workflow.SupervisorDue(updated, time.Now().UTC()) ||
+		if repairedProjection || workflow.SupervisorDue(updated, time.Now().UTC()) ||
 			updated.Automation.Supervisor.ObservedEvent == 0 {
+			repairedProjection = false
 			if _, err := store.RenewSupervisorLease(workflow.TaskID(id), leaseID); err != nil {
 				return err
 			}
-			if err := s.RunStep(id, true, provider, model); err != nil {
+			stepErr := s.RunStep(id, true, provider, model)
+			if stepErr != nil {
 				failed, loadErr := store.Load(workflow.TaskID(id))
-				// Compiler preparation and repair errors retain their Attempt;
-				// only an ordinary Agent runner failure consumes no-progress.
-				if loadErr == nil && failed.SchemaVersion < 10 && failed.Automation.PreparedRequest != nil && !hasPendingSupervisedCompile(failed.Automation.PreparedRequest) {
-					attemptID := failed.Automation.PreparedRequest.AttemptID
-					outcome := workflow.SupervisedOutcome{Kind: workflow.SupervisedOutcomeNoProgress, Detail: err.Error(), EvidenceReference: "supervisor runner error"}
-					if failed, loadErr = store.RecordSupervisedOutcome(workflow.TaskID(id), attemptID, outcome); loadErr == nil {
-						handled, remediationErr := s.remediateRunnerFailure(id, failed, attemptID, outcome)
-						if remediationErr != nil {
-							_, _ = store.PauseSupervisor(workflow.TaskID(id), leaseID, "remediation-paused", remediationErr.Error(), time.Now().UTC().Add(30*time.Second))
-							return remediationErr
+				if loadErr != nil {
+					return fmt.Errorf("runner failed: %v; reload runtime: %w", stepErr, loadErr)
+				}
+				if !observeDispatchedAfterRunnerError(failed) && failed.SchemaVersion < 10 {
+					for _, gate := range failed.Gates {
+						if gate.State == workflow.GateOpen {
+							if decisionErr := s.awaitGateDecision(id, leaseID); decisionErr != nil {
+								return fmt.Errorf("supervised step failed: %w; prepare Gate decision: %v", stepErr, decisionErr)
+							}
+							return nil
 						}
-						if handled {
-							continue
-						}
-						if pending, pendingErr := store.Load(workflow.TaskID(id)); pendingErr == nil && pending.Automation.Cursor.Result == "awaiting-human" {
-							_ = s.Report(id, pending)
-							_, pauseErr := store.PauseSupervisor(workflow.TaskID(id), leaseID, "awaiting-human", pending.Automation.Cursor.Detail, time.Now().UTC().Add(24*time.Hour))
-							return pauseErr
-						}
-						_ = s.Report(id, failed)
 					}
 				}
-				_, _ = store.PauseSupervisor(workflow.TaskID(id), leaseID, "runner-paused", err.Error(), time.Now().UTC().Add(30*time.Second))
-				return err
+				if !observeDispatchedAfterRunnerError(failed) {
+					_, _ = store.PauseSupervisor(workflow.TaskID(id), leaseID, "runner-paused", stepErr.Error(), time.Now().UTC().Add(30*time.Second))
+					return stepErr
+				}
+				// The request crossed the dispatch boundary. Only its bound Session
+				// result can establish no-progress; a runner error cannot do so.
 			}
 			updated, err = store.Load(workflow.TaskID(id))
 			if err != nil {
@@ -109,13 +115,27 @@ func (s Supervisor) Start(id, provider, model string, state workflow.RuntimeStat
 					return err
 				}
 				outcome, outcomeErr := recordSupervisorSessionOutcome(store, request)
+				if outcomeErr != nil && request.DispatchedAt != "" {
+					var reportErr *reportValidationError
+					if !errors.As(outcomeErr, &reportErr) {
+						for retry := 0; retry < 2 && outcomeErr != nil; retry++ {
+							time.Sleep(time.Second)
+							outcome, outcomeErr = recordSupervisorSessionOutcome(store, request)
+						}
+					}
+				}
 				if outcomeErr != nil {
 					var reportErr *reportValidationError
 					if errors.As(outcomeErr, &reportErr) {
 						if request.ReportOrigin == nil {
 							if _, err := store.PrepareReportSupplement(request.TaskID, *request, reportErr.Error()); err == nil { continue }
 						}
-						_, _ = store.OpenCompilerGate(request.TaskID, request.WorkItemID, "report-manual-review", reportErr.Error())
+						if _, err := store.OpenCompilerGate(request.TaskID, request.WorkItemID, "report-manual-review", reportErr.Error()); err != nil { return err }
+						return s.awaitGateDecision(id, leaseID)
+					}
+					if request.DispatchedAt != "" {
+						if stepErr != nil { outcomeErr = fmt.Errorf("runner error: %v; observe original Session: %w", stepErr, outcomeErr) }
+						return s.awaitUnknownSession(id, leaseID, *request, outcomeErr)
 					}
 					_, _ = store.PauseSupervisor(workflow.TaskID(id), leaseID, "session-result-unknown", outcomeErr.Error(), time.Now().UTC().Add(30*time.Second))
 					return outcomeErr
@@ -138,6 +158,19 @@ func (s Supervisor) Start(id, provider, model string, state workflow.RuntimeStat
 				if err != nil {
 					return err
 				}
+				if updated.SchemaVersion < 10 && outcome.Kind == workflow.SupervisedOutcomeNoProgress {
+					handled, remediationErr := s.remediateRunnerFailure(id, updated, request.AttemptID, outcome)
+					if remediationErr != nil {
+						_, _ = store.PauseSupervisor(workflow.TaskID(id), leaseID, "remediation-paused", remediationErr.Error(), time.Now().UTC().Add(30*time.Second))
+						return remediationErr
+					}
+					if handled { continue }
+					if pending, pendingErr := store.Load(workflow.TaskID(id)); pendingErr == nil && pending.Automation.Cursor.Result == "awaiting-human" {
+						if err := s.Report(id, pending); err != nil { return err }
+						_, err = store.PauseSupervisor(workflow.TaskID(id), leaseID, "awaiting-human", pending.Automation.Cursor.Detail, time.Now().UTC().Add(24*time.Hour))
+						return err
+					}
+				}
 				if err = s.Report(id, updated); err != nil {
 					return err
 				}
@@ -149,7 +182,7 @@ func (s Supervisor) Start(id, provider, model string, state workflow.RuntimeStat
 			if err = s.RunStep(id, false, "", ""); err != nil {
 				return err
 			}
-			updated, err = store.Load(workflow.TaskID(id))
+				updated, err = store.Load(workflow.TaskID(id))
 			if err != nil {
 				return err
 			}
@@ -175,7 +208,12 @@ func (s Supervisor) Start(id, provider, model string, state workflow.RuntimeStat
 				}
 				_, err = store.PauseSupervisor(workflow.TaskID(id), leaseID, "supervisor-paused", updated.Automation.Cursor.Result, time.Now().UTC().Add(30*time.Second))
 				return err
-			case string(workflow.RunnerGate), "repair-required", "blocked":
+			case string(workflow.RunnerGate):
+				if err := s.awaitGateDecision(id, leaseID); err != nil {
+					return err
+				}
+				return nil
+			case "repair-required", "blocked":
 				_, err = store.PauseSupervisor(workflow.TaskID(id), leaseID, "supervisor-paused", updated.Automation.Cursor.Result, time.Now().UTC().Add(30*time.Second))
 				return err
 			}
@@ -216,11 +254,63 @@ func (s Supervisor) pauseForHumanRemediation(id workflow.TaskID, state workflow.
 	return err
 }
 
-// repair synchronizes Task artifacts before reporting the repaired state.
-func (s Supervisor) repair(id string) error {
-	state, err := taskworkflow.RepairWorkflowChecklist(id)
+// repair retries the accepted Work Item projection that created this repair.
+func (s Supervisor) repair(id string, repair workflow.ProjectionRepair) error {
+	state, err := taskworkflow.RetryChecklistProjection(id, s.Store, repair)
 	if err != nil {
 		return err
 	}
 	return s.Report(id, state)
+}
+
+func observeDispatchedAfterRunnerError(state workflow.RuntimeState) bool {
+	request := state.Automation.PreparedRequest
+	return state.SchemaVersion < 10 && request != nil && request.DispatchedAt != "" && request.TaskID == state.Task.ID && state.WriteLease != nil && state.WriteLease.AttemptID == request.AttemptID
+}
+
+func syncSupervisorChecklist(id string, store *workflow.Store) error {
+	for attempt := 0; attempt < 3; attempt++ {
+		_, err := taskworkflow.SyncWorkflowChecklist(id, store)
+		if err == nil { return nil }
+		var projectionErr *task.ChecklistProjectionError
+		if errors.As(err, &projectionErr) || errors.Is(err, os.ErrPermission) || attempt == 2 { return err }
+		time.Sleep(time.Second)
+	}
+	return nil
+}
+
+func (s Supervisor) awaitGateDecision(id, leaseID string) error {
+	state, err := s.Store.Load(workflow.TaskID(id))
+	if err != nil { return err }
+	for _, gate := range state.Gates {
+		if gate.State != workflow.GateOpen { continue }
+		if gate.ID == workflow.UsageBudgetGateID {
+			_, err = s.Store.PauseSupervisor(workflow.TaskID(id), leaseID, "budget-awaiting-approval", gate.Reason, time.Now().UTC().Add(24*time.Hour))
+			return err
+		}
+		report, err := workflow.BuildRemediationReportForGate(state, gate)
+		if err != nil { return err }
+		pending, err := s.Store.AwaitRemediation(workflow.TaskID(id), report)
+		if err != nil { return err }
+		if err := s.Report(id, pending); err != nil { return err }
+		_, err = s.Store.PauseSupervisor(workflow.TaskID(id), leaseID, "awaiting-human", string(gate.ID), time.Now().UTC().Add(24*time.Hour))
+		return err
+	}
+	return fmt.Errorf("Runner reported a Gate, but no open Gate remains")
+}
+
+func (s Supervisor) awaitUnknownSession(id, leaseID string, request workflow.PreparedAgentRequest, cause error) error {
+	state, err := s.Store.Load(workflow.TaskID(id))
+	if err != nil { return err }
+	current := state.Automation.PreparedRequest
+	if current == nil || current.TaskID != request.TaskID || current.WorkItemID != request.WorkItemID || current.AttemptID != request.AttemptID || current.SessionID != request.SessionID || current.ExpectedSessionTurn != request.ExpectedSessionTurn || current.DispatchedAt != request.DispatchedAt {
+		return fmt.Errorf("dispatched Session binding changed before remediation: %w", cause)
+	}
+	report, err := workflow.BuildRemediationReportForUnknownSession(state, request, cause.Error())
+	if err != nil { return err }
+	pending, err := s.Store.AwaitRemediation(workflow.TaskID(id), report)
+	if err != nil { return err }
+	if err := s.Report(id, pending); err != nil { return err }
+	_, err = s.Store.PauseSupervisor(workflow.TaskID(id), leaseID, "awaiting-human", report.ProblemID, time.Now().UTC().Add(24*time.Hour))
+	return err
 }
