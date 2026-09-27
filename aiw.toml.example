@@ -92,21 +92,32 @@
 provider = "codex"
 model = "gpt-6-luna"
 level = 1
+reasoning_intensity = "low"
 
 [ai.profiles.normal]
 provider = "codex"
 model = "gpt-5.6-terra"
 level = 2
+reasoning_intensity = "medium"
 
 [ai.profiles.balanced]
 provider = "codex"
 model = "gpt-5.6-sol"
 level = 3
+reasoning_intensity = "medium"
 
 [ai.profiles.reasoning]
 provider = "codex"
 model = "gpt-6-astra"
 level = 4
+reasoning_intensity = "high"
+
+# Optional default budget for new Schema 10 Workflow Tasks. These values are
+# only applied when explicitly snapshotted by `aiw wf budget <task-id> configure`;
+# reading a Task or changing this file does not modify an existing budget.
+# [ai.usage_budget]
+# input_tokens = 100000
+# output_tokens = 20000
 
 # Managed Workflow AI Profiles. They affect only `aiw wf supervise`;
 # other AI commands continue to use the global [ai] configuration above.
