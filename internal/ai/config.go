@@ -107,9 +107,11 @@ func LoadFastProfileConfig() (Config, bool, error) {
 // It deliberately excludes credentials and transport settings, which continue
 // to resolve through the existing global AI configuration.
 type Profile struct {
-	Name     string
-	Provider string
-	Model    string
+	Name               string
+	Provider           string
+	Model              string
+	Level              int
+	ReasoningIntensity string
 }
 
 // LoadProfiles reads named [ai.profiles.<name>] provider/model pairs.
@@ -132,7 +134,21 @@ func LoadProfiles() (map[string]Profile, error) {
 		if name == "" || provider == "" || model == "" {
 			continue
 		}
-		profiles[name] = Profile{Name: name, Provider: normalize(provider), Model: model}
+		level := 0
+		if rawLevel := strings.TrimSpace(values[prefix+name+".level"]); rawLevel != "" {
+			parsedLevel, err := strconv.Atoi(rawLevel)
+			if err != nil {
+				return nil, fmt.Errorf("profile %q has invalid level %q: %w", name, rawLevel, err)
+			}
+			level = parsedLevel
+		}
+		profiles[name] = Profile{
+			Name:               name,
+			Provider:           normalize(provider),
+			Model:              model,
+			Level:              level,
+			ReasoningIntensity: strings.TrimSpace(values[prefix+name+".reasoning_intensity"]),
+		}
 	}
 	return profiles, nil
 }
@@ -192,7 +208,9 @@ func ResolveProfile(profileName string) (Profile, Config, error) {
 	if err != nil {
 		return Profile{}, Config{}, err
 	}
-	return Profile{Name: profileName, Provider: config.Name, Model: config.Model}, config, nil
+	profile.Provider = config.Name
+	profile.Model = config.Model
+	return profile, config, nil
 }
 
 func loadConfigValues() (map[string]string, error) {

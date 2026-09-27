@@ -370,6 +370,9 @@ func deriveExecution(state RuntimeState) ExecutionState {
 	if state.Cancellation != nil {
 		return ExecutionCancelled
 	}
+	if state.Protocol != nil && state.Protocol.Stop != nil && state.Protocol.Stop.Kind == "usage-budget-termination" {
+		return ExecutionBlocked
+	}
 	if hasBlockingExecutionGate(state.Gates) || hasWorkItemState(state.WorkItems, WorkItemBlocked) {
 		return ExecutionBlocked
 	}

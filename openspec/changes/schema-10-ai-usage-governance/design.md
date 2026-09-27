@@ -55,6 +55,29 @@ normalized usage envelope beside the existing turn output. The existing
 Session lifecycle remains authoritative for turn execution and output; it does
 not become the Task budget owner.
 
+### Provider capability evidence
+
+Provider capability is evidence-driven: an adapter reports a field as
+`known` only when that field is present and valid in the Provider response.
+The following matrix records the current adapter contract; it does not claim
+that a Provider always returns every optional field.
+
+| Adapter | Provider usage evidence inspected | Token capability | Monetary-cost capability |
+| --- | --- | --- | --- |
+| Codex CLI | JSONL stdout, including `last_token_usage` or nested `usage` | Conditional; input/output/total fields are recorded when returned | Conditional; otherwise `unknown`; no local pricing |
+| Copilot CLI | JSONL/stdout response and nested `usage` | Conditional; fields are recorded when returned | Conditional; otherwise `unknown`; no local pricing |
+| OpenAI Responses API adapter | OpenAI response `usage` object | Conditional; `input_tokens`, `output_tokens`, and `total_tokens` are accepted when returned | Conditional; normal Responses usage without Provider cost remains `unknown` |
+| Gemini API adapter | REST response `usageMetadata` | Conditional; `promptTokenCount`, `candidatesTokenCount`, and `totalTokenCount` are accepted when returned | Conditional; normally `unknown` unless amount and currency are returned |
+| OpenAI-compatible/Ollama/llama.cpp | JSON response `usage` object | Conditional; recognized Provider fields are recorded | Conditional; `unknown` unless both amount and currency are returned |
+
+The current Gemini implementation uses the Gemini HTTP API directly; it is
+not an official Gemini SDK integration. If a future SDK adapter is added, it
+must use the same envelope and capability evidence rules. CLI or API
+availability, successful model output, and execution duration do not count as
+Token or monetary usage evidence. Missing usage remains `unknown`, malformed
+usage is `invalid`, and AIW never derives cost from model, Profile, or a local
+price table.
+
 ### Workflow accounting ownership
 
 Workflow Core owns the immutable Task-level usage ledger and budget projection.
@@ -74,6 +97,23 @@ Budget limits and cumulative usage are Task-scoped and cover every WorkItem and
 Attempt. Token and monetary limits are independently evaluated. If either
 known value reaches its limit, Workflow Core opens an authorization gate and
 pauses new budget-consuming dispatches until a human decision is recorded.
+
+The initial budget is explicit operator configuration, not a global default or
+an inferred value. The Workflow facade exposes:
+
+```text
+aiw wf budget <task-id> configure --tokens <positive> \
+  --cost <CURRENCY=AMOUNT> [--cost <CURRENCY=AMOUNT> ...]
+```
+
+Configuration is allowed once for a migrated Schema 10 Task and is committed
+through the ordered Workflow event path. The same facade exposes `approve` and
+`terminate` for a pending budget Gate. Both require a non-empty reason; the
+actor defaults to the current OS user when `--by` is omitted. `approve` without
+replacement limits applies the simultaneous 30 percent increase. An explicit
+replacement must provide a Token limit and all existing currencies, and the
+durable Store remains responsible for checking that every dimension increases.
+`terminate` records a human decision and leaves execution `BLOCKED`.
 
 The default approval proposal increases both limits by 30%. A human decision
 may provide different new limits. Approvals may repeat and each decision is
@@ -161,14 +201,40 @@ states. The normal usage report never exposes the raw fragment.
 
 ### Compatibility and recovery
 
-Schema 10 is an additive runtime state evolution. Existing JSON without a
-ledger, budget, Profile level, or usage envelope loads with empty/unknown
-optional fields. Existing Session outputs and Provider implementations remain
-valid; an adapter that does not return a field records that field as unknown.
+Schema 10 is an additive runtime state evolution, entered only through the
+existing explicit managed migration after its service and activation evidence
+gates pass. Existing Schema 9 Tasks remain readable and are not eagerly
+rewritten or assigned a new budget. Migration preserves the original state
+bytes as its source artifact, retains existing WorkItems, Attempts, and event
+sequence, and does not infer historical usage; pre-ledger usage remains
+unknown. A migration is rejected while a legacy Attempt, lease, prepared
+request, or pending event is unresolved.
 
-All ledger and budget transitions use the existing Workflow ordered event and
-lock path. A crash before the accounting event is reconciled from the frozen
-Session/Attempt identity; a repeated reconciliation is idempotent.
+The normalized Task ledger and budget projection belong to the existing
+versioned Workflow protocol state. Each committed accounting or budget
+transition uses the existing Task lock and ordered `events.jsonl` commit path,
+with its normal sequence and Schema 10 event metadata. Existing events are
+preserved byte-for-byte and in order; Schema 10 events are appended only after
+the explicit migration. Usage records bind to the frozen Task, WorkItem,
+Attempt, Session, and turn identity, so replay after a crash is idempotent and
+cannot change historical accounting. The ledger does not create a second
+Task store or event journal.
+
+Session usage is an optional additive field on the persisted result for its
+turn. Existing Session schema 1 records, turns without usage, output files,
+stderr files, event-output files, lifecycle state, and one-call Provider/model
+overrides remain readable and retain their current meaning. Reading an older
+turn yields absent/unknown usage; it does not trigger Session migration or
+rewrite. The Session copy preserves normalized usage and bounded Provider
+evidence, while Workflow remains authoritative for Task aggregation and
+accounting decisions. Existing Provider implementations remain valid; a
+Provider adapter that does not return a field records it as unknown.
+
+A crash before the accounting event is reconciled from the frozen
+Session/Attempt identity; a repeated reconciliation is idempotent. Usage
+evidence is committed with the turn result before the corresponding Task
+accounting projection is advanced, so recovery can complete or replay the
+projection without losing or double-counting the Provider result.
 
 ## Design Readiness
 

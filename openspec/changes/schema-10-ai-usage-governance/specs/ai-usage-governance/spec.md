@@ -1,5 +1,46 @@
 ## ADDED Requirements
 
+### Requirement: Schema 10 persistence compatibility
+
+Schema 10 usage accounting MUST extend the existing Task Workflow state,
+ordered event log, and Session turn persistence seams. Existing Schema 9 Tasks
+MUST remain readable without eager migration, and existing Session schema 1
+records and turns without usage MUST remain readable without rewrite. Explicit
+Task migration MUST preserve the source snapshot and existing event sequence;
+it MUST NOT infer historical usage or initialize unknown historical balances
+as zero. New Task accounting transitions MUST be committed through the
+existing Task lock and ordered Workflow event path, and repeated recovery of a
+committed Provider call MUST remain idempotent on its frozen Session/turn
+identity. Session usage evidence MUST be an additive optional turn field and
+MUST preserve existing output, stderr, event-output, lifecycle, and one-call
+override behavior.
+
+#### Scenario: Existing Task without usage ledger
+
+- **WHEN** a pre-Schema-10 Task is read before explicit managed migration
+- **THEN** its existing state and event history remain readable, no usage or
+  budget is inferred, and no migration is performed as a read side effect
+
+#### Scenario: Explicit Task migration
+
+- **WHEN** an eligible Schema 9 Task passes the existing migration gates
+- **THEN** migration preserves its original snapshot and event sequence,
+  appends the Schema 10 migration event through the ordered event path, and
+  leaves historical usage unknown
+
+#### Scenario: Existing Session turn without usage
+
+- **WHEN** a Session schema 1 record or prior turn has no usage envelope
+- **THEN** the record remains readable, the missing usage remains unknown, and
+  output, stderr, event-output, lifecycle, and saved Provider/model settings
+  retain their existing meaning
+
+#### Scenario: Recover a committed usage event
+
+- **WHEN** recovery encounters a Provider call already committed to the Task
+  ledger for its frozen Session and turn identity
+- **THEN** it does not append or aggregate that call a second time
+
 ### Requirement: Provider usage evidence
 
 AIW MUST persist one normalized usage record for every managed AI call. The
@@ -43,6 +84,24 @@ including every WorkItem and Attempt. Token and monetary limits MUST be
 evaluated independently. Call count MAY be reported as an auxiliary metric but
 MUST NOT replace either primary budget.
 
+The initial Task budget MUST be supplied explicitly after Schema 10 migration;
+AIW MUST NOT infer it from a Profile, Provider, historical usage, or a global
+configuration. The Workflow facade MUST provide an operator operation that
+accepts one positive Token limit and at least one positive per-currency
+monetary limit, and MUST persist it through the ordered Task event path.
+
+#### Scenario: Explicit initial budget
+
+- **WHEN** an operator configures a migrated Task with a positive Token limit
+  and one or more positive currency limits
+- **THEN** AIW persists those limits as the Task budget and makes them
+  available to the cumulative usage Gate
+
+#### Scenario: Missing initial budget dimension
+
+- **WHEN** an operator omits the Token limit or all monetary limits
+- **THEN** AIW rejects configuration and does not create a partial budget
+
 #### Scenario: Usage crosses one budget
 
 - **WHEN** cumulative known Token or monetary usage reaches its Task limit
@@ -74,6 +133,12 @@ source usage digest. Human termination MUST set the Task to `BLOCKED`.
 - **WHEN** a human supplies different limits or terminates the Task
 - **THEN** AIW records the explicit decision; a termination results in
   `BLOCKED`, and no automatic approval is inferred
+
+The approval and termination operations MUST require a reason. If an actor is
+not supplied, the CLI MUST record the current OS user as the actor; failure to
+determine that identity MUST reject the operation. An explicit approval MUST
+increase every existing budget dimension, while an approval without replacement
+limits MUST apply the simultaneous 30 percent increase.
 
 #### Scenario: Repeated approval
 

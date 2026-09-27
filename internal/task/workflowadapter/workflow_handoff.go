@@ -54,6 +54,10 @@ Read the following Task artifacts before acting:
 
 Implement only the selected Work Item. Preserve the managed Task and workspace,
 follow the implement Skill if it is available, and do not resolve Gates.
+This handoff is a supervisor/runtime-owned artifact under the shared .ai/tasks
+directory. Treat it as read-only: update implementation evidence in the
+isolated worktree's openspec/changes/<task>/tasks.md; do not edit this handoff
+from the Agent workspace. The supervisor records lifecycle and recovery updates.
 %s
 Mark the selected checklist item as completed when its implementation is
 complete.

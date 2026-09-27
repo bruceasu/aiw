@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -102,6 +103,26 @@ func runWorkflowCommand(args []string) error {
 		return fmt.Errorf("usage: wf <operation> <task-id> [arguments]")
 	}
 	op, id := args[0], args[1]
+	if op == "status" {
+		if len(args) != 2 {
+			return fmt.Errorf("usage: wf status <task-id>")
+		}
+		if !taskAdapter.SafeID(id) {
+			return fmt.Errorf("invalid task id: %s", id)
+		}
+		state, err := workflow.NewStore("").Load(workflow.TaskID(id))
+		if err != nil {
+			return fmt.Errorf("load Workflow status: %w", err)
+		}
+		printUsageStatus(id, state)
+		return nil
+	}
+	if op == "budget" {
+		if !taskAdapter.SafeID(id) {
+			return fmt.Errorf("invalid task id: %s", id)
+		}
+		return runWorkflowBudgetCommand(id, args[2:])
+	}
 	if op == "recommend-routing" {
 		if len(args) != 2 || !taskAdapter.SafeID(id) { return fmt.Errorf("usage: wf recommend-routing <task-id>") }
 		meta, store, err := compatibleWorkflow(id)
@@ -133,6 +154,43 @@ func runWorkflowCommand(args []string) error {
 			return fmt.Errorf("read latest failure report: %w", err)
 		}
 		fmt.Print(string(content))
+		return nil
+	}
+	if op == "usage" {
+		if !taskAdapter.SafeID(id) {
+			return fmt.Errorf("invalid task id: %s", id)
+		}
+		query, format, err := parseUsageReportArgs(args[2:])
+		if err != nil {
+			return err
+		}
+		report, err := workflow.NewStore("").GetUsageReport(context.Background(), workflow.TaskID(id), query)
+		if err != nil {
+			return fmt.Errorf("get Task usage report: %w", err)
+		}
+		if format == "json" {
+			encoder := json.NewEncoder(os.Stdout)
+			encoder.SetIndent("", "  ")
+			return encoder.Encode(report)
+		}
+		costs, _ := json.Marshal(report.Totals.KnownCostByCurrency)
+		outcomes, _ := json.Marshal(report.Outcomes)
+		fmt.Printf("Task %s usage\n", report.TaskID)
+		fmt.Printf("CALLS\t%d\nUSAGE_UNKNOWN\t%d\nKNOWN INPUT TOKENS\t%d\nKNOWN OUTPUT TOKENS\t%d\nKNOWN TOTAL TOKENS\t%d\nKNOWN COST BY CURRENCY\t%s\nOUTCOMES\t%s\nBUDGET APPROVALS\t%d\nBUDGET TERMINATIONS\t%d\nDIFFICULTY CHANGES\t%d\n",
+			report.Totals.Calls, report.Totals.UsageUnknown,
+			report.Totals.KnownInputTokens, report.Totals.KnownOutputTokens,
+			report.Totals.KnownTotalTokens, costs, outcomes,
+			len(report.BudgetApprovals), len(report.BudgetTerminations), len(report.DifficultyChanges))
+		for _, approval := range report.BudgetApprovals {
+			fmt.Printf("BUDGET APPROVAL\t%s\t%s\t%s\t%d -> %d\n", approval.At, approval.Actor, approval.Reason, approval.Previous.TokenLimit, approval.New.TokenLimit)
+		}
+		for _, change := range report.DifficultyChanges {
+			fmt.Printf("DIFFICULTY CHANGE\t%s\t%s/%s/%d -> %s/%s/%d\t%s\n", change.RecordedAt.Format(time.RFC3339), change.PreviousProfile, change.PreviousModel, change.PreviousLevel, change.SelectedProfile, change.SelectedModel, change.SelectedLevel, change.Reason)
+		}
+		fmt.Printf("RECORDED AT\tWORK ITEM\tATTEMPT\tPROVIDER\tPROFILE\tMODEL\tOUTCOME\n")
+		for _, call := range report.Calls {
+			fmt.Printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\n", call.RecordedAt.Format(time.RFC3339), call.WorkItemID, call.AttemptID, call.Provider, call.Profile, call.Model, call.Outcome)
+		}
 		return nil
 	}
 	if op == "diagnose" {
@@ -605,7 +663,7 @@ func advanceWorkflow(id string, meta task.TaskMeta, store *workflow.Store, super
 		if _, err := ensureLocalRoutingPlan(store, workflow.TaskID(id), meta.Worktree); err != nil {
 			return workflow.RuntimeState{}, err
 		}
-		selection, err = resolveSupervisedAISelection(store, workflow.TaskID(id), providerOverride, modelOverride)
+		selection, err = resolveSupervisedAISelection(store, workflow.TaskID(id), state, item.ID, providerOverride, modelOverride)
 		if err != nil {
 			return workflow.RuntimeState{}, err
 		}
@@ -635,7 +693,7 @@ func advanceWorkflow(id string, meta task.TaskMeta, store *workflow.Store, super
 	return store.RecordAutomation(workflow.TaskID(id), state.Automation.PlanFingerprint, workflow.AutomationCursor{Result: "agent-request-prepared", Detail: string(item.ID)}, request)
 }
 
-func resolveSupervisedAISelection(store *workflow.Store, id workflow.TaskID, providerOverride, modelOverride string) (*workflow.AISelection, error) {
+func resolveSupervisedAISelection(store *workflow.Store, id workflow.TaskID, state workflow.RuntimeState, workItemID workflow.WorkItemID, providerOverride, modelOverride string) (*workflow.AISelection, error) {
 	profileName := ai.DefaultProfileForActor("coder")
 	if plan, err := store.LoadRoutingPlan(id); err == nil && strings.TrimSpace(plan.Profiles["coder"]) != "" {
 		profileName = plan.Profiles["coder"]
@@ -646,6 +704,48 @@ func resolveSupervisedAISelection(store *workflow.Store, id workflow.TaskID, pro
 	if err != nil {
 		return nil, err
 	}
+	profiles, err := ai.LoadProfiles()
+	if err != nil {
+		return nil, err
+	}
+	requestedLevel, adjustmentReason := 0, ""
+	previousProfileName, previousProvider, previousModel, previousIntensity := "", "", "", ""
+	previousLevel := 0
+	configured, ok := profiles[profileName]
+	if !ok && len(profiles) > 0 {
+		configured, ok = lowestProfile(profiles)
+	}
+	if ok {
+		profile = configured
+		requestedLevel = configured.Level + unresolvedAgentRounds(state, workItemID)
+		previousProfile := configured
+		if previous, found := latestUsageSelection(state.Protocol, workItemID); found {
+			previousProfile, _, err = ai.ResolveProfile(previous.Profile)
+			if err != nil { return nil, err }
+			previousProvider, previousModel = previous.Provider, previous.Model
+			previousIntensity = previous.ReasoningIntensity
+			previousLevel = previous.DifficultyLevel
+		} else {
+			previousProvider, previousModel = previousProfile.Provider, previousProfile.Model
+			previousIntensity, previousLevel = previousProfile.ReasoningIntensity, previousProfile.Level
+		}
+		selected, found := profileAtOrAbove(profiles, requestedLevel)
+		if found {
+			profile, config, err = ai.ResolveProfile(selected.Name)
+			if err != nil { return nil, err }
+		} else if requestedLevel > configured.Level {
+			profile, config, err = ai.ResolveProfile(previousProfile.Name)
+			if err != nil { return nil, err }
+		}
+		if requestedLevel > configured.Level {
+			previousProfileName = previousProfile.Name
+			if found {
+				adjustmentReason = "unresolved_agent_round"
+			} else {
+				adjustmentReason = "no_higher_profile_available"
+			}
+		}
+	}
 	if strings.TrimSpace(providerOverride) != "" || strings.TrimSpace(modelOverride) != "" {
 		provider, model := config.Name, config.Model
 		if strings.TrimSpace(providerOverride) != "" { provider = providerOverride }
@@ -653,9 +753,61 @@ func resolveSupervisedAISelection(store *workflow.Store, id workflow.TaskID, pro
 		config, err = ai.ConfigFor(provider, model)
 		if err != nil { return nil, err }
 	}
-	digestSource := strings.Join([]string{profile.Name, config.Name, config.Model, config.BaseURL, config.Command, config.CodexCommand, config.CopilotCommand}, "\n")
+	digestSource := strings.Join([]string{profile.Name, config.Name, config.Model, fmt.Sprint(profile.Level), profile.ReasoningIntensity, config.BaseURL, config.Command, config.CodexCommand, config.CopilotCommand}, "\n")
 	digest := sha256.Sum256([]byte(digestSource))
-	return &workflow.AISelection{Profile: profile.Name, Provider: config.Name, Model: config.Model, Digest: hex.EncodeToString(digest[:])}, nil
+	return &workflow.AISelection{
+		Profile: profile.Name, Provider: config.Name, Model: config.Model, Digest: hex.EncodeToString(digest[:]),
+		Level: profile.Level, ReasoningIntensity: profile.ReasoningIntensity,
+		RequestedLevel: requestedLevel, AdjustmentReason: adjustmentReason,
+		PreviousProfile: previousProfileName, PreviousProvider: previousProvider,
+		PreviousModel: previousModel, PreviousLevel: previousLevel,
+		PreviousReasoningIntensity: previousIntensity,
+	}, nil
+}
+
+func unresolvedAgentRounds(state workflow.RuntimeState, workItemID workflow.WorkItemID) int {
+	for _, item := range state.WorkItems {
+		if item.ID == workItemID && (item.State == workflow.WorkItemCompleted || item.AcceptedReference != nil) { return 0 }
+	}
+	count := 0
+	for _, attempt := range state.Attempts {
+		if attempt.WorkItemID == workItemID && attempt.SessionID != "" && attempt.Outcome != nil { count++ }
+	}
+	return count
+}
+
+func latestUsageSelection(protocol *workflow.ExecutionProtocol, workItemID workflow.WorkItemID) (workflow.UsageEvent, bool) {
+	if protocol == nil || protocol.Usage == nil { return workflow.UsageEvent{}, false }
+	for i := len(protocol.Usage.Records)-1; i >= 0; i-- {
+		var event workflow.UsageEvent
+		if json.Unmarshal(protocol.Usage.Records[i], &event) == nil && event.WorkItemID == workItemID {
+			return event, true
+		}
+	}
+	return workflow.UsageEvent{}, false
+}
+
+func profileAtOrAbove(profiles map[string]ai.Profile, requestedLevel int) (ai.Profile, bool) {
+	var selected ai.Profile
+	found := false
+	for _, candidate := range profiles {
+		if candidate.Level < requestedLevel { continue }
+		if !found || candidate.Level < selected.Level || (candidate.Level == selected.Level && candidate.Name < selected.Name) {
+			selected, found = candidate, true
+		}
+	}
+	return selected, found
+}
+
+func lowestProfile(profiles map[string]ai.Profile) (ai.Profile, bool) {
+	var selected ai.Profile
+	found := false
+	for _, candidate := range profiles {
+		if !found || candidate.Level < selected.Level || (candidate.Level == selected.Level && candidate.Name < selected.Name) {
+			selected, found = candidate, true
+		}
+	}
+	return selected, found
 }
 
 func validateWorkflowArgs(op string, args []string) error {
@@ -666,6 +818,10 @@ func validateWorkflowArgs(op string, args []string) error {
 	case "plan", "sync", "advance", "recommend-routing":
 		if len(args) != 2 {
 			return fmt.Errorf("usage: wf plan <task-id>")
+		}
+	case "budget":
+		if len(args) < 3 {
+			return fmt.Errorf("usage: wf budget <task-id> <configure|approve|terminate> [options]")
 		}
 	case "attempt":
 		if len(args) != 5 || (args[2] != "start" && args[2] != "checkpoint") {
@@ -788,8 +944,15 @@ func compatibleWorkflow(id string) (task.TaskMeta, *workflow.Store, error) {
 		return task.TaskMeta{}, nil, err
 	}
 	store := workflow.NewStore("")
-	if _, err := store.EnsureCompatible(taskworkflow.WorkflowRuntimeFromMeta(meta)); err != nil {
+	runtime, err := store.EnsureCompatible(taskworkflow.WorkflowRuntimeFromMeta(meta))
+	if err != nil {
 		return task.TaskMeta{}, nil, err
+	}
+	wanted := taskworkflow.WorkflowRuntimeFromMeta(meta).Task
+	if runtime.Task.Workspace != wanted.Workspace || runtime.Task.Kind != wanted.Kind {
+		if _, err := store.ReconcileTaskReference(workflow.TaskID(id), wanted); err != nil {
+			return task.TaskMeta{}, nil, fmt.Errorf("reconcile Workflow Task workspace mapping: %w", err)
+		}
 	}
 	return meta, store, nil
 }
@@ -1008,6 +1171,15 @@ Record progress:
   focused-test <task-id> <attempt-id>   Run the selected approved focused check.
 
 Inspect and recover:
+  status <task-id>                    Show budget state, pending authorization, BLOCKED reason, Profile, and partial-usage diagnostics.
+  usage <task-id> [--work-item <id>] [--attempt <id>] [--provider <id>] [--profile <id>] [--from <RFC3339>] [--to <RFC3339>] [--format table|json]
+	                                     Show a bounded, read-only usage call report.
+  budget <task-id> configure --tokens <n> --cost <CURRENCY=AMOUNT> [--cost <CURRENCY=AMOUNT> ...]
+                                         Set the explicit initial Task budget once.
+  budget <task-id> approve [--by <actor>] --reason <reason> [--tokens <n> --cost <CURRENCY=AMOUNT> ...]
+                                         Approve a pending increase; omitted limits use +30%.
+  budget <task-id> terminate [--by <actor>] --reason <reason>
+                                         Stop at a pending budget Gate and leave the Task BLOCKED.
   report <task-id>                     Show the latest unresolved failure report without changing runtime state.
   diagnose <task-id>                   Show Workflow Core diagnostics and repair guidance.
 	continue <task-id>                   Read the human remediation response and continue safely.

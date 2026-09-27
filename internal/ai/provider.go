@@ -2,6 +2,9 @@ package ai
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/json"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"os"
@@ -44,6 +47,90 @@ type Response struct {
 	Metadata    map[string]string
 	StartedAt   time.Time
 	CompletedAt time.Time
+	Usage       *UsageEnvelope `json:"usage,omitempty"`
+}
+
+const UsageEnvelopeVersion = 1
+
+const (
+	UsageRawEvidenceRetention = 90 * 24 * time.Hour
+	UsageRawEvidenceMaxBytes  = 4 * 1024
+)
+
+type UsageFieldState string
+
+const (
+	UsageFieldKnown   UsageFieldState = "known"
+	UsageFieldUnknown UsageFieldState = "unknown"
+	UsageFieldInvalid UsageFieldState = "invalid"
+)
+
+// UsageField preserves availability separately from the value. Value is set
+// only when State is UsageFieldKnown; unknown and invalid values are never
+// represented as zero.
+type UsageField[T any] struct {
+	State UsageFieldState `json:"state"`
+	Value *T              `json:"value,omitempty"`
+}
+
+// UsageEnvelope is the versioned, Provider-reported usage evidence for one
+// call. Token totals are independent Provider fields and are not derived from
+// input/output counts. Cost amount and currency are independent fields so
+// partial Provider responses remain representable.
+type UsageEnvelope struct {
+	Version      int                      `json:"version"`
+	Availability UsageFieldState          `json:"availability"`
+	Provider     string                   `json:"provider,omitempty"`
+	Model        string                   `json:"model,omitempty"`
+	StartedAt    time.Time                `json:"started_at,omitempty"`
+	CompletedAt  time.Time                `json:"completed_at,omitempty"`
+	InputTokens  UsageField[int64]        `json:"input_tokens"`
+	OutputTokens UsageField[int64]        `json:"output_tokens"`
+	TotalTokens  UsageField[int64]        `json:"total_tokens"`
+	CostAmount   UsageField[json.Number]  `json:"cost_amount"`
+	CostCurrency UsageField[string]       `json:"cost_currency"`
+	RawResponse  json.RawMessage          `json:"raw_response,omitempty"`
+	RawResponseDigest string               `json:"raw_response_digest,omitempty"`
+	RawResponseExpiresAt time.Time          `json:"raw_response_expires_at,omitempty"`
+}
+
+// PrepareUsageEvidence bounds the retained fragment and records its stable
+// digest and expiry. Only usage-related fields are retained in RawResponse.
+func PrepareUsageEvidence(usage *UsageEnvelope, now time.Time) {
+	if usage == nil || len(usage.RawResponse) == 0 { return }
+	if now.IsZero() { now = time.Now().UTC() }
+	usage.RawResponse = sanitizeRawUsage(usage.RawResponse)
+	if usage.RawResponseDigest == "" {
+		digest := sha256.Sum256(usage.RawResponse)
+		usage.RawResponseDigest = hex.EncodeToString(digest[:])
+	}
+	if len(usage.RawResponse) > UsageRawEvidenceMaxBytes { usage.RawResponse = nil }
+	if usage.RawResponseExpiresAt.IsZero() {
+		base := usage.CompletedAt
+		if base.IsZero() { base = now }
+		usage.RawResponseExpiresAt = base.Add(UsageRawEvidenceRetention).UTC()
+	}
+}
+
+// ExpireUsageEvidence removes only the raw fragment once its retention
+// boundary passes. Normalized values and the evidence digest remain intact.
+func ExpireUsageEvidence(usage *UsageEnvelope, now time.Time) bool {
+	if usage == nil || len(usage.RawResponse) == 0 { return false }
+	original := append(json.RawMessage(nil), usage.RawResponse...)
+	PrepareUsageEvidence(usage, now)
+	if len(usage.RawResponse) == 0 { return true }
+	if now.Before(usage.RawResponseExpiresAt) { return string(original) != string(usage.RawResponse) }
+	usage.RawResponse = nil
+	return true
+}
+
+// UsageWithoutRawEvidence returns normalized evidence suitable for the
+// immutable accounting ledger, which retains the digest rather than fragment.
+func UsageWithoutRawEvidence(usage *UsageEnvelope) *UsageEnvelope {
+	if usage == nil { return nil }
+	copy := *usage
+	copy.RawResponse = nil
+	return &copy
 }
 
 type Provider interface {
