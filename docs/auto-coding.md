@@ -165,6 +165,9 @@ git -c "safe.directory=<verified-worktree>" -C "<verified-worktree>" status
 
 ## 6. 验证、交付与辅助工作
 
+Schema 10 的 Profile 难度、Task 用量预算、审批行为和未知用量语义见
+[AI usage governance](usage/ai-usage-governance.md)。
+
 默认 focused-test 是独立授权试点，计划位于
 `openspec/changes/<task-id>/artifacts/verification-plan.json`。授权绑定归一化计划摘要，
 选择只能引用已批准 check ID。授权缺失/过期或无法强制 `network: deny` 时，在启动

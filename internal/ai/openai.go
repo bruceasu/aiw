@@ -66,7 +66,9 @@ func (p openAIResponsesProvider) Generate(ctx context.Context, request Request) 
 	if err != nil {
 		return Response{}, fmt.Errorf("encode OpenAI response: %w", err)
 	}
+	completed := time.Now().UTC()
 	return Response{ThreadID: response.ID, FinalOutput: response.OutputText(), Events: events,
-		ExitCode: 0, StartedAt: started, CompletedAt: time.Now().UTC(),
-		Metadata: map[string]string{"provider": "openai", "model": model}}, nil
+		ExitCode: 0, StartedAt: started, CompletedAt: completed,
+		Metadata: map[string]string{"provider": "openai", "model": model},
+		Usage: usageFromRaw("openai", model, started, completed, events)}, nil
 }

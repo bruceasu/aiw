@@ -114,6 +114,7 @@ func executeTurn(ctx context.Context, store *Store, id, phase, prompt, providerO
 		return TurnResult{}, err
 	}
 	result, runErr := backend.Generate(ctx, TurnRequest{SessionID: id, Prompt: composed, Workspace: status.Workspace.Path, ThreadID: status.Backend.ThreadID, Instructions: instructions, Memory: memory, Phase: phase, TurnNumber: turn, OutputDir: store.sessionDir(id) + "/outputs", ForceNewThread: forceNew, Environment: environment, ReadOnly: frozen != nil && frozen.ReadOnly})
+	ensureTurnUsage(&result, cfg.Name, cfg.Model)
 	if runErr != nil && result.ExitCode == 0 {
 		result.ExitCode = 1
 	}
@@ -190,6 +191,7 @@ func ExecuteInteractiveWithOverridesAndEnvironment(ctx context.Context, store *S
 		return nil
 	}); err != nil { return TurnResult{}, err }
 	result, runErr := backend.Interactive(ctx, TurnRequest{SessionID: id, Prompt: composed, Workspace: status.Workspace.Path, ThreadID: status.Backend.ThreadID, Instructions: instructions, Memory: memory, Phase: phase, TurnNumber: turn, OutputDir: store.sessionDir(id) + "/outputs", ForceNewThread: forceNew, Model: cfg.Model, Environment: environment})
+	ensureTurnUsage(&result, cfg.Name, cfg.Model)
 	saveErr := SaveTurnResult(store, status, result)
 	executionErr := runErr
 	if saveErr != nil {
@@ -208,6 +210,31 @@ func ExecuteInteractiveWithOverridesAndEnvironment(ctx context.Context, store *S
 	if updateErr != nil { return result, updateErr }
 	if executionErr != nil { return result, executionErr }
 	return result, nil
+}
+
+func ensureTurnUsage(result *TurnResult, provider, model string) {
+	if result.Usage == nil {
+		unknownInt := func() ai.UsageField[int64] { return ai.UsageField[int64]{State: ai.UsageFieldUnknown} }
+		unknownNumber := ai.UsageField[json.Number]{State: ai.UsageFieldUnknown}
+		unknownString := ai.UsageField[string]{State: ai.UsageFieldUnknown}
+		result.Usage = &ai.UsageEnvelope{
+			Version: ai.UsageEnvelopeVersion, Availability: ai.UsageFieldUnknown,
+			InputTokens: unknownInt(), OutputTokens: unknownInt(), TotalTokens: unknownInt(),
+			CostAmount: unknownNumber, CostCurrency: unknownString,
+		}
+	}
+	if result.Usage.Provider == "" {
+		result.Usage.Provider = provider
+	}
+	if result.Usage.Model == "" {
+		result.Usage.Model = model
+	}
+	if result.Usage.StartedAt.IsZero() {
+		result.Usage.StartedAt = result.StartedAt
+	}
+	if result.Usage.CompletedAt.IsZero() {
+		result.Usage.CompletedAt = result.CompletedAt
+	}
 }
 
 func DecodeThreadID(events []byte) string {

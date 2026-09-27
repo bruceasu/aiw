@@ -69,7 +69,11 @@ func (p geminiProvider) Generate(ctx context.Context, request Request) (Response
 		return Response{}, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return Response{}, fmt.Errorf("gemini API failed (%d): %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+		completed := time.Now().UTC()
+		result := Response{Events: raw, ExitCode: 1, StartedAt: started, CompletedAt: completed,
+			Metadata: map[string]string{"provider": "gemini", "model": model},
+			Usage: usageFromRaw("gemini", model, started, completed, raw)}
+		return result, fmt.Errorf("gemini API failed (%d): %s", resp.StatusCode, strings.TrimSpace(string(raw)))
 	}
 	var decoded struct {
 		Candidates []struct {
@@ -79,12 +83,22 @@ func (p geminiProvider) Generate(ctx context.Context, request Request) (Response
 		} `json:"candidates"`
 	}
 	if err := json.Unmarshal(raw, &decoded); err != nil {
-		return Response{}, fmt.Errorf("decode gemini response: %w", err)
+		completed := time.Now().UTC()
+		result := Response{Events: raw, ExitCode: 1, StartedAt: started, CompletedAt: completed,
+			Metadata: map[string]string{"provider": "gemini", "model": model},
+			Usage: usageFromRaw("gemini", model, started, completed, raw)}
+		return result, fmt.Errorf("decode gemini response: %w", err)
 	}
 	if len(decoded.Candidates) == 0 || len(decoded.Candidates[0].Content.Parts) == 0 {
-		return Response{}, fmt.Errorf("gemini response has no content")
+		completed := time.Now().UTC()
+		result := Response{Events: raw, ExitCode: 1, StartedAt: started, CompletedAt: completed,
+			Metadata: map[string]string{"provider": "gemini", "model": model},
+			Usage: usageFromRaw("gemini", model, started, completed, raw)}
+		return result, fmt.Errorf("gemini response has no content")
 	}
+	completed := time.Now().UTC()
 	return Response{FinalOutput: strings.TrimSpace(decoded.Candidates[0].Content.Parts[0].Text), Events: raw,
-		ExitCode: 0, StartedAt: started, CompletedAt: time.Now().UTC(),
-		Metadata: map[string]string{"provider": "gemini", "model": model}}, nil
+		ExitCode: 0, StartedAt: started, CompletedAt: completed,
+		Metadata: map[string]string{"provider": "gemini", "model": model},
+		Usage: usageFromRaw("gemini", model, started, completed, raw)}, nil
 }

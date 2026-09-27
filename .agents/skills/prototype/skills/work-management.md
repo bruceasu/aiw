@@ -31,6 +31,10 @@ Current AIW task lifecycle commonly uses `aiw new`, `aiw show`, `aiw status`,
 
 Do not install AIW or OpenSpec automatically.
 
+## Legacy Task Path Adjustment
+
+The canonical active Task directory is `.ai/tasks/<task-id>/`; archives remain at `.ai/archive/<date>-<task-id>/`. For a confirmed one-time relocation of the sole active legacy Task, stop the old AIW program first, stop that Task's Supervisor next, then verify there is no active Attempt, write lease, or other writer. Preserve the target `migrated-to` marker outside the target, require the legacy source to be the sole Task record, and stop on any destination data or identity conflict. Move the complete runtime directory, verify Task identity plus state, event history, reports, and artifacts, then use the new version for a read-only status check. Never move archived Tasks or infer a general migration workflow from this exception.
+
 ## Resolve Or Create The Task
 
 Resolve context in this order:

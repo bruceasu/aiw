@@ -1,10 +1,12 @@
 package session
 
 import (
-	"aiw/internal/ai"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"aiw/internal/ai"
 )
 
 // BackendFor is retained as a compatibility seam for Session callers while
@@ -30,7 +32,19 @@ func SaveTurnResult(store *Store, status Status, result TurnResult) error {
 		return err
 	}
 	if len(result.Stderr) > 0 {
-		return atomicWrite(filepath.Join(dir, fmt.Sprintf("%04d-stderr.log", turn)), result.Stderr)
+		if err := atomicWrite(filepath.Join(dir, fmt.Sprintf("%04d-stderr.log", turn)), result.Stderr); err != nil {
+			return err
+		}
+	}
+	if result.Usage != nil {
+		ai.PrepareUsageEvidence(result.Usage, result.CompletedAt)
+		usage, err := json.Marshal(result.Usage)
+		if err != nil {
+			return fmt.Errorf("encode turn usage: %w", err)
+		}
+		if err := atomicWrite(filepath.Join(dir, fmt.Sprintf("%04d-usage.json", turn)), usage); err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"aiw/internal/ai"
 	"aiw/internal/repo"
 )
 
@@ -139,6 +140,35 @@ func (s *Store) ReadText(id, name string) (string, error) {
 	b, err := os.ReadFile(path)
 	return string(b), err
 }
+
+// ReadTurnUsage returns the normalized Provider envelope for a persisted turn.
+// Older managed turns without a sidecar remain readable as explicit unknown
+// usage and are never rewritten as a side effect of this read.
+func (s *Store) ReadTurnUsage(id string, turn int, provider, model string) (*ai.UsageEnvelope, error) {
+	if !validSessionID(id) || turn <= 0 { return nil, errors.New("invalid Session turn identity") }
+	path := s.path(id, "outputs", fmt.Sprintf("%04d-usage.json", turn))
+	content, err := os.ReadFile(path)
+	if err == nil {
+		var usage ai.UsageEnvelope
+		if err := json.Unmarshal(content, &usage); err != nil { return nil, fmt.Errorf("decode Session turn usage: %w", err) }
+		if usage.Version != ai.UsageEnvelopeVersion { return nil, errors.New("unsupported Session turn usage version") }
+		if ai.ExpireUsageEvidence(&usage, time.Now().UTC()) {
+			updated, err := json.Marshal(&usage)
+			if err != nil { return nil, fmt.Errorf("encode expired Session turn usage: %w", err) }
+			if err := atomicWrite(path, updated); err != nil { return nil, fmt.Errorf("expire Session turn raw usage evidence: %w", err) }
+		}
+		return &usage, nil
+	}
+	if !errors.Is(err, os.ErrNotExist) { return nil, err }
+	status, loadErr := s.Load(id)
+	if loadErr != nil { return nil, loadErr }
+	result := TurnResult{}
+	result.StartedAt, _ = time.Parse(time.RFC3339Nano, status.Execution.LastStartedAt)
+	result.CompletedAt, _ = time.Parse(time.RFC3339Nano, status.Execution.LastCompletedAt)
+	ensureTurnUsage(&result, provider, model)
+	return result.Usage, nil
+}
+
 func (s *Store) ReadArtifact(id, name string) (string, error) {
 	if filepath.Base(name) != name {
 		return "", errors.New("invalid artifact name")
