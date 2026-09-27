@@ -40,11 +40,16 @@ type ExecutionProtocol struct {
 	BudgetKnown bool `json:"budget_known"`
 	// E04 owns this versioned ledger; E02 preserves it in the same commit.
 	Budget json.RawMessage `json:"budget"`
+	// Usage is the optional Task-wide AI usage ledger. Its absence in an older
+	// Schema 10 state means historical usage is unknown; readers must not create
+	// an empty projection as a read side effect.
+	Usage *TaskUsageLedger `json:"usage_ledger,omitempty"`
 	Delivery *ManagedDelivery `json:"delivery,omitempty"`
 	DeliveryHistory []ManagedDelivery `json:"delivery_history,omitempty"`
 }
 
 type ExecutionStop struct {
+	Kind string `json:"kind,omitempty"`
 	Reason string `json:"reason"`
 	Reference ActorReference `json:"reference"`
 }
@@ -185,6 +190,7 @@ func validateExecutionProtocol(state RuntimeState) error {
 		}
 	}
 	if err := validateTaskAuxiliary(state); err != nil { return err }
+	if err := validateTaskUsageLedger(p.Usage); err != nil { return err }
 	if state.PendingEvent != nil && (state.PendingEvent.CommitID != state.CommitID || state.PendingEvent.StateRevision != state.StateRevision) { return errors.New("pending event does not match its state commit") }
 	return nil
 }

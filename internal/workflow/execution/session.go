@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strings"
 
+	"aiw/internal/ai"
 	"aiw/internal/session"
 	"aiw/internal/task"
 	"aiw/internal/workflow"
@@ -45,6 +47,42 @@ func recordSupervisorSessionOutcome(store *workflow.Store, request *workflow.Pre
 	if err != nil {
 		return workflow.SupervisedOutcome{}, fmt.Errorf("resolve execution report reference: %w", err)
 	}
+	provider, model, profile, level, intensity, parameterDigest := status.Backend.Name, status.Backend.Model, "unknown", 0, "unknown", ""
+	if request.AISelection != nil {
+		if request.AISelection.Provider != "" { provider = request.AISelection.Provider }
+		if request.AISelection.Model != "" { model = request.AISelection.Model }
+		if strings.TrimSpace(request.AISelection.Profile) != "" { profile = request.AISelection.Profile }
+		level, intensity, parameterDigest = request.AISelection.Level, request.AISelection.ReasoningIntensity, request.AISelection.Digest
+		if intensity == "" { intensity = "unknown" }
+	}
+	if provider == "" { provider = "unknown" }
+	if model == "" { model = "unknown" }
+	usage, err := session.NewStore("").ReadTurnUsage(request.SessionID, request.ExpectedSessionTurn, provider, model)
+	if err != nil { return workflow.SupervisedOutcome{}, fmt.Errorf("read managed Session usage: %w", err) }
+	usageJSON, err := json.Marshal(ai.UsageWithoutRawEvidence(usage))
+	if err != nil { return workflow.SupervisedOutcome{}, fmt.Errorf("encode managed Session usage: %w", err) }
+	reportedOutcome := parseSupervisedOutcome(output, archived)
+	taskState, err := store.Load(request.TaskID)
+	if err != nil { return workflow.SupervisedOutcome{}, err }
+	if taskState.SchemaVersion == workflow.DurableSchemaVersion && taskState.Protocol != nil {
+		usageEvent := workflow.UsageEvent{
+			TaskID: request.TaskID, WorkItemID: request.WorkItemID, AttemptID: request.AttemptID,
+			SessionID: request.SessionID, SessionTurn: request.ExpectedSessionTurn,
+			Provider: provider, Model: model, Profile: profile, DifficultyLevel: level,
+			ReasoningIntensity: intensity, ParameterDigest: parameterDigest,
+			Outcome: string(reportedOutcome.Kind), Usage: usageJSON,
+		}
+		if request.AISelection != nil {
+			usageEvent.RequestedLevel = request.AISelection.RequestedLevel
+			usageEvent.AdjustmentReason = request.AISelection.AdjustmentReason
+			usageEvent.PreviousProfile = request.AISelection.PreviousProfile
+			usageEvent.PreviousProvider = request.AISelection.PreviousProvider
+			usageEvent.PreviousModel = request.AISelection.PreviousModel
+			usageEvent.PreviousLevel = request.AISelection.PreviousLevel
+			usageEvent.PreviousReasoningIntensity = request.AISelection.PreviousReasoningIntensity
+		}
+		if _, err := store.RecordUsageEvent(request.TaskID, usageEvent); err != nil { return workflow.SupervisedOutcome{}, fmt.Errorf("record managed Session usage: %w", err) }
+	}
 	if request.InputReference != nil {
 		var reported agentSupervisedOutcome
 		if err := json.Unmarshal([]byte(output), &reported); err != nil { return workflow.SupervisedOutcome{}, &reportValidationError{reason: err.Error()} }
@@ -61,7 +99,7 @@ func recordSupervisorSessionOutcome(store *workflow.Store, request *workflow.Pre
 		if err := store.ReadExecutionArtifact(request.TaskID, *origin.InputReference, &input); err != nil { return workflow.SupervisedOutcome{}, err }
 		if err := workflow.ValidateReportChanges(structured, input.WorkspaceInputs, root); err != nil { return workflow.SupervisedOutcome{}, &reportValidationError{reason: err.Error()} }
 	}
-	return normalizeSupervisorSessionOutcome(parseSupervisedOutcome(output, archived)), nil
+	return normalizeSupervisorSessionOutcome(reportedOutcome), nil
 }
 
 // executionReportEvidencePath returns a repository-relative path for an

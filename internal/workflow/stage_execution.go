@@ -11,6 +11,7 @@ func (s *Store) BeginExecution(id TaskID, revision uint64, attempt Attempt) (Run
 	if err := s.requireExecutionServices(); err != nil { return RuntimeState{}, err }
 	return s.updateWithEvent(id, &revision, Event{Type: "protocol.attempt.started", AttemptID: attempt.ID, WorkItemID: attempt.WorkItemID}, func(state *RuntimeState) error {
 		if state.Protocol == nil || state.Protocol.Stop != nil || !state.Protocol.BudgetKnown { return errors.New("execution is disabled, stopped or has unknown legacy budget") }
+		if usageBudgetAuthorizationOpen(*state) { return errors.New("Task usage budget authorization is pending") }
 		if err := requireNoStageInFlight(*state); err != nil { return err }
 		if attempt.ID == "" || attempt.WorkItemID == "" || attempt.Workspace != executionWorkspace(*state) { return errors.New("Attempt must bind the current Task workspace") }
 		if _, exists := findAttempt(state.Attempts, attempt.ID); exists { return errors.New("Attempt identity already exists") }
@@ -49,6 +50,7 @@ func (s *Store) PrepareStage(id TaskID, revision uint64, request StageRequest) (
 		item, err := executionItem(state, request.WorkItemID)
 		if err != nil { return err }
 		if state.Protocol.Stop != nil || !state.Protocol.BudgetKnown { return errors.New("execution is stopped or its budget is unknown") }
+		if usageBudgetAuthorizationOpen(*state) { return errors.New("Task usage budget authorization is pending") }
 		if item.Phase != request.Phase || item.AttemptID != request.AttemptID || request.TaskID != id || request.Workspace != executionWorkspace(*state) { return errors.New("stage request does not match the current execution") }
 		if err := requireNoStageInFlight(*state); err != nil { return err }
 		if item.CurrentRequest != "" {
@@ -117,6 +119,7 @@ func (s *Store) ClaimStageDispatch(id TaskID, revision uint64, requestID, execut
 		record, err := stageRecord(state, requestID)
 		if err != nil { return err }
 		if executor == "" || state.Protocol.Stop != nil || record.Dispatch != "intent" { return errors.New("dispatch is stopped or already claimed; reconcile the same request") }
+		if usageBudgetAuthorizationOpen(*state) { return errors.New("Task usage budget authorization is pending") }
 		if err := s.ExecutionServices.Authorize(*state, record.Request); err != nil { return err }
 		record.Dispatch, record.Executor = "unknown", executor
 		return nil

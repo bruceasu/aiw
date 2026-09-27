@@ -350,10 +350,19 @@ type SupervisedCompileState struct {
 // supervised request. Digest is computed by the command adapter from the
 // resolved non-secret configuration fields.
 type AISelection struct {
-	Profile  string `json:"profile"`
-	Provider string `json:"provider"`
-	Model    string `json:"model"`
-	Digest   string `json:"digest"`
+	Profile             string `json:"profile"`
+	Provider            string `json:"provider"`
+	Model               string `json:"model"`
+	Digest              string `json:"digest"`
+	Level               int    `json:"level,omitempty"`
+	ReasoningIntensity  string `json:"reasoning_intensity,omitempty"`
+	RequestedLevel      int    `json:"requested_level,omitempty"`
+	AdjustmentReason    string `json:"adjustment_reason,omitempty"`
+	PreviousProfile     string `json:"previous_profile,omitempty"`
+	PreviousProvider    string `json:"previous_provider,omitempty"`
+	PreviousModel       string `json:"previous_model,omitempty"`
+	PreviousLevel       int    `json:"previous_level,omitempty"`
+	PreviousReasoningIntensity string `json:"previous_reasoning_intensity,omitempty"`
 }
 
 // ProjectionRepair identifies one committed transition whose durable Task or

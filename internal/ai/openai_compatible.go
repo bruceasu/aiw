@@ -83,7 +83,11 @@ func (p openAICompatibleProvider) Generate(ctx context.Context, request Request)
 		return Response{}, readErr
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return Response{}, fmt.Errorf("%s API failed (%d): %s", p.name, resp.StatusCode, strings.TrimSpace(string(raw)))
+		completed := time.Now().UTC()
+		result := Response{Events: raw, ExitCode: 1, StartedAt: started, CompletedAt: completed,
+			Metadata: map[string]string{"provider": p.name, "model": model},
+			Usage: usageFromRaw(p.name, model, started, completed, raw)}
+		return result, fmt.Errorf("%s API failed (%d): %s", p.name, resp.StatusCode, strings.TrimSpace(string(raw)))
 	}
 	var decoded struct {
 		ID      string `json:"id"`
@@ -99,7 +103,9 @@ func (p openAICompatibleProvider) Generate(ctx context.Context, request Request)
 	if len(decoded.Choices) == 0 || strings.TrimSpace(decoded.Choices[0].Message.Content) == "" {
 		return Response{}, fmt.Errorf("%s response has no content", p.name)
 	}
+	completed := time.Now().UTC()
 	return Response{ThreadID: decoded.ID, FinalOutput: strings.TrimSpace(decoded.Choices[0].Message.Content), Events: raw,
-		ExitCode: 0, StartedAt: started, CompletedAt: time.Now().UTC(),
-		Metadata: map[string]string{"provider": p.name, "model": model}}, nil
+		ExitCode: 0, StartedAt: started, CompletedAt: completed,
+		Metadata: map[string]string{"provider": p.name, "model": model},
+		Usage: usageFromRaw(p.name, model, started, completed, raw)}, nil
 }

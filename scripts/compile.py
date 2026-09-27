@@ -7,7 +7,6 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-import tempfile
 
 
 def worktree_go_cache(root: Path) -> Path:
@@ -26,21 +25,24 @@ def main() -> int:
         return 127
 
     root = Path(__file__).resolve().parent.parent
-    output_name = "aiw.exe" if os.name == "nt" else "aiw"
     go_cache = worktree_go_cache(root)
     go_cache.mkdir(parents=True, exist_ok=True)
-    temporary_root = root / ".ai" / "compile-cache" / "tmp"
-    temporary_root.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="aiw-compile-", dir=temporary_root) as temporary:
-        output = Path(temporary) / output_name
-        environment = os.environ.copy()
-        environment["GOCACHE"] = str(go_cache)
+    # On Windows, NUL makes the linker perform the full compile without
+    # creating an executable that the managed environment may refuse to write.
+    # On other platforms, /dev/null has the same no-artifact behavior.
+    output = os.devnull
+    environment = os.environ.copy()
+    environment["GOCACHE"] = str(go_cache)
+    targets = ["./cmd/aiw", "./cmd/aiw-wf", "./cmd/aiw-req", "./cmd/aiw-cz"]
+    for target in targets:
         completed = subprocess.run(
-            [go, "build", "-o", str(output), "main.go"],
+            [go, "build", "-o", output, target],
             cwd=root,
             env=environment,
         )
-    return completed.returncode
+        if completed.returncode != 0:
+            return completed.returncode
+    return 0
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -668,6 +669,9 @@ func (s *Store) ForceClose(id TaskID, reason string, delivery DeliveryState) (Ru
 func (s *Store) ResolveGate(id TaskID, gateID GateID, target GateState) (RuntimeState, error) {
 	if target != GateResolved && target != GateWaived {
 		return RuntimeState{}, fmt.Errorf("unsupported gate resolution: %s", target)
+	}
+	if gateID == UsageBudgetGateID {
+		return RuntimeState{}, errors.New("usage budget Gate requires an explicit budget approval")
 	}
 	return s.UpdateWithEvent(id, Event{Type: "gate.resolved", Detail: string(gateID)}, func(state *RuntimeState) error {
 		for index := range state.Gates {
