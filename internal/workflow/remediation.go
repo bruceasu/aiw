@@ -40,12 +40,17 @@ const (
 	RemediationActionResumeSupervisor RemediationAction = "resume-supervisor"
 	RemediationActionStop            RemediationAction = "stop-supervisor"
 	RemediationActionHumanReview     RemediationAction = "human-review"
+	RemediationActionResolveGate     RemediationAction = "resolve-gate"
+	RemediationActionWaiveGate       RemediationAction = "waive-gate"
 )
 
 type RemediationProblem struct {
 	TaskID            TaskID     `json:"task_id"`
 	WorkItemID        WorkItemID `json:"work_item_id,omitempty"`
 	AttemptID         AttemptID  `json:"attempt_id,omitempty"`
+	GateID            GateID     `json:"gate_id,omitempty"`
+	SessionID         string     `json:"session_id,omitempty"`
+	SessionTurn       int        `json:"session_turn,omitempty"`
 	EventSequence     uint64     `json:"event_sequence"`
 	Category          string     `json:"category"`
 	Detail            string     `json:"detail"`
@@ -155,6 +160,50 @@ func BuildRemediationReportForOutcome(state RuntimeState, attemptID AttemptID, o
 	return NewRemediationReport(problem, nil, RemediationAnalyzed, round, DefaultRemediationOptions(problem, failure.Retryable)), nil
 }
 
+// BuildRemediationReportForGate presents an explicit human decision for one
+// open Gate. Budget authorization keeps its separate approval protocol.
+func BuildRemediationReportForGate(state RuntimeState, gate Gate) (RemediationReport, error) {
+	if gate.ID == "" || gate.State != GateOpen || gate.ID == UsageBudgetGateID || state.LastEventSequence == 0 {
+		return RemediationReport{}, errors.New("Gate is not eligible for a remediation decision")
+	}
+	problem := RemediationProblem{TaskID: state.Task.ID, WorkItemID: gate.WorkItemID, GateID: gate.ID,
+		EventSequence: state.LastEventSequence, Category: "gate", Detail: gate.Reason,
+		EvidenceReference: "gate/" + string(gate.ID)}
+	identity, err := json.Marshal(problem)
+	if err != nil { return RemediationReport{}, err }
+	problem.FailureDigest = contentDigest(identity)
+	options := []RemediationOption{
+		{ID: "resolve-gate", Action: RemediationActionResolveGate, Summary: "确认原因已解决并继续 Workflow", Scope: "仅当前 Gate 及其 WorkItem", Risk: "错误确认会在问题仍存在时继续执行", ResourceImpact: "可能启动下一轮受管 Agent 调用", ExternalEffect: "恢复当前 Task 的受管执行", Rollback: "可停止 Supervisor；保留 Gate 和 Attempt 历史", RequiresApproval: true},
+		{ID: "waive-gate", Action: RemediationActionWaiveGate, Summary: "明确接受当前 Gate 的风险并继续", Scope: "仅当前 Gate 及其 WorkItem", Risk: "可能跳过该 Gate 所要求的验证或人工决策", ResourceImpact: "可能启动下一轮受管 Agent 调用", ExternalEffect: "恢复当前 Task 的受管执行", Rollback: "可停止 Supervisor；保留豁免和 Attempt 历史", RequiresApproval: true},
+		{ID: "human-review", Action: RemediationActionHumanReview, Summary: "暂停并人工检查", Scope: "不修改当前执行事实", Risk: "Task 保持暂停", ResourceImpact: "不消耗 AI 调用", ExternalEffect: "无", Rollback: "检查后重新提交答复", RequiresApproval: false},
+	}
+	return NewRemediationReport(problem, nil, RemediationAwaitingHuman, 0, options), nil
+}
+
+// BuildRemediationReportForUnknownSession preserves the in-flight Attempt and
+// offers only actions that re-observe the same dispatched Session turn.
+func BuildRemediationReportForUnknownSession(state RuntimeState, request PreparedAgentRequest, detail string) (RemediationReport, error) {
+	if request.TaskID != state.Task.ID || request.WorkItemID == "" || request.AttemptID == "" || request.SessionID == "" || request.DispatchedAt == "" || state.LastEventSequence == 0 {
+		return RemediationReport{}, errors.New("unknown Session result has no exact dispatched request binding")
+	}
+	problemReport := FailureReport{SchemaVersion: FailureReportSchemaVersion, TaskID: state.Task.ID,
+		WorkItemID: request.WorkItemID, AttemptID: request.AttemptID, EventSequence: state.LastEventSequence,
+		Category: "session-result-unknown", Detail: detail, Owner: "operator",
+		RecommendedAction: "inspect the bound Session and retry observation only", RecordedAt: time.Now().UTC().Format(time.RFC3339)}
+	problem, _, err := BuildRemediationProblem(problemReport)
+	if err != nil { return RemediationReport{}, err }
+	problem.SessionID = request.SessionID
+	problem.SessionTurn = request.ExpectedSessionTurn
+	identity, err := json.Marshal(problem)
+	if err != nil { return RemediationReport{}, err }
+	problem.FailureDigest = contentDigest(identity)
+	options := []RemediationOption{
+		{ID: "resume-supervisor", Action: RemediationActionResumeSupervisor, Summary: "重新读取同一个已派发 Session 的结果", Scope: "仅当前 Task、Attempt 和已派发的 Session turn", Risk: "若结果仍不完整，将再次暂停", ResourceImpact: "不创建新的 Attempt 或模型调用", ExternalEffect: "仅重新读取原 Session 结果", Rollback: "保留原 Attempt、租约和诊断", RequiresApproval: false},
+		{ID: "human-review", Action: RemediationActionHumanReview, Summary: "暂停并检查 Session 输出", Scope: "不修改当前执行事实", Risk: "Task 保持暂停", ResourceImpact: "不消耗 AI 调用", ExternalEffect: "无", Rollback: "检查后重新提交答复", RequiresApproval: false},
+	}
+	return NewRemediationReport(problem, nil, RemediationAwaitingHuman, 0, options), nil
+}
+
 func (r RemediationReport) Validate() error {
 	if r.SchemaVersion != RemediationSchemaVersion || strings.TrimSpace(r.ProblemID) == "" || strings.TrimSpace(r.ReportPath) == "" || strings.TrimSpace(r.ReportDigest) == "" || r.Status == "" || r.Round < 0 || len(r.Options) == 0 || r.CreatedAt == "" || r.UpdatedAt == "" {
 		return errors.New("remediation report is incomplete")
@@ -206,12 +255,23 @@ func (s *Store) AwaitRemediation(id TaskID, report RemediationReport) (RuntimeSt
 	if report.Status != RemediationAwaitingHuman { return RuntimeState{}, errors.New("only an awaiting-human remediation can pause Workflow") }
 	if report.HumanResponsePath == "" { report.HumanResponsePath = strings.TrimSuffix(report.ReportPath, ".json") + ".response.json" }
 	if report.ReportPath == "" { report.ReportPath = filepath.ToSlash(filepath.Join(remediationReportsDir, report.ProblemID+"-r"+strconv.Itoa(report.Round)+".json")) }
+	if previous, readErr := readRemediationReport(s.path(id, filepath.FromSlash(report.ReportPath))); readErr == nil {
+		if previous.Status != RemediationAwaitingHuman || previous.ProblemID != report.ProblemID || previous.Problem != report.Problem {
+			return RuntimeState{}, errors.New("remediation report conflicts with preserved problem history")
+		}
+		report = previous
+	} else if !errors.Is(readErr, os.ErrNotExist) {
+		return RuntimeState{}, readErr
+	}
 	report.ReportDigest = remediationReportDigest(report)
 	if _, err := s.PersistRemediationReport(state, report); err != nil { return RuntimeState{}, err }
 	content, err := json.MarshalIndent(RemediationResponse{SchemaVersion: RemediationSchemaVersion, ProblemID: report.ProblemID, ReportDigest: report.ReportDigest, RecordedAt: "<RFC3339>", OptionID: "<choose-option-id>", Operator: "<operator>", RiskConfirmed: false, Note: "<required when the selected option requires approval>"}, "", "  ")
 	if err != nil { return RuntimeState{}, err }
 	content = append(content, '\n')
-	if err := atomicWrite(s.path(id, filepath.FromSlash(report.HumanResponsePath)), content); err != nil { return RuntimeState{}, err }
+	responsePath := s.path(id, filepath.FromSlash(report.HumanResponsePath))
+	if _, err := os.Stat(responsePath); errors.Is(err, os.ErrNotExist) {
+		if err := atomicWrite(responsePath, content); err != nil { return RuntimeState{}, err }
+	} else if err != nil { return RuntimeState{}, err }
 	return s.UpdateWithEvent(id, Event{Type: "remediation.awaiting-human", Detail: remediationCursorKey(report)}, func(current *RuntimeState) error {
 		current.Automation.Cursor = AutomationCursor{Result: "awaiting-human", Detail: remediationCursorKey(report), RecordedAt: time.Now().UTC().Format(time.RFC3339)}
 		current.Automation.Supervisor.Result = "awaiting-human"
@@ -260,6 +320,61 @@ func (s *Store) ConsumeRemediationResponse(id TaskID, response RemediationRespon
 	})
 }
 
+// ApplyGateRemediationResponse commits the human Gate decision, optional
+// WorkItem reopen, and response consumption as one recoverable transition.
+// It also finishes a response left pending by the former multi-step path.
+func (s *Store) ApplyGateRemediationResponse(id TaskID, response RemediationResponse) (RuntimeState, error) {
+	_, report, err := s.ReadPendingRemediation(id)
+	if err != nil { return RuntimeState{}, err }
+	if err := response.Validate(report); err != nil { return RuntimeState{}, err }
+	problem := report.Problem
+	if problem.TaskID != id || problem.Category != "gate" || problem.GateID == "" || problem.GateID == UsageBudgetGateID {
+		return RuntimeState{}, errors.New("response is not bound to an eligible Gate")
+	}
+	target := GateState("")
+	for _, option := range report.Options {
+		if option.ID != response.OptionID { continue }
+		switch option.Action {
+		case RemediationActionResolveGate: target = GateResolved
+		case RemediationActionWaiveGate: target = GateWaived
+		}
+		break
+	}
+	if target == "" { return RuntimeState{}, errors.New("response does not select a Gate decision") }
+	reason := "Gate decision by " + response.Operator + ": " + response.Note
+	return s.UpdateWithEvent(id, Event{Type: "remediation.gate-decision", WorkItemID: problem.WorkItemID, Detail: string(problem.GateID) + ":" + response.OptionID}, func(current *RuntimeState) error {
+		if current.Automation.Cursor.Result != "awaiting-human" || current.Automation.Cursor.Detail != remediationCursorKey(report) {
+			return errors.New("remediation response is no longer pending")
+		}
+		gateIndex := -1
+		for index := range current.Gates {
+			if current.Gates[index].ID == problem.GateID { gateIndex = index; break }
+		}
+		if gateIndex < 0 { return fmt.Errorf("Gate %s no longer exists", problem.GateID) }
+		gate := &current.Gates[gateIndex]
+		if gate.WorkItemID != problem.WorkItemID || gate.Reason != problem.Detail { return fmt.Errorf("Gate %s changed after the human report", gate.ID) }
+		if gate.State != GateOpen && gate.State != target { return fmt.Errorf("Gate %s is already %s", gate.ID, gate.State) }
+		itemIndex := -1
+		if problem.WorkItemID != "" {
+			for index := range current.WorkItems { if current.WorkItems[index].ID == problem.WorkItemID { itemIndex = index; break } }
+			if itemIndex < 0 { return fmt.Errorf("unknown work item %s", problem.WorkItemID) }
+		}
+		gate.State = target
+		if itemIndex >= 0 {
+			item := &current.WorkItems[itemIndex]
+			if item.State == WorkItemBlocked && !hasOpenRecoveryGate(*current, item.ID) {
+				if err := ValidateWorkItemTransition(item.ID, item.State, WorkItemReady); err != nil { return err }
+				item.State = WorkItemReady
+				if item.NoProgressCount >= item.RetryPolicy.MaxAttempts { item.NoProgressCount = 0 }
+			}
+		}
+		current.Automation.Cursor = AutomationCursor{Result: "remediation-response-consumed", Detail: remediationCursorKey(report), RecordedAt: time.Now().UTC().Format(time.RFC3339)}
+		current.Automation.Supervisor.Result = "remediation-response-consumed"
+		current.Automation.Supervisor.Detail = reason
+		return nil
+	})
+}
+
 func (s *Store) RecordRemediationAutoRetry(id TaskID, problemID string, detail string) (RuntimeState, error) {
 	if strings.TrimSpace(problemID) == "" { return RuntimeState{}, errors.New("remediation problem id is required") }
 	return s.UpdateWithEvent(id, Event{Type: "remediation.auto-retry", Detail: problemID}, func(current *RuntimeState) error {
@@ -303,7 +418,7 @@ func remediationReportDigest(report RemediationReport) string {
 
 func validRemediationAction(action RemediationAction) bool {
 	switch action {
-	case RemediationActionRetryWorkItem, RemediationActionRepairSession, RemediationActionRepairProjection, RemediationActionResumeSupervisor, RemediationActionStop, RemediationActionHumanReview:
+	case RemediationActionRetryWorkItem, RemediationActionRepairSession, RemediationActionRepairProjection, RemediationActionResumeSupervisor, RemediationActionStop, RemediationActionHumanReview, RemediationActionResolveGate, RemediationActionWaiveGate:
 		return true
 	default:
 		return false

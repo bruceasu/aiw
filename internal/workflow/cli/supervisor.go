@@ -57,6 +57,13 @@ func runWorkflowSupervisor(args []string) (runErr error) {
 	case "status":
 		printSupervisorStatus(state)
 		printSupervisorRuntimeStatus(state)
+		if state.Automation.Cursor.Result == "awaiting-human" {
+			if _, report, readErr := store.ReadPendingRemediation(workflow.TaskID(id)); readErr == nil {
+				printRemediationChoices(report)
+			} else {
+				fmt.Printf("human response unavailable: %v; next: aiw wf diagnose %s\n", readErr, id)
+			}
+		}
 		if p := state.Protocol; p != nil {
 			fmt.Printf("Durable execution: revision=%d budget-known=%t stopped=%t\n", state.StateRevision, p.BudgetKnown, p.Stop != nil)
 			if p.Stop != nil { fmt.Printf("Stop reason: %s\n", p.Stop.Reason) }
@@ -99,6 +106,12 @@ func RunWorkflowSupervisor(adapter TaskAdapter, args []string) error {
 // foreground Supervisor with CLI reporting callbacks.
 func startWorkflowSupervisor(id, provider, model string, store *workflow.Store,
 	state workflow.RuntimeState) error {
+	if state.Automation.Cursor.Result == "awaiting-human" {
+		_, report, err := store.ReadPendingRemediation(workflow.TaskID(id))
+		if err != nil { return err }
+		printRemediationChoices(report)
+		return nil
+	}
 	store.ResumeAuxiliaryHost(workflow.TaskID(id))
 	if state.Delivery == workflow.DeliveryMerged || state.Delivery == workflow.DeliveryDiscarded {
 		printSupervisorStatus(state)
@@ -215,13 +228,21 @@ func printSupervisorStatus(state workflow.RuntimeState) {
 		terminal.Field("detail", supervisor.Detail)
 	}
 	if supervisor.RetryAfter != "" {
-		retryStatus := "due"
+		retryStatus := "eligible"
 		if retryAt, err := time.Parse(time.RFC3339, supervisor.RetryAfter); err == nil && time.Now().UTC().Before(retryAt) {
-			retryStatus = "waiting"
+			retryStatus = "not-yet-eligible"
 		}
 		terminal.Section("Retry")
-		terminal.State("status", retryStatus)
-		terminal.Field("due at", supervisor.RetryAfter)
+		terminal.State("eligibility", retryStatus)
+		terminal.Field("eligible at", supervisor.RetryAfter)
+		terminal.Field("scheduling", "not confirmed by this timestamp")
+	}
+	if state.Automation.Cursor.Result == "awaiting-human" {
+		terminal.Field("next", fmt.Sprintf("fill response file, then aiw wf continue %s", state.Task.ID))
+	} else if supervisor.Result == "budget-awaiting-approval" {
+		terminal.Field("next", fmt.Sprintf("review budget decision: aiw wf budget %s approve --reason <reason>", state.Task.ID))
+	} else if supervisor.RetryAfter != "" {
+		terminal.Field("next", fmt.Sprintf("after eligibility, run aiw wf supervise %s start if no external supervisor is managing this Task", state.Task.ID))
 	}
 }
 

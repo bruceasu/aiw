@@ -49,3 +49,13 @@ func TestRecordSupervisorSessionOutcomeRejectsUndispatchedRequest(t *testing.T) 
 		t.Fatal("expected undispatched request to be rejected")
 	}
 }
+
+func TestRunnerErrorKeepsDispatchedRequestForObservation(t *testing.T) {
+	state := workflow.NewCompatibleRuntime(workflow.TaskReference{ID: "task-1", Workspace: ".", Kind: workflow.WorkspacePrimary}, workflow.PlanningReady, workflow.DeliveryUnmanaged)
+	request := &workflow.PreparedAgentRequest{TaskID: "task-1", WorkItemID: "wi-0001", AttemptID: "attempt-1", SessionID: "session-1"}
+	state.Automation.PreparedRequest = request
+	state.WriteLease = &workflow.WriteLease{AttemptID: "attempt-1"}
+	if observeDispatchedAfterRunnerError(state) { t.Fatal("prepared request was treated as dispatched") }
+	request.DispatchedAt = "2026-09-27T00:00:00Z"
+	if !observeDispatchedAfterRunnerError(state) { t.Fatal("dispatched request was not preserved for Session observation") }
+}

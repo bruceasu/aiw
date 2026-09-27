@@ -52,9 +52,6 @@ if /i "%~1"=="skills" goto :build_skills
 if /i "%~1"=="bin" (
     call :build_windows || exit /b 1
     call :build_linux || exit /b 1
-    call :build_workflow || exit /b 1
-    call :build_req || exit /b 1
-    call :build_cz || exit /b 1
     exit /b 0
 )
 if /i "%~1"=="all" (

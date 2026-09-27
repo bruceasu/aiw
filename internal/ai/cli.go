@@ -95,9 +95,15 @@ func (p cliProvider) Generate(ctx context.Context, request Request) (Response, e
 			finalOutput = diagnosticOutput(stdout)
 		}
 	}
+	completed := time.Now().UTC()
+	model := request.Model
+	if model == "" {
+		model = p.model
+	}
 	result := Response{ThreadID: threadID, FinalOutput: finalOutput, Events: stdout, Stderr: stderr,
 		ExitCode: exitCode, Metadata: map[string]string{"provider": p.name, "command": p.command},
-		StartedAt: started, CompletedAt: time.Now().UTC()}
+		StartedAt: started, CompletedAt: completed,
+		Usage: usageFromRaw(p.name, model, started, completed, stdout)}
 	if err != nil {
 		if message := strings.TrimSpace(string(stderr)); message != "" {
 			return result, fmt.Errorf("%s provider: %w: %s", p.name, err, message)

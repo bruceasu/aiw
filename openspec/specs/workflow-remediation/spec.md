@@ -74,6 +74,24 @@ Workflow MUST 只执行版本化的安全动作白名单。每次动作 MUST 先
 - **WHEN** 答复中的问题 ID、报告 digest、选项 ID 或结构化字段不匹配
 - **THEN** 系统拒绝答复，保留原文件和原问题，输出明确的修复方法，不执行任何动作
 
+#### Scenario: Gate 需要人工判断
+
+- **WHEN** Schema 9 Supervisor 遇到非预算的开放 Gate
+- **THEN** 系统写入绑定 Gate ID、原因和 WorkItem 的答复模板，列出确认已解决、明确豁免和继续人工检查三个选项；确认或豁免需要操作者填写理由和风险确认。预算 Gate 继续使用专用预算授权路径。
+
+#### Scenario: 人工决定后继续
+
+- **WHEN** 人工答复绑定当前开放 Gate 且选择确认或豁免
+- **THEN** 系统只转换该 Gate，按既有规则重开其阻塞的 WorkItem，再消费答复并继续 Supervisor；重复答复不能再次转换 Gate 或创建 Attempt。
+- **AND** Gate 转换、可行时重开 WorkItem、消费答复属于一次可恢复状态事件；旧版已转换 Gate 但未消费答复的半完成状态可以安全对账
+- **AND** 若其他 Gate 仍开放，保留 WorkItem blocked，同时消费当前 Gate 的答复，不绕过其他 Gate
+
+#### Scenario: 已派发 Session 的结果暂时未知
+
+- **WHEN** 已派发请求的 Session 结果无法读取、尚未完整，或与绑定的 Attempt/turn 不匹配
+- **THEN** Supervisor 有界重读同一个结果，不重新派发 Agent；仍无法确认时写入绑定 Task、WorkItem、Attempt、Session 和 turn 的人工答复文件并暂停
+- **AND** `continue` 选择重新观察时必须先确认原请求及写入租约仍然有效；否则保留答复，不消费旧结果、不创建新 Attempt
+
 ### Requirement: continue 和 resume 继续 Workflow
 
 `continue` 和 `resume` MUST 使用同一答复读取和校验逻辑。成功读取后，系统 MUST 只执行答复中对应的已列出动作，并在执行前显示或记录其风险确认；执行完成后 MUST 重新进入正常 Workflow 选择和状态投影流程。

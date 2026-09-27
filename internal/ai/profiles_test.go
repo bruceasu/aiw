@@ -20,6 +20,8 @@ model = "global-model"
 [ai.profiles.fast]
 provider = "gemini"
 model = "fast-model"
+level = 2
+reasoning_intensity = "standard"
 [ai.profiles.balanced]
 provider = "openai"
 [ai.profiles.reasoning]
@@ -29,7 +31,7 @@ model = "reasoning-model"
 	if err := os.WriteFile(filepath.Join(root, "aiw.toml"), []byte(config), 0600); err != nil { t.Fatal(err) }
 	profiles, err := LoadProfiles()
 	if err != nil { t.Fatal(err) }
-	if len(profiles) != 1 || profiles["fast"] != (Profile{Name: "fast", Provider: "gemini", Model: "fast-model"}) {
+	if len(profiles) != 1 || profiles["fast"] != (Profile{Name: "fast", Provider: "gemini", Model: "fast-model", Level: 2, ReasoningIntensity: "standard"}) {
 		t.Fatalf("parsed profiles = %+v", profiles)
 	}
 	for _, tc := range []struct { actor, name, provider, model string }{
@@ -41,7 +43,12 @@ model = "reasoning-model"
 		t.Run(tc.actor, func(t *testing.T) {
 			profile, cfg, err := ResolveActorProfile(tc.actor)
 			if err != nil { t.Fatal(err) }
-			if profile != (Profile{Name: tc.name, Provider: tc.provider, Model: tc.model}) || cfg.Name != tc.provider || cfg.Model != tc.model {
+			want := Profile{Name: tc.name, Provider: tc.provider, Model: tc.model}
+			if tc.name == "fast" {
+				want.Level = 2
+				want.ReasoningIntensity = "standard"
+			}
+			if profile != want || cfg.Name != tc.provider || cfg.Model != tc.model {
 				t.Fatalf("selection = %+v, config provider/model = %s/%s", profile, cfg.Name, cfg.Model)
 			}
 		})

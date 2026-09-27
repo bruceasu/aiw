@@ -13,6 +13,12 @@ Workflow Core MUST 将 OpenSpec 清单编号映射为稳定 WorkItemID，保留�
 - **WHEN** 同一个清单编号仍然存在
 - **THEN** 系统复用其 WorkItemID，并更新标题与依赖映射。
 
+#### Scenario: 清单读取短暂失败
+
+- **WHEN** Supervisor 读取既有清单时遇到可重试的文件读取错误
+- **THEN** 系统有界重试；仍失败则记录暂停原因，不把错误算作 Agent no-progress，也不创建新 Attempt
+- **AND** 清单内容冲突或权限错误不得被自动跳过
+
 ### Requirement: 取消项结清 Task 执行
 
 Workflow Core MUST 将用户明确取消的 Work Item 视为已结清项。Task 的执行状态 MUST 推导为 completed，当且仅当至少有一个 Work Item 且所有 Work Item 均为 completed 或 cancelled，并且不存在更高优先级的活动 Attempt、租用项、阻塞项或阻塞 Gate。取消项不得单独阻止 Task 达到 DONE；验证状态仍按独立验证规则决定最终显示状态。
@@ -48,6 +54,12 @@ Workflow Core MUST 将用户明确取消的 Work Item 视为已结清项。Task 
 
 - **WHEN** prepared request 没有派发标记
 - **THEN** 系统不能把 Session 中已有输出作为本次结果。
+
+#### Scenario: 已派发请求的 Runner 返回错误
+
+- **WHEN** Runner 报错但请求已有 dispatch 标记
+- **THEN** Supervisor 先核对同一 Session/turn 的终态；只有绑定的结果确实报告 no-progress 才消耗该预算
+- **AND** 结果仍未知时保留原 Attempt 与租约，不把 I/O 或状态读取错误当作 Agent no-progress
 
 ### Requirement: 结构化 outcome 与失败分类
 

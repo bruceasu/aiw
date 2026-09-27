@@ -221,3 +221,20 @@ aiw req list --all
 ```
 
 Archive is available for `DECIDED`, `APPROVED`, and `PROMOTED` Requirements. The original artifacts and decision log are preserved, and read operations continue to accept the Requirement ID.
+
+## 直接 CLI 命令
+
+| 命令 | 作用 |
+| --- | --- |
+| `aiw req new <slug> [title]` | 自动分配稳定 ID 并创建 Requirement。 |
+| `aiw req new --id <id> [title]` | 使用明确的兼容 ID 创建 Requirement。 |
+| `aiw req chat [id] [--provider NAME] [--model MODEL]` | 创建或恢复 Requirement Conversation。 |
+| `aiw req list [--all|--archived|--cancelled]` | 列出活动记录或选择历史记录。 |
+| `aiw req show <id>` | 查看 Requirement、决策和 promotion 状态。 |
+| `aiw req capture <id> <artifact> --file <path>` | 从明确指定的文件捕获支持的产物。 |
+| `aiw req approve <id> <APPROVED|DEFERRED|REJECTED> --by <actor> --reason <reason>` | 记录人工决策。 |
+| `aiw req promote <id> --task <task-id>` | 将已批准的 Requirement 交接给 AIW Task，并委托 OpenSpec 创建 change。 |
+| `aiw req archive <id> --reason <reason> [--by <actor>]` | 归档符合条件的 Requirement。 |
+| `aiw req cancel <id> --reason <reason> [--by <actor>]` | 取消并保留 Requirement 记录。 |
+
+使用 `aiw req --help` 或具体子命令的 `--help` 查看当前参数约束。`new <slug>` 会返回实际分配的完整 ID；后续命令应使用该 ID。

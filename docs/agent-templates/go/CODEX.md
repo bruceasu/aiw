@@ -31,6 +31,8 @@ Do not run tests, vet, `build*` scripts, final-artifact builds, or verification
 scripts automatically. When authorized, run one package-focused command and ask
 before widening scope.
 
-For a managed Task, set a process-local Task-scoped `GOCACHE` before each
-authorized Go command. Do not change global Go settings or `GOMODCACHE`; see
-the Concurrent Go Cache Isolation section in `AGENTS.md`.
+For authorized Go tests, use a repository-provided test wrapper when present;
+this repository's `scripts/test.py` owns its `.ai/tmp/go-tests/` cache. Only
+when no wrapper exists, use a process-local Task-scoped `GOCACHE` for a managed
+Task. Do not change global Go settings or `GOMODCACHE`; see the Concurrent Go
+Cache Isolation section in `AGENTS.md`.

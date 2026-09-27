@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Requirement Management Conversation
 
-Start or resume one Requirement with `aiw requirement chat [requirement-id]`.
+Start or resume one Requirement with `aiw req chat [requirement-id]`.
 Use for requirement discovery and human decisions, not implementation or release.
 The Requirement domain builds context, selects methods, checks coverage, and
 derives discussion advice. Session stores evidence; the CLI displays questions
@@ -71,7 +71,7 @@ artifacts as described below; this does not grant Design Readiness.
    choices, correctness, scope, and goals. State the known evidence, missing
    decision, and impact. Give alternatives only with evidence and trade-offs.
    Do not repeat settled questions without changed evidence or a conflict.
-4. Prepare only requested draft actions through `aiw requirement chat prepare`.
+4. Prepare only requested draft actions through `aiw req chat prepare`.
    The host displays the action, target, summary, and scope, then accepts
    `confirm` or `确认`. Never execute the durable operation yourself.
    Capture without --facts-json saves a draft only. With --facts-json, propose
@@ -132,15 +132,6 @@ Run this step after user-confirmed promotion, before reporting the artifact
 handoff complete, or when the user resumes that handoff. It is a standalone
 agent step, never part of the host's method-selection or coverage JSON calls.
 It completes the approved promotion; it does not require another confirmation.
-
-If the shared generator reports `awaiting-agent` or `validating`, the approved
-scope and Task remain reusable but the handoff is incomplete. Do not claim
-`SPEC_DRAFTED`, rewrite formal artifacts directly, or rerun promotion. Read the
-generated handoff and submit the Agent candidate through `aiw requirement
-prepare-spec <requirement-id> --candidate <path>`; it rechecks the approved
-sources, frozen targets, and ownership before writing. `--regenerate` starts a
-new candidate request only when the user explicitly asks. Only an `accepted`
-candidate can finish the promotion handoff.
 
 Read `skills/work-management.md`. Use the linked Task/change, the current
 approved Plan, its captured source bodies and confirmed amendments, and only
