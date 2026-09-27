@@ -33,7 +33,8 @@ Do not load the whole prompt library.
 - Use no more than three targeted discovery batches before editing unless a
   concrete blocker remains.
 - After editing, use at most one static/read-only validation command by default.
-- Do not repeat equivalent commands.
+- Do not repeat unchanged failed commands; a compile-only check may be retried
+  once after a relevant source fix.
 
 Follow `prompts/core/resource-budget.md` and `prompts/core/validation.md` for
 authorization and retry rules.

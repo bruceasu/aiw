@@ -190,13 +190,19 @@ func runWorkflowCommand(args []string) error {
 		costs, _ := json.Marshal(report.Totals.KnownCostByCurrency)
 		outcomes, _ := json.Marshal(report.Outcomes)
 		fmt.Printf("Task %s usage\n", report.TaskID)
-		fmt.Printf("CALLS\t%d\nUSAGE_UNKNOWN\t%d\nKNOWN INPUT TOKENS\t%d\nKNOWN OUTPUT TOKENS\t%d\nKNOWN TOTAL TOKENS\t%d\nKNOWN COST BY CURRENCY\t%s\nOUTCOMES\t%s\nBUDGET APPROVALS\t%d\nBUDGET TERMINATIONS\t%d\nDIFFICULTY CHANGES\t%d\n",
+		fmt.Printf("CALLS\t%d\nUSAGE_UNKNOWN\t%d\nKNOWN INPUT TOKENS\t%d\nKNOWN CACHED INPUT TOKENS\t%d\nKNOWN OUTPUT TOKENS\t%d\nKNOWN REASONING OUTPUT TOKENS\t%d\nKNOWN TOTAL TOKENS\t%d\nKNOWN COST BY CURRENCY\t%s\nOUTCOMES\t%s\nBUDGET APPROVALS\t%d\nBUDGET TERMINATIONS\t%d\nDIFFICULTY CHANGES\t%d\n",
 			report.Totals.Calls, report.Totals.UsageUnknown,
-			report.Totals.KnownInputTokens, report.Totals.KnownOutputTokens,
+			report.Totals.KnownInputTokens, report.Totals.KnownCachedInputTokens,
+			report.Totals.KnownOutputTokens, report.Totals.KnownReasoningOutputTokens,
 			report.Totals.KnownTotalTokens, costs, outcomes,
 			len(report.BudgetApprovals), len(report.BudgetTerminations), len(report.DifficultyChanges))
 		for _, approval := range report.BudgetApprovals {
-			fmt.Printf("BUDGET APPROVAL\t%s\t%s\t%s\t%d -> %d\n", approval.At, approval.Actor, approval.Reason, approval.Previous.TokenLimit, approval.New.TokenLimit)
+			if approval.Previous.TokenLimit > 0 {
+				fmt.Printf("BUDGET APPROVAL\t%s\t%s\t%s\t%d -> %d\n", approval.At, approval.Actor, approval.Reason, approval.Previous.TokenLimit, approval.New.TokenLimit)
+			} else {
+				fmt.Printf("BUDGET APPROVAL\t%s\t%s\t%s\tinput %d -> %d; output %d -> %d\n", approval.At, approval.Actor, approval.Reason,
+					approval.Previous.InputTokenLimit, approval.New.InputTokenLimit, approval.Previous.OutputTokenLimit, approval.New.OutputTokenLimit)
+			}
 		}
 		for _, change := range report.DifficultyChanges {
 			fmt.Printf("DIFFICULTY CHANGE\t%s\t%s/%s/%d -> %s/%s/%d\t%s\n", change.RecordedAt.Format(time.RFC3339), change.PreviousProfile, change.PreviousModel, change.PreviousLevel, change.SelectedProfile, change.SelectedModel, change.SelectedLevel, change.Reason)
@@ -1269,9 +1275,9 @@ Inspect and recover:
   status <task-id>                    Show budget state, pending authorization, BLOCKED reason, Profile, and partial-usage diagnostics.
   usage <task-id> [--work-item <id>] [--attempt <id>] [--provider <id>] [--profile <id>] [--from <RFC3339>] [--to <RFC3339>] [--format table|json]
 	                                     Show a bounded, read-only usage call report.
-  budget <task-id> configure --tokens <n> --cost <CURRENCY=AMOUNT> [--cost <CURRENCY=AMOUNT> ...]
-                                         Set the explicit initial Task budget once.
-  budget <task-id> approve [--by <actor>] --reason <reason> [--tokens <n> --cost <CURRENCY=AMOUNT> ...]
+  budget <task-id> configure [--input-tokens <n> --output-tokens <n>] [--cost <CURRENCY=AMOUNT> ...]
+                                         Set separate Task limits; no flags snapshots aiw.toml defaults.
+  budget <task-id> approve [--by <actor>] --reason <reason> [--input-tokens <n> --output-tokens <n>]
                                          Approve a pending increase; omitted limits use +30%.
   budget <task-id> terminate [--by <actor>] --reason <reason>
                                          Stop at a pending budget Gate and leave the Task BLOCKED.

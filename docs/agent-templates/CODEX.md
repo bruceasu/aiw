@@ -40,7 +40,8 @@ Add another prompt only when the task genuinely spans contexts.
 - Do not run tests, `build*` scripts, final-artifact builds, verification
   scripts, network calls, permission probes, escalation, auto-review, or
   sub-agents unless authorized by the resource budget.
-- Do not repeat equivalent commands.
+- Do not repeat unchanged failed commands; after fixing a compile-only source
+  error, rerun the same compile-only command once.
 
 ## Completion
 

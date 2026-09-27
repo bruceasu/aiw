@@ -29,7 +29,9 @@ or other runtime validation.
 
 ## Retry Budget
 
-- Do not repeat the same or an equivalent failed command.
+- Do not repeat an unchanged failed command. If a compile-only check fails due
+  to a source error, fix the source and rerun the same compile-only command
+  once. If that retry fails, stop and report the remaining error.
 - Allow one cheap corrected retry only for a command spelling, shell entrypoint,
   or path mistake.
 - After a permission failure, stop that path. Do not try alternate shells,

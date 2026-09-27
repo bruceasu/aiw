@@ -19,6 +19,8 @@ const UsageBudgetGateID GateID = "ai-usage-budget-authorization"
 // exact decimal values represented as rational strings and remain per currency.
 type TaskUsageBudget struct {
 	TokenLimit int64             `json:"token_limit"`
+	InputTokenLimit int64        `json:"input_token_limit,omitempty"`
+	OutputTokenLimit int64       `json:"output_token_limit,omitempty"`
 	MonetaryLimits map[string]string `json:"monetary_limits"`
 }
 
@@ -132,6 +134,11 @@ func (s *Store) ApproveTaskUsageBudget(id TaskID, actor, reason string, replacem
 		}
 		if err := validateTaskUsageBudget(next); err != nil { return err }
 		if err := validateUsageBudgetIncrease(previous, next); err != nil { return err }
+		initial := previous
+		if len(ledger.BudgetApprovals) != 0 {
+			initial = ledger.BudgetApprovals[0].Previous
+		}
+		if err := validateUsageBudgetApprovalCeiling(initial, next); err != nil { return err }
 		sourceDigest, err := usageRecordsDigest(ledger.Records)
 		if err != nil { return err }
 		pending := ledger.PendingBudgetAuthorization
@@ -148,7 +155,14 @@ func (s *Store) ApproveTaskUsageBudget(id TaskID, actor, reason string, replacem
 }
 
 func validateTaskUsageBudget(budget TaskUsageBudget) error {
-	if budget.TokenLimit <= 0 || len(budget.MonetaryLimits) == 0 { return errors.New("Task usage budget requires positive Token and monetary limits") }
+	if budget.TokenLimit < 0 || budget.InputTokenLimit < 0 || budget.OutputTokenLimit < 0 {
+		return errors.New("Task usage budget limits cannot be negative")
+	}
+	if budget.InputTokenLimit == 0 && budget.OutputTokenLimit == 0 {
+		if budget.TokenLimit == 0 { return errors.New("Task usage budget requires positive Token limits") }
+	} else if budget.InputTokenLimit == 0 || budget.OutputTokenLimit == 0 || budget.TokenLimit != 0 {
+		return errors.New("Task usage budget requires both input and output limits without a legacy total limit")
+	}
 	for currency, raw := range budget.MonetaryLimits {
 		amount, ok := new(big.Rat).SetString(raw)
 		if strings.TrimSpace(currency) == "" || currency != strings.ToUpper(strings.TrimSpace(currency)) || !ok || amount.Sign() <= 0 {
@@ -159,7 +173,13 @@ func validateTaskUsageBudget(budget TaskUsageBudget) error {
 }
 
 func validateUsageBudgetIncrease(previous, next TaskUsageBudget) error {
-	if next.TokenLimit <= previous.TokenLimit { return errors.New("approved Token limit must increase") }
+	if previous.TokenLimit > 0 {
+		if next.TokenLimit <= previous.TokenLimit || next.InputTokenLimit != 0 || next.OutputTokenLimit != 0 {
+			return errors.New("approved legacy Token limit must increase without changing budget mode")
+		}
+	} else if next.TokenLimit != 0 || next.InputTokenLimit <= previous.InputTokenLimit || next.OutputTokenLimit <= previous.OutputTokenLimit {
+		return errors.New("approved input and output Token limits must both increase without changing budget mode")
+	}
 	for currency, oldRaw := range previous.MonetaryLimits {
 		newRaw, ok := next.MonetaryLimits[currency]
 		if !ok { return fmt.Errorf("approved budget must retain currency %s", currency) }
@@ -170,10 +190,39 @@ func validateUsageBudgetIncrease(previous, next TaskUsageBudget) error {
 	return nil
 }
 
+// The first approval's previous limits are the immutable baseline for older
+// ledgers too, so no migration or inferred reset is needed on restart.
+func validateUsageBudgetApprovalCeiling(initial, next TaskUsageBudget) error {
+	if initial.TokenLimit > 0 {
+		if next.TokenLimit-initial.TokenLimit > initial.TokenLimit {
+			return errors.New("approved Token limit exceeds twice the initial limit")
+		}
+	} else if next.InputTokenLimit-initial.InputTokenLimit > initial.InputTokenLimit ||
+		next.OutputTokenLimit-initial.OutputTokenLimit > initial.OutputTokenLimit {
+		return errors.New("approved input or output Token limit exceeds twice its initial limit")
+	}
+	for currency, nextRaw := range next.MonetaryLimits {
+		initialRaw, ok := initial.MonetaryLimits[currency]
+		if !ok { return fmt.Errorf("approved budget cannot add currency %s without an initial limit", currency) }
+		initialValue, _ := new(big.Rat).SetString(initialRaw)
+		nextValue, _ := new(big.Rat).SetString(nextRaw)
+		if nextValue.Cmp(new(big.Rat).Mul(initialValue, big.NewRat(2, 1))) > 0 {
+			return fmt.Errorf("approved monetary limit for %s exceeds twice its initial limit", currency)
+		}
+	}
+	return nil
+}
+
 func defaultUsageBudgetIncrease(budget TaskUsageBudget) (TaskUsageBudget, error) {
-	if budget.TokenLimit > (math.MaxInt64-99)/130 { return TaskUsageBudget{}, errors.New("Token budget increase overflows int64") }
-	next := TaskUsageBudget{TokenLimit: (budget.TokenLimit*130 + 99)/100, MonetaryLimits: make(map[string]string, len(budget.MonetaryLimits))}
-	if next.TokenLimit <= budget.TokenLimit { next.TokenLimit = budget.TokenLimit+1 }
+	next := TaskUsageBudget{MonetaryLimits: make(map[string]string, len(budget.MonetaryLimits))}
+	var err error
+	if budget.TokenLimit > 0 {
+		next.TokenLimit, err = increaseTokenLimit(budget.TokenLimit)
+	} else {
+		next.InputTokenLimit, err = increaseTokenLimit(budget.InputTokenLimit)
+		if err == nil { next.OutputTokenLimit, err = increaseTokenLimit(budget.OutputTokenLimit) }
+	}
+	if err != nil { return TaskUsageBudget{}, err }
 	for currency, raw := range budget.MonetaryLimits {
 		value, ok := new(big.Rat).SetString(raw)
 		if !ok { return TaskUsageBudget{}, fmt.Errorf("invalid existing monetary limit for %s", currency) }
@@ -181,6 +230,11 @@ func defaultUsageBudgetIncrease(budget TaskUsageBudget) (TaskUsageBudget, error)
 		next.MonetaryLimits[currency] = value.RatString()
 	}
 	return next, nil
+}
+
+func increaseTokenLimit(limit int64) (int64, error) {
+	if limit > (math.MaxInt64-99)/130 { return 0, errors.New("Token budget increase overflows int64") }
+	return (limit*130 + 99)/100, nil
 }
 
 func refreshUsageBudgetGate(state *RuntimeState, ledger *TaskUsageLedger, now time.Time) error {
@@ -208,7 +262,9 @@ func refreshUsageBudgetGate(state *RuntimeState, ledger *TaskUsageLedger, now ti
 
 func taskUsageBudgetBreaches(projection TaskUsageProjection, budget TaskUsageBudget) (bool, []string) {
 	var dimensions []string
-	if projection.KnownTotalTokens >= budget.TokenLimit { dimensions = append(dimensions, "tokens") }
+	if budget.TokenLimit > 0 && projection.KnownTotalTokens >= budget.TokenLimit { dimensions = append(dimensions, "tokens") }
+	if budget.InputTokenLimit > 0 && projection.KnownInputTokens >= budget.InputTokenLimit { dimensions = append(dimensions, "input_tokens") }
+	if budget.OutputTokenLimit > 0 && projection.KnownOutputTokens >= budget.OutputTokenLimit { dimensions = append(dimensions, "output_tokens") }
 	for currency, limitRaw := range budget.MonetaryLimits {
 		limit, ok := new(big.Rat).SetString(limitRaw)
 		if !ok { continue }
@@ -228,7 +284,7 @@ func usageRecordsDigest(records []json.RawMessage) (string, error) {
 }
 
 func cloneTaskUsageBudget(budget TaskUsageBudget) TaskUsageBudget {
-	copy := TaskUsageBudget{TokenLimit: budget.TokenLimit, MonetaryLimits: make(map[string]string, len(budget.MonetaryLimits))}
+	copy := TaskUsageBudget{TokenLimit: budget.TokenLimit, InputTokenLimit: budget.InputTokenLimit, OutputTokenLimit: budget.OutputTokenLimit, MonetaryLimits: make(map[string]string, len(budget.MonetaryLimits))}
 	for currency, amount := range budget.MonetaryLimits { copy.MonetaryLimits[currency] = amount }
 	return copy
 }

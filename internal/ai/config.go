@@ -114,6 +114,32 @@ type Profile struct {
 	ReasoningIntensity string
 }
 
+// UsageBudgetDefaults are operator-selected limits, not an automatic Task
+// migration policy. Workflow snapshots them only on explicit configuration.
+type UsageBudgetDefaults struct {
+	InputTokens  int64
+	OutputTokens int64
+}
+
+func LoadUsageBudgetDefaults() (UsageBudgetDefaults, error) {
+	values, err := loadConfigValues()
+	if err != nil { return UsageBudgetDefaults{}, err }
+	const prefix = "ai.usage_budget."
+	var defaults UsageBudgetDefaults
+	for _, field := range []struct { key string; target *int64 }{
+		{"input_tokens", &defaults.InputTokens},
+		{"output_tokens", &defaults.OutputTokens},
+	} {
+		raw := strings.TrimSpace(values[prefix+field.key])
+		value, parseErr := strconv.ParseInt(raw, 10, 64)
+		if parseErr != nil || value <= 0 {
+			return UsageBudgetDefaults{}, fmt.Errorf("[ai.usage_budget].%s must be a positive integer", field.key)
+		}
+		*field.target = value
+	}
+	return defaults, nil
+}
+
 // LoadProfiles reads named [ai.profiles.<name>] provider/model pairs.
 // Profiles with an empty provider or model are ignored so callers can safely
 // fall back to the canonical global [ai] configuration.
@@ -302,7 +328,7 @@ func mergeConfigFile(values map[string]string, path string) error {
 }
 
 func isAIConfigSection(section string) bool {
-	return section == "ai" || section == "cz" ||
+	return section == "ai" || section == "cz" || section == "ai.usage_budget" ||
 		(strings.HasPrefix(section, "ai.profiles.") && strings.TrimSpace(strings.TrimPrefix(section, "ai.profiles.")) != "")
 }
 
@@ -412,6 +438,7 @@ func isAIConfigKey(key string) bool {
 		"provider": true, "llm_provider": true, "model": true, "llm_model": true,
 		"base_url": true, "llm_base_url": true, "api_key": true, "llm_api_key": true,
 		"command": true, "codex_command": true, "copilot_command": true,
+		"input_tokens": true, "output_tokens": true,
 		"openai_model": true, "openai_base_url": true, "openai_api_key": true,
 		"gemini_model": true, "gemini_base_url": true, "gemini_api_key": true,
 		"ollama_model": true, "ollama_base_url": true, "ollama_api_key": true,

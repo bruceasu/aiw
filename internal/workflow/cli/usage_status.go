@@ -48,9 +48,17 @@ func printUsageBudgetStatus(ledger *workflow.TaskUsageLedger) {
 		status = "authorization_pending"
 	}
 	projection := ledger.Projection
-	fmt.Printf("BUDGET\t%s; tokens=%d/%d; known_cost=%s\n", status,
-		projection.KnownTotalTokens, ledger.Budget.TokenLimit,
-		formatKnownCosts(projection.KnownCostByCurrency))
+	if ledger.Budget.TokenLimit > 0 {
+		fmt.Printf("BUDGET\t%s; tokens=%d/%d; known_cost=%s\n", status,
+			projection.KnownTotalTokens, ledger.Budget.TokenLimit,
+			formatKnownCosts(projection.KnownCostByCurrency))
+	} else {
+		fmt.Printf("BUDGET\t%s; input_tokens=%d/%d (cached=%d); output_tokens=%d/%d (reasoning=%d); known_cost=%s\n", status,
+			projection.KnownInputTokens, ledger.Budget.InputTokenLimit,
+			projection.KnownCachedInputTokens,
+			projection.KnownOutputTokens, ledger.Budget.OutputTokenLimit, projection.KnownReasoningOutputTokens,
+			formatKnownCosts(projection.KnownCostByCurrency))
+	}
 	for _, currency := range sortedCurrencyKeys(ledger.Budget.MonetaryLimits) {
 		fmt.Printf("BUDGET LIMIT\t%s=%s\n", currency, ledger.Budget.MonetaryLimits[currency])
 	}
@@ -83,11 +91,13 @@ func printSelectedUsageProfile(ledger *workflow.TaskUsageLedger) {
 
 func printPartialUsageStatus(ledger *workflow.TaskUsageLedger) {
 	p := ledger.Projection
-	fmt.Printf("PARTIAL USAGE\tusage_unknown=%d; availability=%s; input_tokens=%s; output_tokens=%s; total_tokens=%s; cost_amount=%s; cost_currency=%s\n",
+	fmt.Printf("PARTIAL USAGE\tusage_unknown=%d; availability=%s; input_tokens=%s; cached_input_tokens=%s; output_tokens=%s; reasoning_output_tokens=%s; total_tokens=%s; cost_amount=%s; cost_currency=%s\n",
 		p.UsageUnknown,
 		formatUsageFieldCounts(p.AvailabilityFields),
 		formatUsageFieldCounts(p.InputTokenFields),
+		formatUsageFieldCounts(p.CachedInputTokenFields),
 		formatUsageFieldCounts(p.OutputTokenFields),
+		formatUsageFieldCounts(p.ReasoningOutputTokenFields),
 		formatUsageFieldCounts(p.TotalTokenFields),
 		formatUsageFieldCounts(p.CostAmountFields),
 		formatUsageFieldCounts(p.CostCurrencyFields))

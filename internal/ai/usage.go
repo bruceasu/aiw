@@ -15,7 +15,8 @@ func unknownUsage(provider, model string, started, completed time.Time) *UsageEn
 	return &UsageEnvelope{
 		Version: UsageEnvelopeVersion, Availability: UsageFieldUnknown,
 		Provider: provider, Model: model, StartedAt: started, CompletedAt: completed,
-		InputTokens: unknownInt(), OutputTokens: unknownInt(), TotalTokens: unknownInt(),
+		InputTokens: unknownInt(), CachedInputTokens: unknownInt(),
+		OutputTokens: unknownInt(), ReasoningOutputTokens: unknownInt(), TotalTokens: unknownInt(),
 		CostAmount: unknownNumber(), CostCurrency: unknownString(),
 	}
 }
@@ -25,7 +26,14 @@ func unknownUsage(provider, model string, started, completed time.Time) *UsageEn
 // exact usage object as bounded raw evidence.
 func usageFromRaw(provider, model string, started, completed time.Time, raw []byte) *UsageEnvelope {
 	envelope := unknownUsage(provider, model, started, completed)
-	usage, evidence, ok := findUsage(raw)
+	var usage map[string]json.RawMessage
+	var evidence []byte
+	var ok bool
+	if provider == "codex" {
+		usage, evidence, ok = findCodexCompletedUsage(raw)
+	} else {
+		usage, evidence, ok = findUsage(raw)
+	}
 	if !ok {
 		return envelope
 	}
@@ -33,8 +41,18 @@ func usageFromRaw(provider, model string, started, completed time.Time, raw []by
 	envelope.RawResponse = sanitizeRawUsage(evidence)
 	PrepareUsageEvidence(envelope, completed)
 	setTokenField(&envelope.InputTokens, firstField(usage, "input_tokens", "prompt_tokens", "promptTokenCount"))
+	setTokenField(&envelope.CachedInputTokens, firstField(usage, "cached_input_tokens"))
 	setTokenField(&envelope.OutputTokens, firstField(usage, "output_tokens", "completion_tokens", "candidatesTokenCount"))
+	setTokenField(&envelope.ReasoningOutputTokens, firstField(usage, "reasoning_output_tokens"))
 	setTokenField(&envelope.TotalTokens, firstField(usage, "total_tokens", "totalTokenCount"))
+	if envelope.CachedInputTokens.State == UsageFieldKnown && envelope.InputTokens.State == UsageFieldKnown &&
+		*envelope.CachedInputTokens.Value > *envelope.InputTokens.Value {
+		envelope.CachedInputTokens = UsageField[int64]{State: UsageFieldInvalid}
+	}
+	if envelope.ReasoningOutputTokens.State == UsageFieldKnown && envelope.OutputTokens.State == UsageFieldKnown &&
+		*envelope.ReasoningOutputTokens.Value > *envelope.OutputTokens.Value {
+		envelope.ReasoningOutputTokens = UsageField[int64]{State: UsageFieldInvalid}
+	}
 	amount := firstField(usage, "cost_amount", "cost", "total_cost")
 	currency := firstField(usage, "cost_currency", "currency")
 	amountValue, amountState := parseCost(amount)
@@ -58,10 +76,36 @@ func usageFromRaw(provider, model string, started, completed time.Time, raw []by
 
 var rawUsageFieldAllowlist = map[string]struct{}{
 	"input_tokens": {}, "prompt_tokens": {}, "promptTokenCount": {},
+	"cached_input_tokens": {},
 	"output_tokens": {}, "completion_tokens": {}, "candidatesTokenCount": {},
+	"reasoning_output_tokens": {},
 	"total_tokens": {}, "totalTokenCount": {},
 	"cost_amount": {}, "cost": {}, "total_cost": {},
 	"cost_currency": {}, "currency": {},
+}
+
+// Codex's JSONL stream is a sequence of events, not a single response body.
+// Only a terminal turn event is authoritative for its usage. A failed turn
+// may also carry Provider usage; a later terminal event without usage must
+// not reuse an earlier turn's values.
+func findCodexCompletedUsage(raw []byte) (map[string]json.RawMessage, []byte, bool) {
+	var selected map[string]json.RawMessage
+	var evidence []byte
+	for _, line := range bytes.Split(raw, []byte("\n")) {
+		var event struct {
+			Type string `json:"type"`
+			Usage json.RawMessage `json:"usage"`
+		}
+		if json.Unmarshal(line, &event) != nil { continue }
+		if event.Type == "turn.started" { selected, evidence = nil, nil; continue }
+		if event.Type != "turn.completed" && event.Type != "turn.failed" { continue }
+		selected, evidence = nil, nil
+		if len(event.Usage) == 0 { continue }
+		var usage map[string]json.RawMessage
+		if json.Unmarshal(event.Usage, &usage) != nil || usage == nil { continue }
+		selected, evidence = usage, append([]byte(nil), event.Usage...)
+	}
+	return selected, evidence, selected != nil
 }
 
 // sanitizeRawUsage keeps only recognized scalar usage fields and enforces a

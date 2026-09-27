@@ -85,7 +85,9 @@ type UsageEnvelope struct {
 	StartedAt    time.Time                `json:"started_at,omitempty"`
 	CompletedAt  time.Time                `json:"completed_at,omitempty"`
 	InputTokens  UsageField[int64]        `json:"input_tokens"`
+	CachedInputTokens UsageField[int64]   `json:"cached_input_tokens,omitempty"`
 	OutputTokens UsageField[int64]        `json:"output_tokens"`
+	ReasoningOutputTokens UsageField[int64] `json:"reasoning_output_tokens,omitempty"`
 	TotalTokens  UsageField[int64]        `json:"total_tokens"`
 	CostAmount   UsageField[json.Number]  `json:"cost_amount"`
 	CostCurrency UsageField[string]       `json:"cost_currency"`

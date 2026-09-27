@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"aiw/internal/ai"
 	"aiw/internal/workflow"
 )
 
@@ -19,7 +20,15 @@ func runWorkflowBudgetCommand(id string, args []string) error {
 	store := workflow.NewStore("")
 	switch args[0] {
 	case "configure":
-		budget, err := parseBudgetLimits(args[1:], false)
+		var budget workflow.TaskUsageBudget
+		var err error
+		if len(args) == 1 {
+			defaults, loadErr := ai.LoadUsageBudgetDefaults()
+			if loadErr != nil { return fmt.Errorf("load Task usage budget defaults: %w", loadErr) }
+			budget = workflow.TaskUsageBudget{InputTokenLimit: defaults.InputTokens, OutputTokenLimit: defaults.OutputTokens}
+		} else {
+			budget, err = parseBudgetLimits(args[1:], false)
+		}
 		if err != nil {
 			return err
 		}
@@ -58,18 +67,24 @@ func runWorkflowBudgetCommand(id string, args []string) error {
 
 func parseBudgetLimits(args []string, allowEmpty bool) (workflow.TaskUsageBudget, error) {
 	budget := workflow.TaskUsageBudget{MonetaryLimits: make(map[string]string)}
-	hasTokens, hasCost := false, false
+	hasTokens, hasInput, hasOutput := false, false, false
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
-		case "--tokens":
-			if hasTokens || i+1 >= len(args) {
+		case "--tokens", "--input-tokens", "--output-tokens":
+			flag := args[i]
+			if i+1 >= len(args) || (flag == "--tokens" && hasTokens) ||
+				(flag == "--input-tokens" && hasInput) || (flag == "--output-tokens" && hasOutput) {
 				return workflow.TaskUsageBudget{}, budgetUsage("configure")
 			}
 			value, err := strconv.ParseInt(args[i+1], 10, 64)
 			if err != nil || value <= 0 {
-				return workflow.TaskUsageBudget{}, fmt.Errorf("--tokens must be a positive whole number")
+				return workflow.TaskUsageBudget{}, fmt.Errorf("%s must be a positive whole number", flag)
 			}
-			budget.TokenLimit, hasTokens = value, true
+			switch flag {
+			case "--tokens": budget.TokenLimit, hasTokens = value, true
+			case "--input-tokens": budget.InputTokenLimit, hasInput = value, true
+			case "--output-tokens": budget.OutputTokenLimit, hasOutput = value, true
+			}
 			i++
 		case "--cost":
 			if i+1 >= len(args) {
@@ -81,20 +96,16 @@ func parseBudgetLimits(args []string, allowEmpty bool) (workflow.TaskUsageBudget
 				return workflow.TaskUsageBudget{}, fmt.Errorf("--cost must be CURRENCY=AMOUNT and each currency may appear once")
 			}
 			budget.MonetaryLimits[currency] = amount
-			hasCost = true
 			i++
 		default:
 			return workflow.TaskUsageBudget{}, budgetUsage("configure")
 		}
 	}
-	if !allowEmpty && (!hasTokens || !hasCost) {
-		return workflow.TaskUsageBudget{}, budgetUsage("configure")
-	}
-	if allowEmpty && (hasTokens != hasCost) {
-		return workflow.TaskUsageBudget{}, fmt.Errorf("explicit budget approval requires both --tokens and at least one --cost")
-	}
-	if !hasTokens && !hasCost {
+	if allowEmpty && !hasTokens && !hasInput && !hasOutput && len(budget.MonetaryLimits) == 0 {
 		return workflow.TaskUsageBudget{}, nil
+	}
+	if (hasTokens && (hasInput || hasOutput)) || (hasInput != hasOutput) || (!hasTokens && !hasInput) {
+		return workflow.TaskUsageBudget{}, budgetUsage("configure")
 	}
 	return budget, nil
 }
@@ -130,7 +141,7 @@ func parseBudgetApproval(args []string) (string, string, *workflow.TaskUsageBudg
 	}
 	budget, err := parseBudgetLimits(limitArgs, true)
 	if err != nil { return "", "", nil, err }
-	if budget.TokenLimit == 0 {
+	if budget.TokenLimit == 0 && budget.InputTokenLimit == 0 {
 		return actor, reason, nil, nil
 	}
 	return actor, reason, &budget, nil
@@ -171,9 +182,9 @@ func currentBudgetActor() (string, error) {
 func budgetUsage(operation string) error {
 	switch operation {
 	case "configure":
-		return fmt.Errorf("usage: wf budget <task-id> configure --tokens <positive> --cost <CURRENCY=AMOUNT> [--cost <CURRENCY=AMOUNT> ...]")
+		return fmt.Errorf("usage: wf budget <task-id> configure (--input-tokens <positive> --output-tokens <positive> | --tokens <positive>) [--cost <CURRENCY=AMOUNT> ...]")
 	case "approve":
-		return fmt.Errorf("usage: wf budget <task-id> approve [--by <actor>] --reason <reason> [--tokens <positive> --cost <CURRENCY=AMOUNT> ...]")
+		return fmt.Errorf("usage: wf budget <task-id> approve [--by <actor>] --reason <reason> [--input-tokens <positive> --output-tokens <positive> | --tokens <positive>] [--cost <CURRENCY=AMOUNT> ...]")
 	case "terminate":
 		return fmt.Errorf("usage: wf budget <task-id> terminate [--by <actor>] --reason <reason>")
 	default:

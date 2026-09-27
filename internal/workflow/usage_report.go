@@ -42,7 +42,9 @@ type UsageReportTotals struct {
 	Calls             int64             `json:"calls"`
 	UsageUnknown      int64             `json:"usage_unknown"`
 	KnownInputTokens  int64             `json:"known_input_tokens"`
+	KnownCachedInputTokens int64        `json:"known_cached_input_tokens"`
 	KnownOutputTokens int64             `json:"known_output_tokens"`
+	KnownReasoningOutputTokens int64    `json:"known_reasoning_output_tokens"`
 	KnownTotalTokens  int64             `json:"known_total_tokens"`
 	KnownCostByCurrency map[string]string `json:"known_cost_by_currency"`
 }
@@ -165,7 +167,8 @@ func (s *Store) GetUsageReport(ctx context.Context, taskID TaskID, query UsageRe
 	}
 	report.Totals = UsageReportTotals{
 		Calls: projection.Calls, UsageUnknown: projection.UsageUnknown,
-		KnownInputTokens: projection.KnownInputTokens, KnownOutputTokens: projection.KnownOutputTokens,
+		KnownInputTokens: projection.KnownInputTokens, KnownCachedInputTokens: projection.KnownCachedInputTokens,
+		KnownOutputTokens: projection.KnownOutputTokens, KnownReasoningOutputTokens: projection.KnownReasoningOutputTokens,
 		KnownTotalTokens: projection.KnownTotalTokens,
 		KnownCostByCurrency: projection.KnownCostByCurrency,
 	}

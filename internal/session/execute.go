@@ -219,10 +219,13 @@ func ensureTurnUsage(result *TurnResult, provider, model string) {
 		unknownString := ai.UsageField[string]{State: ai.UsageFieldUnknown}
 		result.Usage = &ai.UsageEnvelope{
 			Version: ai.UsageEnvelopeVersion, Availability: ai.UsageFieldUnknown,
-			InputTokens: unknownInt(), OutputTokens: unknownInt(), TotalTokens: unknownInt(),
+			InputTokens: unknownInt(), CachedInputTokens: unknownInt(),
+			OutputTokens: unknownInt(), ReasoningOutputTokens: unknownInt(), TotalTokens: unknownInt(),
 			CostAmount: unknownNumber, CostCurrency: unknownString,
 		}
 	}
+	if result.Usage.CachedInputTokens.State == "" { result.Usage.CachedInputTokens.State = ai.UsageFieldUnknown }
+	if result.Usage.ReasoningOutputTokens.State == "" { result.Usage.ReasoningOutputTokens.State = ai.UsageFieldUnknown }
 	if result.Usage.Provider == "" {
 		result.Usage.Provider = provider
 	}

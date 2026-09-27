@@ -85,6 +85,26 @@ func TestUsageFromRawMarksInvalidAndAbsentUsage(t *testing.T) {
 	}
 }
 
+func TestCodexCompletedTurnKeepsTokenSubsetsWithoutInventingCost(t *testing.T) {
+	raw := []byte("{\"type\":\"thread.started\",\"thread_id\":\"private\"}\n" +
+		"{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":120,\"cached_input_tokens\":80,\"output_tokens\":30,\"reasoning_output_tokens\":10}}\n")
+	usage := usageFromRaw("codex", "gpt-6-luna", time.Time{}, time.Time{}, raw)
+	assertKnownToken(t, "input", usage.InputTokens, 120)
+	assertKnownToken(t, "cached input", usage.CachedInputTokens, 80)
+	assertKnownToken(t, "output", usage.OutputTokens, 30)
+	assertKnownToken(t, "reasoning output", usage.ReasoningOutputTokens, 10)
+	if usage.TotalTokens.State != UsageFieldUnknown || usage.CostAmount.State != UsageFieldUnknown || usage.CostCurrency.State != UsageFieldUnknown {
+		t.Fatalf("Codex totals or cost were invented: %+v", usage)
+	}
+	if string(usage.RawResponse) != `{"cached_input_tokens":80,"input_tokens":120,"output_tokens":30,"reasoning_output_tokens":10}` {
+		t.Fatalf("bounded Codex usage evidence = %s", usage.RawResponse)
+	}
+	failed := append(raw, []byte("{\"type\":\"turn.failed\"}\n")...)
+	if got := usageFromRaw("codex", "gpt-6-luna", time.Time{}, time.Time{}, failed); got.Availability != UsageFieldUnknown {
+		t.Fatalf("failed final turn reused earlier completed usage: %+v", got)
+	}
+}
+
 func assertKnownToken(t *testing.T, field string, usage UsageField[int64], want int64) {
 	t.Helper()
 	if usage.State != UsageFieldKnown || usage.Value == nil || *usage.Value != want {

@@ -58,12 +58,16 @@ type TaskUsageProjection struct {
 	Calls                 int64                        `json:"calls"`
 	UsageUnknown          int64                        `json:"usage_unknown"`
 	KnownInputTokens      int64                        `json:"known_input_tokens"`
+	KnownCachedInputTokens int64                       `json:"known_cached_input_tokens,omitempty"`
 	KnownOutputTokens     int64                        `json:"known_output_tokens"`
+	KnownReasoningOutputTokens int64                   `json:"known_reasoning_output_tokens,omitempty"`
 	KnownTotalTokens      int64                        `json:"known_total_tokens"`
 	KnownCostByCurrency   map[string]string            `json:"known_cost_by_currency"`
 	AvailabilityFields    UsageFieldCounts             `json:"availability_fields"`
 	InputTokenFields      UsageFieldCounts             `json:"input_token_fields"`
+	CachedInputTokenFields UsageFieldCounts            `json:"cached_input_token_fields,omitempty"`
 	OutputTokenFields     UsageFieldCounts             `json:"output_token_fields"`
+	ReasoningOutputTokenFields UsageFieldCounts        `json:"reasoning_output_token_fields,omitempty"`
 	TotalTokenFields      UsageFieldCounts             `json:"total_token_fields"`
 	CostAmountFields      UsageFieldCounts             `json:"cost_amount_fields"`
 	CostCurrencyFields    UsageFieldCounts             `json:"cost_currency_fields"`
@@ -80,7 +84,9 @@ type UsageFieldCounts struct {
 type usageProjectionEnvelope struct {
 	Availability string `json:"availability"`
 	InputTokens usageProjectionField[int64] `json:"input_tokens"`
+	CachedInputTokens usageProjectionField[int64] `json:"cached_input_tokens"`
 	OutputTokens usageProjectionField[int64] `json:"output_tokens"`
+	ReasoningOutputTokens usageProjectionField[int64] `json:"reasoning_output_tokens"`
 	TotalTokens usageProjectionField[int64] `json:"total_tokens"`
 	CostAmount usageProjectionField[json.Number] `json:"cost_amount"`
 	CostCurrency usageProjectionField[string] `json:"cost_currency"`
@@ -103,6 +109,16 @@ func addUsageProjection(projection *TaskUsageProjection, raw json.RawMessage) er
 		return errors.New("usage envelope has invalid availability state")
 	}
 	if err := addFieldCount(&projection.AvailabilityFields, envelope.Availability); err != nil { return err }
+	if envelope.CachedInputTokens.State == "" { envelope.CachedInputTokens.State = "unknown" }
+	if envelope.ReasoningOutputTokens.State == "" { envelope.ReasoningOutputTokens.State = "unknown" }
+	if envelope.CachedInputTokens.State == "known" && envelope.InputTokens.State == "known" &&
+		(envelope.CachedInputTokens.Value == nil || envelope.InputTokens.Value == nil || *envelope.CachedInputTokens.Value > *envelope.InputTokens.Value) {
+		return errors.New("cached input exceeds reported input")
+	}
+	if envelope.ReasoningOutputTokens.State == "known" && envelope.OutputTokens.State == "known" &&
+		(envelope.ReasoningOutputTokens.Value == nil || envelope.OutputTokens.Value == nil || *envelope.ReasoningOutputTokens.Value > *envelope.OutputTokens.Value) {
+		return errors.New("reasoning output exceeds reported output")
+	}
 	unknown := envelope.Availability != "known"
 	for _, field := range []struct {
 		name string
@@ -111,7 +127,9 @@ func addUsageProjection(projection *TaskUsageProjection, raw json.RawMessage) er
 		total *int64
 	}{
 		{"input_tokens", &envelope.InputTokens, &projection.InputTokenFields, &projection.KnownInputTokens},
+		{"cached_input_tokens", &envelope.CachedInputTokens, &projection.CachedInputTokenFields, &projection.KnownCachedInputTokens},
 		{"output_tokens", &envelope.OutputTokens, &projection.OutputTokenFields, &projection.KnownOutputTokens},
+		{"reasoning_output_tokens", &envelope.ReasoningOutputTokens, &projection.ReasoningOutputTokenFields, &projection.KnownReasoningOutputTokens},
 		{"total_tokens", &envelope.TotalTokens, &projection.TotalTokenFields, &projection.KnownTotalTokens},
 	} {
 		if err := addFieldCount(field.counts, field.value.State); err != nil { return fmt.Errorf("%s: %w", field.name, err) }
@@ -164,11 +182,12 @@ func validateTaskUsageLedger(ledger *TaskUsageLedger) error {
 		return errors.New("unsupported Task usage ledger version")
 	}
 	p := ledger.Projection
-	if p.Calls < 0 || p.UsageUnknown < 0 || p.UsageUnknown > p.Calls || p.KnownInputTokens < 0 || p.KnownOutputTokens < 0 || p.KnownTotalTokens < 0 {
+	if p.Calls < 0 || p.UsageUnknown < 0 || p.UsageUnknown > p.Calls || p.KnownInputTokens < 0 || p.KnownCachedInputTokens < 0 || p.KnownOutputTokens < 0 || p.KnownReasoningOutputTokens < 0 || p.KnownTotalTokens < 0 {
 		return errors.New("invalid Task usage projection totals")
 	}
 	for _, counts := range []UsageFieldCounts{
-		p.AvailabilityFields, p.InputTokenFields, p.OutputTokenFields,
+		p.AvailabilityFields, p.InputTokenFields, p.CachedInputTokenFields,
+		p.OutputTokenFields, p.ReasoningOutputTokenFields,
 		p.TotalTokenFields, p.CostAmountFields, p.CostCurrencyFields,
 	} {
 		if counts.Known < 0 || counts.Unknown < 0 || counts.Invalid < 0 || counts.Known > p.Calls || counts.Unknown > p.Calls-counts.Known || counts.Invalid > p.Calls-counts.Known-counts.Unknown {

@@ -50,10 +50,12 @@ the task is genuinely blocked. Batch related reads and searches. Read relevant
 symbols or excerpts instead of dumping large files, logs, generated output, or
 lockfiles.
 
-Do not rerun the same or an equivalent failed command. One cheap corrected retry
-is allowed only for a command spelling, shell entrypoint, or path mistake. A
-permission failure is not a reason to try alternate shells, escalation, or
-broader commands.
+Do not rerun an unchanged failed command. After fixing the source of a
+compile-only failure, rerun the same compile-only command once to verify the
+fix; if it fails again, stop and report the remaining error. One cheap
+corrected retry is also allowed for a command spelling, shell entrypoint, or
+path mistake. A permission failure is not a reason to try alternate shells,
+escalation, or broader commands.
 
 ## Runtime Authorization
 
@@ -150,7 +152,8 @@ Do not load the whole prompt library.
 - Use no more than three targeted discovery batches before editing unless a
   concrete blocker remains.
 - After editing, use at most one static/read-only validation command by default.
-- Do not repeat equivalent commands.
+- Do not repeat unchanged failed commands; a compile-only check may be retried
+  once after a relevant source fix.
 
 Follow `prompts/core/resource-budget.md` and `prompts/core/validation.md` for
 authorization and retry rules.

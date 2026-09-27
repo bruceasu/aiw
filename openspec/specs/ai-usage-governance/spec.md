@@ -82,71 +82,65 @@ AIW MUST NOT derive total Tokens from component fields or convert currencies.
 
 ### Requirement: Task cumulative AI budget
 
-AIW MUST aggregate known Token and monetary usage across the entire Task,
-including every WorkItem and Attempt. Token and monetary limits MUST be
-evaluated independently. Call count MAY be reported as an auxiliary metric but
-MUST NOT replace either primary budget.
+AIW MUST aggregate known input and output Tokens separately across the entire
+Task, including every WorkItem and Attempt. Cached input and reasoning output
+MUST remain separately identifiable as subsets, not additional consumption.
+Input and output limits MUST be evaluated independently. Monetary usage MAY be
+recorded only when returned by the Provider, but neither monetary amount nor
+credit usage is required to configure or approve a Token budget. Historical
+total-Token and monetary budgets MUST remain readable and enforce their
+original configured dimensions.
 
-The initial Task budget MUST be supplied explicitly after Schema 10 migration;
-AIW MUST NOT infer it from a Profile, Provider, historical usage, or a global
-configuration. The Workflow facade MUST provide an operator operation that
-accepts one positive Token limit and at least one positive per-currency
-monetary limit, and MUST persist it through the ordered Task event path.
+The Workflow facade MUST accept positive input and output Token limits and
+persist the Task budget through the ordered event path. Neither limit may be
+omitted. Optional per-currency monetary limits remain independently enforced
+when explicitly configured. A missing Provider monetary value MUST NOT be
+treated as zero or estimated from Token counts.
 
-#### Scenario: Explicit initial budget
+#### Scenario: Token-only initial budget
 
-- **WHEN** an operator configures a migrated Task with a positive Token limit
-  and one or more positive currency limits
-- **THEN** AIW persists those limits as the Task budget and makes them
-  available to the cumulative usage Gate
+- **WHEN** an operator configures a migrated Task with positive input and
+  output Token limits and no monetary or credit limit
+- **THEN** AIW persists both Token limits and makes them available to the
+  cumulative usage Gate
 
-#### Scenario: Missing initial budget dimension
+#### Scenario: Missing input or output limit
 
-- **WHEN** an operator omits the Token limit or all monetary limits
+- **WHEN** an operator supplies only one of the two Token limits
 - **THEN** AIW rejects configuration and does not create a partial budget
 
-The initial Task budget MUST be supplied explicitly after Schema 10 migration;
-AIW MUST NOT infer it from a Profile, Provider, historical usage, or a global
-configuration. The Workflow facade MUST provide an operator operation that
-accepts one positive Token limit and at least one positive per-currency
-monetary limit, and MUST persist it through the ordered Task event path.
+When an operator configures a migrated Task without explicit limits, AIW MUST
+read positive input/output limits from `[ai.usage_budget]` in `aiw.toml` and
+snapshot them into that Task. Existing Tasks MUST NOT acquire an inferred
+budget as a read side effect. For each
+configured budget dimension, cumulative human-approved increases MUST NOT
+exceed 100% of its initial limit. Repeated approvals share this ceiling, and
+an explicit override exceeding it MUST be rejected.
 
-#### Scenario: Explicit initial budget
-
-- **WHEN** an operator configures a migrated Task with a positive Token limit
-  and one or more positive currency limits
-- **THEN** AIW persists those limits as the Task budget and makes them
-  available to the cumulative usage Gate
-
-#### Scenario: Missing initial budget dimension
-
-- **WHEN** an operator omits the Token limit or all monetary limits
-- **THEN** AIW rejects configuration and does not create a partial budget
-
-Initial Token and per-currency monetary limits MUST be read from application
-configuration and snapshotted into the Task when Schema 10 accounting is
-initialized. For each dimension, the cumulative human-approved increase MUST
-NOT exceed 100% of its initial configured limit, so the effective limit MUST
-NOT exceed twice the initial limit. Repeated approvals share this ceiling. A
-default increase proposal MUST be capped at the remaining allowance, and an
-explicit override MUST be rejected if it exceeds the ceiling.
+%% Verification (2026-09-28): The Store derives the initial baseline from the
+%% first approval's previous limits (or the configured limit before any approval)
+%% and rejects default or explicit increases above twice that baseline for
+%% every configured dimension. Focused tests were added but not run. The one
+%% compile-only attempt found a big.Rat argument type error, which was corrected
+%% statically; compilation was not retried under the repository's retry budget.
+%% Runtime behavior and full Schema 10 readiness remain unverified.
 
 #### Scenario: Initialize a Task budget from configuration
 
-- **WHEN** a Task enters Schema 10 accounting
-- **THEN** AIW copies the configured initial Token and per-currency monetary
-  limits into that Task's budget baseline
+- **WHEN** an operator configures a migrated Task without explicit limits
+- **THEN** AIW copies the configured initial input and output Token limits into
+  that Task's budget baseline through the ordered event path
 
 #### Scenario: Repeated overrides reach the cumulative ceiling
 
-- **WHEN** prior approvals have already increased a budget by its initial
-  amount
-- **THEN** AIW rejects any further increase to that dimension, including an
-  increase included in a repeated approval
+- **WHEN** prior approvals have already increased a configured dimension by
+  its initial amount
+- **THEN** AIW rejects any further increase to that dimension
 
 #### Scenario: Usage crosses one budget
 
-- **WHEN** cumulative known Token or monetary usage reaches its Task limit
+- **WHEN** cumulative known input, output, or explicitly budgeted monetary
+  usage reaches its respective Task limit
 - **THEN** AIW opens an authorization gate for additional budget and prevents
   new budget-consuming dispatches until a human decision is recorded
 
@@ -158,9 +152,11 @@ explicit override MUST be rejected if it exceeds the ceiling.
 
 ### Requirement: Repeated budget approval and termination
 
-AIW MUST propose a simultaneous 30 percent increase to both Task limits when a
-budget increase is requested. A human MUST be able to replace the proposed
-limits, approve additional increases repeatedly, or terminate the Task. Each
+AIW MUST propose a simultaneous 30 percent increase to both configured Token
+limits when a budget increase is requested. Configured monetary limits also
+increase by 30 percent; absent monetary limits remain absent. A human MUST be
+able to replace the proposed limits, approve additional increases repeatedly,
+or terminate the Task. Each
 decision MUST record the actor, time, previous limits, new limits, reason, and
 source usage digest. Human termination MUST set the Task to `BLOCKED`.
 

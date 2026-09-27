@@ -23,7 +23,8 @@ Follow `AGENTS.md` first.
 
 Stop broad exploration after three targeted discovery batches unless a concrete
 unknown blocks the task. Batch related reads and searches, limit command output,
-and do not repeat equivalent commands.
+and do not repeat unchanged failed commands. A compile-only check may be
+retried once after fixing the source error it found.
 
 ## Go Guidance
 

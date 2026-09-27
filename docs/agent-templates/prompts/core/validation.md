@@ -13,6 +13,9 @@ under `scripts/` or at the repository root; otherwise use the narrowest
 language-level compiler command. Do not run `build*` scripts, tests,
 final-artifact builds, formatters, linters, type checkers, verification
 scripts, or smoke commands after an edit.
+If that compile-only check finds a source error, correct it and rerun the same
+compile-only command once. A second failure must be reported without another
+automatic retry.
 
 ## Authorization
 
