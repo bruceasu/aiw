@@ -16,4 +16,4 @@
 
 ## Risks
 
-%% NEEDS_INPUT: Codex CLI receipt and reconciliation capability after an interrupted process. Activation stays disabled until this is proven by a real host, not a test double.
+%% NEEDS_INPUT: Prove that the real Codex host journal can correlate a StageRequest to a terminal turn and confirm process-tree exit after interruption. Conclusive evidence enables automatic idempotent recovery; human reconciliation is optional. Ambiguous liveness or missing evidence stays unknown and must never trigger redispatch.

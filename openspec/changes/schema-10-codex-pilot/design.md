@@ -16,7 +16,7 @@ After successful migration, the initial budget is snapshotted through the ordere
 
 `preflight → explicit activation/migration → BeginExecution → frozen Coder request → ClaimStageDispatch → Codex Session turn → persist terminal/unknown observation and Provider usage → report validation → compile request/result → stop at Tester boundary`.
 
-Reuse the existing Session Codex adapter and JSONL usage parser; do not create another token parser. A real host must enforce request identity, write scope, process timeout/output limits, and read-only reconciliation of the original invocation. An absent receipt or interrupted process is unknown, not a failure that permits another dispatch. Only the existing ordered Store event path may update Task state. A failed compile may use the bounded repair sequence only after its stage evidence is recorded.
+Reuse the existing Session Codex adapter and JSONL usage parser; do not create another token parser. A real host must enforce request identity, write scope, process timeout/output limits, and read-only reconciliation of the original invocation. After interruption, recovery is automatic when durable host evidence proves the original invocation reached a terminal state and its result can be replayed idempotently through the existing Store event path. Human reconciliation is an optional fallback, not a mandatory step. An absent receipt, uncertain process-tree liveness, or incomplete terminal record remains unknown and never permits redispatch; the same invocation must be reconciled or the operator must explicitly stop/escalate it. Only the existing ordered Store event path may update Task state. A failed compile may use the bounded repair sequence only after its stage evidence is recorded.
 
 The existing full `ExecutionServices` activation interface remains fail-closed. Pilot-only stages must not claim Tester, acceptance, or delivery capability. Do not connect empty success callbacks or fabricate activation evidence. If the host cannot meet a required contract, activation stays unavailable and the operator sees the exact missing capability.
 
@@ -28,15 +28,15 @@ Use `[ai.usage_budget]` defaults only when explicitly snapshotted for the pilot 
 
 Compile-only validation is allowed after implementation. Focused tests may be written but are not run by default. A real Codex call needs separate authorization because it consumes account resources and may edit the pilot workspace.
 
-%% NEEDS_INPUT: Whether the current Codex CLI can expose a durable request/turn identifier and terminal receipt sufficient for read-only reconciliation after a crash. If not, the pilot must remain disabled rather than replaying the call.
+%% NEEDS_INPUT: Verify with the real host whether the Codex CLI plus host-owned journal can durably correlate a StageRequest to a terminal turn and prove process-tree exit after a crash. JSONL turn events alone are not proof that a process tree stopped. If this cannot be established, keep activation disabled for that recovery case; never replay the model call.
 
 ## Current implementation inventory
 
 - Reuse `internal/ai/cli.go` for `codex exec --json`, `internal/ai/usage.go` for Provider Token fields, `internal/session/backend.go` for atomic turn outputs, and `internal/workflow/usage_event.go` for idempotent Task accounting.
 - Reuse `execution.RunStage` and `Store.ClaimStageDispatch` to preserve the original request as unknown before crossing the process boundary. `ConsumeStageResult` advances Coder to report validation and compile to Tester; it never directly accepts the WorkItem.
 - Reuse the frozen compile-plan selection and the existing Stage `PhaseCompile` contract. The pilot must supply a real StageExecutor and activation services; the normal Runner explicitly blocks Schema 10.
-- Missing today: a host-owned durable Codex invocation journal tied to a StageRequest, proof that a timed-out or crashed process tree stopped, read-only reconciliation of the same invocation, a production `ExecutionServices` factory, and an explicit pilot CLI entrypoint.
-- The existing live JSONL file is created/truncated by the Session adapter and does not by itself prove terminal process exit after a crash. `Session.StateRunning` is not terminal evidence. Re-running `codex exec` would be a new model call and is forbidden for an unknown request.
+- Missing today: a host-owned durable Codex invocation journal tied to a StageRequest, proof that a timed-out or crashed process tree stopped, read-only reconciliation of the same invocation, a production `ExecutionServices` factory, and an explicit pilot CLI entrypoint. Human reconciliation is an optional escape hatch only when an authorized evidence source can resolve an otherwise unknown state; it is not required when automatic reconciliation has conclusive evidence.
+- The existing live JSONL file is created/truncated by the Session adapter and does not by itself prove terminal process exit after a crash. `Session.StateRunning` is not terminal evidence. Re-running `codex exec` would be a new model call and is forbidden for an unknown request. Recovery may automatically ingest the same terminal result once durable process and receipt evidence are complete; otherwise preserve unknown state and offer optional human reconciliation.
 
 %% Verification (2026-09-28): Static call-path review only. No model invocation, test, or compile was run for the pilot inventory.
 

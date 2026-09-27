@@ -8,7 +8,7 @@ Schema 10 has durable stage and usage contracts, but the normal Workflow Runner 
 
 - Add an opt-in pilot for a new, single-WorkItem Task using Codex CLI with the user's existing ChatGPT login.
 - Connect a real Coder generation, report validation, and the repository's frozen compile-only plan to Schema 10 stage records, usage accounting, and a Task-wide input/output Token budget.
-- Preserve dispatch identity, unknown-result reconciliation, Stop, and budget authorization; fail closed when any required host evidence is unavailable.
+- Preserve dispatch identity, automatic idempotent recovery from conclusive durable evidence, unknown-result safety, Stop, and budget authorization. Human reconciliation is optional; inconclusive process or receipt state must fail closed without redispatch.
 - Stop after controlled compilation. Tester, test execution, acceptance, delivery, and cleanup remain unavailable in this pilot.
 
 ## Out of scope
