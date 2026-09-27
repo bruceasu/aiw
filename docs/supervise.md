@@ -328,6 +328,20 @@ Gate 和 WorkItem；`supervise start` 遇到待答复报告时只显示选项，
 非活跃投影。change 目录或 migration marker 不能替代元数据，也不能恢复丢失的
 Attempt 历史。`status` 不执行这种初始化。
 
+### 编译暂停状态与下一步
+
+`aiw wf supervise <task-id> status` 的 `Compilation` 区分以下情况：
+
+- `repair-prepared`：同一 Attempt 的修复轮次已准备好；确认没有其他 supervisor 正在运行后，用 `aiw wf supervise <task-id> start` 继续。
+- `plan-missing`：先用 `aiw wf diagnose <task-id>` 检查冻结计划和当前 Attempt；不要直接替换仍活跃的请求。
+- `target-unavailable`：先修复 Task 工作区中的编译目标，再检查 Gate；不能仅因脚本已存在就假定原请求可恢复。
+- `repair-limit-reached`：检查编译诊断并人工修复；确认修复后再按 `diagnose` 的实际 Gate 和 Work Item 状态处理。
+- `result-unknown`：先核对编译请求与已记录结果；未知结果不能直接当作失败或成功重跑。
+
+`Retry` 的时间只表示重试资格，不表示存在自动后台调度。以上提示只读，不解决 Gate、不重开 Work Item，也不覆盖已有请求。
+
+%% Verification (2026-09-28): 已静态检查 status 分类与输出路径；`python scripts/compile.py` 退出码为 0。新增的状态分类测试和端到端恢复验证均未运行。
+
 ## schema 10：已实现的受控协议与启用边界
 
 `internal/workflow/execution_protocol.go` 定义阶段

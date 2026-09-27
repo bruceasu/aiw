@@ -237,13 +237,55 @@ func printSupervisorStatus(state workflow.RuntimeState) {
 		terminal.Field("eligible at", supervisor.RetryAfter)
 		terminal.Field("scheduling", "not confirmed by this timestamp")
 	}
+	compileState, compileNext, diagnostics := supervisorCompileGuidance(state)
+	if compileState != "" {
+		terminal.Section("Compilation")
+		terminal.State("state", compileState)
+		if diagnostics != "" { terminal.Field("diagnostics", diagnostics) }
+	}
 	if state.Automation.Cursor.Result == "awaiting-human" {
 		terminal.Field("next", fmt.Sprintf("fill response file, then aiw wf continue %s", state.Task.ID))
 	} else if supervisor.Result == "budget-awaiting-approval" {
 		terminal.Field("next", fmt.Sprintf("review budget decision: aiw wf budget %s approve --reason <reason>", state.Task.ID))
+	} else if compileNext != "" {
+		terminal.Field("next", compileNext)
 	} else if supervisor.RetryAfter != "" {
 		terminal.Field("next", fmt.Sprintf("after eligibility, run aiw wf supervise %s start if no external supervisor is managing this Task", state.Task.ID))
 	}
+}
+
+// supervisorCompileGuidance describes recorded compile state only. A retry
+// timestamp is not proof that a process will restart or that a compile result
+// is known, so this view never advances the request or resolves a Gate.
+func supervisorCompileGuidance(state workflow.RuntimeState) (status, next, diagnostics string) {
+	id := state.Task.ID
+	request := state.Automation.PreparedRequest
+	if request != nil && request.Compile != nil && request.Compile.Result != nil {
+		diagnostics = request.Compile.Result.Diagnostics.Path
+	}
+	if diagnostics == "" && request != nil {
+		for _, item := range state.WorkItems {
+			if item.ID == request.WorkItemID { diagnostics = item.LastOutputReference; break }
+		}
+	}
+	for _, gate := range state.Gates {
+		if gate.State != workflow.GateOpen { continue }
+		switch {
+		case strings.HasPrefix(string(gate.ID), "compile-plan-missing"):
+			return "plan-missing", fmt.Sprintf("inspect frozen compile plan and owning Attempt: aiw wf diagnose %s; do not replace an active request or resolve the Gate without evidence", id), diagnostics
+		case strings.HasPrefix(string(gate.ID), "compile-target-unavailable"):
+			return "target-unavailable", fmt.Sprintf("repair the compile target in the Task workspace, then inspect the Gate: aiw wf diagnose %s; do not resolve it before verifying the target", id), diagnostics
+		case strings.HasPrefix(string(gate.ID), "compiler-repair-limit-"):
+			return "repair-limit-reached", fmt.Sprintf("inspect diagnostics and repair manually; then inspect the Gate and Work Item: aiw wf diagnose %s; resolve/reopen only after the repair is verified", id), diagnostics
+		}
+	}
+	if request != nil && request.Compile != nil && request.Compile.RepairPending {
+		return "repair-prepared", fmt.Sprintf("a repair turn is prepared; if no supervisor is running, run aiw wf supervise %s start to continue the same Attempt", id), diagnostics
+	}
+	if state.Automation.Supervisor.Result == "compiler-paused" {
+		return "result-unknown", fmt.Sprintf("inspect the compiler request and recorded result first: aiw wf diagnose %s; do not rerun an uncertain compile", id), diagnostics
+	}
+	return "", "", ""
 }
 
 // printSupervisorRuntimeStatus renders the active request, workspace lease,
