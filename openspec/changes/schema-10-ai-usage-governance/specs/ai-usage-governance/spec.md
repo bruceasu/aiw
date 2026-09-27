@@ -102,6 +102,45 @@ monetary limit, and MUST persist it through the ordered Task event path.
 - **WHEN** an operator omits the Token limit or all monetary limits
 - **THEN** AIW rejects configuration and does not create a partial budget
 
+The initial Task budget MUST be supplied explicitly after Schema 10 migration;
+AIW MUST NOT infer it from a Profile, Provider, historical usage, or a global
+configuration. The Workflow facade MUST provide an operator operation that
+accepts one positive Token limit and at least one positive per-currency
+monetary limit, and MUST persist it through the ordered Task event path.
+
+#### Scenario: Explicit initial budget
+
+- **WHEN** an operator configures a migrated Task with a positive Token limit
+  and one or more positive currency limits
+- **THEN** AIW persists those limits as the Task budget and makes them
+  available to the cumulative usage Gate
+
+#### Scenario: Missing initial budget dimension
+
+- **WHEN** an operator omits the Token limit or all monetary limits
+- **THEN** AIW rejects configuration and does not create a partial budget
+
+Initial Token and per-currency monetary limits MUST be read from application
+configuration and snapshotted into the Task when Schema 10 accounting is
+initialized. For each dimension, the cumulative human-approved increase MUST
+NOT exceed 100% of its initial configured limit, so the effective limit MUST
+NOT exceed twice the initial limit. Repeated approvals share this ceiling. A
+default increase proposal MUST be capped at the remaining allowance, and an
+explicit override MUST be rejected if it exceeds the ceiling.
+
+#### Scenario: Initialize a Task budget from configuration
+
+- **WHEN** a Task enters Schema 10 accounting
+- **THEN** AIW copies the configured initial Token and per-currency monetary
+  limits into that Task's budget baseline
+
+#### Scenario: Repeated overrides reach the cumulative ceiling
+
+- **WHEN** prior approvals have already increased a budget by its initial
+  amount
+- **THEN** AIW rejects any further increase to that dimension, including an
+  increase included in a repeated approval
+
 #### Scenario: Usage crosses one budget
 
 - **WHEN** cumulative known Token or monetary usage reaches its Task limit
