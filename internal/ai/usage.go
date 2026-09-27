@@ -21,6 +21,12 @@ func unknownUsage(provider, model string, started, completed time.Time) *UsageEn
 	}
 }
 
+// UsageFromRaw parses only fields reported by the named Provider. It is used
+// to reconstruct a completed Codex CLI turn from its exact durable JSONL.
+func UsageFromRaw(provider, model string, started, completed time.Time, raw []byte) *UsageEnvelope {
+	return usageFromRaw(provider, model, started, completed, raw)
+}
+
 // usageFromRaw maps only fields present in the Provider response. It accepts
 // common field names used by the supported Provider APIs while preserving the
 // exact usage object as bounded raw evidence.

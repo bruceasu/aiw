@@ -43,7 +43,7 @@ func durableFixture(t *testing.T) (*Store, RuntimeState, ActorReference) {
 	return store, state, ref
 }
 
-func preparedStageFixture(t *testing.T) (*Store, RuntimeState, StageRequest) {
+func preparedStageIntentFixture(t *testing.T) (*Store, RuntimeState, StageRequest) {
 	t.Helper()
 	store, state, ref := durableFixture(t)
 	state, err := store.BeginExecution("task-1", state.StateRevision, Attempt{ID: "attempt-1", WorkItemID: "wi-0001", Workspace: state.Task.Workspace})
@@ -59,9 +59,64 @@ func preparedStageFixture(t *testing.T) (*Store, RuntimeState, StageRequest) {
 	state, err = store.PrepareStage("task-1", state.StateRevision, request)
 	if err != nil { t.Fatalf("prepare fixture stage: %v", err) }
 	request = state.Protocol.Requests[0].Request
+	return store, state, request
+}
+
+func preparedStageFixture(t *testing.T) (*Store, RuntimeState, StageRequest) {
+	t.Helper()
+	store, state, request := preparedStageIntentFixture(t)
 	state, err = store.ClaimStageDispatch("task-1", state.StateRevision, request.ID, "executor-1")
 	if err != nil { t.Fatalf("claim fixture stage dispatch: %v", err) }
 	return store, state, request
+}
+
+func TestStopBeforeStageClaimPreventsDispatch(t *testing.T) {
+	store, state, request := preparedStageIntentFixture(t)
+	state, err := store.RequestExecutionStop("task-1", state.StateRevision, "operator stop", "test")
+	if err != nil { t.Fatal(err) }
+	if _, err := store.ClaimStageDispatch("task-1", state.StateRevision, request.ID, "executor-1"); err == nil {
+		t.Fatal("Stop allowed a new model dispatch")
+	}
+	loaded, err := store.Load("task-1")
+	if err != nil { t.Fatal(err) }
+	if loaded.Protocol.Stop == nil || loaded.Protocol.Requests[0].Dispatch != "intent" {
+		t.Fatal("refused dispatch changed the Stop or original request")
+	}
+}
+
+func TestCompileResultStopsAtTesterWithoutAcceptance(t *testing.T) {
+	store, state, ref := durableFixture(t)
+	state, err := store.BeginExecution("task-1", state.StateRevision, Attempt{ID: "attempt-1", WorkItemID: "wi-0001", Workspace: state.Task.Workspace})
+	if err != nil { t.Fatal(err) }
+	state, err = store.ConfigureTaskUsageBudget("task-1", TaskUsageBudget{TokenLimit: 1})
+	if err != nil { t.Fatal(err) }
+	state, err = store.RecordUsageEvent("task-1", usageBudgetEvent("task-1", "wi-0001", "attempt-1", "session-1", 1, 10, "0"))
+	if err != nil { t.Fatal(err) }
+	state.Protocol.Items[0].Phase = PhaseCompile
+	state.Protocol.Items[0].ValidatedReport = &ref
+	if err := store.save(state); err != nil { t.Fatal(err) }
+	inputRef, err := store.PersistVerificationArtifact("task-1", "verification-input", map[string]string{"frozen": "input"})
+	if err != nil { t.Fatal(err) }
+	planRef, err := store.PersistVerificationArtifact("task-1", "verification-plan", map[string]string{"frozen": "plan"})
+	if err != nil { t.Fatal(err) }
+	policyRef, err := store.PersistVerificationArtifact("task-1", "verification-policy", map[string]string{"frozen": "policy"})
+	if err != nil { t.Fatal(err) }
+	request := StageRequest{ActorRequest: ActorRequest{SchemaVersion: ActorContractSchemaVersion, ID: "compile-1", Actor: ActorCompiler, TaskID: "task-1", WorkItemID: "wi-0001", AttemptID: "attempt-1", Workspace: state.Task.Workspace, PreparedAt: "2026-09-28T00:00:00Z"}, Phase: PhaseCompile, Input: inputRef, InputDigest: inputRef.SHA256, Plan: planRef, Policy: policyRef, AllowedPaths: []string{"."}}
+	state, err = store.PrepareStage("task-1", state.StateRevision, request)
+	if err != nil { t.Fatal(err) }
+	request = state.Protocol.Requests[0].Request
+	state, err = store.ClaimStageDispatch("task-1", state.StateRevision, request.ID, "compiler-1")
+	if err != nil { t.Fatal(err) }
+	result := StageResult{RequestID: request.ID, TaskID: request.TaskID, WorkItemID: request.WorkItemID, AttemptID: request.AttemptID, LeaseGeneration: request.LeaseGeneration, InputDigest: request.InputDigest, Executor: "compiler-1", Terminal: true, Status: "passed"}
+	if _, err := store.PersistStageResult("task-1", result); err != nil { t.Fatal(err) }
+	state, err = store.Load("task-1")
+	if err != nil { t.Fatal(err) }
+	state, err = store.ConsumeStageResult("task-1", state.StateRevision, result)
+	if err != nil { t.Fatal(err) }
+	item := state.Protocol.Items[0]
+	if item.Phase != PhaseTester || item.ValidatedReport == nil || state.WorkItems[0].AcceptedReference != nil || state.Attempts[0].State != AttemptRunning {
+		t.Fatalf("compile result crossed the Tester/acceptance boundary: %+v", item)
+	}
 }
 
 func TestDurableUnknownAndStopRetainWriter(t *testing.T) {

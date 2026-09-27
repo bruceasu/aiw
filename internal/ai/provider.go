@@ -25,6 +25,7 @@ type Request struct {
 	Workspace      string
 	ThreadID       string
 	Model          string
+	ReasoningIntensity string
 	APIKey         string
 	BaseURL        string
 	Command        string
@@ -36,6 +37,15 @@ type Request struct {
 	// provider invocation. It is never persisted in Session state.
 	Environment    []string
 	ReadOnly       bool
+	InvocationObserver InvocationObserver
+}
+
+// InvocationObserver persists one-shot CLI process and output evidence.
+type InvocationObserver interface {
+	ProcessKey() string
+	Started(pid int) error
+	Write([]byte) (int, error)
+	Finished(exitCode int) error
 }
 
 type Response struct {

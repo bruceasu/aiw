@@ -89,6 +89,9 @@ func RepairWorkflowState(adapter TaskAdapter, id string) error {
 }
 
 func runWorkflowCommand(args []string) error {
+	if len(args) > 0 && args[0] == "pilot" {
+		return runCodexPilot(args[1:])
+	}
 	if len(args) > 0 && args[0] == "knowledge" {
 		return RunKnowledgeCommand(args[1:])
 	}
@@ -1230,6 +1233,9 @@ Typical flow:
   2. aiw wf run <task-id>        Preview the next action without executing it.
   3. aiw wf run <task-id> --execute
                                          Execute one prepared Work Item.
+  aiw wf pilot <task-id> status         Read-only Schema 10 Codex preflight.
+  aiw wf pilot <task-id> activate       Explicitly preflight and migrate a new pilot Task.
+  aiw wf pilot <task-id> run            Resume the original Coder/report/compile stage; stops before Tester.
 
 Auxiliary maintenance (does not enable schema 10):
   auxiliary inventory                Print a bounded local inventory for review.

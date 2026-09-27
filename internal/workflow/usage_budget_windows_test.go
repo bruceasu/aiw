@@ -52,6 +52,22 @@ func TestTaskUsageBudgetInputOutputWithoutMoney(t *testing.T) {
 	}
 }
 
+func TestOpenUsageGatePreventsNewCoderDispatch(t *testing.T) {
+	store, state, request := preparedStageIntentFixture(t)
+	if _, err := store.ConfigureTaskUsageBudget("task-1", TaskUsageBudget{TokenLimit: 1}); err != nil { t.Fatal(err) }
+	state, err := store.RecordUsageEvent("task-1", usageBudgetEvent("task-1", "wi-0001", "attempt-1", "session-1", 1, 10, "0"))
+	if err != nil { t.Fatal(err) }
+	if !usageBudgetAuthorizationOpen(state) { t.Fatal("configured Task Token limit did not open authorization") }
+	if _, err := store.ClaimStageDispatch("task-1", state.StateRevision, request.ID, "executor-1"); err == nil {
+		t.Fatal("open usage Gate allowed a new Coder dispatch")
+	}
+	loaded, err := store.Load("task-1")
+	if err != nil { t.Fatal(err) }
+	if loaded.Protocol.Requests[0].Dispatch != "intent" || loaded.Protocol.Usage.PendingBudgetAuthorization == nil {
+		t.Fatal("refused dispatch changed the prepared request or discarded the pending authorization")
+	}
+}
+
 func TestTaskUsageBudgetRepeatedApprovalStopsAtInitialCeiling(t *testing.T) {
 	store := usageBudgetFixture(t)
 	if _, err := store.ConfigureTaskUsageBudget("task-1", TaskUsageBudget{InputTokenLimit: 10, OutputTokenLimit: 5}); err != nil { t.Fatal(err) }
