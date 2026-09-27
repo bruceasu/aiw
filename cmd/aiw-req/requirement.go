@@ -88,7 +88,7 @@ func requirementSubcommandUsage(command string) (string, bool) {
 		"new":          requirementNewUsage + "\n",
 		"show":         "usage: aiw req show <id>\n",
 		"capture":      "usage: aiw req capture <id> <artifact> --file <path>\n",
-		"approve":      "usage: aiw req approve <id> <APPROVED|DEFERRED|REJECTED> --by <actor> --reason <reason>\n",
+		"approve":      "usage: aiw req approve <id> <APPROVED|DEFERRED|REJECTED> [--by <actor>] --reason <reason>\n",
 		"promote":      "usage: aiw req promote <id> --task <task-id>\n",
 		"archive":      "usage: aiw req archive <id> --by <actor> --reason <reason>\n",
 		"cancel":       "usage: aiw req cancel <id> --by <actor> --reason <reason>\n",
@@ -106,7 +106,7 @@ commands:
   new --id <id> [title]               Create an exact ID for compatibility.
   show <id>
   capture <id> <artifact> --file <path>
-  approve <id> <APPROVED|DEFERRED|REJECTED> --by <actor> --reason <reason>
+  approve <id> <APPROVED|DEFERRED|REJECTED> [--by <actor>] --reason <reason>
 	promote <id> --task <task-id>
   archive <id> --by <actor> --reason <reason>
   cancel <id> --by <actor> --reason <reason>
@@ -166,7 +166,8 @@ func chatRequirement(args []string) error {
 func requirementChatLoop(plan requirementChatPlan) error {
 	store := session.NewStore("")
 	reader := bufio.NewReader(os.Stdin)
-	var displayedAction string
+	displayedAction, err := displayRequirementCheckpoint(store, plan)
+	if err != nil { return err }
 	for {
 		fmt.Print("> ")
 		line, err := reader.ReadString('\n')
@@ -254,10 +255,9 @@ func prepareRequirementAction(args []string) error {
 			if err := json.Unmarshal([]byte(args[6]), &action.Facts); err != nil { return err }
 		}
 	case "approve":
-		if len(args) != 7 || args[3] != "--by" || args[5] != "--reason" {
-			return errors.New("usage: aiw req chat prepare approve <id> <decision> --by <actor> --reason <reason>")
-		}
-		action.RequirementID, action.Decision, action.By, action.Reason = args[1], args[2], args[4], args[6]
+		id, decision, by, reason, err := parseApprovalArgs(args[1:], "usage: aiw req chat prepare approve <id> <decision> [--by <actor>] --reason <reason>")
+		if err != nil { return err }
+		action.RequirementID, action.Decision, action.By, action.Reason = id, decision, by, reason
 	case "promote":
 		if (len(args) != 4 && len(args) != 5) || args[2] != "--task" || (len(args) == 5 && args[4] != "--allow-unrelated-dirty") {
 			return errors.New("usage: aiw req chat prepare promote <id> --task <task-id>")
@@ -452,15 +452,48 @@ func captureRequirement(args []string) error {
 }
 
 func approveRequirement(args []string) error {
-	if len(args) != 6 || args[2] != "--by" || args[4] != "--reason" {
-		return errors.New("usage: aiw req approve <id> <APPROVED|DEFERRED|REJECTED> --by <actor> --reason <reason>")
-	}
-	meta, err := requirement.Approve(args[0], args[1], args[3], args[5])
+	id, decision, by, reason, err := parseApprovalArgs(args, "usage: aiw req approve <id> <APPROVED|DEFERRED|REJECTED> [--by <actor>] --reason <reason>")
+	if err != nil { return err }
+	meta, err := requirement.Approve(id, decision, by, reason)
 	if err != nil {
 		return err
 	}
 	fmt.Printf("requirement %s: %s\n", meta.ID, meta.Status)
 	return nil
+}
+
+func parseApprovalArgs(args []string, usage string) (string, string, string, string, error) {
+	if len(args) < 4 || !requirement.ValidID(args[0]) {
+		return "", "", "", "", errors.New(usage)
+	}
+	id, decision, by, reason := args[0], args[1], "", ""
+	for i := 2; i < len(args); i++ {
+		switch args[i] {
+		case "--by":
+			if i+1 >= len(args) || args[i+1] == "" || strings.HasPrefix(args[i+1], "--") {
+				return "", "", "", "", errors.New(usage)
+			}
+			by, i = args[i+1], i+1
+		case "--reason":
+			if i+1 >= len(args) || args[i+1] == "" || strings.HasPrefix(args[i+1], "--") {
+				return "", "", "", "", errors.New(usage)
+			}
+			reason, i = args[i+1], i+1
+		default:
+			return "", "", "", "", errors.New(usage)
+		}
+	}
+	if reason == "" {
+		return "", "", "", "", errors.New(usage)
+	}
+	if by == "" {
+		current, err := user.Current()
+		if err != nil || current.Username == "" {
+			return "", "", "", "", errors.New("cannot determine current user; provide --by <actor>")
+		}
+		by = current.Username
+	}
+	return id, decision, by, reason, nil
 }
 
 func promoteRequirement(args []string) error {
@@ -495,7 +528,21 @@ func promoteRequirement(args []string) error {
 		return fmt.Errorf("promoted task not found: %s", taskID)
 	}
 	if err := taskcmd.EnsureChecklistMapping(taskID); err != nil {
-		return fmt.Errorf("recover Work Item mapping: %w", err)
+		if !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("recover Work Item mapping: %w", err)
+		}
+		// OpenSpec owns proposal/design/spec/tasks generation. A newly created
+		// change may legitimately have no tasks.md yet; preserve the Task and
+		// handoff, then let a later promotion retry complete checklist mapping.
+		if meta.Promotion.TaskID == "" {
+			meta, _, err = requirement.StartPromotion(reqID, taskID)
+			if err != nil { return err }
+		}
+		snapshot, err := requirement.ArtifactSnapshot(reqID)
+		if err != nil { return err }
+		if err := writeRequirementHandoff(meta, snapshot); err != nil { return err }
+		fmt.Printf("requirement %s promoted to task %s; awaiting OpenSpec tasks.md\n", reqID, taskID)
+		return nil
 	}
 	if meta.Promotion.TaskID == "" {
 		meta, _, err = requirement.StartPromotion(reqID, taskID)
