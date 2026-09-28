@@ -38,6 +38,10 @@ func (p cliProvider) Generate(ctx context.Context, request Request) (Response, e
 	}
 	defer cleanup()
 	cmd := exec.CommandContext(ctx, p.command, args...)
+	if request.InvocationObserver != nil {
+		if p.name != "codex" { return Response{}, fmt.Errorf("managed invocation observer is supported only by Codex CLI") }
+		if err := configureManagedProcess(cmd, request.InvocationObserver.ProcessKey()); err != nil { return Response{}, fmt.Errorf("configure managed Codex process: %w", err) }
+	}
 	cmd.Dir = request.Workspace
 	cmd.Env = commandEnvironment(request.Environment)
 	if p.name == "codex" {
@@ -65,10 +69,28 @@ func (p cliProvider) Generate(ctx context.Context, request Request) (Response, e
 		writer = io.MultiWriter(&events, liveOutput)
 	}
 	if err := cmd.Start(); err != nil {
+		_ = finishManagedProcess(cmd)
 		return Response{}, fmt.Errorf("%s provider start: %w", p.name, err)
 	}
+	if request.InvocationObserver != nil {
+		if err := startManagedProcess(cmd); err != nil {
+			_ = cmd.Process.Kill(); _ = cmd.Wait(); _ = finishManagedProcess(cmd)
+			return Response{}, fmt.Errorf("start managed Codex process: %w", err)
+		}
+		if err := request.InvocationObserver.Started(cmd.Process.Pid); err != nil {
+			_ = cmd.Process.Kill(); _ = cmd.Wait(); _ = finishManagedProcess(cmd)
+			return Response{}, fmt.Errorf("persist managed Codex start: %w", err)
+		}
+		if err := resumeManagedProcess(cmd); err != nil {
+			_ = cmd.Process.Kill(); _ = cmd.Wait(); _ = finishManagedProcess(cmd)
+			return Response{}, fmt.Errorf("resume managed Codex process: %w", err)
+		}
+		writer = io.MultiWriter(writer, request.InvocationObserver)
+	}
 	_, copyErr := io.Copy(writer, stdoutPipe)
+	if copyErr != nil { _, _ = io.Copy(io.Discard, stdoutPipe) }
 	err = cmd.Wait()
+	if request.InvocationObserver != nil { err = errors.Join(err, finishManagedProcess(cmd)) }
 	if copyErr != nil && err == nil {
 		err = copyErr
 	}
@@ -77,6 +99,9 @@ func (p cliProvider) Generate(ctx context.Context, request Request) (Response, e
 	exitCode := 1
 	if cmd.ProcessState != nil {
 		exitCode = cmd.ProcessState.ExitCode()
+	}
+	if request.InvocationObserver != nil {
+		if observerErr := request.InvocationObserver.Finished(exitCode); observerErr != nil { err = errors.Join(err, fmt.Errorf("persist managed Codex completion: %w", observerErr)) }
 	}
 	threadID := request.ThreadID
 	if p.name == "copilot" && threadID == "" {
@@ -287,6 +312,13 @@ func (p cliProvider) interactiveArgs(request Request) []string {
 
 func (p cliProvider) args(r Request) []string {
 	if p.name == "codex" {
+		if r.InvocationObserver != nil {
+			args := []string{"exec", "--sandbox", "workspace-write"}
+			if r.Model != "" { args = append(args, "--model", r.Model) }
+			if r.ReasoningIntensity != "" { args = append(args, "--config", "model_reasoning_effort="+r.ReasoningIntensity) }
+			if r.ThreadID != "" && !r.ForceNewThread { args = append(args, "resume", r.ThreadID) }
+			return append(args, "--json", "-")
+		}
 		args := []string{"exec"}
 		if r.Phase == "artifact-generation" && r.Model != "" {
 			args = append(args, "--model", r.Model)

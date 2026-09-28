@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -44,14 +45,56 @@ func ExecuteTurnWithOverridesAndEnvironment(ctx context.Context, store *Store, i
 // prevents a later Session memory update from changing the bound request.
 type FrozenTurn struct {
 	Prompt string
+	OutputSchema map[string]any
 	Instructions string
 	Memory string
 	ExpectedTurn int
 	ReadOnly bool
+	ReasoningIntensity string
+	InvocationObserver ai.InvocationObserver
 }
 
 func ExecuteFrozenTurn(ctx context.Context, store *Store, id, phase string, frozen FrozenTurn, provider, model string, environment []string) (TurnResult, error) {
 	return executeTurn(ctx, store, id, phase, frozen.Prompt, provider, model, true, environment, &frozen)
+}
+
+// RecoverFrozenTurn publishes the already completed result of the exact
+// Session turn. It never invokes a Provider and refuses conflicting output.
+func RecoverFrozenTurn(store *Store, id string, turn int, result TurnResult) error {
+	if store == nil || id == "" || turn <= 0 || result.CompletedAt.IsZero() { return errors.New("frozen turn recovery identity is incomplete") }
+	status, err := store.Load(id)
+	if err != nil { return err }
+	finalName, eventsName := fmt.Sprintf("outputs/%04d-final.txt", turn), fmt.Sprintf("outputs/%04d-events.jsonl", turn)
+	final, finalErr := store.ReadText(id, finalName)
+	events, eventsErr := store.ReadText(id, eventsName)
+	if status.Session.LastTurn == turn {
+		if status.Result.Status != "completed" && status.Result.Status != "failed" { return errors.New("Session turn was advanced without a terminal result") }
+		if finalErr != nil || eventsErr != nil || final != result.FinalOutput || events != string(result.Events) { return errors.New("persisted Session turn conflicts with the Codex invocation receipt") }
+		return nil
+	}
+	if status.Session.LastTurn+1 != turn || status.Session.State != StateRunning { return errors.New("Session is not awaiting this frozen turn recovery") }
+	if finalErr == nil && final != result.FinalOutput || eventsErr == nil && events != string(result.Events) { return errors.New("partial Session outputs conflict with the Codex invocation receipt") }
+	if finalErr != nil && !errors.Is(finalErr, os.ErrNotExist) { return finalErr }
+	if eventsErr != nil && !errors.Is(eventsErr, os.ErrNotExist) { return eventsErr }
+	if err := SaveTurnResult(store, status, result); err != nil { return err }
+	_, err = store.Update(id, func(current *Status) error {
+		if current.Session.LastTurn == turn {
+			if current.Result.Status != "completed" && current.Result.Status != "failed" { return errors.New("Session turn has a conflicting terminal state") }
+			return nil
+		}
+		if current.Session.LastTurn+1 != turn || current.Session.State != StateRunning { return errors.New("Session changed while recovering its frozen turn") }
+		current.Session.LastTurn = turn
+		current.Execution.LastExitCode = &result.ExitCode
+		current.Execution.LastCompletedAt = result.CompletedAt.UTC().Format(time.RFC3339)
+		current.Backend.ThreadID = result.ThreadID
+		current.Result.FinalOutputFile = finalName
+		current.Result.Status = "completed"
+		current.Session.State = StateActive
+		if result.ExitCode != 0 { current.Result.Status, current.Session.State, current.Result.ErrorMessage = "failed", StateFailed, result.FinalOutput }
+		return nil
+	})
+	if err != nil { return err }
+	return nil
 }
 
 func ComposePrompt(instructions, memory, phase, prompt string) string {
@@ -113,7 +156,13 @@ func executeTurn(ctx context.Context, store *Store, id, phase, prompt, providerO
 	}); err != nil {
 		return TurnResult{}, err
 	}
-	result, runErr := backend.Generate(ctx, TurnRequest{SessionID: id, Prompt: composed, Workspace: status.Workspace.Path, ThreadID: status.Backend.ThreadID, Instructions: instructions, Memory: memory, Phase: phase, TurnNumber: turn, OutputDir: store.sessionDir(id) + "/outputs", ForceNewThread: forceNew, Environment: environment, ReadOnly: frozen != nil && frozen.ReadOnly})
+	var observer ai.InvocationObserver
+	if frozen != nil { observer = frozen.InvocationObserver }
+	reasoningIntensity := ""
+	if frozen != nil { reasoningIntensity = frozen.ReasoningIntensity }
+	var outputSchema map[string]any
+	if frozen != nil { outputSchema = frozen.OutputSchema }
+	result, runErr := backend.Generate(ctx, TurnRequest{SessionID: id, Prompt: composed, OutputSchema: outputSchema, Workspace: status.Workspace.Path, ThreadID: status.Backend.ThreadID, Model: modelOverride, ReasoningIntensity: reasoningIntensity, Instructions: instructions, Memory: memory, Phase: phase, TurnNumber: turn, OutputDir: store.sessionDir(id) + "/outputs", ForceNewThread: forceNew, Environment: environment, ReadOnly: frozen != nil && frozen.ReadOnly, InvocationObserver: observer})
 	ensureTurnUsage(&result, cfg.Name, cfg.Model)
 	if runErr != nil && result.ExitCode == 0 {
 		result.ExitCode = 1

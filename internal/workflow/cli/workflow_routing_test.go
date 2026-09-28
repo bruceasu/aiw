@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -41,6 +42,33 @@ func TestRecommendationFailurePersistsDefaults(t *testing.T) {
 	if err != nil { t.Fatal(err) }
 	if plan.Source != "defaults" || !reflect.DeepEqual(plan.Profiles, workflow.DefaultRoutingProfiles()) { t.Fatalf("fallback plan = %+v", plan) }
 	if !reflect.DeepEqual(plan.Compile, workflow.CompilePlanForWorkspace(".")) { t.Fatalf("fallback compile plan = %+v", plan.Compile) }
+}
+
+func TestRecommendRoutingDefaultsSkipsAI(t *testing.T) {
+	meta, store := routingTestTask(t)
+	previous := routingProfilesRecommender
+	calls := 0
+	routingProfilesRecommender = func(string) (map[string]string, error) {
+		calls++
+		return nil, errors.New("should not be called")
+	}
+	t.Cleanup(func() { routingProfilesRecommender = previous })
+	if err := runWorkflowCommand([]string{"recommend-routing", meta.ID, "--defaults"}); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 0 {
+		t.Fatalf("AI routing recommender calls = %d, want 0", calls)
+	}
+	plan, err := store.LoadRoutingPlan(workflow.TaskID(meta.ID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Source != "defaults" || !reflect.DeepEqual(plan.Profiles, workflow.DefaultRoutingProfiles()) {
+		t.Fatalf("routing plan = %+v", plan)
+	}
+	if !reflect.DeepEqual(plan.Compile, workflow.CompilePlanForWorkspace(".")) {
+		t.Fatalf("compile plan = %+v", plan.Compile)
+	}
 }
 
 func TestSupervisedAdvanceReusesSnapshotAfterConfigChange(t *testing.T) {

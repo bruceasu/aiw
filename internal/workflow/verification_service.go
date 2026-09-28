@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -51,6 +52,9 @@ type VerificationReceipt struct {
 	// A Tester repair must explain assertion changes against the original
 	// requirements. The trusted host verifies the independent review evidence.
 	AssertionReview *ActorReference `json:"assertion_review,omitempty"`
+	// Usage contains only normalized Provider-reported fields; raw response
+	// fragments remain in the Session's bounded usage sidecar.
+	Usage json.RawMessage `json:"provider_usage,omitempty"`
 }
 
 type VerificationService struct {

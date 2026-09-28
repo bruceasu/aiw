@@ -2,8 +2,13 @@ package execution
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"fmt"
 
+	"aiw/internal/ai"
 	"aiw/internal/workflow"
 )
 
@@ -70,6 +75,29 @@ func (e *VerificationStageExecutor) save(request workflow.StageRequest, observat
 	if err := e.Host.VerifyReceipt(request, *receipt); err != nil { return observation, nil, errors.Join(runErr, err) }
 	ref, err := e.Store.PersistVerificationArtifact(request.TaskID, "verification-receipt", *receipt)
 	if err != nil { return observation, nil, errors.Join(runErr, err) }
+	if request.Phase == workflow.PhaseCoder {
+		if len(receipt.Usage) == 0 || !json.Valid(receipt.Usage) { return observation, nil, errors.Join(runErr, errors.New("Codex terminal receipt has no normalized Provider usage")) }
+		var usage ai.UsageEnvelope
+		if err := json.Unmarshal(receipt.Usage, &usage); err != nil { return observation, nil, errors.Join(runErr, err) }
+		selection := request.Model
+		if selection == nil { return observation, nil, errors.Join(runErr, errors.New("Codex usage has no frozen model selection")) }
+		parameters, err := json.Marshal(selection)
+		if err != nil { return observation, nil, errors.Join(runErr, err) }
+		parameterDigest := sha256.Sum256(parameters)
+		usageJSON, err := json.Marshal(&usage)
+		if err != nil { return observation, nil, errors.Join(runErr, err) }
+		_, err = e.Store.RecordUsageEvent(request.TaskID, workflow.UsageEvent{
+			TaskID: request.TaskID, WorkItemID: request.WorkItemID, AttemptID: request.AttemptID,
+			SessionID: request.SessionID, SessionTurn: request.Turn, Provider: selection.Provider,
+			Model: selection.Model, Profile: selection.Profile, DifficultyLevel: selection.Level,
+			ReasoningIntensity: selection.ReasoningIntensity, RequestedLevel: selection.RequestedLevel,
+			AdjustmentReason: selection.AdjustmentReason, PreviousProfile: selection.PreviousProfile,
+			PreviousProvider: selection.PreviousProvider, PreviousModel: selection.PreviousModel,
+			PreviousLevel: selection.PreviousLevel, PreviousReasoningIntensity: selection.PreviousReasoningIntensity,
+			ParameterDigest: hex.EncodeToString(parameterDigest[:]), Outcome: string(receipt.Result.Status), Usage: usageJSON,
+		})
+		if err != nil { return observation, nil, errors.Join(runErr, fmt.Errorf("record Codex Provider usage: %w", err)) }
+	}
 	result := receipt.Result
 	result.Evidence = append([]workflow.ActorReference{ref}, receipt.Result.Evidence...)
 	// RunStage persists the exact result before consumption. If saving fails,

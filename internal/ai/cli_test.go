@@ -74,6 +74,21 @@ func TestCodexReadOnlyArgumentsUseSupportedApprovalFlags(t *testing.T) {
 	}
 }
 
+type codexArgsObserver struct{}
+
+func (*codexArgsObserver) ProcessKey() string { return "" }
+func (*codexArgsObserver) Started(int) error { return nil }
+func (*codexArgsObserver) Write(p []byte) (int, error) { return len(p), nil }
+func (*codexArgsObserver) Finished(int) error { return nil }
+
+func TestManagedCodexArgumentsOmitUnsupportedApprovalFlag(t *testing.T) {
+	p := NewCLIProvider("codex", Config{Name: "codex", Command: "codex"})
+	args := p.(cliProvider).args(Request{Model: "test-model", InvocationObserver: &codexArgsObserver{}})
+	joined := strings.Join(args, " ")
+	if strings.Contains(joined, "--ask-for-approval") { t.Fatalf("managed Codex arguments contain unsupported approval flag: %q", joined) }
+	if !strings.Contains(joined, "--sandbox workspace-write") { t.Fatalf("managed Codex arguments lack workspace scope: %q", joined) }
+}
+
 func TestCodexStructuredArgumentsUseOutputSchema(t *testing.T) {
 	p := NewCLIProvider("codex", Config{Name: "codex", Command: "codex"})
 	args, lastMessagePath, cleanup, err := p.(cliProvider).argsForGenerate(Request{
@@ -91,6 +106,15 @@ func TestCodexStructuredArgumentsUseOutputSchema(t *testing.T) {
 	if lastMessagePath == "" || !strings.Contains(joined, "--output-last-message ") {
 		t.Fatalf("Codex structured arguments = %q, want final output file", joined)
 	}
+}
+
+func TestManagedCodexStructuredArgumentsUseOutputSchema(t *testing.T) {
+	p := NewCLIProvider("codex", Config{Name: "codex", Command: "codex"})
+	args, _, cleanup, err := p.(cliProvider).argsForGenerate(Request{Model: "test-model", InvocationObserver: &codexArgsObserver{}, OutputSchema: map[string]any{"type": "object"}})
+	if err != nil { t.Fatal(err) }
+	defer cleanup()
+	joined := strings.Join(args, " ")
+	if !strings.Contains(joined, "--output-schema ") || !strings.Contains(joined, "--json -") { t.Fatalf("managed Codex lacks structured output flags: %q", joined) }
 }
 
 func TestCLIProviderPromptIncludesSystemPrompt(t *testing.T) {

@@ -52,7 +52,23 @@ func TestTaskUsageBudgetInputOutputWithoutMoney(t *testing.T) {
 	}
 }
 
-func TestTaskUsageBudgetRepeatedApprovalStopsAtInitialCeiling(t *testing.T) {
+func TestOpenUsageGatePreventsNewCoderDispatch(t *testing.T) {
+	store, state, request := preparedStageIntentFixture(t)
+	if _, err := store.ConfigureTaskUsageBudget("task-1", TaskUsageBudget{TokenLimit: 1}); err != nil { t.Fatal(err) }
+	state, err := store.RecordUsageEvent("task-1", usageBudgetEvent("task-1", "wi-0001", "attempt-1", "session-1", 1, 10, "0"))
+	if err != nil { t.Fatal(err) }
+	if !usageBudgetAuthorizationOpen(state) { t.Fatal("configured Task Token limit did not open authorization") }
+	if _, err := store.ClaimStageDispatch("task-1", state.StateRevision, request.ID, "executor-1"); err == nil {
+		t.Fatal("open usage Gate allowed a new Coder dispatch")
+	}
+	loaded, err := store.Load("task-1")
+	if err != nil { t.Fatal(err) }
+	if loaded.Protocol.Requests[0].Dispatch != "intent" || loaded.Protocol.Usage.PendingBudgetAuthorization == nil {
+		t.Fatal("refused dispatch changed the prepared request or discarded the pending authorization")
+	}
+}
+
+func TestTaskUsageBudgetRepeatedApprovalHasNoFixedMultiplierCeiling(t *testing.T) {
 	store := usageBudgetFixture(t)
 	if _, err := store.ConfigureTaskUsageBudget("task-1", TaskUsageBudget{InputTokenLimit: 10, OutputTokenLimit: 5}); err != nil { t.Fatal(err) }
 	first := usageBudgetEvent("task-1", "wi-0001", "attempt-1", "session-1", 1, 0, "0")
@@ -67,18 +83,34 @@ func TestTaskUsageBudgetRepeatedApprovalStopsAtInitialCeiling(t *testing.T) {
 	if state.Protocol.Usage.Budget.OutputTokenLimit != 10 || len(state.Protocol.Usage.BudgetApprovals) != 2 {
 		t.Fatalf("second approval did not reach the initial ceiling: %+v", state.Protocol.Usage)
 	}
-	if _, err := store.ApproveTaskUsageBudget("task-1", "operator", "above ceiling", nil); err == nil {
-		t.Fatal("third automatic increase exceeded the initial ceiling")
-	}
-	if _, err := store.ApproveTaskUsageBudget("task-1", "operator", "explicit above ceiling", &TaskUsageBudget{InputTokenLimit: 20, OutputTokenLimit: 11}); err == nil {
-		t.Fatal("explicit increase exceeded the initial output ceiling")
-	}
+	state, err = store.ApproveTaskUsageBudget("task-1", "operator", "third increase", nil)
+	if err != nil { t.Fatal(err) }
+	if state.Protocol.Usage.Budget.OutputTokenLimit != 13 || len(state.Protocol.Usage.BudgetApprovals) != 3 { t.Fatal("third human-approved increase was not recorded") }
+	third := first
+	third.WorkItemID, third.AttemptID, third.SessionID = "wi-0003", "attempt-3", "session-3"
+	if _, err := store.RecordUsageEvent("task-1", third); err != nil { t.Fatal(err) }
+	state, err = store.ApproveTaskUsageBudget("task-1", "operator", "explicit above old ceiling", &TaskUsageBudget{InputTokenLimit: 40, OutputTokenLimit: 20})
+	if err != nil { t.Fatal(err) }
+	if usageBudgetAuthorizationOpen(state) || state.Protocol.Usage.Budget.OutputTokenLimit != 20 || len(state.Protocol.Usage.BudgetApprovals) != 4 { t.Fatal("explicit approval did not close the Gate or preserve history") }
 	restarted := NewStore(store.Root)
 	loaded, err := restarted.Load("task-1")
 	if err != nil { t.Fatal(err) }
-	if len(loaded.Protocol.Usage.BudgetApprovals) != 2 || loaded.Protocol.Usage.Budget.OutputTokenLimit != 10 || !usageBudgetAuthorizationOpen(loaded) {
-		t.Fatalf("rejected increases changed persisted approval or Gate state: %+v", loaded.Protocol.Usage)
+	if len(loaded.Protocol.Usage.BudgetApprovals) != 4 || loaded.Protocol.Usage.Budget.OutputTokenLimit != 20 || usageBudgetAuthorizationOpen(loaded) {
+		t.Fatalf("restarted Task lost approved limits or history: %+v", loaded.Protocol.Usage)
 	}
+}
+
+func TestExplicitApprovalCanCoverOneCallAboveFormerCeiling(t *testing.T) {
+	store := usageBudgetFixture(t)
+	if _, err := store.ConfigureTaskUsageBudget("task-1", TaskUsageBudget{InputTokenLimit: 30000, OutputTokenLimit: 6000}); err != nil { t.Fatal(err) }
+	event := usageBudgetEvent("task-1", "wi-0001", "attempt-1", "session-1", 1, 0, "0")
+	event.Usage = json.RawMessage(`{"availability":"known","input_tokens":{"state":"known","value":192488},"cached_input_tokens":{"state":"known","value":159232},"output_tokens":{"state":"known","value":1902},"total_tokens":{"state":"unknown"},"cost_amount":{"state":"unknown"},"cost_currency":{"state":"unknown"}}`)
+	state, err := store.RecordUsageEvent("task-1", event)
+	if err != nil { t.Fatal(err) }
+	if !usageBudgetAuthorizationOpen(state) { t.Fatal("oversized call did not open a Gate") }
+	state, err = store.ApproveTaskUsageBudget("task-1", "operator", "explicitly cover known overshoot and one more call", &TaskUsageBudget{InputTokenLimit: 400000, OutputTokenLimit: 8000})
+	if err != nil { t.Fatal(err) }
+	if usageBudgetAuthorizationOpen(state) || state.Protocol.Usage.Budget.InputTokenLimit != 400000 || len(state.Protocol.Usage.BudgetApprovals) != 1 || state.Protocol.Usage.Projection.KnownInputTokens != 192488 { t.Fatal("explicit approval lost usage or failed to close its Gate") }
 }
 
 func TestTaskUsageBudgetAggregationReplayAndConcurrentApproval(t *testing.T) {
@@ -133,12 +165,9 @@ func TestTaskUsageBudgetOverrideLimitsAndBlockedRecovery(t *testing.T) {
 	if _, err := store.ApproveTaskUsageBudget("task-1", "operator", "invalid override", &TaskUsageBudget{TokenLimit: 30, MonetaryLimits: map[string]string{"USD": "1"}}); err == nil {
 		t.Fatal("override that failed to increase every existing dimension was accepted")
 	}
-	if _, err := store.ApproveTaskUsageBudget("task-1", "operator", "over ceiling", &TaskUsageBudget{TokenLimit: 30, MonetaryLimits: map[string]string{"USD": "3"}}); err == nil {
-		t.Fatal("override above the initial 100% increase ceiling was accepted")
-	}
-	state, err := store.ApproveTaskUsageBudget("task-1", "operator", "approved override", &TaskUsageBudget{TokenLimit: 20, MonetaryLimits: map[string]string{"USD": "2"}})
+	state, err := store.ApproveTaskUsageBudget("task-1", "operator", "approved override beyond old ceiling", &TaskUsageBudget{TokenLimit: 30, MonetaryLimits: map[string]string{"USD": "3"}})
 	if err != nil { t.Fatal(err) }
-	if len(state.Protocol.Usage.BudgetApprovals) != 1 || state.Protocol.Usage.Budget.TokenLimit != 20 || state.Protocol.Usage.Budget.MonetaryLimits["USD"] != "2" {
+	if len(state.Protocol.Usage.BudgetApprovals) != 1 || state.Protocol.Usage.Budget.TokenLimit != 30 || state.Protocol.Usage.Budget.MonetaryLimits["USD"] != "3" {
 		t.Fatalf("explicit budget override was not recorded: %+v", state.Protocol.Usage)
 	}
 

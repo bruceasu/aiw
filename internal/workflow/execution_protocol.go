@@ -58,6 +58,7 @@ type ItemExecution struct {
 	VerifierSnapshot *ActorReference `json:"verifier_snapshot,omitempty"`
 	VerifierGap string `json:"verifier_gap,omitempty"`
 	ValidatedReport *ActorReference `json:"validated_report,omitempty"`
+	ReportRetry *ActorReference `json:"report_retry,omitempty"`
 	TestAuthoringRequest string `json:"test_authoring_request,omitempty"`
 	WorkItemID WorkItemID `json:"work_item_id"`
 	AttemptID AttemptID `json:"attempt_id"`
@@ -168,6 +169,7 @@ func validateExecutionProtocol(state RuntimeState) error {
 			if err != nil || authored.Request.Phase != PhaseTester || authored.Request.WorkItemID != item.WorkItemID || authored.Request.AttemptID != item.AttemptID || !authored.Consumed { return errors.New("test authoring cursor has no matching terminal Tester") }
 		}
 		if item.ValidatedReport != nil && !validProtocolReference(*item.ValidatedReport) { return errors.New("validated report reference is incomplete") }
+		if item.ReportRetry != nil && !validProtocolReference(*item.ReportRetry) { return errors.New("report retry reference is incomplete") }
 		if item.Phase == PhaseAccepted && (item.Accepted == nil || !validProtocolReference(*item.Accepted)) { return errors.New("accepted execution has no immutable evidence") }
 	}
 	if state.WriteLease != nil {

@@ -50,7 +50,7 @@ func (s *Store) PrepareStage(id TaskID, revision uint64, request StageRequest) (
 		item, err := executionItem(state, request.WorkItemID)
 		if err != nil { return err }
 		if state.Protocol.Stop != nil || !state.Protocol.BudgetKnown { return errors.New("execution is stopped or its budget is unknown") }
-		if usageBudgetAuthorizationOpen(*state) { return errors.New("Task usage budget authorization is pending") }
+		if isGeneration(request) && usageBudgetAuthorizationOpen(*state) { return errors.New("Task usage budget authorization is pending before model generation") }
 		if item.Phase != request.Phase || item.AttemptID != request.AttemptID || request.TaskID != id || request.Workspace != executionWorkspace(*state) { return errors.New("stage request does not match the current execution") }
 		if err := requireNoStageInFlight(*state); err != nil { return err }
 		if item.CurrentRequest != "" {
@@ -99,12 +99,14 @@ func (s *Store) PrepareStage(id TaskID, revision uint64, request StageRequest) (
 		}
 		state.Protocol.LeaseGeneration++
 		request.LeaseGeneration = state.Protocol.LeaseGeneration
-		if err := s.ExecutionServices.Authorize(*state, request); err != nil { return err }
-		if err := s.ExecutionServices.Budget(state, request, "reserve"); err != nil { return err }
+		// Authorize the candidate cursor and writer lease. updateWithEvent does
+		// not commit either when authorization or budget reservation fails.
 		if request.Phase == PhaseCoder || request.Phase == PhaseTester {
 			state.WriteLease = &WriteLease{AttemptID: request.AttemptID, Workspace: request.Workspace, AcquiredAt: request.PreparedAt, RequestID: request.ID, Generation: request.LeaseGeneration}
 		}
 		item.CurrentRequest = request.ID
+		if err := s.ExecutionServices.Authorize(*state, request); err != nil { return err }
+		if err := s.ExecutionServices.Budget(state, request, "reserve"); err != nil { return err }
 		state.Protocol.Requests = append(state.Protocol.Requests, StageRecord{Request: request, Dispatch: "intent"})
 		return nil
 	})
@@ -119,7 +121,7 @@ func (s *Store) ClaimStageDispatch(id TaskID, revision uint64, requestID, execut
 		record, err := stageRecord(state, requestID)
 		if err != nil { return err }
 		if executor == "" || state.Protocol.Stop != nil || record.Dispatch != "intent" { return errors.New("dispatch is stopped or already claimed; reconcile the same request") }
-		if usageBudgetAuthorizationOpen(*state) { return errors.New("Task usage budget authorization is pending") }
+		if isGeneration(record.Request) && usageBudgetAuthorizationOpen(*state) { return errors.New("Task usage budget authorization is pending before model generation") }
 		if err := s.ExecutionServices.Authorize(*state, record.Request); err != nil { return err }
 		record.Dispatch, record.Executor = "unknown", executor
 		return nil
