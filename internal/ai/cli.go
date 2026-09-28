@@ -313,7 +313,7 @@ func (p cliProvider) interactiveArgs(request Request) []string {
 func (p cliProvider) args(r Request) []string {
 	if p.name == "codex" {
 		if r.InvocationObserver != nil {
-			args := []string{"exec", "--sandbox", "workspace-write", "--ask-for-approval", "never"}
+			args := []string{"exec", "--sandbox", "workspace-write"}
 			if r.Model != "" { args = append(args, "--model", r.Model) }
 			if r.ReasoningIntensity != "" { args = append(args, "--config", "model_reasoning_effort="+r.ReasoningIntensity) }
 			if r.ThreadID != "" && !r.ForceNewThread { args = append(args, "resume", r.ThreadID) }

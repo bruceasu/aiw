@@ -56,6 +56,14 @@ func preparedStageIntentFixture(t *testing.T) (*Store, RuntimeState, StageReques
 	inputRef, err := store.PersistExecutionInput(prepared, input)
 	if err != nil { t.Fatalf("persist fixture execution input: %v", err) }
 	request := StageRequest{ActorRequest: ActorRequest{SchemaVersion: 1, ID: requestID, Actor: ActorCoder, TaskID: "task-1", WorkItemID: "wi-0001", AttemptID: "attempt-1", Workspace: state.Task.Workspace, PreparedAt: "2026-09-18T00:00:00Z"}, Phase: PhaseCoder, SessionID: "session-1", Turn: 1, Model: selection, AllowedPaths: []string{"src"}, Input: inputRef, InputDigest: inputRef.SHA256, Plan: ref, Policy: ref}
+	store.ExecutionServices.Authorize = func(candidate RuntimeState, request StageRequest) error {
+		item, err := executionItem(&candidate, request.WorkItemID)
+		if err != nil { return err }
+		if item.CurrentRequest != request.ID || candidate.WriteLease == nil || candidate.WriteLease.RequestID != request.ID || candidate.WriteLease.Generation != request.LeaseGeneration {
+			t.Fatal("Coder authorization did not receive its candidate cursor and writer lease")
+		}
+		return nil
+	}
 	state, err = store.PrepareStage("task-1", state.StateRevision, request)
 	if err != nil { t.Fatalf("prepare fixture stage: %v", err) }
 	request = state.Protocol.Requests[0].Request
@@ -68,6 +76,41 @@ func preparedStageFixture(t *testing.T) (*Store, RuntimeState, StageRequest) {
 	state, err = store.ClaimStageDispatch("task-1", state.StateRevision, request.ID, "executor-1")
 	if err != nil { t.Fatalf("claim fixture stage dispatch: %v", err) }
 	return store, state, request
+}
+
+func TestRetryInvalidCoderReportPreservesResultAndRequiresUnchangedWorkspace(t *testing.T) {
+	store, state, plan := durableFixture(t)
+	state, err := store.BeginExecution("task-1", state.StateRevision, Attempt{ID: "attempt-1", WorkItemID: "wi-0001", Workspace: state.Task.Workspace})
+	if err != nil { t.Fatal(err) }
+	if err := os.MkdirAll(filepath.Join(state.Task.Workspace, "work"), 0o755); err != nil { t.Fatal(err) }
+	baseline, err := CaptureValidationInputs(state.Task.Workspace, []string{"work"}, nil, "fixed-toolchain")
+	if err != nil { t.Fatal(err) }
+	prepared := PreparedAgentRequest{TaskID: "task-1", WorkItemID: "wi-0001", AttemptID: "attempt-1", SessionID: "session-1", ExpectedSessionTurn: 1, Workspace: state.Task.Workspace}
+	requestID := ExecutionRequestID(prepared)
+	input := ExecutionInput{SchemaVersion: 1, RequestID: requestID, TaskID: "task-1", WorkItemID: "wi-0001", AttemptID: "attempt-1", SessionID: "session-1", Turn: 1, Actor: ActorCoder, Workspace: state.Task.Workspace, Prompt: "Implement the WorkItem", AllowedPaths: []string{"work"}, Sources: []InputSource{{Kind: "work-item", Path: "tasks.md#1.1", Required: true, Status: "loaded", Content: "fixed", SHA256: contentDigest([]byte("fixed"))}}, WorkspaceInputs: &baseline}
+	inputRef, err := store.PersistExecutionInput(prepared, input)
+	if err != nil { t.Fatal(err) }
+	prepared.InputReference = &inputRef
+	prepared.DispatchedAt = "2026-09-29T00:00:00Z"
+	reportRef, err := store.PersistExecutionReport(prepared, "session/0001-final.txt", "**No work done**")
+	if err != nil { t.Fatal(err) }
+	request := StageRequest{ActorRequest: ActorRequest{SchemaVersion: ActorContractSchemaVersion, ID: requestID, Actor: ActorCoder, TaskID: "task-1", WorkItemID: "wi-0001", AttemptID: "attempt-1", Workspace: state.Task.Workspace, PreparedAt: "2026-09-29T00:00:00Z"}, Phase: PhaseCoder, SessionID: "session-1", Turn: 1, Model: &AISelection{Profile: "test", Provider: "codex", Model: "test", Digest: "fixed"}, AllowedPaths: []string{"work"}, Input: inputRef, InputDigest: baseline.Digest(), Plan: plan, Policy: plan, LeaseGeneration: 1}
+	state.Protocol.LeaseGeneration = 1
+	state.Protocol.Requests = []StageRecord{{Request: request, Executor: "codex-pilot", Dispatch: "terminal", Consumed: true}}
+	result := StageResult{RequestID: requestID, TaskID: "task-1", WorkItemID: "wi-0001", AttemptID: "attempt-1", SessionID: "session-1", Turn: 1, LeaseGeneration: 1, InputDigest: baseline.Digest(), Executor: "codex-pilot", Terminal: true, Status: "passed", Evidence: []ActorReference{plan, reportRef}}
+	if err := store.save(state); err != nil { t.Fatal(err) }
+	resultRef, err := store.PersistStageResult("task-1", result)
+	if err != nil { t.Fatal(err) }
+	state.Protocol.Requests[0].Result = &resultRef
+	state.Protocol.Items[0].Phase, state.Protocol.Items[0].CurrentRequest = PhaseReport, requestID
+	if err := store.save(state); err != nil { t.Fatal(err) }
+	if err := os.WriteFile(filepath.Join(state.Task.Workspace, "work", "changed.txt"), []byte("changed"), 0o644); err != nil { t.Fatal(err) }
+	if _, err := store.RetryInvalidCoderReport("task-1", state.StateRevision, "wi-0001"); err == nil { t.Fatal("changed workspace allowed a new Coder request") }
+	if err := os.Remove(filepath.Join(state.Task.Workspace, "work", "changed.txt")); err != nil { t.Fatal(err) }
+	retried, err := store.RetryInvalidCoderReport("task-1", state.StateRevision, "wi-0001")
+	if err != nil { t.Fatal(err) }
+	if retried.Protocol.Items[0].Phase != PhaseCoder || retried.Protocol.Items[0].ReportRetry == nil || retried.Protocol.Requests[0].Result == nil || retried.Protocol.Requests[0].Dispatch != "terminal" { t.Fatal("report retry erased the original Coder result") }
+	if _, err := store.RetryInvalidCoderReport("task-1", retried.StateRevision, "wi-0001"); err == nil { t.Fatal("second report retry was allowed") }
 }
 
 func TestStopBeforeStageClaimPreventsDispatch(t *testing.T) {
@@ -102,6 +145,12 @@ func TestCompileResultStopsAtTesterWithoutAcceptance(t *testing.T) {
 	policyRef, err := store.PersistVerificationArtifact("task-1", "verification-policy", map[string]string{"frozen": "policy"})
 	if err != nil { t.Fatal(err) }
 	request := StageRequest{ActorRequest: ActorRequest{SchemaVersion: ActorContractSchemaVersion, ID: "compile-1", Actor: ActorCompiler, TaskID: "task-1", WorkItemID: "wi-0001", AttemptID: "attempt-1", Workspace: state.Task.Workspace, PreparedAt: "2026-09-28T00:00:00Z"}, Phase: PhaseCompile, Input: inputRef, InputDigest: inputRef.SHA256, Plan: planRef, Policy: policyRef, AllowedPaths: []string{"."}}
+	store.ExecutionServices.Authorize = func(candidate RuntimeState, request StageRequest) error {
+		item, err := executionItem(&candidate, request.WorkItemID)
+		if err != nil { return err }
+		if item.CurrentRequest != request.ID || candidate.WriteLease != nil { t.Fatal("compile authorization did not receive its candidate cursor without a writer lease") }
+		return nil
+	}
 	state, err = store.PrepareStage("task-1", state.StateRevision, request)
 	if err != nil { t.Fatal(err) }
 	request = state.Protocol.Requests[0].Request

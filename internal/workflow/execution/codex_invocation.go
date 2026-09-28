@@ -52,6 +52,7 @@ type CodexInvocationProof struct {
 	Events   []byte
 	Terminal bool
 	Running  bool
+	Stopped  bool
 }
 
 // CodexInvocationJournal implements ai.InvocationObserver. State and stdout
@@ -139,10 +140,13 @@ func (j *CodexInvocationJournal) Finished(exitCode int) error {
 	defer j.mu.Unlock()
 	if j.current.State != "running" { return errors.New("Codex process finished without a running receipt") }
 	events, err := os.ReadFile(j.outputPath)
+	if errors.Is(err, os.ErrNotExist) && j.current.OutputBytes == 0 { events, err = nil, nil }
 	if err != nil { return err }
 	terminal, found := codexTerminalEvent(events)
 	if !found {
 		j.current.State, j.current.Error = "unknown", "Codex process exited without a complete terminal turn event"
+		j.current.ExitCode = &exitCode
+		j.current.CompletedAt = time.Now().UTC()
 	} else {
 		j.current.State, j.current.TerminalEvent = "terminal", terminal
 		j.current.ExitCode = &exitCode
@@ -172,14 +176,15 @@ func (j *CodexInvocationJournal) Reconcile() (CodexInvocationProof, error) {
 	if running { return CodexInvocationProof{Receipt: receipt, Running: true}, nil }
 	if !conclusive { return CodexInvocationProof{Receipt: receipt}, nil }
 	events, err := os.ReadFile(j.outputPath)
+	if errors.Is(err, os.ErrNotExist) && receipt.OutputBytes == 0 { events, err = nil, nil }
 	if err != nil { return CodexInvocationProof{}, err }
 	terminal, found := codexTerminalEvent(events)
-	if !found { return CodexInvocationProof{Receipt: receipt, Events: events}, nil }
+	if !found { return CodexInvocationProof{Receipt: receipt, Events: events, Stopped: true}, nil }
 	if receipt.State == "terminal" && (receipt.TerminalEvent != terminal || receipt.OutputBytes != int64(len(events))) {
 		return CodexInvocationProof{}, errors.New("Codex terminal receipt conflicts with its durable JSONL")
 	}
 	if receipt.State == "terminal" && receipt.OutputDigest != digestHex(events) { return CodexInvocationProof{}, errors.New("Codex terminal output digest mismatch") }
-	return CodexInvocationProof{Receipt: receipt, Events: events, Terminal: true}, nil
+	return CodexInvocationProof{Receipt: receipt, Events: events, Terminal: true, Stopped: true}, nil
 }
 
 func codexTerminalEvent(events []byte) (string, bool) {

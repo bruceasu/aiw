@@ -35,6 +35,69 @@ func TestValidationInputsTrackContentAndDiscovery(t *testing.T) {
 	if restored := capture(); restored.Digest() != changed.Digest() { t.Fatal("discovery is not deterministic") }
 }
 
+func TestReadExecutionArtifactAcceptsTaskRootReachedThroughSymlink(t *testing.T) {
+	base := t.TempDir()
+	realRoot := filepath.Join(base, "real-runtime")
+	linkedRoot := filepath.Join(base, "linked-runtime")
+	if err := os.MkdirAll(realRoot, 0o755); err != nil { t.Fatal(err) }
+	if err := os.Symlink(realRoot, linkedRoot); err != nil { t.Skipf("symlink unavailable: %v", err) }
+
+	store := NewStore(linkedRoot)
+	id := TaskID("task-1")
+	path := store.path(id, "reports", "protocol", "evidence.json")
+	content := []byte(`{"value":"kept inside Task"}`)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil { t.Fatal(err) }
+	if err := os.WriteFile(path, content, 0o644); err != nil { t.Fatal(err) }
+	ref := ActorReference{Kind: "test-evidence", Path: "reports/protocol/evidence.json", SHA256: contentDigest(content)}
+	var decoded struct { Value string `json:"value"` }
+	if err := store.ReadExecutionArtifact(id, ref, &decoded); err != nil { t.Fatal(err) }
+	if decoded.Value != "kept inside Task" { t.Fatalf("unexpected artifact: %+v", decoded) }
+}
+
+func TestReadExecutionArtifactAcceptsOnlyTaskLocalRoutingPlan(t *testing.T) {
+	store := NewStore(t.TempDir())
+	id := TaskID("task-1")
+	content := []byte(`{"task_id":"task-1"}`)
+	path := store.path(id, "routing-plan.json")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil { t.Fatal(err) }
+	if err := os.WriteFile(path, content, 0o644); err != nil { t.Fatal(err) }
+	ref := ActorReference{Kind: "routing-plan", Path: "routing-plan.json", SHA256: contentDigest(content)}
+	var decoded struct { TaskID string `json:"task_id"` }
+	if err := store.ReadExecutionArtifact(id, ref, &decoded); err != nil { t.Fatal(err) }
+	if decoded.TaskID != string(id) { t.Fatalf("unexpected Task ID: %s", decoded.TaskID) }
+
+	other := store.path(id, "other.json")
+	if err := os.WriteFile(other, content, 0o644); err != nil { t.Fatal(err) }
+	ref.Path = "other.json"
+	if err := store.ReadExecutionArtifact(id, ref, &decoded); err == nil { t.Fatal("accepted another Task-root file as routing plan") }
+	ref.Kind, ref.Path = "other-artifact", "routing-plan.json"
+	if err := store.ReadExecutionArtifact(id, ref, &decoded); err == nil { t.Fatal("accepted Task-root file as report evidence") }
+	ref.Kind = "routing-plan"
+	ref.SHA256 = contentDigest([]byte("different"))
+	if err := store.ReadExecutionArtifact(id, ref, &decoded); err == nil { t.Fatal("accepted altered routing plan digest") }
+}
+
+func TestLoadExecutionInputReusesFrozenRequestIdentity(t *testing.T) {
+	store := NewStore(t.TempDir())
+	request := PreparedAgentRequest{TaskID: "task-1", WorkItemID: "wi-0001", AttemptID: "attempt-1", SessionID: "session-1", ExpectedSessionTurn: 1, Workspace: "workspace"}
+	if _, _, exists, err := store.LoadExecutionInput(request); err != nil || exists { t.Fatalf("unexpected absent input: exists=%v err=%v", exists, err) }
+	input := ExecutionInput{SchemaVersion: 1, RequestID: ExecutionRequestID(request), TaskID: request.TaskID, WorkItemID: request.WorkItemID, AttemptID: request.AttemptID, SessionID: request.SessionID, Turn: request.ExpectedSessionTurn, Workspace: request.Workspace, Actor: ActorCoder}
+	content, err := json.MarshalIndent(input, "", "  ")
+	if err != nil { t.Fatal(err) }
+	content = append(content, '\n')
+	path := store.path(request.TaskID, "reports", "inputs", input.RequestID+".json")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil { t.Fatal(err) }
+	if err := os.WriteFile(path, content, 0o644); err != nil { t.Fatal(err) }
+	ref, saved, exists, err := store.LoadExecutionInput(request)
+	if err != nil || !exists { t.Fatalf("failed to recover frozen input: exists=%v err=%v", exists, err) }
+	if ref.Path != "reports/inputs/"+input.RequestID+".json" || ref.SHA256 != contentDigest(content) || saved.RequestID != input.RequestID { t.Fatalf("wrong recovered input: ref=%+v saved=%+v", ref, saved) }
+	input.Workspace = "different-workspace"
+	content, err = json.MarshalIndent(input, "", "  ")
+	if err != nil { t.Fatal(err) }
+	if err := os.WriteFile(path, append(content, '\n'), 0o644); err != nil { t.Fatal(err) }
+	if _, _, _, err := store.LoadExecutionInput(request); err == nil { t.Fatal("accepted a frozen input bound to a different workspace") }
+}
+
 func TestReportSectionsDistinguishMissingEmptyAndUnknown(t *testing.T) {
 	for _, section := range []ReportSection{{}, {State: "empty", Items: []string{}}, {State: "unknown", Items: []string{}, Reason: ""}, {State: "known", Items: []string{}}} {
 		if section.validate("coverage") == nil { t.Fatalf("accepted missing or ambiguous facts: %+v", section) }

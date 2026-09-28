@@ -24,7 +24,8 @@ func managedProcessState(pid int, token, _ string) (running, conclusive bool, er
 	if statErr != nil && !errors.Is(statErr, os.ErrNotExist) { return false, false, statErr }
 	groupID, err := strconv.Atoi(parts[2])
 	if err != nil { return false, false, err }
-	if killErr := syscall.Kill(-groupID, 0); killErr == nil || errors.Is(killErr, syscall.EPERM) { return true, true, nil }
+	killErr := syscall.Kill(-groupID, 0)
+	if killErr == nil || errors.Is(killErr, syscall.EPERM) { return true, true, nil }
 	if errors.Is(killErr, syscall.ESRCH) { return false, true, nil }
 	return false, false, killErr
 }

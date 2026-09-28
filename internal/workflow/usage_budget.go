@@ -134,11 +134,6 @@ func (s *Store) ApproveTaskUsageBudget(id TaskID, actor, reason string, replacem
 		}
 		if err := validateTaskUsageBudget(next); err != nil { return err }
 		if err := validateUsageBudgetIncrease(previous, next); err != nil { return err }
-		initial := previous
-		if len(ledger.BudgetApprovals) != 0 {
-			initial = ledger.BudgetApprovals[0].Previous
-		}
-		if err := validateUsageBudgetApprovalCeiling(initial, next); err != nil { return err }
 		sourceDigest, err := usageRecordsDigest(ledger.Records)
 		if err != nil { return err }
 		pending := ledger.PendingBudgetAuthorization
@@ -187,28 +182,8 @@ func validateUsageBudgetIncrease(previous, next TaskUsageBudget) error {
 		newValue, _ := new(big.Rat).SetString(newRaw)
 		if newValue.Cmp(oldValue) <= 0 { return fmt.Errorf("approved monetary limit for %s must increase", currency) }
 	}
-	return nil
-}
-
-// The first approval's previous limits are the immutable baseline for older
-// ledgers too, so no migration or inferred reset is needed on restart.
-func validateUsageBudgetApprovalCeiling(initial, next TaskUsageBudget) error {
-	if initial.TokenLimit > 0 {
-		if next.TokenLimit-initial.TokenLimit > initial.TokenLimit {
-			return errors.New("approved Token limit exceeds twice the initial limit")
-		}
-	} else if next.InputTokenLimit-initial.InputTokenLimit > initial.InputTokenLimit ||
-		next.OutputTokenLimit-initial.OutputTokenLimit > initial.OutputTokenLimit {
-		return errors.New("approved input or output Token limit exceeds twice its initial limit")
-	}
-	for currency, nextRaw := range next.MonetaryLimits {
-		initialRaw, ok := initial.MonetaryLimits[currency]
-		if !ok { return fmt.Errorf("approved budget cannot add currency %s without an initial limit", currency) }
-		initialValue, _ := new(big.Rat).SetString(initialRaw)
-		nextValue, _ := new(big.Rat).SetString(nextRaw)
-		if nextValue.Cmp(new(big.Rat).Mul(initialValue, big.NewRat(2, 1))) > 0 {
-			return fmt.Errorf("approved monetary limit for %s exceeds twice its initial limit", currency)
-		}
+	for currency := range next.MonetaryLimits {
+		if _, existed := previous.MonetaryLimits[currency]; !existed { return fmt.Errorf("approved budget cannot add currency %s without an initial limit", currency) }
 	}
 	return nil
 }

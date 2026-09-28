@@ -24,6 +24,7 @@ import (
 )
 
 var taskAdapter TaskAdapter
+var routingProfilesRecommender = recommendRoutingProfiles
 
 // RunWorkflowCommand executes Workflow CLI with the application adapter
 // supplied by the standalone program.
@@ -133,8 +134,9 @@ func runWorkflowCommand(args []string) error {
 		return runWorkflowBudgetCommand(id, args[2:])
 	}
 	if op == "recommend-routing" {
-		if len(args) != 2 || !taskAdapter.SafeID(id) {
-			return fmt.Errorf("usage: wf recommend-routing <task-id>")
+		useDefaults := len(args) == 3 && args[2] == "--defaults"
+		if (len(args) != 2 && !useDefaults) || !taskAdapter.SafeID(id) {
+			return fmt.Errorf("usage: wf recommend-routing <task-id> [--defaults]")
 		}
 		meta, store, err := compatibleWorkflow(id)
 		if err != nil {
@@ -145,8 +147,10 @@ func runWorkflowCommand(args []string) error {
 			return fmt.Errorf("Task %s workspace is unassigned", id)
 		}
 		plan := workflow.NewRoutingPlan(workflow.TaskID(id), "defaults", workflow.DefaultRoutingProfiles(), workflow.CompilePlanForWorkspace(workspace))
-		if profiles, recommendErr := recommendRoutingProfiles(workspace); recommendErr == nil {
-			plan = workflow.NewRoutingPlan(workflow.TaskID(id), "llm", profiles, plan.Compile)
+		if !useDefaults {
+			if profiles, recommendErr := routingProfilesRecommender(workspace); recommendErr == nil {
+				plan = workflow.NewRoutingPlan(workflow.TaskID(id), "llm", profiles, plan.Compile)
+			}
 		}
 		state, reference, err := store.PersistRoutingPlan(workflow.TaskID(id), plan)
 		if err != nil {
@@ -884,9 +888,13 @@ func validateWorkflowArgs(op string, args []string) error {
 		return fmt.Errorf("invalid task id: %s", args[1])
 	}
 	switch op {
-	case "plan", "sync", "advance", "recommend-routing":
+	case "plan", "sync", "advance":
 		if len(args) != 2 {
 			return fmt.Errorf("usage: wf plan <task-id>")
+		}
+	case "recommend-routing":
+		if len(args) != 2 && (len(args) != 3 || args[2] != "--defaults") {
+			return fmt.Errorf("usage: wf recommend-routing <task-id> [--defaults]")
 		}
 	case "budget":
 		if len(args) < 3 {
@@ -1235,6 +1243,10 @@ Typical flow:
                                          Execute one prepared Work Item.
   aiw wf pilot <task-id> status         Read-only Schema 10 Codex preflight.
   aiw wf pilot <task-id> activate       Explicitly preflight and migrate a new pilot Task.
+  aiw wf pilot <task-id> recover        Recover only the legacy unstarted missing-source request.
+  aiw wf pilot <task-id> recover-cli-rejection
+                                       Recover a proven Codex argument-parser rejection; no model call.
+  aiw wf pilot <task-id> retry-report   Authorize one new Coder request after a no-change invalid report; no model call.
   aiw wf pilot <task-id> run            Resume the original Coder/report/compile stage; stops before Tester.
 
 Auxiliary maintenance (does not enable schema 10):
@@ -1249,7 +1261,7 @@ Auxiliary maintenance (does not enable schema 10):
 Plan and execute:
   plan <task-id>                       Create or reconcile Work Items from tasks.md.
   sync <task-id>                       Synchronize checklist completion into Workflow Core.
-  recommend-routing <task-id>          Persist advisory AI routing and Compile Plan.
+  recommend-routing <task-id> [--defaults] Persist advisory AI routing and Compile Plan; --defaults skips AI.
   advance <task-id>                    Prepare the next ready Work Item without executing it.
   run <task-id> [--execute] [--primary] [--provider NAME] [--model MODEL]
                                          Preview the next action, or execute one Work Item.

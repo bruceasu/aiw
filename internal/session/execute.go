@@ -45,6 +45,7 @@ func ExecuteTurnWithOverridesAndEnvironment(ctx context.Context, store *Store, i
 // prevents a later Session memory update from changing the bound request.
 type FrozenTurn struct {
 	Prompt string
+	OutputSchema map[string]any
 	Instructions string
 	Memory string
 	ExpectedTurn int
@@ -159,7 +160,9 @@ func executeTurn(ctx context.Context, store *Store, id, phase, prompt, providerO
 	if frozen != nil { observer = frozen.InvocationObserver }
 	reasoningIntensity := ""
 	if frozen != nil { reasoningIntensity = frozen.ReasoningIntensity }
-	result, runErr := backend.Generate(ctx, TurnRequest{SessionID: id, Prompt: composed, Workspace: status.Workspace.Path, ThreadID: status.Backend.ThreadID, Model: modelOverride, ReasoningIntensity: reasoningIntensity, Instructions: instructions, Memory: memory, Phase: phase, TurnNumber: turn, OutputDir: store.sessionDir(id) + "/outputs", ForceNewThread: forceNew, Environment: environment, ReadOnly: frozen != nil && frozen.ReadOnly, InvocationObserver: observer})
+	var outputSchema map[string]any
+	if frozen != nil { outputSchema = frozen.OutputSchema }
+	result, runErr := backend.Generate(ctx, TurnRequest{SessionID: id, Prompt: composed, OutputSchema: outputSchema, Workspace: status.Workspace.Path, ThreadID: status.Backend.ThreadID, Model: modelOverride, ReasoningIntensity: reasoningIntensity, Instructions: instructions, Memory: memory, Phase: phase, TurnNumber: turn, OutputDir: store.sessionDir(id) + "/outputs", ForceNewThread: forceNew, Environment: environment, ReadOnly: frozen != nil && frozen.ReadOnly, InvocationObserver: observer})
 	ensureTurnUsage(&result, cfg.Name, cfg.Model)
 	if runErr != nil && result.ExitCode == 0 {
 		result.ExitCode = 1

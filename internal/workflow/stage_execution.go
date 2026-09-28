@@ -99,12 +99,14 @@ func (s *Store) PrepareStage(id TaskID, revision uint64, request StageRequest) (
 		}
 		state.Protocol.LeaseGeneration++
 		request.LeaseGeneration = state.Protocol.LeaseGeneration
-		if err := s.ExecutionServices.Authorize(*state, request); err != nil { return err }
-		if err := s.ExecutionServices.Budget(state, request, "reserve"); err != nil { return err }
+		// Authorize the candidate cursor and writer lease. updateWithEvent does
+		// not commit either when authorization or budget reservation fails.
 		if request.Phase == PhaseCoder || request.Phase == PhaseTester {
 			state.WriteLease = &WriteLease{AttemptID: request.AttemptID, Workspace: request.Workspace, AcquiredAt: request.PreparedAt, RequestID: request.ID, Generation: request.LeaseGeneration}
 		}
 		item.CurrentRequest = request.ID
+		if err := s.ExecutionServices.Authorize(*state, request); err != nil { return err }
+		if err := s.ExecutionServices.Budget(state, request, "reserve"); err != nil { return err }
 		state.Protocol.Requests = append(state.Protocol.Requests, StageRecord{Request: request, Dispatch: "intent"})
 		return nil
 	})

@@ -44,6 +44,7 @@ type ExecutionInput struct {
 	AllowedPaths []string `json:"allowed_paths"`
 	Sources []InputSource `json:"sources"`
 	Prompt string `json:"prompt"`
+	OutputSchema map[string]any `json:"output_schema,omitempty"`
 }
 
 // ExecutionRequestID includes the turn: a repair never overwrites its parent.
@@ -71,6 +72,28 @@ func (s *Store) PersistExecutionInput(r PreparedAgentRequest, input ExecutionInp
 		}
 	}
 	return s.persistExecutionArtifact(r, "execution-input", "inputs/"+input.RequestID+".json", input)
+}
+
+// LoadExecutionInput reuses an already frozen request without publishing a
+// second version at the same identity. Absence is distinct from a bad artifact.
+func (s *Store) LoadExecutionInput(r PreparedAgentRequest) (ActorReference, ExecutionInput, bool, error) {
+	var input ExecutionInput
+	if err := validateTaskID(r.TaskID); err != nil { return ActorReference{}, input, false, err }
+	if r.TaskID == "." || r.TaskID == ".." || r.SessionID == "" || r.ExpectedSessionTurn <= 0 { return ActorReference{}, input, false, errors.New("execution input request binding is incomplete") }
+	requestID := ExecutionRequestID(r)
+	relative := filepath.ToSlash(filepath.Join("reports", "inputs", requestID+".json"))
+	path := s.path(r.TaskID, filepath.FromSlash(relative))
+	if _, err := os.Lstat(path); errors.Is(err, os.ErrNotExist) { return ActorReference{}, input, false, nil } else if err != nil { return ActorReference{}, input, false, err }
+	target, err := confinedFile(s.path(r.TaskID, "reports"), filepath.Join("inputs", requestID+".json"))
+	if err != nil { return ActorReference{}, input, false, fmt.Errorf("resolve frozen execution input: %w", err) }
+	content, err := os.ReadFile(target)
+	if err != nil { return ActorReference{}, input, false, err }
+	ref := ActorReference{Kind: "execution-input", Path: relative, SHA256: contentDigest(content)}
+	if err := s.ReadExecutionArtifact(r.TaskID, ref, &input); err != nil { return ActorReference{}, ExecutionInput{}, false, err }
+	if input.SchemaVersion != 1 || input.RequestID != requestID || input.TaskID != r.TaskID || input.WorkItemID != r.WorkItemID || input.AttemptID != r.AttemptID || input.SessionID != r.SessionID || input.Turn != r.ExpectedSessionTurn || input.Workspace != r.Workspace || !equalJSON(input.AISelection, r.AISelection) {
+		return ActorReference{}, ExecutionInput{}, false, errors.New("frozen execution input does not match the original request identity and model")
+	}
+	return ref, input, true, nil
 }
 
 // persistExecutionArtifact publishes once under the existing Task lock. E02
@@ -113,9 +136,15 @@ func (s *Store) ReadExecutionArtifact(id TaskID, ref ActorReference, value any) 
 	if err := validateTaskID(id); err != nil { return err }
 	if id == "." || id == ".." || ref.SHA256 == "" || ref.Kind == "" { return errors.New("artifact identity and digest are required") }
 	root := s.path(id, "reports")
+	if ref.Kind == "routing-plan" {
+		if ref.Path != "routing-plan.json" { return errors.New("routing plan must use its Task-local path") }
+		root = s.path(id, "")
+	}
 	target, err := confinedFile(s.path(id, ""), ref.Path)
 	if err != nil { return fmt.Errorf("resolve execution artifact: %w", err) }
-	relative, err := filepath.Rel(root, target)
+	resolvedRoot, err := filepath.EvalSymlinks(root)
+	if err != nil { return fmt.Errorf("resolve Task artifact root: %w", err) }
+	relative, err := filepath.Rel(resolvedRoot, target)
 	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) { return errors.New("artifact must be Task-owned") }
 	content, err := os.ReadFile(target)
 	if err != nil { return fmt.Errorf("read execution artifact content: %w", err) }

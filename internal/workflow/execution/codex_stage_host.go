@@ -37,6 +37,7 @@ type codexStageObservation struct {
 	PID           int    `json:"pid,omitempty"`
 	ProcessToken  string `json:"process_token,omitempty"`
 	TerminalEvent string `json:"terminal_event,omitempty"`
+	StderrDigest  string `json:"stderr_digest,omitempty"`
 }
 
 func (h *CodexStageHost) Identity() string { return h.ID }
@@ -51,6 +52,9 @@ func (h *CodexStageHost) Check(state workflow.RuntimeState, request workflow.Sta
 	if input.Actor != workflow.ActorCoder || input.RequestID != request.ID || input.TaskID != request.TaskID || input.WorkItemID != request.WorkItemID || input.AttemptID != request.AttemptID || input.SessionID != request.SessionID || input.Turn != request.Turn || input.Workspace != request.Workspace || input.WorkspaceInputs == nil || input.WorkspaceInputs.Digest() != request.InputDigest || !equalCodexPaths(input.AllowedPaths, request.AllowedPaths) {
 		return errors.New("stale: Codex Session input does not match the frozen Coder request")
 	}
+	// Source validation must precede ClaimStageDispatch. A rejected frozen
+	// source must never leave an otherwise unstarted request as unknown.
+	if err := h.Store.ValidateFrozenTaskSources(input); err != nil { return err }
 	status, err := h.Sessions.Load(request.SessionID)
 	if err != nil { return fmt.Errorf("load bound Codex Session: %w", err) }
 	if status.Task == nil || status.Task.TaskID != string(request.TaskID) || status.Task.WorkItemID != string(request.WorkItemID) || status.Task.AttemptID != string(request.AttemptID) || status.Session.ID != request.SessionID || status.Session.LastTurn+1 != request.Turn || status.Workspace.Path != request.Workspace {
@@ -87,12 +91,93 @@ func (h *CodexStageHost) VerifyObservation(_ workflow.RuntimeState, request work
 	var evidence codexStageObservation
 	if err := h.Store.ReadExecutionArtifact(request.TaskID, result.Evidence[0], &evidence); err != nil { return err }
 	if evidence.RequestID != request.ID || evidence.RequestDigest != codexRequestDigest(request) { return errors.New("Codex observation does not identify the original request") }
+	if evidence.State == "preflight-rejected" {
+		if result.Status != "not-dispatched" || evidence.PID != 0 || evidence.ProcessToken != "" || evidence.TerminalEvent != "" { return errors.New("preflight recovery cannot claim a started process") }
+		return h.proveMissingSourceNeverDispatched(request)
+	}
+	if evidence.State == "cli-argument-rejected" {
+		if result.Status != "not-dispatched" { return errors.New("CLI argument rejection requires a not-dispatched observation") }
+		proof, stderrDigest, err := h.proveCLIArgumentRejected(request)
+		if err != nil { return err }
+		if evidence.PID != proof.Receipt.PID || evidence.ProcessToken != proof.Receipt.ProcessToken || evidence.StderrDigest != stderrDigest || evidence.TerminalEvent != "" { return errors.New("CLI argument rejection proof changed") }
+		return nil
+	}
 	if evidence.PID == 0 && (evidence.ProcessToken != "" || evidence.State != "prepared") || evidence.PID > 0 && evidence.ProcessToken == "" { return errors.New("Codex observation has an incomplete process identity") }
 	journal, err := h.invocationJournal(request)
 	if err != nil { return err }
 	proof, err := journal.Reconcile()
 	if err != nil { return err }
 	if proof.Receipt.RequestDigest != evidence.RequestDigest || proof.Receipt.PID != evidence.PID || proof.Receipt.ProcessToken != evidence.ProcessToken || proof.Receipt.State != evidence.State { return errors.New("Codex observation conflicts with the durable invocation journal") }
+	return nil
+}
+
+// ProveMissingSourceNotDispatched is an explicit recovery for the legacy pilot
+// input that omitted its Task source. It cannot recover an arbitrary unknown
+// invocation and never starts a Session or Codex process.
+func (h *CodexStageHost) ProveMissingSourceNotDispatched(request workflow.StageRequest) (workflow.DispatchObservation, error) {
+	if err := h.proveMissingSourceNeverDispatched(request); err != nil { return workflow.DispatchObservation{}, err }
+	evidence := codexStageObservation{RequestID: request.ID, RequestDigest: codexRequestDigest(request), State: "preflight-rejected"}
+	ref, err := h.Store.PersistVerificationArtifact(request.TaskID, "verification-codex-invocation-observation", evidence)
+	if err != nil { return workflow.DispatchObservation{}, err }
+	return workflow.DispatchObservation{RequestID: request.ID, Executor: h.ID, Generation: request.LeaseGeneration, Status: "not-dispatched", Evidence: ref}, nil
+}
+
+// ProveCLIArgumentRejected handles only the known pre-dispatch Codex CLI
+// parser failure. It does not start a process or infer safety from PID absence.
+func (h *CodexStageHost) ProveCLIArgumentRejected(request workflow.StageRequest) (workflow.DispatchObservation, error) {
+	proof, stderrDigest, err := h.proveCLIArgumentRejected(request)
+	if err != nil { return workflow.DispatchObservation{}, err }
+	evidence := codexStageObservation{RequestID: request.ID, RequestDigest: codexRequestDigest(request), State: "cli-argument-rejected", PID: proof.Receipt.PID, ProcessToken: proof.Receipt.ProcessToken, StderrDigest: stderrDigest}
+	ref, err := h.Store.PersistVerificationArtifact(request.TaskID, "verification-codex-invocation-observation", evidence)
+	if err != nil { return workflow.DispatchObservation{}, err }
+	return workflow.DispatchObservation{RequestID: request.ID, Executor: h.ID, Generation: request.LeaseGeneration, Status: "not-dispatched", Evidence: ref}, nil
+}
+
+func (h *CodexStageHost) proveCLIArgumentRejected(request workflow.StageRequest) (CodexInvocationProof, string, error) {
+	reject := func(reason string) (CodexInvocationProof, string, error) { return CodexInvocationProof{}, "", errors.New(reason) }
+	if h == nil || h.Store == nil || h.Sessions == nil || h.ID == "" || request.Phase != workflow.PhaseCoder || request.Turn != 1 || request.Model == nil || !strings.EqualFold(request.Model.Provider, "codex") { return reject("CLI rejection recovery requires the original Codex Coder turn") }
+	if _, err := h.Store.ReadVerificationReceipt(request.TaskID, request.ID); err == nil { return reject("Codex request already has a terminal receipt") } else if !errors.Is(err, os.ErrNotExist) { return CodexInvocationProof{}, "", err }
+	journal, err := h.invocationJournal(request)
+	if err != nil { return CodexInvocationProof{}, "", err }
+	proof, err := journal.Reconcile()
+	if err != nil { return CodexInvocationProof{}, "", err }
+	if !codexCLIRejectionProof(proof) { return reject("Codex process or output cannot prove the known CLI parser rejection") }
+	status, err := h.Sessions.Load(request.SessionID)
+	if err != nil { return CodexInvocationProof{}, "", err }
+	if status.Task == nil || status.Task.TaskID != string(request.TaskID) || status.Task.WorkItemID != string(request.WorkItemID) || status.Task.AttemptID != string(request.AttemptID) || status.Session.ID != request.SessionID || status.Session.State != session.StateFailed || status.Session.LastTurn != request.Turn || status.Workspace.Path != request.Workspace || status.Backend.Name != "codex" || status.Backend.Model != request.Model.Model || status.Result.Status != "failed" || status.Execution.LastExitCode == nil || *status.Execution.LastExitCode != 2 { return reject("bound Codex Session does not prove the CLI parser failure") }
+	for _, name := range []string{"outputs/0001-events.jsonl", "outputs/0001-live.jsonl", "outputs/0001-final.txt"} {
+		content, err := h.Sessions.ReadText(request.SessionID, name)
+		if err != nil || content != "" { return reject("Codex Session has missing or nonempty output; keep request unknown") }
+	}
+	stderr, err := h.Sessions.ReadText(request.SessionID, "outputs/0001-stderr.log")
+	if err != nil { return CodexInvocationProof{}, "", err }
+	if !codexCLIParserRejected(stderr) { return reject("Codex stderr does not prove the known unsupported-argument rejection") }
+	return proof, digestHex([]byte(stderr)), nil
+}
+
+func codexCLIRejectionProof(proof CodexInvocationProof) bool {
+	r := proof.Receipt
+	return proof.Stopped && !proof.Terminal && !proof.Running && r.PID > 0 && r.ProcessToken != "" && r.OutputBytes == 0 && len(proof.Events) == 0 && r.TerminalEvent == "" && (r.State == "running" || r.State == "unknown") && (r.ExitCode == nil || *r.ExitCode == 2)
+}
+
+func codexCLIParserRejected(stderr string) bool {
+	return strings.HasPrefix(strings.TrimSpace(stderr), "error: unexpected argument '--ask-for-approval' found") && strings.Contains(stderr, "Usage: codex exec")
+}
+
+func (h *CodexStageHost) proveMissingSourceNeverDispatched(request workflow.StageRequest) error {
+	if h == nil || h.Store == nil || h.Sessions == nil || h.ID == "" || request.Phase != workflow.PhaseCoder || request.Turn != 1 || request.Model == nil || !strings.EqualFold(request.Model.Provider, "codex") { return errors.New("preflight recovery requires the original Codex Coder turn") }
+	var input workflow.ExecutionInput
+	if err := h.Store.ReadExecutionArtifact(request.TaskID, request.Input, &input); err != nil { return err }
+	if input.RequestID != request.ID || input.TaskID != request.TaskID || input.WorkItemID != request.WorkItemID || input.AttemptID != request.AttemptID || input.SessionID != request.SessionID || input.Turn != request.Turn || input.Actor != workflow.ActorCoder || input.Workspace != request.Workspace || !equalCodexJSON(input.AISelection, request.Model) || input.WorkspaceInputs == nil || input.WorkspaceInputs.Digest() != request.InputDigest || len(input.Sources) != 1 || input.Sources[0].Kind != "work-item" || !input.Sources[0].Required || input.Sources[0].Status != "loaded" || input.Sources[0].SHA256 != digestHex([]byte(input.Sources[0].Content)) { return errors.New("unknown request is not the legacy pilot source-preflight failure") }
+	status, err := h.Sessions.Load(request.SessionID)
+	if err != nil { return err }
+	if status.Task == nil || status.Task.TaskID != string(request.TaskID) || status.Task.WorkItemID != string(request.WorkItemID) || status.Task.AttemptID != string(request.AttemptID) || status.Session.ID != request.SessionID || status.Session.State != session.StateCreated || status.Session.LastTurn != 0 || status.Backend.Name != "codex" || status.Backend.Model != request.Model.Model || status.Result.Status != "not_started" || status.Execution.Phase != "" || status.Execution.LastStartedAt != "" || status.Execution.LastCompletedAt != "" || status.Execution.LastExitCode != nil || status.Workspace.Path != request.Workspace { return errors.New("original Codex Session has execution evidence; keep request unknown") }
+	if _, err := h.Store.ReadVerificationReceipt(request.TaskID, request.ID); err == nil { return errors.New("original Codex request already has a receipt") } else if !errors.Is(err, os.ErrNotExist) { return err }
+	journal, err := h.invocationJournal(request)
+	if err != nil { return err }
+	for _, path := range []string{journal.recordPath, journal.outputPath} {
+		if _, err := os.Lstat(path); err == nil { return errors.New("Codex invocation journal exists; keep request unknown") } else if !errors.Is(err, os.ErrNotExist) { return err }
+	}
 	return nil
 }
 
@@ -112,7 +197,9 @@ func (h *CodexStageHost) Start(ctx context.Context, request workflow.StageReques
 	state, err := h.Store.Load(request.TaskID)
 	if err != nil { return nil, nil, err }
 	if state.Protocol == nil || state.Protocol.Stop != nil { return nil, nil, errors.New("Codex execution is stopped before dispatch") }
-	frozen := session.FrozenTurn{Prompt: input.Prompt, ExpectedTurn: request.Turn, ReasoningIntensity: request.Model.ReasoningIntensity, InvocationObserver: journal}
+	prompt := input.Prompt
+	if input.OutputSchema != nil { prompt += codexReportIdentityInstruction(request) }
+	frozen := session.FrozenTurn{Prompt: prompt, OutputSchema: input.OutputSchema, ExpectedTurn: request.Turn, ReasoningIntensity: request.Model.ReasoningIntensity, InvocationObserver: journal}
 	result, runErr = session.ExecuteFrozenTurn(runCtx, h.Sessions, request.SessionID, "artifact-generation", frozen, "codex", request.Model.Model, nil)
 	proof, err := journal.Reconcile()
 	if err != nil { return nil, nil, errors.Join(runErr, err) }
@@ -123,6 +210,10 @@ func (h *CodexStageHost) Start(ctx context.Context, request workflow.StageReques
 	if err != nil { return nil, nil, errors.Join(runErr, err) }
 	if err := h.Store.PersistVerificationReceipt(request.TaskID, receipt); err != nil { return nil, nil, errors.Join(runErr, err) }
 	return nil, &receipt, runErr
+}
+
+func codexReportIdentityInstruction(request workflow.StageRequest) string {
+	return fmt.Sprintf("\n\nRequired report identity (copy these values exactly): schema_version=1, request_id=%s, task_id=%s, work_item_id=%s, attempt_id=%s, session_id=%s, turn=%d, actor=coder, input_sha256=%s. Each report section requires state, items, and reason. The final answer must be the JSON object only, without Markdown fences.\n", request.ID, request.TaskID, request.WorkItemID, request.AttemptID, request.SessionID, request.Turn, request.Input.SHA256)
 }
 
 func (h *CodexStageHost) Observe(request workflow.StageRequest) (*workflow.DispatchObservation, *workflow.VerificationReceipt, error) {
@@ -147,7 +238,7 @@ func (h *CodexStageHost) Observe(request workflow.StageRequest) (*workflow.Dispa
 		return nil, &receipt, nil
 	}
 	evidence := codexStageObservation{RequestID: request.ID, RequestDigest: proof.Receipt.RequestDigest, State: proof.Receipt.State, PID: proof.Receipt.PID, ProcessToken: proof.Receipt.ProcessToken, TerminalEvent: proof.Receipt.TerminalEvent}
-	ref, err := h.Store.PersistVerificationArtifact(request.TaskID, "codex-invocation-observation", evidence)
+	ref, err := h.Store.PersistVerificationArtifact(request.TaskID, "verification-codex-invocation-observation", evidence)
 	if err != nil { return nil, nil, err }
 	return &workflow.DispatchObservation{RequestID: request.ID, Executor: h.ID, Generation: request.LeaseGeneration, Status: "unknown", Evidence: ref}, nil, nil
 }

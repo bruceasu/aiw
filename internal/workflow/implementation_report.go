@@ -40,6 +40,31 @@ type ImplementationReport struct {
 	History ReportSection `json:"history"`
 }
 
+// ImplementationReportOutputSchema is the structured final-answer contract for
+// a Coder turn. Semantic identity and file digests are still checked by
+// ValidateImplementationReport against the frozen request and workspace.
+func ImplementationReportOutputSchema() map[string]any {
+	object := func(properties map[string]any, required ...string) map[string]any {
+		return map[string]any{"type": "object", "properties": properties, "required": required, "additionalProperties": false}
+	}
+	stringType := map[string]any{"type": "string"}
+	integerType := map[string]any{"type": "integer"}
+	strings := map[string]any{"type": "array", "items": stringType}
+	section := object(map[string]any{"state": stringType, "items": strings, "reason": stringType}, "state", "items", "reason")
+	reference := object(map[string]any{"kind": stringType, "path": stringType, "sha256": stringType}, "kind", "path", "sha256")
+	references := map[string]any{"type": "array", "items": reference}
+	report := object(map[string]any{
+		"schema_version": integerType, "request_id": stringType, "task_id": stringType,
+		"work_item_id": stringType, "attempt_id": stringType, "session_id": stringType,
+		"turn": integerType, "actor": stringType, "input_sha256": stringType,
+		"coverage": section, "changes": references, "interfaces": section,
+		"side_effects": section, "test_entrypoints": section, "decisions": section,
+		"limitations": section, "risks": section, "validation": section,
+		"references": references, "history": section,
+	}, "schema_version", "request_id", "task_id", "work_item_id", "attempt_id", "session_id", "turn", "actor", "input_sha256", "coverage", "changes", "interfaces", "side_effects", "test_entrypoints", "decisions", "limitations", "risks", "validation", "references", "history")
+	return object(map[string]any{"report": report}, "report")
+}
+
 func (section ReportSection) validate(name string) error {
 	if section.Items == nil { return fmt.Errorf("report %s must include an explicit items array", name) }
 	switch section.State {

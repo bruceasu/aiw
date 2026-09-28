@@ -112,18 +112,15 @@ treated as zero or estimated from Token counts.
 When an operator configures a migrated Task without explicit limits, AIW MUST
 read positive input/output limits from `[ai.usage_budget]` in `aiw.toml` and
 snapshot them into that Task. Existing Tasks MUST NOT acquire an inferred
-budget as a read side effect. For each
-configured budget dimension, cumulative human-approved increases MUST NOT
-exceed 100% of its initial limit. Repeated approvals share this ceiling, and
-an explicit override exceeding it MUST be rejected.
+budget as a read side effect. Human-approved increases have no fixed
+cumulative multiplier ceiling. Every approval MUST still set finite positive
+limits, increase every existing budget dimension, and preserve the recorded
+actor, reason, previous limits, new limits, and source usage digest.
 
-%% Verification (2026-09-28): The Store derives the initial baseline from the
-%% first approval's previous limits (or the configured limit before any approval)
-%% and rejects default or explicit increases above twice that baseline for
-%% every configured dimension. Focused tests were added but not run. The one
-%% compile-only attempt found a big.Rat argument type error, which was corrected
-%% statically; compilation was not retried under the repository's retry budget.
-%% Runtime behavior and full Schema 10 readiness remain unverified.
+%% Decision (2026-09-29): The initial 100% cumulative increase ceiling is
+%% removed by operator request. Approval remains human-initiated and audited;
+%% the Task's explicit finite limits and usage Gate remain in force. The
+%% archived Schema 10 design records the former policy as historical context.
 
 #### Scenario: Initialize a Task budget from configuration
 
@@ -131,11 +128,12 @@ an explicit override exceeding it MUST be rejected.
 - **THEN** AIW copies the configured initial input and output Token limits into
   that Task's budget baseline through the ordered event path
 
-#### Scenario: Repeated overrides reach the cumulative ceiling
+#### Scenario: Repeated approvals exceed the former cumulative ceiling
 
-- **WHEN** prior approvals have already increased a configured dimension by
-  its initial amount
-- **THEN** AIW rejects any further increase to that dimension
+- **WHEN** a human approves a further positive increase after prior approvals
+  have already doubled a configured dimension's initial limit
+- **THEN** AIW records the new finite limits and approval without imposing a
+  fixed multiplier ceiling, and reevaluates the usage Gate against known usage
 
 #### Scenario: Usage crosses one budget
 
