@@ -1,0 +1,3 @@
+[ai.usage_budget]
+input_tokens = 30000
+output_tokens = 6000
