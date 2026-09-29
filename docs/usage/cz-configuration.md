@@ -33,5 +33,15 @@ Copilot SDK 可使用已登录的 GitHub 凭据，也可在 `[cz.copilot].api_ke
 GitHub 用户令牌。Codex SDK 可使用已登录的 Codex 凭据，也可在
 `[cz.codex].api_key` 中设置 API key。OpenAI SDK 需要模型和 API key。
 
-`cz` 需要 Node.js 22.12.0 或更高版本。运行 `build.bat cz` 安装插件依赖并把
-TypeScript 编译为 JavaScript。`aiw cz` 直接运行 `aiw-cz.js` 插件入口。
+`cz` 需要 Node.js 22.12.0 或更高版本。运行 `build.bat cz` 安装构建依赖、
+编译 TypeScript，并在 `plugins/aiw-cz/release/` 生成当前平台的发布样本。
+`build.bat plugins` 只将该样本安装到 `plugins/aiw-cz`，保留安装目录已有的
+`cz.toml` / `.cz.toml`，不会复制 TypeScript 源码和 `node_modules`。
+Linux 构建需在 Linux 主机运行 `npm install` 和 `npm run build:release`，
+再将完整的 `release/` 内容安装到 AIW 的 `plugins/aiw-cz/`。
+
+发布样本的 `release-manifest.json` 列出实际文件、来源平台和用途，并记录
+开发目录的体积基线。样本包含 Copilot 和 Codex 对应平台的运行资源、Koffi
+原生组件、语言文件和打包后的 JavaScript；Node.js 仍由运行环境提供。
+`aiw cz` 继续运行 `aiw-cz.js` 插件入口。打包后无法找到必需的 provider
+二进制时，该 provider 会报告缺失资源并按原有顺序尝试下一种方式。

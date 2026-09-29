@@ -1,56 +1,52 @@
 ---
 name: fd-workflow
-description: Design an AIW Task from an Issue or refine its Feature Design, including decisions and ordered work items. Also supports explicitly requested standalone FD storage.
+description: Create and design a numbered FD, record decisions and Work Items, and hand it to the next role.
 ---
 
 # Feature Design Workflow
 
-Read `skills/work-management.md`. A managed FD is the Task's primary
-engineering plan. Resolve the Issue and Task when they exist, then read the
-approved Issue evidence, relevant code and stable specs. An OpenSpec change is
-created only when the user explicitly requests it. Stable spec updates do not
-require a change directory.
+Read `skills/work-management.md` and the repository instructions. Use this
+Skill when the user wants to create, refine, review, or close a Feature Design.
+It does not implement code. A new FD does not require an AIW Task or OpenSpec
+change. Read an Issue and stable specs when they affect the design.
 
-Choose the FD mode before writing: an AIW Task uses the managed FD below;
-`FD-XXX` numbering, `FEATURE_INDEX.md`, and the portable template belong only
-to standalone FD storage. Do not place an FD under `docs/requirements/`;
-that directory holds Issue records. A managed FD uses its Task ID for identity
-and numbered Work Items within the document.
+## Resolve the FD
 
-## Managed FD
+Use an explicit FD ID first, then a unique FD linked from the current Issue or
+conversation. Ask when several FDs match. For a new FD, use `aiw fd new
+"<title>" [--issue <id>]`; this allocates an unused `FD-XXX` number, creates
+the file from `docs/features/TEMPLATE.md`, updates the index, and records a
+`design-requested` event. If an AIW Task already owns a legacy FD, keep its
+current path and use the legacy workflow until a deliberate migration.
 
-Use `docs/features/<task-id>.md` for a managed Task FD; the Task's
-`.ai/tasks/<task-id>/` record remains the execution center. Move an older FD
-stored elsewhere to this path before mapping it to Core, and preserve completed
-items. A legacy Task with only an OpenSpec `design.md` and `tasks.md` may
-continue from them until its plan is deliberately moved to an FD.
+## Design
 
-Record the goal and source Issue, constraints, relevant stable specs, decisions
-with evidence and rationale, compatibility effects, acceptance evidence,
-ordered work items, TODO, Verification, and `%% NEEDS_INPUT` for unresolved
-material choices. Use numbered checklist items such as `- [ ] 1.1 ...` so AIW
-can map them to Workflow Core Work Items. Keep item IDs stable after mapping.
-The FD owns their meaning and ordering; Workflow Core owns execution state.
+Read the FD, approved Issue evidence when present, relevant code, prior FDs,
+and stable specs. Write the problem, credible options, decision and reason,
+scope, compatibility effects, numbered Work Items, acceptance, and a realistic
+Verification plan. Use `%% NEEDS_INPUT: ...` for material unknowns. Do not
+turn a routine technical choice with clear evidence into a human question.
+Keep Work Item IDs stable after implementation starts.
 
-Choose a clearly better approach from evidence and known user preferences.
-Use a bounded sub-agent comparison only when delegation is authorized and
-useful. Ask the human when options are materially close, critical information
-is missing, or the choice changes authorization or accepted scope. Record the
-choice and remaining trade-offs in the FD. Mark design readiness as
-`FD_APPLIED`, `FD_NOT_REQUIRED`, or `BLOCKED`. A `BLOCKED` FD cannot map its
-numbered work items yet; resolve material decisions before setting it ready.
+`Design` becomes `Open` only when the FD contains all required sections,
+numbered Work Items, and no material `%% NEEDS_INPUT` note. The Planner then
+emits `design-ready` with `--producer planner --artifact <fd-path>` and the
+current source event ID when one is dispatched. This records the handoff to
+Worker. Do not emit an event merely because a heading or template exists.
 
-When stable behavior changes, update the relevant `openspec/specs/` capability
-spec. If a linked OpenSpec change exists, keep its proposal and spec delta in
-sync with the FD. Do not make its `tasks.md` the Task's required work source.
+Use `aiw fd list`, `show`, and `resume` for status and recovery. A pending event
+can be handled by the named role in the current host after `aiw fd claim <id>
+<event-id> --session <host-session-id>`. A dispatched event with unknown outcome
+must be reconciled against its original session or log.
 
-After writing the FD, use the supported AIW planning/sync operation to map its
-items into `.ai/tasks/<task-id>/`. Report any failed mapping as a Gate. Do not
-create Attempts, claim leases, change Task status, commit, or run verification
-as part of design.
+## Close and archive
 
-## Standalone FD
+A passed Reviewer event is required before `aiw fd close <id> Complete`.
+Deferred and Closed need `--reason "..."`. Archive changes the FD
+path and index; it does not merge or publish code. Update a changelog only if
+the repository uses one. Do not commit, push, or merge as a side effect of
+design or archive unless the user authorized that action.
 
-Use this mode only when the user explicitly requests standalone FD storage or
-there is no managed AIW Task. Read `references/portable-operations.md` for its
-layout and operations. Do not silently reconcile a standalone FD into a Task.
+Read `references/portable-operations.md` for numbered FD conventions and
+`references/templates.md` for layout examples. When they conflict with the
+FD-first contract above, use this Skill and the current CLI behavior.

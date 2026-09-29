@@ -1,8 +1,8 @@
 # AIW Issue 使用手册
 
-Issue 可以记录 Bug、功能或修改。新流程是 **Issue → Feature Design → Task**。
-`.ai/tasks/<task-id>/` 保存 Task 生命周期和执行状态；
-`docs/features/<task-id>.md` 保存工程决策和工作项。OpenSpec 负责
+Issue 可以记录 Bug、功能或修改。新流程是 **Issue → 编号 FD → 角色交接**。
+`docs/features/FD-XXX_SLUG.md` 保存工程决策、工作项与验证；
+`.ai/fd/<fd-id>/` 保存交接回执。旧 Task 及 Core 数据继续可读。OpenSpec 负责
 `openspec/specs/` 中的稳定规格，change 是可选关联。
 
 ## 当前命令与兼容性
@@ -18,7 +18,8 @@ aiw issue chat [id]
 aiw issue new <slug> [title]
 aiw issue capture <id> <artifact> --file <path>
 aiw issue approve <id> APPROVED --by <actor> --reason <reason>
-aiw issue promote <id> --task <task-id>
+aiw fd new "<title>" --issue <id>
+aiw issue promote <id> --task <task-id>  # 旧 Task 兼容入口
 aiw issue show <id>
 aiw issue link-parent <child-id> <parent-id>
 aiw issue children <parent-id>
@@ -30,7 +31,13 @@ aiw issue children <parent-id>
 
 %% NEEDS_INPUT: 独立的 ISSUE 编号和 `docs/issues/` 存储需要单独确定迁移策略；本阶段保留 REQ 数据格式以兼容旧记录。
 
-## 推广与 FD
+## FD 交接与旧推广
+
+批准后的 Issue 默认通过 `aiw fd new "<title>" --issue <id>` 链接到编号
+FD。Planner 根据批准来源完成设计，再发出 `design-ready`；不必先创建
+Task 或 OpenSpec change。完整用法见 [FD 工作流](aiw-fd.md)。
+
+以下说明仅适用于显式选择 `aiw issue promote --task` 的旧 Task 流程。
 
 推广会创建或复用原生 Task、写入
 `.ai/tasks/<task-id>/artifacts/requirement-handoff.md`，并建立

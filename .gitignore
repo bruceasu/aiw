@@ -14,6 +14,7 @@ plugins/aiw-cz/aiw-cz.exe
 plugins/aiw-cz/aiw-cz
 plugins/aiw-cz/node_modules/
 plugins/aiw-cz/dist/
+plugins/aiw-cz/release/
 plugins/aiw-wf/aiw-wf.exe
 plugins/aiw-wf/aiw-wf
 plugins/aiw-req/aiw-req.exe

@@ -1,14 +1,14 @@
 ---
 name: issue-management
-description: Manage one AIW Issue from discovery through a decision or Task handoff.
+description: Manage one AIW Issue from discovery through a decision or FD handoff.
 disable-model-invocation: true
 ---
 
 # Issue Management
 
 Use this skill when the user wants to discover, refine, split, decide, or
-promote one AIW Issue about a bug, feature, or modification. Its work ends at
-an Issue decision or Task handoff. For an existing Requirement, keep its `REQ`
+hand off one AIW Issue about a bug, feature, or modification. Its work ends at
+an Issue decision or FD handoff. For an existing Requirement, keep its `REQ`
 ID and artifacts; use `requirement-management` for compatibility details.
 Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`
 for authorization and Task lifecycle.
@@ -19,7 +19,7 @@ A request may name source files, exact edits, or tests while invoking this
 skill. Treat those details as Issue input, not as permission to implement.
 Finish the Issue stage before starting engineering design or changing code.
 Use `fd-workflow` for design after handoff and `implement` for code changes
-under its Task and FD rules. If the user clearly asks to switch to
+under its FD rules. If the user clearly asks to switch to
 implementation, state the switch and follow `implement` before any edit.
 If the intended stage is unclear, ask which stage the user wants. Do not
 change source files or run implementation validation while using this skill.
@@ -84,27 +84,25 @@ A missing business rule or source conflict cannot be waived by the agent. If
 it prevents a valid decision, report `BLOCKED` or `INCOMPLETE` and the precise
 `%% NEEDS_INPUT` question. Approval and promotion are separate human decisions.
 
-After an approved Issue is promoted, the handoff creates or reuses one AIW
-Task with source lineage. Its managed FD at `docs/features/<task-id>.md` owns
-engineering decisions and ordered work items; the Task lives at
-`.ai/tasks/<task-id>/`. Use `fd-workflow` to complete the FD from approved
-sources, map selected work items with `aiw wf plan`, and update stable
-OpenSpec specs when requirements change. Use native Task creation by default.
-Do not create an OpenSpec change unless the user explicitly asks for one;
-stable spec updates do not imply a change directory.
+After an Issue is approved, the new default handoff is a numbered FD. Use
+`aiw fd new "<title>" --issue <id>` to link the approved source, then use
+`fd-workflow` to write decisions and ordered Work Items. The existing
+`aiw issue promote --task` command remains a legacy Task handoff and must be
+chosen explicitly. Do not create an OpenSpec change unless the user explicitly
+asks for one; stable spec updates do not imply a change directory.
 Discovery alone does not authorize implementation or establish Design
 Readiness.
 
-For a post-promotion repair, preserve approved sources, approval and Session
-records, Task state, and authored FD content. Replace only known generated
-placeholders. Mark unsupported details `%% NEEDS_INPUT`, and ask only about a
-material conflict or missing decision. Report repaired files and remaining
-Gates without repeating promotion.
+For a post-handoff repair, preserve approved sources, approval and Session
+records, legacy Task state when present, and authored FD content. Replace only
+known generated placeholders. Mark unsupported details `%% NEEDS_INPUT`, and
+ask only about a material conflict or missing decision. Report repaired files
+and remaining blockers without repeating the handoff.
 
 ## Completion and verification
 
 Finish when the current requested stage has a recorded outcome: a source-backed
-Plan, a documented decision, a linked split, or an approved Issue handoff.
+Plan, a documented decision, a linked split, or an approved Issue-to-FD handoff.
 Report changed artifacts, source and revision evidence reviewed, commands
 actually run, unresolved Gates, and the next action. Verify the resulting
 record and lineage by static inspection. State skipped validation explicitly;

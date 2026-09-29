@@ -12,7 +12,17 @@ Unless explicitly authorized by the Skill contract, a Skill is read-only: it
 does not modify files, create or mutate AIW Tasks or OpenSpec changes, create
 branches or worktrees, commit, publish externally, or run runtime validation.
 
-## Managed Execution Vocabulary
+## FD-first vocabulary
+
+For new work, the numbered FD owns decisions, Work Items, status, and
+Verification. `.ai/fd/<id>/` stores role handoff receipts and logs, not a
+second Task status. Roles are PM, Planner, Worker, Reviewer/Verifier, and the
+human decision maker. A role must hand off an existing artifact and actual
+evidence. Do not invent a review or rerun an unknown dispatched event.
+
+The table below applies to legacy managed Tasks.
+
+## Legacy Managed Execution Vocabulary
 
 | Term | Owner | Meaning |
 | --- | --- | --- |
@@ -30,8 +40,8 @@ recommended next action. They MUST NOT independently claim or release a Task
 write lease, fabricate an Attempt outcome, set a Task display status, or alter
 generated Workflow regions in planning artifacts.
 
-AIW Task, worktree, branch, Session, commit, synchronization, archive, merge,
-and cleanup rules belong to `skills/work-management.md`; reviewed Skills must
+FD and legacy Task workspace, branch, Session, commit, archive, merge, and
+cleanup rules belong to `skills/work-management.md`; reviewed Skills must
 reference that contract instead of redefining lifecycle rules. External
 publication requires an explicit user request.
 

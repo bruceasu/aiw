@@ -1,9 +1,12 @@
 # aiw
 
-AIW is a workflow-first CLI for organizing work, preserving task state, and exposing reusable capabilities through a small core, Skills, AI support, and plugins.
+AIW is a workflow-first CLI for organizing work with numbered Feature Designs,
+role handoffs, Skills, AI support, and plugins. Existing Task and Workflow Core
+records remain available for compatibility.
 
 ## Feature Overview
 
+* Create numbered FDs and route PM, Planner, Worker, and Reviewer handoffs with `aiw fd`
 * Initialize AIW Task, FD, and optional OpenSpec directories and default instruction files
 * Automatically create or append `.wt/` entries to `.gitignore`
 * Generate or merge AI prompt files from `docs/agent-templates/`
@@ -13,7 +16,7 @@ AIW is a workflow-first CLI for organizing work, preserving task state, and expo
 * Output task-specific context prompts
 * Create and maintain long-lived specification documents
 * Archive completed tasks
-* Run bounded foreground supervision with frozen model and compile plans
+* Read legacy bounded foreground supervision records during migration
 * Inspect Task execution and recovery state
 
 ## Directory Structure
@@ -37,10 +40,13 @@ repo/
 Notes:
 
 * `AGENTS.md` and `.github/copilot-instructions.md` are created only if they do not already exist.
-* Task metadata and runtime state live under `.ai/tasks/<task-id>/`; an authored
-  FD at `docs/features/<task-id>.md` owns the work plan. Stable specs live under
-  `openspec/specs/`. An OpenSpec change is optional, and older `tasks.md` plans
-  remain readable. The compatible `tasks.toml` filename remains readable.
+* New work uses `docs/features/FD-XXX_SLUG.md` and `.ai/fd/<fd-id>/` role
+  receipts. Legacy Task metadata and runtime state live under
+  `.ai/tasks/<task-id>/`; legacy FDs at `docs/features/<task-id>.md` and older
+  `tasks.md` plans remain readable. Stable specs live under `openspec/specs/`.
+  An OpenSpec change is optional.
+
+See [FD-first workflow](docs/usage/aiw-fd.md) for new development work.
 
 ## Build and Installation
 
@@ -76,11 +82,14 @@ build.bat req
 ```
 
 The Conventional Commit wizard is a TypeScript plugin requiring Node.js 22.12.0
-or newer. Install its dependencies and compile it with:
+or newer. Build its platform-specific release directory with:
 
 ```bat
 build.bat cz
 ```
+
+`build.bat plugins` installs the curated CZ release without its TypeScript
+source or `node_modules`. See [CZ configuration](docs/usage/cz-configuration.md).
 
 ## Commands
 

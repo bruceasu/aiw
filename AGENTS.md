@@ -3,18 +3,20 @@
 Always respond in Chinese.
 Write prompts in Easy English when asked to draft prompts.
 
-## Managed Workflow
+## FD Workflow
 
-Before coding, read the selected AIW Task, its FD work item, approved Issue
-handoff when present, and relevant stable specs under `openspec/specs/`.
+Before coding, read the selected numbered FD and its Work Items, the approved
+Issue when present, and relevant stable specs under `openspec/specs/`. For a
+legacy AIW Task, also read its Task record and linked FD.
 Read a linked OpenSpec change only when one exists and affects the work:
 
-- `openspec/changes/<task>/`
+- `openspec/changes/<id>/`
 
-The FD is the primary plan. An older Task may continue from its existing
-`tasks.md` and `design.md`. An OpenSpec change is optional.
+The numbered FD is the primary plan for new work. A new FD does not require
+Task or Workflow Core. An older Task may continue from its existing `tasks.md`
+and `design.md`. An OpenSpec change is optional.
 
-- Work on one task at a time.
+- Work on one FD or legacy Task at a time.
 - Keep changes scoped and reviewable.
 - Do not refactor unrelated modules.
 - Preserve backward compatibility unless explicitly required.
@@ -23,10 +25,13 @@ The FD is the primary plan. An older Task may continue from its existing
 - Update stable specs or design notes only when their requirements or decisions
   changed.
 
-When a dedicated branch or worktree is needed:
+When a dedicated branch or worktree is needed for a numbered FD:
 
-- branch: `feature/<task-id>`
-- worktree: `.wt/<task-id>`
+- branch: `feature/<fd-id>`
+- worktree: `.wt/<fd-id>`
+
+Use `aiw fd worktree add <fd-id>` after the FD is committed. Legacy Tasks keep
+their existing `feature/<task-id>` and `.wt/<task-id>` conventions.
 
 ## Resource Budget
 
@@ -83,9 +88,10 @@ to the user's requested outcome.
 
 ## Working Rules
 
-- For managed engineering work, read `skills/work-management.md`. Use AIW for
-  Task lifecycle and explicit workspace isolation, and OpenSpec for requirement
-  and checklist artifacts. Work in the primary workspace by default.
+- For engineering work, read `skills/work-management.md`. Use numbered FDs for
+  new work and AIW Task/Core only for legacy Tasks. Use OpenSpec for stable
+  capability specs and explicit change requests. Work in the primary workspace
+  by default.
 - Plan first for non-trivial work.
 - Inspect the nearest code, tests, config, and docs.
 - Expand only when current evidence is insufficient.

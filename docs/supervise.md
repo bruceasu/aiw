@@ -1,5 +1,8 @@
 # `workflow supervise` 当前执行流程
 
+> 旧 Task 兼容资料。新开发工作使用编号 FD 与角色交接，见
+> [FD 工作流](usage/aiw-fd.md)。不要为新 FD 启动 Supervisor。
+
 ## 默认执行路径与协议版本
 
 当前新 Task 使用 **schema 9**。下图和本文常规命令描述这条已接通的 CLI

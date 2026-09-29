@@ -1,5 +1,8 @@
 # AIW 自动编码流程
 
+> 本文记录旧 Task 的 Supervisor 路径。新开发工作使用
+> [FD 工作流](usage/aiw-fd.md)。
+
 本文按当前源码说明自动编码入口和执行边界。详细操作及故障处理见
 [Supervise 使用指南](supervise.md)。
 

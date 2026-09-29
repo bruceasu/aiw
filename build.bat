@@ -156,15 +156,19 @@ exit /b 0
 pushd plugins\aiw-cz
 call npm install || (popd & exit /b 1)
 call npm run build || (popd & exit /b 1)
+call npm run build:release || (popd & exit /b 1)
 popd
-echo TypeScript cz plugin built in plugins\aiw-cz\dist.
+echo TypeScript cz plugin built in plugins\aiw-cz\release.
 exit /b 0
 
  :build_plugins
 call :build_workflow || exit /b 1
 call :build_req || exit /b 1
 call :build_cz || exit /b 1
-call :install_entries plugins "%INSTALL_DIR%\plugins" || exit /b 1
+if not exist "%INSTALL_DIR%\plugins" mkdir "%INSTALL_DIR%\plugins" || exit /b 1
+robocopy plugins "%INSTALL_DIR%\plugins" /S /Z /MT:32 /R:1 /W:1 /FFT /XD "%CD%\plugins\aiw-cz" /NFL /NDL /NP
+if errorlevel 8 exit /b 1
+node plugins\aiw-cz\scripts\release.mjs --install "%INSTALL_DIR%\plugins\aiw-cz" || exit /b 1
 exit /b 0
 
  :build_docs
@@ -178,13 +182,7 @@ exit /b 0
 
  :install_entries
 if not exist "%~2\" mkdir "%~2" || exit /b 1
-for %%E in ("%~1\*") do (
-    if exist "%%~fE\" (
-        xcopy /E /I /Y /H "%%~fE" "%~2\%%~nxE\" >nul || exit /b 1
-    ) else (
-        copy /Y "%%~fE" "%~2\" >nul || exit /b 1
-    )
-)
+call cp-mul.bat "%~1" "%~2" || exit /b 1
 exit /b 0
 
  :help
@@ -197,8 +195,8 @@ echo   windows  Build and install the Windows executable.
 echo   linux    Build and install the Linux executable.
 echo   wf       Build Windows and Linux workflow plugin binaries.
 echo   req      Build Windows and Linux req plugin binaries.
-echo   cz       Install dependencies and compile the TypeScript cz plugin.
-echo   plugins  Build plugin binaries and install plugins individually.
+echo   cz       Install dependencies and build the TypeScript cz release.
+echo   plugins  Build plugin binaries and install the curated cz release.
 echo   docs     Copy usage documentation to the install directory.
 echo   skills   Build workflow binaries and install skills individually.
 echo.
