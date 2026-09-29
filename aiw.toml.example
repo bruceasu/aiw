@@ -137,6 +137,10 @@ llm = false
 # Selecting a provider tries only that SDK, then the manual wizard.
 # provider = "copilot"
 candidates = 3
+# Print resolved provider configuration during `aiw cz --llm` runs.
+# Also available through AIW_CZ_DEBUG=1.
+debug_source = false
+
 # max_subject_length = 72
 # Preferred editor command for long-form editing in CZ.
 # This takes precedence over GIT_EDITOR/VISUAL/EDITOR.
