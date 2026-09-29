@@ -2,9 +2,8 @@
 
 ## 默认执行路径与协议版本
 
-当前新 Task 默认使用 **schema 9**。下图和本文常规命令描述这条已接通的 CLI
-路径。源码另有 schema 10 持久化多阶段协议，但只有受控宿主、授权服务、预算服务
-及平台证据齐备后才能通过受管迁移启用；`supervise start` 不负责启用它。
+当前新 Task 使用 **schema 9**。下图和本文常规命令描述这条已接通的 CLI
+路径。
 
 Task 建立时可以没有 Session；首次准备受管 Agent 请求时，Workflow 先将同名
 Session 绑定写入 Task 元数据，再创建或读取 Session，成功后才创建 Attempt。
@@ -29,8 +28,8 @@ flowchart TD
 turn，解析结构化结果，执行编译和有界修复，最后在满足条件时完成本地 Git
 交付。它不自动 push、发布 PR 或 archive。
 
-Tester、受控测试 Runner、Verifier 和知识生成不属于默认循环中的必经自动步骤。
-schema 10 的实现与启用边界见下方专节；总体流程见[自动编码](auto-coding.md)。
+当前监督循环只自动派发 Coder 并执行编译。
+总体流程见[自动编码](auto-coding.md)。
 
 ## Quick start：从新 Task 开始
 
@@ -47,9 +46,9 @@ aiw show payment-retry
 aiw context payment-retry
 ```
 
-补齐 `openspec/changes/payment-retry/` 中的需求、设计和 `tasks.md`。每项清单应有
-明确范围和完成条件；不要让 Agent 从空白任务猜需求。若 Task 已由
-`requirement promote` 创建，直接检查现有工件，不要重复创建。
+补齐 `docs/features/payment-retry.md` 中的决策和编号工作项，将 Design Readiness
+设为 `FD_APPLIED` 或 `FD_NOT_REQUIRED`。每项工作应有明确范围和完成条件；
+若 Task 已由 `issue promote` 创建，直接检查现有 FD，不要重复创建。
 
 ### 2. 准备工作树和计划
 
@@ -122,7 +121,7 @@ Task 也应先生成路由与 Compile Plan。推荐器可调用全局 AI provide
 
 | 目的 | 命令 | 注意事项 |
 |---|---|---|
-| 只预览下一步 | `aiw wf run payment-retry` | 不启动 Agent，但可能准备并持久化请求；不是完全只读 |
+| 准备下一步 | `aiw wf run payment-retry` | 不启动 Agent，但可能准备并持久化请求；不是只读操作 |
 | 执行一个 Work Item | `aiw wf run payment-retry --execute` | 不自动交付；不等同于 supervise 的编译修复循环 |
 | 显式在主工作区执行一步 | `aiw wf run payment-retry --execute --primary` | Task 必须绑定主工作区 |
 | 请求停止循环 | `aiw wf supervise payment-retry stop` | 保留状态；确认在途进程结束后再启动新循环 |
@@ -156,8 +155,7 @@ Profile 必须同时包含非空 `provider` 和 `model`；缺失或不完整时�
 
 默认映射为 `analysis=fast`、`coder/tester=balanced`、`verifier=reasoning`。
 **默认 schema 9 supervise 实际读取路由计划中的 `coder` 项**，尚未按角色自动
-调度全部 Actor，也不按失败次数升级模型。schema 10 另有按 Actor 记账的模型
-路由和升级服务，不能把它的能力当作默认 CLI 行为。
+调度全部 Actor，也不按失败次数升级模型。
 
 新请求将 Profile、provider、model 和无密钥摘要存入 `AISelection`；启动时的
 CLI 覆盖在生成快照时应用。执行与编译修复复用该选择，修改配置或重启时传入其他
@@ -207,10 +205,10 @@ flowchart TD
 `aiw wf supervise <task-id> status` 会区分重试资格时间与实际调度：到期不代表
 后台已经自动重启。状态输出会给出待填写的答复文件或手动 `start` 下一步。
 
-`tasks.md` 暂时读取失败时，Supervisor 最多重试两次读取；仍失败则保存
+Task 清单（FD 的 Work Items；旧 Task 为 `tasks.md`）暂时读取失败时，Supervisor 最多重试两次读取；仍失败则保存
 `checklist-paused` 原因并暂停，不将其算作 Agent no-progress，也不新建 Attempt。
 清单解析冲突和权限错误不会自动重试或跳过。修复原文件后再执行
-`aiw wf supervise <task-id> start`。这不改变 OpenSpec 清单作为当前规划来源的约定。
+`aiw wf supervise <task-id> start`。当前规划来源是 FD 工作项；尚未迁移的旧 Task 继续使用 `tasks.md`。
 
 已派发请求的 Session 结果暂时未知时，Supervisor 有界重读同一 Session；仍未知
 则写入绑定原 Attempt、Session 和 turn 的人工答复文件。选择 `resume-supervisor`
@@ -227,7 +225,7 @@ no-progress 处理。结果不完整或绑定不符时暂停，保留诊断。
 引用和各事实章节；报告无效时最多准备一次报告补充，仍无效则打开
 `report-manual-review` Gate。报告校验通过本身不代表 Work Item 已被接受。
 
-勾选 `tasks.md` 不会绕过活跃的受管编译、阻塞状态或未清除的编译失败。
+勾选 FD 工作项（旧 Task 为 `tasks.md`）不会绕过活跃的受管编译、阻塞状态或未清除的编译失败。
 编译通过并关闭 Attempt 后，由清单同步决定 Work Item 完成及后续调度。
 
 ### 两类失败计数
@@ -301,7 +299,8 @@ Gate、待处理请求、写入 lease 或投影修复时，隔离 Task 可进入
 | `.ai/tasks/<task-id>/reports/attempts/` | 不可变失败记录 |
 | `.ai/tasks/<task-id>/reports/latest-failure.md` | 原因、可重试性、责任方、下一步和证据引用 |
 | `.ai/sessions/<session-id>/` | Session 状态、提示词、输出和线程信息 |
-| `openspec/changes/<task-id>/tasks.md` | 人工清单与 Workflow 投影 |
+| `docs/features/<task-id>.md` | 默认的人工工作项清单与 Workflow 投影 |
+| `openspec/changes/<task-id>/tasks.md` | 尚未迁移 FD 的旧 Task 清单 |
 
 ```powershell
 aiw wf report payment-retry
@@ -312,16 +311,15 @@ aiw wf repair payment-retry
 
 `report` 只读取报告，不初始化状态，也无需逐个查看 Session outputs。
 `recover` 恢复持久化状态事件，`repair` 修复投影；它们不重新执行 Agent。
-`supervise start` 遇到已完成 Work Item 的 `tasks.md` 写回修复记录时，会重试该写回；
+`supervise start` 遇到已完成 Work Item 的清单写回修复记录时，会重试该写回；
 确认成功后关闭对应记录并继续处理后续 Work Item。写回失败时保留记录并暂停。
 `continue/resume` 选择 `repair-projection` 或 `repair-session` 时只执行修复；修复失败
 保留答复供重试，成功后提示下一条 `supervise start` 命令。
-Schema 9 `supervise` 遇到非预算 Gate 时，会在
+`supervise` 遇到 Gate 时，会在
 `.ai/tasks/<task-id>/reports/remediation/` 写入带风险说明的报告和 `.response.json`
 答复模板；填写 `option_id`、`operator`、`risk_confirmed`，确认或豁免 Gate 时还须
 填写 `note`，再运行 `aiw wf continue <task-id>`。`continue` 只处理报告中绑定的
 Gate 和 WorkItem；`supervise start` 遇到待答复报告时只显示选项，不派发新 Agent。
-预算 Gate 仍须通过 `aiw wf budget` 的授权命令处理。
 处理 Gate 后应根据诊断决定是否 reopen 和重新 start。
 
 若 `state.json` 缺失，`start` 仅在存在有效、ID 匹配的持久 Task 元数据时初始化
@@ -341,47 +339,6 @@ Attempt 历史。`status` 不执行这种初始化。
 `Retry` 的时间只表示重试资格，不表示存在自动后台调度。以上提示只读，不解决 Gate、不重开 Work Item，也不覆盖已有请求。
 
 %% Verification (2026-09-28): 已静态检查 status 分类与输出路径；`python scripts/compile.py` 退出码为 0。新增的状态分类测试和端到端恢复验证均未运行。
-
-## schema 10：已实现的受控协议与启用边界
-
-`internal/workflow/execution_protocol.go` 定义阶段
-`coder → report-validation → compile → tester → test-run → acceptance → accepted`。
-Coder 完成只结束实现阶段；Tester 使用独立 Session 和测试路径写入范围，测试
-Runner 只执行冻结 manifest。结果需绑定请求、输入、Session turn 和 lease generation。
-
-这条路径需要受控宿主接入 `ExecutionServices`，并提供授权、预算、结果及接受
-校验和平台启用证据。`JournaledVerificationHost` 还要求完整的执行边界；缺少
-宿主、网络隔离或独立断言审查能力时拒绝执行，不降级成普通 shell。
-
-**当前通用 CLI 的 `NextRunnerOutcome` 对 schema 10 返回 blocked，要求受控阶段
-适配器，并禁用旧派发。** 因此不能靠再次 `supervise start` 运行完整多角色链路，
-也不能手改 `schema_version` 启用。命令面没有通用的迁移、grant 或解除 Stop 操作。
-
-| 事项 | schema 10 行为 |
-|---|---|
-| 明确 Stop | 即使没有前台 Supervisor 也持久保存；重启不解除，不代表在途进程已退出 |
-| 结果未知 | 通过原执行器只读对账，保留请求、预留额度和写入权；缺输出不能证明未派发 |
-| 已保存结果 | 校验后消费原结果，不重新调用模型或测试命令 |
-| 预算 | 按 Actor/生成请求记账；升级使用配置中的不同模型顺序，重启不刷新额度 |
-| 旧预算不明 | 保留未知状态并要求人工决策，不归零，也不伪记耗尽 |
-| 本地交付 | 要求冻结计划、精确授权及受控交付宿主；旧 `local-merge` 被拒绝 |
-| 清理 | 独立授权，并要求已记录合并和 sealed-source 证据；不自动撤销冲突或强删资源 |
-
-基础设施恢复、实现/测试修复、报告补充各有自己的边界，不能用默认 schema 9 的
-`retry-policy` 或 `reopen` 说明替代。下方故障操作示例面向默认 schema 9；遇到
-durable/controlled-adapter 提示时，应处理受控宿主接入或原请求对账。
-
-辅助宿主可处理 Verifier、Task memory 和项目知识的持久队列，保存等待或未知状态；
-它不是持续轮询守护进程，也不是默认循环必然启动的步骤。配置、能力证据和明确
-Task 授权不足会记录 host gap。可用维护入口包括：
-
-```powershell
-aiw wf auxiliary inventory
-aiw wf knowledge show payment-retry
-```
-
-`auxiliary policy`、`initialize`、`settle` 和 `knowledge review/import` 属于显式
-维护操作，不启用 schema 10，不授予模型或测试执行权限。
 
 ## 出现问题时如何处理
 
@@ -515,13 +472,13 @@ aiw wf supervise payment-retry status
 工作树中使用 `resolving-merge-conflicts` 检查双方意图，完成经审阅的冲突解决和
 必要验证。Skill 不会被 supervise 自动调用；需要业务取舍时由人决定。
 
-所有相关 Gate 已处理、Task 已满足交付条件后，可显式重试本地交付：
+对旧 Schema 9 Task，确认没有在途写入、隔离工作树干净且相关改动已按路径提交后，可显式重试本地交付：
 
 ```powershell
 aiw wf local-merge payment-retry "Complete payment retry"
 ```
 
-这条命令会提交、合并和清理，不是预览。若合并已经成功但清理失败，先核实祖先
+这条命令会合并并清理，不是预览；不会自动暂存或提交未提交的改动。若合并已经成功但清理失败，先核实祖先
 关系与 delivery 状态，按诊断修复剩余清理；不要重复合并或直接删除目录。
 
 ### 场景 8：无可运行项目，但 Task 尚未交付
@@ -545,13 +502,10 @@ aiw wf skip-focused-test payment-retry "本次不运行可选聚焦测试，已�
 - `internal/workflow/execution/compile.go`：冻结计划、编译与修复编排。
 - `internal/commands/task/local_delivery.go`：本地交付和冲突保留。
 - `internal/workflow/attempts.go`、`compile.go`、`failure_report.go`：重试、编译结果和报告。
-- `internal/workflow/execution_protocol.go`、`protocol_store.go`、`execution_stop.go`：schema 10 启用边界、条件提交与 Stop。
-- `internal/workflow/execution/stages.go`、`verification_host.go`、`local_delivery.go`：受控阶段、结果对账与授权交付。
 
 ### TODO 与 Verification
 
-- [x] 对照命令解析、默认调度、协议启用和交付拒绝分支更新说明。
-- [x] 区分 schema 9 默认路径与 schema 10 受控服务，保留故障恢复操作指引。
+- [x] 对照命令解析、默认调度和交付条件更新说明。
 
 %% 本次仅核对源码；真实宿主隔离、外部模型和持久化平台能力未在本次文档更新中运行验证。
 %% 本轮 Gate 恢复聚焦测试已通过独立的 `.ai/tmp/go-tests/` 缓存运行；Execution/CLI 的新增用例仍未运行，不以 compile-only 代替测试证据。

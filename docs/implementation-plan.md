@@ -1,5 +1,8 @@
 # AIW CLI Refactoring and `cz` Rebuild Implementation Plan
 
+> Historical planning notes. For current CZ behavior and configuration, see
+> [CZ configuration](usage/cz-configuration.md).
+
 ## Objective
 
 Refactor the current CLI into the structure:
@@ -13,13 +16,13 @@ and rebuild the top-level `aiw cz` capability within the new architecture.
 The implementation is divided into two phases:
 
 1. Complete command structure migration.
-2. Gradually rebuild a TUI + AI experience inside `internal/cz` that approaches the reference project's UX.
+2. Run the Conventional Commit wizard from the TypeScript `plugins/aiw-cz` module.
 
 ---
 
 ## Confirmed Constraints
 
-* `cz` resides in `cmd/aiw-cz` and is launched through `plugins/aiw-cz`
+* `cz` resides in `plugins/aiw-cz/src` and is launched through `plugins/aiw-cz/aiw-cz.js`
 * `git`, `wt`, and `tcc` reside in:
 
   * `internal/commands/git`
@@ -43,7 +46,7 @@ The following structural migration has already been completed:
 * `internal/commands/wt` now handles worktree commands
 * `internal/commands/tcc` now handles tcc commands
 * `internal/commands/git` now handles git shortcut commands
-* `internal/cz` contains the standalone Conventional Commit implementation
+* `plugins/aiw-cz/src` contains the standalone Conventional Commit implementation
 * Initial shared utilities have been extracted into:
 
   * `internal/envx`
@@ -53,7 +56,7 @@ The following structural migration has already been completed:
 
 The current focus is now limited to:
 
-1. Further splitting the internal structure of `internal/cz`
+1. Keeping the TypeScript plugin small and its configuration independent from `[ai]`
 2. Introducing a real searchable TUI
 3. Completing advanced `cz` functionality and documentation
 

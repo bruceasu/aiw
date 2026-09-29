@@ -58,6 +58,12 @@ func contentDigest(content []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
+func equalJSON(a, b any) bool {
+	left, _ := json.Marshal(a)
+	right, _ := json.Marshal(b)
+	return bytes.Equal(left, right)
+}
+
 func (s *Store) PersistExecutionInput(r PreparedAgentRequest, input ExecutionInput) (ActorReference, error) {
 	if input.SchemaVersion != 1 || input.RequestID != ExecutionRequestID(r) || input.TaskID != r.TaskID || input.WorkItemID != r.WorkItemID || input.AttemptID != r.AttemptID || input.SessionID != r.SessionID || input.Turn != r.ExpectedSessionTurn || input.Workspace != r.Workspace || !validActor(input.Actor) || strings.TrimSpace(input.Prompt) == "" || len(input.Sources) == 0 || len(input.AllowedPaths) == 0 {
 		return ActorReference{}, errors.New("execution input requires exact request identity, role, scope, sources and prompt")
@@ -111,10 +117,7 @@ func (s *Store) persistExecutionArtifact(r PreparedAgentRequest, kind, relative 
 	if err != nil { return ActorReference{}, err }
 	attempt, found := findAttempt(state.Attempts, r.AttemptID)
 	if !found || attempt.WorkItemID != r.WorkItemID || attempt.Workspace != r.Workspace { return ActorReference{}, errors.New("artifact does not match persisted Attempt") }
-	if state.SchemaVersion == DurableSchemaVersion {
-		item, err := executionItem(&state, r.WorkItemID)
-		if err != nil || item.AttemptID != r.AttemptID || item.Phase == PhaseAccepted || !isSystemLock(lock) { return ActorReference{}, errors.New("artifact does not match the durable execution") }
-	} else if current := state.Automation.PreparedRequest; current == nil || ExecutionRequestID(*current) != ExecutionRequestID(r) { return ActorReference{}, errors.New("artifact does not match the prepared generation") }
+	if current := state.Automation.PreparedRequest; current == nil || ExecutionRequestID(*current) != ExecutionRequestID(r) { return ActorReference{}, errors.New("artifact does not match the prepared generation") }
 	if _, err := os.Stat(s.path(r.TaskID, runtimeStateFile)); err != nil { return ActorReference{}, err }
 	relative = filepath.ToSlash(filepath.Join("reports", relative))
 	target := s.path(r.TaskID, filepath.FromSlash(relative))

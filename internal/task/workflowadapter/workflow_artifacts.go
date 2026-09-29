@@ -3,6 +3,7 @@ package workflowadapter
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -32,6 +33,13 @@ func SyncWorkflowChecklistAtPath(id string, store *workflowcore.Store, path stri
 		}
 		return workflowcore.RuntimeState{}, err
 	}
+	if filepath.Base(path) == id+".md" && filepath.Base(filepath.Dir(path)) == "features" {
+		readiness, err := task.ReadFeatureDesignReadiness(path)
+		if err != nil { return workflowcore.RuntimeState{}, err }
+		if readiness == "BLOCKED" {
+			return workflowcore.RuntimeState{}, fmt.Errorf("Task %s Feature Design is BLOCKED; resolve Design Readiness before mapping work items", id)
+		}
+	}
 	candidates := make([]workflowcore.ChecklistCandidate, len(items))
 	for index, item := range items {
 		candidates[index] = workflowcore.ChecklistCandidate{Item: item.Number, Title: item.Title, Completed: item.Completed, DependsOn: item.DependsOn}
@@ -47,6 +55,9 @@ func WorkflowChecklistPath(id string) (string, error) {
 		return "", err
 	}
 	if task.ResolvedWorkspaceKind(meta) != "isolated" {
+		if _, err := os.Stat(task.FeatureDesignPath(id)); err == nil {
+			return task.FeatureDesignPath(id), nil
+		} else if !os.IsNotExist(err) { return "", err }
 		return filepath.Join(task.TaskDir(id), "tasks.md"), nil
 	}
 	worktree := strings.TrimSpace(meta.Worktree)
@@ -60,6 +71,13 @@ func WorkflowChecklistPath(id string) (string, error) {
 		}
 		worktree = filepath.Join(root, filepath.FromSlash(worktree))
 	}
+	fdPath := filepath.Join(worktree, task.FeatureDesignPath(id))
+	if _, err := os.Stat(fdPath); err == nil {
+		return fdPath, nil
+	} else if !os.IsNotExist(err) { return "", err }
+	if _, err := os.Stat(task.FeatureDesignPath(id)); err == nil {
+		return "", fmt.Errorf("Task %s FD is not in the isolated worktree; commit the planning artifact first", id)
+	} else if !os.IsNotExist(err) { return "", err }
 	return filepath.Join(worktree, task.TaskDir(id), "tasks.md"), nil
 }
 
@@ -77,8 +95,13 @@ func ProjectAcceptedWorkItem(id string, store *workflowcore.Store, state workflo
 		return fmt.Errorf("completed work item %s has no checklist projection", workItemID)
 	}
 	meta, err := task.ReadTaskMeta(task.ResolveTaskMetaPath(id))
-	if err == nil && task.ResolvedWorkspaceKind(meta) != "isolated" {
-		err = fmt.Errorf("accepted Work Item projection requires an isolated Task worktree")
+	if err == nil && task.ResolvedWorkspaceKind(meta) == "primary" {
+		primary, _, primaryErr := gitx.IsPrimaryWorktree()
+		if primaryErr != nil { err = primaryErr } else if !primary || meta.Worktree != "." {
+			err = fmt.Errorf("accepted Work Item projection requires the bound primary worktree")
+		}
+	} else if err == nil && task.ResolvedWorkspaceKind(meta) != "isolated" {
+		err = fmt.Errorf("accepted Work Item projection requires a bound primary or isolated worktree")
 	}
 	path := ""
 	if err == nil {

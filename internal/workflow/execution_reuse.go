@@ -56,19 +56,9 @@ func (s *Store) ReadAcceptedExecution(id TaskID, item WorkItem, reference ActorR
 	state, err := s.Load(id)
 	if err != nil { return evidence, err }
 	var bindings []ActorReference
-	if state.SchemaVersion == DurableSchemaVersion {
-		if err := s.requireExecutionServices(); err != nil { return evidence, err }
-		cursor, err := executionItem(&state, item.ID)
-		if err != nil || cursor.Accepted == nil || *cursor.Accepted != reference || cursor.AcceptanceCandidate == nil { return evidence, fmt.Errorf("Core acceptance provenance is unavailable") }
-		var candidate AcceptanceCandidate
-		if err := s.ReadExecutionArtifact(id, *cursor.AcceptanceCandidate, &candidate); err != nil { return evidence, err }
-		if err := s.ExecutionServices.ValidateAcceptance(state, candidate); err != nil { return evidence, err }
-		bindings = candidate.Inputs.Bindings
-	} else {
-		if state.Automation.PreparedRequest == nil || state.Automation.PreparedRequest.Compile == nil { return evidence, fmt.Errorf("current validation plan is unavailable") }
-		bindings, err = CompileInputBindings(state.Automation.PreparedRequest.Compile.Plan)
-		if err != nil { return evidence, err }
-	}
+	if state.Automation.PreparedRequest == nil || state.Automation.PreparedRequest.Compile == nil { return evidence, fmt.Errorf("current validation plan is unavailable") }
+	bindings, err = CompileInputBindings(state.Automation.PreparedRequest.Compile.Plan)
+	if err != nil { return evidence, err }
 	toolchain, err := ValidationToolchainIdentity()
 	if err != nil { return evidence, err }
 	current, err := CaptureValidationInputs(root, evidence.Inputs.Scope, bindings, toolchain)

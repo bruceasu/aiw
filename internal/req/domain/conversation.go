@@ -132,6 +132,7 @@ Return one JSON object with domain (generic/unknown/finance), gap (intake/value/
 Cite user-input or a loaded Requirement source. Use its exact digest and quote. No Markdown.`
 
 const coverageOutputInstructions = `Return only a CoverageAssessment JSON object. No Markdown or prose outside JSON.
+An Issue may be a bug, feature, or modification. Do not turn routine strategy choices into user questions when evidence and stated preferences select a clear option; put the choice and rationale in conclusion and next_step.
 Fields: version:1, requirement_id (empty for new), revision (0 for new), items, optional plan_review.
 Include each dimension once: roles, problem, current_workflow, goals, scope, rules, exceptions, data, permissions, dependencies, acceptance.
 Each item has dimension, status, conclusion, sources, question, impact, next_step, reason, optional impact_kind and options.

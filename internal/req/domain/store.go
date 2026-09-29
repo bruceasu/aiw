@@ -22,6 +22,7 @@ const cancelledRoot = "cancelled"
 type Meta struct {
 	ID        string
 	Title     string
+	ParentID  string
 	Status    string
 	Created   string
 	Updated   string
@@ -189,7 +190,7 @@ func readMeta(id string, input io.Reader) (Meta, error) {
 		case "terminal":
 			switch key { case "by": meta.Terminal.By = value; case "at": meta.Terminal.At = value; case "reason": meta.Terminal.Reason = value }
 		default:
-			switch key { case "id": meta.ID = value; case "title": meta.Title = value; case "status": meta.Status = value; case "created": meta.Created = value; case "updated": meta.Updated = value; case "revision": fmt.Sscanf(value, "%d", &meta.Revision) }
+			switch key { case "id": meta.ID = value; case "title": meta.Title = value; case "parent_id": meta.ParentID = value; case "status": meta.Status = value; case "created": meta.Created = value; case "updated": meta.Updated = value; case "revision": fmt.Sscanf(value, "%d", &meta.Revision) }
 		}
 	}
 	if err := scanner.Err(); err != nil { return Meta{}, err }
@@ -200,7 +201,7 @@ func readMeta(id string, input io.Reader) (Meta, error) {
 
 func Write(meta Meta) error {
 	if !ValidID(meta.ID) { return errors.New("invalid requirement id") }
-	content := fmt.Sprintf("id = %q\ntitle = %q\nstatus = %q\ncreated = %q\nupdated = %q\nrevision = %d\n\n[approval]\nstatus = %q\nby = %q\nat = %q\nreason = %q\n\n[promotion]\nstatus = %q\ntask_id = %q\n\n[conversation]\nsession_id = %q\n\n[terminal]\nby = %q\nat = %q\nreason = %q\n", meta.ID, meta.Title, meta.Status, meta.Created, meta.Updated, meta.Revision, meta.Approval.Status, meta.Approval.By, meta.Approval.At, meta.Approval.Reason, meta.Promotion.Status, meta.Promotion.TaskID, meta.Conversation.SessionID, meta.Terminal.By, meta.Terminal.At, meta.Terminal.Reason)
+	content := fmt.Sprintf("id = %q\ntitle = %q\nparent_id = %q\nstatus = %q\ncreated = %q\nupdated = %q\nrevision = %d\n\n[approval]\nstatus = %q\nby = %q\nat = %q\nreason = %q\n\n[promotion]\nstatus = %q\ntask_id = %q\n\n[conversation]\nsession_id = %q\n\n[terminal]\nby = %q\nat = %q\nreason = %q\n", meta.ID, meta.Title, meta.ParentID, meta.Status, meta.Created, meta.Updated, meta.Revision, meta.Approval.Status, meta.Approval.By, meta.Approval.At, meta.Approval.Reason, meta.Promotion.Status, meta.Promotion.TaskID, meta.Conversation.SessionID, meta.Terminal.By, meta.Terminal.At, meta.Terminal.Reason)
 	content = strings.Replace(content, "\n[promotion]\n", fmt.Sprintf("source_digest = %q\n\n[promotion]\n", meta.Approval.SourceDigest), 1)
 	keys := make([]string, 0, len(meta.Artifacts))
 	for kind := range meta.Artifacts { keys = append(keys, kind) }
@@ -212,6 +213,32 @@ func Write(meta Meta) error {
 		for _, kind := range keys { content += fmt.Sprintf("%s = %q\n", kind, meta.Artifacts[kind].Digest) }
 	}
 	return atomicWrite(filepath.Join(dirFor(meta.ID), "requirement.toml"), []byte(content))
+}
+
+// LinkParent records split lineage on a child before its approval is fixed.
+// Existing REQ records without parent_id remain valid roots.
+func LinkParent(childID, parentID string) (Meta, error) {
+	if !ValidID(childID) || !ValidID(parentID) || childID == parentID {
+		return Meta{}, errors.New("child and parent must be distinct valid Issue IDs")
+	}
+	child, err := Read(childID)
+	if err != nil { return Meta{}, err }
+	if child.ParentID == parentID { return child, nil }
+	if child.ParentID != "" { return Meta{}, fmt.Errorf("Issue %s already has parent %s", childID, child.ParentID) }
+	if child.Approval.Status != "PENDING" || child.Status == "ARCHIVED" || child.Status == "CANCELLED" {
+		return Meta{}, fmt.Errorf("Issue %s lineage is fixed after approval or closure", childID)
+	}
+	seen := map[string]bool{childID: true}
+	for current := parentID; current != ""; {
+		if seen[current] { return Meta{}, errors.New("Issue parent link would create a cycle") }
+		seen[current] = true
+		parent, err := Read(current)
+		if err != nil { return Meta{}, err }
+		current = parent.ParentID
+	}
+	child.ParentID, child.Updated, child.Revision = parentID, time.Now().Format("2006-01-02"), child.Revision+1
+	if err := Write(child); err != nil { return Meta{}, err }
+	return child, nil
 }
 
 func BindConversation(id, sessionID string) (Meta, error) {
@@ -277,8 +304,9 @@ func approvalSourceDigest(meta Meta) string {
 	b, _ := json.Marshal(struct {
 		ID        string
 		Title     string
+		ParentID  string `json:"ParentID,omitempty"`
 		Artifacts map[string]Artifact
-	}{meta.ID, meta.Title, meta.Artifacts})
+	}{meta.ID, meta.Title, meta.ParentID, meta.Artifacts})
 	return digest(b)
 }
 
@@ -300,8 +328,8 @@ func CompletePromotion(id, taskID string) (Meta, error) {
 	meta, err := Read(id)
 	if err != nil { return Meta{}, err }
 	if meta.Promotion.TaskID != taskID { return Meta{}, fmt.Errorf("requirement does not link to task %s", taskID) }
-	if meta.Promotion.Status == "SPEC_DRAFTED" { return meta, nil }
-	meta.Promotion.Status = "SPEC_DRAFTED"
+	if meta.Promotion.Status == "SPEC_DRAFTED" || meta.Promotion.Status == "FD_READY" { return meta, nil }
+	meta.Promotion.Status = "FD_READY"
 	meta.Updated, meta.Revision = time.Now().Format("2006-01-02"), meta.Revision+1
 	if err := Write(meta); err != nil { return Meta{}, err }
 	return meta, nil

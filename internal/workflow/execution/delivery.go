@@ -1,7 +1,6 @@
 package execution
 
 import (
-	"fmt"
 	"aiw/internal/task"
 	"aiw/internal/workflow"
 )
@@ -14,7 +13,6 @@ func (s Supervisor) DeliverCompleted(id string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if state.SchemaVersion == workflow.DurableSchemaVersion { return false, fmt.Errorf("durable delivery requires the grant-bound managed action runner") }
 	summary := workflow.DeriveSummary(state)
 	if summary.Execution != workflow.ExecutionCompleted ||
 		(summary.Validation != workflow.ValidationPassed && summary.Validation != workflow.ValidationNotRequired && summary.Validation != workflow.ValidationWaived) ||

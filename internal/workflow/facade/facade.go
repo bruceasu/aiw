@@ -26,7 +26,7 @@ func New(execute Executor, help HelpPrinter) Facade {
 
 // Dispatch handles the canonical aiw wf command surface.
 func (f Facade) Dispatch(args []string) error {
-	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
+	if len(args) == 0 || ((args[0] == "help" || args[0] == "--help" || args[0] == "-h") && len(args) == 1) {
 		if f.help != nil {
 			f.help()
 		}
@@ -41,7 +41,5 @@ func (f Facade) Dispatch(args []string) error {
 // OperationNames is the public operation registry used by help tooling and
 // shell completion. Keep this list aligned with Workflow command dispatch.
 var OperationNames = []string{
-	"plan", "sync", "advance", "run", "supervise", "recommend-routing",
-	"focused-test", "delivery", "local-merge", "delivery-failed", "report",
-	"diagnose", "recover", "repair", "repair-metadata", "help",
+	"plan", "status", "run", "supervise", "diagnose", "complete", "help",
 }

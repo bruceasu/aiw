@@ -1,5 +1,8 @@
 # Multi-Actor Supervise Workflow
 
+> Historical design record. For the current Issue, FD, Task, and optional
+> OpenSpec contract, use `skills/work-management.md` and `openspec/specs/`.
+
 Status: IMPLEMENTATION MAP AND REQUIREMENT SOURCE
 
 ## Current Implementation

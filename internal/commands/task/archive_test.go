@@ -109,6 +109,25 @@ func archiveTestRun(t *testing.T, backend string) (string, error) {
 	return stderr, err
 }
 
+func TestArchivePrefersFDAndMovesItWithNativeTask(t *testing.T) {
+	listTestWorkspace(t)
+	id := "native"
+	meta := writeListTestMeta(t, task.TaskMetaPath(id), id, "TODO")
+	archiveTestWrite(t, task.FeatureDesignPath(id), "## Design Readiness\n\nFD_APPLIED\n\n## Work Items\n- [ ] 1.1 FD work\n")
+	archiveTestWrite(t, filepath.Join(task.TaskDir(id), "tasks.md"), "- [ ] 9.9 Stale change work\n")
+	if err := syncArchiveWorkflow(id, meta, task.TaskDir(id)); err != nil { t.Fatal(err) }
+	state, err := workflow.NewStore("").Load(workflow.TaskID(id))
+	if err != nil || len(state.WorkItems) != 1 || state.WorkItems[0].Checklist.Item != "1.1" { t.Fatalf("archive plan source: %#v %v", state.WorkItems, err) }
+	plan, err := prepareTaskArchive(id)
+	if err != nil { t.Fatal(err) }
+	want := task.FeatureDesignArchivePath(plan.name)
+	found := false
+	for _, move := range plan.moves {
+		if move.source == task.FeatureDesignPath(id) && move.target == want { found = true }
+	}
+	if !found { t.Fatalf("FD archive move missing: %#v", plan.moves) }
+}
+
 func TestPairedArchiveBackendsPreserveThreeTreesAndRetry(t *testing.T) {
 	for _, backend := range []string{"native", "auto", "openspec", "auto-fallback"} {
 		t.Run(backend, func(t *testing.T) {

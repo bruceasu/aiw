@@ -54,18 +54,18 @@ func TestOperationalRetriesAreIndependentAndBounded(t *testing.T) {
 	if _, err := store.Create(compatibleState()); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := store.SetOperationalRetryLimit("task-1", RetryNotification, 1); err != nil {
+	if _, err := store.SetOperationalRetryLimit("task-1", RetryRecovery, 1); err != nil {
 		t.Fatal(err)
 	}
-	state, err := store.ConsumeOperationalRetry("task-1", RetryNotification)
+	state, err := store.ConsumeOperationalRetry("task-1", RetryRecovery)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if state.OperationalRetries.Notification.Used != 1 || state.OperationalRetries.Recovery.Used != 0 || state.OperationalRetries.Delivery.Used != 0 {
+	if state.OperationalRetries.Recovery.Used != 1 || state.OperationalRetries.Delivery.Used != 0 {
 		t.Fatalf("operational retries are not independent: %#v", state.OperationalRetries)
 	}
-	if _, err := store.ConsumeOperationalRetry("task-1", RetryNotification); err == nil {
-		t.Fatal("expected exhausted notification retry budget")
+	if _, err := store.ConsumeOperationalRetry("task-1", RetryRecovery); err == nil {
+		t.Fatal("expected exhausted recovery retry budget")
 	}
 	state, err = store.ConsumeOperationalRetry("task-1", RetryDelivery)
 	if err != nil || state.OperationalRetries.Delivery.Used != 1 {

@@ -36,10 +36,6 @@ func NewCompatibleRuntime(task TaskReference, planning PlanningState, delivery D
 func (s *Store) EnsureCompatible(state RuntimeState) (RuntimeState, error) {
 	loaded, err := s.Load(state.Task.ID)
 	if err == nil {
-		if loaded.SchemaVersion == DurableSchemaVersion {
-			if _, err := os.Stat(s.path(state.Task.ID, runtimeEventsFile)); err != nil { return RuntimeState{}, err }
-			return loaded, nil
-		}
 		if err := s.ensureEventLog(state.Task.ID); err != nil {
 			return RuntimeState{}, err
 		}

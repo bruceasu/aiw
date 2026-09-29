@@ -6,14 +6,14 @@
 
 | 场景 | 首选 Skill | 何时使用 |
 | --- | --- | --- |
-| 需求发现、范围与干系人 | `requirement-management` | 新需求、模糊目标或需要记录 Requirement |
+| Issue 发现、范围与干系人 | `issue-management` | Bug、功能、修改或模糊目标 |
 | 缺陷初分流 | `triage` | 报错、异常行为或待分类请求 |
 | 难题诊断 | `diagnosing-bugs` | 需要建立假设、证据和复现路径 |
 | 大型不确定计划 | `wayfinder` | 选择、依赖或范围尚未收敛 |
-| Feature Design 与决策 | `fd-workflow` | Task 尚有重大设计决策 |
-| OpenSpec 规格 | `to-spec` | 需要 proposal、design 或 capability specs |
-| 实现切片 | `to-tickets` | 将设计转为有序 `tasks.md` 条目 |p
-| 单一 checklist 实现 | `implement` | 已选中 Task 条目并具备工作区 |
+| Feature Design 与决策 | `fd-workflow` | 为 Task 决定方案并提供工作项 |
+| OpenSpec 规格 | `to-spec` | 稳定 capability specs 需要更新，change 可选 |
+| 实现切片 | `to-tickets` | 将 FD 拆成有序工作项 |
+| 单一工作项实现 | `implement` | 已选中 FD 工作项并具备工作区 |
 | 测试先行 | `tdd` | 用户明确要求 red-green-refactor 或集成测试 |
 | 变更评审 | `code-review` | 用户明确要求对分支、PR 或固定点之后的改动评审 |
 | 模块设计 | `codebase-design` | 接口、模块边界、seam、可测试性需改进 |
@@ -37,7 +37,7 @@
 | --- | --- | --- |
 | 获取准确命令语法 | `aiw help [command|topic]` | 先用于陌生或变更状态的操作；帮助本身不替代授权 |
 | 初始化项目约定 | `aiw init` | 会写入脚手架，需用户请求 |
-| 创建受管变更 | `aiw new <task-id> --backend auto` | 建立 AIW Task 并可委托 OpenSpec；不要以 `openspec new change` 代替 |
+| 创建 Task | `aiw new <task-id>` | 默认建立原生 Task 与 FD；OpenSpec 后端需显式选择 |
 | 查看、列出 Task | `aiw show <task-id>`、`aiw list` | 只读状态检查 |
 | 改变 Task 状态 | `aiw status <task-id> <status>`、`aiw done <task-id>` | 需要明确状态转换请求 |
 | 归档 | `aiw archive <task-id>` | 完成不代表合并或发布；归档需单独授权 |
@@ -51,7 +51,7 @@
 
 ## 建议原则
 
-- 一个共同目标、分支、工作树、交付和归档生命周期对应一个 AIW Task 与一个 OpenSpec change；独立生命周期才建议拆分，并先取得用户同意。
-- AIW 管理 Task、工作树、分支、Session 和生命周期；OpenSpec 管理 proposal、design、规格与人类维护的 checklist。
+- 一个共同目标、分支、工作树、交付和归档生命周期对应一个 AIW Task；OpenSpec change 只在需要其规格变更流程时关联。
+- AIW 管理 Task、工作树、分支、Session 和生命周期；FD 管理工程决策和人类维护的工作项；OpenSpec 管理稳定规格及可选 change。
 - 检查、测试、构建、格式化、发布、提交、合并和清理是不同授权边界。建议它们时，明确说明目的、范围、预计耗时和风险；不得默认执行。
 - 每次建议优先给出最小的可逆步骤；信息不足则用 `%% NEEDS_INPUT:` 询问会实质改变方案的事实。

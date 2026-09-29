@@ -27,7 +27,7 @@ func TestPromoteRequirementRefusesUnapprovedWithoutTask(t *testing.T) {
 	if err := promoteRequirement([]string{"unapproved", "--task", "target"}); err == nil {
 		t.Fatal("expected unapproved promotion refusal")
 	}
-	if _, err := os.Stat(task.TaskDir("target")); !os.IsNotExist(err) {
+	if _, err := os.Stat(task.RuntimeTaskDir("target")); !os.IsNotExist(err) {
 		t.Fatalf("task was created: %v", err)
 	}
 }
@@ -73,7 +73,7 @@ func TestPromoteRequirementRecoversTaskMetadataWithoutWorkflowState(t *testing.T
 		}
 	}
 	promoted, err := requirement.Read("approved")
-	if err != nil || promoted.Promotion.TaskID != "target" || promoted.Promotion.Status != "SPEC_DRAFTED" {
+	if err != nil || promoted.Promotion.TaskID != "target" || promoted.Promotion.Status != "FD_READY" {
 		t.Fatalf("promotion link was not completed: %#v, %v", promoted.Promotion, err)
 	}
 }
@@ -132,7 +132,7 @@ func TestRequirementHandoffIsIdempotentAndLeavesRecoverableStateOnFailure(t *tes
 	}
 	handoff := filepath.Join(task.RuntimeTaskDir("target"), "artifacts", "requirement-handoff.md")
 	content, err := os.ReadFile(handoff)
-	if err != nil || !strings.Contains(string(content), "## Approved Scope") || !strings.Contains(string(content), "## Accepted Risks") {
+	if err != nil || !strings.Contains(string(content), "## Approved Scope") || !strings.Contains(string(content), "## Suggested Next Workflow Action") {
 		t.Fatalf("unexpected handoff: %s (%v)", content, err)
 	}
 	if err := os.WriteFile(handoff, []byte("user-authored"), 0o644); err != nil {
@@ -145,13 +145,13 @@ func TestRequirementHandoffIsIdempotentAndLeavesRecoverableStateOnFailure(t *tes
 	if err != nil || string(content) != "user-authored" {
 		t.Fatalf("handoff was overwritten: %s (%v)", content, err)
 	}
-	if err := os.RemoveAll(task.TaskDir("blocked")); err != nil {
+	if err := os.RemoveAll(task.RuntimeTaskDir("blocked")); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(filepath.Dir(task.TaskDir("blocked")), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(task.RuntimeTaskDir("blocked")), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(task.TaskDir("blocked"), []byte("not a directory"), 0o644); err != nil {
+	if err := os.WriteFile(task.RuntimeTaskDir("blocked"), []byte("not a directory"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	meta.Promotion.TaskID = "blocked"

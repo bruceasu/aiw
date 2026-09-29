@@ -3,8 +3,8 @@
 # Loading rules differ by section; there is no single global priority order.
 # Shared AI reads project, AIW_ROOT, then executable-directory files. Later
 # values overwrite earlier values; .aiw.toml follows aiw.toml in each directory.
-# CZ reads project, AIW_ROOT, then executable-directory cz.toml/.cz.toml.
-# Later CZ values overwrite earlier values, except project default_language.
+# CZ reads plugin-directory cz.toml/.cz.toml, AIW_ROOT, then the project file.
+# Later CZ values overwrite earlier values. CZ does not inherit [ai] settings.
 # Keep values and comments on separate lines for the built-in parsers.
 
 [runtime]
@@ -14,22 +14,25 @@
 # Project configuration is not read for this setting. Use an existing absolute
 # file path, not a command name or a command with arguments.
 # python = "C:/path/to/python.exe"
+# Node plugin runtime: AIW_NODE > user config > executable-dir aiw.toml
+# > bundled node/node.exe (or node/node) > node on PATH.
+# Use an existing absolute path to pin a Node version for JS/TS plugins.
+# TypeScript plugins require Node.js 22.12.0 or newer.
+# node = "C:/tools/node-v22.12.0/node.exe"
 
 # Global UI language. CZ resolves: --lang, [i18n].default_language, then
-# terminal locale env in this order: LC_ALL, LC_MESSAGES, LANGUAGE, LANG.
+# terminal locale env in this order: LC_ALL, LANG.
 # Terminal values normalize to a base language by trimming, lowercasing,
 # removing any encoding, then removing region/variant suffixes. LANGUAGE is
-# checked left-to-right across colon-separated candidates. Unsupported
-# detected locales fall back to built-in English. Blank/unsupported --lang and
-# invalid default_language values are errors. A valid --lang always wins over
+# detected locales fall back to built-in English. Unsupported --lang values
+# are errors. A valid --lang always wins over
 # lower-priority settings. Built-in CZ locales: en, zh, ja. Configure
 # non-built-in languages under [cz.locales.<language>]; unspecified values
 # fall back to the built-in English locale.
 [i18n]
 # default_language = "en"
 
-# Shared AI provider configuration. [ai] is the canonical section; [cz]
-# provider settings remain supported only as a compatibility fallback.
+# Shared AI provider configuration. CZ uses its own [cz] settings below.
 [ai]
 # OpenAI
 # provider = "openai"
@@ -83,7 +86,6 @@
 # llm_model = "your-model"
 # llm_base_url = "https://api.openai.com/v1"
 # llm_api_key = ""
-# All [ai] keys above are also accepted under [cz] as legacy fallbacks.
 # Environment overrides: OPENAI_*, GEMINI_*, OLLAMA_*, LLAMACPP_* with
 # MODEL, BASE_URL and API_KEY suffixes; then AIW_LLM_PROVIDER, AIW_LLM_MODEL,
 # AIW_LLM_BASE_URL and AIW_LLM_API_KEY override the resolved values.
@@ -112,13 +114,6 @@ model = "gpt-6-astra"
 level = 4
 reasoning_intensity = "high"
 
-# Optional default budget for new Schema 10 Workflow Tasks. These values are
-# only applied when explicitly snapshotted by `aiw wf budget <task-id> configure`;
-# reading a Task or changing this file does not modify an existing budget.
-# [ai.usage_budget]
-# input_tokens = 100000
-# output_tokens = 20000
-
 # Managed Workflow AI Profiles. They affect only `aiw wf supervise`;
 # other AI commands continue to use the global [ai] configuration above.
 # Each selected Profile must provide both a provider and a model. Missing or
@@ -138,40 +133,37 @@ reasoning_intensity = "high"
 [cz]
 # Default is no-LLM wizard. Set true to enable LLM by default.
 llm = false
-
-# Candidate count used in LLM mode; positive integer. Built-in default: 3.
-candidates = 5
-
-# Print resolved provider configuration during `aiw cz --llm` runs.
-# Also available through AIW_CZ_DEBUG=1.
-debug_source = false
-
-# Not configurable: the current CZ parser does not read emoji.
-# emoji = false
-
-# Allow multiple scopes, choose their separator, and limit subject length.
-# max_subject_length must be a positive integer; separator must not be empty.
-# enable_multiple_scopes = false
-# scope_enum_separator = ","
+# --llm tries Copilot SDK, then Codex SDK, then OpenAI SDK, then the manual wizard.
+# Selecting a provider tries only that SDK, then the manual wizard.
+# provider = "copilot"
+candidates = 3
 # max_subject_length = 72
-
-# Compatibility aliases (use one spelling per setting):
-# use_llm = false
-# debug = false
-# EDITOR = "code --wait"
-# enableMultipleScopes = false
-# scopeEnumSeparator = ","
-# maxSubjectLength = 72
-# codex_cli_command = "codex"
-# copilot_cli_command = "copilot"
-
 # Preferred editor command for long-form editing in CZ.
 # This takes precedence over GIT_EDITOR/VISUAL/EDITOR.
 # editor = "code --wait"
 # editor = "notepad"
 editor = ""
 
-# Legacy global customization. Prefer named locales below for new settings.
+# Each SDK has an independent model. Leave a model commented to use that
+# SDK's own default. The OpenAI SDK requires a configured model and API key.
+[cz.copilot]
+# model = "your-copilot-model"
+# api_key = "" # Optional GitHub user token; prefer CZ_COPILOT_API_KEY.
+
+[cz.codex]
+# model = "your-codex-model"
+# api_key = "" # Optional Codex API key; prefer CZ_CODEX_API_KEY.
+
+[cz.openai]
+# model = "your-openai-model"
+# base_url = "https://api.openai.com/v1"
+# api_key = "" # Prefer CZ_OPENAI_API_KEY or OPENAI_API_KEY.
+
+# CZ-specific environment overrides: CZ_LLM_PROVIDER and
+# CZ_COPILOT_*, CZ_CODEX_*, CZ_OPENAI_* with MODEL, API_KEY, BASE_URL suffixes.
+# CLI --provider and --model override CZ environment and file settings.
+
+# Global CZ customization. Prefer named locales below for new settings.
 # Defining types/scopes replaces the corresponding list, rather than adding
 # one entry to the built-in list. Type entries need both value and name;
 # scope name is optional and defaults to value.
@@ -247,7 +239,7 @@ editor = ""
 # empty_scope = "(empty) no scope"
 # custom_scope_option = "(custom) enter custom scope"
 # footer_edit = "Edit footer? [y/N]"
-# editor_hint = "(use /edit or Ctrl+E for editor)"
+# editor_hint = "(use /edit for editor)"
 
 # Not read from aiw.toml: ask system prompts.
 # Put the following section in ~/.aiw/ask/config.toml instead.

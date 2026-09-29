@@ -19,7 +19,8 @@ const (
 )
 
 func selectBackend(operation string, args []string) (backendMode, []string, error) {
-	mode := backendAuto
+	// Native Task/FD creation is the default. OpenSpec is opt-in.
+	mode := backendNative
 	remaining := make([]string, 0, len(args))
 	for i := 0; i < len(args); i++ {
 		if args[i] != "--backend" {

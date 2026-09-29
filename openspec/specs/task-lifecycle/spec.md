@@ -6,7 +6,7 @@
 ## Requirements
 ### Requirement: Task 活动存储与旧位置诊断
 
-系统 MUST 将活动 Task 元数据和运行信息归于 `.ai/tasks/<id>/`，将计划与清单归于 `openspec/changes/<id>/`。系统 MUST 保留旧元数据文件名 `tasks.toml` 的读取兼容性。旧活动目录 `.ai/<id>/` MUST NOT 被正常读取、写入、自动迁移或用于同 ID 的新建/补建；发现旧目录或迁移标记时 MUST 返回可操作的手工迁移诊断。Task 归档位置 MUST 保持 `.ai/archive/<date>-<id>/`。
+系统 MUST 将活动 Task 元数据和运行信息归于 `.ai/tasks/<id>/`。新原生 Task 的计划与工作项归于 `docs/features/<id>.md`，OpenSpec change 是可选关联。旧 Task 的 `openspec/changes/<id>/tasks.md` 仍可作为计划来源。系统 MUST 保留旧元数据文件名 `tasks.toml` 的读取兼容性。旧活动目录 `.ai/<id>/` MUST NOT 被正常读取、写入、自动迁移或用于同 ID 的新建/补建；发现旧目录或迁移标记时 MUST 返回可操作的手工迁移诊断。Task 归档位置 MUST 保持 `.ai/archive/<date>-<id>/`。
 
 #### Scenario: 创建和读取活动 Task
 
@@ -31,7 +31,7 @@
 #### Scenario: 创建普通 Task
 
 - **WHEN** 原生 new 的预检通过
-- **THEN** 系统创建 tasks.md、notes.md、Task 元数据和稳定清单映射。
+- **THEN** 系统创建 FD、Task 元数据和工作项映射，不要求 OpenSpec change。
 - **AND** 初始 Task 为 TODO，工作区为 primary / `.`，branch 与 parent_branch 为当前分支，delivery 为 unmanaged。
 - **AND** 创建清单映射不派发 Agent、不启动实现。
 
@@ -43,6 +43,8 @@
 ### Requirement: OpenSpec 后端选择
 
 适用命令的 backend MUST 支持 auto、native、openspec。native MUST 直接走本地实现。auto 在 OpenSpec 不可用或该操作没有直接映射时 MUST 明确回退；显式 openspec 对不可用或不支持的情况 MUST 报错。
+
+省略 `--backend` 时 MUST 默认 native。只有显式 auto 或 openspec 才可委托 OpenSpec。
 
 #### Scenario: 未安装 OpenSpec
 
@@ -75,17 +77,17 @@ archive MUST 检查 DONE / CANCELLED 的终止资格、工作区绑定和交付�
 - **THEN** 系统拒绝，因为该 Task 没有对应受管理工作树或分支可清理。
 
 #### Scenario: 完成并交付后工作树已删除
-- **WHEN** Core 确认 DONE、交付为 merged、历史隔离资源均已清理且主工作区 change 唯一存在
-- **THEN** native 和 openspec 归档均从该 change 同步清单并执行同样的资格检查，不访问已删除工作树。
+- **WHEN** Core 确认 DONE、交付为 merged、历史隔离资源均已清理，且主工作区 FD 或旧 change 清单可用
+- **THEN** native 和 openspec 归档优先从 FD 同步工作项；没有 FD 时才读取旧 change 清单，不访问已删除工作树。
 
 ### Requirement: Task 配对归档
 
-系统 MUST 将同一 Task 的 OpenSpec change、任务运行目录及存在的绑定 Session 作为一组归档，以相同日期和完整 Task ID 关联各归档位置。系统 MUST 保留原任务身份、Workflow 状态、证据及 Session 引用，并保持既有归档资格和 Git 授权要求。原生与委托后端 MUST 满足同一契约。
+系统 MUST 将同一 Task 的受管 FD、任务运行目录、存在的 OpenSpec change 及绑定 Session 作为一组归档，以相同日期和完整 Task ID 关联各归档位置。FD 归于 `docs/features/archive/<date>-<id>.md`；没有 OpenSpec change 不阻止归档。系统 MUST 保留原任务身份、Workflow 状态、证据及 Session 引用，并保持既有归档资格和 Git 授权要求。原生与委托后端 MUST 满足同一契约。
 
 #### Scenario: 成功归档
 
 - **WHEN** 满足归档条件的 Task 执行 archive
-- **THEN** 两处活动目录分别移动到对应的归档根，并具有相同归档名称
+- **THEN** Task 运行目录、存在的 FD 和 OpenSpec change 分别移动到对应的归档根，并具有相同日期与 Task ID
 - **AND** 存在的绑定 Session 一并归入同一日期与 Task ID 对应的 Session 归档目录
 - **AND** 原有运行数据被保留，活动位置不再保留该任务目录
 
@@ -113,7 +115,7 @@ archive MUST 检查 DONE / CANCELLED 的终止资格、工作区绑定和交付�
 
 ### Requirement: 列表发现与归档可见性
 
-`aiw list` MUST 只显示未归档任务。`aiw list --all` MUST 同时显示未归档与已归档任务，分别展示 Workflow 状态、归档标识和实际 change 路径或规格缺失标识。发现过程 MUST 合并规格与运行记录候选，限定在支持的固定目录层级，兼容既有元数据路径和文件名。除缺失运行记录的最小补建外，列表 MUST NOT 修改运行数据。
+`aiw list` MUST 只显示未归档任务。`aiw list --all` MUST 同时显示未归档与已归档任务，分别展示 Workflow 状态、归档标识和现存 change、FD 或 Task 运行记录路径。发现过程 MUST 合并可选 change 与运行记录候选，限定在支持的固定目录层级，兼容既有元数据路径和文件名。除缺失运行记录的最小补建外，列表 MUST NOT 修改运行数据。
 
 #### Scenario: 默认列表
 
@@ -220,15 +222,15 @@ Task archive MUST 将存在且可定位的真实 Session 绑定归档到 `.ai/se
 - **THEN** 沿用原 Task 归档日期补齐会话归档，已完成的新位置不重复移动
 - **AND** 任一步骤失败仅补偿本次移动，list 不搬动或重建 Session 历史
 
-### Requirement: 规格缺失时正常显示
+### Requirement: 可选规格缺失时正常显示
 
-运行记录存在但对应 change 记录在支持的位置均不存在时，列表 MUST 保留该任务行并在 PATH 单元格显示“规格已删除”。系统 MUST NOT 仅因规格缺失使列表失败，也 MUST NOT 自动重建规格。
+运行记录存在但没有对应 change 时，列表 MUST 保留该任务行并优先显示现存 FD 路径；FD 也不存在时显示 Task 运行记录路径。系统 MUST NOT 仅因 change 缺失使列表失败，也 MUST NOT 自动重建规格。
 
 #### Scenario: 规格记录已经删除
 
 - **WHEN** 列表范围内的 Task 仍有运行记录，但其 change 记录不存在
-- **THEN** 显示任务状态和“规格已删除”，继续显示其他任务
-- **AND** 没有其他错误时命令正常返回，不显示无效的规格路径
+- **THEN** 显示任务状态及现存 FD 或运行记录路径，继续显示其他任务
+- **AND** 没有其他错误时命令正常返回，不显示不存在的 change 路径
 
 #### Scenario: 规格只是归档或部分文档缺失
 
@@ -270,7 +272,7 @@ Task archive MUST 将存在且可定位的真实 Session 绑定归档到 `.ai/se
 
 ### Requirement: 清理结果同步当前绑定
 
-系统 MUST 在成功移除隔离工作树后将当前绑定设为 unassigned、worktree 置空，并保留历史分支、父分支、Session 和交付证据。系统 MUST NOT 自动将其绑定为 primary。清理失败 MUST 保留符合实际结果的状态并允许恢复。
+系统 MUST 在成功移除隔离工作树后先将当前绑定设为 unassigned、worktree 置空，并保留历史分支、父分支、Session 和交付证据。若 Task 未完成且分支清理成功，系统 MUST 将其恢复绑定到已验证的 primary 工作区继续推进；已完成 Task 保持 unassigned。清理失败 MUST 保留符合实际结果的状态并允许恢复。
 
 #### Scenario: 分支清理失败
 - **WHEN** 合并和工作树移除成功，但分支删除失败
@@ -341,7 +343,7 @@ Task 列表 MUST 支持现有规范路径、旧 `.ai/tasks/<id>/` 位置及 task
 
 ### Requirement: 正常列表保留 Workflow 摘要
 
-有效 Task 行 MUST 保留现有身份、Workflow 派生状态和 Change 路径的展示格式；Workflow 摘要失败 MUST 保留现有 RUNTIME_ERROR 行语义。列表修复 MUST NOT 启动 Attempt、派发 Agent 或修改任务完成状态。
+有效 Task 行 MUST 保留现有身份、Workflow 派生状态和 PATH 列的展示格式；Workflow 摘要失败 MUST 保留现有 RUNTIME_ERROR 行语义。列表修复 MUST NOT 启动 Attempt、派发 Agent 或修改任务完成状态。
 
 #### Scenario: 有效 DRAFT 与 DONE Task
 

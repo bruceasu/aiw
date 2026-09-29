@@ -115,17 +115,36 @@ func buildPluginCommand(path string, args []string) (*exec.Cmd, error) {
 			return exec.Command("powershell", append([]string{"-File", path}, args...)...), nil
 		}
 		return exec.Command("pwsh", append([]string{"-File", path}, args...)...), nil
-	case ".js":
-		if exePath, _ := lookPathFn("bun"); exePath != "" {
-			return exec.Command("bun", append([]string{path}, args...)...), nil
-		}
-		return exec.Command("node", append([]string{path}, args...)...), nil
+	case ".js", ".mjs", ".cjs":
+		return buildNodeCommand(path, args, false)
+	case ".ts", ".mts", ".cts":
+		return buildNodeCommand(path, args, true)
 	default:
 		if shebang != "" {
 			return buildCommand(path, args, ext, shebang)
 		}
 		return exec.Command(path, args...), nil
 	}
+}
+
+func buildNodeCommand(path string, args []string, stripTypes bool) (*exec.Cmd, error) {
+	exeDir, err := pluginExecutablePathFn()
+	if err != nil {
+		exeDir = ""
+	} else {
+		exeDir = filepath.Dir(exeDir)
+	}
+	node, err := configuredNodeInterpreter(exeDir)
+	if err != nil {
+		return nil, err
+	}
+	commandArgs := []string{}
+	if stripTypes {
+		commandArgs = append(commandArgs, "--experimental-strip-types")
+	}
+	commandArgs = append(commandArgs, path)
+	commandArgs = append(commandArgs, args...)
+	return exec.Command(node, commandArgs...), nil
 }
 
 func buildCommand(path string, args []string, ext, shebang string) (*exec.Cmd, error) {

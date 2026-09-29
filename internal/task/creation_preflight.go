@@ -20,7 +20,7 @@ func preflightTaskCreation(id string) (creationPreflight, error) {
 	if err != nil {
 		return creationPreflight{}, err
 	}
-	return classifyCreationDirtyPaths(dirtyPaths, []string{TaskDir(id), filepath.Join(RuntimeTasksDir, id)}, taskCreationSharedWritePaths()), nil
+	return classifyCreationDirtyPaths(dirtyPaths, []string{TaskDir(id), FeatureDesignPath(id), filepath.Join(RuntimeTasksDir, id)}, taskCreationSharedWritePaths()), nil
 }
 
 func AuthorizeTaskCreation(id string, allowUnrelatedDirty bool) error {

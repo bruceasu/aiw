@@ -1,0 +1,57 @@
+# AIW Issue 使用手册
+
+Issue 可以记录 Bug、功能或修改。新流程是 **Issue → Feature Design → Task**。
+`.ai/tasks/<task-id>/` 保存 Task 生命周期和执行状态；
+`docs/features/<task-id>.md` 保存工程决策和工作项。OpenSpec 负责
+`openspec/specs/` 中的稳定规格，change 是可选关联。
+
+## 当前命令与兼容性
+
+`aiw issue` 是现有 `aiw req` 程序的入口别名。当前版本继续使用 `REQ` 编号、
+`docs/requirements/<id>/` 和原 Session 证据路径。旧记录无需迁移。
+审批与推广仍各自需要明确的人类决定。
+
+```text
+aiw issue chat [id]
+aiw issue new <slug> [title]
+aiw issue capture <id> <artifact> --file <path>
+aiw issue approve <id> APPROVED --by <actor> --reason <reason>
+aiw issue promote <id> --task <task-id>
+aiw issue show <id>
+aiw issue link-parent <child-id> <parent-id>
+aiw issue children <parent-id>
+```
+
+大型 Issue 可按独立结果拆成子 Issue。在子 Issue 获批前使用 `link-parent`
+记录结构化来源关系；`children` 查询直接子项。在各 Issue Plan 中仍应说明
+拆分范围，不要把一个 Issue 的已批准内容静默转移到另一记录。
+
+%% NEEDS_INPUT: 独立的 ISSUE 编号和 `docs/issues/` 存储需要单独确定迁移策略；本阶段保留 REQ 数据格式以兼容旧记录。
+
+## 推广与 FD
+
+推广会创建或复用原生 Task、写入
+`.ai/tasks/<task-id>/artifacts/requirement-handoff.md`，并建立
+`docs/features/<task-id>.md`。该 handoff 文件名为兼容旧读取器而保留。
+新 FD 初始为 `BLOCKED`，带 `%% NEEDS_INPUT` 提示；这表示工程计划尚待
+根据已批准 Issue 来源填写，不能把模板文字当作已决定的实现范围。
+
+在 FD 中写明目标、约束、决策、验收证据、TODO、Verification 和有序工作项。
+工作项用 `- [ ] 1.1 ...` 形式。完成后运行 `aiw wf plan <task-id>` 将其
+映射到 Workflow Core，再以同一 Issue 和 Task ID 重试 promote，完成
+`FD_READY` 记录。FD 为 `BLOCKED` 或没有工作项时，推广停在可恢复的
+`TASK_CREATED`；`aiw wf plan` 不会映射被整体阻塞的 FD 工作项。
+
+如稳定行为改变，更新相关 `openspec/specs/`。只在 OpenSpec change 的
+提案、delta spec 或归档流程有价值时显式绑定；Task 的实现和完成不依赖它。
+
+## 本地交付
+
+旧 Schema 9 的手动 `aiw wf local-merge <task-id> <merge-message>` 与 Task 完成状态分离，
+要求隔离工作树干净、相关改动已经提交，并检查分支、在途写入和 Git 合并安全条件。未完成 Task
+合并成功后在 primary 继续推进，保留原工作项、证据和 Session 关联。
+
+%% RISK: 手动合并不会自动核对分支中已提交文件的路径范围；执行前仍须人工审阅分支提交。
+
+Task 归档时，受管 FD 移至 `docs/features/archive/<YYYY-MM-DD>-<task-id>.md`，
+与 Task 运行记录及存在的 OpenSpec change 使用同一日期和 Task ID。

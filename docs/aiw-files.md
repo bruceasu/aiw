@@ -9,7 +9,7 @@
 | 文件/目录 | 作用 |
 |---|---|
 | `openspec/` | OpenSpec 工作区根目录 |
-| `openspec/changes/` | 活跃 Task/Change |
+| `openspec/changes/` | 可选的活跃 OpenSpec change |
 | `openspec/changes/archive/` | 已归档 Change |
 | `openspec/specs/` | 长期维护的规格说明 |
 | `.wt/` | Git worktree 默认目录 |
@@ -22,14 +22,12 @@
 
 已有文件通常不会覆盖；`--merge`、`--force` 或交互式设置流程可能更新已有内容。
 
-## 2. Task 和 OpenSpec 文件
+## 2. Task、FD 和 OpenSpec 文件
 
 执行 `aiw new <task-id>` 后：
 
 ```text
-openspec/changes/<task-id>/
-├── tasks.md
-└── notes.md
+docs/features/<task-id>.md
 
 .ai/tasks/<task-id>/
 ├── task.toml
@@ -39,8 +37,7 @@ openspec/changes/<task-id>/
 
 作用：
 
-- `tasks.md`：人工维护的目标、范围、任务清单和验证项。
-- `notes.md`：临时发现、调试和实验记录。
+- `docs/features/<task-id>.md`：工程决策、人工工作项和验证意图。
 - `.ai/tasks/<task-id>/task.toml`：Task 元数据、分支、worktree、Session 等信息。
 - `state.json`：Workflow Core 的运行状态、Work Items、Attempts、Gates 和 Evidence。
 - `events.jsonl`：Workflow 状态事件日志。
@@ -49,10 +46,10 @@ openspec/changes/<task-id>/
 
 | 命令 | 文件 |
 |---|---|
-| `aiw decision <task-id>` | `openspec/changes/<task-id>/design.md` |
+| 旧版 `aiw decision <task-id>` | 已存在的 OpenSpec change 下的 `design.md`；新 Task 决策写入 FD |
 | `aiw spec <spec-id>` | `openspec/specs/<spec-id>/spec.toml`、`spec.md` |
 | `Workflow Runner` | `.ai/tasks/<task-id>/artifacts/handoff.md` |
-| `aiw archive` | 将 Change 移动到 `openspec/changes/archive/` |
+| `aiw archive` | 将 Task、FD 和存在的 Change 移到各自的归档位置 |
 
 这里的 Workflow Runner handoff 是运行时生成的 Attempt-bound managed context，属于 `.ai/tasks/<task-id>/`；不要与 Session handoff（`.ai/sessions/<session-id>/artifacts/handoff.md`）或 OpenSpec 的业务交接产物混淆。
 ### 当前活动 Task 的一次性手工路径调整
@@ -66,7 +63,7 @@ openspec/changes/<task-id>/
 
 不重建 Task、不改写运行状态或事件历史。归档位置继续使用 `.ai/archive/<date>-<task-id>/`；这不是通用迁移命令或批量迁移流程。
 
-Requirement promotion 还可能补充 OpenSpec 标准文件：
+显式选择 OpenSpec 后端或关联 change 时，可能存在以下可选工件：
 
 ```text
 openspec/changes/<task-id>/
@@ -76,21 +73,21 @@ openspec/changes/<task-id>/
 └── specs/<capability>/spec.md
 ```
 
-这些文件只会在缺失时由生成器创建，已有人工内容通常保留。
+原生 Task 与 Issue promotion 不要求这些工件。
 
-## 3. Requirement 文件
+## 3. Issue 文件（兼容 Requirement 记录）
 
-执行 `aiw req new <requirement-id>` 后，默认生成：
+执行 `aiw issue new <slug>` 后，当前兼容程序默认生成：
 
 ```text
-requirements/<requirement-id>/
+docs/requirements/<requirement-id>/
 └── requirement.toml
 ```
 
 捕获需求产物后，可能增加：
 
 ```text
-requirements/<requirement-id>/
+docs/requirements/<requirement-id>/
 ├── problem-brief.md
 ├── business-case.md
 ├── metric-brief.md
@@ -101,21 +98,21 @@ requirements/<requirement-id>/
 
 作用：
 
-- `requirement.toml`：需求身份、状态、审批、promotion 状态、revision 和 artifact 摘要。
+- `requirement.toml`：Issue 身份、可选 `parent_id`、状态、审批、promotion、revision 和工件摘要。
 - 各类 Markdown：需求讨论和决策产物。
 - `decision-log.md`：审批、延期、拒绝、归档或取消记录。
 
 归档或取消后，整个目录会被移动到：
 
 ```text
-requirements/archive/<requirement-id>/
-requirements/cancelled/<requirement-id>/
+docs/requirements/archive/<requirement-id>/
+docs/requirements/cancelled/<requirement-id>/
 ```
 
-Requirement promotion 成功后，还会在目标 Task 下生成：
+Issue promotion 后，还会在目标 Task 下生成：
 
 ```text
-openspec/changes/<task-id>/artifacts/requirement-handoff.md
+.ai/tasks/<task-id>/artifacts/requirement-handoff.md
 ```
 
 ## 4. Session 文件

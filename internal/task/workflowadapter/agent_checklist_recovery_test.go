@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"aiw/internal/task"
-	taskworkflow "aiw/internal/task/workflowadapter"
 	"aiw/internal/workflow"
 )
 
@@ -27,7 +26,7 @@ func TestStartManagedAttemptRefreshesAuthoredDependencies(t *testing.T) {
 		t.Fatal(err)
 	}
 	store := workflow.NewStore("")
-	if _, err := store.EnsureCompatible(taskworkflow.WorkflowRuntimeFromMeta(meta)); err != nil {
+	if _, err := store.EnsureCompatible(WorkflowRuntimeFromMeta(meta)); err != nil {
 		t.Fatal(err)
 	}
 	// Acceptance was created first, before its implementation dependency was authored.

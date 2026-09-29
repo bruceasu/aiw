@@ -1,32 +1,33 @@
 # AIW Work Management Contract
 
-Use this contract for engineering Skills in an AIW/OpenSpec repository.
+Use this contract for engineering Skills in an AIW repository.
 
 ## Ownership
 
-- AIW owns Task lifecycle status, branch, worktree, Session, handoff lineage,
-  and external mappings.
-- OpenSpec owns proposal, design, capability specs, and the detailed
-  implementation checklist in `tasks.md`.
-- GitHub and GitLab are optional projections used only on explicit request.
+- An Issue describes a bug, feature, or modification and may be split into
+  smaller Issues. Existing Requirement records and `aiw req` remain compatible
+  Issue entry points until their data is migrated explicitly.
+- Feature Design (FD) owns engineering decisions and planned work items.
+  An approved Issue may lead directly to an FD and AIW Task.
+- `.ai/tasks/<task-id>/` is the center of execution. AIW owns Task lifecycle,
+  branch, worktree, Session, handoff lineage, and external mappings. Workflow
+  Core owns Work Items, Attempts, Gates, Evidence, write leases, and derived
+  execution, validation, and readiness state there.
+- OpenSpec owns stable capability specs in `openspec/specs/`. An OpenSpec change
+  may be linked when spec changes need that workflow; it is not required to
+  create, plan, implement, merge, or complete a Task.
+- GitHub and GitLab are optional Issue projections used only on explicit request.
 
-Do not create a second task tracker or let OpenSpec lifecycle state override the
-resolved AIW Task.
+Do not create a second Task tracker or treat `task.toml.status` as an
+independently writable execution source. Request Workflow Core transitions
+through the managed Task context and report the resulting summary. Keep
+human-authored FD work items distinct from Core-owned generated state.
 
 ## Discover Commands
 
 Before an unfamiliar or mutating operation, inspect `aiw help --json` or the
 specific command help once. Use the installed command surface rather than
-inventing subcommands.
-
-Current AIW task lifecycle commonly uses `aiw new`, `aiw show`, `aiw status`,
-`aiw done`, and `aiw archive`. Worktrees use `aiw wt`.
-
-Do not install AIW or OpenSpec automatically.
-
-## Legacy Task Path Adjustment
-
-The canonical active Task directory is `.ai/tasks/<task-id>/`; archives remain at `.ai/archive/<date>-<task-id>/`. For a confirmed one-time relocation of the sole active legacy Task, stop the old AIW program first, stop that Task's Supervisor next, then verify there is no active Attempt, write lease, or other writer. Preserve the target `migrated-to` marker outside the target, require the legacy source to be the sole Task record, and stop on any destination data or identity conflict. Move the complete runtime directory, verify Task identity plus state, event history, reports, and artifacts, then use the new version for a read-only status check. Never move archived Tasks or infer a general migration workflow from this exception.
+inventing subcommands. Do not install AIW or OpenSpec automatically.
 
 ## Resolve Or Create The Task
 
@@ -35,86 +36,84 @@ Resolve context in this order:
 1. Task ID explicitly supplied by the user.
 2. Task established by the active AIW Session.
 3. AIW Task associated with the current worktree or branch.
-4. A unique matching OpenSpec change.
+4. Unique Task linked from the current Issue or FD.
+5. Unique Task linked to an OpenSpec change, when one exists.
 
-If planning work needs a new lifecycle, create it through AIW. `aiw new
-<task-id> --backend auto` may delegate artifact creation to an installed
-OpenSpec CLI and otherwise uses AIW's native backend.
+If several Tasks match, ask for the Task ID. Create a new lifecycle through
+AIW. Choose its supported native backend when no OpenSpec change is needed;
+do not create a change just to satisfy Task creation.
 
-If several Tasks match, stop and ask for the Task ID.
+One Issue may be split into smaller Issues when each has independently useful
+scope. One Issue or FD may lead to multiple Tasks when delivery or archive
+lifecycles differ. Record the lineage; do not silently duplicate work.
 
-## Task And Change Mapping
+## Issue Decisions
 
-Use one AIW Task and one OpenSpec change for work sharing the same goal, branch,
-worktree, delivery, and archive lifecycle.
+Use confirmed user preferences and current evidence to choose a clearly better
+approach within the approved scope. A bounded sub-agent may compare options;
+the main agent remains responsible for the choice and records the rationale in
+the Issue or FD. Ask the human when options are materially close, a critical
+fact is missing, or the decision changes scope, risk, or authorization. Do not
+interrupt for routine implementation choices.
 
-Keep ordinary implementation slices as checklist items in `tasks.md`. Create a
-separate AIW Task/change only when a slice needs an independent worktree,
-delivery, or archive lifecycle, and only after the user approves the split.
+## Feature Design And Specs
 
-## Worktree Rules
+FD is the primary engineering planning artifact for a Task. It records the
+goal, constraints, decisions, compatibility effects, acceptance evidence,
+work items, TODO, Verification, and unresolved `%% NEEDS_INPUT` notes. Generate
+or update Task work from its selected FD items. Implementation does not depend
+on an OpenSpec `tasks.md` checklist.
 
-- Create or resolve implementation worktrees through `aiw wt`.
-- Default to one Task, one `feature/<task-id>` branch, and one
-  `.wt/<task-id>` worktree.
-- Do not use raw `git worktree` when AIW is available.
+Read relevant stable specs before changing behavior. Update `openspec/specs/`
+when stable requirements change. Link an OpenSpec change only when its proposal,
+spec delta, or archive workflow adds value. If linked, keep its artifacts
+consistent with the FD, but do not let its checklist or lifecycle override the
+Task. A legacy Task whose only plan is `tasks.md` remains actionable; migrate
+its plan deliberately rather than discarding completed items.
+
+## Workspace Rules
+
+- Work in the primary Git checkout and current branch for ordinary manual work.
+  Automated Task execution uses an isolated worktree by default; use the
+  documented explicit primary-workspace opt-out when authorized.
+- A Task lifecycle does not imply a feature branch or linked worktree.
+- Use isolation for parallel writes, conflicting work, long-running work,
+  disposable experiments, or an explicit user request. State the reason first.
+- Create or resolve isolated worktrees only through `aiw wt`.
+- Require explicit Task or Session context when several Tasks share primary.
+- Treat `unassigned` and unknown workspace bindings as read-only until bound.
+- Planning artifacts created on the current branch must be committed before
+  creating an isolated Task worktree, so it inherits the Task and FD records.
+- Record `parent_branch` before creating the Task branch/worktree. Delivery
+  targets that branch, never an inferred current checkout.
 - Do not silently implement in a workspace that does not match the Task.
-- Do not remove a worktree or branch automatically, including after archive.
+- Do not commit, merge, push, remove a worktree, or delete a branch merely
+  because implementation is complete. Git delivery is separately authorized.
+  Preserve Task resources on any failure or conflict.
 
 If AIW is unavailable, report the missing capability and ask before using a raw
 Git fallback.
 
-## OpenSpec Operations
+## Delivery And Completion
 
-Use OpenSpec CLI for artifact apply, spec sync, or archive support when it is
-already installed. Prefer AIW lifecycle commands that delegate with
-`--backend auto` where supported.
+`local-merge` is a delivery operation, independent of Task completion status.
+After a successful merge, an unfinished Task remains unfinished and resumes in
+the primary workspace. Preserve its Work Items, Evidence, Gates, and Session
+lineage; do not mark it done or archive it as a side effect of delivery.
 
-If OpenSpec CLI is unavailable:
+After implementation, update the selected FD work item, TODO, Verification,
+and remaining `%%` notes. Request the appropriate Core transition and report
+Task completion separately from Git delivery. Archive only under the Task's
+documented archive rules. Archive a managed FD with its Task at
+`docs/features/archive/<date>-<task-id>.md`; a linked OpenSpec change remains
+optional. Do not automatically commit, merge, push, clean a
+worktree, delete a branch, or archive.
 
-- continue from local artifacts when the requested operation can be completed
-  safely;
-- do not install it;
-- report which OpenSpec operation was not executed.
+## Validation
 
-For synchronization:
-
-- OpenSpec may update AIW title, goal, and progress summary.
-- AIW may update OpenSpec lifecycle status and Task/worktree references.
-- Proposal, design, specs, and checklist content remain OpenSpec-owned.
-- Stop on conflicts instead of overwriting either side.
-
-Archive through `aiw archive <task-id> --backend auto`. Do not add worktree or
-branch cleanup flags unless the user explicitly requests cleanup.
-
-## Sub-Agents
-
-
-- Use them only for bounded static analysis, code location, or independent
-  implementation fragments.
-- Sub-agents must not run tests, builds, network calls, permission escalation,
-  commits, archive operations, or worktree operations.
-- The main agent owns integration, lifecycle mutations, and the final report.
-- Do not invoke `code-review` automatically after implementation.
-
-## Tests
-
-Writing or editing tests is allowed. Running tests, builds, type checks,
-formatters, linters, vet, or verification scripts requires an explicit user
-instruction to execute them.
-
-After development, report which tests were not run. When a focused test
-would add useful evidence, give one optional command with scope and expected
-duration; do not ask solely because implementation finished. Run tests only
-under the repository's runtime authorization rules. Broader tests or builds
-require separate approval.
-
-## Completion
-
-After implementation:
-
-- update the selected `tasks.md` item, TODO, Verification, and remaining `%%`
-  notes;
-- synchronize the coarse AIW Task status without overwriting OpenSpec content;
-- report static evidence and checks not run;
-- do not commit, archive, or clean a worktree unless requested.
+Static review is the default. After implementation, run one compile-only check:
+prefer `scripts/compile*` or root `compile*`, otherwise the narrowest language
+compiler command without retaining a final distributable artifact. Do not run
+tests, final-artifact builds, formatters, linters, vet, or verification scripts
+without authorization under the repository rules. Report actual commands,
+static evidence, skipped checks, and unresolved risks.

@@ -73,17 +73,8 @@ func (s *Store) PersistExecutionReport(request PreparedAgentRequest, source, out
 		return ActorReference{}, errors.New("execution report does not match the persisted Attempt")
 	}
 	if request.InputReference != nil {
-		if state.SchemaVersion == DurableSchemaVersion {
-			record, err := stageRecord(&state, ExecutionRequestID(request))
-			if err != nil || record.Request.Input != *request.InputReference || record.Dispatch == "intent" || record.Dispatch == "not-dispatched" { return ActorReference{}, errors.New("execution report does not match its durable dispatch") }
-			report.Actor = record.Request.Actor
-			content, err = json.MarshalIndent(report, "", "  ")
-			if err != nil { return ActorReference{}, err }
-			content = append(content, '\n')
-		} else {
-			current := state.Automation.PreparedRequest
-			if current == nil || ExecutionRequestID(*current) != ExecutionRequestID(request) || current.InputReference == nil || *current.InputReference != *request.InputReference || current.DispatchedAt != request.DispatchedAt { return ActorReference{}, errors.New("execution report does not match the prepared input version") }
-		}
+		current := state.Automation.PreparedRequest
+		if current == nil || ExecutionRequestID(*current) != ExecutionRequestID(request) || current.InputReference == nil || *current.InputReference != *request.InputReference || current.DispatchedAt != request.DispatchedAt { return ActorReference{}, errors.New("execution report does not match the prepared input version") }
 	}
 	// Legacy directory promotion belongs to the Store migration protocol, not
 	// this artifact writer. Never create a second partial Task directory.

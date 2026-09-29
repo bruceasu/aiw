@@ -1,5 +1,8 @@
 # Schema 10 Requirement Plan draft
 
+%% DECISION (2026-09-29): Schema 10 is abandoned. This plan is retained as a
+%% historical record; do not use it to create new Task work or activate a pilot.
+
 > This is a review draft. It is not yet the formal Requirement Plan.
 
 ## Facts and confirmed rules

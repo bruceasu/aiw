@@ -1,158 +1,63 @@
 ---
 name: to-tickets
-description: Break a plan, spec, or the current conversation into ordered tracer-bullet items in an OpenSpec change.
+description: Split an Issue or Feature Design into ordered, actionable AIW Task work items, with an optional OpenSpec change.
 disable-model-invocation: true
 ---
 
 # To Tickets
 
-Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
+Follow `skills/reviewed-skill-contract.md` and
+`skills/work-management.md`.
 
-## Contract
+## When To Use
 
-Trigger when an existing plan or spec needs ordered implementation items. Do
-not create a second tracker, worktree, branch, commit, or external projection.
-Return ordered checklist items with prerequisites and acceptance criteria;
-record unresolved scope as `%% NEEDS_INPUT: ...`.
+Use this Skill to turn an approved Issue and FD into actionable work items for
+one AIW Task, or to revise that Task's existing work plan. Do not use it for
+spec writing, implementation, Task execution, or external ticket publishing.
+An OpenSpec change is optional.
 
-For a managed Task, map each checklist item to a proposed Work Item and report
-its dependencies and likely Gates. This Skill does not create Attempts, claim
-leases, or mark execution completion.
+## Inputs And Decisions
 
-Break a plan, spec, or conversation into a set of **tickets** — tracer-bullet vertical slices, each declaring the tickets that **block** it.
+Resolve the Task, its approved Issue handoff, linked FD, relevant stable specs,
+and nearby code only as needed. For an older Task without an FD, use its
+existing OpenSpec `tasks.md` as the plan until migration is deliberate. If the
+FD is missing or a material design decision is unresolved, route that decision
+to `fd-workflow` before marking affected items ready. Keep settled decisions.
 
-Read `skills/work-management.md`. Resolve one AIW Task and its matching OpenSpec
-change before writing. Do not create a parallel `.scratch` ticket hierarchy.
+When a split strategy needs comparison and delegation is authorized, give a
+bounded sub-agent the confirmed scope and known user preferences, then choose
+the clear best option. Otherwise make the routine choice from the same
+evidence. Ask the human only when options are materially close, critical
+information is missing, or a split changes delivery or authorization. Record
+an unresolved choice as `%% NEEDS_INPUT: ...`; keep the FD `BLOCKED` until
+the affected design decision is resolved rather than mapping it as ready.
 
-## Process
+## Write And Map Work Items
 
-### 1. Gather context
+Break the work into small, complete outcomes. In the FD's `## Work Items`, use
+top-level, stable, dotted numbered checkboxes such as `- [ ] 1.1 Implement X`.
+For each item, state acceptance evidence and verification intent in the FD.
+Express a real dependency in the checkbox title with
+`<!-- aiw:depends-on=1.1 -->`; use comma-separated IDs for several
+dependencies. Keep IDs stable once mapped, including completed IDs. Do not
+turn prose ordering into a dependency unless the work truly requires it.
 
-Work from whatever is already in the conversation context. If the user passes a
-change identifier or spec path, resolve and read the corresponding OpenSpec
-artifacts. A GitHub/GitLab URL is read only when the user explicitly asks for an
-external projection.
+Use `aiw wf plan <task-id>` or the supported planning operation to reconcile
+the authored checklist with Workflow Core Work Items. The FD owns item meaning
+and order; Workflow Core owns execution state. For a legacy Task, edit and map
+its existing `tasks.md` without creating a second checklist. A linked
+change's `tasks.md` is not automatically a second plan to maintain. Preserve
+its authored text and completed IDs if an explicit compatibility update is
+needed.
 
-For a managed Task, read `design.md` before splitting work. Honour its
-`## Design Readiness` when present. If it is `BLOCKED`, do not create tickets
-that appear ready for implementation. If ticket splitting exposes a material
-missing design decision or a design-level `%% NEEDS_INPUT`, automatically load
-`fd-workflow` in managed AIW/OpenSpec mode to resolve or record that gap, then
-continue only when the resulting Design Readiness permits it. Do not load FD
-again merely to change ticket size, ordering, or wording.
+Create a separate child Issue or Task only for an independently deliverable
+outcome, and preserve parent lineage. Do not create a worktree, Attempt, or
+lease, and do not mark an item complete here.
 
-Older changes may not have a Design Readiness section. Preserve compatibility:
-use the existing design and specs when they make every selected item actionable;
-otherwise report the missing decision as a Design Readiness Gate rather than
-inventing it.
+## Completion And Verification
 
-### 2. Explore the codebase (optional)
-
-If needed, inspect only the relevant codebase area. Ticket titles and
-descriptions should use the project's domain glossary vocabulary and respect
-ADRs in the area being changed.
-
-Look for opportunities to prefactor the code to make the implementation easier. "Make the change easy, then make the easy change."
-
-### 3. Draft vertical slices
-
-Break the work into **tracer bullet** tickets.
-
-<vertical-slice-rules>
-
-- Each slice cuts a narrow but COMPLETE path through every layer (schema, API, UI, tests) — vertical, NOT a horizontal slice of one layer
-- A completed slice is demoable or verifiable on its own
-- Each slice is sized to fit in a single fresh context window
-- Any prefactoring should be done first
-
-</vertical-slice-rules>
-
-Give each item an explicit order and acceptance criteria. Represent ordinary
-dependencies through task order and wording in `tasks.md`; do not invent
-external blocking links for work that shares one AIW task and worktree.
-
-For a nontrivial item, identify the existing requirement/acceptance criteria
-and design decisions that constrain it, plus the observable evidence that
-would show it is complete. Reference stable IDs when the OpenSpec artifacts
-already provide them; do not create a second WP ID or invent IDs for older
-changes. Include compatibility, migration, rollback, security, or operability
-work only when the change actually requires it. A planned test or check does
-not authorize running it.
-
-**Wide refactors are the exception to vertical slicing.** A **wide refactor** is one mechanical change — rename a column, retype a shared symbol — whose **blast radius** fans across the whole codebase, so a single edit breaks thousands of call sites at once and no vertical slice can land green. Don't force it into a tracer bullet; sequence it as **expand–contract**. First expand: add the new form beside the old so nothing breaks. Then migrate the call sites over in batches sized by blast radius (per package, per directory), each batch its own ticket blocked by the expand, keeping CI green batch to batch because the old form still exists. Finally contract: delete the old form once no caller remains, in a ticket blocked by every migrate batch. When even the batches can't stay green alone, keep the sequence but let them share an integration branch that all block a final integrate-and-verify ticket — green is promised only there.
-
-### 4. Resolve material choices
-
-When sizing, prerequisites, or scope have materially different valid options,
-present the affected items as a numbered list. For each, show:
-
-- **Title**: short descriptive name
-- **Order / prerequisites**: which earlier task items gate this one
-- **What it delivers**: the end-to-end behaviour this ticket makes work
-
-Ask only for the decision needed to choose between those options, such as:
-
-- Does the granularity feel right? (too coarse / too fine)
-- Are the prerequisites correct — does each item depend only on work that genuinely gates it?
-- Should any tickets be merged or split further?
-
-When the accepted spec and design determine a bounded breakdown, use best
-judgment and continue to `tasks.md` without a separate approval round. Record
-an unresolved material decision as `%% NEEDS_INPUT: ...`; do not mark an
-affected item ready by assumption. A new AIW Task or independent delivery
-boundary still requires the approval described below.
-
-### 5. Write the task breakdown
-
-Write the resolved items as numbered checklist entries in the current change's
-`tasks.md`, ordered by prerequisite. Keep them under the current AIW Task when
-they share its worktree and lifecycle.
-
-If a slice requires an independent worktree, status, archive lifecycle, or
-delivery boundary, propose a separate AIW Task and matching OpenSpec change.
-Create them through AIW only after the user approves the split. External
-publication is a separate explicit workflow.
-
-Synchronize the AIW Task's progress summary after writing, without replacing
-the detailed OpenSpec checklist. This Skill does not create a worktree or run
-tests.
-
-<task-item-template>
-
-# <NN> — <Ticket title>
-
-**What to build:** the end-to-end behaviour this ticket makes work, from the user's perspective — not a layer-by-layer implementation list.
-
-**Prerequisites:** earlier task numbers that gate this item, or "None — can start immediately".
-
-**Relevant spec/design:** existing requirement, acceptance-criterion, or design/ADR references when they constrain this item.
-
-**Verification intent:** observable behavior or evidence needed to complete this item; record execution authorization separately.
-
-- [ ] Acceptance criterion 1
-- [ ] Acceptance criterion 2
-
-</task-item-template>
-
-<independent-change-template>
-
-## Parent
-
-A reference to the parent issue on the tracker (if the source was an existing issue, otherwise omit this section).
-
-## What to build
-
-The end-to-end behaviour this ticket makes work, from the user's perspective — not layer-by-layer implementation.
-
-## Acceptance criteria
-
-- [ ] Criterion 1
-- [ ] Criterion 2
-
-## Prerequisites
-
-- A reference to each blocking ticket, or "None — can start immediately".
-
-</independent-change-template>
-
-In either form, avoid specific file paths or code snippets — they go stale fast. Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it and note briefly that it came from a prototype. Trim to the decision-rich parts — not a working demo, just the important bits.
+Complete when each ready item has a clear outcome and acceptance evidence and
+the Task mapping succeeds. Review the checklist, IDs, dependencies, and mapped
+results statically. Report proposed Work Items, static evidence, failed
+mappings as Gates, and the next action. Do not run tests, commit, or publish
+external tickets.

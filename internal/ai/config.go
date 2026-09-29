@@ -114,32 +114,6 @@ type Profile struct {
 	ReasoningIntensity string
 }
 
-// UsageBudgetDefaults are operator-selected limits, not an automatic Task
-// migration policy. Workflow snapshots them only on explicit configuration.
-type UsageBudgetDefaults struct {
-	InputTokens  int64
-	OutputTokens int64
-}
-
-func LoadUsageBudgetDefaults() (UsageBudgetDefaults, error) {
-	values, err := loadConfigValues()
-	if err != nil { return UsageBudgetDefaults{}, err }
-	const prefix = "ai.usage_budget."
-	var defaults UsageBudgetDefaults
-	for _, field := range []struct { key string; target *int64 }{
-		{"input_tokens", &defaults.InputTokens},
-		{"output_tokens", &defaults.OutputTokens},
-	} {
-		raw := strings.TrimSpace(values[prefix+field.key])
-		value, parseErr := strconv.ParseInt(raw, 10, 64)
-		if parseErr != nil || value <= 0 {
-			return UsageBudgetDefaults{}, fmt.Errorf("[ai.usage_budget].%s must be a positive integer", field.key)
-		}
-		*field.target = value
-	}
-	return defaults, nil
-}
-
 // LoadProfiles reads named [ai.profiles.<name>] provider/model pairs.
 // Profiles with an empty provider or model are ignored so callers can safely
 // fall back to the canonical global [ai] configuration.
@@ -328,7 +302,7 @@ func mergeConfigFile(values map[string]string, path string) error {
 }
 
 func isAIConfigSection(section string) bool {
-	return section == "ai" || section == "cz" || section == "ai.usage_budget" ||
+	return section == "ai" || section == "cz" ||
 		(strings.HasPrefix(section, "ai.profiles.") && strings.TrimSpace(strings.TrimPrefix(section, "ai.profiles.")) != "")
 }
 

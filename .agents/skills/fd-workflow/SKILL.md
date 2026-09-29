@@ -1,48 +1,49 @@
 ---
 name: fd-workflow
-description: Deepen an AIW/OpenSpec Task design when material decisions remain, or manage explicitly requested standalone Feature Design storage.
+description: Design an AIW Task from an Issue or refine its Feature Design, including decisions and ordered work items. Also supports explicitly requested standalone FD storage.
 ---
 
 # Feature Design Workflow
 
-Use the current working directory as the repository root unless the user explicitly specifies another repository.
+Read `skills/work-management.md`. A managed FD is the Task's primary
+engineering plan. Resolve the Issue and Task when they exist, then read the
+approved Issue evidence, relevant code and stable specs. An OpenSpec change is
+optional. Do not create one solely to hold a design or checklist.
 
-The user's explicit request takes precedence over defaults in this skill. Complete reversible/read-only work without unnecessary approval pauses. Ask only when a choice would materially change the outcome and cannot be inferred safely.
+## Managed FD
 
-## Managed AIW/OpenSpec Mode
+Use `docs/features/<task-id>.md` for a managed Task FD; the Task's
+`.ai/tasks/<task-id>/` record remains the execution center. Move an older FD
+stored elsewhere to this path before mapping it to Core, and preserve completed
+items. A legacy Task with only an OpenSpec `design.md` and `tasks.md` may
+continue from them until its plan is deliberately moved to an FD.
 
-When a resolved AIW Task and matching OpenSpec change are in scope, this mode
-takes precedence over the portable storage workflow below. `fd-workflow` is a
-planning adapter: it may analyze the request and, when authorized, update the
-OpenSpec proposal, design, or checklist owned by that change. It reports
-proposed Work Items, Evidence, Gates, and next actions to Workflow Core.
+Record the goal and source Issue, constraints, relevant stable specs, decisions
+with evidence and rationale, compatibility effects, acceptance evidence,
+ordered work items, TODO, Verification, and `%% NEEDS_INPUT` for unresolved
+material choices. Use numbered checklist items such as `- [ ] 1.1 ...` so AIW
+can map them to Workflow Core Work Items. Keep item IDs stable after mapping.
+The FD owns their meaning and ordering; Workflow Core owns execution state.
 
-In managed mode, do not create or update `docs/features/FEATURE_INDEX.md`,
-allocate FD numbers, maintain a second status, archive an FD, update a
-changelog, commit, or run verification. Do not claim/release a lease or change
-Task/Attempt state. Record unresolved design input as `%% NEEDS_INPUT` in the
-appropriate OpenSpec artifact.
+Choose a clearly better approach from evidence and known user preferences.
+Use a bounded sub-agent comparison only when delegation is authorized and
+useful. Ask the human when options are materially close, critical information
+is missing, or the choice changes authorization or accepted scope. Record the
+choice and remaining trade-offs in the FD. Mark design readiness as
+`FD_APPLIED`, `FD_NOT_REQUIRED`, or `BLOCKED`. A `BLOCKED` FD cannot map its
+numbered work items yet; resolve material decisions before setting it ready.
 
-Use portable mode only when the user explicitly requests standalone FD storage
-or no managed AIW/OpenSpec context exists. Portable mode has its own files and
-must not be reconciled into a managed Task automatically.
+When stable behavior changes, update the relevant `openspec/specs/` capability
+spec. If a linked OpenSpec change exists, keep its proposal and spec delta in
+sync with the FD. Do not make its `tasks.md` the Task's required work source.
 
-`to-spec` is the normal managed-mode caller. Before this design pass, use
-`domain-modeling` in engineering mode when terminology, entity relationships,
-or domain boundaries are not stable. `to-tickets` may call this Skill only
-when ticket splitting reveals a material missing design decision.
-`implement` consumes the resulting OpenSpec design and must not call this
-Skill. A managed design pass records `FD_APPLIED`, `FD_NOT_REQUIRED`, or
-`BLOCKED` in the change's `design.md`; only `BLOCKED` prevents implementation.
+After writing the FD, use the supported AIW planning/sync operation to map its
+items into `.ai/tasks/<task-id>/`. Report any failed mapping as a Gate. Do not
+create Attempts, claim leases, change Task status, commit, or run verification
+as part of design.
 
-For a managed design pass, read only the relevant proposal, design, capability
-specs, and checklist. Resolve material decisions in the existing `design.md`:
-state the requirement or constraint, evidence, chosen approach and rationale,
-compatibility or migration effect, verification intent, and remaining risk.
-Keep settled requirements from the approved handoff; ask only about a new
-material conflict or missing decision. Report Design Readiness from those
-artifacts, and leave unresolved choices as `%% NEEDS_INPUT`.
+## Standalone FD
 
-## Standalone FD mode
-
-Use this mode only when the user explicitly requests standalone FD storage or no managed AIW/OpenSpec context exists. Read `references/portable-operations.md` only for standalone FD work; it contains the storage layout, operation steps, annotations, and safety rules. Do not load it for a managed design pass.
+Use this mode only when the user explicitly requests standalone FD storage or
+there is no managed AIW Task. Read `references/portable-operations.md` for its
+layout and operations. Do not silently reconcile a standalone FD into a Task.

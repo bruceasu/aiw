@@ -64,26 +64,10 @@ func runWorkflowSupervisor(args []string) (runErr error) {
 				fmt.Printf("human response unavailable: %v; next: aiw wf diagnose %s\n", readErr, id)
 			}
 		}
-		if p := state.Protocol; p != nil {
-			fmt.Printf("Durable execution: revision=%d budget-known=%t stopped=%t\n", state.StateRevision, p.BudgetKnown, p.Stop != nil)
-			if p.Stop != nil { fmt.Printf("Stop reason: %s\n", p.Stop.Reason) }
-			for _, item := range p.Items { fmt.Printf("%s: phase=%s request=%s\n", item.WorkItemID, item.Phase, item.CurrentRequest) }
-			for _, request := range p.Requests { if !request.Consumed && request.Dispatch != "not-dispatched" { fmt.Printf("In flight: %s observation=%s executor=%s\n", request.Request.ID, request.Dispatch, request.Executor) } }
-			for _, recovery := range p.Recoveries { fmt.Printf("Recovery %s/%s: remaining=%d\n", recovery.WorkItemID, recovery.Phase, 2-len(recovery.Requests)) }
-			if a := p.Auxiliary; a != nil {
-				if a.HostGap != "" { fmt.Printf("Auxiliary host gap: %s\n", a.HostGap) }
-				fmt.Printf("Auxiliary sources: consumed=%d total=%d\n", a.Cursor, len(a.Sources))
-				for _, job := range a.Jobs { fmt.Printf("Auxiliary %s/%s: state=%s recovery-used=%t reason=%s\n", job.Kind, job.Key, job.State, job.RecoveryUsed, job.Reason) }
-			}
-		}
 		return nil
 	case "start":
 		return startWorkflowSupervisor(id, provider, model, store, state)
 	case "stop":
-		if state.SchemaVersion == workflow.DurableSchemaVersion {
-			_, err := store.RequestExecutionStop(workflow.TaskID(id), state.StateRevision, "Explicit supervisor Stop", "wf supervise stop")
-			return err
-		}
 		if state.Automation.Supervisor.LeaseID == "" {
 			return nil
 		}
@@ -112,8 +96,8 @@ func startWorkflowSupervisor(id, provider, model string, store *workflow.Store,
 		printRemediationChoices(report)
 		return nil
 	}
-	store.ResumeAuxiliaryHost(workflow.TaskID(id))
-	if state.Delivery == workflow.DeliveryMerged || state.Delivery == workflow.DeliveryDiscarded {
+	if state.Delivery == workflow.DeliveryDiscarded ||
+		(state.Delivery == workflow.DeliveryMerged && workflow.DeriveSummary(state).Execution == workflow.ExecutionCompleted) {
 		printSupervisorStatus(state)
 		return nil
 	}
@@ -245,8 +229,6 @@ func printSupervisorStatus(state workflow.RuntimeState) {
 	}
 	if state.Automation.Cursor.Result == "awaiting-human" {
 		terminal.Field("next", fmt.Sprintf("fill response file, then aiw wf continue %s", state.Task.ID))
-	} else if supervisor.Result == "budget-awaiting-approval" {
-		terminal.Field("next", fmt.Sprintf("review budget decision: aiw wf budget %s approve --reason <reason>", state.Task.ID))
 	} else if compileNext != "" {
 		terminal.Field("next", compileNext)
 	} else if supervisor.RetryAfter != "" {

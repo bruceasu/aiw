@@ -15,9 +15,7 @@ import (
 // This is a deliberate discovery surface: low-level lifecycle adapters remain
 // callable, but only these operations are offered in shell completion.
 var publicWorkflowSurface = []string{
-	"plan", "sync", "advance", "run", "supervise", "recommend-routing",
-	"focused-test", "delivery", "local-merge", "delivery-failed", "report",
-	"diagnose", "recover", "repair", "repair-metadata", "help",
+	"plan", "status", "run", "supervise", "diagnose", "complete", "help",
 }
 
 func TestPublicWorkflowSurfaceStaysAligned(t *testing.T) {

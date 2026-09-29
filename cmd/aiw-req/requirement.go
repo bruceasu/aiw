@@ -60,7 +60,22 @@ func DispatchRequirement(args []string) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("%s\t%s\tapproval=%s\tpromotion=%s\ttask=%s\n", meta.ID, meta.Status, meta.Approval.Status, meta.Promotion.Status, meta.Promotion.TaskID)
+		fmt.Printf("%s\t%s\tapproval=%s\tpromotion=%s\ttask=%s\tparent=%s\n", meta.ID, meta.Status, meta.Approval.Status, meta.Promotion.Status, meta.Promotion.TaskID, meta.ParentID)
+		return nil
+	case "link-parent":
+		if len(args) != 3 { return errors.New("usage: aiw issue link-parent <child-id> <parent-id>") }
+		meta, err := requirement.LinkParent(args[1], args[2])
+		if err != nil { return err }
+		fmt.Printf("issue %s parent=%s\n", meta.ID, meta.ParentID)
+		return nil
+	case "children":
+		if len(args) != 2 { return errors.New("usage: aiw issue children <parent-id>") }
+		if _, err := requirement.Read(args[1]); err != nil { return err }
+		issues, err := requirement.List(requirement.ListAll)
+		if err != nil { return err }
+		for _, issue := range issues {
+			if issue.ParentID == args[1] { fmt.Printf("%s\t%s\t%s\n", issue.ID, issue.Status, issue.Title) }
+		}
 		return nil
 	case "capture":
 		return captureRequirement(args[1:])
@@ -89,6 +104,8 @@ func requirementSubcommandUsage(command string) (string, bool) {
 		"chat":    "usage: aiw req chat [requirement-id] [--provider NAME] [--model MODEL]\n",
 		"new":     requirementNewUsage + "\n",
 		"show":    "usage: aiw req show <id>\n",
+		"link-parent": "usage: aiw issue link-parent <child-id> <parent-id>\n",
+		"children": "usage: aiw issue children <parent-id>\n",
 		"capture": "usage: aiw req capture <id> <artifact> --file <path>\n",
 		"approve": "usage: aiw req approve <id> <APPROVED|DEFERRED|REJECTED> [--by <actor>] --reason <reason>\n",
 		"promote": "usage: aiw req promote <id> --task <task-id>\n",
@@ -107,6 +124,8 @@ commands:
   new <slug> [title]                  Auto-number a new Requirement.
   new --id <id> [title]               Create an exact ID for compatibility.
   show <id>
+  link-parent <child-id> <parent-id>    Record split lineage before approval.
+  children <parent-id>                 List direct child Issues.
   capture <id> <artifact> --file <path>
   approve <id> <APPROVED|DEFERRED|REJECTED> [--by <actor>] --reason <reason>
 	promote <id> --task <task-id>
@@ -444,15 +463,17 @@ func requirementConversationPhase(meta requirement.Meta) (string, error) {
 }
 
 func requirementConversationInstructions() string {
-	return `You are the AIW Requirement Management conversation orchestrator.
+	return `You are the AIW Issue Management conversation orchestrator. The req command and REQ IDs are compatibility names.
 
-Guide the human through one requirement at a time. Use the generic discovery baseline and only the domain methods actually loaded in the current input. Follow the current call's JSON response contract. Do not require the human to name a Skill, artifact type, file path, or CLI parameter. Keep conflicts and missing decisions explicit. Do not create ADRs at this stage.
+Guide the human through one bug, feature, or modification Issue at a time. Use the generic discovery baseline and only the domain methods actually loaded in the current input. Follow the current call's JSON response contract. Do not require the human to name a Skill, artifact type, file path, or CLI parameter. Keep conflicts and missing facts explicit. Do not create ADRs at this stage.
+
+For an engineering strategy, use source evidence and the user's small preferences to choose a clearly better option. A bounded sub-agent may compare options when authorized. Record the choice and rationale in the Issue Plan. Ask the human only when options are materially close, critical information is missing, or the choice changes scope, risk, or authorization. A large Issue may be split into smaller Issues with distinct outcomes; preserve parent and child lineage.
 
 Treat every durable action as a confirmation checkpoint. Before creating a Requirement, capturing an artifact, recording APPROVED, DEFERRED, or REJECTED, or promoting a Task, show the action, target, content summary, and write scope. Prepare the action with aiw req chat prepare, then ask the human to type confirm or 确认 in the active conversation. Do not invoke a durable Requirement operation before that confirmation. The active conversation sets AIW_REQUIREMENT_SESSION, so confirmed new Requirements link to this Session. For capture, prepare the artifact source yourself; the human must not need to construct a path or command.
 
 For a new Requirement, prepare new with a lowercase slug such as add-chat-support. The host adds a REQ number only after confirmation. Do not guess the next number. Use --id only when the human asks for an exact ID. After creation, use the full ID returned by the host.
 
-Promotion is separate from implementation: it creates or reuses one AIW Task and its requirement handoff. Do not generate OpenSpec prose, start implementation, or make release decisions.`
+Promotion is separate from implementation: it creates or reuses one AIW Task and its Issue handoff. Feature Design supplies the Task work items; OpenSpec changes are optional and stable specs change only when behavior changes. Do not start implementation or make release decisions.`
 }
 
 func captureRequirement(args []string) error {
@@ -529,46 +550,20 @@ func promoteRequirement(args []string) error {
 	if meta.Promotion.TaskID != "" && meta.Promotion.TaskID != taskID {
 		return fmt.Errorf("requirement already links to task %s", meta.Promotion.TaskID)
 	}
-	if meta.Promotion.Status == "SPEC_DRAFTED" {
+	if meta.Promotion.Status == "SPEC_DRAFTED" || meta.Promotion.Status == "FD_READY" {
 		if !fsx.Exists(task.RuntimeTaskDir(taskID)) {
-			return fmt.Errorf("historical SPEC_DRAFTED Requirement task not found: %s", taskID)
+			return fmt.Errorf("promoted Issue task not found: %s", taskID)
 		}
-		if err := taskcmd.EnsureChecklistMapping(taskID); err != nil {
-			return err
-		}
-		fmt.Printf("requirement %s already has an OpenSpec change for task %s\n", reqID, taskID)
+		fmt.Printf("issue %s already links to task %s\n", reqID, taskID)
 		return nil
 	}
 	if meta.Promotion.TaskID == "" && !fsx.Exists(task.RuntimeTaskDir(taskID)) {
-		if err := taskcmd.CreateTaskWithOpenSpec(taskID, allowUnrelatedDirty); err != nil {
+		if err := taskcmd.CreateTaskFromIssue(taskID, reqID, allowUnrelatedDirty); err != nil {
 			return err
 		}
 	}
 	if !fsx.Exists(task.RuntimeTaskDir(taskID)) {
 		return fmt.Errorf("promoted task not found: %s", taskID)
-	}
-	if err := taskcmd.EnsureChecklistMapping(taskID); err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("recover Work Item mapping: %w", err)
-		}
-		// OpenSpec owns proposal/design/spec/tasks generation. A newly created
-		// change may legitimately have no tasks.md yet; preserve the Task and
-		// handoff, then let a later promotion retry complete checklist mapping.
-		if meta.Promotion.TaskID == "" {
-			meta, _, err = requirement.StartPromotion(reqID, taskID)
-			if err != nil {
-				return err
-			}
-		}
-		snapshot, err := requirement.ArtifactSnapshot(reqID)
-		if err != nil {
-			return err
-		}
-		if err := writeRequirementHandoff(meta, snapshot); err != nil {
-			return err
-		}
-		fmt.Printf("requirement %s promoted to task %s; awaiting OpenSpec tasks.md\n", reqID, taskID)
-		return nil
 	}
 	if meta.Promotion.TaskID == "" {
 		meta, _, err = requirement.StartPromotion(reqID, taskID)
@@ -583,10 +578,29 @@ func promoteRequirement(args []string) error {
 	if err := writeRequirementHandoff(meta, snapshot); err != nil {
 		return err
 	}
+	checklistPath := task.FeatureDesignPath(taskID)
+	if !fsx.Exists(checklistPath) { checklistPath = filepath.Join(task.TaskDir(taskID), "tasks.md") }
+	items, err := task.ReadWorkflowChecklist(checklistPath)
+	if errors.Is(err, os.ErrNotExist) || (err == nil && len(items) == 0) {
+		fmt.Printf("issue %s linked to task %s; awaiting Feature Design work items\n", reqID, taskID)
+		return nil
+	}
+	if err != nil { return fmt.Errorf("read Feature Design work items: %w", err) }
+	if checklistPath == task.FeatureDesignPath(taskID) {
+		readiness, err := task.ReadFeatureDesignReadiness(checklistPath)
+		if err != nil { return err }
+		if readiness == "BLOCKED" {
+			fmt.Printf("issue %s linked to task %s; awaiting Feature Design readiness\n", reqID, taskID)
+			return nil
+		}
+	}
+	if err := taskcmd.EnsureChecklistMapping(taskID); err != nil {
+		return fmt.Errorf("map Feature Design work items: %w", err)
+	}
 	if err := completePromotion(reqID, taskID); err != nil {
 		return err
 	}
-	fmt.Printf("requirement %s promoted to task %s\n", reqID, taskID)
+	fmt.Printf("issue %s promoted to task %s from Feature Design\n", reqID, taskID)
 	return nil
 }
 
@@ -709,6 +723,6 @@ func writeRequirementHandoff(meta requirement.Meta, artifacts []requirement.Arti
 	for _, artifact := range artifacts {
 		rows = append(rows, fmt.Sprintf("| %s | %s | %s |", artifact.Kind, artifact.Path, artifact.Digest))
 	}
-	content := "# Requirement Handoff\n\n## Source\n- Requirement ID: " + meta.ID + "\n- Requirement revision: " + fmt.Sprint(meta.Revision) + "\n- Approved by: " + meta.Approval.By + "\n- Approved at: " + meta.Approval.At + "\n\n## Referenced Artifacts\n| Artifact | Path | Digest |\n|---|---|---|\n" + strings.Join(rows, "\n") + "\n\n## Approved Scope\n- Use the approved Requirement Plan and referenced artifacts as the authoritative scope.\n\n## Non-Goals\n%% NEEDS_INPUT: Confirm non-goals from the approved Requirement artifacts before OpenSpec planning.\n\n## Accepted Risks\n%% NEEDS_INPUT: Confirm accepted risks from the approved Requirement artifacts before OpenSpec planning.\n\n## Open Decisions Carried Into Engineering\n%% NEEDS_INPUT: Review Requirement artifacts before OpenSpec planning.\n\n## Suggested Next Workflow Action\nUse the OpenSpec CLI to author and validate the proposal, design, specs, and tasks.\n"
+	content := "# Issue Handoff\n\n## Source\n- Issue ID: " + meta.ID + "\n- Issue revision: " + fmt.Sprint(meta.Revision) + "\n- Approved by: " + meta.Approval.By + "\n- Approved at: " + meta.Approval.At + "\n\n## Referenced Artifacts\n| Artifact | Path | Digest |\n|---|---|---|\n" + strings.Join(rows, "\n") + "\n\n## Approved Scope\n- Use the approved Issue Plan and referenced artifacts as the authoritative scope.\n\n## Open Decisions Carried Into Engineering\n%% NEEDS_INPUT: Review approved artifacts before finalizing the Feature Design.\n\n## Suggested Next Workflow Action\nComplete docs/features/" + meta.Promotion.TaskID + ".md with decisions and ordered work items, then run aiw wf plan " + meta.Promotion.TaskID + ". Update stable OpenSpec specs only when their requirements change.\n"
 	return os.WriteFile(path, []byte(content), 0o644)
 }

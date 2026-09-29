@@ -1,5 +1,12 @@
 package task
 
+import "aiw/internal/task"
+
+// CreateTaskFromIssue creates a native Task and FD without an OpenSpec change.
+func CreateTaskFromIssue(id, issueID string, allowUnrelatedDirty bool) error {
+	return task.CreateIssueTask(id, issueID, allowUnrelatedDirty)
+}
+
 // CreateTaskWithOpenSpec creates the Task through the verified OpenSpec
 // backend. OpenSpec owns the change artifacts; AIW only reconciles its Task
 // metadata after the delegated command returns.

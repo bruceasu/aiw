@@ -11,7 +11,7 @@ description: 在整个 AIW/OpenSpec 开发流程中提供阶段建议，并路�
 
 ## 输入与输出
 
-从用户已有上下文识别目标、当前阶段、Task / OpenSpec change、已完成证据、未知项和是否授权运行命令或改变外部状态。不要为获得信息而改变任何状态。
+从用户已有上下文识别目标、当前阶段、Issue / FD / Task、可选的 OpenSpec change、已完成证据、未知项和授权边界。不要为获得信息而改变任何状态。
 
 返回简明建议，包含：
 
@@ -25,11 +25,11 @@ description: 在整个 AIW/OpenSpec 开发流程中提供阶段建议，并路�
 
 ## 开发阶段建议
 
-- **新想法、问题不清或需求冲突**：先澄清问题、受众、成功条件和范围；推荐 `requirement-management`。复杂或跨域决策可用 `wayfinder`。
+- **新想法、Bug、修改或范围不清**：先确定问题、受众、成功条件和范围；推荐 `issue-management`。复杂或跨域决策可用 `wayfinder`。
 - **缺陷、报错或性能退化**：先以 `triage` 分类；问题难以定位时用 `diagnosing-bugs`，并把运行时复现作为需显式授权的后续步骤。
-- **需求已稳定但尚未可实施**：确认一个 AIW Task 与一个 OpenSpec change 的生命周期映射；按实际缺口推荐 `fd-workflow`、`to-spec` 或 `to-tickets`，跳过已有且充分的工件。
+- **Issue 已稳定但尚未可实施**：以 Task 和 FD 为中心；按实际缺口推荐 `fd-workflow`、`to-spec` 或 `to-tickets`。OpenSpec change 是可选关联。
 - **需求或设计中的领域语言不稳定**：先使用 `domain-modeling` 固化术语、实体关系和边界，再继续需求或 OpenSpec 设计。
-- **准备编码**：确认选中的 `tasks.md` 条目、工作区和授权边界；推荐 `implement`。只有明确要求测试先行时才推荐 `tdd`。
+- **准备编码**：确认选中的 FD 工作项、工作区和授权边界；旧 Task 可使用 `tasks.md`。推荐 `implement`，只有明确要求测试先行时才推荐 `tdd`。
 - **实现中或实现后**：建议检查变更是否覆盖当前 checklist、静态证据和未决 Gate；测试、构建、格式化和评审均须用户明确授权。用户明确要求审查时才推荐 `code-review`。
 - **交付、并行或跨会话**：先确认 Task 的工作区、分支和父分支；隔离工作区使用 `aiw wt`，跨会话使用 `handoff` 后由用户明确要求的 `aiw turn <task-id>`。合并、发布、清理和归档必须单独授权。
 
@@ -39,10 +39,10 @@ description: 在整个 AIW/OpenSpec 开发流程中提供阶段建议，并路�
 
 以下是按需路由，不要求每个 Task 重新执行已满足的阶段。只有缺少会影响当前工作的决策或工件时，才回到相应阶段。
 
-1. 使用 `requirement-management` 处理新需求、模糊需求或待决的业务/技术选择。
-2. Requirement 获批后，将其提升为一个 AIW Task；该步骤创建或复用 Task 及其初始 OpenSpec 规划工件。
-3. 若 Task 仍缺设计、提案、能力规格或任务轮廓，使用 `/fd-workflow` 或 `/to-spec`；所需工件和 ID 一致性未满足前，流程仍不完整。
-4. 若 `tasks.md` 的条目粒度、依赖或验证边界仍不清楚，使用 `/to-tickets` 深化；已有可执行条目时直接进入 `/implement`。
+1. 使用 `issue-management` 处理新 Issue、模糊范围或待决的业务/技术选择。
+2. Issue 获批后，可将其提升为 AIW Task；该步骤创建或复用 Task、来源交接和初始 FD，不强制创建 OpenSpec change。
+3. 若 FD 缺少工程决策，使用 `/fd-workflow`；稳定行为规则需要更新时使用 `/to-spec`。只有已关联 change 时才维护其提案与 delta spec。
+4. 若 FD 工作项的粒度、依赖或验证边界仍不清楚，使用 `/to-tickets` 深化；已有可执行条目时直接进入 `/implement`。
 5. 在 Task 工作区内使用 `/implement` 完成一个选中的条目；受管自动执行可使用 `aiw wf run|supervise <task-id>`，但只有用户明确授权执行时才建议实际运行。
 6. 开发后报告未运行的测试及适用时的一个可选聚焦命令；运行测试遵守仓库的运行授权规则，不因实现结束而例行提问。
 7. 仅在用户明确要求评审时使用 `/code-review`。
@@ -50,7 +50,7 @@ description: 在整个 AIW/OpenSpec 开发流程中提供阶段建议，并路�
 
 已关联 AIW Task 的变更使用 `/implement` 一次处理一个选中条目；不要用 OpenSpec 自带的批量 apply Skill 绕过受管 Work Item 和 Task 状态。
 
-保持共享目标、分支、工作树、交付和归档生命周期的 checklist 在同一 AIW Task 内；仅在生命周期独立且用户同意后拆分为另一个 AIW Task 与 OpenSpec change。
+保持共享目标、分支、工作树、交付和归档生命周期的工作项在同一 AIW Task 内；独立交付可拆分为子 Issue 和 Task，并记录 lineage。OpenSpec change 不随 Task 强制创建。
 
 ## 边界与完成条件
 

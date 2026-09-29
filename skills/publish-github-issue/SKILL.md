@@ -56,7 +56,7 @@ uniquely, stop and ask for the Task ID.
 ## Projection rules
 
 - AIW is authoritative for lifecycle status.
-- OpenSpec is authoritative for requirements and detailed checklist progress.
+- The approved Issue and FD own scope and planned work; OpenSpec owns stable capability specs when applicable.
 - Publication is one-way and explicit.
 - The mapping lives at `external/github.json`, not in `task.toml`.
 - Use `--body-file` or stdin for Markdown bodies; do not pass a large generated

@@ -42,6 +42,7 @@ type WorkflowFieldOwner string
 
 const (
 	OwnerTaskMetadata WorkflowFieldOwner = "task-metadata"
+	OwnerFeatureDesign WorkflowFieldOwner = "feature-design"
 	OwnerOpenSpec     WorkflowFieldOwner = "openspec"
 	OwnerWorkflowCore WorkflowFieldOwner = "workflow-core"
 )
@@ -59,6 +60,8 @@ var workflowFieldOwnership = map[string]WorkflowFieldOwner{
 	"task.toml.delivery":       OwnerWorkflowCore,
 	"tasks.md.prose":           OwnerOpenSpec,
 	"tasks.md.checklist":       OwnerOpenSpec,
+	"feature-design.md.prose":  OwnerFeatureDesign,
+	"feature-design.md.work-items": OwnerFeatureDesign,
 	"runtime.state":            OwnerWorkflowCore,
 	"runtime.events":           OwnerWorkflowCore,
 	"runtime.write_lease":      OwnerWorkflowCore,
@@ -179,5 +182,25 @@ func UnassignWorkspace(path, id string) (task.TaskMeta, error) {
 			return task.TaskMeta{}, err
 		}
 	}
+	return task.ReadTaskMeta(path)
+}
+
+// BindPrimaryAfterMerge restores an unfinished delivered Task to its parent
+// branch while preserving its historical delivery and Session fields.
+func BindPrimaryAfterMerge(path, id string) (task.TaskMeta, error) {
+	meta, err := task.ReadTaskMeta(path)
+	if err != nil { return task.TaskMeta{}, err }
+	if meta.ID != id { return task.TaskMeta{}, fmt.Errorf("primary binding Task ID mismatch: %s", id) }
+	if meta.Delivery != "merged" || meta.ParentBranch == "" {
+		return task.TaskMeta{}, fmt.Errorf("Task %s needs merged delivery and parent_branch before primary binding", id)
+	}
+	if meta.WorkspaceKind == "primary" && meta.Worktree == "." { return meta, nil }
+	if meta.WorkspaceKind != "unassigned" { return task.TaskMeta{}, fmt.Errorf("Task %s must be unassigned before primary binding", id) }
+	content, err := os.ReadFile(path)
+	if err != nil { return task.TaskMeta{}, err }
+	content, _ = task.ReplaceTaskMetaField(content, "worktree", ".")
+	content, _ = task.ReplaceTaskMetaField(content, "workspace_kind", "primary")
+	content, _ = task.ReplaceTaskMetaField(content, "branch", meta.ParentBranch)
+	if err := task.WriteTaskMetaAtomically(path, content); err != nil { return task.TaskMeta{}, err }
 	return task.ReadTaskMeta(path)
 }

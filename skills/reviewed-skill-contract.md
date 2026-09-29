@@ -21,12 +21,14 @@ branches or worktrees, commit, publish externally, or run runtime validation.
 | Attempt | Workflow Core | One bounded execution run for a Work Item; it may reference one Session. |
 | Gate | Workflow Core | An unresolved dependency, decision, authorization, validation, or delivery precondition. |
 | Evidence | Workflow Core | A static review, authorized command result, approval, or manual record. |
-| Specification | OpenSpec | Proposal, design, capability requirements, and human-authored checklist prose. |
+| Issue | AIW Issue record | Problem, scope, approval, and Task handoff lineage. |
+| Feature Design | FD author | Engineering decisions and human-authored work items. |
+| Specification | OpenSpec | Stable capability requirements and optional change artifacts. |
 
 Skills report changed artifacts, proposed Evidence, unresolved Gates, and a
 recommended next action. They MUST NOT independently claim or release a Task
 write lease, fabricate an Attempt outcome, set a Task display status, or alter
-generated Workflow regions in OpenSpec artifacts.
+generated Workflow regions in planning artifacts.
 
 AIW Task, worktree, branch, Session, commit, synchronization, archive, merge,
 and cleanup rules belong to `skills/work-management.md`; reviewed Skills must

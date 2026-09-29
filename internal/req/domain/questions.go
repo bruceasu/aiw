@@ -23,6 +23,7 @@ type DiscoveryQuestions struct {
 }
 
 const discoveryQuestionInstructions = `Assess all discovery dimensions, but do not ask a full questionnaire.
+For a strategy choice, use confirmed user preferences and evidence to select a clearly better option and record why. Ask only when options are close or a critical fact is missing.
 For each open question, cite known evidence, name the missing decision and explain its impact.
 Use impact_kind: irreversible, correctness, scope, goal or other. Do not exaggerate impact.
 Ask at most three distinct questions in a turn. Put conflicts first, then high-impact gaps.

@@ -1,5 +1,7 @@
 # 需求管理与开发工作流设计
 
+> 历史提案。当前 Issue → FD → Task 契约见 `skills/work-management.md` 和 `docs/usage/aiw-issue.md`；此文中的强制 OpenSpec change 设计不再适用。
+
 ## 状态
 
 提案；尚未实现 `aiw req` 命令或修改相关 Skill。

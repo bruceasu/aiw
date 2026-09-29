@@ -163,7 +163,7 @@ func BuildRemediationReportForOutcome(state RuntimeState, attemptID AttemptID, o
 // BuildRemediationReportForGate presents an explicit human decision for one
 // open Gate. Budget authorization keeps its separate approval protocol.
 func BuildRemediationReportForGate(state RuntimeState, gate Gate) (RemediationReport, error) {
-	if gate.ID == "" || gate.State != GateOpen || gate.ID == UsageBudgetGateID || state.LastEventSequence == 0 {
+	if gate.ID == "" || gate.State != GateOpen || state.LastEventSequence == 0 {
 		return RemediationReport{}, errors.New("Gate is not eligible for a remediation decision")
 	}
 	problem := RemediationProblem{TaskID: state.Task.ID, WorkItemID: gate.WorkItemID, GateID: gate.ID,
@@ -328,7 +328,7 @@ func (s *Store) ApplyGateRemediationResponse(id TaskID, response RemediationResp
 	if err != nil { return RuntimeState{}, err }
 	if err := response.Validate(report); err != nil { return RuntimeState{}, err }
 	problem := report.Problem
-	if problem.TaskID != id || problem.Category != "gate" || problem.GateID == "" || problem.GateID == UsageBudgetGateID {
+	if problem.TaskID != id || problem.Category != "gate" || problem.GateID == "" {
 		return RuntimeState{}, errors.New("response is not bound to an eligible Gate")
 	}
 	target := GateState("")

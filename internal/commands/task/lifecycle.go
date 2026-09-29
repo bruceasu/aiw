@@ -15,7 +15,7 @@ import (
 )
 
 func newTask(id string, allowUnrelatedDirty bool) error {
-	if err := task.CreateTask(id, allowUnrelatedDirty); err != nil {
+	if err := task.CreateIssueTask(id, "", allowUnrelatedDirty); err != nil {
 		return err
 	}
 	if err := ensureChecklistMapping(id); err != nil {
@@ -48,6 +48,7 @@ func ensureTaskMeta(id string) error {
 }
 
 func createDecision(id string) error {
+	fmt.Fprintln(os.Stderr, "legacy command: aiw decision creates an OpenSpec change design.md; write new Task decisions in docs/features/<task-id>.md")
 	dir := task.TaskDir(id)
 	if !fsx.Exists(dir) {
 		return fmt.Errorf("task not found: %s", id)
@@ -170,6 +171,12 @@ func collectTaskListRows(includeArchived bool) ([]taskListRow, error) {
 		path := "规格已删除"
 		if location.ChangeDir != "" {
 			path = filepath.ToSlash(location.ChangeDir)
+		} else if fsx.Exists(task.FeatureDesignPath(location.ID)) {
+			path = filepath.ToSlash(task.FeatureDesignPath(location.ID))
+		} else if location.Archived && fsx.Exists(task.FeatureDesignArchivePath(location.ArchiveName)) {
+			path = filepath.ToSlash(task.FeatureDesignArchivePath(location.ArchiveName))
+		} else if location.RuntimeDir != "" {
+			path = filepath.ToSlash(location.RuntimeDir)
 		}
 		state, rebuilt, runtimeErr := location.EnsureRuntime()
 		status := "RUNTIME_ERROR"
@@ -189,6 +196,12 @@ func collectTaskListRows(includeArchived bool) ([]taskListRow, error) {
 }
 
 func showTask(id string) error {
+	if fd := task.FeatureDesignPath(id); fsx.Exists(fd) {
+		b, err := os.ReadFile(fd)
+		if err != nil { return err }
+		fmt.Print(string(b))
+		return nil
+	}
 	path := filepath.Join(task.ChangesDir, id, "tasks.md")
 	b, err := os.ReadFile(path)
 	if err != nil {

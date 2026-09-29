@@ -32,6 +32,9 @@ func EnsureRunnerHandoff(id string, request *workflowcore.PreparedAgentRequest, 
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
+	planPath, err := WorkflowChecklistPath(id)
+	if err != nil { return err }
+	planPath = filepath.ToSlash(planPath)
 	validationInstruction := `After editing, follow the implement Skill's
 compile-only procedure: prefer a compile script under scripts/ or the repository
 root, otherwise use the narrowest language-level compile command. If compilation
@@ -47,22 +50,21 @@ Attempt: %s
 
 Read the following Task artifacts before acting:
 
-- proposal.md
-- design.md
-- tasks.md
-- specs/
+- %s
+- .ai/tasks/%s/artifacts/requirement-handoff.md when present
+- relevant openspec/specs/ capabilities
 
 Implement only the selected Work Item. Preserve the managed Task and workspace,
 follow the implement Skill if it is available, and do not resolve Gates.
 This handoff is a supervisor/runtime-owned artifact under the shared .ai/tasks
 directory. Treat it as read-only: update implementation evidence in the
-isolated worktree's openspec/changes/<task>/tasks.md; do not edit this handoff
+selected authored plan in the Task workspace; do not edit this handoff
 from the Agent workspace. The supervisor records lifecycle and recovery updates.
 %s
 Mark the selected checklist item as completed when its implementation is
 complete.
 Report the evidence required to complete the Work Item.
-`, request.TaskID, request.WorkItemID, request.AttemptID, validationInstruction)
+`, request.TaskID, request.WorkItemID, request.AttemptID, planPath, id, validationInstruction)
 	return os.WriteFile(path, []byte(content), 0o644)
 }
 

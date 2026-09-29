@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"aiw/internal/task"
-	taskworkflow "aiw/internal/task/workflowadapter"
 	"aiw/internal/workflow"
 )
 
@@ -231,7 +230,7 @@ func newFocusedTestCommandFixture(t *testing.T) focusedTestCommandFixture {
 	if err := task.WriteTaskMeta(task.TaskMetaPath(string(id)), fixture.meta); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := fixture.store.EnsureCompatible(taskworkflow.WorkflowRuntimeFromMeta(fixture.meta)); err != nil {
+	if _, err := fixture.store.EnsureCompatible(WorkflowRuntimeFromMeta(fixture.meta)); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := fixture.store.SyncChecklist(id, []workflow.ChecklistCandidate{{Item: "1.1", Title: "focused validation"}}, "fixture"); err != nil {

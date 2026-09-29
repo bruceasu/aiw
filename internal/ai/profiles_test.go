@@ -59,20 +59,3 @@ model = "reasoning-model"
 	global, err := LoadConfig()
 	if err != nil || global.Name != "openai" || global.Model != "global-model" { t.Fatalf("global resolution changed: %s/%s, %v", global.Name, global.Model, err) }
 }
-
-func TestUsageBudgetDefaultsRequireBothPositiveDimensions(t *testing.T) {
-	root := t.TempDir()
-	previous, err := os.Getwd()
-	if err != nil { t.Fatal(err) }
-	t.Cleanup(func() { _ = os.Chdir(previous) })
-	if err := os.Chdir(root); err != nil { t.Fatal(err) }
-	t.Setenv("AIW_ROOT", root)
-	path := filepath.Join(root, "aiw.toml")
-	if err := os.WriteFile(path, []byte("[ai.usage_budget]\ninput_tokens = 100000\noutput_tokens = 20000\n"), 0600); err != nil { t.Fatal(err) }
-	defaults, err := LoadUsageBudgetDefaults()
-	if err != nil || defaults.InputTokens != 100000 || defaults.OutputTokens != 20000 {
-		t.Fatalf("budget defaults = %+v, %v", defaults, err)
-	}
-	if err := os.WriteFile(path, []byte("[ai.usage_budget]\ninput_tokens = 100000\n"), 0600); err != nil { t.Fatal(err) }
-	if _, err := LoadUsageBudgetDefaults(); err == nil { t.Fatal("missing output limit was accepted") }
-}

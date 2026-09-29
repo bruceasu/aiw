@@ -2,7 +2,6 @@ package workflow
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,9 +27,6 @@ const (
 // not read or write OpenSpec artifacts; Task/OpenSpec adapters own that seam.
 type Store struct {
 	Root string
-	ExecutionServices *ExecutionServices
-	DeliveryServices *DeliveryServices
-	AuxiliaryServices *AuxiliaryServices
 }
 
 type Event struct {
@@ -45,18 +41,11 @@ type Event struct {
 	Detail        string     `json:"detail,omitempty"`
 }
 
-// ConfigureAuxiliaryStore is installed once by the executable composition root.
-// Library users retain explicit service injection; constructing a Store does not
-// start a process, initialize resources, or enable a protocol migration.
-var ConfigureAuxiliaryStore func(*Store)
-
 func NewStore(root string) *Store {
 	if strings.TrimSpace(root) == "" {
 		root = filepath.Join(repo.Root(), defaultRuntimeRoot)
 	}
-	store := &Store{Root: root}
-	if ConfigureAuxiliaryStore != nil { ConfigureAuxiliaryStore(store) }
-	return store
+	return &Store{Root: root}
 }
 
 func (s *Store) Create(state RuntimeState) (RuntimeState, error) {
@@ -64,7 +53,6 @@ func (s *Store) Create(state RuntimeState) (RuntimeState, error) {
 		return RuntimeState{}, err
 	}
 	if err := s.legacyTaskError(state.Task.ID); err != nil { return RuntimeState{}, err }
-	if state.SchemaVersion == DurableSchemaVersion { return RuntimeState{}, errors.New("durable execution requires the managed migration boundary") }
 	lock, err := s.lock(state.Task.ID)
 	if err != nil { return RuntimeState{}, err }
 	defer unlock(lock)
@@ -113,11 +101,6 @@ func (s *Store) loadFromDir(id TaskID, dir string) (RuntimeState, error) {
 	if err := json.Unmarshal(b, &state); err != nil {
 		return RuntimeState{}, fmt.Errorf("decode workflow state: %w", err)
 	}
-	if state.SchemaVersion == DurableSchemaVersion {
-		decoder := json.NewDecoder(bytes.NewReader(b))
-		decoder.DisallowUnknownFields()
-		if err := decoder.Decode(&state); err != nil { return RuntimeState{}, fmt.Errorf("preserve unsupported durable state: %w", err) }
-	}
 	if state.Task.ID != id {
 		return RuntimeState{}, fmt.Errorf("workflow state id mismatch: %s", state.Task.ID)
 	}
@@ -131,16 +114,10 @@ func (s *Store) loadFromDir(id TaskID, dir string) (RuntimeState, error) {
 }
 
 func normalizeRuntimeState(state *RuntimeState) error {
-	for i := range state.Notifications {
-		n := &state.Notifications[i]
-		if n.Managed == nil && n.State == NotificationDelivered { n.State = "legacy-local-ack" }
-	}
 	switch state.SchemaVersion {
 	case 1, 2, 3, 4, 5, 6, 7, 8:
 		state.SchemaVersion = SchemaVersion
 	case SchemaVersion:
-	case DurableSchemaVersion:
-		return validateExecutionProtocol(*state)
 	default:
 		return fmt.Errorf("unsupported workflow schema version: %d", state.SchemaVersion)
 	}
@@ -172,7 +149,6 @@ func (s *Store) update(id TaskID, change func(*RuntimeState) error) (RuntimeStat
 	if err != nil {
 		return RuntimeState{}, err
 	}
-	if state.SchemaVersion == DurableSchemaVersion { return RuntimeState{}, errors.New("durable state requires an ordered conditional commit") }
 	if err := change(&state); err != nil {
 		return RuntimeState{}, err
 	}
@@ -201,13 +177,7 @@ func (s *Store) updateWithEvent(id TaskID, expected *uint64, event Event, change
 	if err != nil {
 		return RuntimeState{}, err
 	}
-	startAuxiliary := false
-	defer func() {
-		unlock(lock)
-		// A projection failure cannot roll back acceptance. Persisted source
-		// facts remain discoverable at the next managed startup.
-		if startAuxiliary { s.startAuxiliaryHost(id) }
-	}()
+	defer unlock(lock)
 	if err := s.rejectLegacyTask(id); err != nil {
 		return RuntimeState{}, err
 	}
@@ -220,50 +190,25 @@ func (s *Store) updateWithEvent(id TaskID, expected *uint64, event Event, change
 		return RuntimeState{}, fmt.Errorf("workflow Task has pending event %d; recover it before another transition", state.PendingEvent.Sequence)
 	}
 	if expected != nil && state.StateRevision != *expected { return RuntimeState{}, errors.New("workflow state revision changed; reconcile before retry") }
-	if state.SchemaVersion == DurableSchemaVersion {
-		if !isSystemLock(lock) || expected == nil || !strings.HasPrefix(event.Type, "protocol.") { return RuntimeState{}, errors.New("durable execution requires a conditional protocol transition and system lock") }
-		events, err := s.readEvents(id)
-		if err != nil { return RuntimeState{}, err }
-		if uint64(len(events)) != state.LastEventSequence { return RuntimeState{}, errors.New("durable event history is incomplete") }
-		for i, recorded := range events { if recorded.Sequence != uint64(i+1) { return RuntimeState{}, errors.New("durable event sequence is inconsistent") } }
-		if len(events) == 0 || events[len(events)-1].CommitID != state.CommitID || events[len(events)-1].StateRevision != state.StateRevision { return RuntimeState{}, errors.New("event history does not confirm the current state revision") }
-	}
 	originalSchema, originalRevision := state.SchemaVersion, state.StateRevision
 	if err := change(&state); err != nil {
-		if errors.Is(err, errProtocolNoChange) { return s.Load(id) }
 		return RuntimeState{}, err
 	}
 	if state.SchemaVersion != originalSchema || state.StateRevision != originalRevision { return RuntimeState{}, errors.New("transition cannot replace the schema or commit revision") }
-	if state.SchemaVersion == DurableSchemaVersion {
-		previousSources := 0
-		previousNotifications := len(state.Notifications)
-		if state.Protocol != nil && state.Protocol.Auxiliary != nil { previousSources = len(state.Protocol.Auxiliary.Sources) }
-		captureAuxiliarySource(&state)
-		s.captureNotificationFacts(&state)
-		startAuxiliary = state.Protocol != nil && state.Protocol.Auxiliary != nil && len(state.Protocol.Auxiliary.Sources) > previousSources
-		startAuxiliary = startAuxiliary || len(state.Notifications) > previousNotifications
-	}
 	if strings.TrimSpace(event.Type) == "" {
 		return RuntimeState{}, errors.New("workflow event type is required")
 	}
 	if state.Task.ID != id { return RuntimeState{}, errors.New("workflow Task ID cannot change") }
 	event.SchemaVersion = state.SchemaVersion
 	event.Sequence = state.LastEventSequence + 1
-	if state.SchemaVersion == DurableSchemaVersion {
-		state.StateRevision++
-		state.CommitID = fmt.Sprintf("%s-%d", id, state.StateRevision)
-		event.CommitID, event.StateRevision = state.CommitID, state.StateRevision
-	}
 	if event.At == "" {
 		event.At = time.Now().UTC().Format(time.RFC3339)
 	}
 	state.PendingEvent = &event
 	if err := ValidateRuntimeState(state); err != nil {
-		startAuxiliary = false
 		return RuntimeState{}, err
 	}
 	if err := s.save(state); err != nil {
-		startAuxiliary = false
 		return RuntimeState{}, err
 	}
 	if err := s.appendEvent(event, id); err != nil {
@@ -321,22 +266,16 @@ func (s *Store) RecoverPendingEvent(id TaskID) (RuntimeState, error) {
 	if state.PendingEvent == nil {
 		return state, nil
 	}
-	if state.SchemaVersion == DurableSchemaVersion && !isSystemLock(lock) { return RuntimeState{}, errors.New("durable recovery requires the migrated Task lock") }
 	pending := *state.PendingEvent
 	if pending.Sequence != state.LastEventSequence+1 || pending.Sequence == 0 {
 		return RuntimeState{}, fmt.Errorf("pending event sequence %d cannot follow confirmed sequence %d", pending.Sequence, state.LastEventSequence)
 	}
 	events, err := s.readEvents(id)
 	if err != nil {
-		if repairErr := s.repairPendingTail(id, state); repairErr != nil { return RuntimeState{}, errors.Join(err, repairErr) }
-		events, err = s.readEvents(id)
-		if err != nil { return RuntimeState{}, err }
+		return RuntimeState{}, err
 	}
 	found := false
-	var sequence uint64
 	for _, existing := range events {
-		sequence++
-		if state.SchemaVersion == DurableSchemaVersion && (existing.Sequence != sequence || existing.Sequence > pending.Sequence) { return RuntimeState{}, errors.New("event history conflicts with pending commit") }
 		if existing.Sequence != pending.Sequence {
 			continue
 		}
@@ -345,7 +284,6 @@ func (s *Store) RecoverPendingEvent(id TaskID) (RuntimeState, error) {
 		}
 		found = true
 	}
-	if state.SchemaVersion == DurableSchemaVersion && !found && sequence != state.LastEventSequence { return RuntimeState{}, errors.New("confirmed event history is incomplete") }
 	if !found {
 		if err := s.appendEvent(pending, id); err != nil {
 			return RuntimeState{}, err
@@ -503,7 +441,6 @@ func (s *Store) save(state RuntimeState) error {
 	if err != nil {
 		return err
 	}
-	if state.SchemaVersion == DurableSchemaVersion { return durableWrite(s.path(state.Task.ID, runtimeStateFile), append(b, '\n')) }
 	return atomicWrite(s.path(state.Task.ID, runtimeStateFile), append(b, '\n'))
 }
 

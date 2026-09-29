@@ -1,33 +1,37 @@
-# `cz` AI 配置
+# CZ 配置
 
-`cz` 会按以下顺序选择 provider 和 model，优先级从高到低：
-
-1. 命令行参数 `--provider` / `--model`。
-2. 运行时环境变量：`AIW_LLM_PROVIDER`、`AIW_LLM_MODEL`，以及所选 provider 对应的 model 环境变量（例如 `OPENAI_MODEL`、`GEMINI_MODEL`）。
-3. 项目配置中的 `[cz]`：provider-specific model 优先于通用 `model`；缺少 `[cz].provider` 时使用 `[ai].provider`。`[cz]` 中明确设置的连接和命令值继续用于 `cz`。
-4. `[ai.profiles.fast]`：当 `[cz]` 和 `AIW_LLM_PROVIDER` 没有指定 provider/model 时，完整的 fast profile 优先于顶层 `[ai]`。
-5. 顶层 `[ai]` provider/model，以及所选 provider 的默认值。
-
-选择 provider 后，只使用该 provider 对应的 model、endpoint、credential 和 command 设置；fast profile 的连接设置与其 provider/model 一起解析。没有配置完整的 fast profile 时，`cz` 回退到顶层 `[ai]`，再使用 provider 默认值。
-
-要让 `cz` 默认使用轻量模型，可配置 `ai.profiles.fast`：
-
-```toml
-[ai]
-provider = "openai"
-model = "your-general-model"
-
-[ai.profiles.fast]
-provider = "openai"
-model = "your-lightweight-model"
-```
-
-上述配置会让没有更高优先级覆盖的 `cz` 使用 `your-lightweight-model`。也可以只为 `cz` 指定 provider 或 model：
+`aiw cz` 使用独立的 `[cz]` 配置，不读取 `[ai]`、`[ai.profiles.fast]` 或 `AIW_LLM_*`。
+配置文件按以下顺序加载，后面的值覆盖前面的值：插件目录的 `cz.toml`、
+`AIW_ROOT` 的 `aiw.toml`、当前 Git 项目根目录的 `aiw.toml`。
 
 ```toml
 [cz]
-provider = "openai"
-model = "your-lightweight-model"
+llm = false
+candidates = 3
+# provider = "copilot" # 可选；指定后只尝试这一项
+
+[cz.copilot]
+model = "your-copilot-model"
+
+[cz.codex]
+model = "your-codex-model"
+
+[cz.openai]
+model = "your-openai-model"
+# api_key = "..." # 推荐使用 CZ_OPENAI_API_KEY 或 OPENAI_API_KEY
+# base_url = "https://api.openai.com/v1"
 ```
 
-`cz` 的 CLI 参数仍可临时覆盖这些文件设置，例如 `cz --provider openai --model your-model`。
+`--llm` 按 Copilot SDK → Codex SDK → OpenAI SDK 的顺序尝试。各方式使用各自的
+`model`、认证与端点配置，前一项失败或没有有效候选时尝试下一项；全部失败后提示
+原因并进入手工向导。`--no-llm` 直接进入手工向导。`--provider` 只尝试指定方式；
+`--model` 覆盖所选方式的模型。CLI 参数优先于 `CZ_LLM_PROVIDER`、
+`CZ_<PROVIDER>_MODEL`、`CZ_<PROVIDER>_API_KEY`、`CZ_<PROVIDER>_BASE_URL`，
+这些环境变量优先于配置文件。OpenAI 还可使用 `OPENAI_API_KEY`。
+
+Copilot SDK 可使用已登录的 GitHub 凭据，也可在 `[cz.copilot].api_key` 中设置
+GitHub 用户令牌。Codex SDK 可使用已登录的 Codex 凭据，也可在
+`[cz.codex].api_key` 中设置 API key。OpenAI SDK 需要模型和 API key。
+
+`cz` 需要 Node.js 22.12.0 或更高版本。运行 `build.bat cz` 安装插件依赖并把
+TypeScript 编译为 JavaScript。`aiw cz` 直接运行 `aiw-cz.js` 插件入口。

@@ -2,7 +2,6 @@ package workflow
 
 import (
 	"crypto/sha256"
-	"encoding/json"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -57,12 +56,9 @@ var attemptTransitions = map[AttemptState]map[AttemptState]bool{
 }
 
 func ValidateRuntimeState(state RuntimeState) error {
-	if state.SchemaVersion != SchemaVersion && state.SchemaVersion != DurableSchemaVersion {
+	if state.SchemaVersion != SchemaVersion {
 		return fmt.Errorf("unsupported workflow schema version: %d", state.SchemaVersion)
 	}
-	if state.SchemaVersion == DurableSchemaVersion {
-		if err := validateExecutionProtocol(state); err != nil { return err }
-	} else if state.Protocol != nil { return fmt.Errorf("execution protocol cannot be enabled on a legacy schema") }
 	workItems := make(map[WorkItemID]struct{}, len(state.WorkItems))
 	for _, item := range state.WorkItems {
 		if item.ID == "" {
@@ -99,9 +95,6 @@ func ValidateRuntimeState(state RuntimeState) error {
 		return err
 	}
 	if err := validateEvidenceReferences(state.Evidence, workItems); err != nil {
-		return err
-	}
-	if err := validateNotifications(state.Notifications); err != nil {
 		return err
 	}
 	if err := validateFocusedTestAuthorization(state.FocusedTestAuthorization); err != nil {
@@ -285,55 +278,6 @@ func validateEvidenceReferences(evidence []Evidence, workItems map[WorkItemID]st
 	return nil
 }
 
-func validateNotifications(notifications []Notification) error {
-	seen := make(map[NotificationID]struct{}, len(notifications))
-	for _, notification := range notifications {
-		if notification.ID == "" {
-			return errors.New("notification id is required")
-		}
-		if _, exists := seen[notification.ID]; exists {
-			return fmt.Errorf("duplicate notification id: %s", notification.ID)
-		}
-		seen[notification.ID] = struct{}{}
-		if strings.TrimSpace(notification.Topic) == "" || !json.Valid(notification.Payload) {
-			return fmt.Errorf("notification %s requires a topic and valid JSON payload", notification.ID)
-		}
-		if notification.CreatedAt == "" || notification.UpdatedAt == "" {
-			return fmt.Errorf("notification %s timestamps are required", notification.ID)
-		}
-		if _, err := time.Parse(time.RFC3339, notification.CreatedAt); err != nil {
-			return fmt.Errorf("notification %s created_at must be RFC3339: %w", notification.ID, err)
-		}
-		if _, err := time.Parse(time.RFC3339, notification.UpdatedAt); err != nil {
-			return fmt.Errorf("notification %s updated_at must be RFC3339: %w", notification.ID, err)
-		}
-		if notification.DispatchAttempts < 0 {
-			return fmt.Errorf("notification %s has negative dispatch attempts", notification.ID)
-		}
-		if notification.Managed != nil {
-			if err := validateManagedNotification(notification); err != nil { return err }
-			continue
-		}
-		switch notification.State {
-		case NotificationPending:
-			if notification.DispatchAttempts != 0 {
-				return fmt.Errorf("pending notification %s has dispatch attempts", notification.ID)
-			}
-		case NotificationDispatching, NotificationFailed:
-			if notification.DispatchAttempts == 0 {
-				return fmt.Errorf("notification %s has no dispatch attempt", notification.ID)
-			}
-		case NotificationDelivered, "legacy-local-ack":
-			if notification.DispatchAttempts == 0 || strings.TrimSpace(notification.Receipt) == "" {
-				return fmt.Errorf("delivered notification %s requires an attempt and receipt", notification.ID)
-			}
-		default:
-			return fmt.Errorf("notification %s has unsupported state: %s", notification.ID, notification.State)
-		}
-	}
-	return nil
-}
-
 func validateWriteLease(lease *WriteLease, attempts []Attempt) error {
 	if lease == nil {
 		return nil
@@ -369,9 +313,6 @@ func DeriveSummary(state RuntimeState) TaskSummary {
 func deriveExecution(state RuntimeState) ExecutionState {
 	if state.Cancellation != nil {
 		return ExecutionCancelled
-	}
-	if state.Protocol != nil && state.Protocol.Stop != nil && state.Protocol.Stop.Kind == "usage-budget-termination" {
-		return ExecutionBlocked
 	}
 	if hasBlockingExecutionGate(state.Gates) || hasWorkItemState(state.WorkItems, WorkItemBlocked) {
 		return ExecutionBlocked

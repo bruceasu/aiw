@@ -106,7 +106,6 @@ func printTaskHelp() {
 		"  status <task-id> <status>\n" +
 		"  done <task-id>\n" + "  archive <task-id> [options]\n\n" +
 		"  context <task-id>\n" +
-		"  decision <task-id>\n" +
 		"  spec <spec-id>\n" +
 		"  prompts [options]\n\n" +
 		"Execution:\n" +

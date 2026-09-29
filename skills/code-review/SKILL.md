@@ -17,8 +17,8 @@ sub-agents, one per axis. It does not authorize tests, builds, network calls, or
 permission escalation. This Skill aggregates their findings.
 
 Read `skills/work-management.md` and `docs/agents/work-management.md` when
-present. Resolve the originating OpenSpec change before reviewing. External
-Issue or PR references are fallback context, not the local source of truth.
+present. Resolve the originating Issue and FD when present, plus relevant
+stable specs. Read a linked OpenSpec change only when one exists.
 
 ## Process
 
@@ -34,11 +34,10 @@ Before going further, confirm the fixed point resolves (`git rev-parse <fixed-po
 
 Look for the originating spec, in this order:
 
-1. OpenSpec change references in the commit messages or branch name — read the
-   local proposal, design, specs, and tasks first.
+1. Task or Issue references in the commits or branch name — read the local FD
+   and approved Issue handoff first.
 2. A path the user passed as an argument.
-3. OpenSpec artifacts under `openspec/changes/<change-id>/` and
-   `openspec/specs/` matching the branch name or feature.
+3. Relevant stable specs and a linked OpenSpec change when present.
 4. If nothing is found, ask the user where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
 
 ### 3. Identify the standards sources

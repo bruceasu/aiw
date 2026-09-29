@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -90,21 +89,26 @@ func RepairWorkflowState(adapter TaskAdapter, id string) error {
 }
 
 func runWorkflowCommand(args []string) error {
-	if len(args) > 0 && args[0] == "pilot" {
-		return runCodexPilot(args[1:])
-	}
-	if len(args) > 0 && args[0] == "knowledge" {
-		return RunKnowledgeCommand(args[1:])
-	}
-	if len(args) > 0 && args[0] == "auxiliary" {
-		return execution.RunAuxiliaryMaintenance(args[1:])
-	}
 	if len(args) > 0 && (args[0] == "continue" || args[0] == "resume") {
 		return runRemediationResponse(args)
 	}
-	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
+	if len(args) == 0 {
 		printWorkflowHelp()
 		return nil
+	}
+	if args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
+		if len(args) == 1 {
+			printWorkflowHelp()
+			return nil
+		}
+		if len(args) != 2 {
+			return fmt.Errorf("usage: wf help [--all]")
+		}
+		if args[1] == "--all" {
+			printWorkflowHelpAll()
+			return nil
+		}
+		return fmt.Errorf("unknown workflow help topic %q; use --all", args[1])
 	}
 	if args[0] == "repair-metadata" {
 		return taskAdapter.RepairMetadata(args[1:])
@@ -124,14 +128,9 @@ func runWorkflowCommand(args []string) error {
 		if err != nil {
 			return fmt.Errorf("load Workflow status: %w", err)
 		}
-		printUsageStatus(id, state)
+		summary := workflow.DeriveSummary(state)
+		fmt.Printf("Task %s: %s (execution=%s validation=%s delivery=%s)\n", id, summary.Status, summary.Execution, summary.Validation, summary.Delivery)
 		return nil
-	}
-	if op == "budget" {
-		if !taskAdapter.SafeID(id) {
-			return fmt.Errorf("invalid task id: %s", id)
-		}
-		return runWorkflowBudgetCommand(id, args[2:])
 	}
 	if op == "recommend-routing" {
 		useDefaults := len(args) == 3 && args[2] == "--defaults"
@@ -175,49 +174,6 @@ func runWorkflowCommand(args []string) error {
 			return fmt.Errorf("read latest failure report: %w", err)
 		}
 		fmt.Print(string(content))
-		return nil
-	}
-	if op == "usage" {
-		if !taskAdapter.SafeID(id) {
-			return fmt.Errorf("invalid task id: %s", id)
-		}
-		query, format, err := parseUsageReportArgs(args[2:])
-		if err != nil {
-			return err
-		}
-		report, err := workflow.NewStore("").GetUsageReport(context.Background(), workflow.TaskID(id), query)
-		if err != nil {
-			return fmt.Errorf("get Task usage report: %w", err)
-		}
-		if format == "json" {
-			encoder := json.NewEncoder(os.Stdout)
-			encoder.SetIndent("", "  ")
-			return encoder.Encode(report)
-		}
-		costs, _ := json.Marshal(report.Totals.KnownCostByCurrency)
-		outcomes, _ := json.Marshal(report.Outcomes)
-		fmt.Printf("Task %s usage\n", report.TaskID)
-		fmt.Printf("CALLS\t%d\nUSAGE_UNKNOWN\t%d\nKNOWN INPUT TOKENS\t%d\nKNOWN CACHED INPUT TOKENS\t%d\nKNOWN OUTPUT TOKENS\t%d\nKNOWN REASONING OUTPUT TOKENS\t%d\nKNOWN TOTAL TOKENS\t%d\nKNOWN COST BY CURRENCY\t%s\nOUTCOMES\t%s\nBUDGET APPROVALS\t%d\nBUDGET TERMINATIONS\t%d\nDIFFICULTY CHANGES\t%d\n",
-			report.Totals.Calls, report.Totals.UsageUnknown,
-			report.Totals.KnownInputTokens, report.Totals.KnownCachedInputTokens,
-			report.Totals.KnownOutputTokens, report.Totals.KnownReasoningOutputTokens,
-			report.Totals.KnownTotalTokens, costs, outcomes,
-			len(report.BudgetApprovals), len(report.BudgetTerminations), len(report.DifficultyChanges))
-		for _, approval := range report.BudgetApprovals {
-			if approval.Previous.TokenLimit > 0 {
-				fmt.Printf("BUDGET APPROVAL\t%s\t%s\t%s\t%d -> %d\n", approval.At, approval.Actor, approval.Reason, approval.Previous.TokenLimit, approval.New.TokenLimit)
-			} else {
-				fmt.Printf("BUDGET APPROVAL\t%s\t%s\t%s\tinput %d -> %d; output %d -> %d\n", approval.At, approval.Actor, approval.Reason,
-					approval.Previous.InputTokenLimit, approval.New.InputTokenLimit, approval.Previous.OutputTokenLimit, approval.New.OutputTokenLimit)
-			}
-		}
-		for _, change := range report.DifficultyChanges {
-			fmt.Printf("DIFFICULTY CHANGE\t%s\t%s/%s/%d -> %s/%s/%d\t%s\n", change.RecordedAt.Format(time.RFC3339), change.PreviousProfile, change.PreviousModel, change.PreviousLevel, change.SelectedProfile, change.SelectedModel, change.SelectedLevel, change.Reason)
-		}
-		fmt.Printf("RECORDED AT\tWORK ITEM\tATTEMPT\tPROVIDER\tPROFILE\tMODEL\tOUTCOME\n")
-		for _, call := range report.Calls {
-			fmt.Printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\n", call.RecordedAt.Format(time.RFC3339), call.WorkItemID, call.AttemptID, call.Provider, call.Profile, call.Model, call.Outcome)
-		}
 		return nil
 	}
 	if op == "diagnose" {
@@ -267,22 +223,11 @@ func runWorkflowCommand(args []string) error {
 		return runWorkflowSupervisor(args)
 	}
 	if op == "delivery" {
-		if len(args) != 3 || (args[2] != string(workflow.DeliveryMerged) && args[2] != string(workflow.DeliveryDiscarded)) {
-			return fmt.Errorf("usage: wf delivery <task-id> <merged|discarded>")
-		}
-		_, store, err := compatibleWorkflow(id)
-		if err != nil {
-			return err
-		}
-		state, err := store.SetDelivery(workflow.TaskID(id), workflow.DeliveryState(args[2]))
-		if err != nil {
-			return err
-		}
-		return projectWorkflowState(id, state)
+		return fmt.Errorf("wf delivery cannot record a Git result directly; use wf local-merge for local delivery")
 	}
 	if op == "local-merge" {
 		if len(args) < 3 {
-			return fmt.Errorf("usage: wf local-merge <task-id> <commit-message>")
+			return fmt.Errorf("usage: wf local-merge <task-id> <merge-message>")
 		}
 		meta, store, err := compatibleWorkflow(id)
 		if err != nil {
@@ -351,6 +296,9 @@ func runWorkflowCommand(args []string) error {
 		state, err = store.ResolveGate(workflow.TaskID(id), workflow.GateID(args[2]), workflow.GateState(args[3]))
 	case "skip-focused-test":
 		var workItemID workflow.WorkItemID
+		if _, err = syncWorkflowChecklist(id, store); err != nil {
+			break
+		}
 		state, workItemID, err = store.SkipFocusedTest(workflow.TaskID(id), strings.Join(args[2:], " "))
 		if err == nil {
 			err = projectAcceptedWorkItem(id, store, state, workItemID)
@@ -358,6 +306,9 @@ func runWorkflowCommand(args []string) error {
 	case "complete":
 		if len(args) != 3 {
 			return fmt.Errorf("usage: wf complete <task-id> <work-item-id>")
+		}
+		if _, err = syncWorkflowChecklist(id, store); err != nil {
+			break
 		}
 		state, err = store.CompleteWorkItem(workflow.TaskID(id), workflow.WorkItemID(args[2]))
 		if err == nil {
@@ -630,6 +581,13 @@ func ensureAutomatedWorkspace(id string, meta task.TaskMeta, primary bool) (task
 	if kind != "primary" {
 		return task.TaskMeta{}, fmt.Errorf("Task %s workspace is %s; repair or explicitly bind it before automated execution", id, kind)
 	}
+	if meta.Delivery == "merged" {
+		isPrimary, primaryPath, err := gitx.IsPrimaryWorktree()
+		if err != nil { return task.TaskMeta{}, err }
+		if !isPrimary { return task.TaskMeta{}, fmt.Errorf("merged Task resumes in the primary worktree: %s", primaryPath) }
+		fmt.Printf("workflow workspace: primary task=%s (resumed after merge)\n", id)
+		return meta, nil
+	}
 	isPrimary, primaryPath, err := gitx.IsPrimaryWorktree()
 	if err != nil {
 		return task.TaskMeta{}, err
@@ -772,18 +730,8 @@ func resolveSupervisedAISelection(store *workflow.Store, id workflow.TaskID, sta
 		profile = configured
 		requestedLevel = configured.Level + unresolvedAgentRounds(state, workItemID)
 		previousProfile := configured
-		if previous, found := latestUsageSelection(state.Protocol, workItemID); found {
-			previousProfile, _, err = ai.ResolveProfile(previous.Profile)
-			if err != nil {
-				return nil, err
-			}
-			previousProvider, previousModel = previous.Provider, previous.Model
-			previousIntensity = previous.ReasoningIntensity
-			previousLevel = previous.DifficultyLevel
-		} else {
-			previousProvider, previousModel = previousProfile.Provider, previousProfile.Model
-			previousIntensity, previousLevel = previousProfile.ReasoningIntensity, previousProfile.Level
-		}
+		previousProvider, previousModel = previousProfile.Provider, previousProfile.Model
+		previousIntensity, previousLevel = previousProfile.ReasoningIntensity, previousProfile.Level
 		selected, found := profileAtOrAbove(profiles, requestedLevel)
 		if found {
 			profile, config, err = ai.ResolveProfile(selected.Name)
@@ -845,19 +793,6 @@ func unresolvedAgentRounds(state workflow.RuntimeState, workItemID workflow.Work
 	return count
 }
 
-func latestUsageSelection(protocol *workflow.ExecutionProtocol, workItemID workflow.WorkItemID) (workflow.UsageEvent, bool) {
-	if protocol == nil || protocol.Usage == nil {
-		return workflow.UsageEvent{}, false
-	}
-	for i := len(protocol.Usage.Records) - 1; i >= 0; i-- {
-		var event workflow.UsageEvent
-		if json.Unmarshal(protocol.Usage.Records[i], &event) == nil && event.WorkItemID == workItemID {
-			return event, true
-		}
-	}
-	return workflow.UsageEvent{}, false
-}
-
 func profileAtOrAbove(profiles map[string]ai.Profile, requestedLevel int) (ai.Profile, bool) {
 	var selected ai.Profile
 	found := false
@@ -895,10 +830,6 @@ func validateWorkflowArgs(op string, args []string) error {
 	case "recommend-routing":
 		if len(args) != 2 && (len(args) != 3 || args[2] != "--defaults") {
 			return fmt.Errorf("usage: wf recommend-routing <task-id> [--defaults]")
-		}
-	case "budget":
-		if len(args) < 3 {
-			return fmt.Errorf("usage: wf budget <task-id> <configure|approve|terminate> [options]")
 		}
 	case "attempt":
 		if len(args) != 5 || (args[2] != "start" && args[2] != "checkpoint") {
@@ -1167,7 +1098,7 @@ func reportAuthoredChecklist(meta task.TaskMeta, state workflow.RuntimeState, te
 func printDeliveryGuidance(meta task.TaskMeta, state workflow.RuntimeState) {
 	terminal := ui.NewTerminal(os.Stdout)
 	summary := workflow.DeriveSummary(state)
-	if meta.WorkspaceKind != "isolated" || summary.Execution != workflow.ExecutionCompleted || summary.Delivery == workflow.DeliveryMerged || summary.Delivery == workflow.DeliveryDiscarded {
+	if meta.WorkspaceKind != "isolated" || summary.Delivery == workflow.DeliveryMerged || summary.Delivery == workflow.DeliveryDiscarded {
 		return
 	}
 	terminal.Section("Delivery")
@@ -1177,8 +1108,8 @@ func printDeliveryGuidance(meta task.TaskMeta, state workflow.RuntimeState) {
 	terminal.Field("parent", meta.ParentBranch)
 	terminal.Section("Next")
 	terminal.Line("  1. Review the worktree changes.")
-	terminal.Line("  2. Supervise automatically runs local-merge when acceptance and validation are complete and no Gate remains open.")
-	terminal.Line(fmt.Sprintf("  3. For manual delivery, run `aiw wf local-merge %s \"Complete Task %s\"`.", meta.ID, meta.ID))
+	terminal.Line("  2. Supervise automatically delivers completed work after validation.")
+	terminal.Line(fmt.Sprintf("  3. For a clean, precommitted legacy worktree, run `aiw wf local-merge %s \"Deliver Task %s\"` at any Task status.", meta.ID, meta.ID))
 }
 
 func repairWorkflowState(id string) error {
@@ -1231,40 +1162,44 @@ func repairWorkflowState(id string) error {
 }
 
 func printWorkflowHelp() {
+	fmt.Print(`AIW workflow manages Task work items and execution.
+
+Common commands:
+  aiw wf plan <task-id>                 Map FD Work Items (or a legacy tasks.md) into Workflow Core.
+  aiw wf status <task-id>               Inspect Task execution, validation, and delivery.
+  aiw wf run <task-id> --execute        Execute one prepared Work Item.
+  aiw wf supervise <task-id> start     Start managed execution and eligible local delivery.
+  aiw wf supervise <task-id> status    Inspect the supervisor.
+  aiw wf supervise <task-id> stop      Request a supervisor stop.
+  aiw wf complete <task-id> <item-id>  Complete an accepted manual Work Item.
+  aiw wf diagnose <task-id>            Inspect blockers and repair guidance.
+
+aiw wf run <task-id> prepares the next request without starting an Agent;
+it can write Task state and is not a read-only preview.
+Use aiw wf help --all for compatibility, recovery, and manual
+recording commands.
+`)
+}
+
+func printWorkflowHelpAll() {
 	fmt.Print(`AIW workflow manages a Task's checklist, execution state, evidence, and recovery.
 
 Usage:
   aiw wf <command> <task-id> [options]
 
 Typical flow:
-  1. aiw wf plan <task-id>       Create or reconcile Work Items from tasks.md.
-  2. aiw wf run <task-id>        Preview the next action without executing it.
+  1. aiw wf plan <task-id>       Reconcile Work Items from the FD or a legacy tasks.md.
+  2. aiw wf run <task-id>        Prepare the next request without an Agent turn; may write Task state.
   3. aiw wf run <task-id> --execute
                                          Execute one prepared Work Item.
-  aiw wf pilot <task-id> status         Read-only Schema 10 Codex preflight.
-  aiw wf pilot <task-id> activate       Explicitly preflight and migrate a new pilot Task.
-  aiw wf pilot <task-id> recover        Recover only the legacy unstarted missing-source request.
-  aiw wf pilot <task-id> recover-cli-rejection
-                                       Recover a proven Codex argument-parser rejection; no model call.
-  aiw wf pilot <task-id> retry-report   Authorize one new Coder request after a no-change invalid report; no model call.
-  aiw wf pilot <task-id> run            Resume the original Coder/report/compile stage; stops before Tester.
-
-Auxiliary maintenance (does not enable schema 10):
-  auxiliary inventory                Print a bounded local inventory for review.
-  knowledge show <task>               Show versioned entries, coverage and review todo.
-  knowledge review <task> <root> <file>  Review an exact version at a human terminal.
-  knowledge import <task> <root> <file>  Preserve selected human text as a candidate.
-  auxiliary policy <file>            Install a reviewed versioned R3 policy.
-  auxiliary initialize               Consume .ai/auxiliary-inventory.json once.
-  auxiliary settle                   Refresh storage without resetting model usage.
 
 Plan and execute:
-  plan <task-id>                       Create or reconcile Work Items from tasks.md.
-  sync <task-id>                       Synchronize checklist completion into Workflow Core.
+  plan <task-id>                       Reconcile Work Items from the FD or a legacy tasks.md.
+  sync <task-id>                       Compatibility alias of plan.
   recommend-routing <task-id> [--defaults] Persist advisory AI routing and Compile Plan; --defaults skips AI.
   advance <task-id>                    Prepare the next ready Work Item without executing it.
   run <task-id> [--execute] [--primary] [--provider NAME] [--model MODEL]
-                                         Preview the next action, or execute one Work Item.
+                                         Prepare the next request, or execute one Work Item.
   supervise <task-id> <start|status|stop> [--provider NAME] [--model MODEL]
                                          Start, inspect, or stop managed execution; overrides apply only to start, which locally merges accepted isolated Tasks.
 
@@ -1277,9 +1212,8 @@ Record progress:
   skip-focused-test <task-id> <reason>
                                       Waive optional focused verification and complete its Work Item.
   complete <task-id> <work-item-id>                       Mark a Work Item complete.
-  delivery <task-id> <merged|discarded>                   Record Task delivery state.
-	local-merge <task-id> <commit-message>
-	                                     Commit accepted Task changes and perform verified local delivery.
+  local-merge <task-id> <merge-message>
+                                      Merge a clean, committed Task branch; unfinished Tasks resume in primary.
   delivery-failed <task-id> <stage> <detail>              Record a delivery failure and its stage/detail.
   retry-policy <task-id> <work-item-id> <1-5>
                                          Set the automatic Attempt limit (default: 3).
@@ -1290,15 +1224,7 @@ Record progress:
   focused-test <task-id> <attempt-id>   Run the selected approved focused check.
 
 Inspect and recover:
-  status <task-id>                    Show budget state, pending authorization, BLOCKED reason, Profile, and partial-usage diagnostics.
-  usage <task-id> [--work-item <id>] [--attempt <id>] [--provider <id>] [--profile <id>] [--from <RFC3339>] [--to <RFC3339>] [--format table|json]
-	                                     Show a bounded, read-only usage call report.
-  budget <task-id> configure [--input-tokens <n> --output-tokens <n>] [--cost <CURRENCY=AMOUNT> ...]
-                                         Set separate Task limits; no flags snapshots aiw.toml defaults.
-  budget <task-id> approve [--by <actor>] --reason <reason> [--input-tokens <n> --output-tokens <n>]
-                                         Approve a pending increase; omitted limits use +30%.
-  budget <task-id> terminate [--by <actor>] --reason <reason>
-                                         Stop at a pending budget Gate and leave the Task BLOCKED.
+  status <task-id>                    Show Task execution, validation, and delivery state.
   report <task-id>                     Show the latest unresolved failure report without changing runtime state.
   diagnose <task-id>                   Show Workflow Core diagnostics and repair guidance.
 	continue <task-id>                   Read the human remediation response and continue safely.
@@ -1308,13 +1234,14 @@ Inspect and recover:
   repair-metadata [task-id] [--dry-run]                   Preview or repair Core-derived metadata for discovered active, legacy, and archived Tasks.
 
 Execution and workspace rules:
-  - Without --execute, run only previews the next action.
+  - Without --execute, run may synchronize Work Items and persist a prepared request; it does not start an Agent.
   - --execute delegates one prepared Work Item to the internal Task Agent adapter.
   - Automated execution uses an isolated .wt/<task-id> worktree by default.
   - --primary is an explicit opt-out and only works for Tasks bound to the primary workspace.
   - --provider NAME and --model MODEL override the configured AI selection for run execution or supervisor start; both also accept --provider=NAME and --model=MODEL.
   - --primary requires --execute. Supervisor provider/model overrides are accepted only with supervise start.
   - supervise start commits and locally merges accepted isolated Tasks, then cleans verified merged resources and clears the current worktree binding while retaining delivery history.
+  - local-merge is independent of Task completion; unfinished Tasks resume in the primary workspace.
   - Manual run does not deliver; push and archive remain separate operations.
   - Each Work Item has a default automatic Attempt limit of 3; retry-policy accepts 1 through 5.
   - Exhaustion blocks only that Work Item, clears its prepared request, and releases its lease.

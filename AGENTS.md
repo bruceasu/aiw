@@ -3,14 +3,16 @@
 Always respond in Chinese.
 Write prompts in Easy English when asked to draft prompts.
 
-## OpenSpec Workflow
+## Managed Workflow
 
-Before coding, read only the relevant files under:
+Before coding, read the selected AIW Task, its FD work item, approved Issue
+handoff when present, and relevant stable specs under `openspec/specs/`.
+Read a linked OpenSpec change only when one exists and affects the work:
 
 - `openspec/changes/<task>/`
-- `openspec/specs/`
 
-Prioritize `tasks.md`, `design.md` when present, and the relevant spec.
+The FD is the primary plan. An older Task may continue from its existing
+`tasks.md` and `design.md`. An OpenSpec change is optional.
 
 - Work on one task at a time.
 - Keep changes scoped and reviewable.

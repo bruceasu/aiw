@@ -1,33 +1,28 @@
 # Work Management
 
-AIW is authoritative for Task lifecycle, branch, worktree, Session, and handoff
-state. OpenSpec is authoritative for proposal, design, capability requirements,
-and the detailed checklist in `tasks.md`.
+`.ai/tasks/<task-id>/` is the Task lifecycle and execution center. AIW owns
+Task identity, branch, worktree, Session, and handoff lineage. Workflow Core
+owns Work Items, Attempts, Gates, Evidence, leases, and derived status.
 
-Local work normally uses:
+An Issue can describe a bug, feature, or modification and can be split into
+smaller Issues. The existing `aiw req` command and REQ files remain compatible
+Issue records; `aiw issue` is the preferred entry point.
 
-- `openspec/changes/<task-id>/` for active Task artifacts;
-- `openspec/specs/` for stable capability requirements;
-- the primary Git checkout for ordinary sequential implementation;
-- `.wt/<task-id>/` for automated execution and explicitly isolated Task
-  worktrees.
+The managed Feature Design at `docs/features/<task-id>.md` owns decisions and
+ordered work items for new native Tasks. AIW maps those items into Workflow
+Core. Existing Tasks may continue from `openspec/changes/<task-id>/tasks.md`
+until their plan is migrated deliberately. OpenSpec owns stable requirements
+under `openspec/specs/`; a change directory is optional.
 
-Use AIW lifecycle commands for Task creation, status, completion, and archive.
-Automated execution creates or reuses the Task worktree by default. Use `aiw wt`
-for explicit isolation or repair. AIW's automatic backend may delegate
-supported artifact operations to an installed OpenSpec CLI.
+Ordinary sequential work uses the primary Git checkout. Isolated work uses a
+verified `.wt/<task-id>/` created through AIW. `local-merge` delivers the
+branch regardless of Task completion state. An unfinished merged Task resumes
+in primary with its Work Items and evidence intact.
 
-Workflow Core runtime state is not projected into Git-tracked `task.toml` or
-OpenSpec `tasks.md`: it owns Attempts, leases, retry counts, evidence, and
-diagnostics in its runtime store. A retry-exhausted Work Item stays blocked
-until an operator reopens it with a reason. A force-close records `CANCELLED`
-and an explicit merged or discarded delivery outcome; it is not a substitute
-for validation or checklist completion. For a worktree pull conflict,
-`aiw wt pull <task-id> --conflict-handoff` is opt-in and yields a reviewable
-proposal only for eligible text files; protected paths and unsafe file types
-remain manual, and proposal application never commits or completes the merge.
+Archive a managed FD with its Task at
+`docs/features/archive/<date>-<task-id>.md`; a linked OpenSpec change is
+archived only when it exists.
 
 Do not create new canonical work under `.scratch`. GitHub and GitLab remain
-optional external projections.
-
-For complete Skill behavior, read `skills/work-management.md`.
+optional external projections. Read `skills/work-management.md` for the full
+contract and authorization boundaries.

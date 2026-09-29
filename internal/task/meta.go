@@ -25,6 +25,7 @@ const (
 	LegacyTaskMetaFile = "tasks.toml"
 	RuntimeTasksDir       = ".ai/tasks"
 	LegacyRuntimeTasksDir = ".ai"
+	FeatureDesignDir      = "docs/features"
 )
 
 type TaskMeta struct {
@@ -49,6 +50,11 @@ func Today() string {
 
 func TaskDir(id string) string {
 	return filepath.Join(ChangesDir, id)
+}
+
+// FeatureDesignPath is the authored work plan for an Issue-driven Task.
+func FeatureDesignPath(id string) string {
+	return filepath.Join(FeatureDesignDir, id+".md")
 }
 
 func RuntimeTaskDir(id string) string {

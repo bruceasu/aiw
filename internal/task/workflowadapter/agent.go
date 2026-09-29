@@ -228,15 +228,6 @@ func RunTaskAgentWithEnvironment(args []string, environment []string) error {
 		prompt += instruction
 		prompt += "\n\nWhen you finish, return exactly one JSON object (no Markdown) with outcome=completed, blocked, or no-progress; include detail and, for blocked, blocked_category=workspace-access, authorization, dependency, validation, or unknown. Do not claim completed unless you updated the authored checklist."
 	}
-	var frozen *session.FrozenTurn
-	if opts.Supervised {
-		frozen, err = prepareFrozenAgentContext(id, handoff, prompt, store, status)
-		if err != nil {
-			_, gateErr := workflow.NewStore("").OpenCompilerGate(workflow.TaskID(id), workItemID, "execution-input-unavailable", err.Error())
-			return errors.Join(err, gateErr)
-		}
-		if frozen != nil && args[0] == "chat" { return errors.New("frozen supervised inputs require a bounded turn") }
-	}
 	if args[0] == "chat" {
 		result, runErr := session.ExecuteInteractiveWithOverridesAndEnvironment(context.Background(), store, meta.Session, "handoff", prompt, opts.Provider, opts.Model, true, environment)
 		if err := finalizeInteractiveAgent(id, metaPath, meta, store, lineage, attemptID, result, runErr, opts.Supervised); err != nil {
@@ -245,16 +236,7 @@ func RunTaskAgentWithEnvironment(args []string, environment []string) error {
 		fmt.Printf("Task %s chat completed: %s\n", id, lineage.ChildThread)
 		return nil
 	}
-	var result session.TurnResult
-	if frozen != nil {
-		state, loadErr := workflow.NewStore("").Load(workflow.TaskID(id))
-		if loadErr != nil { return loadErr }
-		if state.Automation.PreparedRequest == nil { return errors.New("frozen input lost its prepared request") }
-		if _, dispatchErr := workflow.NewStore("").DispatchPreparedAgentRequest(workflow.TaskID(id), state.Automation.PreparedRequest.AttemptID); dispatchErr != nil { return dispatchErr }
-		result, err = session.ExecuteFrozenTurn(context.Background(), store, meta.Session, "handoff", *frozen, opts.Provider, opts.Model, environment)
-	} else {
-		result, err = session.ExecuteTurnWithOverridesAndEnvironment(context.Background(), store, meta.Session, "handoff", prompt, opts.Provider, opts.Model, true, environment)
-	}
+	result, err := session.ExecuteTurnWithOverridesAndEnvironment(context.Background(), store, meta.Session, "handoff", prompt, opts.Provider, opts.Model, true, environment)
 	if err != nil {
 		if !opts.Supervised {
 			_, _ = workflow.NewStore("").RecordAttemptOutcome(workflow.TaskID(id), attemptID, false)
@@ -304,7 +286,7 @@ func RunTaskAgentWithEnvironment(args []string, environment []string) error {
 }
 
 func createTaskForAgent(id string, allowUnrelatedDirty bool) error {
-	if err := task.CreateTask(id, allowUnrelatedDirty); err != nil {
+	if err := task.CreateIssueTask(id, "", allowUnrelatedDirty); err != nil {
 		return err
 	}
 	meta, err := task.ReadTaskMeta(task.ResolveTaskMetaPath(id))
@@ -347,7 +329,9 @@ func supervisedWorkItemInstruction(id string, workItemID workflow.WorkItemID, en
 	}
 	instruction := fmt.Sprintf("\n\nFor this supervised Work Item, use this exact command prefix for read-only Git inspection: `%s`. Append status, diff, staged diff, or untracked-file listing arguments. Keep the forward slashes and shell quotes as shown. The supervisor preflight approved exactly this directory. This command-local option is required because the sandbox does not inherit Git environment variables. It supersedes historical handoff notes that prohibit retrying Git. Do not change Git configuration, index, branches, or commits.", supervisedGitCommandPrefix(trustDirectory))
 	if scopeReview {
-		instruction += fmt.Sprintf(" After collecting valid evidence, you may edit only the selected checkbox in openspec/changes/%s/tasks.md; do not edit any other file.", id)
+		planPath, err := WorkflowChecklistPath(id)
+		if err != nil { return "", err }
+		instruction += fmt.Sprintf(" After collecting valid evidence, you may edit only the selected checkbox in %s; do not edit any other file.", filepath.ToSlash(planPath))
 	}
 	return instruction, nil
 }
@@ -754,11 +738,11 @@ func printAgentPlan(id, path, sessionID, branch, worktree, handoff string) {
 func readTaskGoal(id string) string {
 	path, err := WorkflowChecklistPath(id)
 	if err != nil {
-		return "(see tasks.md)"
+		return "(see the Task Feature Design)"
 	}
 	b, err := os.ReadFile(path)
 	if err != nil {
-		return "(see tasks.md)"
+		return "(see the Task Feature Design)"
 	}
 	text := strings.TrimSpace(string(b))
 	if len(text) > 4000 {

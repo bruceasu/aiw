@@ -55,7 +55,7 @@ func (s *Store) SetOperationalRetryLimit(id TaskID, kind OperationalRetryKind, l
 }
 
 func normalizeOperationalRetries(accounting *OperationalRetryAccounting) error {
-	for _, counter := range []*RetryCounter{&accounting.Recovery, &accounting.Notification, &accounting.Delivery} {
+	for _, counter := range []*RetryCounter{&accounting.Recovery, &accounting.Delivery} {
 		if counter.MaxAttempts == 0 {
 			counter.MaxAttempts = DefaultRetryLimit
 		}
@@ -73,8 +73,6 @@ func retryCounter(accounting *OperationalRetryAccounting, kind OperationalRetryK
 	switch kind {
 	case RetryRecovery:
 		return &accounting.Recovery, nil
-	case RetryNotification:
-		return &accounting.Notification, nil
 	case RetryDelivery:
 		return &accounting.Delivery, nil
 	default:

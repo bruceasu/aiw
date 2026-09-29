@@ -5,7 +5,6 @@
 // concepts used to coordinate their execution.
 package workflow
 
-import "encoding/json"
 
 const (
 	SchemaVersion     = 9
@@ -19,7 +18,6 @@ type WorkItemID string
 type AttemptID string
 type GateID string
 type EvidenceID string
-type NotificationID string
 
 type PlanningState string
 
@@ -71,18 +69,6 @@ const (
 	DeliveryPending   DeliveryState = "pending"
 	DeliveryMerged    DeliveryState = "merged"
 	DeliveryDiscarded DeliveryState = "discarded"
-)
-
-// NotificationState records the durable state of a notification outbox item.
-// A Plugin receives the stable notification ID so a delivery backend can
-// provide idempotency across a recovered dispatch.
-type NotificationState string
-
-const (
-	NotificationPending     NotificationState = "pending"
-	NotificationDispatching NotificationState = "dispatching"
-	NotificationFailed      NotificationState = "failed"
-	NotificationDelivered   NotificationState = "delivered"
 )
 
 type WorkspaceState string
@@ -174,7 +160,6 @@ type RuntimeState struct {
 	SchemaVersion     int             `json:"schema_version"`
 	StateRevision     uint64          `json:"state_revision,omitempty"`
 	CommitID          string          `json:"commit_id,omitempty"`
-	Protocol          *ExecutionProtocol `json:"execution_protocol,omitempty"`
 	Task              TaskReference   `json:"task"`
 	Planning          PlanningState   `json:"planning"`
 	Delivery          DeliveryState   `json:"delivery"`
@@ -193,24 +178,7 @@ type RuntimeState struct {
 	Cancellation      *Cancellation   `json:"cancellation,omitempty"`
 	Policy            *PolicySnapshot `json:"policy_snapshot,omitempty"`
 	OperationalRetries OperationalRetryAccounting `json:"operational_retries,omitempty"`
-	Notifications      []Notification             `json:"notifications,omitempty"`
 	Summary           TaskSummary     `json:"summary"`
-}
-
-// Notification is a persisted outbox record. Payload is frozen before a
-// Plugin process starts, so workflow transition completion does not depend on
-// a transient Plugin invocation.
-type Notification struct {
-	Managed          *NotificationMessage `json:"managed,omitempty"`
-	ID               NotificationID    `json:"id"`
-	Topic            string            `json:"topic"`
-	Payload          json.RawMessage   `json:"payload"`
-	State            NotificationState `json:"state"`
-	CreatedAt        string            `json:"created_at"`
-	UpdatedAt        string            `json:"updated_at"`
-	DispatchAttempts int               `json:"dispatch_attempts"`
-	LastError        string            `json:"last_error,omitempty"`
-	Receipt          string            `json:"receipt,omitempty"`
 }
 
 // WorkspaceBinding is the durable boundary between a Task worktree and its
@@ -409,16 +377,13 @@ type OperationalRetryKind string
 
 const (
 	RetryRecovery     OperationalRetryKind = "recovery"
-	RetryNotification OperationalRetryKind = "notification"
 	RetryDelivery     OperationalRetryKind = "delivery"
 )
 
 // OperationalRetryAccounting persists the bounded retry budget for each
-// task-level operation category.  Notification outbox records can retain
-// their own delivery details while consuming only the notification budget.
+// task-level operation category.
 type OperationalRetryAccounting struct {
 	Recovery     RetryCounter `json:"recovery"`
-	Notification RetryCounter `json:"notification"`
 	Delivery     RetryCounter `json:"delivery"`
 }
 

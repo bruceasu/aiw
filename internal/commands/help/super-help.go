@@ -15,6 +15,7 @@ import (
 	"aiw/internal/fsx"
 	plug "aiw/internal/plugin"
 	"aiw/internal/version"
+	workflowcli "aiw/internal/workflow/cli"
 )
 
 var executablePathFn = os.Executable
@@ -48,6 +49,9 @@ func Dispatch(args []string) error {
 	// join args as one query if more than one
 	if len(args) == 1 {
 		name := args[0]
+		if name == "wf" {
+			return showBuiltinHelp(name)
+		}
 		// check plugin first
 		if ok, _ := pluginExists(name); ok {
 			return showPluginHelp(name)
@@ -94,18 +98,18 @@ func listAll() error {
 
 	fmt.Print("Core workflow:\n" +
 		"  init [--no-setup] [--prompts] [--merge] [--force] [--template <name>]\n" +
-		"  new <task-id>             Create a task/change.\n" +
+		"  new <task-id>             Create a Task.\n" +
 		"  list [--all]              List active tasks; --all includes archives.\n" +
-		"  show <task-id>            Print tasks.md.\n" +
+		"  show <task-id>            Print the FD or legacy tasks.md.\n" +
 		"  status <task-id> <s>      Update task status.\n" +
 		"  done <task-id>            Shortcut for: status <task-id> DONE.\n" +
-		"  archive <task-id> [opts]  Archive a completed task/change (sync, validate, repair).\n" +
+		"  archive <task-id> [opts]  Archive a completed Task (sync, validate, repair).\n" +
 		"  wf <op> <task-id>         Run managed workflow operations.\n" +
 		"  workspace bind <task-id> --primary  Bind the Task to the primary workspace.\n" +
-		"  context <task-id>         Show files to read before implementing.\n" +
-		"  decision <task-id>        Create design.md for a task.\n" +
-		"  spec <spec-id>            Create a long-lived spec under openspec/specs.\n" +
-		"  req <...>                 Manage Requirement intake and promotion.\n\n")
+		"  context <task-id>         Show Task, FD, and current Work Item context.\n" +
+		"  spec <spec-id>            Create a stable spec skeleton under openspec/specs.\n" +
+		"  issue <...>               Manage Issue intake, split lineage, and promotion.\n" +
+		"  req <...>                 Compatibility alias for Issue records.\n\n")
 
 	fmt.Print("Worktree:\n" +
 		"  wt add <task-id> [base]   Explicitly isolate a task in a worktree.\n" +
@@ -120,7 +124,7 @@ func listAll() error {
 		"  wt repair                 Repair worktree links after relocation.\n" +
 		"  wt ignore                 Add .wt/ to .gitignore.\n\n")
 
-	fmt.Print("Auxiliary:\n" +
+	fmt.Print("Other tools:\n" +
 		"  ask <prompt>               Ask the built-in LLM for AIW guidance.\n" +
 		"  prompts <...>             Generate or merge prompt files.\n" +
 		"  completion <shell>        Generate shell completion scripts.\n" +
@@ -248,8 +252,8 @@ func listBuiltins() ([]string, error) {
 func staticBuiltinCommands() []string {
 	return []string{
 		"init", "new", "list", "show", "status", "done",
-		"archive", "context", "decision", "spec", "registry",
-		"prompts", "wt", "task",
+		"archive", "context", "spec", "registry",
+		"prompts", "wt", "task", "wf",
 	}
 }
 
@@ -272,14 +276,14 @@ func listPlugins() ([]string, error) {
 			}
 			for _, sub := range subEntries {
 				name, ok := pluginNameFromFile(sub.Name())
-				if ok && !seen[name] {
+				if ok && name != "wf" && !seen[name] {
 					out = append(out, name)
 					seen[name] = true
 				}
 			}
 			continue
 		}
-		if name, ok := pluginNameFromFile(f.Name()); ok && !seen[name] {
+		if name, ok := pluginNameFromFile(f.Name()); ok && name != "wf" && !seen[name] {
 			out = append(out, name)
 			seen[name] = true
 		}
@@ -323,6 +327,10 @@ func showPluginHelp(name string) error {
 }
 
 func showBuiltinHelp(name string) error {
+	if name == "wf" {
+		workflowcli.PrintWorkflowHelp()
+		return nil
+	}
 	if usage, ok := builtinUsageText(name); ok {
 		fmt.Print(usage)
 		return nil
@@ -358,27 +366,29 @@ func builtinHelpShort(name string) string {
 	case "init":
 		return "initialize prompts and worktree scaffolding"
 	case "new":
-		return "create a new change"
+		return "create a Task"
 	case "list":
 		return "list active tasks; --all includes archives"
 	case "show":
-		return "show change tasks"
+		return "show a Task's FD or legacy checklist"
 	case "status":
-		return "update change status"
+		return "update Task status"
 	case "done":
-		return "mark change done"
+		return "mark a Task done"
 	case "archive":
-		return "archive a completed change"
+		return "archive a completed Task"
 	case "context":
 		return "show implementation context"
 	case "decision":
-		return "create or show a design decision"
+		return "legacy: create an OpenSpec change design.md"
 	case "spec":
 		return "create a long-lived spec"
 	case "prompts":
 		return "generate or merge prompt files"
 	case "task":
 		return "manage fresh-agent handoff and lineage"
+	case "wf":
+		return "manage Task work items and execution"
 	default:
 		return ""
 	}
@@ -403,7 +413,7 @@ func builtinUsageText(name string) (string, bool) {
 	case "context":
 		return "usage: aiw context <task-id>\n", true
 	case "decision":
-		return "usage: aiw decision <task-id>\n", true
+		return "usage: aiw decision <task-id>\nLegacy OpenSpec change template; write new Task decisions in docs/features/<task-id>.md.\n", true
 	case "spec":
 		return "usage: aiw spec <spec-id>\n", true
 	case "prompts":

@@ -17,6 +17,11 @@ var extPriority = map[string]int{
 	"":     2,
 	".exe": 3,
 	".js":  4,
+	".mjs": 5,
+	".cjs": 6,
+	".ts":  7,
+	".mts": 8,
+	".cts": 9,
 }
 
 // DiscoverPlugin searches standard locations for a plugin named `name` and

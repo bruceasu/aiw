@@ -10,7 +10,10 @@ import (
 	help "aiw/internal/commands/help"
 	sessioncmd "aiw/internal/commands/session"
 	taskcmd "aiw/internal/commands/task"
+	taskadapter "aiw/internal/task/workflowadapter"
 	"aiw/internal/version"
+	workflowcli "aiw/internal/workflow/cli"
+	workflowcmd "aiw/internal/workflow/facade"
 
 	plug "aiw/internal/plugin"
 )
@@ -79,6 +82,18 @@ func main() {
 		}
 	case "session":
 		err = sessioncmd.Dispatch(os.Args[2:])
+	case "wf":
+		facade := workflowcmd.New(
+			func(args []string) error {
+				return workflowcli.RunWorkflowCommand(taskadapter.New(taskadapter.DefaultOperations{}), args)
+			},
+			workflowcli.PrintWorkflowHelp,
+		)
+		err = facade.Dispatch(os.Args[2:])
+	case "issue":
+		// The existing req plugin remains the compatibility implementation.
+		code, pluginErr := dispatchPlugin("req", os.Args[2:])
+		if pluginErr != nil { err = pluginErr } else if code != 0 { os.Exit(code) }
 	default:
 		// try plugin fallback: aiw-<subcommand>
 		pluginName := os.Args[1]

@@ -43,12 +43,8 @@ func (s *Store) ReconcileTaskReference(id TaskID, reference TaskReference) (Runt
 		return RuntimeState{}, fmt.Errorf("unsupported Task workspace kind: %s", reference.Kind)
 	}
 	state, err := s.Load(id)
-	if err != nil {
-		return RuntimeState{}, err
-	}
-	if state.SchemaVersion == DurableSchemaVersion {
-		return RuntimeState{}, errors.New("durable Task reference reconciliation requires its protocol migration seam")
-	}
+	if err != nil { return RuntimeState{}, err }
+	if state.Task.Workspace == reference.Workspace && state.Task.Kind == reference.Kind { return state, nil }
 	return s.UpdateWithEvent(id, Event{Type: "task.workspace-reconciled", Detail: fmt.Sprintf("%s:%s -> %s:%s", state.Task.Kind, state.Task.Workspace, reference.Kind, reference.Workspace)}, func(current *RuntimeState) error {
 		if current.WriteLease != nil || current.Automation.PreparedRequest != nil {
 			return errors.New("cannot reconcile Task workspace while execution is prepared or leased")
@@ -60,7 +56,7 @@ func (s *Store) ReconcileTaskReference(id TaskID, reference TaskReference) (Runt
 			}
 		}
 		if current.Task.Workspace == reference.Workspace && current.Task.Kind == reference.Kind {
-			return errProtocolNoChange
+			return nil
 		}
 		current.Task.Workspace = reference.Workspace
 		current.Task.Kind = reference.Kind

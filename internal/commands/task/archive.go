@@ -128,10 +128,15 @@ func prepareTaskArchive(id string) (taskArchivePlan, error) {
 		plan.name = task.Today() + "-" + id
 	}
 	if plan.location.ChangeDir == "" {
-		fmt.Fprintln(os.Stderr, "规格已删除:", id)
+		if _, err := os.Stat(task.FeatureDesignPath(id)); errors.Is(err, os.ErrNotExist) && !plan.location.Archived {
+			fmt.Fprintln(os.Stderr, "Task plan is missing:", id)
+		} else if err != nil && !errors.Is(err, os.ErrNotExist) { return plan, err }
 	} else if !plan.location.Archived {
 		plan.moves = append(plan.moves, archiveMove{plan.location.ChangeDir, task.ArchiveTaskDir(plan.name)})
 	}
+	if _, err := os.Stat(task.FeatureDesignPath(id)); err == nil {
+		plan.moves = append(plan.moves, archiveMove{task.FeatureDesignPath(id), task.FeatureDesignArchivePath(plan.name)})
+	} else if !errors.Is(err, os.ErrNotExist) { return plan, err }
 	runtimeTarget := filepath.Join(task.RuntimeRoot(), ".ai", "archive", plan.name)
 	if !sameArchivePath(plan.location.RuntimeDir, runtimeTarget) {
 		plan.moves = append(plan.moves, archiveMove{plan.location.RuntimeDir, runtimeTarget})
@@ -294,7 +299,7 @@ func archiveWithBackend(id string, opts ArchiveOptions, bin string) error {
 	if err != nil {
 		return err
 	}
-	if err := prepareArchiveEligibility(id, opts, plan, bin == ""); err != nil {
+	if err := prepareArchiveEligibility(id, opts, plan); err != nil {
 		return err
 	}
 	refreshed, err := prepareTaskArchive(id)
@@ -303,6 +308,12 @@ func archiveWithBackend(id string, opts ArchiveOptions, bin string) error {
 	}
 	if refreshed.name != plan.name {
 		return errors.New("archive date changed during preparation; retry")
+	}
+	if refreshed.summary.Status != workflow.TaskDone && refreshed.summary.Status != workflow.TaskCancelled {
+		return fmt.Errorf("Task %s is no longer terminal after checklist synchronization", id)
+	}
+	if err := finishArchivePreparation(refreshed, opts, bin == ""); err != nil {
+		return err
 	}
 	return executeTaskArchive(refreshed, strings.TrimSpace(bin))
 }
@@ -327,7 +338,7 @@ func verifyArchivedDelivery(branch, worktree string) error {
 	return nil
 }
 
-func prepareArchiveEligibility(id string, opts ArchiveOptions, plan taskArchivePlan, native bool) error {
+func prepareArchiveEligibility(id string, opts ArchiveOptions, plan taskArchivePlan) error {
 	src, meta, summary := plan.location.ChangeDir, plan.meta, plan.summary
 	forceClosed := summary.Status == workflow.TaskCancelled
 	workflowDone := summary.Status == workflow.TaskDone
@@ -346,13 +357,14 @@ func prepareArchiveEligibility(id string, opts ArchiveOptions, plan taskArchiveP
 	if kind == "unassigned" && delivery != workflow.DeliveryMerged && delivery != workflow.DeliveryDiscarded {
 		return errors.New("unassigned Task must record merged or discarded delivery before archive")
 	}
-	if !plan.location.Archived && src != "" && (workflowDone || (meta.Status == "DONE" && !forceClosed)) {
+	fdExists := fsx.Exists(task.FeatureDesignPath(id))
+	if !plan.location.Archived && (src != "" || fdExists) && (workflowDone || (meta.Status == "DONE" && !forceClosed)) {
 		if err := syncArchiveWorkflow(id, meta, src); err != nil {
 			return err
 		}
 	}
 	problems := []string{}
-	if !plan.location.Archived && src != "" {
+	if !plan.location.Archived && src != "" && !fdExists {
 		problems = archiveArtifactProblems(src)
 	}
 	if len(problems) > 0 && !opts.Force {
@@ -409,15 +421,40 @@ func prepareArchiveEligibility(id string, opts ArchiveOptions, plan taskArchiveP
 			return fmt.Errorf("task branch %s is not merged into %s", branch, meta.ParentBranch)
 		}
 	}
+	if opts.CleanupWT && (kind != "isolated" || !gitx.WorktreeRegistered(wt)) {
+		return errors.New("refusing to clean an unverified isolated worktree")
+	}
+	return nil
+}
+
+func finishArchivePreparation(plan taskArchivePlan, opts ArchiveOptions, native bool) error {
+	if plan.location.Archived {
+		return nil
+	}
+	meta := plan.meta
+	if native && plan.location.ChangeDir != "" {
+		if err := syncSpecSnapshots(plan.location.ChangeDir, meta.Specs); err != nil {
+			return err
+		}
+	}
+	branch := strings.TrimSpace(meta.Branch)
+	if branch == "" {
+		branch = "feature/" + meta.ID
+	}
+	wt := strings.TrimSpace(meta.Worktree)
+	if wt == "" {
+		wt = filepath.ToSlash(filepath.Join(task.WorktreeDir, meta.ID))
+	}
+	delivery := plan.summary.Delivery
+	if plan.summary.Status != workflow.TaskCancelled {
+		delivery = taskworkflow.WorkflowRuntimeFromMeta(meta).Delivery
+	}
 	if opts.Push {
 		if err := gitx.Run("git", "push", "-u", "origin", branch); err != nil {
 			return err
 		}
 	}
 	if opts.CleanupWT {
-		if kind != "isolated" || !gitx.WorktreeRegistered(wt) {
-			return errors.New("refusing to clean an unverified isolated worktree")
-		}
 		if err := gitx.Run("git", "worktree", "remove", wt); err != nil {
 			return err
 		}
@@ -431,11 +468,6 @@ func prepareArchiveEligibility(id string, opts ArchiveOptions, plan taskArchiveP
 			return err
 		}
 	}
-	if native && src != "" {
-		if err := syncSpecSnapshots(src, meta.Specs); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -444,7 +476,11 @@ func syncArchiveWorkflow(id string, meta task.TaskMeta, changeDir string) error 
 	if _, err := store.EnsureCompatible(taskworkflow.WorkflowRuntimeFromMeta(meta)); err != nil {
 		return err
 	}
-	state, err := taskworkflow.SyncWorkflowChecklistAtPath(id, store, filepath.Join(changeDir, "tasks.md"))
+	checklistPath := task.FeatureDesignPath(id)
+	if _, err := os.Stat(checklistPath); errors.Is(err, os.ErrNotExist) {
+		checklistPath = filepath.Join(changeDir, "tasks.md")
+	} else if err != nil { return err }
+	state, err := taskworkflow.SyncWorkflowChecklistAtPath(id, store, checklistPath)
 	if err != nil {
 		return fmt.Errorf("archive requires workflow sync: %w", err)
 	}

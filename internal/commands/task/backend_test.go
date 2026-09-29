@@ -13,6 +13,14 @@ func TestSelectBackendNativeDoesNotProbe(t *testing.T) {
 	}
 }
 
+func TestSelectBackendDefaultsToNativeWithoutOpenSpecProbe(t *testing.T) {
+	t.Setenv("AIW_OPENSPEC_BIN", "definitely-not-an-executable")
+	mode, args, err := selectBackend("new", []string{"TASK-1"})
+	if err != nil || mode != backendNative || len(args) != 1 || args[0] != "TASK-1" {
+		t.Fatalf("native default = %s %#v %v", mode, args, err)
+	}
+}
+
 func TestSelectBackendRejectsInvalidMode(t *testing.T) {
 	if _, _, err := selectBackend("new", []string{"TASK-1", "--backend", "invalid"}); err == nil {
 		t.Fatal("expected invalid backend error")

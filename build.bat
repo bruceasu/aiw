@@ -153,42 +153,18 @@ echo Req plugin binaries built in plugins\aiw-req.
 exit /b 0
 
  :build_cz
-if not exist "plugins\aiw-cz" md "plugins\aiw-cz"
-del /s/q plugins\aiw-cz\aiw-cz.exe 2>nul
-del /s/q plugins\aiw-cz\aiw-cz 2>nul
-set "GOFLAGS="
-
-set "GOOS=windows"
-set "GOARCH=amd64"
-go build -trimpath -ldflags="-s -w -X aiw/internal/version.Version=%AIW_VERSION%" -o "plugins\aiw-cz\aiw-cz.exe" ./cmd/aiw-cz
-if errorlevel 1 (
-    set "GOOS="
-    set "GOARCH="
-    echo Error: Windows cz build failed.
-    exit /b 1
-)
-
-set "GOOS=linux"
-set "GOARCH=amd64"
-go build -trimpath -ldflags="-s -w -X aiw/internal/version.Version=%AIW_VERSION%" -o "plugins\aiw-cz\aiw-cz" ./cmd/aiw-cz
-if errorlevel 1 (
-    set "GOOS="
-    set "GOARCH="
-    echo Error: Linux cz build failed.
-    exit /b 1
-)
-
-set "GOOS="
-set "GOARCH="
-echo Cz plugin binaries built in plugins\aiw-cz.
+pushd plugins\aiw-cz
+call npm install || (popd & exit /b 1)
+call npm run build || (popd & exit /b 1)
+popd
+echo TypeScript cz plugin built in plugins\aiw-cz\dist.
 exit /b 0
 
  :build_plugins
 call :build_workflow || exit /b 1
 call :build_req || exit /b 1
 call :build_cz || exit /b 1
-call cp-mirror.bat plugins %INSTALL_DIR%\plugins || exit /b 1
-call cp-mirror.bat skills %INSTALL_DIR%\skills || exit /b 1
+call :install_entries plugins "%INSTALL_DIR%\plugins" || exit /b 1
 exit /b 0
 
  :build_docs
@@ -197,7 +173,18 @@ exit /b 0
 
  :build_skills
 call :build_workflow || exit /b 1
-call cp-mirror.bat skills %INSTALL_DIR%\skills || exit /b 1
+call :install_entries skills "%INSTALL_DIR%\skills" || exit /b 1
+exit /b 0
+
+ :install_entries
+if not exist "%~2\" mkdir "%~2" || exit /b 1
+for %%E in ("%~1\*") do (
+    if exist "%%~fE\" (
+        xcopy /E /I /Y /H "%%~fE" "%~2\%%~nxE\" >nul || exit /b 1
+    ) else (
+        copy /Y "%%~fE" "%~2\" >nul || exit /b 1
+    )
+)
 exit /b 0
 
  :help
@@ -210,10 +197,10 @@ echo   windows  Build and install the Windows executable.
 echo   linux    Build and install the Linux executable.
 echo   wf       Build Windows and Linux workflow plugin binaries.
 echo   req      Build Windows and Linux req plugin binaries.
-echo   cz       Build Windows and Linux cz plugin binaries.
-echo   plugins  Copy plugins and skills to the install directory.
+echo   cz       Install dependencies and compile the TypeScript cz plugin.
+echo   plugins  Build plugin binaries and install plugins individually.
 echo   docs     Copy usage documentation to the install directory.
-echo   skills   Copy skills to the install directory.
+echo   skills   Build workflow binaries and install skills individually.
 echo.
 echo Help: -h, --help, help, /h, /?
 exit /b 0

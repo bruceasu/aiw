@@ -12,18 +12,6 @@ import (
 	"aiw/internal/ai"
 )
 
-// TaskMemoryProjection is installed by the executable composition root. It
-// appends Task-owned facts to this turn only; human Session memory is untouched.
-var TaskMemoryProjection func(string) (string, error)
-
-func projectTaskMemory(status Status, memory string) (string, error) {
-	if TaskMemoryProjection == nil || status.Task == nil || status.Task.TaskID == "" { return memory, nil }
-	projection, err := TaskMemoryProjection(status.Task.TaskID)
-	if err != nil { return "", err }
-	if projection != "" { memory += "\n\n"+projection }
-	return memory, nil
-}
-
 func ExecuteTurn(ctx context.Context, store *Store, id, phase, prompt, backendName, model string, forceNew bool) (TurnResult, error) {
 	return ExecuteTurnWithOverrides(ctx, store, id, phase, prompt, backendName, model, forceNew)
 }
@@ -120,8 +108,6 @@ func executeTurn(ctx context.Context, store *Store, id, phase, prompt, providerO
 		instructions, err = store.ReadText(id, status.Instructions.File)
 		if err != nil { return TurnResult{}, err }
 		memory, err = store.ReadText(id, status.Instructions.MemoryFile)
-		if err != nil { return TurnResult{}, err }
-		memory, err = projectTaskMemory(status, memory)
 		if err != nil { return TurnResult{}, err }
 	}
 	if phase == "" {
@@ -220,8 +206,6 @@ func ExecuteInteractiveWithOverridesAndEnvironment(ctx context.Context, store *S
 	instructions, err := store.ReadText(id, status.Instructions.File)
 	if err != nil { return TurnResult{}, err }
 	memory, err := store.ReadText(id, status.Instructions.MemoryFile)
-	if err != nil { return TurnResult{}, err }
-	memory, err = projectTaskMemory(status, memory)
 	if err != nil { return TurnResult{}, err }
 	if phase == "" { phase = status.Session.CurrentPhase; if phase == "" { phase = "interactive" } }
 	composed := fmt.Sprintf("[Persistent Execution Instructions]\n\n%s\n\n[Session Memory]\n\n%s\n\n[Current Phase]\n\n%s\n\n[Current Task]\n\n%s\n", strings.TrimSpace(instructions), strings.TrimSpace(memory), phase, strings.TrimSpace(prompt))

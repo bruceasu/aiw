@@ -4,17 +4,17 @@ AIW is a workflow-first CLI for organizing work, preserving task state, and expo
 
 ## Feature Overview
 
-* Initialize the OpenSpec-backed directory structure and default instruction files
+* Initialize AIW Task, FD, and optional OpenSpec directories and default instruction files
 * Automatically create or append `.wt/` entries to `.gitignore`
 * Generate or merge AI prompt files from `docs/agent-templates/`
 * Create, view, and update tasks
-* Capture, approve, and promote durable Requirement records before Task creation
+* Capture, approve, split, and promote durable Issues before Task creation
 * Create dedicated Git worktrees for tasks
 * Output task-specific context prompts
 * Create and maintain long-lived specification documents
 * Archive completed tasks
 * Run bounded foreground supervision with frozen model and compile plans
-* Inspect durable execution, recovery, and auxiliary knowledge state
+* Inspect Task execution and recovery state
 
 ## Directory Structure
 
@@ -22,6 +22,8 @@ After running `aiw init`, the following structure will be created (if missing):
 
 ```text
 repo/
+|-- .ai/tasks/
+|-- docs/features/
 |-- openspec/
 |   |-- changes/
 |   |-- specs/
@@ -35,9 +37,10 @@ repo/
 Notes:
 
 * `AGENTS.md` and `.github/copilot-instructions.md` are created only if they do not already exist.
-* Canonical Task metadata and runtime state live under `.ai/tasks/<task-id>/`.
-  OpenSpec proposal, design, specs, and checklists live under
-  `openspec/changes/<task-id>/`. The compatible `tasks.toml` filename remains readable.
+* Task metadata and runtime state live under `.ai/tasks/<task-id>/`; an authored
+  FD at `docs/features/<task-id>.md` owns the work plan. Stable specs live under
+  `openspec/specs/`. An OpenSpec change is optional, and older `tasks.md` plans
+  remain readable. The compatible `tasks.toml` filename remains readable.
 
 ## Build and Installation
 
@@ -72,8 +75,8 @@ Build its Windows and Linux binaries into `plugins/aiw-req` with:
 build.bat req
 ```
 
-The Conventional Commit wizard is distributed as the `aiw-cz` plugin. Build
-its Windows and Linux binaries into `plugins/aiw-cz` with:
+The Conventional Commit wizard is a TypeScript plugin requiring Node.js 22.12.0
+or newer. Install its dependencies and compile it with:
 
 ```bat
 build.bat cz
@@ -103,6 +106,9 @@ aiw req approve <requirement-id> <APPROVED|DEFERRED|REJECTED> --by <actor> --rea
 aiw req promote <requirement-id> --task <task-id>
 aiw req archive <requirement-id> --reason <reason> [--by <actor>]
 aiw req cancel <requirement-id> --reason <reason> [--by <actor>]
+aiw issue <command> ... # preferred alias for aiw req
+aiw issue link-parent <child-id> <parent-id>
+aiw issue children <parent-id>
 
 aiw wt add <task-id> [base-branch]
 aiw wt rm <task-id> [--delete-branch] [--force]
@@ -117,13 +123,13 @@ aiw wt repair
 aiw wt ignore
 
 aiw context <task-id>
-aiw decision <task-id>
 aiw spec <spec-id>
 aiw wf <operation> <task-id> [arguments/options]
 aiw wf repair-metadata [task-id] [--dry-run]
 aiw workspace <operation> <task-id>
 aiw wf run <task-id> [--execute] [--primary] [--provider NAME] [--model MODEL]
 aiw wf supervise <task-id> <start|status|stop> [--provider NAME] [--model MODEL]
+aiw wf help --all
 aiw completion <powershell|bash|zsh|fish>
 aiw session status <task-id>
 aiw session list
@@ -145,7 +151,7 @@ aiw tcc [args...]       # TCC wrapper with automatic include/lib defaults
 aiw git <subcommand>    # run: aiw git help
 aiw cxs <subcommand>   # inspect and resume Codex CLI sessions
 aiw github <subcommand> # GitHub Issues and PRs
-aiw cz <subcommand>    # Conventional Commit wizard
+aiw cz [options]       # Conventional Commit wizard
 aiw exec-java [args...] # run a Java main class through Maven
 ```
 
@@ -160,7 +166,7 @@ private session storage, and provider limitations.
 ### List Tasks
 
 Run `aiw list` to show active Tasks, sorted by Task ID, with three fields:
-Task ID, Workflow status, and the actual OpenSpec Change path. Use
+Task ID, Workflow status, and the available FD or OpenSpec change path. Use
 `aiw list --all` (also `aiw task list --all`) to include archived Tasks and
 insert an `ACTIVE`/`ARCHIVED` field before the path. Archiving does not replace
 the Workflow status: an archived Task can still show `DONE` or `CANCELLED`.
@@ -212,10 +218,10 @@ aiw context payment-retry
 aiw status payment-retry IN_PROGRESS
 ```
 
-Use `aiw decision payment-retry` when the Task needs a design decision, and
-`aiw spec <spec-id>` when you need to create or update a long-lived
-specification. `aiw done payment-retry` records Task completion; it does not
-commit, push, merge, or publish code.
+Record Task design decisions in `docs/features/payment-retry.md`. Use
+`aiw spec <spec-id>` to create a new stable spec skeleton when needed;
+`/to-spec` helps write or update its rules. `aiw done payment-retry` records
+Task completion; it does not commit, push, merge, or publish code.
 
 ### Work in an isolated worktree
 
@@ -302,11 +308,11 @@ and executed one bounded step at a time:
 
 ```powershell
 aiw wf plan payment-retry
-aiw wf advance payment-retry
 aiw wf run payment-retry
 ```
 
-The first `run` is a preview. Execute one authorized step with:
+The first `run` prepares the next request without starting an Agent; it may
+write Task state. Execute one authorized step with:
 
 ```powershell
 aiw wf run payment-retry --execute
@@ -327,21 +333,21 @@ aiw wf recover payment-retry
 aiw wf repair payment-retry
 ```
 
-### Preserve a requirement before creating a Task
+### Preserve an Issue before creating a Task
 
-Use Requirement Management when the request still needs clarification,
-business approval, metric definition, or engineering option review:
+Use Issue Management when a bug, feature, or modification still needs scope,
+approval, metric definition, or engineering option review:
 
 ```powershell
-aiw req chat daily-withdrawal-report
-aiw req show daily-withdrawal-report
-aiw req approve daily-withdrawal-report APPROVED --by alice --reason "scope approved"
-aiw req promote daily-withdrawal-report --task daily-withdrawal-report
+aiw issue chat daily-withdrawal-report
+aiw issue show daily-withdrawal-report
+aiw issue approve daily-withdrawal-report APPROVED --by alice --reason "scope approved"
+aiw issue promote daily-withdrawal-report --task daily-withdrawal-report
 ```
 
 Promotion requires an explicit approval and creates or reuses the linked Task.
 It does not mean that the implementation is complete or approved for release.
-See [Requirement Management](docs/usage/aiw-requirement.md) for artifact
+See [Issue Management](docs/usage/aiw-issue.md) for artifact
 capture, recovery, and revision rules.
 
 ## Shell Completion
@@ -422,10 +428,10 @@ Use `--backend native` to force the built-in behavior, or
 `--backend openspec` to require OpenSpec and fail if delegation is unavailable.
 Configure a specific executable with `AIW_OPENSPEC_BIN`.
 
-## Requirement Management
+## Issue Management
 
-Requirement Management preserves the human requirement discussion before it
-becomes an engineering Task. Start with `aiw req chat [requirement-id]`:
+Issue Management preserves the discussion before it becomes an engineering
+Task. Start with `aiw issue chat [id]`:
 it creates or resumes a durable Flow Session, selects the smallest useful
 discussion phase, and asks for confirmation before each durable action.
 Records are stored under `docs/requirements/<requirement-id>/`; promotion requires
@@ -437,13 +443,13 @@ Supported captured artifacts are `problem-brief`, `business-case`,
 is copied from an explicit source file and recorded with a digest, so later
 untracked edits are not silently handed to engineering.
 
-See the [Requirement Management user guide](docs/usage/aiw-requirement.md) for
+See the [Issue Management user guide](docs/usage/aiw-issue.md) for
 the lifecycle, commands, examples, recovery behavior, and Skill integration.
 
-### Use the Requirement Management Skill
+### Use the Issue Management Skill
 
-Use `$requirement-management` when you want an AI conversation to lead the
-Requirement workflow. It starts or resumes `aiw req chat`, selects the
+Use `$issue-management` when you want an AI conversation to lead the
+Issue workflow. It starts or resumes `aiw issue chat`, selects the
 generic discovery or an applicable finance method, and prepares durable actions for
 explicit confirmation. Users do not need to remember artifact types, paths, or
 CLI parameters.
@@ -455,19 +461,19 @@ Install the canonical repository Skill into the current project's managed Skill
 location when needed:
 
 ```text
-aiw skills install requirement-management
+aiw skills install issue-management
 ```
 
 Examples:
 
 ```text
-$requirement-management I need a daily withdrawal report.
-aiw req chat daily-withdrawal-report
+$issue-management I need a daily withdrawal report.
+aiw issue chat daily-withdrawal-report
 ```
 
 The conversation shows a confirmation checkpoint before it creates, captures,
 approves, defers, rejects, or promotes. Confirm a displayed action with
-`confirm` or `确认`; the lower-level `aiw req ...`
+`confirm` or `确认`; the compatible lower-level `aiw req ...`
 commands remain available for scripts and automation.
 
 ## Automatic development workflow
@@ -477,39 +483,38 @@ AIW separates Task orchestration from AI Session execution:
 * `aiw wf` owns the managed Task plan, Work Items, Attempts, Gates,
   Evidence, write leases, recovery, and derived progress.
 * `aiw session` manages persisted AIW Sessions, their memory, handoffs, and backend resume IDs.
-* OpenSpec owns proposal, design, capability specs, and the human-authored
-  checklist in `tasks.md`.
+* FD owns engineering decisions and the human-authored work items; OpenSpec
+  owns stable capability specs and optional change artifacts.
 
 The normal flow is:
 
 ```text
-Requirement -> approved Task -> OpenSpec artifacts -> Work Items
+Issue -> approved Task and FD -> mapped Work Items
   -> prepared Attempt -> one bounded agent turn -> Evidence/Gate
   -> next Work Item or human decision
 ```
 
 ### End-to-end example
 
-Start with a Task whose `tasks.md` contains numbered checklist items. For a
-requirement-led change, use Requirement Management first:
+Start with a Task whose FD has numbered work items. For an Issue-led change,
+use Issue Management first:
 
 ```text
-aiw req chat daily-withdrawal-report
-aiw req approve daily-withdrawal-report APPROVED --by alice --reason "scope approved"
-aiw req promote daily-withdrawal-report --task daily-withdrawal-report
+aiw issue chat daily-withdrawal-report
+aiw issue approve daily-withdrawal-report APPROVED --by alice --reason "scope approved"
+aiw issue promote daily-withdrawal-report --task daily-withdrawal-report
 ```
 
-Prepare and inspect the managed execution plan:
+Complete `docs/features/daily-withdrawal-report.md`, set its Design Readiness
+to `FD_APPLIED` or `FD_NOT_REQUIRED`, then prepare and inspect the managed plan:
 
 ```text
 aiw wf plan daily-withdrawal-report
 aiw show daily-withdrawal-report
-aiw wf advance daily-withdrawal-report
 ```
 
-`advance` selects one dependency-satisfied Work Item and prepares one
-Attempt-bound agent request. It does not start a model. Preview the same
-bounded step with:
+`run` without `--execute` selects a dependency-satisfied Work Item and prepares
+an Attempt-bound request. It does not start a model, but may write Task state:
 
 ```text
 aiw wf run daily-withdrawal-report
@@ -532,7 +537,7 @@ aiw wf run daily-withdrawal-report --execute --primary
 The workflow facade dispatches `plan`, `sync`, `advance`, `run`,
 `supervise`, `recommend-routing`, `attempt`, `evidence`, `gate`,
 `skip-focused-test`, `complete`, `retry-policy`, `reopen`, `force-close`,
-`focused-test`, `delivery`, `local-merge`, `delivery-failed`, `report`,
+`focused-test`, `local-merge`, `delivery-failed`, `report`,
 `diagnose`, `recover`, and `repair`. `repair-metadata` is a special form:
 `aiw wf repair-metadata [task-id] [--dry-run]`. Run and `supervise ... start`
 accept `--provider NAME`
@@ -558,9 +563,7 @@ while its lease is active.
 
 ### Supervised bounded execution
 
-New Tasks currently default to **schema 9**. The commands below use its
-Coder/compile/repair loop. The implemented schema 10 protocol requires a
-controlled host and managed activation; `supervise start` does not enable it.
+Tasks use the Coder/compile/repair loop described below.
 
 For a long-running local loop, start supervision explicitly. Supervisor
 execution uses the same isolated-worktree default:
@@ -608,54 +611,6 @@ input references additionally require a matching implementation report,
 including input identity, change references, and explicit fact sections.
 An invalid report can receive one report-only supplement; a further failure
 opens `report-manual-review`. A saved report alone does not accept the Work Item.
-
-### Durable multi-stage protocol (schema 10)
-
-The Core implements `coder -> report-validation -> compile -> tester ->
-test-run -> acceptance -> accepted`. Tester uses an independent Session and
-test-path write scope; the Runner consumes a frozen test manifest. Controlled
-execution requires authorization, result and acceptance validators, budget
-services, and platform activation evidence. Missing host isolation or assertion
-review capability fails closed.
-
-**This is not the default CLI execution loop.** The generic Runner blocks
-schema 10 with a controlled-stage-adapter diagnostic and disables legacy
-dispatch. There is no general CLI migration, grant, or Stop-clear command;
-changing `schema_version` manually does not enable execution.
-
-* Explicit `supervise stop` persists even without a foreground lease. Restart
-  does not clear it or prove that an in-flight process exited.
-* Unknown results must be reconciled through the original executor. Saved
-  results can be consumed without replaying the model or command.
-* Actor generation and repair budgets survive restart. Configured distinct
-  model tiers support escalation; unknown historical budgets remain unknown.
-* Local delivery requires a frozen, grant-bound plan and controlled host.
-  Legacy `local-merge` is rejected. Cleanup needs its own grant and sealed
-  source evidence; conflicts are preserved without implicit abort or reset.
-
-Supervisor `status` also exposes protocol revision, budget-known state, Stop
-reason, item phases, in-flight requests, recovery counts, and auxiliary gaps.
-The ordinary retry/reopen instructions below describe schema 9, not a way to
-reset these durable budgets or bypass Stop.
-
-### Auxiliary work and knowledge
-
-The controlled auxiliary host drains persisted Verifier, Task memory, and
-project knowledge jobs within a bounded run. It preserves waiting and unknown
-work for a later managed launch; it is not a polling daemon. Explicit Task
-authorization, reviewed provider capability evidence, and host configuration
-are required. Missing capabilities remain visible as host gaps.
-
-```text
-aiw wf auxiliary inventory
-aiw wf knowledge show <task-id>
-```
-
-Explicit maintenance also includes `auxiliary policy <file>`,
-`auxiliary initialize`, `auxiliary settle`, and
-`knowledge review|import <task-id> <root> <file>`. These operations do not enable
-schema 10 or authorize model/test execution. Inspect their help before changing
-policy or publishing a knowledge review.
 
 ### Evidence, completion, and recovery
 
@@ -859,6 +814,11 @@ Supported extensions:
 .cmd
 .ps1
 .js
+.mjs
+.cjs
+.ts
+.mts
+.cts
 .jar
 (no extension)
 ```
@@ -873,11 +833,16 @@ When multiple matching plugins exist:
 2. `.py`
 3. Extensionless scripts (shebang)
 4. Native binaries (`.exe` / ELF)
+5. JavaScript (`.js`, `.mjs`, `.cjs`), then TypeScript (`.ts`, `.mts`, `.cts`)
 
 ## Interpreters and Shebang
 
 * Extensionless scripts with a `#!` shebang are executed using the specified interpreter.
-* For `.js` files, `bun` is preferred when available; otherwise `node` is used.
+* JavaScript plugins run with the configured Node runtime.
+* TypeScript plugins run with the configured Node runtime and
+  `--experimental-strip-types`. They require
+  Node.js 22.12.0 or newer and may use only syntax supported by Node's type
+  stripping; TypeScript imports must use the actual file extension.
 
 ### Python Interpreter Configuration
 
@@ -916,6 +881,28 @@ If the canonical file does not exist, AIW also checks
 first existing user configuration file and does not merge user files. It does
 not read project-root configuration for interpreter selection, and it does not
 create a missing user configuration file or directory.
+
+### Node Interpreter Configuration
+
+JavaScript and TypeScript plugins select Node in this order:
+
+1. The absolute path in `AIW_NODE`
+2. `[runtime].node` in the user `aiw.toml`
+3. `[runtime].node` in `aiw.toml` beside the AIW executable
+4. `node/node.exe` on Windows, or `node/node` on other platforms, beside the
+   AIW executable
+5. `node` from `PATH`
+
+Use an absolute path to a Node executable to pin a version:
+
+```toml
+[runtime]
+node = "C:/tools/node-v22.12.0/node.exe"
+```
+
+The user configuration locations and path validation rules are the same as
+those for Python above. The project-root `aiw.toml` is not read for this
+setting. An empty value is treated as unset.
 
 ## Environment Variables
 
@@ -978,13 +965,15 @@ Options:
 Creates:
 
 ```text
-openspec/changes/<task-id>/
-|-- tasks.md
-`-- notes.md
+docs/features/<task-id>.md
 
 .ai/tasks/<task-id>/
 `-- task.toml
 ```
+
+The FD starts `BLOCKED` and needs confirmed decisions and numbered work items
+before `aiw wf plan` can map them. Use `--backend openspec` only when an
+OpenSpec change is wanted.
 
 Default metadata:
 
@@ -999,7 +988,7 @@ delivery = "unmanaged"
 ```
 
 如果工作区有未提交改动，默认会拒绝创建。仅当所有脏路径都与新建
-`openspec/changes/<task-id>/` 无关时，才可显式确认：
+`.ai/tasks/<task-id>/`、`docs/features/<task-id>.md` 无关时，才可显式确认：
 
 ```text
 aiw new <task-id> --allow-unrelated-dirty
@@ -1008,9 +997,11 @@ aiw new <task-id> --allow-unrelated-dirty
 目标目录存在脏改动时始终拒绝；此规则不改变已有工件编辑、worktree、归档、
 提交或推送等操作的保护策略。
 
-## 3. `aiw decision <task-id>`
+## 3. Legacy `aiw decision <task-id>`
 
-Creates `design.md` for the task if it does not already exist.
+Creates `openspec/changes/<task-id>/design.md` only for an existing legacy
+change. New Task decisions belong in `docs/features/<task-id>.md`. The command
+remains callable for compatibility but is omitted from the main help.
 
 ## 4. `aiw spec <spec-id>`
 
@@ -1045,13 +1036,9 @@ Does not archive the task automatically.
 Moves:
 
 ```text
-openspec/changes/<task-id>
-```
-
-to:
-
-```text
-openspec/archive/<YYYY-MM-DD>-<task-id>
+.ai/tasks/<task-id>/                 -> .ai/archive/<YYYY-MM-DD>-<task-id>/
+docs/features/<task-id>.md          -> docs/features/archive/<YYYY-MM-DD>-<task-id>.md
+openspec/changes/<task-id>/         -> openspec/changes/archive/<YYYY-MM-DD>-<task-id>/  (when linked)
 ```
 
 Options:
@@ -1115,7 +1102,9 @@ in `task.toml`.
 
 ## 9. `aiw context <task-id>`
 
-Prints recommended files to review and execution constraints for the task.
+Prints the Task metadata, Issue handoff and authored plan in the bound workspace,
+then relevant change/spec files, Workflow status, and the current or next ready
+Work Item. It does not change Task state.
 
 ## 10. `aiw prompts [template] [--merge] [--force]`
 
@@ -1187,7 +1176,6 @@ For body/breaking/footer fields:
 
 ```text
 /edit
-Ctrl+E
 ```
 
 launches an external editor.
@@ -1196,22 +1184,22 @@ launches an external editor.
 
 Enabled only with `--llm`.
 
-Uses the globally configured AI provider through the shared provider module.
+Uses CZ's own provider configuration. Automatic order: Copilot SDK, Codex SDK,
+OpenAI SDK, then the manual wizard.
 
 ```bash
 set OPENAI_API_KEY=your_api_key
 
-# optional
-set OPENAI_MODEL=gpt-4o-mini
-set OPENAI_BASE_URL=https://api.openai.com/v1
+# Configure a model under [cz.openai] in aiw.toml.
 ```
 
 ### Configuration Priority
 
 ```text
-CLI
--> Project Root Configuration
--> Program Directory Configuration
+CLI and CZ environment variables
+-> project root aiw.toml
+-> AIW_ROOT aiw.toml
+-> plugin directory cz.toml
 ```
 
 Supported configuration files:
@@ -1221,60 +1209,46 @@ aiw.toml
 .aiw.toml
 ```
 
-### AI Provider Configuration Priority
+### CZ Provider Configuration
 
 ```text
-[ai] section in config
--> environment variables
--> .env in current directory
--> .env in program directory
--> defaults
-```
-
-Supported shared options include:
-
-```toml
-provider
-model
-base_url
-api_key
-codex_command
-copilot_command
-```
-
-Mapping:
-
-```text
-OPENAI_MODEL
-OPENAI_BASE_URL
-OPENAI_API_KEY
+CLI options
+-> CZ_* environment variables
+-> [cz] and [cz.<provider>] in aiw.toml
+-> SDK authentication defaults
 ```
 
 Example:
 
 ```toml
-[ai]
-provider = "openai"
+[cz]
 llm = false
 candidates = 3
-emoji = false
-EDITOR = "code --wait"
-model = "gpt-4o-mini"
+
+[cz.copilot]
+model = "your-copilot-model"
+
+[cz.codex]
+model = "your-codex-model"
+
+[cz.openai]
+model = "your-openai-model"
 base_url = "https://api.openai.com/v1"
-api_key = ""
-
-[[cz.types]]
-value = "feat"
-name = "feat:     New Feature | A new feature"
-
-[[cz.types]]
-value = "fix"
-name = "fix:      Bug Fix | A bug fix"
 ```
 
-The provider settings are global and are shared by `aiw ask`, managed workflow
-turns, and CZ. Existing provider settings under `[cz]` remain supported as a
-compatibility fallback.
+Optional environment overrides:
+
+```text
+CZ_LLM_PROVIDER
+CZ_COPILOT_MODEL
+CZ_CODEX_MODEL
+CZ_OPENAI_MODEL
+CZ_OPENAI_API_KEY
+OPENAI_API_KEY
+```
+
+See [CZ configuration](docs/usage/cz-configuration.md) for provider-specific
+settings and fallback behavior.
 
 ### CZ language
 

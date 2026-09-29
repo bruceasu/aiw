@@ -33,6 +33,8 @@
 
 ### Requirement: 本地交付资格
 
+手动 `local-merge` MUST 独立于 Task 的完成和验证状态；仍须通过工作区、分支、无在途写入及 Git 冲突预检。合并成功后，未完成 Task MUST 保持工作项和证据，并恢复到 primary 工作区继续推进。自动交付仍遵守以下完成与授权条件。
+
 Supervisor MUST 仅在当前开发接受成立、无在途写请求/阻塞、工作区为 isolated 且有适用 AI 批准计划及 grant 时尝试自动本地交付。必需测试的旧 waived 不满足资格，Verifier 不另加 Gate。merged/discarded 不重复交付，primary Task 不走隔离自动合并入口。
 
 #### Scenario: 缺少交付授权

@@ -61,9 +61,6 @@ func TestGateRemediationRequiresExplicitHumanDecision(t *testing.T) {
 			if !option.RequiresApproval { t.Fatalf("Gate decision lacks explicit approval: %+v", option) }
 		}
 	}
-	if _, err := BuildRemediationReportForGate(state, Gate{ID: UsageBudgetGateID, State: GateOpen}); err == nil {
-		t.Fatal("usage budget Gate must use budget approval")
-	}
 }
 
 func TestUnknownSessionRemediationBindsDispatchedTurn(t *testing.T) {

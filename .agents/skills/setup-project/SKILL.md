@@ -1,6 +1,6 @@
 ---
 name: setup-project
-description: Configure AIW Task lifecycle, OpenSpec artifact management, triage labels, and domain-doc conventions for the engineering Skills.
+description: Configure AIW Issue, Feature Design, and Task lifecycle conventions, with optional OpenSpec specs and triage labels.
 disable-model-invocation: true
 ---
 
@@ -29,8 +29,9 @@ Treat `.scratch` as legacy data.
 
 Record this ownership split in `docs/agents/work-management.md`:
 
-- AIW owns Task lifecycle, branch, worktree, Session, and handoff state.
-- OpenSpec owns proposal, design, capability specs, and `tasks.md`.
+- AIW owns Issue and Task lifecycle, branch, worktree, Session, and handoff state.
+- FD owns design decisions and ordered work items.
+- OpenSpec owns stable capability specs; change artifacts are optional.
 - External Issues are optional projections used only on explicit request.
 
 Do not create a separate issue-tracker configuration for an AIW/OpenSpec

@@ -6,8 +6,8 @@ disable-model-invocation: true
 ---
 
 Follow `skills/reviewed-skill-contract.md`. Read `skills/work-management.md`
-when present. Resolve the AIW Task, its
-worktree, Session, and matching OpenSpec change before writing the handoff.
+when present. Resolve the AIW Task, its linked FD, worktree, and Session.
+Read a linked OpenSpec change only when one exists.
 
 Write a handoff document summarising the current conversation so a fresh agent
 can continue the work. Prefer the AIW Session artifact location. Use the
@@ -20,8 +20,8 @@ For managed work, include the Task ID, Work Item, Attempt, relevant Evidence,
 and unresolved Gates when known. A handoff records facts and recommendations;
 it does not complete an Attempt, release a lease, or advance Task state.
 
-Do not duplicate content already captured in other artifacts (OpenSpec specs,
-proposal, design, tasks, plans, ADRs, external Issues, commits, or diffs).
+Do not duplicate content already captured in other artifacts (Issue, FD,
+OpenSpec specs or change, plans, ADRs, external Issues, commits, or diffs).
 Reference them by path or URL instead.
 
 Redact any sensitive information, such as API keys, passwords, or personally identifiable information.

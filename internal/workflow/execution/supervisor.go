@@ -31,8 +31,8 @@ type Supervisor struct {
 // dispatch, Session validation, compile repair, outcome recording, and delivery.
 func (s Supervisor) Start(id, provider, model string, state workflow.RuntimeState) error {
 	store := s.Store
-	if state.Delivery == workflow.DeliveryMerged ||
-		state.Delivery == workflow.DeliveryDiscarded {
+	if state.Delivery == workflow.DeliveryDiscarded ||
+		(state.Delivery == workflow.DeliveryMerged && workflow.DeriveSummary(state).Execution == workflow.ExecutionCompleted) {
 		return nil
 	}
 	leaseID := fmt.Sprintf("supervisor-%d", time.Now().UTC().UnixNano())
@@ -284,10 +284,6 @@ func (s Supervisor) awaitGateDecision(id, leaseID string) error {
 	if err != nil { return err }
 	for _, gate := range state.Gates {
 		if gate.State != workflow.GateOpen { continue }
-		if gate.ID == workflow.UsageBudgetGateID {
-			_, err = s.Store.PauseSupervisor(workflow.TaskID(id), leaseID, "budget-awaiting-approval", gate.Reason, time.Now().UTC().Add(24*time.Hour))
-			return err
-		}
 		report, err := workflow.BuildRemediationReportForGate(state, gate)
 		if err != nil { return err }
 		pending, err := s.Store.AwaitRemediation(workflow.TaskID(id), report)

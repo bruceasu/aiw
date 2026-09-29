@@ -1,5 +1,8 @@
 # AIW Plugins 与 Skills 开发辅助报告
 
+> 历史评审记录。当前 Issue、FD、Task 和可选 OpenSpec change 的执行契约以
+> `skills/work-management.md` 及各 Skill 的现行 `SKILL.md` 为准。
+
 日期：2026-09-11
 审查范围：当前 `plugins/`、`skills/`、相关 Go 插件调度器及 README。
 审查方式：静态阅读与一次只读索引检查。未运行测试、构建、Lint 或自动验证。

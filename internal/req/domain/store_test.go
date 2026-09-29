@@ -29,11 +29,24 @@ func TestCreateCaptureApproveAndSnapshot(t *testing.T) {
 	if _, created, err := StartPromotion("daily-report", "daily-report-task"); err != nil || !created { t.Fatalf("unexpected promotion start: created=%v err=%v", created, err) }
 	if _, created, err := StartPromotion("daily-report", "daily-report-task"); err != nil || created { t.Fatalf("promotion should be idempotent: created=%v err=%v", created, err) }
 	meta, err = CompletePromotion("daily-report", "daily-report-task")
-	if err != nil || meta.Promotion.Status != "SPEC_DRAFTED" { t.Fatalf("unexpected promotion completion: %#v %v", meta, err) }
+	if err != nil || meta.Promotion.Status != "FD_READY" { t.Fatalf("unexpected promotion completion: %#v %v", meta, err) }
 	snapshot, err := ArtifactSnapshot("daily-report")
 	if err != nil || len(snapshot) != 1 || snapshot[0].Kind != "requirement-plan" { t.Fatalf("unexpected snapshot: %#v %v", snapshot, err) }
 	stored, err := Read("daily-report")
 	if err != nil || stored.Artifacts["requirement-plan"].Digest != artifact.Digest { t.Fatalf("artifact metadata was not persisted: %#v %v", stored, err) }
+}
+
+func TestIssueParentLineageIsQueryableAndCannotCycle(t *testing.T) {
+	inTempDir(t)
+	for _, id := range []string{"parent", "child"} {
+		if _, err := Create(id, id); err != nil { t.Fatal(err) }
+	}
+	child, err := LinkParent("child", "parent")
+	if err != nil || child.ParentID != "parent" || child.Revision != 2 { t.Fatalf("link: %#v %v", child, err) }
+	stored, err := Read("child")
+	if err != nil || stored.ParentID != "parent" { t.Fatalf("stored parent: %#v %v", stored, err) }
+	if _, err := LinkParent("parent", "child"); err == nil { t.Fatal("expected cycle refusal") }
+	if _, err := LinkParent("child", "parent"); err != nil { t.Fatalf("idempotent link: %v", err) }
 }
 
 func TestArtifactSnapshotRejectsPostCaptureChanges(t *testing.T) {

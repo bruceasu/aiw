@@ -58,6 +58,50 @@ func configuredPythonFromFile(path, source string) (pythonInterpreterSetting, er
 	return validatePythonInterpreter(value, source+" "+path)
 }
 
+func configuredNodeInterpreter(exeDir string) (string, error) {
+	if value := strings.TrimSpace(os.Getenv("AIW_NODE")); value != "" {
+		return validateRuntimeInterpreter(value, "AIW_NODE", "Node")
+	}
+	userConfigPath, err := findUserConfigPath()
+	if err != nil {
+		return "", err
+	}
+	if userConfigPath != "" {
+		configured, err := configuredNodeFromFile(userConfigPath, "user config")
+		if err != nil || configured != "" {
+			return configured, err
+		}
+	}
+	if exeDir != "" {
+		programConfigPath := filepath.Join(exeDir, "aiw.toml")
+		exists, err := configFileExists(programConfigPath)
+		if err != nil {
+			return "", fmt.Errorf("inspect program config %s: %w", programConfigPath, err)
+		}
+		if exists {
+			configured, err := configuredNodeFromFile(programConfigPath, "program config")
+			if err != nil || configured != "" {
+				return configured, err
+			}
+		}
+		if local := filepath.Join(exeDir, "node", executableName("node")); fileExists(local) {
+			return local, nil
+		}
+	}
+	return "node", nil
+}
+
+func configuredNodeFromFile(path, source string) (string, error) {
+	value, err := readRuntimeValue(path, "node")
+	if err != nil {
+		return "", fmt.Errorf("read %s %s: %w", source, path, err)
+	}
+	if strings.TrimSpace(value) == "" {
+		return "", nil
+	}
+	return validateRuntimeInterpreter(value, source+" "+path, "Node")
+}
+
 func findUserConfigPath() (string, error) {
 	configDir, err := userConfigDirFn()
 	if err != nil {
@@ -101,29 +145,34 @@ func samePath(left, right string) bool {
 }
 
 func validatePythonInterpreter(path, source string) (pythonInterpreterSetting, error) {
+	validated, err := validateRuntimeInterpreter(path, source, "Python")
+	return pythonInterpreterSetting{path: validated}, err
+}
+
+func validateRuntimeInterpreter(path, source, name string) (string, error) {
 	path = filepath.Clean(strings.TrimSpace(path))
 	if !filepath.IsAbs(path) {
-		return pythonInterpreterSetting{}, fmt.Errorf(
-			"invalid Python interpreter from %s: path must be absolute: %s", source, path,
+		return "", fmt.Errorf(
+			"invalid %s interpreter from %s: path must be absolute: %s", name, source, path,
 		)
 	}
 	info, err := statPathFn(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return pythonInterpreterSetting{}, fmt.Errorf(
-				"invalid Python interpreter from %s: not an existing file: %s", source, path,
+			return "", fmt.Errorf(
+				"invalid %s interpreter from %s: not an existing file: %s", name, source, path,
 			)
 		}
-		return pythonInterpreterSetting{}, fmt.Errorf(
-			"inspect Python interpreter from %s at %s: %w", source, path, err,
+		return "", fmt.Errorf(
+			"inspect %s interpreter from %s at %s: %w", name, source, path, err,
 		)
 	}
 	if info.IsDir() {
-		return pythonInterpreterSetting{}, fmt.Errorf(
-			"invalid Python interpreter from %s: not an existing file: %s", source, path,
+		return "", fmt.Errorf(
+			"invalid %s interpreter from %s: not an existing file: %s", name, source, path,
 		)
 	}
-	return pythonInterpreterSetting{path: path}, nil
+	return path, nil
 }
 
 func configFileExists(path string) (bool, error) {
@@ -141,6 +190,10 @@ func configFileExists(path string) (bool, error) {
 }
 
 func readRuntimePython(path string) (string, error) {
+	return readRuntimeValue(path, "python")
+}
+
+func readRuntimeValue(path, keyName string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return "", err
@@ -148,8 +201,8 @@ func readRuntimePython(path string) (string, error) {
 	defer file.Close()
 
 	inRuntime := false
-	pythonSeen := false
-	pythonValue := ""
+	valueSeen := false
+	configuredValue := ""
 	scanner := bufio.NewScanner(file)
 	for lineNumber := 1; scanner.Scan(); lineNumber++ {
 		line := strings.TrimSpace(strings.TrimPrefix(scanner.Text(), "\uFEFF"))
@@ -172,23 +225,23 @@ func readRuntimePython(path string) (string, error) {
 		if !ok {
 			return "", fmt.Errorf("line %d: expected key = value in [runtime]", lineNumber)
 		}
-		if strings.TrimSpace(key) != "python" {
+		if strings.TrimSpace(key) != keyName {
 			continue
 		}
-		if pythonSeen {
-			return "", fmt.Errorf("line %d: duplicate runtime.python", lineNumber)
+		if valueSeen {
+			return "", fmt.Errorf("line %d: duplicate runtime.%s", lineNumber, keyName)
 		}
 		value, err := parseConfigString(rawValue)
 		if err != nil {
-			return "", fmt.Errorf("line %d: runtime.python: %w", lineNumber, err)
+			return "", fmt.Errorf("line %d: runtime.%s: %w", lineNumber, keyName, err)
 		}
-		pythonValue = value
-		pythonSeen = true
+		configuredValue = value
+		valueSeen = true
 	}
 	if err := scanner.Err(); err != nil {
 		return "", err
 	}
-	return pythonValue, nil
+	return configuredValue, nil
 }
 
 func parseConfigSection(line string, inRuntime bool) (string, error) {

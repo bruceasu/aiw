@@ -1,5 +1,8 @@
 # Skills Review
 
+> 历史评审记录。当前 Issue、FD、Task 和可选 OpenSpec change 的执行契约以
+> `skills/work-management.md` 及各 Skill 的现行 `SKILL.md` 为准。
+
 本文档记录 `./skills` 下各 Skill 的质量评审结果与后续修正材料。
 
 评审原则：参考 `writing-great-skills`，重点检查可预测性、路由清晰度、步骤完成标准、渐进披露、单一事实来源、重复内容和与 AIW/OpenSpec 工作流的一致性。

@@ -1,4 +1,4 @@
-# Requirement 管理
+# Issue 管理（兼容 Requirement 记录）
 
 ## Purpose
 
@@ -19,6 +19,15 @@
 - **THEN** 系统写入对应工件、记录路径和内容摘要并递增 revision。
 - **AND** 普通首次捕获将 DRAFT 推进为 DISCOVERED；捕获 requirement-plan 可将 DRAFT / DISCOVERED 推进为 DECIDED。
 
+### Requirement: Issue 拆分关系
+
+系统 MUST 允许尚未批准的子 Issue 记录一个已存在的父 Issue ID，并从父 Issue 查询直接子项。系统 MUST 拒绝自身关联、循环和覆盖已有父项；旧 REQ 记录缺少 `parent_id` 时仍作为根 Issue 读取。关联变更 MUST 递增子 Issue revision，已批准或关闭的子 Issue 不得改写来源关系。
+
+#### Scenario: 拆分后查询
+
+- **WHEN** 子 Issue 在批准前关联父 Issue
+- **THEN** `show` 展示父 ID，`children` 能从父 ID 查询该子 Issue。
+
 ### Requirement: 人工决定与直接 CLI 兼容
 
 approve MUST 接受 APPROVED、DEFERRED 或 REJECTED，并要求决定人及原因。直接 CLI 的 APPROVED MUST 要求当前状态为 DECIDED。系统 MUST 保存决定记录；聊天就绪评估不能替代这项显式决定。
@@ -35,20 +44,20 @@ approve MUST 接受 APPROVED、DEFERRED 或 REJECTED，并要求决定人及原�
 
 ### Requirement: 推广与可恢复关联
 
-promote MUST 要求有效的 APPROVED 决定，并把一个 Requirement 关联到一个 Task。已有关联只允许继续同一 Task 的推广。推广 MUST 写入 handoff，并通过 `new --backend openspec` 委托 OpenSpec 创建对应 change。AIW MUST NOT 生成、验证或写入 proposal、design、capability specs 和 tasks；OpenSpec 创建成功且清单同步完成后，才记录 SPEC_DRAFTED。
+promote MUST 要求有效的 APPROVED 决定，并把一个 Issue 关联到一个 Task。已有关联只允许继续同一 Task 的推广。新 Task MUST 有 FD 和来源 handoff，不要求 OpenSpec change。FD 有编号工作项且 Design Readiness 为 FD_APPLIED 或 FD_NOT_REQUIRED 时，方可映射到 Workflow Core 并记录 FD_READY；BLOCKED 的 FD 保持可恢复的 TASK_CREATED。旧 SPEC_DRAFTED 记录 MUST 保持可读，不自动迁移或覆盖。AIW MUST NOT 伪造批准范围、工程决策或稳定 spec。
 
 系统 MUST 报告路由建议结果或其不可用诊断；无模型时可使用确定性配置或明确未配置状态，MUST NOT 因可选模型建议不可用而使已经通过交接验证的工件永远无法完成推广。后续执行的路由前置条件不因推广完成而被豁免。批准和推广仍各自要求原有正式授权，已授权范围内的工件补齐不要求重复批准。
 
-#### Scenario: 委托 OpenSpec 的推广
+#### Scenario: Issue 到 FD/Task 的推广
 
-- **WHEN** 已批准需求执行 promote 且 OpenSpec CLI 可用
-- **THEN** 系统复用或创建目标 Task，写入 handoff，委托 OpenSpec 创建 change，同步清单并记录 SPEC_DRAFTED。
-- **AND** OpenSpec 工件内容由 OpenSpec 负责，AIW 不生成或覆盖这些文件。
+- **WHEN** 已批准 Issue 执行 promote
+- **THEN** 系统复用或创建目标 Task，写入 handoff，建立 FD，并等待其工作项可映射后记录 FD_READY。
+- **AND** OpenSpec CLI 是否可用不影响原生推广。
 
-#### Scenario: OpenSpec 不可用
+#### Scenario: FD 尚未完成
 
-- **WHEN** promote 需要创建新 Task 但 OpenSpec CLI 不可用
-- **THEN** 系统保留 Requirement，返回可操作的 OpenSpec 安装或配置错误，不创建伪造的 OpenSpec 工件。
+- **WHEN** Task 和 FD 已创建，但 FD 仍无可执行工作项
+- **THEN** 系统保留 TASK_CREATED、Task 和 handoff；同一请求可在 FD 完成后继续。
 
 #### Scenario: 恢复中断的推广
 
