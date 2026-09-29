@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	completioncmd "aiw/internal/commands/completion"
 	askcmd "aiw/internal/commands/ask"
+	completioncmd "aiw/internal/commands/completion"
 	help "aiw/internal/commands/help"
 	sessioncmd "aiw/internal/commands/session"
 	taskcmd "aiw/internal/commands/task"
@@ -22,7 +22,7 @@ const (
 	openspecDir   = "openspec"
 	changesDir    = "openspec/changes"
 	specsDir      = "openspec/specs"
-	archiveDir    = "openspec/archive"
+	archiveDir    = "openspec/changes/archive"
 	worktreeDir   = ".wt"
 	gitignoreFile = ".gitignore"
 	promptsDir    = "docs/agent-templates"
@@ -93,7 +93,11 @@ func main() {
 	case "issue":
 		// The existing req plugin remains the compatibility implementation.
 		code, pluginErr := dispatchPlugin("req", os.Args[2:])
-		if pluginErr != nil { err = pluginErr } else if code != 0 { os.Exit(code) }
+		if pluginErr != nil {
+			err = pluginErr
+		} else if code != 0 {
+			os.Exit(code)
+		}
 	default:
 		// try plugin fallback: aiw-<subcommand>
 		pluginName := os.Args[1]
@@ -103,7 +107,9 @@ func main() {
 			help.Dispatch([]string{})
 			err = pluginErr
 		} else {
-			if code != 0 { os.Exit(code) }
+			if code != 0 {
+				os.Exit(code)
+			}
 		}
 	}
 	if err != nil {
@@ -114,10 +120,14 @@ func main() {
 
 func dispatchPlugin(pluginName string, args []string) (int, error) {
 	bin, err := plug.DiscoverPlugin(pluginName)
-	if err != nil { return 0, fmt.Errorf("plugin discovery error: %w", err) }
+	if err != nil {
+		return 0, fmt.Errorf("plugin discovery error: %w", err)
+	}
 	env := plug.InvocationEnvironment(pluginName, bin, strings.Join(append([]string{pluginName}, args...), " "))
 	code, err := plug.ExecPlugin(bin, args, env)
-	if err != nil { return 0, fmt.Errorf("plugin execution error: %w", err) }
+	if err != nil {
+		return 0, fmt.Errorf("plugin execution error: %w", err)
+	}
 	return code, nil
 }
 

@@ -13,6 +13,7 @@ Use this contract for engineering Skills in an AIW repository.
   branch, worktree, Session, handoff lineage, and external mappings. Workflow
   Core owns Work Items, Attempts, Gates, Evidence, write leases, and derived
   execution, validation, and readiness state there.
+- New Tasks use the Schema 9 execution path.
 - OpenSpec owns stable capability specs in `openspec/specs/`. An OpenSpec change
   may be linked when spec changes need that workflow; it is not required to
   create, plan, implement, merge, or complete a Task.

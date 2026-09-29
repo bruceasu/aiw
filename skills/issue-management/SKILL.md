@@ -1,67 +1,105 @@
 ---
 name: issue-management
-description: Discover, refine, split, decide, or promote one AIW Issue covering a bug, feature, or modification. Use before Feature Design or Task implementation.
+description: Manage one AIW Issue from discovery through a decision or Task handoff.
 disable-model-invocation: true
 ---
 
 # Issue Management
 
-Use `aiw issue` for the Issue conversation. It currently delegates to the
-compatible `aiw req` implementation, so new records still receive `REQ` IDs
-and live under `docs/requirements/<id>/`. Do not migrate existing files or
-rewrite Session evidence during a conversation.
+Use this skill when the user wants to discover, refine, split, decide, or
+promote one AIW Issue about a bug, feature, or modification. Its work ends at
+an Issue decision or Task handoff. For an existing Requirement, keep its `REQ`
+ID and artifacts; use `requirement-management` for compatibility details.
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`
+for authorization and Task lifecycle.
 
-An Issue records a problem or desired change, including bugs, features, and
-modifications. Capture the actor, observed behavior, goal, scope, constraints,
-rules, exceptions, acceptance examples, sources, and remaining decisions. A
-large Issue may be split into smaller Issues with independent outcomes. Use
-`aiw issue link-parent <child-id> <parent-id>` before child approval, and record
-the relationship in both plans. Do not lose the original
-scope or create duplicate Task work.
+## Route before acting
+
+A request may name source files, exact edits, or tests while invoking this
+skill. Treat those details as Issue input, not as permission to implement.
+Finish the Issue stage before starting engineering design or changing code.
+Use `fd-workflow` for design after handoff and `implement` for code changes
+under its Task and FD rules. If the user clearly asks to switch to
+implementation, state the switch and follow `implement` before any edit.
+If the intended stage is unclear, ask which stage the user wants. Do not
+change source files or run implementation validation while using this skill.
+
+## Inputs and record
+
+Start with the user's request and any Issue ID, current source snapshot,
+revisions, digests, confirmed facts, Session evidence, and loaded methods.
+Read an existing Issue Plan and linked sources before editing it. A new request
+has no ID until the CLI creates one; never invent an ID. Use `aiw issue` as the
+supported command surface, checking its help before an unfamiliar or mutating
+operation. Current records may still use `REQ` IDs under
+`docs/requirements/<id>/`; preserve their paths and evidence.
+
+The output is one source-backed Issue Plan or decision, with any split lineage,
+unresolved Gates, and a recommended next action. The Issue Plan records the
+actor, observed behavior or desired change, goal, scope and non-goals,
+constraints, business rules and exceptions, acceptance examples, sources,
+assumptions, and remaining decisions.
 
 ## Conversation
 
-Use the host's current source snapshot, revisions, digests, confirmed facts,
-and loaded methods. New requests have no invented ID. The host makes a method
-selection call and a coverage call; return only the JSON shape requested for
-each. The generic discovery baseline applies to every domain. Load only a
-relevant support method; finance intake, value, metric, engineering options,
-and synthesis skills are for finance Issues. Use `domain-modeling` when terms
-or boundaries are unstable. An unread method was not applied.
+1. **Establish the issue.** Reconcile the request with the current sources and
+   record facts separately from assumptions. Show both sources for a real
+   conflict. Stop discovery when every material claim is sourced or marked
+   `%% NEEDS_INPUT: <missing fact or question>`.
+2. **Choose the next method.** The host makes a method-selection call and a
+   coverage call; return only the JSON shape requested for each. Apply the
+   generic discovery baseline to every domain. Load a support method only
+   when its trigger applies: finance intake, value, metric, engineering
+   options, and synthesis are for finance Issues; `domain-modeling` helps when
+   terms or boundaries are unstable. An unread method was not applied.
+3. **Resolve decisions.** Distinguish missing business facts from engineering
+   strategy choices. Use evidence and confirmed preferences to choose a
+   clearly better strategy within scope, recording the rationale. Ask the
+   human when options are close, a critical fact is absent, or a choice
+   changes scope or risk. Ask at most three high-impact questions per turn;
+   do not repeat settled questions. Continue only when the remaining unknowns
+   are explicit and their effect on readiness is recorded.
+4. **Split only for independent outcomes.** If smaller Issues can stand alone,
+   retain the original scope and record which outcome belongs to each child.
+   Link each child to its parent with `aiw issue link-parent <child-id> <parent-id>`
+   before child approval, and record the relationship in both
+   plans. Account for each outcome once across Issue and Task handoffs.
+5. **Prepare a durable action.** Use the supported CLI to prepare a draft or
+   action. In chat mode, show its target, summary, and write scope, then use
+   the host's confirmation checkpoint for that action. Model output, a draft,
+   and Session memory are not human approval. If sources or revisions drift,
+   reassess before acting. Retain an invalid model response with diagnostics;
+   do not accept it through repeated retries.
 
-Separate a missing business fact from an engineering strategy choice. For a
-strategy choice, use evidence and the user's small preferences to select a
-clearly better option and record the rationale. A bounded sub-agent may compare
-options when delegation is authorized. Ask the human when options are close,
-key information is absent, or the choice changes scope or risk. Ask at most
-three high-impact questions per turn; do not repeat settled questions. Show
-both sources for a real conflict.
+## Readiness and handoff
 
-Prepare drafts and durable actions through the supported CLI. In chat mode,
-the host still requires a confirmation checkpoint for each durable action.
-Do not treat model output, a captured draft, or Session memory as human
-approval. Source or revision drift requires a fresh assessment. An invalid
-model response is retained with diagnostics; it is not accepted by retrying
-indefinitely.
+Assess the Plan from its content, not its headings: every material business
+rule, exception, scope boundary, and acceptance example must be supported or
+marked unresolved. Record proposed engineering postponements with reasons.
+A missing business rule or source conflict cannot be waived by the agent. If
+it prevents a valid decision, report `BLOCKED` or `INCOMPLETE` and the precise
+`%% NEEDS_INPUT` question. Approval and promotion are separate human decisions.
 
-## Readiness And Promotion
+After an approved Issue is promoted, the handoff creates or reuses one AIW
+Task with source lineage. Its managed FD at `docs/features/<task-id>.md` owns
+engineering decisions and ordered work items; the Task lives at
+`.ai/tasks/<task-id>/`. Use `fd-workflow` to complete the FD from approved
+sources, map selected work items with `aiw wf plan`, and update stable
+OpenSpec specs when requirements change. A linked OpenSpec change is optional.
+Discovery alone does not authorize implementation or establish Design
+Readiness.
 
-An Issue Plan states facts, assumptions, goals, scope, non-goals, rules,
-acceptance examples, sources, and remaining decisions. Empty headings do not
-prove readiness. Record proposed engineering postponements with reasons; a
-missing business rule or conflict cannot be waived by the agent. Approval and
-promotion remain separate human decisions.
-
-Promotion creates or reuses one AIW Task and a source-backed handoff. Its
-managed FD at `docs/features/<task-id>.md` then provides engineering decisions
-and ordered work items. The Task lives at `.ai/tasks/<task-id>/`. Complete the
-FD from the approved Issue sources, map its work items with `aiw wf plan`, and
-update stable OpenSpec specs when behavior changes. A linked OpenSpec change
-is optional. Do not start implementation or declare Design Readiness from
-discovery alone.
-
-For a post-promotion handoff, preserve approved sources, approval and Session
+For a post-promotion repair, preserve approved sources, approval and Session
 records, Task state, and authored FD content. Replace only known generated
-placeholders. Record unsupported details as `%% NEEDS_INPUT`; ask only for a
+placeholders. Mark unsupported details `%% NEEDS_INPUT`, and ask only about a
 material conflict or missing decision. Report repaired files and remaining
-Gates without rerunning promotion or tests.
+Gates without repeating promotion.
+
+## Completion and verification
+
+Finish when the current requested stage has a recorded outcome: a source-backed
+Plan, a documented decision, a linked split, or an approved Issue handoff.
+Report changed artifacts, source and revision evidence reviewed, commands
+actually run, unresolved Gates, and the next action. Verify the resulting
+record and lineage by static inspection. State skipped validation explicitly;
+do not claim an unrun test, sibling method, promotion, or approval completed.
