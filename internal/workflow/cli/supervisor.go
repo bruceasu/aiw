@@ -113,6 +113,9 @@ func newWorkflowSupervisor(store *workflow.Store, workspace, provider, model str
 		RunStep: func(id string, execute bool, provider, model string) error {
 			return runWorkflowWithOverrides(id, execute, true, false, provider, model)
 		},
+		ReviewGo: func(id string, request *workflow.PreparedAgentRequest) (workflow.TesterResult, error) {
+			return runSupervisedGoTester(id, store, request, provider, model)
+		},
 		Merge:  taskAdapter.LocalMergeDelivery,
 		Report: projectWorkflowState,
 		Delivered: func(id, parentBranch string) {

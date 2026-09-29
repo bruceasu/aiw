@@ -82,4 +82,3 @@
 - [全局与 Profile 配置](../../../internal/ai/config.go)、[provider 与优先级](../../../internal/ai/provider.go)。
 - [路由计划](../../../internal/workflow/routing_plan.go)。
 - [推荐与请求快照](../../../internal/workflow/cli/command.go)：resolveSupervisedAISelection、路由推荐及 request 准备分支。
-- [路由回归材料](../../../internal/commands/task/workflow_routing_test.go)；本次未执行。

@@ -38,35 +38,15 @@ prefer `scripts/compile*` or root `compile*`, otherwise run the narrowest
 applicable `go build` command without retaining a final artifact. Do not run
 `scripts/verify.sh`, tests, vet, `build*` scripts, or final-artifact builds.
 
-When the shared resource budget authorizes runtime validation, choose one
-smallest relevant command:
-- `python scripts/test.py ./path/to/package` when this repository provides the wrapper
-- otherwise `go test ./path/to/package`
-- `go vet ./path/to/package`
+For Go work, use current compile evidence and an independent static review.
+Do not create or run Go tests.
 
 Ask before repository-wide commands. Rerun only after a relevant change.
 
-## Concurrent Go Cache Isolation
+## Go Cache Isolation
 
-Prefer repository-provided compile and test scripts; they own their cache
-settings. In this repository, `scripts/test.py` uses a separate
-`.ai/tmp/go-tests/` cache and temporary directory for authorized tests. Do
-not override its `GOCACHE` with the fallback below.
-
-If no test wrapper exists and a managed AIW Task or change ID is known, use a
-Task-scoped build cache. In PowerShell, set it only for the current process
-before the authorized command:
-
-```powershell
-$env:GOCACHE = ".ai/cache/go/<task-id>"
-go test ./path/to/package
-```
-
-Replace `<task-id>` with the resolved AIW Task ID. Create no global Go
-configuration: do not run `go env -w GOCACHE`, and do not override
-`GOMODCACHE`. Preserve Task-scoped caches for recovery; do not delete them as
-part of validation or completion. The shared resource budget still controls
-whether any test command may run.
+Use the repository compile script, which owns its cache settings. Do not
+change global Go settings or `GOMODCACHE`.
 
 ## Escalation
 If a deeper subtree has its own `AGENTS.md` or `CODEX.md`, prefer that local file.

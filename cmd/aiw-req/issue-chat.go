@@ -25,7 +25,7 @@ Choose options using evidence and preferences; ask only about close choices, mis
 
 Before creating, capturing, deciding, or promoting, show target, summary, and write scope. Run "aiw issue chat prepare"; require "confirm" or "确认" before writing. Use lowercase slugs; never guess REQ IDs.
 
-Promotion creates a Task, not implementation or release approval.`
+Promotion creates a native Task and FD. Do not create an OpenSpec change unless the human explicitly requests it. Promotion is not implementation or release approval.`
 }
 
 func dispatchIssueChat(args []string) error {

@@ -84,7 +84,7 @@ type CompilerRequest struct {
 }
 type CompilerResult struct { ActorResult; Diagnostics ActorReference `json:"diagnostics,omitempty"` }
 type TesterRequest struct { ActorRequest; InterfaceInventory ActorReference `json:"interface_inventory"` }
-type TesterResult struct { ActorResult; TestCaseInventory ActorReference `json:"test_case_inventory"` }
+type TesterResult struct { ActorResult; TestCaseInventory ActorReference `json:"test_case_inventory,omitempty"`; StaticReview ActorReference `json:"static_review,omitempty"` }
 type VerifierRequest struct { ActorRequest; EvidenceReferences []ActorReference `json:"evidence_references"` }
 type VerifierResult struct { ActorResult; Report ActorReference `json:"report"` }
 
@@ -154,7 +154,9 @@ func (r TesterResult) Validate() error {
 	if err := r.ActorResult.Validate(); err != nil { return err }
 	if r.Actor != ActorTester { return fmt.Errorf("tester result actor must be tester") }
 	if r.Status == ActorResultAccepted {
-		if err := validateActorReferences([]ActorReference{r.TestCaseInventory}); err != nil { return fmt.Errorf("test-case inventory: %w", err) }
+		if r.TestCaseInventory.Kind == "" && r.StaticReview.Kind == "" { return fmt.Errorf("tester result requires a test-case inventory or static review") }
+		if r.TestCaseInventory.Kind != "" { if err := validateActorReferences([]ActorReference{r.TestCaseInventory}); err != nil { return fmt.Errorf("test-case inventory: %w", err) } }
+		if r.StaticReview.Kind != "" { if err := validateActorReferences([]ActorReference{r.StaticReview}); err != nil { return fmt.Errorf("static review: %w", err) } }
 	}
 	return nil
 }

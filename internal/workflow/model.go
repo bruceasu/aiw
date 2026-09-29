@@ -287,6 +287,7 @@ type PreparedAgentRequest struct {
 	// CompilerResult is committed with the compile counter so recovery cannot
 	// count the same completed compiler invocation twice.
 	CompilerResult *CompilerResult `json:"compiler_result,omitempty"`
+	GoAcceptance *ActorReference `json:"go_acceptance,omitempty"`
 	Workspace  string     `json:"workspace"`
 	Handoff    string     `json:"handoff,omitempty"`
 	// SkillManifest freezes the selected Skills for this Actor request.  A
@@ -355,6 +356,8 @@ type WorkItem struct {
 	ID                  WorkItemID         `json:"id"`
 	Checklist           ChecklistReference `json:"checklist"`
 	Title               string             `json:"title"`
+	Verification        string             `json:"verification,omitempty"`
+	RequiresGoEvidence  bool               `json:"requires_go_evidence,omitempty"`
 	Dependencies        []WorkItemID       `json:"dependencies,omitempty"`
 	State               WorkItemState      `json:"state"`
 	RetryPolicy         RetryPolicy        `json:"retry_policy"`

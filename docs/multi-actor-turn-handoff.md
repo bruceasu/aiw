@@ -684,7 +684,6 @@ write_scopes:
     - cmd/**
     - go.mod
   tester:
-    - internal/**/*_test.go
     - tests/**
   analysis: []
   compiler: []

@@ -73,6 +73,8 @@ Workflow Core MUST 将用户明确取消的 Work Item 视为已结清项。Task 
 
 系统 MUST 将原编译后同步规则扩展为完整接受链：有效报告、当前适用编译和必需单元测试证据满足后才关闭 Work Item、同步完成及释放下游。Coder completed 只结束实现阶段，不关闭整体 Attempt；Session completed、清单勾选和旧 waived 均不得绕过。
 
+对 Go 工作，关闭 Work Item 和释放下游须有有效报告、当前适用的编译证据及独立静态审查记录；不要求 Go 单元测试证据。缺失或失效证据仍阻止接受；非 Go 工作保持必需单元测试规则。
+
 #### Scenario: 提前勾选清单
 - **WHEN** 编译通过但必需测试尚未完成或失效
 - **THEN** 即使清单已勾选也不接受、不释放依赖，继续显示阶段和证据缺口。
@@ -314,6 +316,5 @@ supervise MUST 保留顺序主流程和持久归属，并支持有界辅助宿�
 - [Attempt 与 outcome](../../../internal/workflow/attempts.go)、[失败报告](../../../internal/workflow/failure_report.go)。
 - [请求准备与派发](../../../internal/workflow/cli/command.go)、[前台循环](../../../internal/workflow/execution/supervisor.go)。
 - [Session 绑定校验](../../../internal/workflow/execution/session.go)、[outcome 解析](../../../internal/workflow/execution/outcome.go)。
-- [清单回归材料](../../../internal/workflow/commands_test.go)、[outcome 回归材料](../../../internal/workflow/execution/outcome_test.go)；本次未执行。
 
 %% 当前完成仍依赖 Agent 的结构化声明、实际编译结果及清单同步，不证明每条需求都已实现。Verifier 自动调用与需求缺项返工尚不在本链路中。

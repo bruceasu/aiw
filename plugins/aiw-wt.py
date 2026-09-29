@@ -128,7 +128,7 @@ def run_cmd_at(cwd, cmd):
 
 
 def task_dir(task_id):
-    return CHANGES_DIR / task_id
+    return RUNTIME_TASKS_DIR / task_id
 
 
 def task_meta_path(task_id):
@@ -214,16 +214,25 @@ def add(task_id, base):
         if not base:
             print("task has no parent_branch; pass one explicitly", file=sys.stderr)
             return 2
-    task_path = f"openspec/changes/{task_id}/tasks.md"
-    if run_cmd(["git", "cat-file", "-e", f"{base}:{task_path}"]) != 0:
-        print(f"task artifacts are not committed on {base}", file=sys.stderr)
+    fd_path = f"docs/features/{task_id}.md"
+    legacy_path = f"openspec/changes/{task_id}/tasks.md"
+    plan_path = fd_path if (ROOT / fd_path).is_file() else legacy_path
+    if not (ROOT / plan_path).is_file():
+        print(f"Task {task_id} has no Feature Design or legacy tasks.md", file=sys.stderr)
+        return 2
+    committed = subprocess.run(
+        ["git", "cat-file", "-e", f"{base}:{plan_path}"],
+        cwd=ROOT, capture_output=True, check=False,
+    )
+    if committed.returncode != 0:
+        print(f"Task plan {plan_path} is not committed on {base}", file=sys.stderr)
         return 2
     status = subprocess.run(
-        ["git", "status", "--porcelain", "--", f"openspec/changes/{task_id}"],
+        ["git", "status", "--porcelain", "--", plan_path],
         cwd=ROOT, text=True, capture_output=True, check=False,
     )
     if status.returncode != 0 or status.stdout.strip():
-        print("task artifacts have uncommitted changes", file=sys.stderr)
+        print(f"Task plan {plan_path} has uncommitted changes", file=sys.stderr)
         return 2
     if run_cmd(["git", "worktree", "add", wt, "-b", branch, base]) != 0:
         return 2

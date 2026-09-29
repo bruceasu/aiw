@@ -172,4 +172,3 @@ archive / cancel MUST 要求操作人与原因，并将需求移动至对应终�
 - [存储、状态与摘要](../../../internal/issue/store.go)：Create、Capture、Approve、StartPromotion、CompletePromotion、ArtifactSnapshot、moveTerminal。
 - [编号分配](../../../internal/issue/numbering.go)、[创建参数](../../../cmd/aiw-req/requirement_creation.go)。
 - [命令与推广编排](../../../cmd/aiw-req/requirement.go)：DispatchRequirement、promoteRequirement、OpenSpec delegation。
-- [回归材料](../../../internal/issue/store_test.go)；本次未执行。

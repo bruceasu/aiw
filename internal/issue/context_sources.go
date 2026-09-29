@@ -60,11 +60,19 @@ func newContextReader(options ConversationContextOptions) (*contextReader, error
 // contextLocalPath validates before cleaning so traversal cannot disappear.
 // Reject platform-specific aliases on all hosts, including Windows ADS names.
 func contextLocalPath(path string) (string, error) {
+	return contextLocalPathWithDraft(path, false)
+}
+
+func contextLocalPathWithDraft(path string, allowDraft bool) (string, error) {
 	portable := strings.ReplaceAll(path, "\\", "/")
 	if portable == "" || strings.HasPrefix(portable, "/") || strings.ContainsAny(portable, ":\x00") {
 		return "", errContextPath
 	}
-	for _, part := range strings.Split(portable, "/") {
+	parts := strings.Split(portable, "/")
+	if allowDraft && len(parts) >= 4 && parts[0] == ".ai" && parts[1] == "requirements" && parts[2] == "drafts" {
+		parts = parts[1:]
+	}
+	for _, part := range parts {
 		lower := strings.ToLower(part)
 		stem := strings.TrimSuffix(lower, filepath.Ext(lower))
 		if part == ".." || strings.TrimRight(part, " .") != part && part != "." {
@@ -87,7 +95,15 @@ func contextLocalPath(path string) (string, error) {
 // read bounds allocation before reading and rejects links at every component.
 // os.Root also prevents filesystem traversal during the actual open operation.
 func (reader *contextReader) read(path string) ([]byte, error) {
-	local, err := contextLocalPath(path)
+	return reader.readWithDraftPolicy(path, false)
+}
+
+func (reader *contextReader) readDraft(path string) ([]byte, error) {
+	return reader.readWithDraftPolicy(path, true)
+}
+
+func (reader *contextReader) readWithDraftPolicy(path string, allowDraft bool) ([]byte, error) {
+	local, err := contextLocalPathWithDraft(path, allowDraft)
 	if err != nil {
 		return nil, err
 	}

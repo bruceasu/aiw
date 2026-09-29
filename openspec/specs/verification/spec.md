@@ -70,6 +70,8 @@ Runner MUST 校验网络、目录、实际路径、副作用及资源限制，�
 
 系统 MUST 满足以下规则：编译通过后，Tester 在独立上下文中取得原始需求/验收、实现报告、接口清单、源码、已有测试/fixture 及范围约束，产出单元测试、用例清单和执行计划。预期行为以需求为准，不按当前实现反推断言；写入限获准测试路径，不与 Coder 并写。
 
+对 Go 工作，Tester MUST 不生成 Go 单元测试文件；独立审查仍须依据原始需求和实现报告记录可核实的静态检查结论，并提供编译证据。其他语言继续适用上述单元测试产出规则。本 Go 例外也适用于本规范中要求修复后运行相关测试的条款。
+
 追踪：SW10 / AC10。
 
 #### Scenario: AC10 验收行为
@@ -138,6 +140,8 @@ Runner MUST 校验网络、目录、实际路径、副作用及资源限制，�
 
 系统 MUST 满足以下规则：有效报告、当前适用编译和单元测试证据满足后才接受并释放下游；清单勾选、Session 成功或 Coder completed 均不能绕过。明确不影响可执行行为的变更可按规则记录单元测试不适用，疑问转人工；执行型 prompt/配置/脚本不按纯文档处理。不适用、未执行、waived 与 passed 分开，旧可选测试 waived 不能替代新的必需测试。
 
+对 Go 工作，接受链 MUST 使用当前适用的编译证据和独立静态审查记录代替 Go 单元测试证据；缺失或失效时不得接受，也不得将未执行、不适用或 waived 记为 passed。其他语言仍须满足适用的单元测试要求，历史已接受结果和原始证据不得改写。
+
 追踪：SW14 / AC14。
 
 #### Scenario: AC14 验收行为
@@ -181,6 +185,5 @@ Verifier MUST 复用 R3 的单次输入/输出、Task 累计及 E05 来源恢复
 - [Verification Plan](../../../internal/workflow/verification_plan.go)、[授权状态](../../../internal/workflow/state.go)。
 - [测试选择](../../../internal/commands/task/focused_test_selection.go)、[受控执行](../../../internal/commands/task/focused_test_runner.go)。
 - [测试编写辅助能力](../../../internal/workflow/test_authoring.go)、[Verifier 报告](../../../internal/workflow/verifier.go)、[角色契约](../../../internal/workflow/actor_contracts.go)。
-- [编译回归材料](../../../internal/workflow/execution/compile_test.go)、[测试执行回归材料](../../../internal/commands/task/focused_test_runner_test.go)；本次未执行。
 
 %% Verifier 接入、独立需求覆盖报告及未来返工闭环是待实现变更，见 docs/tmp-issue.md；当前基线保留未接入和 report-only 的事实。

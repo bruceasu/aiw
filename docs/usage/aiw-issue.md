@@ -10,6 +10,8 @@ Issue 可以记录 Bug、功能或修改。新流程是 **Issue → Feature Desi
 `aiw issue` 是现有 `aiw req` 程序的入口别名。当前版本继续使用 `REQ` 编号、
 `docs/requirements/<id>/` 和原 Session 证据路径。旧记录无需迁移。
 审批与推广仍各自需要明确的人类决定。
+临时草稿放在 `.ai/requirements/drafts/`；捕获后，正式产物存入
+`docs/requirements/<id>/`。草稿路径仅作为捕获来源，不作为通用上下文来源。
 
 ```text
 aiw issue chat [id]
@@ -42,8 +44,9 @@ aiw issue children <parent-id>
 `FD_READY` 记录。FD 为 `BLOCKED` 或没有工作项时，推广停在可恢复的
 `TASK_CREATED`；`aiw wf plan` 不会映射被整体阻塞的 FD 工作项。
 
-如稳定行为改变，更新相关 `openspec/specs/`。只在 OpenSpec change 的
-提案、delta spec 或归档流程有价值时显式绑定；Task 的实现和完成不依赖它。
+如稳定行为改变，更新相关 `openspec/specs/`。只有用户明确要求使用
+OpenSpec change 时才创建或绑定 change；更新稳定规格本身不创建 change。
+Task 的实现和完成不依赖它。
 
 ## 本地交付
 

@@ -23,7 +23,7 @@ For non-trivial work, provide:
 - Validation
 - Risks
 
-Inspect tests, configs, and public contracts before broad exploration.
+Inspect configs, call paths, and public contracts before broad exploration.
 Follow the shared resource budget. After implementation, run one compile-only
 check: prefer `scripts/compile*` or root `compile*`, otherwise use the
 narrowest applicable `go build` command without retaining a final artifact.
@@ -31,8 +31,5 @@ Do not run tests, vet, `build*` scripts, final-artifact builds, or verification
 scripts automatically. When authorized, run one package-focused command and ask
 before widening scope.
 
-For authorized Go tests, use a repository-provided test wrapper when present;
-this repository's `scripts/test.py` owns its `.ai/tmp/go-tests/` cache. Only
-when no wrapper exists, use a process-local Task-scoped `GOCACHE` for a managed
-Task. Do not change global Go settings or `GOMODCACHE`; see the Concurrent Go
-Cache Isolation section in `AGENTS.md`.
+For Go work, use current compile evidence and an independent static review.
+Do not create or run Go tests. Do not change global Go settings or `GOMODCACHE`.

@@ -5,7 +5,7 @@
 - handlers
 - services
 - storage or client packages
-- config packages and tests
+- config packages and call paths
 
 ## Keep Stable
 - package boundaries and `internal/` ownership
@@ -16,7 +16,6 @@
 
 ## Validate
 - use static package, contract, context, and error-flow review by default
-- add regression or contract tests when service behavior changes
-- when authorized, run one smallest relevant `go test`, `go vet`, or `go build`
-  command for the changed package
+- review changed contracts and failure paths independently against the code
+- use one compile-only check for the changed package
 - ask before widening beyond that package

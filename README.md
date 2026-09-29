@@ -702,11 +702,9 @@ states. Review the parent branch before pushing.
 
 ### Focused-test pilot
 
-For explicitly authorized local Go tests, use `python scripts/test.py <package> [go-test-arguments]`.
-The wrapper keeps `GOCACHE` and Go/test temporary files under
-`.ai/tmp/go-tests/`, separate from the compile cache, and disables dependency
-downloads. The existing Go module cache remains shared and read-only for this
-purpose. It does not run tests unless invoked with an explicit target.
+Go work uses compile evidence and independent static review. This repository
+does not retain Go test files. The focused-test pilot remains available for
+applicable non-Go checks when explicitly authorized.
 
 The task-bound `focused-test` path is a pilot for this AIW repository only. It
 is disabled by default for every Task. It runs one selected check only after a

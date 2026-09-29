@@ -34,6 +34,10 @@ supported command surface, checking its help before an unfamiliar or mutating
 operation. Current records may still use `REQ` IDs under
 `docs/requirements/<id>/`; preserve their paths and evidence.
 
+Write temporary Issue drafts under `.ai/requirements/drafts/`. Keep them
+project-relative, UTF-8, and within 64 KiB. Capture copies a confirmed draft
+into `docs/requirements/<id>/`; a draft is not itself an approved record.
+
 The output is one source-backed Issue Plan or decision, with any split lineage,
 unresolved Gates, and a recommended next action. The Issue Plan records the
 actor, observed behavior or desired change, goal, scope and non-goals,
@@ -85,7 +89,9 @@ Task with source lineage. Its managed FD at `docs/features/<task-id>.md` owns
 engineering decisions and ordered work items; the Task lives at
 `.ai/tasks/<task-id>/`. Use `fd-workflow` to complete the FD from approved
 sources, map selected work items with `aiw wf plan`, and update stable
-OpenSpec specs when requirements change. A linked OpenSpec change is optional.
+OpenSpec specs when requirements change. Use native Task creation by default.
+Do not create an OpenSpec change unless the user explicitly asks for one;
+stable spec updates do not imply a change directory.
 Discovery alone does not authorize implementation or establish Design
 Readiness.
 

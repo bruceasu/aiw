@@ -89,4 +89,3 @@ Supervisor MUST 仅在当前开发接受成立、无在途写请求/阻塞、工
 - [Task 绑定](../../../internal/commands/task/workflow.go)、[工作区协调](../../../internal/commands/task/workspace_coordinator.go)。
 - [工作树插件](../../../plugins/aiw-wt.py)、[监督 Git 预检](../../../internal/commands/task/supervised_git.go)。
 - [自动交付资格](../../../internal/workflow/execution/delivery.go)、[本地合并与清理](../../../internal/commands/task/local_delivery.go)。
-- [Git 预检回归材料](../../../internal/commands/task/supervised_git_test.go)；本次未执行。

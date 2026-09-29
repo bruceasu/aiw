@@ -129,6 +129,21 @@ func (s *Store) RecordSupervisedOutcome(id TaskID, attemptID AttemptID, outcome 
 				return fmt.Errorf("attempt %s is %s, expected running", attemptID, attempt.State)
 			}
 			outcome.RecordedAt = time.Now().UTC().Format(time.RFC3339)
+			prepared := state.Automation.PreparedRequest
+			goChanged := false
+			if prepared != nil && prepared.AttemptID == attemptID && prepared.Compile != nil && prepared.Compile.Request != nil { goChanged = goChangedPaths(prepared.Compile.Request.ChangedPaths) }
+			if outcome.Kind == SupervisedOutcomeCompleted {
+				for itemIndex := range state.WorkItems {
+					item := &state.WorkItems[itemIndex]
+					if item.ID != attempt.WorkItemID { continue }
+					if goChanged { item.RequiresGoEvidence = true }
+					if item.Verification == "go" || item.Verification == "mixed" || item.RequiresGoEvidence {
+						if prepared == nil || prepared.GoAcceptance == nil { return fmt.Errorf("Go work item %s requires accepted compile and static review before Attempt completion", item.ID) }
+						item.AcceptedReference = prepared.GoAcceptance
+					}
+					break
+				}
+			}
 			attempt.Outcome = &outcome
 			attempt.EndedAt = outcome.RecordedAt
 			if outcome.Kind == SupervisedOutcomeCompleted {

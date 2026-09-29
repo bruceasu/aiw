@@ -13,6 +13,7 @@ var (
 	numberedChecklistPattern = regexp.MustCompile(`^- \[([ xX])\] ([0-9]+(?:\.[0-9]+)+)\s+(.+?)\s*$`)
 	numberedChecklistPrefix  = regexp.MustCompile(`^- \[[^\]]*\] [0-9]`)
 	dependencyCommentPattern = regexp.MustCompile(`\s*<!--\s*aiw:depends-on=([^>]+)-->\s*$`)
+	verificationCommentPattern = regexp.MustCompile(`\s*<!--\s*aiw:verification=(go|mixed)\s*-->\s*$`)
 	dependencyReferencePattern = regexp.MustCompile(`^[0-9]+(?:\.[0-9]+)+$`)
 )
 
@@ -25,6 +26,7 @@ type ChecklistItem struct {
 	Completed bool
 	Line      int
 	DependsOn []string
+	Verification string
 }
 
 // ChecklistDiagnostic reports a non-mutating parse problem. Callers must not
@@ -141,12 +143,18 @@ func ParseNumberedChecklist(content string) ([]ChecklistItem, []ChecklistDiagnos
 			diagnostics = append(diagnostics, *dependencyDiagnostic)
 			continue
 		}
+		verification := ""
+		if marker := verificationCommentPattern.FindStringSubmatch(title); marker != nil {
+			verification = marker[1]
+			title = strings.TrimSpace(strings.TrimSuffix(title, marker[0]))
+		}
 		items = append(items, ChecklistItem{
 			Number:    number,
 			Title:     title,
 			Completed: strings.EqualFold(matches[1], "x"),
 			Line:      lineNumber,
 			DependsOn: dependencies,
+			Verification: verification,
 		})
 	}
 	return items, diagnostics
@@ -193,6 +201,8 @@ func ChecklistFingerprint(items []ChecklistItem) string {
 			hash.Write([]byte(dependency))
 			hash.Write([]byte{0})
 		}
+		hash.Write([]byte(item.Verification))
+		hash.Write([]byte{0})
 	}
 	return hex.EncodeToString(hash.Sum(nil))
 }

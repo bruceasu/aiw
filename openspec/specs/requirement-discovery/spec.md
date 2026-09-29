@@ -154,6 +154,5 @@ Session 证据 MUST 保留实际装载的方法、来源版本和缺失清单，
 - [覆盖校验](../../../internal/issue/coverage.go)、[问题排序](../../../internal/issue/questions.go)、[对话编排](../../../internal/issue/conversation.go)。
 - [恢复](../../../internal/issue/conversation_history.go)、[就绪检查](../../../internal/issue/readiness.go)。
 - [聊天接入与捕获检查点](../../../cmd/aiw-req/requirement_discovery.go)、[批准检查点](../../../cmd/aiw-req/requirement_readiness.go)。
-- [领域回归材料](../../../internal/issue/conversation_regression_test.go)、[命令回归材料](../../../cmd/aiw-req/requirement_regression_test.go)；本次未执行。
 
 %% 引用有效、JSON 合法和问题排序正确，不证明模型找全了业务缺口；专业质量仍需人工评审。

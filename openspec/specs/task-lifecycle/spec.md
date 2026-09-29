@@ -371,4 +371,3 @@ Task 列表 MUST 支持现有规范路径、旧 `.ai/tasks/<id>/` 位置及 task
 - [命令入口](../../../internal/commands/task/command.go)、[生命周期](../../../internal/commands/task/workflow.go)、[创建预检](../../../internal/commands/task/creation_preflight.go)。
 - [后端选择](../../../internal/commands/task/backend.go)、[元数据路径](../../../internal/task/meta.go)、[兼容映射](../../../internal/task/workflow/workflow.go)。
 - [摘要派生](../../../internal/workflow/state.go)、[运行兼容](../../../internal/workflow/compat.go)。
-- [创建预检回归材料](../../../internal/commands/task/creation_preflight_test.go)；本次未执行。

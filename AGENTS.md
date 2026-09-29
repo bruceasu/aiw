@@ -242,10 +242,9 @@ prefer `scripts/compile*` or root `compile*`, otherwise run the narrowest
 applicable `go build` command without retaining a final artifact. Do not run
 `scripts/verify.sh`, tests, vet, `build*` scripts, or final-artifact builds.
 
-When the shared resource budget authorizes runtime validation, choose one
-smallest relevant command:
-- `go test ./path/to/package`
-- `go vet ./path/to/package`
+For Go work, use the current compile result and an independent static review.
+Do not create or run Go tests. Runtime validation still requires the shared
+resource budget's explicit authorization.
 
 Ask before repository-wide commands. Rerun only after a relevant change.
 

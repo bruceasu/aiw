@@ -13,6 +13,7 @@ type ChecklistCandidate struct {
 	Title     string
 	Completed bool
 	DependsOn []string
+	Verification string
 }
 
 // ReconcileChecklist maps new checklist references to Work Items while
@@ -131,6 +132,11 @@ func (s *Store) syncChecklistWithEvent(id TaskID, candidates []ChecklistCandidat
 		}
 		for _, candidate := range candidates {
 			index := byReference[candidate.Item]
+			if state.WorkItems[index].State == WorkItemCompleted {
+				if candidate.Verification != "" && state.WorkItems[index].Verification != candidate.Verification {
+					return fmt.Errorf("completed checklist item %s cannot acquire a new verification policy", candidate.Item)
+				}
+			} else { state.WorkItems[index].Verification = candidate.Verification }
 			dependencies := make([]WorkItemID, 0, len(candidate.DependsOn))
 			for _, reference := range candidate.DependsOn {
 				dependencyIndex, exists := byReference[reference]
@@ -168,7 +174,7 @@ func (s *Store) syncChecklistWithEvent(id TaskID, candidates []ChecklistCandidat
 				continue
 			}
 			closeChecklistAttempt(state, state.WorkItems[index].ID)
-			if err := completeWorkItem(state, state.WorkItems[index].ID); err != nil {
+			if err := completeWorkItem(s, state, state.WorkItems[index].ID); err != nil {
 				return fmt.Errorf("synchronize completed checklist item %s: %w", candidate.Item, err)
 			}
 		}
@@ -235,6 +241,7 @@ func validateChecklistCandidates(candidates []ChecklistCandidate) error {
 		if seen[candidate.Item] {
 			return fmt.Errorf("duplicate checklist item: %s", candidate.Item)
 		}
+		if candidate.Verification != "" && candidate.Verification != "go" && candidate.Verification != "mixed" { return fmt.Errorf("unsupported verification scope for checklist item %s", candidate.Item) }
 		seen[candidate.Item] = true
 	}
 	return nil
@@ -685,7 +692,7 @@ func (s *Store) ResolveGate(id TaskID, gateID GateID, target GateState) (Runtime
 
 func (s *Store) CompleteWorkItem(id TaskID, workItemID WorkItemID) (RuntimeState, error) {
 	return s.UpdateWithEvent(id, Event{Type: "work-item.completed", WorkItemID: workItemID}, func(state *RuntimeState) error {
-		return completeWorkItem(state, workItemID)
+		return completeWorkItem(s, state, workItemID)
 	})
 }
 
@@ -749,7 +756,7 @@ func (s *Store) SkipFocusedTest(id TaskID, reason string) (RuntimeState, WorkIte
 				}
 				item.State = WorkItemReady
 			}
-			return completeWorkItem(state, item.ID)
+			return completeWorkItem(s, state, item.ID)
 		}
 		if skipped == "" {
 			return fmt.Errorf("Task has no authorized focused verification Work Item")
@@ -759,7 +766,7 @@ func (s *Store) SkipFocusedTest(id TaskID, reason string) (RuntimeState, WorkIte
 	return updated, skipped, err
 }
 
-func completeWorkItem(state *RuntimeState, workItemID WorkItemID) error {
+func completeWorkItem(store *Store, state *RuntimeState, workItemID WorkItemID) error {
 	for index := range state.WorkItems {
 		item := &state.WorkItems[index]
 		if item.ID != workItemID {
@@ -768,6 +775,7 @@ func completeWorkItem(state *RuntimeState, workItemID WorkItemID) error {
 		if err := completionPreconditions(*state, *item); err != nil {
 			return err
 		}
+		if err := store.requireCurrentGoAcceptance(*state, *item); err != nil { return err }
 		if err := ValidateWorkItemTransition(item.ID, item.State, WorkItemCompleted); err != nil {
 			return err
 		}

@@ -40,15 +40,15 @@ description: 在整个 AIW/OpenSpec 开发流程中提供阶段建议，并路�
 以下是按需路由，不要求每个 Task 重新执行已满足的阶段。只有缺少会影响当前工作的决策或工件时，才回到相应阶段。
 
 1. 使用 `issue-management` 处理新 Issue、模糊范围或待决的业务/技术选择。
-2. Issue 获批后，可将其提升为 AIW Task；该步骤创建或复用 Task、来源交接和初始 FD，不强制创建 OpenSpec change。
+2. Issue 获批后，可将其提升为 AIW Task；该步骤创建或复用原生 Task、来源交接和初始 FD。只有用户明确要求时才创建 OpenSpec change。
 3. 若 FD 缺少工程决策，使用 `/fd-workflow`；稳定行为规则需要更新时使用 `/to-spec`。只有已关联 change 时才维护其提案与 delta spec。
 4. 若 FD 工作项的粒度、依赖或验证边界仍不清楚，使用 `/to-tickets` 深化；已有可执行条目时直接进入 `/implement`。
-5. 在 Task 工作区内使用 `/implement` 完成一个选中的条目；受管自动执行可使用 `aiw wf run|supervise <task-id>`，但只有用户明确授权执行时才建议实际运行。
+5. 在 Task 工作区内使用 `/implement`，按 FD 依赖顺序持续处理当前 Task 的全部可执行 Work Item；用户明确限定单项时只处理该项。每项单独同步并核对状态，遇到真实 Gate 才暂停。`aiw wf run --execute` 和 `aiw wf supervise` 是单独的自动执行模式，只有用户明确指定时才建议运行。
 6. 开发后报告未运行的测试及适用时的一个可选聚焦命令；运行测试遵守仓库的运行授权规则，不因实现结束而例行提问。
 7. 仅在用户明确要求评审时使用 `/code-review`。
 8. 全部 checklist 完成后，报告派生的 Workflow 摘要、Evidence、未关闭 Gate 和用户请求的下一状态转换。Git 交付、归档、合并、清理及删除分支均须单独授权。
 
-已关联 AIW Task 的变更使用 `/implement` 一次处理一个选中条目；不要用 OpenSpec 自带的批量 apply Skill 绕过受管 Work Item 和 Task 状态。
+已关联 AIW Task 的变更默认使用 `/implement` 连续处理全部可执行条目，每次只认领和核对一个 Work Item；不要用 OpenSpec 自带的批量 apply Skill 绕过受管 Work Item 和 Task 状态。
 
 保持共享目标、分支、工作树、交付和归档生命周期的工作项在同一 AIW Task 内；独立交付可拆分为子 Issue 和 Task，并记录 lineage。OpenSpec change 不随 Task 强制创建。
 
@@ -57,7 +57,7 @@ description: 在整个 AIW/OpenSpec 开发流程中提供阶段建议，并路�
 - 不自动调用 `/tdd`、`/code-review`，也不运行命令、修改文件、创建 Task/change、管理工作树或改变生命周期。
 - 它在用户获得清晰下一步、前置条件和风险边界后完成；若关键事实未知，返回 `INCOMPLETE` 和 `%% NEEDS_INPUT: ...`。
 - 编写测试可以被建议；运行测试需要用户明确指令。主代理最多使用两个有界子代理；子代理不能运行测试、构建、网络操作、权限升级、提交、归档或工作树操作。
-- 手动实现通常使用主工作区；自动 Task 执行默认隔离至 `.wt/<task-id>`。只有明确授权时才使用主工作区例外；工作树只能经 `aiw wt` 创建和解析。
+- 顺序实现通常使用主工作区；只有并行写入、冲突、长时间自动执行或用户明确要求隔离时才在 Task 阶段使用 `.wt/<task-id>`。工作树只能经 `aiw wt` 创建和解析；Issue 阶段不创建工作树。
 
 ## 补充路线
 

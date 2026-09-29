@@ -21,6 +21,7 @@ import (
 type Supervisor struct {
 	Store     *workflow.Store
 	RunStep   func(id string, execute bool, provider, model string) error
+	ReviewGo func(id string, request *workflow.PreparedAgentRequest) (workflow.TesterResult, error)
 	Merge     func(id string, meta task.TaskMeta, store *workflow.Store, message string) error
 	Report    func(id string, state workflow.RuntimeState) error
 	Delivered func(id, parentBranch string)
@@ -152,6 +153,18 @@ func (s Supervisor) Start(id, provider, model string, state workflow.RuntimeStat
 					}
 					if repairPending {
 						continue
+					}
+					if outcome.Kind == workflow.SupervisedOutcomeCompleted {
+						needsGo, scopeErr := goReviewRequired(store, request)
+						if scopeErr != nil { return scopeErr }
+						if needsGo {
+							if s.ReviewGo == nil { return fmt.Errorf("independent Go Tester adapter is unavailable") }
+							tester, reviewErr := s.ReviewGo(id, request)
+							if reviewErr != nil { return reviewErr }
+							accepted, acceptErr := store.PersistGoAcceptance(*request, outcome, tester)
+							if acceptErr != nil { return acceptErr }
+							if _, acceptErr = store.AttachGoAcceptance(request.TaskID, *request, accepted); acceptErr != nil { return acceptErr }
+						}
 					}
 				}
 				updated, err = store.RecordSupervisedOutcome(workflow.TaskID(id), request.AttemptID, outcome)

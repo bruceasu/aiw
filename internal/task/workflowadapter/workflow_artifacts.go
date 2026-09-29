@@ -42,7 +42,7 @@ func SyncWorkflowChecklistAtPath(id string, store *workflowcore.Store, path stri
 	}
 	candidates := make([]workflowcore.ChecklistCandidate, len(items))
 	for index, item := range items {
-		candidates[index] = workflowcore.ChecklistCandidate{Item: item.Number, Title: item.Title, Completed: item.Completed, DependsOn: item.DependsOn}
+		candidates[index] = workflowcore.ChecklistCandidate{Item: item.Number, Title: item.Title, Completed: item.Completed, DependsOn: item.DependsOn, Verification: item.Verification}
 	}
 	return store.SyncChecklist(workflowcore.TaskID(id), candidates, task.ChecklistFingerprint(items))
 }
@@ -180,7 +180,7 @@ func RepairWorkflowChecklist(id string) (workflowcore.RuntimeState, error) {
 	}
 	candidates := make([]workflowcore.ChecklistCandidate, len(items))
 	for index, item := range items {
-		candidates[index] = workflowcore.ChecklistCandidate{Item: item.Number, Title: item.Title, Completed: item.Completed, DependsOn: item.DependsOn}
+		candidates[index] = workflowcore.ChecklistCandidate{Item: item.Number, Title: item.Title, Completed: item.Completed, DependsOn: item.DependsOn, Verification: item.Verification}
 	}
 	return store.RepairChecklist(workflowcore.TaskID(id), candidates)
 }

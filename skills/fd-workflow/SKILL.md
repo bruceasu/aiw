@@ -8,7 +8,14 @@ description: Design an AIW Task from an Issue or refine its Feature Design, incl
 Read `skills/work-management.md`. A managed FD is the Task's primary
 engineering plan. Resolve the Issue and Task when they exist, then read the
 approved Issue evidence, relevant code and stable specs. An OpenSpec change is
-optional. Do not create one solely to hold a design or checklist.
+created only when the user explicitly requests it. Stable spec updates do not
+require a change directory.
+
+Choose the FD mode before writing: an AIW Task uses the managed FD below;
+`FD-XXX` numbering, `FEATURE_INDEX.md`, and the portable template belong only
+to standalone FD storage. Do not place an FD under `docs/requirements/`;
+that directory holds Issue records. A managed FD uses its Task ID for identity
+and numbered Work Items within the document.
 
 ## Managed FD
 

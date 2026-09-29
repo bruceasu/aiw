@@ -13,6 +13,10 @@ type ExecutionEvidence struct {
 	Report *ActorReference `json:"report,omitempty"`
 	Inputs *ValidationInputs `json:"inputs,omitempty"`
 	CompileRunID string `json:"compile_run_id"`
+	AttemptID AttemptID `json:"attempt_id,omitempty"`
+	StaticReview *ActorReference `json:"static_review,omitempty"`
+	StaticReviewInputs *ValidationInputs `json:"static_review_inputs,omitempty"`
+	GoSources []string `json:"go_sources,omitempty"`
 	TestRunIDs []string `json:"test_run_ids"`
 	TestsRequired bool `json:"tests_required"`
 	TestsNotApplicableReason string `json:"tests_not_applicable_reason,omitempty"`
@@ -36,6 +40,7 @@ func AssessExecutionReuse(evidence ExecutionEvidence, current ValidationInputs, 
 		if !authorized { return ExecutionReuse{"authorization-required", "current controlled validation is missing; no applicable authorization"} }
 		return ExecutionReuse{"validate", "current controlled validation is required: " + reason}
 	}
+	if len(evidence.GoSources) != 0 && (evidence.StaticReview == nil || evidence.StaticReview.SHA256 == "" || evidence.StaticReviewInputs == nil) { return ExecutionReuse{"validate", "current Go static review evidence is missing"} }
 	if evidence.Report == nil || evidence.Report.SHA256 == "" { return ExecutionReuse{"report-only", "reuse applicable validation and request the original generation's one report supplement"} }
 	return ExecutionReuse{"reuse", "report and controlled evidence remain applicable"}
 }

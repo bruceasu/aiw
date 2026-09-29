@@ -134,7 +134,7 @@ func CaptureFactReferences(id, kind, source string, quotes []string) ([]Coverage
 		return nil, "", err
 	}
 	defer reader.root.Close()
-	content, err := reader.read(source)
+	content, err := reader.readDraft(source)
 	if err != nil {
 		return nil, "", err
 	}
@@ -204,7 +204,7 @@ For every source, provide source, digest, and an exact quote from the current in
 
 You may write a requested draft and prepare a pending action with "aiw issue resume". Never execute a durable action or write a confirmation record. The host displays confirmation checkpoints.
 
-Write drafts as project-relative UTF-8 files, outside ".ai" and credential directories, and keep each file within 64 KiB. Never directly replace a captured artifact. For capture, use "--facts-json" only to request confirmation of an array of exact draft excerpts; omit it for a draft-only capture. Never prepare approval from a file alone or merely because the question list is empty.
+Write drafts as project-relative UTF-8 files under ".ai/requirements/drafts/", within 64 KiB. This directory is allowed only as a capture source; it is not a general context source. Never directly replace a captured artifact. For capture, use "--facts-json" only to request confirmation of an array of exact draft excerpts; omit it for a draft-only capture. Never prepare approval from a file alone or merely because the question list is empty.
 
 When a captured requirement-plan is loaded, include plan_review with sections and deferred_design.
 

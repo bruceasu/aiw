@@ -174,7 +174,7 @@ task_id = ""
 | `aiw req show <id>` | 查看状态、产物索引、批准和 promotion | 只读 |
 | `aiw req capture <id> <artifact>` | 保存经用户确认的 Requirement Artifact | 仅对应 Requirement Markdown 文件 |
 | `aiw req approve <id>` | 记录人工批准、延期或拒绝 | 仅 `requirement.toml` 和 `decision-log.md` |
-| `aiw req promote <id> --task <task-id>` | 创建或关联受管 Task，委托 OpenSpec 创建 change，并生成交接输入 | Requirement 元数据、AIW Task 和交接工件 |
+| `aiw req promote <id> --task <task-id>` | 创建或关联原生 Task 与 FD，不自动创建 OpenSpec change，并生成交接输入 | Requirement 元数据、AIW Task、FD 和交接工件 |
 
 `capture` 不运行 Skill，也不解释需求内容；它只保存明确给出的产物。Skill 的输出与 Requirement 文件之间不应存在隐式写入。
 

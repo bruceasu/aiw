@@ -14,9 +14,9 @@ Use this contract for engineering Skills in an AIW repository.
   Core owns Work Items, Attempts, Gates, Evidence, write leases, and derived
   execution, validation, and readiness state there.
 - New Tasks use the Schema 9 execution path.
-- OpenSpec owns stable capability specs in `openspec/specs/`. An OpenSpec change
-  may be linked when spec changes need that workflow; it is not required to
-  create, plan, implement, merge, or complete a Task.
+- OpenSpec owns stable capability specs in `openspec/specs/`. Create an
+  OpenSpec change only when the user explicitly requests one. Stable spec
+  updates and Task creation do not imply a change directory.
 - GitHub and GitLab are optional Issue projections used only on explicit request.
 
 Do not create a second Task tracker or treat `task.toml.status` as an
@@ -41,8 +41,8 @@ Resolve context in this order:
 5. Unique Task linked to an OpenSpec change, when one exists.
 
 If several Tasks match, ask for the Task ID. Create a new lifecycle through
-AIW. Choose its supported native backend when no OpenSpec change is needed;
-do not create a change just to satisfy Task creation.
+AIW. Use its native backend unless the user explicitly asks for an OpenSpec
+change. Do not create a change just to satisfy Task creation.
 
 One Issue may be split into smaller Issues when each has independently useful
 scope. One Issue or FD may lead to multiple Tasks when delivery or archive
@@ -66,25 +66,25 @@ or update Task work from its selected FD items. Implementation does not depend
 on an OpenSpec `tasks.md` checklist.
 
 Read relevant stable specs before changing behavior. Update `openspec/specs/`
-when stable requirements change. Link an OpenSpec change only when its proposal,
-spec delta, or archive workflow adds value. If linked, keep its artifacts
+when stable requirements change. Link an OpenSpec change only on explicit user
+request. If linked, keep its artifacts
 consistent with the FD, but do not let its checklist or lifecycle override the
 Task. A legacy Task whose only plan is `tasks.md` remains actionable; migrate
 its plan deliberately rather than discarding completed items.
 
 ## Workspace Rules
 
-- Work in the primary Git checkout and current branch for ordinary manual work.
-  Automated Task execution uses an isolated worktree by default; use the
-  documented explicit primary-workspace opt-out when authorized.
+- Work in the primary Git checkout and current branch for ordinary sequential
+  work. An isolated worktree is an explicit Task execution choice for parallel
+  writes, conflicting work, long-running automation, or a user request.
 - A Task lifecycle does not imply a feature branch or linked worktree.
 - Use isolation for parallel writes, conflicting work, long-running work,
   disposable experiments, or an explicit user request. State the reason first.
 - Create or resolve isolated worktrees only through `aiw wt`.
 - Require explicit Task or Session context when several Tasks share primary.
 - Treat `unassigned` and unknown workspace bindings as read-only until bound.
-- Planning artifacts created on the current branch must be committed before
-  creating an isolated Task worktree, so it inherits the Task and FD records.
+- The Task's FD, or a legacy `tasks.md`, must be committed on the parent
+  branch before creating an isolated Task worktree, so it inherits the plan.
 - Record `parent_branch` before creating the Task branch/worktree. Delivery
   targets that branch, never an inferred current checkout.
 - Do not silently implement in a workspace that does not match the Task.

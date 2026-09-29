@@ -13,7 +13,7 @@
 | Feature Design 与决策 | `fd-workflow` | 为 Task 决定方案并提供工作项 |
 | OpenSpec 规格 | `to-spec` | 稳定 capability specs 需要更新，change 可选 |
 | 实现切片 | `to-tickets` | 将 FD 拆成有序工作项 |
-| 单一工作项实现 | `implement` | 已选中 FD 工作项并具备工作区 |
+| Task 连续实现 | `implement` | FD 工作项已就绪；逐项同步，直至完成或遇到真实 Gate |
 | 测试先行 | `tdd` | 用户明确要求 red-green-refactor 或集成测试 |
 | 变更评审 | `code-review` | 用户明确要求对分支、PR 或固定点之后的改动评审 |
 | 模块设计 | `codebase-design` | 接口、模块边界、seam、可测试性需改进 |
@@ -37,7 +37,7 @@
 | --- | --- | --- |
 | 获取准确命令语法 | `aiw help [command|topic]` | 先用于陌生或变更状态的操作；帮助本身不替代授权 |
 | 初始化项目约定 | `aiw init` | 会写入脚手架，需用户请求 |
-| 创建 Task | `aiw new <task-id>` | 默认建立原生 Task 与 FD；OpenSpec 后端需显式选择 |
+| 创建 Task | `aiw new <task-id>` | 默认建立原生 Task 与 FD；只有用户明确要求 OpenSpec change 时才选 `--backend openspec` |
 | 查看、列出 Task | `aiw show <task-id>`、`aiw list` | 只读状态检查 |
 | 改变 Task 状态 | `aiw status <task-id> <status>`、`aiw done <task-id>` | 需要明确状态转换请求 |
 | 归档 | `aiw archive <task-id>` | 完成不代表合并或发布；归档需单独授权 |
@@ -45,13 +45,13 @@
 | 单次会话交接 | `aiw wf run <task-id> --execute` | 用户明确要求继续/交接时使用；保留 Session 与 lineage |
 | 规划或同步 Workflow Core | `aiw wf plan|sync|advance <task-id>` | 会改变受管状态时需要授权 |
 | 预览或执行下一个工作项 | `aiw wf run <task-id>`；`--execute` | 无 `--execute` 用于预览；执行需明确授权，默认隔离工作树 |
-| 持续监督 | `aiw wf supervise <task-id> start|status|stop` | `start`/`stop` 是状态性操作，需明确授权 |
+| 持续监督 | `aiw wf supervise <task-id> start|status|stop` | 仅在用户明确选择自动监督模式时使用；普通 Implement 不启动它 |
 | 诊断和修复受管状态 | `aiw wf diagnose|recover|repair <task-id>` | `diagnose` 用于检查；`recover`/`repair` 需明确授权 |
 | Evidence、Gate、Work Item | `aiw wf evidence|gate|complete ...` | 仅记录真实证据和获批决定，不能伪造结果 |
 
 ## 建议原则
 
-- 一个共同目标、分支、工作树、交付和归档生命周期对应一个 AIW Task；OpenSpec change 只在需要其规格变更流程时关联。
+- 一个共同目标、分支、工作树、交付和归档生命周期对应一个 AIW Task；OpenSpec change 只有用户明确要求时才关联。
 - AIW 管理 Task、工作树、分支、Session 和生命周期；FD 管理工程决策和人类维护的工作项；OpenSpec 管理稳定规格及可选 change。
 - 检查、测试、构建、格式化、发布、提交、合并和清理是不同授权边界。建议它们时，明确说明目的、范围、预计耗时和风险；不得默认执行。
 - 每次建议优先给出最小的可逆步骤；信息不足则用 `%% NEEDS_INPUT:` 询问会实质改变方案的事实。

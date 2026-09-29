@@ -79,6 +79,5 @@ Session MUST 区分后端执行成功与失败，保存可读取的输出。Work
 - [存储](../../../internal/session/store.go)、[生命周期](../../../internal/session/lifecycle.go)。
 - [prompt 与执行](../../../internal/session/execute.go)、[输出保存](../../../internal/session/backend.go)。
 - [Task prompt](../../../internal/commands/task/agent.go)、[监督结果校验](../../../internal/workflow/execution/session.go)。
-- [监督 Session 回归材料](../../../internal/workflow/execution/session_test.go)；本次未执行。
 
 %% 当前 turn 读取 memory 不等于 supervise 已实现自动记忆总结与更新；本基线不承诺跨模型线程的隐式记忆。

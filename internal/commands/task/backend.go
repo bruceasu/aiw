@@ -38,7 +38,10 @@ func selectBackend(operation string, args []string) (backendMode, []string, erro
 		}
 		i++
 	}
-	if mode == backendNative {
+	// Auto keeps the native path. Only an explicit openspec selection may
+	// create a change directory.
+	if mode == backendNative || mode == backendAuto {
+		mode = backendNative
 		return mode, remaining, nil
 	}
 	bin, err := findOpenSpec()
