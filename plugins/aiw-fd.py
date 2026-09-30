@@ -30,7 +30,7 @@ META = {
 FD_RE = re.compile(r"^FD-(\d{3,})$", re.IGNORECASE)
 FD_FILE_RE = re.compile(r"^FD-(\d{3,})_[A-Z0-9_]+\.md$", re.IGNORECASE)
 STATUS_RE = re.compile(r"(?m)^\*\*Status:\*\*[ \t]*(.+?)[ \t]*$")
-REVISION_RE = re.compile(r"(?m)^\*\*Revision:\*\*[ \t]*(\d+)[ \t]*$")
+REVISION_RE = re.compile(r"(?m)^\*\*Revision:\*\*[ \t]*(\d+)[ \t\r]*$")
 PRIORITY_RE = re.compile(r"(?m)^\*\*Priority:\*\*[ \t]*(.+?)[ \t]*$")
 ITEM_RE = re.compile(r"(?m)^\s*- \[([ xX-])\] (\d+(?:\.\d+)*)\s+(.+)$")
 ALLOWED = {
@@ -149,6 +149,11 @@ def revision(content: str) -> int:
     if not match:
         raise FDError("FD is missing **Revision:**; migrate the FD before emitting events")
     return int(match.group(1))
+
+
+def fd_digest(content: bytes | str) -> str:
+    data = content.encode("utf-8") if isinstance(content, str) else content
+    return hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest()
 
 
 def title(content: str) -> str:
@@ -281,7 +286,7 @@ def dispatch(base: Path, path: Path, event: dict) -> None:
             raise FDError("handoff changed before dispatch; inspect the latest event")
         fd_path = resolve_fd(base, name)
         fd_content = fd_path.read_bytes()
-        if revision(fd_content.decode("utf-8")) != current["fd_revision"] or hashlib.sha256(fd_content).hexdigest() != current["fd_sha256"]:
+        if revision(fd_content.decode("utf-8")) != current["fd_revision"] or fd_digest(fd_content) != current["fd_sha256"]:
             raise FDError("FD changed since the handoff; reconcile before dispatch")
         current["dispatch_state"] = "launching"
         atomic_json(path, current)
@@ -320,41 +325,77 @@ def request_review(base: Path, name: str, reason: str) -> None:
         raise FDError("request-review requires a one-line --reason of at most 500 characters")
     with fd_lock(base, name):
         fd_path = resolve_fd(base, name)
-        if fd_path.parent.name != "archive" or status(fd_path.read_text(encoding="utf-8")) != "Complete":
-            raise FDError("request-review requires an archived Complete FD")
-        latest = latest_event(base, name)
-        if (not latest or latest[1].get("event_type") != "verification-passed"
-                or latest[1].get("producer") != "reviewer"
-                or latest[1].get("dispatch_state") != "acknowledged"):
-            raise FDError("request-review requires an acknowledged Reviewer verification-passed event")
-
-        active_path = feature_dir(base) / fd_path.name
-        if active_path.exists() or active_path.is_symlink():
-            raise FDError(f"active FD path already exists: {active_path}")
         content = fd_path.read_text(encoding="utf-8")
-        new_revision = revision(content) + 1
-        updated = STATUS_RE.sub("**Status:** Pending Verification", content, count=1)
-        updated = REVISION_RE.sub(f"**Revision:** {new_revision}", updated, count=1)
-        updated = re.sub(r"(?m)^\*\*Completed:\*\*", "**Previously completed:**", updated, count=1)
-        active_ref = active_path.relative_to(base).as_posix()
-        event_id = f"{name}-{new_revision:06d}-review-requested"
-        target = runtime_dir(base, name) / "events" / f"{new_revision:06d}-review-requested.json"
-        if target.exists():
-            raise FDError(f"event already exists: {event_id}")
-        event = {"event_id": event_id, "fd_id": name, "event_type": "review-requested",
-                 "fd_revision": new_revision, "producer": "pm",
-                 "fd_sha256": hashlib.sha256(updated.encode("utf-8")).hexdigest(),
-                 "artifact_ref": active_ref, "fd_path": active_ref,
-                 "target_role": "reviewer", "dispatch_state": "pending",
-                 "reason": reason.strip(), "created_at": datetime.now(timezone.utc).isoformat()}
-        # Move first so a failed receipt write leaves one unambiguous Complete FD.
-        fd_path.replace(active_path)
-        atomic_json(target, event)
-        atomic_text(active_path, updated)
-        latest_path, previous_event = latest
-        previous_event["review_requested_by"] = event_id
-        atomic_json(latest_path, previous_event)
-        update_index(base)
+        if fd_path.parent.name != "archive":
+            if status(content) != "Pending Verification":
+                raise FDError("active request-review requires a Pending Verification FD")
+            latest = latest_event(base, name)
+            if latest and latest[1]["dispatch_state"] in {"launching", "dispatched"}:
+                raise FDError(f"{latest[1]['event_id']} is in flight; reconcile its session before requesting review")
+            digest = fd_digest(content)
+            if (latest and latest[1]["dispatch_state"] == "pending"
+                    and latest[1]["target_role"] == "reviewer"
+                    and latest[1]["fd_revision"] == revision(content)
+                    and latest[1]["fd_sha256"] == digest):
+                raise FDError(f"Reviewer handoff {latest[1]['event_id']} is already pending; claim or resume it")
+            new_revision = revision(content) + 1
+            updated = REVISION_RE.sub(f"**Revision:** {new_revision}", content, count=1)
+            active_ref = fd_path.relative_to(base).as_posix()
+            event_id = f"{name}-{new_revision:06d}-review-requested"
+            target = runtime_dir(base, name) / "events" / f"{new_revision:06d}-review-requested.json"
+            if target.exists():
+                raise FDError(f"event already exists: {event_id}")
+            event = {"event_id": event_id, "fd_id": name, "event_type": "review-requested",
+                     "fd_revision": new_revision, "producer": "pm",
+                     "fd_sha256": fd_digest(updated),
+                     "artifact_ref": active_ref, "fd_path": active_ref,
+                     "target_role": "reviewer", "dispatch_state": "pending",
+                     "reason": reason.strip(), "created_at": datetime.now(timezone.utc).isoformat()}
+            if latest:
+                event["supersedes"] = latest[1]["event_id"]
+            atomic_json(target, event)
+            atomic_text(fd_path, updated)
+            if latest and latest[1]["dispatch_state"] == "pending":
+                previous_path, previous_event = latest
+                previous_event["dispatch_state"] = "cancelled"
+                previous_event["superseded_by"] = event_id
+                atomic_json(previous_path, previous_event)
+            update_index(base)
+        else:
+            if status(content) != "Complete":
+                raise FDError("request-review requires an archived Complete FD")
+            latest = latest_event(base, name)
+            if (not latest or latest[1].get("event_type") != "verification-passed"
+                    or latest[1].get("producer") != "reviewer"
+                    or latest[1].get("dispatch_state") != "acknowledged"):
+                raise FDError("request-review requires an acknowledged Reviewer verification-passed event")
+
+            active_path = feature_dir(base) / fd_path.name
+            if active_path.exists() or active_path.is_symlink():
+                raise FDError(f"active FD path already exists: {active_path}")
+            new_revision = revision(content) + 1
+            updated = STATUS_RE.sub("**Status:** Pending Verification", content, count=1)
+            updated = REVISION_RE.sub(f"**Revision:** {new_revision}", updated, count=1)
+            updated = re.sub(r"(?m)^\*\*Completed:\*\*", "**Previously completed:**", updated, count=1)
+            active_ref = active_path.relative_to(base).as_posix()
+            event_id = f"{name}-{new_revision:06d}-review-requested"
+            target = runtime_dir(base, name) / "events" / f"{new_revision:06d}-review-requested.json"
+            if target.exists():
+                raise FDError(f"event already exists: {event_id}")
+            event = {"event_id": event_id, "fd_id": name, "event_type": "review-requested",
+                     "fd_revision": new_revision, "producer": "pm",
+                     "fd_sha256": fd_digest(updated),
+                     "artifact_ref": active_ref, "fd_path": active_ref,
+                     "target_role": "reviewer", "dispatch_state": "pending",
+                     "reason": reason.strip(), "created_at": datetime.now(timezone.utc).isoformat()}
+            # Move first so a failed receipt write leaves one unambiguous Complete FD.
+            fd_path.replace(active_path)
+            atomic_json(target, event)
+            atomic_text(active_path, updated)
+            latest_path, previous_event = latest
+            previous_event["review_requested_by"] = event_id
+            atomic_json(latest_path, previous_event)
+            update_index(base)
     dispatch(base, target, event)
 
 
@@ -410,7 +451,7 @@ def prepare_event(base: Path, name: str, kind: str, producer: str, artifact: str
         updated = STATUS_RE.sub(f"**Status:** {new_status}", updated, count=1)
     event = {"event_id": event_id, "fd_id": name, "event_type": kind,
              "fd_revision": new_revision, "producer": producer,
-             "fd_sha256": hashlib.sha256(updated.encode("utf-8")).hexdigest(),
+             "fd_sha256": fd_digest(updated),
              "artifact_ref": artifact_ref, "fd_path": fd_path.relative_to(base).as_posix(),
              "target_role": target_role, "dispatch_state": "pending",
              "created_at": datetime.now(timezone.utc).isoformat()}
@@ -507,7 +548,7 @@ def claim(base: Path, name: str, event_id: str, session_ref: str) -> None:
             raise FDError(f"{event_id} is {event['dispatch_state']}; inspect its original session or log")
         content = fd_path.read_bytes()
         if (revision(content.decode("utf-8")) != event["fd_revision"]
-                or hashlib.sha256(content).hexdigest() != event["fd_sha256"]):
+                or fd_digest(content) != event["fd_sha256"]):
             raise FDError("FD changed since the handoff; reconcile before claiming")
         event["dispatch_state"] = "dispatched"
         event["session_ref"] = session_ref
@@ -537,7 +578,7 @@ def close_locked(base: Path, name: str, outcome: str, reason: str) -> None:
     if outcome == "Complete" and (not latest or latest[1]["event_type"] != "verification-passed"
                                   or latest[1]["producer"] != "reviewer"
                                   or latest[1]["fd_revision"] != revision(content)
-                                  or latest[1]["fd_sha256"] != hashlib.sha256(content.encode("utf-8")).hexdigest()):
+                                  or latest[1]["fd_sha256"] != fd_digest(content)):
         raise FDError("Complete requires the current Reviewer's verification-passed event")
     if latest and latest[1]["dispatch_state"] in {"launching", "dispatched"}:
         raise FDError("cannot archive while a role execution has an unknown result")
@@ -621,7 +662,7 @@ def main() -> int:
     claimed.add_argument("--session", required=True)
     resumed = commands.add_parser("resume", help="resume a pending handoff safely")
     resumed.add_argument("fd_id")
-    review = commands.add_parser("request-review", help="request a fresh Reviewer handoff for an archived Complete FD")
+    review = commands.add_parser("request-review", help="request Reviewer for Pending Verification or archived Complete FD")
     review.add_argument("fd_id")
     review.add_argument("--reason", required=True)
     closed = commands.add_parser("close", help="archive a completed, deferred, or closed FD")

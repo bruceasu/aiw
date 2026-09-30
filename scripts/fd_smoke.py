@@ -131,6 +131,27 @@ def main() -> None:
         assert (features / "archive" / design.name).is_file()
         assert "FD-001" in (features / "FEATURE_INDEX.md").read_text(encoding="utf-8")
         fd(root, "resume", "FD-001", success=False)
+
+        fd(root, "new", "Stale review")
+        stalled = features / "FD-002_STALE_REVIEW.md"
+        old_event = root / ".ai" / "fd" / "FD-002" / "events" / "000002-design-requested.json"
+        stalled_content = stalled.read_text(encoding="utf-8")
+        stalled_content = stalled_content.replace("**Status:** Design", "**Status:** Pending Verification")
+        stalled_content = stalled_content.replace("**Revision:** 2", "**Revision:** 3")
+        stalled.write_text(stalled_content, encoding="utf-8")
+        fd(root, "request-review", "FD-002", "--reason", "recover stale handoff")
+        new_event = old_event.parent / "000004-review-requested.json"
+        receipt = json.loads(new_event.read_text(encoding="utf-8"))
+        assert receipt["target_role"] == "reviewer"
+        assert receipt["supersedes"] == "FD-002-000002-design-requested"
+        assert json.loads(old_event.read_text(encoding="utf-8"))["dispatch_state"] == "cancelled"
+        fd(root, "request-review", "FD-002", "--reason", "duplicate", success=False)
+        fd(root, "claim", "FD-002", receipt["event_id"], "--session", "smoke-reviewer")
+        fd(root, "request-review", "FD-002", "--reason", "in flight", success=False)
+        review.write_text("Changes requested: resolve open evidence gates.\n", encoding="utf-8")
+        fd(root, "emit", "FD-002", "changes-requested", "--producer", "reviewer",
+           "--artifact", "docs/features/reviews/FD-001.md", "--source-event", receipt["event_id"])
+        assert "**Status:** In Progress" in stalled.read_text(encoding="utf-8")
         print("FD smoke flow passed in a disposable local Git repository")
 
 

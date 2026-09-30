@@ -78,16 +78,9 @@ def detect_cli(provider: str, timeout: float = 5.0) -> CLIInfo:
 
 
 def _invocation(info: CLIInfo, prompt: str, model: str = "", last_message: str = "") -> list[str]:
-    configured = os.environ.get(f"CZ_{info.provider.upper()}_ARGS", "").strip()
-    if configured:
-        args = shlex.split(configured, posix=os.name != "nt")
-        if info.provider == "codex" and "-" not in args:
-            args.append("-")
-        elif info.provider == "copilot":
-            args = [arg.replace("{prompt}", prompt) for arg in args]
-            if not any("{prompt}" in arg for arg in shlex.split(configured, posix=os.name != "nt")):
-                args.extend(("--prompt", prompt))
-    elif info.provider == "codex":
+    if os.environ.get(f"CZ_{info.provider.upper()}_ARGS", "").strip():
+        raise ProviderUnavailable(f"CZ_{info.provider.upper()}_ARGS cannot override the read-only CLI contract")
+    if info.provider == "codex":
         if "--json" not in info.help_text:
             raise ProviderUnavailable("codex CLI has no detected --json mode")
         args = ["exec", "--sandbox", "read-only", "--json"]

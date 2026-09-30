@@ -7,6 +7,9 @@
 `cz` MUST resolve its LLM settings from `[cz]`, provider-specific `[cz.copilot]`,
 `[cz.codex]`, and `[cz.openai]`, plus explicit CZ CLI and environment overrides.
 It MUST NOT inherit the global `[ai]` provider, model, or fast profile.
+At each configuration location, `cz.toml` MUST take precedence over `.cz.toml`,
+and `aiw.toml` MUST take precedence over `.aiw.toml`; the pair MUST NOT be
+merged when both files exist.
 
 #### Scenario: independent provider models
 

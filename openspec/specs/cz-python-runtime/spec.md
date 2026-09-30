@@ -15,6 +15,8 @@ Codex MUST send the prompt through stdin with `exec --sandbox read-only --json -
 and decode the final assistant message from the last-message file or JSONL
 events. Copilot MUST request text output with `--prompt`; both adapters MUST
 pass the selected provider model when configured.
+Arbitrary `CZ_CODEX_ARGS` and `CZ_COPILOT_ARGS` MUST NOT replace the enforced
+read-only and structured-output invocation.
 
 ### Requirement: structured candidate contract
 
@@ -39,3 +41,8 @@ exists.
 Every provider and fallback path MUST display the candidate in TUI and offer
 edit and cancel before committing. Accepting the preview MUST create a local
 Git commit without another prompt. The plugin MUST NOT push.
+
+### Requirement: retry uses the previous commit
+
+`--retry` MUST load the previous commit message as the draft and MUST skip all
+LLM provider calls, even when LLM mode is configured.

@@ -38,6 +38,8 @@ The dispatcher MUST save a receipt before starting a role. A pending receipt
 MAY be resumed. A launching or dispatched receipt MUST NOT start a second
 writer automatically. The operator MUST reconcile its original process or
 session before retrying an unknown result.
+Receipt content digests MUST treat CRLF and LF line endings as equivalent;
+other FD content changes MUST still invalidate the handoff.
 
 A host Agent that handles a pending receipt MUST atomically bind the exact
 event ID to its Session before writing. Repeating the claim for the same
@@ -92,9 +94,34 @@ the existing `verification-passed` or `changes-requested` event.
 
 #### Scenario: Reject re-review without completion evidence
 
-- **WHEN** the FD is not archived and Complete, the reason is invalid, or the
+- **WHEN** an archived FD is not Complete, the reason is invalid, or the
   latest acknowledged Reviewer pass is missing
 - **THEN** the request fails without creating an event or changing the FD
+
+### Requirement: Recover an active FD review handoff
+
+An operator MAY request review of an active Pending Verification FD when its
+prior pending handoff is stale or missing. The operation MUST create a new
+`review-requested` receipt tied to the current FD content and reason, preserve
+the FD status and Work Items, and record which prior event it supersedes. A
+superseded pending receipt MUST be cancelled. A launching or dispatched receipt
+MUST NOT be superseded, and an identical pending Reviewer handoff MUST NOT be
+duplicated. The Reviewer MUST use the normal claim/source-event protocol;
+unresolved `%% NEEDS_INPUT` notes MUST still prevent `verification-passed`.
+
+#### Scenario: Recover a stale Planner handoff
+
+- **WHEN** an active Pending Verification FD changed after an unclaimed Planner
+  event, and an operator runs `aiw fd request-review FD-005 --reason "..."`
+- **THEN** a new pending Reviewer event records the current FD digest and the
+  superseded Planner event, without claiming that Worker emitted a result
+- **AND** the Reviewer may claim the new event and report changes requested
+
+#### Scenario: Preserve in-flight review
+
+- **WHEN** the latest event is launching or dispatched, or a current Reviewer
+  event is already pending
+- **THEN** the request fails without creating a duplicate event
 
 ### Requirement: Git and workspace boundary
 

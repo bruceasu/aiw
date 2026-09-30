@@ -172,19 +172,19 @@ def _merge(config: Config, data: dict[str, Any]) -> None:
 def load_config(plugin_dir: Path, requested_language: str = "") -> Config:
     config = Config()
     root = Path.cwd()
-    candidates = [plugin_dir / "cz.toml", plugin_dir / ".cz.toml"]
+    candidates = [_first_existing(plugin_dir / "cz.toml", plugin_dir / ".cz.toml")]
     if os.environ.get("AIW_ROOT"):
         aiw_root = Path(os.environ["AIW_ROOT"])
-        candidates.extend((aiw_root / "aiw.toml", aiw_root / ".aiw.toml"))
-    candidates.extend((root / "aiw.toml", root / ".aiw.toml"))
+        candidates.append(_first_existing(aiw_root / "aiw.toml", aiw_root / ".aiw.toml"))
+    candidates.append(_first_existing(root / "aiw.toml", root / ".aiw.toml"))
     for path in candidates:
-        if path.is_file():
+        if path:
             _merge(config, _toml(path))
 
     explicit_language = requested_language or os.environ.get("CZ_LANGUAGE", "")
     if not explicit_language:
         for path in candidates:
-            if path.is_file():
+            if path:
                 data = _toml(path)
                 i18n = data.get("i18n", {})
                 if isinstance(i18n, dict) and isinstance(i18n.get("default_language"), str):

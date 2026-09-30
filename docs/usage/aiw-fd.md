@@ -45,6 +45,8 @@ increase `**Revision:**`; a pending role event must be claimed before its role
 can complete it, and a changed FD cannot be claimed until reconciled. A
 `Complete` archive also requires the FD content to match the Reviewer's
 `verification-passed` receipt. Reconcile changed content with a new review.
+FD claim and dispatch compare content after normalizing CRLF to LF, so a
+Windows line-ending conversion alone does not invalidate a handoff.
 If a process crashes while holding `.ai/fd/<id>/.mutation-lock`, inspect the
 original process and event receipt before removing the stale lock. Never
 remove it while the role may still be writing.
@@ -67,6 +69,14 @@ The new Reviewer handoff uses the normal `claim` and `--source-event` flow.
 After `verification-passed`, close it as Complete again. The request does not
 change Work Item checkboxes; explicitly revise the FD if review findings add
 work.
+
+An active `Pending Verification` FD with a stale unclaimed handoff can also use
+`aiw fd request-review FD-005 --reason "恢复独立评审"`. This creates a new Reviewer
+event for the current FD digest and cancels the old pending receipt. It does
+not invent a Worker `implementation-ready` event. Claim the new event in an
+independent Reviewer session. Outstanding `%% NEEDS_INPUT` notes still block a
+Reviewer pass; the Reviewer can issue `changes-requested` to return work to
+Worker. An in-flight event must be reconciled before requesting review.
 
 Old `aiw issue promote --task`, `aiw task`, and `aiw wf` remain compatibility
 commands for existing Task records. Do not use `aiw wf supervise` for a new FD.

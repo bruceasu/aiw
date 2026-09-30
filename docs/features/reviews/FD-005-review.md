@@ -1,30 +1,49 @@
 # FD-005 独立评审报告
 
-- FD：FD-005
-- 来源事件：未发现有效的 Worker `implementation-ready` 移交；当前可见的 `FD-005-000002-design-requested` 是旧 Planner 请求，不能作为本次 Reviewer 移交。
-- 评审基线：当前工作区相对 `HEAD` 的变更
-- 评审方式：独立 Reviewer 会话进行静态检查
-- 实施报告：未找到 `docs/features/reports/FD-005-implementation.md`
-
-## 结论
-
-`CHANGES_REQUESTED`。FD 保持 Pending Verification。未发出生命周期事件：没有有效的 Worker 移交事件可供引用；不伪造来源或越过角色流程。
+- FD：`FD-005`
+- 结论：`CHANGES_REQUESTED`
+- 来源事件：`FD-005-000005-review-requested`
+- 认领会话：`codex-review-fd005-r4`
+- 评审基线：HEAD=`61acf474abf222e87e6278ee21226692b309428`，并包含当前工作区的 Python 修复及 Node/TypeScript 清理差异
+- Worker 报告：`docs/features/reports/FD-005-implementation.md`
 
 ## Findings
 
-1. **高：OpenAI 请求失败不会按 FD 要求回退。** `plugins/aiw-cz/cz_openai.py` 抛出 `OpenAIUnavailable`；`plugins/aiw-cz/cz_llm.py` 的回退捕获范围不包含该异常，网络/API 错误会中断 provider 链。
-2. **高：Codex/Copilot 的只读安全要求没有得到执行层保障。** `plugins/aiw-cz/cz_providers.py` 通过 `subprocess.run` 在当前仓库目录执行 CLI，未设置或强制只读权限语义。FD 要求检测和调用不得修改仓库；仅靠提示文本不能保证此项。
-3. **中：Python 配置兼容不完整。** `plugins/aiw-cz/cz_config.py` 使用简化 TOML 解析，`#` 会截断引号字符串；未读取现有配置使用的 `[i18n].default_language` 和 `cz.llm_provider`。TypeScript 参考实现 `plugins/aiw-cz/src/config.ts` 读取这些字段，故迁移可能改变既有配置行为。
-4. **高：验收勾选缺乏所需证据。** FD 将 1.1–1.8 全部标为完成，但自身 Verification 明确记载未运行发布/安装、CLI、GUI/TUI 及提交流程，且仍保留目标环境 CLI 与安装行为的 `NEEDS_INPUT`。没有独立实施报告或运行证据能证明这些验收项。
+1. **高：验收证据仍不足，不能通过 Verification。**
+   Worker 报告及 FD Verification 明确记载尚未验证目标环境中的 Codex/Copilot
+   CLI 参数和输出、OpenAI HTTP、TUI 提交、Python 发布安装及配置保留行为；FD
+   也将 Work Items 1.3–1.7 保持未完成。静态代码修复本身不能替代这些验收证据。
 
-## 命令与检查
+## Static review result
 
-- 阅读 FD-005、Issue 计划、相关 CZ 稳定规格、Python/TypeScript 实现和工作区变更。
-- `aiw fd show FD-005`
-- `git status --short`（限定查看 FD-005 审查相关路径）
-- `rg` 搜索 FD-005 事件、报告和索引引用
-- 未运行测试、构建、CLI/provider、GUI/TUI、OpenAI 网络请求、安装或 Git 写操作。
+- `plugins/aiw-cz/aiw-cz.py`：`--retry` 现在在候选生成前直接复用上一条草稿。
+- `plugins/aiw-cz/cz_providers.py`：拒绝 `CZ_*_ARGS` 覆盖，并固定 Codex/Copilot 的
+  只读与结构化输出调用契约。
+- `plugins/aiw-cz/cz_config.py`：每个配置层恢复为 `first-existing` 选择语义。
+- `plugins/aiw-fd.py`：Revision 正则和 FD digest 对 CRLF/LF 进行规范化；本轮事件已成功 claim。
+- Node/TypeScript 文件删除与 `build.bat` 的 Python 发布路径符合 FD 的迁移范围；未发现超出范围的代码变更。
 
-## 剩余风险
+## Evidence reviewed
 
-插件发现优先级可找到 Python 实现，但没有安装/升级运行证据证明旧 JS 文件清理和用户配置保留。应由 Worker 修复上述问题并补齐证据，再由有效的独立 Reviewer 移交重新评审。
+- FD-005、Issue 计划、`openspec/specs/cz-configuration-priority/spec.md`、`openspec/specs/cz-python-runtime/spec.md`
+- `docs/features/reports/FD-005-implementation.md`
+- `plugins/aiw-cz/aiw-cz.py`, `cz_config.py`, `cz_providers.py`, `cz_llm.py`, `cz_openai.py`, `cz_ui.py`
+- `plugins/aiw-fd.py`、`build.bat`、原 TypeScript 实现删除差异
+- `.ai/fd/FD-005/events/000005-review-requested.json`
+
+## Commands actually run
+
+- `python plugins/aiw-fd.py claim FD-005 FD-005-000005-review-requested --session codex-review-fd005-r4`
+- `python plugins/aiw-fd.py show FD-005`
+- `Get-Content`、`rg`、`Select-String`：读取 FD、报告、规格和关键实现
+- `git log --oneline --decorate -10`
+- `git status --short`
+- `git diff --stat` / `git diff --name-status` / `git diff`：核对实现与清理差异
+
+## Skipped checks
+
+未运行测试、完整构建、Python 发布安装、真实 CLI provider、TUI、OpenAI 网络请求或 Git 提交流程；这些检查在仓库规则下未获运行授权，且 Worker 报告也明确列为未验证。
+
+## Residual risk
+
+在目标环境证据补齐并由 Reviewer 重新复核前，不能确认 CLI 版本兼容性、非交互行为、TUI 提交和发布安装路径。`changes-requested` 事件已将 FD 返回 Worker，当前状态为 `In Progress`。

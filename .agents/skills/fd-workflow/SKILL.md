@@ -47,3 +47,9 @@ as part of design.
 Use this mode only when the user explicitly requests standalone FD storage or
 there is no managed AIW Task. Read `references/portable-operations.md` for its
 layout and operations. Do not silently reconcile a standalone FD into a Task.
+
+For an active `Pending Verification` FD blocked by a stale, unclaimed handoff,
+`aiw fd request-review <id> --reason "..."` creates a fresh Reviewer request
+for the current FD. It does not fabricate Worker completion. An independent
+Reviewer claims that event and reports findings. Do not use this recovery path
+for an in-flight event or to bypass unresolved `%% NEEDS_INPUT` gates.

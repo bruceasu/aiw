@@ -1,7 +1,7 @@
 # FD-005: 将 aiw-cz 从 TypeScript 迁移到 Python
 
-**Status:** Pending Verification
-**Revision:** 3
+**Status:** In Progress
+**Revision:** 6
 **Priority:** Medium
 
 ## Problem
@@ -47,7 +47,7 @@ OpenAI 使用标准库 HTTP 和 JSON，不引入 OpenAI SDK。`requirements.txt`
 
 - [x] 1.1 固化 Python 插件入口、配置兼容层和 locale 解析；验收：现有 `aiw cz` 参数、配置优先级和系统语言回退均有静态证据。已新增 `plugins/aiw-cz/aiw-cz.py` 与 `cz_config.py`，使用标准库解析配置和 locale。
 - [x] 1.2 实现 Git staged context、提示构造、候选 JSON 解析和 Conventional Commit 校验；验收：无效候选不会跳过人工审阅。已新增 `plugins/aiw-cz/cz_core.py`。
-- [x] 1.3 实现 Codex CLI 和 Copilot CLI 适配器；验收：记录实际 CLI 命令、参数、超时、退出码、stdout/stderr 和结构化输出兼容策略。已由 `cz_providers.py` 接入 `cz_llm.py`。
+- [ ] 1.3 实现 Codex CLI 和 Copilot CLI 适配器；验收：记录实际 CLI 命令、参数、超时、退出码、stdout/stderr 和结构化输出兼容策略。静态修复已由 `cz_providers.py` 接入 `cz_llm.py`；目标环境运行证据待补。
   设计决策：Codex 从配置或 PATH 自动发现，Copilot 仅在显式设置
   `CZ_COPILOT_COMMAND` 后探测；未配置时直接跳过，不引导安装。适配器调用
   版本命令记录版本，随后读取 help/能力信息，
@@ -59,10 +59,10 @@ OpenAI 使用标准库 HTTP 和 JSON，不引入 OpenAI SDK。`requirements.txt`
   stderr 只用于诊断；解析后仍执行字段、类型、长度和 issue 引用校验。CLI 不支持
   结构化输出时，可以请求纯文本并由适配器提取 JSON，但不得把未经校验的文本当作
   候选。版本未知或能力探测失败时按命令失败处理并回退下一个 provider。
-- [x] 1.4 实现 OpenAI Responses HTTP 适配器；验收：支持 API key、model、base URL、超时、HTTP 错误和结构化候选响应，不依赖 OpenAI SDK。已新增 `plugins/aiw-cz/cz_openai.py`。
-- [x] 1.5 实现 Codex → Copilot → OpenAI → 交互式的回退编排；验收：provider 失败或候选无效时按顺序回退，显式 provider 失败时不调用其他 provider。已新增 `plugins/aiw-cz/cz_llm.py`。
-- [x] 1.6 实现 TUI 交互向导；验收：候选在 TUI 预览，可编辑或取消；接受后自动本地 commit，不执行 push。已更新 `plugins/aiw-cz/cz_ui.py`。
-- [x] 1.7 替换构建、发布和插件入口；验收：发布内容不再要求 Node.js/npm，Python、locale 和 requirements 安装路径清晰。已更新 `build.bat` 并新增 `plugins/aiw-cz/requirements.txt`。
+- [ ] 1.4 实现 OpenAI Responses HTTP 适配器；验收：支持 API key、model、base URL、超时、HTTP 错误和结构化候选响应，不依赖 OpenAI SDK。已新增 `plugins/aiw-cz/cz_openai.py`；HTTP 运行证据待补。
+- [ ] 1.5 实现 Codex → Copilot → OpenAI → 交互式的回退编排；验收：provider 失败或候选无效时按顺序回退，显式 provider 失败时不调用其他 provider。已新增 `plugins/aiw-cz/cz_llm.py`；运行证据待补。
+- [ ] 1.6 实现 TUI 交互向导；验收：候选在 TUI 预览，可编辑或取消；接受后自动本地 commit，不执行 push。已更新 `plugins/aiw-cz/cz_ui.py`；完整交互证据待补。
+- [ ] 1.7 替换构建、发布和插件入口；验收：发布内容不再要求 Node.js/npm，Python、locale 和 requirements 安装路径清晰。已更新 `build.bat` 并新增 `plugins/aiw-cz/requirements.txt`；安装证据待补。
 - [x] 1.8 更新 CZ 配置规格、Python runtime 规格及使用文档；验收：稳定规格与 Python/CLI/HTTP 行为一致。
 
 ### CLI capability detection
@@ -102,12 +102,12 @@ OpenAI 使用标准库 HTTP 和 JSON，不引入 OpenAI SDK。`requirements.txt`
 - 1.6：移除 GUI 路径；TUI 统一预览、编辑、取消与默认接受，接受后本地 Git commit。未在本轮运行交互式流程。
 - 1.7：构建脚本已改为准备和安装 Python 发布目录；未运行构建或安装流程。
 - 1.8：已同步 `openspec/specs/cz-configuration-priority/spec.md`，新增 `openspec/specs/cz-python-runtime/spec.md` 和 Python runtime 使用说明。
-- Review fixes：保留安装目录中的 `cz.toml`/`.cz.toml`；修复 OS locale 选择、staged 前置检查、`--retry`、多候选选择和 CLI help 能力门控；同步 CZ 插件规格入口。
-- FD Review：`docs/features/reviews/FD-005-review.md`；独立静态审查结论 `CHANGES_REQUESTED`。未发现有效 Worker `implementation-ready` 移交，因此未发出生命周期事件；FD 保持 Pending Verification。
+- Review fixes：保留安装目录中的 `cz.toml`/`.cz.toml`；修复 OS locale 选择、staged 前置检查、`--retry`、CLI 参数契约、多候选选择和 CLI help 能力门控；同步 CZ 插件规格入口。静态修复已复核通过，运行证据仍待补。
+- FD Review：`docs/features/reviews/FD-005-review.md`；来源事件 `FD-005-000005-review-requested` 已由独立 Reviewer 认领。本轮静态代码复核未发现新的实现问题，但 1.3–1.7 的目标环境/运行证据仍缺失，结论为 `CHANGES_REQUESTED`；FD 保持 Pending Verification。
 
 ## Review follow-up gate
 
-- 静态修复已处理：用户配置保留、系统 locale、staged 前置检查、`--retry`、多候选选择、CLI help 能力门控和规格入口同步。
+- 上轮复核的三项实现问题已做静态修复；目标环境 CLI/OpenAI/TUI/安装证据仍待补，详见 `docs/features/reviews/FD-005-review.md`。
 - `%% NEEDS_INPUT: 目标环境中 Codex/Copilot CLI 的实际版本、非交互参数和 JSON/JSONL 输出证据。`
 - `%% NEEDS_INPUT: 目标环境中 Python 发布安装、TUI 和用户配置保留的运行证据。`
 - 在上述证据完成并由独立 Reviewer 复核前，FD 不得进入 Verification Passed 或 Complete。

@@ -55,6 +55,12 @@
       "source_identity": "D:\\green\\aiw\\skills\\eng-review-finance",
       "source_revision": null
     },
+    "fd-review": {
+      "mode": "copy",
+      "sha256": "b3cf505ef9b3ec11689059e89b033483d0a85d429d7ad69d5aedab1743fd485e",
+      "source_identity": "D:\\green\\aiw\\skills\\fd-review",
+      "source_revision": null
+    },
     "fd-workflow": {
       "mode": "copy",
       "sha256": "6d1c536a18f0557fa11ea35c589ceafb40fefabaf1b867744a61105f1d2e43d1",

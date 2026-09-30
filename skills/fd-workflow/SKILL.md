@@ -39,6 +39,12 @@ can be handled by the named role in the current host after `aiw fd claim <id>
 <event-id> --session <host-session-id>`. A dispatched event with unknown outcome
 must be reconciled against its original session or log.
 
+For an active `Pending Verification` FD blocked by a stale, unclaimed handoff,
+`aiw fd request-review <id> --reason "..."` creates a fresh Reviewer request
+for the current FD. It does not fabricate Worker completion. An independent
+Reviewer claims that event and reports findings. Do not use this recovery path
+for an in-flight event or to bypass unresolved `%% NEEDS_INPUT` gates.
+
 ## Close and archive
 
 A passed Reviewer event is required before `aiw fd close <id> Complete`.
