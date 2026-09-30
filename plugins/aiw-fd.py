@@ -19,7 +19,7 @@ from pathlib import Path
 META = {
     "name": "aiw-fd",
     "short": "manage numbered Feature Designs and role handoffs",
-    "description": "Create, inspect, and advance FD-first work without Workflow Core.",
+    "description": "Create, inspect, and advance FD-first work.",
     "commands": ["new", "list", "show", "emit", "claim", "resume", "request-review", "close", "worktree"],
     "readOnly": False,
     "mutatesFiles": True,

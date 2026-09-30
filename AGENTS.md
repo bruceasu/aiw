@@ -13,10 +13,9 @@ Read a linked OpenSpec change only when one exists and affects the work:
 - `openspec/changes/<id>/`
 
 The numbered FD is the primary plan for new work. A new FD does not require
-Task or Workflow Core. An older Task may continue from its existing `tasks.md`
-and `design.md`. An OpenSpec change is optional.
+An OpenSpec change is optional.
 
-- Work on one FD or legacy Task at a time.
+- Work on one FD at a time.
 - Keep changes scoped and reviewable.
 - Do not refactor unrelated modules.
 - Preserve backward compatibility unless explicitly required.
@@ -89,7 +88,7 @@ to the user's requested outcome.
 ## Working Rules
 
 - For engineering work, read `skills/work-management.md`. Use numbered FDs for
-  new work and AIW Task/Core only for legacy Tasks. Use OpenSpec for stable
+  new work. Use OpenSpec for stable
   capability specs and explicit change requests. Work in the primary workspace
   by default.
 - Plan first for non-trivial work.

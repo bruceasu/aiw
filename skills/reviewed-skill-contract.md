@@ -20,18 +20,6 @@ second Task status. Roles are PM, Planner, Worker, Reviewer/Verifier, and the
 human decision maker. A role must hand off an existing artifact and actual
 evidence. Do not invent a review or rerun an unknown dispatched event.
 
-The table below applies to legacy managed Tasks.
-
-## Legacy Managed Execution Vocabulary
-
-| Term | Owner | Meaning |
-| --- | --- | --- |
-| Task | AIW durable metadata | Identity, workspace, branch, delivery summary, and Session mapping. |
-| Work Item | Workflow Core | A typed execution unit mapped to a human checklist item. |
-| Attempt | Workflow Core | One bounded execution run for a Work Item; it may reference one Session. |
-| Gate | Workflow Core | An unresolved dependency, decision, authorization, validation, or delivery precondition. |
-| Evidence | Workflow Core | A static review, authorized command result, approval, or manual record. |
-| Issue | AIW Issue record | Problem, scope, approval, and Task handoff lineage. |
 | Feature Design | FD author | Engineering decisions and human-authored work items. |
 | Specification | OpenSpec | Stable capability requirements and optional change artifacts. |
 
@@ -40,8 +28,8 @@ recommended next action. They MUST NOT independently claim or release a Task
 write lease, fabricate an Attempt outcome, set a Task display status, or alter
 generated Workflow regions in planning artifacts.
 
-FD and legacy Task workspace, branch, Session, commit, archive, merge, and
-cleanup rules belong to `skills/work-management.md`; reviewed Skills must
+FD workspace, commit, archive, merge, and cleanup rules belong to
+`skills/work-management.md`; reviewed Skills must
 reference that contract instead of redefining lifecycle rules. External
 publication requires an explicit user request.
 

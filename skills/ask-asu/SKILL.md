@@ -1,13 +1,13 @@
 ---
 name: ask-asu
-description: Route an AIW request to the next FD or legacy Task stage without performing the work.
+description: Route an AIW request to the next FD stage without performing the work.
 ---
 
 # Ask Asu
 
 This Skill is a read-only guide. Read `skills/work-management.md` and
 `references/development-workflow.md`. Identify the current Issue, numbered FD,
-legacy Task, evidence, pending event, and authorization limits. Do not run a
+FD evidence, pending event, and authorization limits. Do not run a
 mutating command or write an artifact while acting only as Ask Asu.
 
 ## Default path

@@ -60,15 +60,6 @@ a focused commit for an independently reviewable slice. A Reviewer checks a
 specific commit or diff. Commit does not authorize push, merge, release,
 deployment, worktree deletion, or archive. Follow any narrower local rule.
 
-## Legacy Task compatibility
-
-Existing `.ai/tasks/<task-id>/` records and Core state remain readable. A
-legacy Task may continue from its existing `docs/features/<task-id>.md` or
-OpenSpec `tasks.md`. Do not rewrite its completed items, evidence, Sessions, or
-Git lineage to make it look like a new FD. The old `aiw issue promote --task`
-and `aiw wf` commands remain compatibility paths until migrated explicitly.
-Do not start `aiw wf supervise` for new work.
-
 ## Validation
 
 Static review is the default. After code edits, run one compile-only check

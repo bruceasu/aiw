@@ -114,7 +114,7 @@ model = "gpt-6-astra"
 level = 4
 reasoning_intensity = "high"
 
-# Managed Workflow AI Profiles. They affect only `aiw wf supervise`;
+# Managed AI Profiles for FD/OpenSpec automation.
 # other AI commands continue to use the global [ai] configuration above.
 # Each selected Profile must provide both a provider and a model. Missing or
 # incomplete Profiles fall back to [ai].

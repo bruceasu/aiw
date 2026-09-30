@@ -8,12 +8,7 @@ import (
 	askcmd "aiw/internal/commands/ask"
 	completioncmd "aiw/internal/commands/completion"
 	help "aiw/internal/commands/help"
-	sessioncmd "aiw/internal/commands/session"
-	taskcmd "aiw/internal/commands/task"
-	taskadapter "aiw/internal/task/workflowadapter"
 	"aiw/internal/version"
-	workflowcli "aiw/internal/workflow/cli"
-	workflowcmd "aiw/internal/workflow/facade"
 
 	plug "aiw/internal/plugin"
 )
@@ -44,52 +39,12 @@ func main() {
 		fmt.Println("aiw " + version.Label())
 	case "help":
 		err = help.Dispatch(os.Args[2:])
-	case "init":
-		err = taskcmd.DispatchTopLevel("init", os.Args[2:])
-	case "new":
-		err = taskcmd.DispatchTopLevel("new", os.Args[2:])
-	case "list":
-		err = taskcmd.DispatchTopLevel("list", os.Args[2:])
-	case "show":
-		err = taskcmd.DispatchTopLevel("show", os.Args[2:])
-	case "status":
-		err = taskcmd.DispatchTopLevel("status", os.Args[2:])
-	case "done":
-		err = taskcmd.DispatchTopLevel("done", os.Args[2:])
-	case "archive":
-		err = taskcmd.DispatchTopLevel("archive", os.Args[2:])
 	// `wt` is implemented as an external plugin (aiw-wt.py) and will be
 	// handled by the plugin fallback below. Do not dispatch a built-in handler.
-	case "context":
-		err = taskcmd.DispatchTopLevel("context", os.Args[2:])
-	case "decision":
-		err = taskcmd.DispatchTopLevel("decision", os.Args[2:])
-	case "spec":
-		err = taskcmd.DispatchTopLevel("spec", os.Args[2:])
-	case "prompts":
-		err = taskcmd.DispatchTopLevel("prompts", os.Args[2:])
-	case "workspace":
-		err = taskcmd.DispatchTopLevel(os.Args[1], os.Args[2:])
 	case "completion":
 		err = completioncmd.Dispatch(os.Args[2:])
 	case "ask":
 		err = askcmd.Dispatch(os.Args[2:])
-	case "task":
-		if len(os.Args) < 3 {
-			err = taskcmd.DispatchTopLevel("help", nil)
-		} else {
-			err = taskcmd.DispatchTopLevel(os.Args[2], os.Args[3:])
-		}
-	case "session":
-		err = sessioncmd.Dispatch(os.Args[2:])
-	case "wf":
-		facade := workflowcmd.New(
-			func(args []string) error {
-				return workflowcli.RunWorkflowCommand(taskadapter.New(taskadapter.DefaultOperations{}), args)
-			},
-			workflowcli.PrintWorkflowHelp,
-		)
-		err = facade.Dispatch(os.Args[2:])
 	case "issue":
 		// The existing req plugin remains the compatibility implementation.
 		code, pluginErr := dispatchPlugin("req", os.Args[2:])

@@ -19,7 +19,5 @@ and runner logs. `aiw fd resume` never starts a second writer for an event
 already marked dispatched or launching. New work does not need AIW Task or
 Workflow Core.
 
-The legacy `aiw issue promote --task`, `aiw task`, and `aiw wf` commands are
-available for existing Task records. `aiw wf supervise` is deprecated for new
-work. OpenSpec stable specs remain relevant; a change directory is created
-only on explicit request.
+OpenSpec stable specs remain relevant; a change directory is created only on
+explicit request.

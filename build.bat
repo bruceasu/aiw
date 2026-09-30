@@ -43,7 +43,6 @@ endlocal & cd /d "%CWD%" & exit /b %RESULT%
  :run_action
 if /i "%~1"=="windows" goto :build_windows
 if /i "%~1"=="linux" goto :build_linux
-if /i "%~1"=="wf" goto :build_workflow
 if /i "%~1"=="req" goto :build_req
 if /i "%~1"=="cz" goto :build_cz
 if /i "%~1"=="plugins" goto :build_plugins
@@ -88,37 +87,6 @@ if not exist "bin\aiw-linux-amd64" (
 )
 xcopy /D /Y bin\aiw-linux-amd64 %INSTALL_DIR%\aiw >nul
 echo Installation complete. aiw is now available in %INSTALL_DIR%.
-exit /b 0
-
- :build_workflow
-if not exist "plugins\aiw-wf" md "plugins\aiw-wf"
-del /s/q plugins\aiw-wf\aiw-wf.exe 2>nul
-del /s/q plugins\aiw-wf\aiw-wf 2>nul
-set "GOFLAGS="
-
-set "GOOS=windows"
-set "GOARCH=amd64"
-go build -trimpath  -ldflags="-s -w -X aiw/internal/version.Version=%AIW_VERSION%" -o "plugins\aiw-wf\aiw-wf.exe" ./cmd/aiw-wf
-if errorlevel 1 (
-    set "GOOS="
-    set "GOARCH="
-    echo Error: Windows workflow build failed.
-    exit /b 1
-)
-
-set "GOOS=linux"
-set "GOARCH=amd64"
-go build -trimpath  -ldflags="-s -w -X aiw/internal/version.Version=%AIW_VERSION%" -o "plugins\aiw-wf\aiw-wf" ./cmd/aiw-wf
-if errorlevel 1 (
-    set "GOOS="
-    set "GOARCH="
-    echo Error: Linux workflow build failed.
-    exit /b 1
-)
-
-set "GOOS="
-set "GOARCH="
-echo Workflow plugin binaries built in plugins\aiw-wf.
 exit /b 0
 
  :build_req

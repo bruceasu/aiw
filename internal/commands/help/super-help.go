@@ -15,7 +15,6 @@ import (
 	"aiw/internal/fsx"
 	plug "aiw/internal/plugin"
 	"aiw/internal/version"
-	workflowcli "aiw/internal/workflow/cli"
 )
 
 var executablePathFn = os.Executable
@@ -139,8 +138,6 @@ func listAll() error {
 	fmt.Print("Examples:\n" +
 		"  aiw init --prompts --template go\n" +
 		"  aiw new payment-retry\n" +
-		"  aiw wf plan payment-retry\n" +
-		"  aiw wf run payment-retry --execute\n" +
 		"\n")
 
 	pls, err := listPlugins()
@@ -327,10 +324,6 @@ func showPluginHelp(name string) error {
 }
 
 func showBuiltinHelp(name string) error {
-	if name == "wf" {
-		workflowcli.PrintWorkflowHelp()
-		return nil
-	}
 	if usage, ok := builtinUsageText(name); ok {
 		fmt.Print(usage)
 		return nil

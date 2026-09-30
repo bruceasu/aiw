@@ -70,7 +70,7 @@ type ResultInfo struct {
 	ErrorMessage    string `json:"error_message,omitempty"`
 }
 
-// ManagedExecutionRef links a Session to a Workflow Core Attempt. It is
+// ManagedExecutionRef links a Session to an execution record. It is
 // optional so standalone Sessions retain their existing lifecycle and JSON
 // shape. Fields retain the former task map's JSON names for read compatibility.
 type ManagedExecutionRef struct {

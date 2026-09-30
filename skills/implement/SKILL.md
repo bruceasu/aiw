@@ -55,8 +55,3 @@ It emits `changes-requested` with findings or `verification-passed` with its
 review report. A failed review returns to Worker; continue from the same FD.
 Do not claim verification passed because Worker checked the FD box.
 
-## Legacy Task
-
-The old `aiw wf` commands remain available for pre-existing Tasks. Do not
-start `wf supervise` for a numbered FD. Report any legacy Core acceptance
-Gate instead of fabricating an Attempt or Tester result.
