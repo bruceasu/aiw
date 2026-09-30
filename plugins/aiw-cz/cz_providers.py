@@ -45,6 +45,13 @@ def detect_cli(provider: str, timeout: float = 5.0) -> CLIInfo:
             [*command, "--help"], capture_output=True, text=True,
             encoding="utf-8", errors="replace", timeout=timeout, check=False,
         )
+        help_text = (help_result.stdout or help_result.stderr)
+        if provider == "codex" and help_result.returncode == 0:
+            exec_help = subprocess.run(
+                [*command, "exec", "--help"], capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=timeout, check=False,
+            )
+            help_text += "\n" + (exec_help.stdout or exec_help.stderr)
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise ProviderUnavailable(f"{provider} capability detection failed: {exc}") from exc
     if version.returncode != 0 and help_result.returncode != 0:
@@ -53,7 +60,7 @@ def detect_cli(provider: str, timeout: float = 5.0) -> CLIInfo:
         provider=provider,
         command=command,
         version=(version.stdout or version.stderr).strip(),
-        help_text=(help_result.stdout or help_result.stderr),
+        help_text=help_text,
     )
 
 
