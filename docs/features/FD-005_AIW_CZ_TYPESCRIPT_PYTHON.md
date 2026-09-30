@@ -92,6 +92,7 @@ OpenAI 使用标准库 HTTP 和 JSON，不引入 OpenAI SDK。`requirements.txt`
 
 - Design only：静态阅读现有 `plugins/aiw-cz`、Python 插件执行器、GUI 参考插件、构建脚本和相关稳定规格。
 - 1.1：运行 Python compile-only 检查通过；未运行插件、GUI、CLI provider 或提交流程。
+- 1.1 locale 跟进：Windows 默认语言改读用户区域设置（与 `Get-Culture` 对应），配置文件的 `i18n.default_language` 按现有文件优先级由后者覆盖前者；未在本轮运行插件。
 - 1.2：新增 staged diff/history 读取、统一 JSON 候选结构和字段/类型/长度/Issue 引用校验。
 - 1.3：新增 `cz_providers.py`，支持 PATH/环境变量命令发现、版本/help 探测、超时、退出码和统一 JSON 提取，并已接入回退编排。
 - 1.3 跟进：Copilot 改为仅显式配置后探测，探测和调用关闭标准输入；未配置时直接进入下一 provider。本轮只做静态检查，未运行真实 CLI。

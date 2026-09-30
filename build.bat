@@ -121,12 +121,13 @@ echo Req plugin binaries built in plugins\aiw-req.
 exit /b 0
 
  :build_cz
-pushd plugins\aiw-cz
-call npm install || (popd & exit /b 1)
-call npm run build || (popd & exit /b 1)
-call npm run build:release || (popd & exit /b 1)
-popd
-echo TypeScript cz plugin built in plugins\aiw-cz\release.
+if exist "plugins\aiw-cz\release" rmdir /s /q "plugins\aiw-cz\release"
+mkdir "plugins\aiw-cz\release"
+xcopy /Y /I "plugins\aiw-cz\aiw-cz.py" "plugins\aiw-cz\release" >nul || exit /b 1
+xcopy /Y /I "plugins\aiw-cz\cz_*.py" "plugins\aiw-cz\release" >nul || exit /b 1
+xcopy /Y /I "plugins\aiw-cz\requirements.txt" "plugins\aiw-cz\release" >nul || exit /b 1
+xcopy /E /I /Y "plugins\aiw-cz\locales" "plugins\aiw-cz\release\locales" >nul || exit /b 1
+echo Python cz plugin release prepared in plugins\aiw-cz\release.
 exit /b 0
 
  :build_plugins
@@ -135,7 +136,10 @@ call :build_cz || exit /b 1
 if not exist "%INSTALL_DIR%\plugins" mkdir "%INSTALL_DIR%\plugins" || exit /b 1
 robocopy plugins "%INSTALL_DIR%\plugins" /S /Z /MT:32 /R:1 /W:1 /FFT /XD "%CD%\plugins\aiw-cz" /NFL /NDL /NP
 if errorlevel 8 exit /b 1
-node plugins\aiw-cz\scripts\release.mjs --install "%INSTALL_DIR%\plugins\aiw-cz" || exit /b 1
+if not exist "%INSTALL_DIR%\plugins\aiw-cz" mkdir "%INSTALL_DIR%\plugins\aiw-cz"
+mkdir "%INSTALL_DIR%\plugins\aiw-cz"
+robocopy plugins\aiw-cz\release "%INSTALL_DIR%\plugins\aiw-cz" /E /NFL /NDL /NP /XF cz.toml .cz.toml
+if errorlevel 8 exit /b 1
 exit /b 0
 
  :build_docs
@@ -152,16 +156,15 @@ call cp-mul.bat "%~1" "%~2" || exit /b 1
 exit /b 0
 
  :help
-echo Usage: build.bat [windows] [linux] [wf] [req] [cz] [plugins] [docs] [skills]
+echo Usage: build.bat [windows] [linux] [req] [cz] [plugins] [docs] [skills]
 echo.
 echo Actions can be combined and run in the specified order.
 echo With no arguments, only the Windows build is performed.
 echo.
 echo   windows  Build and install the Windows executable.
 echo   linux    Build and install the Linux executable.
-echo   wf       Build Windows and Linux workflow plugin binaries.
 echo   req      Build Windows and Linux req plugin binaries.
-echo   cz       Install dependencies and build the TypeScript cz release.
+echo   cz       Prepare the Python cz release.
 echo   plugins  Build plugin binaries and install the curated cz release.
 echo   docs     Copy usage documentation to the install directory.
 echo   skills   Build workflow binaries and install skills individually.

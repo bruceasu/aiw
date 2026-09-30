@@ -15,3 +15,5 @@ Codex 使用 `exec --sandbox read-only --json -`，提示通过 stdin 传入，�
 交互式始终使用 TUI，不依赖图形界面。候选消息在 TUI 中预览，可输入
 `e` 编辑、`n` 取消，或直接回车接受并自动执行本地 `git commit`；插件不会
 执行 `git push`。未配置语言时使用操作系统语言，没有对应翻译时回退英语。
+Windows 默认读取用户区域设置（`Get-Culture`）；显式 `--lang`、`CZ_LANGUAGE`
+或 `[i18n].default_language` 优先。

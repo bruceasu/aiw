@@ -5,6 +5,7 @@ from __future__ import annotations
 import locale
 import os
 import re
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -115,6 +116,12 @@ def _locale_name(raw: str) -> str:
 
 def _system_locale() -> str:
     raw = os.environ.get("LC_ALL") or os.environ.get("LANG") or ""
+    if not raw and sys.platform == "win32":
+        import ctypes
+
+        buffer = ctypes.create_unicode_buffer(85)
+        if ctypes.windll.kernel32.GetUserDefaultLocaleName(buffer, len(buffer)):
+            raw = buffer.value
     if not raw:
         try:
             raw = locale.getlocale()[0] or ""
@@ -182,7 +189,6 @@ def load_config(plugin_dir: Path, requested_language: str = "") -> Config:
                 i18n = data.get("i18n", {})
                 if isinstance(i18n, dict) and isinstance(i18n.get("default_language"), str):
                     explicit_language = i18n["default_language"]
-                    break
     language = explicit_language or _system_locale()
     language = _locale_name(language)
     if language not in SUPPORTED_LOCALES or not (plugin_dir / "locales" / f"{language}.toml").is_file():

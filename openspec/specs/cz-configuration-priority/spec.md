@@ -39,6 +39,6 @@ manual wizard as `--no-llm`. No fallback MUST commit without user review.
 
 `aiw cz` MUST run the Python implementation through the plugin entry point.
 Its runtime requires a target-machine Python interpreter and uses only the
-standard library by default. GUI mode MAY use tkinter when available; otherwise
-the same interactive flow MUST use TUI. The Go AI provider workflow MUST NOT
-be changed as a side effect of CZ provider selection.
+standard library by default. Interactive mode MUST use TUI and MUST NOT
+require tkinter or a GUI framework. The Go AI provider workflow MUST NOT be
+changed as a side effect of CZ provider selection.

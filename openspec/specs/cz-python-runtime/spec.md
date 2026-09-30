@@ -8,6 +8,13 @@ Without an explicit provider, `cz --llm` MUST use Codex CLI, then Copilot CLI,
 then the OpenAI Responses HTTP API. A missing executable, unsupported mode,
 non-zero exit, timeout, HTTP error, or invalid candidate MUST advance to the
 next provider. After all providers fail, `cz` MUST enter the interactive flow.
+Copilot MUST only be invoked when `CZ_COPILOT_COMMAND` explicitly names an
+installed CLI. An unconfigured Copilot MUST be skipped without an installation
+prompt. CLI probes and invocations MUST NOT read interactive input.
+Codex MUST send the prompt through stdin with `exec --sandbox read-only --json -`
+and decode the final assistant message from the last-message file or JSONL
+events. Copilot MUST request text output with `--prompt`; both adapters MUST
+pass the selected provider model when configured.
 
 ### Requirement: structured candidate contract
 
@@ -16,11 +23,10 @@ Each provider adapter MUST normalize its output to a JSON object containing a
 `subject`, `body`, `breaking`, and `footer`. The shared validator MUST reject
 unknown types, empty subjects, overlong subjects, and unrelated issue references.
 
-### Requirement: GUI and TUI fallback
+### Requirement: TUI interaction
 
-An interactive invocation MUST use GUI only when a usable tkinter runtime and
-display environment are detected. Otherwise it MUST use TUI. GUI failure MUST
-fall back to TUI without bypassing human review.
+An interactive invocation MUST use the TUI. It MUST NOT require tkinter or any
+third-party GUI framework.
 
 ### Requirement: locale fallback
 
@@ -30,4 +36,6 @@ exists.
 
 ### Requirement: human review
 
-No provider or fallback path MAY commit without the interactive human review.
+Every provider and fallback path MUST display the candidate in TUI and offer
+edit and cancel before committing. Accepting the preview MUST create a local
+Git commit without another prompt. The plugin MUST NOT push.
