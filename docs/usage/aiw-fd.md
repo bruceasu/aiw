@@ -68,6 +68,14 @@ After `verification-passed`, close it as Complete again. The request does not
 change Work Item checkboxes; explicitly revise the FD if review findings add
 work.
 
+An active `Pending Verification` FD with a stale unclaimed handoff can also use
+`aiw fd request-review FD-005 --reason "恢复独立评审"`. This creates a new Reviewer
+event for the current FD digest and cancels the old pending receipt. It does
+not invent a Worker `implementation-ready` event. Claim the new event in an
+independent Reviewer session. Outstanding `%% NEEDS_INPUT` notes still block a
+Reviewer pass; the Reviewer can issue `changes-requested` to return work to
+Worker. An in-flight event must be reconciled before requesting review.
+
 Old `aiw issue promote --task`, `aiw task`, and `aiw wf` remain compatibility
 commands for existing Task records. Do not use `aiw wf supervise` for a new FD.
 Stable specs still live in `openspec/specs/`; create an OpenSpec change only

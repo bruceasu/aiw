@@ -25,7 +25,7 @@ Do not load the whole prompt library.
 - Static analysis and editing are the default.
 - Tests, final-artifact builds, formatters, linters, type checks, verification
   scripts, network calls, permission probes, privilege escalation,
-  `codex-auto-review`, and sub-agents have a default budget of zero.
+  `codex-auto-review` has a default budget of zero.
 - After implementation, run one compile-only check: prefer `scripts/compile*`
   or root `compile*`, otherwise use the narrowest language-level compiler
   command. The command must not retain a final distributable artifact.

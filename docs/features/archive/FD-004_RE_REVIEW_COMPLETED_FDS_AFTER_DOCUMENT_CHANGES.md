@@ -1,7 +1,7 @@
 # FD-004: Re-review completed FDs after document changes
 
-**Status:** Pending Verification
-**Revision:** 4
+**Status:** Closed
+**Revision:** 5
 **Priority:** Medium
 
 ## Problem
@@ -84,3 +84,6 @@ explicitly cancelled item, with its reason on the same line.
 - `openspec/specs/fd-workflow/spec.md`
 - `docs/usage/aiw-fd.md`
 - Implementation report: `docs/features/reports/FD-004-implementation.md`
+
+**Closed:** 2026-09-30
+**Disposition reason:** 用户明确请求关闭；FD-004 当前未完成独立 Verification，不声明 Complete。

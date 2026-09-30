@@ -1,7 +1,7 @@
 # FD-005: 将 aiw-cz 从 TypeScript 迁移到 Python
 
 **Status:** Pending Verification
-**Revision:** 3
+**Revision:** 4
 **Priority:** Medium
 
 ## Problem
@@ -102,12 +102,12 @@ OpenAI 使用标准库 HTTP 和 JSON，不引入 OpenAI SDK。`requirements.txt`
 - 1.6：移除 GUI 路径；TUI 统一预览、编辑、取消与默认接受，接受后本地 Git commit。未在本轮运行交互式流程。
 - 1.7：构建脚本已改为准备和安装 Python 发布目录；未运行构建或安装流程。
 - 1.8：已同步 `openspec/specs/cz-configuration-priority/spec.md`，新增 `openspec/specs/cz-python-runtime/spec.md` 和 Python runtime 使用说明。
-- Review fixes：保留安装目录中的 `cz.toml`/`.cz.toml`；修复 OS locale 选择、staged 前置检查、`--retry`、多候选选择和 CLI help 能力门控；同步 CZ 插件规格入口。
-- FD Review：`docs/features/reviews/FD-005-review.md`；独立静态审查结论 `CHANGES_REQUESTED`。未发现有效 Worker `implementation-ready` 移交，因此未发出生命周期事件；FD 保持 Pending Verification。
+- Review fixes：保留安装目录中的 `cz.toml`/`.cz.toml`；修复 OS locale 选择、staged 前置检查、多候选选择和 CLI help 能力门控；同步 CZ 插件规格入口。`--retry` 仍未通过本轮复核。
+- FD Review：`docs/features/reviews/FD-005-review.md`；本轮独立静态审查结论 `CHANGES_REQUESTED`。未发现有效 Worker `implementation-ready` 移交，因此未发出生命周期事件；FD 保持 Pending Verification。
 
 ## Review follow-up gate
 
-- 静态修复已处理：用户配置保留、系统 locale、staged 前置检查、`--retry`、多候选选择、CLI help 能力门控和规格入口同步。
+- 本轮复核仍发现：`--retry` 会先调用 LLM、`CZ_*_ARGS` 可绕过 CLI 只读/结构化输出约束、同层级配置文件的二选一语义被改为合并；详见 `docs/features/reviews/FD-005-review.md`。
 - `%% NEEDS_INPUT: 目标环境中 Codex/Copilot CLI 的实际版本、非交互参数和 JSON/JSONL 输出证据。`
 - `%% NEEDS_INPUT: 目标环境中 Python 发布安装、TUI 和用户配置保留的运行证据。`
 - 在上述证据完成并由独立 Reviewer 复核前，FD 不得进入 Verification Passed 或 Complete。
