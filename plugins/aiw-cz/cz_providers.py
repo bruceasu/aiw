@@ -46,7 +46,7 @@ def detect_cli(provider: str, timeout: float = 5.0) -> CLIInfo:
             encoding="utf-8", errors="replace", timeout=timeout, check=False,
         )
         help_text = (help_result.stdout or help_result.stderr)
-        if provider == "codex" and help_result.returncode == 0:
+        if provider == "codex":
             exec_help = subprocess.run(
                 [*command, "exec", "--help"], capture_output=True, text=True,
                 encoding="utf-8", errors="replace", timeout=timeout, check=False,

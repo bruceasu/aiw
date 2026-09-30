@@ -120,9 +120,6 @@ def _message(draft: Draft) -> str:
 
 def review_and_commit(root: Path, draft: Draft) -> None:
     print("\n--- Commit message preview ---\n" + _message(draft) + "------------------------------")
-    answer = input("Commit this message? [Y/n]: ").strip().lower()
-    if answer not in ("", "y", "yes"):
-        return
     branch = subprocess.run(
         ["git", "branch", "--show-current"], cwd=root, capture_output=True,
         text=True, encoding="utf-8", errors="replace", check=True,
