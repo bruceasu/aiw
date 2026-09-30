@@ -2,6 +2,14 @@
 
 Use this contract for AIW engineering Skills.
 
+This file is the canonical shared contract. A Skill that needs these rules
+should reference `skills/work-management.md` in its `SKILL.md` and keep its
+own instructions focused on its domain. Do not copy lifecycle rules into each
+Skill. `aiw skills install` and `sync` materialize this file beside the Skill
+when that reference is present; treat the installed copy as generated output.
+The same applies to `skills/reviewed-skill-contract.md`, so user-level
+installations remain usable outside the AIW repository.
+
 ## New FD workflow
 
 - A numbered file under `docs/features/FD-XXX_SLUG.md` is the source of truth

@@ -69,6 +69,33 @@ not only editable FD status text.
 - **WHEN** Reviewer emits `changes-requested` with a report
 - **THEN** the FD returns to In Progress and Worker receives the report.
 
+### Requirement: Re-review a completed FD
+
+An operator MUST be able to request an explicit review of an archived Complete
+FD with a one-line reason. The operation MUST require an acknowledged latest
+Reviewer `verification-passed` receipt, create a new `review-requested` event
+for the current FD content, increment its revision, return it to the active
+feature directory as `Pending Verification`, and rebuild the index. It MUST
+preserve the prior completion date and MUST NOT modify Work Item checkboxes.
+The Reviewer MUST use the normal claim/source-event protocol and report through
+the existing `verification-passed` or `changes-requested` event.
+
+#### Scenario: Request review after an archived FD is updated
+
+- **WHEN** an operator runs `aiw fd request-review FD-001 --reason "..."` for
+  an archived Complete FD with an acknowledged Reviewer pass
+- **THEN** the current FD content is revisioned and a Reviewer handoff records
+  the reason and content digest
+- **AND** the FD returns to the active index as Pending Verification without
+  changing its Work Items
+- **AND** a Reviewer pass can be closed as Complete again
+
+#### Scenario: Reject re-review without completion evidence
+
+- **WHEN** the FD is not archived and Complete, the reason is invalid, or the
+  latest acknowledged Reviewer pass is missing
+- **THEN** the request fails without creating an event or changing the FD
+
 ### Requirement: Git and workspace boundary
 
 An FD MAY have an isolated worktree once its plan is committed. Local focused

@@ -20,7 +20,7 @@ META = {
     "name": "aiw-fd",
     "short": "manage numbered Feature Designs and role handoffs",
     "description": "Create, inspect, and advance FD-first work without Workflow Core.",
-    "commands": ["new", "list", "show", "emit", "claim", "resume", "close", "worktree"],
+    "commands": ["new", "list", "show", "emit", "claim", "resume", "request-review", "close", "worktree"],
     "readOnly": False,
     "mutatesFiles": True,
     "requiresConfirmation": False,
@@ -315,6 +315,49 @@ def emit(base: Path, name: str, kind: str, producer: str, artifact: str,
     dispatch(base, target, event)
 
 
+def request_review(base: Path, name: str, reason: str) -> None:
+    if not reason.strip() or len(reason) > 500 or any(char in reason for char in "\r\n"):
+        raise FDError("request-review requires a one-line --reason of at most 500 characters")
+    with fd_lock(base, name):
+        fd_path = resolve_fd(base, name)
+        if fd_path.parent.name != "archive" or status(fd_path.read_text(encoding="utf-8")) != "Complete":
+            raise FDError("request-review requires an archived Complete FD")
+        latest = latest_event(base, name)
+        if (not latest or latest[1].get("event_type") != "verification-passed"
+                or latest[1].get("producer") != "reviewer"
+                or latest[1].get("dispatch_state") != "acknowledged"):
+            raise FDError("request-review requires an acknowledged Reviewer verification-passed event")
+
+        active_path = feature_dir(base) / fd_path.name
+        if active_path.exists() or active_path.is_symlink():
+            raise FDError(f"active FD path already exists: {active_path}")
+        content = fd_path.read_text(encoding="utf-8")
+        new_revision = revision(content) + 1
+        updated = STATUS_RE.sub("**Status:** Pending Verification", content, count=1)
+        updated = REVISION_RE.sub(f"**Revision:** {new_revision}", updated, count=1)
+        updated = re.sub(r"(?m)^\*\*Completed:\*\*", "**Previously completed:**", updated, count=1)
+        active_ref = active_path.relative_to(base).as_posix()
+        event_id = f"{name}-{new_revision:06d}-review-requested"
+        target = runtime_dir(base, name) / "events" / f"{new_revision:06d}-review-requested.json"
+        if target.exists():
+            raise FDError(f"event already exists: {event_id}")
+        event = {"event_id": event_id, "fd_id": name, "event_type": "review-requested",
+                 "fd_revision": new_revision, "producer": "pm",
+                 "fd_sha256": hashlib.sha256(updated.encode("utf-8")).hexdigest(),
+                 "artifact_ref": active_ref, "fd_path": active_ref,
+                 "target_role": "reviewer", "dispatch_state": "pending",
+                 "reason": reason.strip(), "created_at": datetime.now(timezone.utc).isoformat()}
+        # Move first so a failed receipt write leaves one unambiguous Complete FD.
+        fd_path.replace(active_path)
+        atomic_json(target, event)
+        atomic_text(active_path, updated)
+        latest_path, previous_event = latest
+        previous_event["review_requested_by"] = event_id
+        atomic_json(latest_path, previous_event)
+        update_index(base)
+    dispatch(base, target, event)
+
+
 def prepare_event(base: Path, name: str, kind: str, producer: str, artifact: str,
                   source_event: str) -> tuple[Path, dict]:
     if kind not in ALLOWED:
@@ -578,6 +621,9 @@ def main() -> int:
     claimed.add_argument("--session", required=True)
     resumed = commands.add_parser("resume", help="resume a pending handoff safely")
     resumed.add_argument("fd_id")
+    review = commands.add_parser("request-review", help="request a fresh Reviewer handoff for an archived Complete FD")
+    review.add_argument("fd_id")
+    review.add_argument("--reason", required=True)
     closed = commands.add_parser("close", help="archive a completed, deferred, or closed FD")
     closed.add_argument("fd_id")
     closed.add_argument("outcome", choices=["Complete", "Deferred", "Closed"])
@@ -605,6 +651,8 @@ def main() -> int:
             claim(base, fd_id(args.fd_id), args.event_id, args.session)
         elif args.command == "resume":
             resume(base, fd_id(args.fd_id))
+        elif args.command == "request-review":
+            request_review(base, fd_id(args.fd_id), args.reason)
         elif args.command == "close":
             close(base, fd_id(args.fd_id), args.outcome, args.reason)
         elif args.command == "worktree":

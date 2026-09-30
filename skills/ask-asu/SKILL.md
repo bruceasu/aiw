@@ -31,13 +31,6 @@ the smallest user question that resolves it. A pending event may be continued
 with `aiw fd resume`; a dispatched event with unknown result must be checked
 against its original session or log before any retry.
 
-## Compatibility
-
-Old AIW Tasks and Core records remain readable. Route one only when the user
-selected it or it is the unique existing context. Do not create a Task or
-OpenSpec change for a new FD. Do not recommend `aiw wf supervise` as the next
-step. A linked OpenSpec change is handled only when it exists and matters.
-
 ## Output
 
 State the current stage, evidence, one recommended next Skill or command, the

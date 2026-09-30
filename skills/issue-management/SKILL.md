@@ -11,7 +11,9 @@ hand off one AIW Issue about a bug, feature, or modification. Its work ends at
 an Issue decision or FD handoff. For an existing Requirement, keep its `REQ`
 ID and artifacts; use `requirement-management` for compatibility details.
 Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`
-for authorization and Task lifecycle.
+for authorization and Task lifecycle. Keep this Skill focused on Issue
+decisions; the shared file owns lifecycle rules and the installer supplies its
+per-Skill copy from the canonical source.
 
 ## Route before acting
 

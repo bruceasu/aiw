@@ -123,9 +123,9 @@
     },
     "handoff": {
       "mode": "copy",
-      "sha256": "6d9657f754386843d801e4ebddc57470aa68bc1490bb314f6800962523005df6",
+      "sha256": "bf8ef97b603a65f8d28dda2b32825ecaac0fdccc1c42ce714c6450d69154393a",
       "source_identity": "D:\\03_projects\\AI-tools\\old\\aiw\\skills\\handoff",
-      "source_revision": "f543e5e80b277521ce84ee8a5da25d713e5cec15"
+      "source_revision": "ec2c467a608f6b211fbdc3f7a026fa66516150a3"
     },
     "implement": {
       "mode": "copy",
@@ -141,9 +141,9 @@
     },
     "issue-management": {
       "mode": "copy",
-      "sha256": "e341e354d3ad27c696a55c17ab88dbbd91cd3163852af63d4999b118d75a1fec",
+      "sha256": "5aba51d7f5bd059fd73ac35f6a9aa46200eee45461c902b245318f59f356df1c",
       "source_identity": "D:\\03_projects\\AI-tools\\old\\aiw\\skills\\issue-management",
-      "source_revision": "f543e5e80b277521ce84ee8a5da25d713e5cec15"
+      "source_revision": "ec2c467a608f6b211fbdc3f7a026fa66516150a3"
     },
     "metrics-review": {
       "mode": "copy",
@@ -201,9 +201,9 @@
     },
     "setup-project": {
       "mode": "copy",
-      "sha256": "abd52029fb349108f6f4bf8bdb1ba400009db5f56c97ea97b533e1d367bde046",
-      "source_identity": "D:\\03_projects\\AI-tools\\old\\aiw\\skills\\setup-project",
-      "source_revision": "f543e5e80b277521ce84ee8a5da25d713e5cec15"
+      "sha256": "ab7c88c64eeabb0ceb82573b513634ef343b9bd7184d9c61a4d81dbdcb17f8f1",
+      "source_identity": "D:\\green\\aiw\\skills\\setup-project",
+      "source_revision": null
     },
     "tdd": {
       "mode": "copy",

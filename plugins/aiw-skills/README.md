@@ -90,11 +90,17 @@ also available in JSON results.
 The installer:
 
 1. validates the Skill name, description, and filesystem entries;
-2. hashes the complete source directory;
-3. copies it to staging on the destination filesystem;
-4. verifies the staged hash;
-5. publishes the directory;
-6. atomically records managed ownership.
+2. materializes `skills/work-management.md` from the canonical catalog when
+   the Skill's `SKILL.md` references that shared contract;
+3. hashes the complete materialized Skill;
+4. copies it to staging on the destination filesystem;
+5. verifies the staged hash;
+6. publishes the directory;
+7. atomically records managed ownership.
+
+The generated per-Skill copy is installation output. Edit the canonical
+`skills/work-management.md` file and reinstall or sync managed Skills to
+refresh it; do not maintain separate copies by hand.
 
 The managed manifest is `.agents/skills/.aiw-skills.json` under the selected
 scope. It records schema version, source identity, source revision when

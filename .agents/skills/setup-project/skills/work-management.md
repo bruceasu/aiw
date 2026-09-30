@@ -1,120 +1,69 @@
 # AIW Work Management Contract
 
-Use this contract for engineering Skills in an AIW repository.
+Use this contract for AIW engineering Skills.
 
-## Ownership
+## New FD workflow
 
-- An Issue describes a bug, feature, or modification and may be split into
-  smaller Issues. Existing Requirement records and `aiw req` remain compatible
-  Issue entry points until their data is migrated explicitly.
-- Feature Design (FD) owns engineering decisions and planned work items.
-  An approved Issue may lead directly to an FD and AIW Task.
-- `.ai/tasks/<task-id>/` is the center of execution. AIW owns Task lifecycle,
-  branch, worktree, Session, handoff lineage, and external mappings. Workflow
-  Core owns Work Items, Attempts, Gates, Evidence, write leases, and derived
-  execution, validation, and readiness state there.
-- New Tasks use the Schema 9 execution path.
-- OpenSpec owns stable capability specs in `openspec/specs/`. An OpenSpec change
-  may be linked when spec changes need that workflow; it is not required to
-  create, plan, implement, merge, or complete a Task.
-- GitHub and GitLab are optional Issue projections used only on explicit request.
+- A numbered file under `docs/features/FD-XXX_SLUG.md` is the source of truth
+  for design, Work Items, status, Verification, and unresolved `%%` notes.
+- `docs/features/FEATURE_INDEX.md` is an index. Rebuild it from FD files; do
+  not treat it as a second state owner.
+- An Issue may link to an FD. An AIW Task is not required for a new FD.
+- `aiw fd` is the FD command surface. Read `aiw fd --help` before an unfamiliar
+  or mutating operation. `aiw fd emit` records an explicit handoff; ordinary
+  file saves and Git commits do not dispatch roles.
+- `.ai/fd/<fd-id>/` contains dispatch receipts and logs. It does not own FD
+  status or replace the Markdown plan. Never write a fake event or review.
+- OpenSpec owns stable capability specs in `openspec/specs/`. Create an
+  OpenSpec change only when the user explicitly asks for one.
 
-Do not create a second Task tracker or treat `task.toml.status` as an
-independently writable execution source. Request Workflow Core transitions
-through the managed Task context and report the resulting summary. Keep
-human-authored FD work items distinct from Core-owned generated state.
+## Roles and handoffs
 
-## Discover Commands
+PM creates and grooms an FD. Planner records options, decisions, acceptance,
+and numbered Work Items. Worker implements all ready items in dependency order.
+Reviewer checks the actual diff and evidence in a separate session. A failed
+review returns concrete findings to Worker. Human decisions and authorization
+stop automatic dispatch until answered.
 
-Before an unfamiliar or mutating operation, inspect `aiw help --json` or the
-specific command help once. Use the installed command surface rather than
-inventing subcommands. Do not install AIW or OpenSpec automatically.
+Use an explicit stage event after the producing role has written its result.
+The event must name an existing project-relative artifact. If the host has a
+configured role runner, AIW starts the next role. Otherwise the event stays
+pending for a Skill or later `aiw fd resume`. Before a host session writes for
+a pending handoff, claim its exact event with `aiw fd claim <id> <event-id>
+--session <host-session-id>`; include that event in `--source-event` at the
+next handoff. Do not redispatch an unknown in-flight result; inspect the
+recorded session or log first.
 
-## Resolve Or Create The Task
+FD Work Item checkboxes record authored progress. Mark one complete only when
+the required change and real evidence exist. Report checks that were not run.
+Do not mark the FD Complete until all scoped items are resolved and the
+Reviewer has recorded a passed result.
 
-Resolve context in this order:
+## Workspace and Git
 
-1. Task ID explicitly supplied by the user.
-2. Task established by the active AIW Session.
-3. AIW Task associated with the current worktree or branch.
-4. Unique Task linked from the current Issue or FD.
-5. Unique Task linked to an OpenSpec change, when one exists.
+Use the primary workspace for ordinary sequential work. Use an FD worktree
+only for parallel writes, conflicting changes, or a user request. Record the
+parent branch and keep each FD's writing role in one workspace at a time.
+Worktree creation requires the FD plan to be committed so it is present in the
+new worktree. Do not mix unrelated files into an FD commit.
 
-If several Tasks match, ask for the Task ID. Create a new lifecycle through
-AIW. Choose its supported native backend when no OpenSpec change is needed;
-do not create a change just to satisfy Task creation.
+The user permits local Git commits for the new FD workflow. A Worker may make
+a focused commit for an independently reviewable slice. A Reviewer checks a
+specific commit or diff. Commit does not authorize push, merge, release,
+deployment, worktree deletion, or archive. Follow any narrower local rule.
 
-One Issue may be split into smaller Issues when each has independently useful
-scope. One Issue or FD may lead to multiple Tasks when delivery or archive
-lifecycles differ. Record the lineage; do not silently duplicate work.
+## Legacy Task compatibility
 
-## Issue Decisions
-
-Use confirmed user preferences and current evidence to choose a clearly better
-approach within the approved scope. A bounded sub-agent may compare options;
-the main agent remains responsible for the choice and records the rationale in
-the Issue or FD. Ask the human when options are materially close, a critical
-fact is missing, or the decision changes scope, risk, or authorization. Do not
-interrupt for routine implementation choices.
-
-## Feature Design And Specs
-
-FD is the primary engineering planning artifact for a Task. It records the
-goal, constraints, decisions, compatibility effects, acceptance evidence,
-work items, TODO, Verification, and unresolved `%% NEEDS_INPUT` notes. Generate
-or update Task work from its selected FD items. Implementation does not depend
-on an OpenSpec `tasks.md` checklist.
-
-Read relevant stable specs before changing behavior. Update `openspec/specs/`
-when stable requirements change. Link an OpenSpec change only when its proposal,
-spec delta, or archive workflow adds value. If linked, keep its artifacts
-consistent with the FD, but do not let its checklist or lifecycle override the
-Task. A legacy Task whose only plan is `tasks.md` remains actionable; migrate
-its plan deliberately rather than discarding completed items.
-
-## Workspace Rules
-
-- Work in the primary Git checkout and current branch for ordinary manual work.
-  Automated Task execution uses an isolated worktree by default; use the
-  documented explicit primary-workspace opt-out when authorized.
-- A Task lifecycle does not imply a feature branch or linked worktree.
-- Use isolation for parallel writes, conflicting work, long-running work,
-  disposable experiments, or an explicit user request. State the reason first.
-- Create or resolve isolated worktrees only through `aiw wt`.
-- Require explicit Task or Session context when several Tasks share primary.
-- Treat `unassigned` and unknown workspace bindings as read-only until bound.
-- Planning artifacts created on the current branch must be committed before
-  creating an isolated Task worktree, so it inherits the Task and FD records.
-- Record `parent_branch` before creating the Task branch/worktree. Delivery
-  targets that branch, never an inferred current checkout.
-- Do not silently implement in a workspace that does not match the Task.
-- Do not commit, merge, push, remove a worktree, or delete a branch merely
-  because implementation is complete. Git delivery is separately authorized.
-  Preserve Task resources on any failure or conflict.
-
-If AIW is unavailable, report the missing capability and ask before using a raw
-Git fallback.
-
-## Delivery And Completion
-
-`local-merge` is a delivery operation, independent of Task completion status.
-After a successful merge, an unfinished Task remains unfinished and resumes in
-the primary workspace. Preserve its Work Items, Evidence, Gates, and Session
-lineage; do not mark it done or archive it as a side effect of delivery.
-
-After implementation, update the selected FD work item, TODO, Verification,
-and remaining `%%` notes. Request the appropriate Core transition and report
-Task completion separately from Git delivery. Archive only under the Task's
-documented archive rules. Archive a managed FD with its Task at
-`docs/features/archive/<date>-<task-id>.md`; a linked OpenSpec change remains
-optional. Do not automatically commit, merge, push, clean a
-worktree, delete a branch, or archive.
+Existing `.ai/tasks/<task-id>/` records and Core state remain readable. A
+legacy Task may continue from its existing `docs/features/<task-id>.md` or
+OpenSpec `tasks.md`. Do not rewrite its completed items, evidence, Sessions, or
+Git lineage to make it look like a new FD. The old `aiw issue promote --task`
+and `aiw wf` commands remain compatibility paths until migrated explicitly.
+Do not start `aiw wf supervise` for new work.
 
 ## Validation
 
-Static review is the default. After implementation, run one compile-only check:
-prefer `scripts/compile*` or root `compile*`, otherwise the narrowest language
-compiler command without retaining a final distributable artifact. Do not run
-tests, final-artifact builds, formatters, linters, vet, or verification scripts
-without authorization under the repository rules. Report actual commands,
-static evidence, skipped checks, and unresolved risks.
+Static review is the default. After code edits, run one compile-only check
+using a repository `compile*` script when available. Tests, final builds,
+formatters, linters, vet, network calls, and deployment follow the repository's
+authorization rules. Report actual commands, skipped checks, and risks.

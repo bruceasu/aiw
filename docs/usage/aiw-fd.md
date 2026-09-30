@@ -14,6 +14,7 @@ aiw fd emit FD-002 design-ready --producer planner --artifact docs/features/FD-0
 aiw fd resume FD-002
 aiw fd emit FD-002 implementation-ready --producer worker --artifact docs/features/reports/FD-002-implementation.md --source-event FD-002-000003-design-ready
 aiw fd emit FD-002 verification-passed --producer reviewer --artifact docs/features/reviews/FD-002-review.md --source-event FD-002-000004-implementation-ready
+aiw fd request-review FD-001 --reason "文档在验收后更新"
 ```
 
 The creation event routes to Planner. Planner writes options, decision,
@@ -57,6 +58,15 @@ After a passed review and a separate close decision, run `aiw fd close FD-002
 Complete`. Use `--reason "..."` for `Deferred` and `Closed` outcomes.
 This archives the FD file and rebuilds the index; it does not change Git
 delivery state.
+
+If an archived Complete FD is later updated, request a fresh review with
+`aiw fd request-review FD-001 --reason "..."`. The command records the current
+content and reason, increments the revision, returns the FD to the active
+index as `Pending Verification`, and preserves its previous completion date.
+The new Reviewer handoff uses the normal `claim` and `--source-event` flow.
+After `verification-passed`, close it as Complete again. The request does not
+change Work Item checkboxes; explicitly revise the FD if review findings add
+work.
 
 Old `aiw issue promote --task`, `aiw task`, and `aiw wf` remain compatibility
 commands for existing Task records. Do not use `aiw wf supervise` for a new FD.

@@ -24,7 +24,10 @@ FRONTMATTER_RE = re.compile(
     re.DOTALL,
 )
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
-WORK_MANAGEMENT_REFERENCE = "skills/work-management.md"
+SHARED_SKILL_REFERENCES = (
+    "skills/reviewed-skill-contract.md",
+    "skills/work-management.md",
+)
 MANAGED_SOURCE_IDENTITY = "<adopted-from-installed>"
 
 
@@ -174,9 +177,9 @@ def validate_copyable_tree(root: Path) -> None:
                     )
 
 
-def skill_mentions_work_management(skill_dir: Path) -> bool:
+def shared_skill_references(skill_dir: Path) -> List[str]:
     text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
-    return WORK_MANAGEMENT_REFERENCE in text
+    return [reference for reference in SHARED_SKILL_REFERENCES if reference in text]
 
 
 def repository_work_management_path() -> Path:
@@ -211,11 +214,11 @@ def add_scope_argument(command: argparse.ArgumentParser) -> None:
 def materialize_skill_source(skill: Skill, temp_root: Path) -> Path:
     materialized = temp_root / skill.name
     shutil.copytree(str(skill.source), str(materialized), symlinks=True)
-    if skill_mentions_work_management(skill.source):
-        shared_source = repository_work_management_path()
+    for reference in shared_skill_references(skill.source):
+        shared_source = Path(__file__).resolve().parents[2] / reference
         if not shared_source.is_file():
-            raise SkillError("Shared work-management reference is missing: {}".format(shared_source))
-        shared_target = materialized / WORK_MANAGEMENT_REFERENCE
+            raise SkillError("Shared Skill reference is missing: {}".format(shared_source))
+        shared_target = materialized / reference
         shared_target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(str(shared_source), str(shared_target))
     return materialized

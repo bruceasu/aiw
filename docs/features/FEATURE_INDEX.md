@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-004](FD-004_RE_REVIEW_COMPLETED_FDS_AFTER_DOCUMENT_CHANGES.md) | Re-review completed FDs after document changes | Pending Verification | Medium |
 
 ## Completed
 
