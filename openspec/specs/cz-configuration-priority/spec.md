@@ -11,7 +11,7 @@ It MUST NOT inherit the global `[ai]` provider, model, or fast profile.
 #### Scenario: independent provider models
 
 - **WHEN** each CZ provider has its own model configured
-- **THEN** each SDK invocation uses only the selected provider's model and credentials
+- **THEN** each provider invocation uses only the selected provider's model and credentials
 
 #### Scenario: CLI override
 
@@ -20,14 +20,14 @@ It MUST NOT inherit the global `[ai]` provider, model, or fast profile.
 
 ### Requirement: ordered LLM fallback
 
-Without a selected provider, `--llm` MUST attempt Copilot SDK, Codex SDK, then
-OpenAI SDK. A failed provider or invalid candidate MUST advance to the next.
+Without a selected provider, `--llm` MUST attempt Codex CLI, Copilot CLI, then
+OpenAI HTTP. A failed provider or invalid candidate MUST advance to the next.
 When all attempts fail, CZ MUST explain the failure briefly and enter the same
 manual wizard as `--no-llm`. No fallback MUST commit without user review.
 
 #### Scenario: all providers fail
 
-- **WHEN** no SDK returns a valid candidate
+- **WHEN** no provider returns a valid candidate
 - **THEN** CZ opens its manual commit message wizard
 
 #### Scenario: explicit provider fails
@@ -37,6 +37,8 @@ manual wizard as `--no-llm`. No fallback MUST commit without user review.
 
 ### Requirement: CZ remains an independent plugin
 
-`aiw cz` MUST run the TypeScript implementation through the plugin entry point.
-Its runtime requires Node.js 22.12.0 or newer. The Go AI provider workflow
-MUST NOT be changed as a side effect of CZ provider selection.
+`aiw cz` MUST run the Python implementation through the plugin entry point.
+Its runtime requires a target-machine Python interpreter and uses only the
+standard library by default. GUI mode MAY use tkinter when available; otherwise
+the same interactive flow MUST use TUI. The Go AI provider workflow MUST NOT
+be changed as a side effect of CZ provider selection.

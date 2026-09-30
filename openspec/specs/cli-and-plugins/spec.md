@@ -94,6 +94,6 @@ git export MUST 璋冪敤 `git archive --format=zip` 瀵煎嚭鎸囧畾 Git ref�
 - [涓诲叆鍙(../../../main.go)銆乕Task 鍒嗘淳](../../../internal/commands/task/command.go)銆?
 - [鎻掍欢鍙戠幇](../../../internal/plugin/discover.go)銆乕鎻掍欢鎵ц](../../../internal/plugin/exec.go)銆乕鍒濆鍖朷(../../../internal/commands/task/init.go)銆?
 - [ask 閰嶇疆](../../../internal/commands/ask/config.go)銆乕璺緞绛栫暐](../../../internal/commands/ask/path_policy.go)銆乕闂瓟鎵ц](../../../internal/commands/ask/command.go)銆?
-- [cz](../../../plugins/aiw-cz/src/index.ts)銆乕Git export](../../../plugins/aiw-git/git-export.py)銆?
+- [cz](../../../plugins/aiw-cz/aiw-cz.py)；[Git export](../../../plugins/aiw-git/git-export.py)。
 
 %% ReadOnly 鏄紶缁?provider 鐨勬墽琛岄厤缃紱澶栭儴 CLI 鐨勫疄闄呮枃浠惰闂殧绂讳粛鍙栧喅浜庡叾瀹炵幇锛宎llow-path 涓嶈兘琚硾鍖栦负鎵€鏈夊悗绔殑涓ユ牸璇诲彇鐧藉悕鍗曘€?
