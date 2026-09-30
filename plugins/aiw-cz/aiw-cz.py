@@ -46,11 +46,11 @@ def main(argv: list[str] | None = None) -> int:
     if config.llm:
         generated = candidates(config, Path.cwd(), config.provider)
         if not generated:
-            review_and_commit(Path.cwd(), wizard(config, previous_draft(Path.cwd()) if args.retry else None))
+            review_and_commit(Path.cwd(), config, wizard(config, previous_draft(Path.cwd()) if args.retry else None))
         else:
-            review_and_commit(Path.cwd(), choose_candidate(config, generated))
+            review_and_commit(Path.cwd(), config, choose_candidate(config, generated))
     else:
-        review_and_commit(Path.cwd(), wizard(config, previous_draft(Path.cwd()) if args.retry else None))
+        review_and_commit(Path.cwd(), config, wizard(config, previous_draft(Path.cwd()) if args.retry else None))
     print(f"aiw-cz Python entry ready (language={config.language}, llm={config.llm})", file=sys.stderr)
     return 0
 

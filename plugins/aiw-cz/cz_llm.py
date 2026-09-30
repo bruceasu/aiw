@@ -16,7 +16,7 @@ def candidates(config: Config, root: Path, selected: str = "") -> list[Draft] | 
     for provider in providers:
         try:
             if provider in ("codex", "copilot"):
-                raw, _ = run_cli(provider, prompt)
+                raw, _ = run_cli(provider, prompt, config.providers[provider].model, root)
             elif provider == "openai":
                 raw = openai_generate(prompt, config.providers[provider])
             else:
