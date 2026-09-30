@@ -838,11 +838,27 @@ def build_index(root: Path, repo_name: str | None = None) -> Index:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--root", default=".", help="Project root. Default: current directory.")
-    parser.add_argument("--out", default=".ai", help="Output directory relative to root. Default: .ai")
-    parser.add_argument("--repo-name", default=None, help="Repository name to write into JSONL records. Default: root directory name.")
-    parser.add_argument("--version", action="store_true", help="Print version and exit.")
+    parser = argparse.ArgumentParser(
+        prog="generate-ai-index",
+        description=(
+            "为单个代码仓库生成供 AI 检索的符号、API 和文件索引。\n"
+            "只扫描源码，不执行项目代码，也不访问网络。"
+        ),
+        epilog=(
+            "示例:\n"
+            "  python plugins/aiw-ai-gen-index.py --root .\n"
+            "  python plugins/aiw-ai-gen-index.py --root D:/work/my-repo --out .ai\n"
+            "\n"
+            "输出到 <root>/<out>/，默认是 .ai/：PROJECT_MAP.md、API_INDEX.md、\n"
+            "symbols.jsonl、apis.jsonl、files.jsonl 和 metadata.json。\n"
+            "支持 Java、Go、Python、JavaScript 和 TypeScript 源文件。"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("--root", default=".", help="要扫描的仓库根目录（默认：当前目录）")
+    parser.add_argument("--out", default=".ai", help="相对于仓库根目录的输出目录（默认：.ai）")
+    parser.add_argument("--repo-name", default=None, help="写入索引记录的仓库名称（默认：根目录名）")
+    parser.add_argument("--version", action="store_true", help="显示版本并退出")
     args = parser.parse_args()
 
     if args.version:

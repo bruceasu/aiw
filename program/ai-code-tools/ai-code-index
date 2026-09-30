@@ -667,47 +667,65 @@ def cmd_stats(args: argparse.Namespace) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="ai-code-index")
-    parser.add_argument("--version", action="store_true", help="Print version and exit.")
-    sub = parser.add_subparsers(dest="cmd")
+    parser = argparse.ArgumentParser(
+        prog="ai-code-index",
+        description=(
+            "管理多个仓库的本地代码索引，并按关键词查找符号、API 和文件。\n"
+            "首次使用时添加仓库并生成索引；之后用 update 刷新。"
+        ),
+        epilog=(
+            "快速开始:\n"
+            "  ai-code-index repo add <仓库路径>\n"
+            "  ai-code-index update --run-generator\n"
+            "  ai-code-index context \"订单创建接口\" --current-repo\n"
+            "\n"
+            "数据保存在 ~/.ai-code-index/。检索基于本地索引和关键词评分，\n"
+            "不是语义向量搜索；源码变更后请重新 update。\n"
+            "直接运行 Python 插件脚本时，先单独运行 aiw-ai-gen-index.py，\n"
+            "再运行 aiw-ai-code-index.py update（不带 --run-generator）。"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("--version", action="store_true", help="显示版本并退出")
+    sub = parser.add_subparsers(dest="cmd", metavar="命令")
 
-    repo = sub.add_parser("repo")
+    repo = sub.add_parser("repo", help="添加、列出或移除仓库")
     repo_sub = repo.add_subparsers(dest="repo_cmd", required=True)
 
-    p = repo_sub.add_parser("add")
-    p.add_argument("path")
-    p.add_argument("--name", default=None)
+    p = repo_sub.add_parser("add", help="注册一个仓库")
+    p.add_argument("path", help="仓库路径")
+    p.add_argument("--name", default=None, help="索引中显示的仓库名称")
     p.set_defaults(func=cmd_repo_add)
 
-    p = repo_sub.add_parser("list")
+    p = repo_sub.add_parser("list", help="列出已注册仓库")
     p.set_defaults(func=cmd_repo_list)
 
-    p = repo_sub.add_parser("remove")
-    p.add_argument("path")
+    p = repo_sub.add_parser("remove", help="移除仓库登记及其全局索引记录")
+    p.add_argument("path", help="仓库路径")
     p.set_defaults(func=cmd_repo_remove)
 
-    p = sub.add_parser("scan")
-    p.add_argument("path")
-    p.add_argument("--run-generator", action="store_true", help="Run generate-ai-index before importing .ai/*.jsonl")
+    p = sub.add_parser("scan", help="扫描并更新一个仓库的全局索引")
+    p.add_argument("path", help="仓库路径")
+    p.add_argument("--run-generator", action="store_true", help="先运行 PATH 中的 generate-ai-index 或仓库 scripts/generate-ai-index.py")
     p.set_defaults(func=cmd_scan)
 
-    p = sub.add_parser("update")
-    p.add_argument("--run-generator", action="store_true", help="Run generate-ai-index for each repo before importing .ai/*.jsonl")
+    p = sub.add_parser("update", help="刷新所有已注册仓库的全局索引")
+    p.add_argument("--run-generator", action="store_true", help="逐个运行 PATH 中的 generate-ai-index 或仓库 scripts/generate-ai-index.py")
     p.set_defaults(func=cmd_update)
 
-    p = sub.add_parser("search")
-    p.add_argument("query")
-    p.add_argument("--top", type=int, default=10)
-    p.add_argument("--current-repo", action="store_true", help="Boost results from current working repo")
+    p = sub.add_parser("search", help="列出匹配的索引记录")
+    p.add_argument("query", help="关键词或问题描述")
+    p.add_argument("--top", type=int, default=10, help="最多显示结果数（默认：10）")
+    p.add_argument("--current-repo", action="store_true", help="提高当前工作目录所属仓库的结果排名")
     p.set_defaults(func=cmd_search)
 
-    p = sub.add_parser("context")
-    p.add_argument("query")
-    p.add_argument("--top", type=int, default=8)
-    p.add_argument("--current-repo", action="store_true", help="Boost results from current working repo")
+    p = sub.add_parser("context", help="生成带文件位置的 Agent 调查上下文")
+    p.add_argument("query", help="关键词或问题描述")
+    p.add_argument("--top", type=int, default=8, help="最多包含结果数（默认：8）")
+    p.add_argument("--current-repo", action="store_true", help="提高当前工作目录所属仓库的结果排名")
     p.set_defaults(func=cmd_context)
 
-    p = sub.add_parser("stats")
+    p = sub.add_parser("stats", help="查看全局索引记录统计")
     p.set_defaults(func=cmd_stats)
 
     return parser

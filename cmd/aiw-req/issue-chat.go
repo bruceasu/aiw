@@ -38,7 +38,7 @@ func dispatchIssueChat(args []string) error {
 		return errors.New("issue action preparation requires an active conversation")
 	}
 	if len(args) == 0 {
-		return errors.New("usage: aiw issue chat prepare <new|capture|approve|promote> ...")
+		return errors.New("usage: aiw issue chat prepare <new|capture|approve|archive|cancel> ...")
 	}
 	action := issuePendingAction{Kind: args[0]}
 	switch action.Kind {
@@ -69,13 +69,6 @@ func dispatchIssueChat(args []string) error {
 			return err
 		}
 		action.RequirementID, action.Decision, action.By, action.Reason = id, decision, by, reason
-	case "promote":
-		usage, _ := issueSubcommandUsage("promote")
-		if (len(args) != 4 && len(args) != 5) || args[2] != "--task" || (len(args) == 5 && args[4] != "--allow-unrelated-dirty") {
-			return errors.New(usage)
-		}
-		action.RequirementID, action.TaskID = args[1], args[3]
-		action.AllowUnrelatedDirty = true
 	case "archive":
 		usage, _ := issueSubcommandUsage("archive")
 		if len(args) != 6 || args[2] != "--by" || args[4] != "--reason" {
@@ -91,7 +84,7 @@ func dispatchIssueChat(args []string) error {
 	default:
 		return fmt.Errorf("unsupported requirement action: %s", action.Kind)
 	}
-	if !issue.ValidID(action.RequirementID) || (action.TaskID != "" && !issue.ValidID(action.TaskID)) {
+	if !issue.ValidID(action.RequirementID) {
 		return errors.New("invalid requirement or task id")
 	}
 	b, err := json.MarshalIndent(action, "", "  ")
@@ -310,14 +303,6 @@ func confirmIssueAction(store *session.Store, sessionID string) (string, error) 
 		}
 	case "approve":
 		if err := confirmIssueApproval(store, sessionID, content, action); err != nil {
-			return "", err
-		}
-	case "promote":
-		args := []string{action.RequirementID, "--task", action.TaskID}
-		if action.AllowUnrelatedDirty {
-			args = append(args, "--allow-unrelated-dirty")
-		}
-		if err := promoteIssue(args); err != nil {
 			return "", err
 		}
 	case "archive":

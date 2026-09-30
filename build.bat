@@ -130,7 +130,6 @@ echo TypeScript cz plugin built in plugins\aiw-cz\release.
 exit /b 0
 
  :build_plugins
-call :build_workflow || exit /b 1
 call :build_req || exit /b 1
 call :build_cz || exit /b 1
 if not exist "%INSTALL_DIR%\plugins" mkdir "%INSTALL_DIR%\plugins" || exit /b 1
@@ -144,7 +143,6 @@ call cp-mirror.bat docs\usage %INSTALL_DIR%\docs\usage || exit /b 1
 exit /b 0
 
  :build_skills
-call :build_workflow || exit /b 1
 call :install_entries skills "%INSTALL_DIR%\skills" || exit /b 1
 exit /b 0
 

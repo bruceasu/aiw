@@ -26,8 +26,6 @@ type issuePendingAction struct {
 	Decision            string   `json:"decision,omitempty"`
 	By                  string   `json:"by,omitempty"`
 	Reason              string   `json:"reason,omitempty"`
-	TaskID              string   `json:"task_id,omitempty"`
-	AllowUnrelatedDirty bool     `json:"allow_unrelated_dirty,omitempty"`
 }
 
 // approvalCheckpoint binds advice to the exact displayed action and evidence.
