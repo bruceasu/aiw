@@ -43,14 +43,16 @@ def main(argv: list[str] | None = None) -> int:
     except subprocess.CalledProcessError as exc:
         print(f"aiw-cz: git context unavailable: {exc}", file=sys.stderr)
         return 1
-    if config.llm:
+    if args.retry:
+        review_and_commit(Path.cwd(), config, previous_draft(Path.cwd()))
+    elif config.llm:
         generated = candidates(config, Path.cwd(), config.provider)
         if not generated:
-            review_and_commit(Path.cwd(), config, wizard(config, previous_draft(Path.cwd()) if args.retry else None))
+            review_and_commit(Path.cwd(), config, wizard(config))
         else:
             review_and_commit(Path.cwd(), config, choose_candidate(config, generated))
     else:
-        review_and_commit(Path.cwd(), config, wizard(config, previous_draft(Path.cwd()) if args.retry else None))
+        review_and_commit(Path.cwd(), config, wizard(config))
     print(f"aiw-cz Python entry ready (language={config.language}, llm={config.llm})", file=sys.stderr)
     return 0
 

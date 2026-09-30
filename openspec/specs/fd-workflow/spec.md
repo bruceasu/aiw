@@ -38,6 +38,8 @@ The dispatcher MUST save a receipt before starting a role. A pending receipt
 MAY be resumed. A launching or dispatched receipt MUST NOT start a second
 writer automatically. The operator MUST reconcile its original process or
 session before retrying an unknown result.
+Receipt content digests MUST treat CRLF and LF line endings as equivalent;
+other FD content changes MUST still invalidate the handoff.
 
 A host Agent that handles a pending receipt MUST atomically bind the exact
 event ID to its Session before writing. Repeating the claim for the same

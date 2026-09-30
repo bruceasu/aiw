@@ -30,7 +30,7 @@ META = {
 FD_RE = re.compile(r"^FD-(\d{3,})$", re.IGNORECASE)
 FD_FILE_RE = re.compile(r"^FD-(\d{3,})_[A-Z0-9_]+\.md$", re.IGNORECASE)
 STATUS_RE = re.compile(r"(?m)^\*\*Status:\*\*[ \t]*(.+?)[ \t]*$")
-REVISION_RE = re.compile(r"(?m)^\*\*Revision:\*\*[ \t]*(\d+)[ \t]*$")
+REVISION_RE = re.compile(r"(?m)^\*\*Revision:\*\*[ \t]*(\d+)[ \t\r]*$")
 PRIORITY_RE = re.compile(r"(?m)^\*\*Priority:\*\*[ \t]*(.+?)[ \t]*$")
 ITEM_RE = re.compile(r"(?m)^\s*- \[([ xX-])\] (\d+(?:\.\d+)*)\s+(.+)$")
 ALLOWED = {
@@ -149,6 +149,11 @@ def revision(content: str) -> int:
     if not match:
         raise FDError("FD is missing **Revision:**; migrate the FD before emitting events")
     return int(match.group(1))
+
+
+def fd_digest(content: bytes | str) -> str:
+    data = content.encode("utf-8") if isinstance(content, str) else content
+    return hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest()
 
 
 def title(content: str) -> str:
@@ -281,7 +286,7 @@ def dispatch(base: Path, path: Path, event: dict) -> None:
             raise FDError("handoff changed before dispatch; inspect the latest event")
         fd_path = resolve_fd(base, name)
         fd_content = fd_path.read_bytes()
-        if revision(fd_content.decode("utf-8")) != current["fd_revision"] or hashlib.sha256(fd_content).hexdigest() != current["fd_sha256"]:
+        if revision(fd_content.decode("utf-8")) != current["fd_revision"] or fd_digest(fd_content) != current["fd_sha256"]:
             raise FDError("FD changed since the handoff; reconcile before dispatch")
         current["dispatch_state"] = "launching"
         atomic_json(path, current)
@@ -327,7 +332,7 @@ def request_review(base: Path, name: str, reason: str) -> None:
             latest = latest_event(base, name)
             if latest and latest[1]["dispatch_state"] in {"launching", "dispatched"}:
                 raise FDError(f"{latest[1]['event_id']} is in flight; reconcile its session before requesting review")
-            digest = hashlib.sha256(content.encode("utf-8")).hexdigest()
+            digest = fd_digest(content)
             if (latest and latest[1]["dispatch_state"] == "pending"
                     and latest[1]["target_role"] == "reviewer"
                     and latest[1]["fd_revision"] == revision(content)
@@ -342,7 +347,7 @@ def request_review(base: Path, name: str, reason: str) -> None:
                 raise FDError(f"event already exists: {event_id}")
             event = {"event_id": event_id, "fd_id": name, "event_type": "review-requested",
                      "fd_revision": new_revision, "producer": "pm",
-                     "fd_sha256": hashlib.sha256(updated.encode("utf-8")).hexdigest(),
+                     "fd_sha256": fd_digest(updated),
                      "artifact_ref": active_ref, "fd_path": active_ref,
                      "target_role": "reviewer", "dispatch_state": "pending",
                      "reason": reason.strip(), "created_at": datetime.now(timezone.utc).isoformat()}
@@ -379,7 +384,7 @@ def request_review(base: Path, name: str, reason: str) -> None:
                 raise FDError(f"event already exists: {event_id}")
             event = {"event_id": event_id, "fd_id": name, "event_type": "review-requested",
                      "fd_revision": new_revision, "producer": "pm",
-                     "fd_sha256": hashlib.sha256(updated.encode("utf-8")).hexdigest(),
+                     "fd_sha256": fd_digest(updated),
                      "artifact_ref": active_ref, "fd_path": active_ref,
                      "target_role": "reviewer", "dispatch_state": "pending",
                      "reason": reason.strip(), "created_at": datetime.now(timezone.utc).isoformat()}
@@ -446,7 +451,7 @@ def prepare_event(base: Path, name: str, kind: str, producer: str, artifact: str
         updated = STATUS_RE.sub(f"**Status:** {new_status}", updated, count=1)
     event = {"event_id": event_id, "fd_id": name, "event_type": kind,
              "fd_revision": new_revision, "producer": producer,
-             "fd_sha256": hashlib.sha256(updated.encode("utf-8")).hexdigest(),
+             "fd_sha256": fd_digest(updated),
              "artifact_ref": artifact_ref, "fd_path": fd_path.relative_to(base).as_posix(),
              "target_role": target_role, "dispatch_state": "pending",
              "created_at": datetime.now(timezone.utc).isoformat()}
@@ -543,7 +548,7 @@ def claim(base: Path, name: str, event_id: str, session_ref: str) -> None:
             raise FDError(f"{event_id} is {event['dispatch_state']}; inspect its original session or log")
         content = fd_path.read_bytes()
         if (revision(content.decode("utf-8")) != event["fd_revision"]
-                or hashlib.sha256(content).hexdigest() != event["fd_sha256"]):
+                or fd_digest(content) != event["fd_sha256"]):
             raise FDError("FD changed since the handoff; reconcile before claiming")
         event["dispatch_state"] = "dispatched"
         event["session_ref"] = session_ref
@@ -573,7 +578,7 @@ def close_locked(base: Path, name: str, outcome: str, reason: str) -> None:
     if outcome == "Complete" and (not latest or latest[1]["event_type"] != "verification-passed"
                                   or latest[1]["producer"] != "reviewer"
                                   or latest[1]["fd_revision"] != revision(content)
-                                  or latest[1]["fd_sha256"] != hashlib.sha256(content.encode("utf-8")).hexdigest()):
+                                  or latest[1]["fd_sha256"] != fd_digest(content)):
         raise FDError("Complete requires the current Reviewer's verification-passed event")
     if latest and latest[1]["dispatch_state"] in {"launching", "dispatched"}:
         raise FDError("cannot archive while a role execution has an unknown result")

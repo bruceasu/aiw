@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-005](FD-005_AIW_CZ_TYPESCRIPT_PYTHON.md) | 将 aiw-cz 从 TypeScript 迁移到 Python | Pending Verification | Medium |
+| [FD-005](FD-005_AIW_CZ_TYPESCRIPT_PYTHON.md) | 将 aiw-cz 从 TypeScript 迁移到 Python | In Progress | Medium |
 | [FD-006](FD-006_TYPESCRIPT_AGENT_PROXY.md) | 本机 TypeScript Agent Proxy | Open | Medium |
 
 ## Completed

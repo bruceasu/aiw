@@ -45,6 +45,8 @@ increase `**Revision:**`; a pending role event must be claimed before its role
 can complete it, and a changed FD cannot be claimed until reconciled. A
 `Complete` archive also requires the FD content to match the Reviewer's
 `verification-passed` receipt. Reconcile changed content with a new review.
+FD claim and dispatch compare content after normalizing CRLF to LF, so a
+Windows line-ending conversion alone does not invalidate a handoff.
 If a process crashes while holding `.ai/fd/<id>/.mutation-lock`, inspect the
 original process and event receipt before removing the stale lock. Never
 remove it while the role may still be writing.
