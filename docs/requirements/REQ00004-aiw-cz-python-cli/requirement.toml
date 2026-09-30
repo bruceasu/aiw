@@ -1,0 +1,32 @@
+id = "REQ00004-aiw-cz-python-cli"
+title = "将 aiw-cz 从 TypeScript 迁移到 Python"
+parent_id = ""
+status = "APPROVED"
+created = "2026-09-30"
+updated = "2026-09-30"
+revision = 3
+
+[approval]
+status = "APPROVED"
+by = "user"
+at = "2026-09-30T23:53:48+09:00"
+reason = "已确认 Python 迁移、CLI/HTTP provider 回退、GUI/TUI、国际化和兼容性要求"
+source_digest = "e9cc4b20595b61f21c20980752386aad6e07a6c7e996646407ce25d629bbb3d4"
+
+[promotion]
+status = "NOT_STARTED"
+task_id = ""
+
+[conversation]
+session_id = ""
+
+[terminal]
+by = ""
+at = ""
+reason = ""
+
+[artifact]
+requirement-plan = "docs/requirements/REQ00004-aiw-cz-python-cli/requirement-plan.md"
+
+[digest]
+requirement-plan = "576f2be4532acea65f6142654cbd1e169ec84b19e4c13dd7c2a43e001f1c0307"

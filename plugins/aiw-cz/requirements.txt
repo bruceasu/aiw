@@ -1,0 +1,2 @@
+# aiw-cz uses the Python standard library by default.
+# Keep this file as the supported installation hook for future optional packages.
