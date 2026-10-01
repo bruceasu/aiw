@@ -1,7 +1,0 @@
-{
-  "plugins/test_notify_managed.py": "5b3a5fd65bd09c154c34423f19da6ced0dc34f2e4554ce0b6be6caba312af1f7",
-  "plugins/aiw-notify.py": "91e414c50dda8a91e3e526d697ca116a0c01c198d47e7297fb3afff8c00fb243",
-  "plugins/send_teams_msg.py": "3326ac85b729edd6a38b5639502281b2c1c1df86afaa7d795a1e1cd40bcb6b8e",
-  "openspec/changes/workflow-automation/run-e07-adapter-terminal.py": "70155ca95805f56eb6e4e24df8406da2d6f91d5356fe1b4e646f03fce8ea8f74",
-  "openspec/changes/workflow-automation/e07-adapter-verification-plan.md": "25aad2e20963d88251ecfb4fb927acc70b0f9103b4ac5bd769131c320d5b7fd4"
-}

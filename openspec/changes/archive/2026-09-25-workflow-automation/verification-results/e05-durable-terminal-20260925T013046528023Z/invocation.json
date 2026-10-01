@@ -1,5 +1,0 @@
-{
-  "scope": "One original three-test E05 durable run from the operator terminal",
-  "authorization_context": "Execution requires explicit operator approval for this bounded E05 durable group; the runner does not verify approval and implies no product grant",
-  "product_runner_grant": false
-}

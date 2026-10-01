@@ -2,7 +2,8 @@
 
 `aiw cz` 使用独立的 `[cz]` 配置，不读取 `[ai]`、`[ai.profiles.fast]` 或 `AIW_LLM_*`。
 配置文件按以下顺序加载，后面的值覆盖前面的值：插件目录的 `cz.toml`、
-`AIW_ROOT` 的 `aiw.toml`、当前 Git 项目根目录的 `aiw.toml`。
+`AIW_ROOT` 的 `aiw.toml`、当前工作目录的 `aiw.toml`。每处若主文件不存在，
+则读取对应的 `.cz.toml` 或 `.aiw.toml`；同一处的两个文件不会合并。
 
 ```toml
 [cz]
@@ -22,26 +23,23 @@ model = "your-openai-model"
 # base_url = "https://api.openai.com/v1"
 ```
 
-`--llm` 按 Copilot SDK → Codex SDK → OpenAI SDK 的顺序尝试。各方式使用各自的
+`--llm` 按 Codex CLI → Copilot CLI → OpenAI Responses HTTP 的顺序尝试。各方式使用各自的
 `model`、认证与端点配置，前一项失败或没有有效候选时尝试下一项；全部失败后提示
 原因并进入手工向导。`--no-llm` 直接进入手工向导。`--provider` 只尝试指定方式；
 `--model` 覆盖所选方式的模型。CLI 参数优先于 `CZ_LLM_PROVIDER`、
 `CZ_<PROVIDER>_MODEL`、`CZ_<PROVIDER>_API_KEY`、`CZ_<PROVIDER>_BASE_URL`，
 这些环境变量优先于配置文件。OpenAI 还可使用 `OPENAI_API_KEY`。
 
-Copilot SDK 可使用已登录的 GitHub 凭据，也可在 `[cz.copilot].api_key` 中设置
-GitHub 用户令牌。Codex SDK 可使用已登录的 Codex 凭据，也可在
-`[cz.codex].api_key` 中设置 API key。OpenAI SDK 需要模型和 API key。
+Codex CLI 从 `PATH` 查找，也可通过 `CZ_CODEX_COMMAND` 指定命令。
+Copilot CLI 仅在设置 `CZ_COPILOT_COMMAND` 后使用；未设置时直接跳过。
+两个 CLI 使用本机登录状态，并要求支持当前插件所需的非交互参数。
+OpenAI HTTP 需要模型和 API key，可通过 `[cz.openai]`、`CZ_OPENAI_API_KEY`
+或 `OPENAI_API_KEY` 配置。
 
-`cz` 需要 Node.js 22.12.0 或更高版本。运行 `build.bat cz` 安装构建依赖、
-编译 TypeScript，并在 `plugins/aiw-cz/release/` 生成当前平台的发布样本。
-`build.bat plugins` 只将该样本安装到 `plugins/aiw-cz`，保留安装目录已有的
-`cz.toml` / `.cz.toml`，不会复制 TypeScript 源码和 `node_modules`。
-Linux 构建需在 Linux 主机运行 `npm install` 和 `npm run build:release`，
-再将完整的 `release/` 内容安装到 AIW 的 `plugins/aiw-cz/`。
-
-发布样本的 `release-manifest.json` 列出实际文件、来源平台和用途，并记录
-开发目录的体积基线。样本包含 Copilot 和 Codex 对应平台的运行资源、Koffi
-原生组件、语言文件和打包后的 JavaScript；Node.js 仍由运行环境提供。
-`aiw cz` 继续运行 `aiw-cz.js` 插件入口。打包后无法找到必需的 provider
-二进制时，该 provider 会报告缺失资源并按原有顺序尝试下一种方式。
+`cz` 需要目标机器预装 Python，默认只使用标准库。Windows 上运行
+`build.bat cz` 会在 `plugins/aiw-cz/release/` 准备 Python 入口、模块、
+`requirements.txt` 和语言文件；`build.bat plugins` 将这份内容安装到 AIW
+插件目录，并保留已有的 `cz.toml` / `.cz.toml`。
+`aiw cz` 运行 `aiw-cz.py`。CLI 缺失、失败或返回无效候选时，插件按上述顺序
+尝试下一种方式；所有方式失败后进入 TUI。安装和交互细节见
+[Python runtime](cz-python-runtime.md)。

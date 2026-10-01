@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-014",
+  "source_event": "FD-014-000022-test-accepted",
+  "human_report": "FD-014-review-r2.md",
+  "data": {
+    "outcome": "verification-passed",
+    "reviewer_session": "fd014-reviewer-20261002-c8261b92",
+    "reviewed_base": "f52ef70 and FD-014 scoped working-tree changes",
+    "findings": [],
+    "results": [
+      "26/34 distinct scenarios have mapped passed evidence; 8 remain uncovered",
+      "Tester reports 15/15 passing on the authorized corrected rerun; first-run failures retained",
+      "PM explicitly accepts unavailable business-code branch coverage as an exception",
+      "Dual Markdown/JSON handoff and paired archive paths match the stable spec"
+    ],
+    "commands": [
+      "python plugins/aiw-fd.py claim FD-014 FD-014-000022-test-accepted --session fd014-reviewer-20261002-c8261b92",
+      "Get-Content, rg, git diff, git show, git status, git log, Get-FileHash (read-only inspection)"
+    ],
+    "checks_not_run": ["tests", "coverage", "compile", "final build", "network"],
+    "residual_risk": "Business-code branch coverage is unmeasured; E21-E25 and E27-E29 have no current-run execution evidence."
+  }
+}

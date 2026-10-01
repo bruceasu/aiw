@@ -9,7 +9,7 @@ import { ProxyError, safeError } from "./errors.js";
 import { complete } from "./providers.js";
 import { appendAudit, ResultStore, type PendingResult } from "./store.js";
 import { validateRequest } from "./validate.js";
-import type { AuditRecord, Completion, RequestInput } from "./types.js";
+import type { AuditRecord, Completion, RequestInput, Usage } from "./types.js";
 
 const MAX_ACTIVE = 8;
 const MAX_CONNECTIONS = 128;
@@ -129,8 +129,12 @@ export async function startService(port = PORT): Promise<Service> {
 }
 
 async function handleHttp(request: IncomingMessage, response: ServerResponse, store: ResultStore, port: number): Promise<void> {
-  if (!isLoopback(request.socket.remoteAddress) || !localHostHeader(request.headers.host, port)) {
-    json(response, 403, { error: { code: "local_only", message: "Only local loopback requests are accepted" } });
+  const localOnly = HOST === "127.0.0.1";
+  if ((localOnly && !isLoopback(request.socket.remoteAddress)) ||
+      !(localOnly ? localHostHeader(request.headers.host, port) : remoteHostHeader(request.headers.host, port))) {
+    json(response, 403, { error: localOnly
+      ? { code: "local_only", message: "Only local loopback requests are accepted" }
+      : { code: "invalid_host", message: "Use the configured IPv4 address and port" } });
     return;
   }
   if (request.method === "GET" && request.url === "/health") {
@@ -152,7 +156,7 @@ async function handleHttp(request: IncomingMessage, response: ServerResponse, st
     active++;
     try {
       const result = await execute(input);
-      json(response, 200, { request_id: input.request_id, provider: input.provider, model: input.model, output_format: input.output_format, result: result.text, usage: result.usage });
+      json(response, 200, { request_id: input.request_id, provider: input.provider, model: input.model, output_format: input.output_format, result: result.text, usage: result.usage, ...(result.reasoning_summary !== undefined ? { reasoning_summary: result.reasoning_summary } : {}) });
     } finally { active--; }
   } catch (error) {
     const safe = safeError(error);
@@ -168,7 +172,7 @@ async function execute(input: RequestInput): Promise<Completion> {
     await writeAudit({
       timestamp: new Date().toISOString(), request_id: requestId, client_id: input.client_id,
       provider: input.provider, model: input.model, status: "succeeded", duration_ms: Date.now() - start,
-      input_tokens: result.usage.input_tokens, output_tokens: result.usage.output_tokens, cost: result.usage.cost,
+      ...auditUsage(result.usage),
     });
     return result;
   } catch (error) {
@@ -177,8 +181,7 @@ async function execute(input: RequestInput): Promise<Completion> {
     await writeAudit({
       timestamp: new Date().toISOString(), request_id: requestId, client_id: input.client_id,
       provider: input.provider, model: input.model, status: "failed", duration_ms: Date.now() - start,
-      input_tokens: usage?.input_tokens ?? null, output_tokens: usage?.output_tokens ?? null,
-      cost: usage?.cost ?? null, error_code: safe.code,
+      ...auditUsage(usage), error_code: safe.code,
     });
     throw error;
   }
@@ -197,8 +200,7 @@ async function executeAndStore(input: RequestInput, store: ResultStore): Promise
       await writeAudit({
         timestamp: new Date().toISOString(), request_id: requestId, event_id: pending.event_id,
         client_id: input.client_id, provider: input.provider, model: input.model, status: "succeeded",
-        duration_ms: Date.now() - start, input_tokens: completion.usage.input_tokens,
-        output_tokens: completion.usage.output_tokens, cost: completion.usage.cost,
+        duration_ms: Date.now() - start, ...auditUsage(completion.usage),
       });
       return pending;
     } finally { active--; }
@@ -207,12 +209,20 @@ async function executeAndStore(input: RequestInput, store: ResultStore): Promise
     await writeAudit({
       timestamp: new Date().toISOString(), request_id: requestId, client_id: input.client_id,
       provider: input.provider, model: input.model, status: "failed", duration_ms: Date.now() - start,
-      input_tokens: completion?.usage.input_tokens ?? (error instanceof ProxyError ? error.usage?.input_tokens ?? null : null),
-      output_tokens: completion?.usage.output_tokens ?? (error instanceof ProxyError ? error.usage?.output_tokens ?? null : null),
-      cost: completion?.usage.cost ?? (error instanceof ProxyError ? error.usage?.cost ?? null : null), error_code: safe.code,
+      ...auditUsage(completion?.usage ?? (error instanceof ProxyError ? error.usage : undefined)),
+      error_code: safe.code,
     });
     throw error;
   }
+}
+
+function auditUsage(usage: Usage | undefined): Pick<AuditRecord, "input_tokens" | "output_tokens" | "cost" | "openai_usage"> {
+  return {
+    input_tokens: usage?.input_tokens ?? null,
+    output_tokens: usage?.output_tokens ?? null,
+    cost: usage?.cost ?? null,
+    ...(usage?.openai_usage ? { openai_usage: usage.openai_usage } : {}),
+  };
 }
 
 async function writeAudit(record: AuditRecord): Promise<void> {
@@ -255,6 +265,14 @@ function localHostHeader(host: string | undefined, port: number): boolean {
     const parsed = new URL(`http://${host}`);
     return ["127.0.0.1", "localhost"].includes(parsed.hostname) && (!parsed.port || Number(parsed.port) === port);
   } catch { return false; }
+}
+
+function remoteHostHeader(host: string | undefined, port: number): boolean {
+  if (!host) return false;
+  const authority = /^((?:[0-9]{1,3}\.){3}[0-9]{1,3})(?::([0-9]{1,5}))?$/.exec(host);
+  if (!authority || isIP(authority[1]) !== 4) return false;
+  return Number(authority[2] ?? 80) === port &&
+    (HOST === "0.0.0.0" || authority[1] === HOST);
 }
 
 function isLoopback(address: string | undefined): boolean {

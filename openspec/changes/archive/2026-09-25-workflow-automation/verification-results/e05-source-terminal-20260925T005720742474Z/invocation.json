@@ -1,5 +1,0 @@
-{
-  "scope": "One original three-test E05 source run from the operator terminal",
-  "authorization_context": "Operator explicitly invoked this bounded E05 source test runner; no product grant is implied",
-  "product_runner_grant": false
-}

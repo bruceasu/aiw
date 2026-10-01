@@ -25,11 +25,19 @@ SCHEMA = {
 }
 
 
-def _text(response: dict) -> str:
+def _text(response: object) -> str:
+    if not isinstance(response, dict):
+        raise OpenAIUnavailable("OpenAI response is not a JSON object")
     if isinstance(response.get("output_text"), str):
         return response["output_text"]
-    for item in response.get("output", []):
-        for content in item.get("content", []) if isinstance(item, dict) else []:
+    output = response.get("output", [])
+    if not isinstance(output, list):
+        raise OpenAIUnavailable("OpenAI response has invalid output")
+    for item in output:
+        content_items = item.get("content", []) if isinstance(item, dict) else []
+        if not isinstance(content_items, list):
+            continue
+        for content in content_items:
             if isinstance(content, dict) and isinstance(content.get("text"), str):
                 return content["text"]
     raise OpenAIUnavailable("OpenAI response contains no text")

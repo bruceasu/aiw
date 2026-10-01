@@ -16,7 +16,7 @@ Explicit invocation of this Skill authorizes at most two parallel static-review
 sub-agents, one per axis. It does not authorize tests, builds, network calls, or
 permission escalation. This Skill aggregates their findings.
 
-Read `skills/work-management.md` and `docs/agents/work-management.md` when
+Read `skills/work-management.md` and `.agents/agents/work-management.md` when
 present. Resolve the originating Issue and FD when present, plus relevant
 stable specs. Read a linked OpenSpec change only when one exists.
 

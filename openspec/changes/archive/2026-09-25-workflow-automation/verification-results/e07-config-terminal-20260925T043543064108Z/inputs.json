@@ -1,7 +1,0 @@
-{
-  "plugins/test_notify_config.py": "7ec94805a9392f2640d548c90b1d91220ebdbc4ea369ed3bdd6732bc0c42ec97",
-  "plugins/aiw-notify.py": "91e414c50dda8a91e3e526d697ca116a0c01c198d47e7297fb3afff8c00fb243",
-  "plugins/send_teams_msg.py": "3326ac85b729edd6a38b5639502281b2c1c1df86afaa7d795a1e1cd40bcb6b8e",
-  "openspec/changes/workflow-automation/run-e07-config-terminal.py": "d566a0cb0701815acd433c586f2e856bd11c2385398fa9baa3662e8fae02dbad",
-  "openspec/changes/workflow-automation/e07-config-verification-plan.md": "6c1e7f2aeaa2367116908e1eb0ade312ba561033286bc093a42dc4dd29b57dc7"
-}

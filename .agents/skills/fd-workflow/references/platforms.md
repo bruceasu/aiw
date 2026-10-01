@@ -16,7 +16,7 @@ Keep repository-wide durable project instructions in:
 AGENTS.md
 ```
 
-Both CLIs can use this convention, so FD lifecycle rules do not need to be duplicated in `CLAUDE.md` or vendor-specific files.
+Both CLIs can use this convention, so FD lifecycle rules do not need to be duplicated in `CODEX.md` or vendor-specific files.
 
 ## OpenAI Codex CLI
 
@@ -34,6 +34,7 @@ $fd-workflow new Add export pagination
 $fd-workflow status
 $fd-workflow deep Investigate why export memory grows with large datasets
 $fd-workflow verify FD-012
+$fd-workflow request-review FD-012 Because something is changed.
 $fd-workflow close FD-012 complete
 ```
 
@@ -53,11 +54,8 @@ Use fd-workflow to create a new FD for export pagination.
 Use fd-workflow to show status.
 Use fd-workflow to deeply analyze the export memory problem.
 Use fd-workflow to verify FD-012.
+Use fd-workflow request-review FD-012 because something is changed
 Use fd-workflow to close FD-012 as complete.
 ```
-
-## Optional compatibility layer for old Claude commands
-
-A repository migrating from `.claude/commands/fd-*.md` may keep those files temporarily for Claude Code users. They are not the source of truth. The canonical workflow should live in this skill, and project conventions should live in `AGENTS.md`.
 
 Avoid editing the same workflow independently in both locations. If compatibility commands are kept, make them thin wrappers that instruct the agent to use `fd-workflow` with the corresponding operation.

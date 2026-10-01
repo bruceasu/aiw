@@ -15,15 +15,83 @@ aiw fd resume FD-002
 aiw fd emit FD-002 implementation-ready --producer worker --artifact docs/features/reports/FD-002-implementation.md --source-event FD-002-000003-design-ready
 aiw fd emit FD-002 verification-passed --producer reviewer --artifact docs/features/reviews/FD-002-review.md --source-event FD-002-000004-implementation-ready
 aiw fd request-review FD-001 --reason "文档在验收后更新"
+aiw fd reopen FD-004 --reason "继续未完成的验证"
 ```
 
 The creation event routes to Planner. Planner writes options, decision,
 acceptance, and numbered Work Items before `design-ready`. Worker implements
 all ready items and records a report; then it emits `implementation-ready`.
+New FDs carry `**Test policy:** Independent`. For them, this event routes to
+an independent Tester. New FDs also carry `**Evidence policy:** Dual`:
+future reports use Chinese Markdown for people and same-basename JSON for
+CLI/AI. Put one `<!-- aiw-data: FD-XXX-report.json -->`
+comment in Markdown, use Markdown for `--artifact`, and write JSON with schema
+`aiw.fd.evidence.v1`, FD ID, kind, source event, Markdown filename, and `data`.
+Use the JSON templates under `docs/features/`. Reviewer reports use kind
+`reviewer-report` and live under `docs/features/reviews/`. The CLI checks the
+JSON before handoff, and close archives both files. Older Markdown-only
+evidence is preserved. Relative filename references remain valid after archive.
+Tester claims in a different session, writes a
+black-box report using `docs/features/TEST_REPORT_TEMPLATE.md`, and emits
+`test-report-ready --producer tester --artifact <report> --source-event
+<implementation-ready-event>`. PM writes a versioned decision using
+`docs/features/TEST_DECISION_TEMPLATE.md` and emits `test-accepted` to
+Reviewer or `test-rejected` to Worker, citing the exact Tester event. The
+decision records both coverage measures, exceptions, residual risk, PM
+identity, and time; failed executed behavior tests cannot be accepted.
+Existing FDs without the marker continue directly to independent Review.
 An independent Reviewer emits `changes-requested` with findings or
 `verification-passed` with a review report. A role must claim or receive its
 handoff before completing it, then pass `--source-event <event-id>`.
 `aiw fd show` displays the last ID.
+
+For legacy Markdown-only evidence, the Tester report uses labelled fields.
+For Dual evidence, the CLI reads the JSON sidecar and checks event/revision/
+digest, session, scenario inventory, count, and coverage fields before accepting
+`test-report-ready`. The PM decision uses
+`docs/features/TEST_DECISION_TEMPLATE.md`, cites the exact Tester report,
+and records an explicit exception for coverage below 70% or unavailable.
+Tester must split broad FD acceptance items into distinct observable
+scenarios before computing requirements coverage; a partially tested item
+does not make all its behaviors covered. A human-approved command uses an
+affirmative `approved:<source>:<id>` reference in its Planner record.
+Tester preparation may happen earlier in a separate assigned test path, but
+the canonical Tester handoff starts after Worker completion. Preparing cases
+does not authorize running tests, measuring coverage, or calling services.
+Tester-authored repository test code belongs under the root `tests/` directory.
+Before execution, Tester proposes each exact command, scope, duration, and
+side effects. Planner inspects the invoked test code and writes a decision
+using `docs/features/TEST_AUTHORIZATION_TEMPLATE.md`. A focused, offline,
+inspectable command confined to assigned or temporary paths can receive a
+recorded `planner-low-risk` approval without human review. Dangerous or
+unclear effects require explicit human approval and a reference in the record.
+Executed tests or measured branch coverage require a matching record for each
+command; the CLI checks the event, FD revision/digest, Tester session, and
+exact command. In Dual evidence, JSON `data.authorization_records` and
+`data.commands` are matching arrays. New FD revisions
+need new authorization.
+
+## One-operation host workflow
+
+Ask the host agent to run `$fd-workflow auto` with a feature request or a
+single FD ID. This is a Skill operation, not an `aiw fd auto` CLI command. It
+creates or resumes one numbered FD, splits ordered Work Items, designs and
+implements them, delegates required tests to a separate Tester subagent and
+each review to a separate `fd-review` subagent,
+repairs concrete findings, and closes with `aiw fd close <id> Complete` after
+a current Reviewer pass. The host counts at most three Reviewer outcomes for
+the active implementation cycle across interrupted/resumed auto runs. A third
+failed review leaves the FD active with its findings. The resulting Worker
+handoff stays pending for a later human-directed recovery.
+On a later `$fd-workflow auto` invocation, the host checks the earlier review
+count and latest findings before claiming that pending Worker handoff; it does
+not reset the three-round limit.
+
+Auto uses the normal claim/source-event receipts. It stops if a role is
+already in flight, another Session owns a handoff, a material choice needs
+the human, or no separate Reviewer subagent is available. The request does
+not authorize tests, builds, network access, permission escalation, commits,
+merge, push, or deployment. Those steps still follow repository rules.
 
 The event receipt includes FD ID, revision, type, producer, target role, and
 artifact path. `AIW_FD_ROLE_RUNNER` may name an executable that receives
@@ -47,19 +115,59 @@ can complete it, and a changed FD cannot be claimed until reconciled. A
 `verification-passed` receipt. Reconcile changed content with a new review.
 FD claim and dispatch compare content after normalizing CRLF to LF, so a
 Windows line-ending conversion alone does not invalidate a handoff.
+For an active `Open` or `In Progress` FD whose latest pending Worker event is
+stale after PM edits, run `aiw fd refresh-worker <fd-id> --reason "..."`.
+This cancels the old event and creates a `work-requested` Worker handoff for
+the current FD revision and digest. Claim the new event and cite it on
+`implementation-ready`. A current or in-flight Worker event cannot be
+replaced; use `request-review` only for the separate `Pending Verification`
+review-recovery case.
 If a process crashes while holding `.ai/fd/<id>/.mutation-lock`, inspect the
 original process and event receipt before removing the stale lock. Never
 remove it while the role may still be writing.
 
-For parallel writes, commit the FD plan, then run `aiw fd worktree add FD-002`.
+When an implementation request asks for parallel work, isolation, a worktree,
+or `wt`, use the isolated FD workflow; an informational or design-only mention
+does not start implementation. Commit the FD plan, then run
+`aiw fd worktree add FD-002`. It writes the FD ID, parent branch, feature
+branch, and worktree path to `.ai/fd/FD-002/workspace.json`; read and verify
+that record immediately, then use its `parent_branch` for the later merge.
 `aiw fd worktree status FD-002` shows Git worktrees. Sequential work may stay
-in the primary checkout. Local commits may be made for focused slices under
-repository rules; push, merge, release, and archive are separate actions.
+in the primary checkout.
 
-After a passed review and a separate close decision, run `aiw fd close FD-002
-Complete`. Use `--reason "..."` for `Deferred` and `Closed` outcomes.
+Before using `aiw wt` operations, check `aiw help wt` and use them only if they
+accept the FD ID. Do not create a Task for a Task-only command. When no FD-aware
+merge command is available, use scoped local Git operations for
+`feature/<fd-id>` and the recorded parent. After a passed review, merge first;
+archive the FD only after the merge succeeds. A conflict leaves the FD active
+and worktree intact. This isolated lifecycle authorizes local commits and the
+requested merge/archive; it does not authorize push, release, deployment, or
+worktree removal.
+
+After a passed review, run `aiw fd close FD-002 Complete` once any requested
+isolated merge has succeeded. Use `--reason "..."` for `Deferred` and `Closed`
+outcomes. Manual close requests still require their own explicit decision.
 This archives the FD file and rebuilds the index; it does not change Git
 delivery state.
+
+Native archived FDs live at
+`docs/features/archive/<FD-ID>/<FD-ID>_SLUG.md`. Their reports and reviews
+live in that FD directory's `reports/` and `reviews/` subdirectories. Existing
+flat native archives are migrated into this layout with their evidence.
+
+To continue an archived `Closed` or `Deferred` FD, run `aiw fd reopen <fd-id>
+--reason "..."`. This preserves the earlier close record and Work Items,
+returns the FD to the active index as `In Progress`, and creates a Worker
+handoff. Claim that exact handoff before editing, then use the normal
+`implementation-ready` and independent review flow. Earlier evidence stays
+archived; write new reports and reviews in the active evidence directories.
+Give new evidence distinct filenames, such as `FD-004-implementation-r2.md`,
+because a later close will reject an archive filename collision.
+If the reason was entered incorrectly, use `aiw fd reopen <fd-id> --reason
+"corrected text" --correct-reason` before the Worker claims the new event.
+This keeps the event ID, updates its FD digest, and records the old reason in
+the receipt's correction history. A claimed handoff cannot be corrected here.
+Use `request-review` for an archived `Complete` FD.
 
 If an archived Complete FD is later updated, request a fresh review with
 `aiw fd request-review FD-001 --reason "..."`. The command records the current

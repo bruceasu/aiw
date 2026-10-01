@@ -1,0 +1,30 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-014",
+  "source_event": "FD-014-000019-test-rejected",
+  "human_report": "FD-014-implementation-r4.md",
+  "data": {
+    "summary": "新增中文 Markdown 与同名 JSON 双份证据、CLI 校验和成对归档，保留旧格式兼容。",
+    "changed_paths": [
+      "plugins/aiw-fd.py",
+      "docs/features/TEMPLATE.md",
+      "docs/features/TEST_REPORT_TEMPLATE.md",
+      "docs/features/TEST_REPORT_DATA_TEMPLATE.json",
+      "docs/features/TEST_DECISION_TEMPLATE.md",
+      "docs/features/TEST_DECISION_DATA_TEMPLATE.json",
+      "docs/features/TEST_AUTHORIZATION_TEMPLATE.md",
+      "docs/features/TEST_AUTHORIZATION_DATA_TEMPLATE.json",
+      "docs/features/REPORT_DATA_TEMPLATE.json",
+      "openspec/specs/fd-workflow/spec.md",
+      "skills/fd-workflow/SKILL.md",
+      "skills/fd-review/SKILL.md",
+      "skills/work-management.md",
+      "docs/usage/aiw-fd.md",
+      "AGENTS.md"
+    ],
+    "commands": ["python scripts/compile.py"],
+    "results": ["Go 编译检查通过；未执行 Python 生命周期测试。"],
+    "residual_risk": "Python 双份证据校验和成对归档尚待独立 Tester 与 Reviewer 验证。"
+  }
+}

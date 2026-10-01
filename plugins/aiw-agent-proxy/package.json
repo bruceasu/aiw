@@ -10,7 +10,6 @@
     "start": "node aiw-agent-proxy.js start"
   },
   "dependencies": {
-    "@github/copilot-sdk": "1.0.14",
     "ws": "8.18.3"
   },
   "devDependencies": {

@@ -42,9 +42,8 @@ Express a real dependency in the checkbox title with
 dependencies. Keep IDs stable once mapped, including completed IDs. Do not
 turn prose ordering into a dependency unless the work truly requires it.
 
-Use `aiw wf plan <task-id>` or the supported planning operation to reconcile
-the authored checklist with Workflow Core Work Items. The FD owns item meaning
-and order; Workflow Core owns execution state. For a legacy Task, edit and map
+Use the FD workflow to reconcile the authored checklist with implementation
+work items. The FD owns item meaning and order.
 its existing `tasks.md` without creating a second checklist. A linked
 change's `tasks.md` is not automatically a second plan to maintain. Preserve
 its authored text and completed IDs if an explicit compatibility update is

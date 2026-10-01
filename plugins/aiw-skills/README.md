@@ -95,8 +95,12 @@ The installer:
 3. hashes the complete materialized Skill;
 4. copies it to staging on the destination filesystem;
 5. verifies the staged hash;
-6. publishes the directory;
-7. atomically records managed ownership.
+6. publishes the directory, retrying brief Windows sharing or access errors;
+7. atomically records managed ownership before moving to the next Skill.
+
+If a later Skill cannot be published, earlier successful Skills remain recorded
+as managed and can be safely retried. If Windows keeps a directory locked past
+the bounded retry window, installation stops and leaves that Skill unchanged.
 
 The generated per-Skill copy is installation output. Edit the canonical
 `skills/work-management.md` file and reinstall or sync managed Skills to

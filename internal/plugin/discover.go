@@ -148,6 +148,15 @@ func matchPluginName(filename, wantBase string) bool {
 
 func scoreExt(path string) int {
 	ext := strings.ToLower(filepath.Ext(path))
+	// Prefer the Windows executable when a plugin ships both platform binaries.
+	if runtime.GOOS == "windows" {
+		if ext == ".exe" {
+			return extPriority[""]
+		}
+		if ext == "" {
+			return extPriority[".exe"]
+		}
+	}
 	if ext == "" {
 		// if file is text and has shebang, treat as empty ext priority
 		if hasShebang(path) {

@@ -1,35 +1,49 @@
-# Legacy Local Markdown Reference
+# Local Work Tracking: FD Workflow
 
-This layout is retained only for reading existing user data. It is not the
-canonical work manager for an AIW/OpenSpec repository, and new Skills MUST NOT
-publish specifications or tickets here.
+Use the AIW Issue and numbered FD workflow for new engineering work. This file
+is a reference for local artifacts; it does not define a separate issue
+tracker or duplicate Issue/FD lifecycle rules.
 
-Use `openspec/changes/<change-id>/` for new local work. See
-`docs/agents/work-management.md` and `skills/work-management.md`.
+## New work
 
-## Conventions
+1. Use `issue-management` to discover and decide an Issue when the request
+   needs problem clarification or approval. Use `aiw issue` for durable Issue
+   records; check CLI help before an unfamiliar or mutating command.
+2. Use `fd-workflow` to create or refine the engineering plan. A new FD is the
+   numbered file `docs/features/FD-XXX_SLUG.md`, created through `aiw fd new`.
+   It owns engineering decisions, ordered Work Items, status, Verification,
+   and unresolved `%% NEEDS_INPUT` notes. `docs/features/FEATURE_INDEX.md` is
+   only its index.
+3. Use `implement` to execute ready FD Work Items. Follow
+   `skills/work-management.md` for role handoffs, state, and evidence.
 
-- One feature per directory: `.scratch/<feature-slug>/`
-- The spec is `.scratch/<feature-slug>/spec.md`
-- Implementation issues are one file per ticket at `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01` — never a single combined tickets file
-- Triage state is recorded as a `Status:` line near the top of each issue file (see `triage-labels.md` for the role strings)
-- Comments and conversation history append to the bottom of the file under a `## Comments` heading
+An Issue may link to an FD. A Task is not required for a new FD. Create an
+OpenSpec change only when the user explicitly requests one; stable capability
+specifications belong in `openspec/specs/`.
 
-## Legacy behavior only
+## Temporary files under `.ai/`
 
-Do not create new `.scratch` files as part of the OpenSpec workflow.
+Use `.ai/requirements/drafts/` for temporary Issue drafts produced by
+`issue-management`. Keep drafts project-relative, UTF-8, and within 64 KiB;
+they are proposals, not approved Issue records. Do not create local ticket
+files or copy durable decisions, FD status, or Work Items into this directory.
 
-## When a skill says "fetch the relevant ticket"
+Use `.ai/tmp/` only for disposable working notes or temporary output that has
+no dedicated artifact location. Use unique filenames and remove temporary
+files when their work is incorporated or no longer needed. Do not use this
+directory as an alternate source of truth.
 
-Read the file at the referenced path. The user will normally pass the path or the issue number directly.
+AIW manages `.ai/fd/<fd-id>/` as role handoff receipts and logs. Treat it as
+generated workflow data; do not handwrite events, reviews, or FD status there.
 
-## Wayfinding operations
+## Existing `.scratch` data
 
-Used by `/wayfinder`. The **map** is a file with one **child** file per ticket.
+`.scratch/` is legacy data. Read existing files when a request references
+them, but do not create or update `.scratch` maps, tickets, statuses, comments,
+or wayfinding records for new work. Migrate only when the user explicitly
+requests migration, preserving links and history in the appropriate Issue or
+FD artifacts.
 
-- **Map**: `.scratch/<effort>/map.md` — the Notes / Decisions-so-far / Fog body.
-- **Child ticket**: `.scratch/<effort>/issues/NN-<slug>.md`, numbered from `01`, with the question in the body. A `Type:` line records the ticket type (`research`/`prototype`/`grilling`/`task`); a `Status:` line records `claimed`/`resolved`.
-- **Blocking**: a `Blocked by: NN, NN` line near the top. A ticket is unblocked when every file it lists is `resolved`.
-- **Frontier**: scan `.scratch/<effort>/issues/` for files that are open, unblocked, and unclaimed; first by number wins.
-- **Claim**: set `Status: claimed` and save before any work.
-- **Resolve**: append the answer under an `## Answer` heading, set `Status: resolved`, then append a context pointer (gist + link) to the map's Decisions-so-far in `map.md`.
+When asked to fetch existing work, resolve an AIW Issue by its Issue ID or an
+FD by its ID/path. Do not infer an artifact from a bare title when multiple
+records could match.

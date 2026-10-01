@@ -1,1 +1,0 @@
-Same three E02 tests. One rerun after relocating only subprocess TMP/TEMP to the writable worktree. This addresses the observed failure to resolve default Temp paths without changing ACLs or bypassing path validation. No further automatic retry. Preserve all outputs.

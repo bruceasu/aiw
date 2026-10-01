@@ -25,7 +25,7 @@ change only on a separate, explicit request.
 
 Required input is the target repository. Inspect its existing `AGENTS.md` or
 `CODEX.md`, AIW markers and available CLI help, `openspec/changes/` and
-`openspec/specs/`, `docs/agents/`, `CONTEXT.md`, `CONTEXT-MAP.md`, ADR
+`openspec/specs/`, `.agents/agents/`, `CONTEXT.md`, `CONTEXT-MAP.md`, ADR
 directories, installed triage Skill, and clear monorepo boundaries. Treat
 `.scratch` as legacy data. Read `skills/work-management.md` once when present.
 
@@ -44,7 +44,7 @@ If no `AGENTS.md` or `CODEX.md` exists, include the choice of which file to
 create in that same proposal; do not create both. If both exist, inspect both
 and propose updating only the one that governs the relevant repository scope.
 
-Propose the AIW ownership contract in `docs/agents/work-management.md`:
+Propose the AIW ownership contract in `.agents/agents/work-management.md`:
 
 - AIW owns Issue and Task lifecycle, branch, worktree, Session, and handoff
   state.
@@ -55,14 +55,14 @@ Propose the AIW ownership contract in `docs/agents/work-management.md`:
 Do not create a separate issue-tracker configuration for an AIW/OpenSpec
 repository. If triage is installed, ask once whether to keep the default role
 labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`,
-`wontfix`). Propose `docs/agents/triage-labels.md` only if the answer or
+`wontfix`). Propose `.agents/agents/triage-labels.md` only if the answer or
 existing project conventions require it. Use root `CONTEXT.md` and `docs/adr/`
 by default; propose a multi-context layout only when repository evidence shows
 clear monorepo boundaries.
 
-The Agent skills block points to `docs/agents/work-management.md` and
-`docs/agents/domain.md` only when those files exist or are included in the
-approved proposal. Point to `docs/agents/triage-labels.md` only when triage is
+The Agent skills block points to `.agents/agents/work-management.md` and
+`.agents/agents/domain.md` only when those files exist or are included in the
+approved proposal. Point to `.agents/agents/triage-labels.md` only when triage is
 configured. Preserve surrounding instructions and update a single existing
 `## Agent skills` block instead of adding duplicates.
 

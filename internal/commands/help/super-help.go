@@ -48,9 +48,6 @@ func Dispatch(args []string) error {
 	// join args as one query if more than one
 	if len(args) == 1 {
 		name := args[0]
-		if name == "wf" {
-			return showBuiltinHelp(name)
-		}
 		// check plugin first
 		if ok, _ := pluginExists(name); ok {
 			return showPluginHelp(name)
@@ -89,7 +86,7 @@ func listAllJSON() error {
 }
 
 func listAll() error {
-	fmt.Print("aiw " + version.Label() + " - workflow-first task and AI tooling\n\n" +
+	fmt.Print("aiw " + version.Label() + " - FD-first workflow and AI tooling\n\n" +
 		"Usage:\n" +
 		"  aiw <command> [args...]\n" +
 		"  aiw --help\n" +
@@ -97,48 +94,41 @@ func listAll() error {
 
 	fmt.Print("Core workflow:\n" +
 		"  init [--no-setup] [--prompts] [--merge] [--force] [--template <name>]\n" +
-		"  new <task-id>             Create a Task.\n" +
-		"  list [--all]              List active tasks; --all includes archives.\n" +
-		"  show <task-id>            Print the FD or legacy tasks.md.\n" +
-		"  status <task-id> <s>      Update task status.\n" +
-		"  done <task-id>            Shortcut for: status <task-id> DONE.\n" +
-		"  archive <task-id> [opts]  Archive a completed Task (sync, validate, repair).\n" +
-		"  wf <op> <task-id>         Run managed workflow operations.\n" +
-		"  workspace bind <task-id> --primary  Bind the Task to the primary workspace.\n" +
-		"  context <task-id>         Show Task, FD, and current Work Item context.\n" +
-		"  spec <spec-id>            Create a stable spec skeleton under openspec/specs.\n" +
-		"  issue <...>               Manage Issue intake, split lineage, and promotion.\n" +
-		"  req <...>                 Compatibility alias for Issue records.\n\n")
-
-	fmt.Print("Worktree:\n" +
-		"  wt add <task-id> [base]   Explicitly isolate a task in a worktree.\n" +
-		"  wt rm <task-id>           Remove a task worktree.\n" +
-		"  wt status <task-id>       Check worktree and merge readiness.\n" +
-		"  wt commit <task-id>       Commit worktree changes.\n" +
-		"  wt pull <task-id>         Merge task branch into its parent.\n" +
-		"  wt list                   List known worktrees.\n" +
-		"  wt prune [--dry-run]      Remove stale worktree metadata.\n" +
-		"  wt lock <task-id> [r]     Protect a worktree from removal.\n" +
-		"  wt unlock <task-id>       Remove a worktree lock.\n" +
-		"  wt repair                 Repair worktree links after relocation.\n" +
-		"  wt ignore                 Add .wt/ to .gitignore.\n\n")
+		"  fd new <title> [--issue <id>]  Create a numbered FD and request Planner.\n" +
+		"  fd list                      Show the FD index.\n" +
+		"  fd show <fd-id>               Show an FD and its last handoff.\n" +
+		"  fd emit <fd-id> <event> --producer <role> --artifact <path> [--source-event <id>]\n" +
+		"                               Record a stage result and route the next role.\n" +
+		"                               Test events: test-report-ready, test-accepted, test-rejected.\n" +
+		"  fd claim <fd-id> <event-id> --session <id>\n" +
+		"                               Bind a pending handoff to one host session.\n" +
+		"  fd resume <fd-id>             Resume a pending handoff safely.\n" +
+		"  fd request-review <fd-id> --reason <text>\n" +
+		"                               Request review for a pending or completed FD.\n" +
+		"  fd refresh-worker <fd-id> --reason <text>\n" +
+		"                               Replace a stale pending Worker handoff.\n" +
+		"  fd reopen <fd-id> --reason <text>\n" +
+		"                               Resume an archived Closed or Deferred FD.\n" +
+		"  fd reopen <fd-id> --reason <text> --correct-reason\n" +
+		"                               Correct an unclaimed reopen handoff reason.\n" +
+		"  fd close <fd-id> <Complete|Deferred|Closed> [--reason <text>]\n" +
+		"                               Archive an FD with the required evidence.\n" +
+		"  fd worktree <add|status> <fd-id>\n" +
+		"                               Add or inspect an FD worktree.\n" +
+		"  issue <...>                  Manage Issue intake, split lineage, and promotion.\n" +
+		"  req <...>                    Compatibility alias for Issue records.\n\n")
 
 	fmt.Print("Other tools:\n" +
-		"  ask <prompt>               Ask the built-in LLM for AIW guidance.\n" +
-		"  prompts <...>             Generate or merge prompt files.\n" +
-		"  completion <shell>        Generate shell completion scripts.\n" +
-		"  session <...>             Manage persisted AIW Sessions.\n\n")
-
-	fmt.Print("Plugins:\n" +
-		"  git <subcommand>         Git helpers and discoverable Git subcommands.\n" +
-		"  github <subcommand>      Read and publish GitHub Issues and PRs.\n" +
-		"  cz <subcommand>          Conventional Commit wizard.\n" +
-		"  tcc <args...>            Tiny C Compiler wrapper.\n\n")
+		"  ask <prompt>                 Ask the built-in LLM for AIW guidance.\n" +
+		"  completion <shell>           Generate shell completion scripts.\n" +
+		"  version                      Print the AIW version.\n\n")
 
 	fmt.Print("Examples:\n" +
 		"  aiw init --prompts --template go\n" +
-		"  aiw new payment-retry\n" +
-		"\n")
+		"  aiw fd new \"Payment retry\"\n" +
+		"  aiw fd list\n" +
+		"  aiw fd show FD-001\n" +
+		"  aiw help fd\n\n")
 
 	pls, err := listPlugins()
 	if err != nil || len(pls) == 0 {
@@ -216,42 +206,11 @@ func extractShortFromSource(src string) string {
 }
 
 func listBuiltins() ([]string, error) {
-	// Static list embedded in code 閳?used when source tree is not present
-	builtinCommands := staticBuiltinCommands()
-
-	out := []string{}
-	seen := map[string]bool{}
-	for _, b := range builtinCommands {
-		out = append(out, b)
-		seen[b] = true
-	}
-
-	// Try to merge with actual internal/commands directory if available
-	cmdsDir := filepath.Join("internal", "commands")
-	if entries, err := os.ReadDir(cmdsDir); err == nil {
-		for _, e := range entries {
-			if !e.IsDir() {
-				continue
-			}
-			name := e.Name()
-			if name == "help" || name == "cz" {
-				continue
-			}
-			if !seen[name] {
-				out = append(out, name)
-				seen[name] = true
-			}
-		}
-	}
-	return out, nil
+	return staticBuiltinCommands(), nil
 }
 
 func staticBuiltinCommands() []string {
-	return []string{
-		"init", "new", "list", "show", "status", "done",
-		"archive", "context", "spec", "registry",
-		"prompts", "wt", "task", "wf",
-	}
+	return []string{"init", "ask", "completion", "help", "version", "issue"}
 }
 
 func listPlugins() ([]string, error) {
@@ -272,6 +231,9 @@ func listPlugins() ([]string, error) {
 				continue
 			}
 			for _, sub := range subEntries {
+				if sub.IsDir() {
+					continue
+				}
 				name, ok := pluginNameFromFile(sub.Name())
 				if ok && name != "wf" && !seen[name] {
 					out = append(out, name)
@@ -289,17 +251,13 @@ func listPlugins() ([]string, error) {
 }
 
 func pluginExists(name string) (bool, string) {
-	if p := pluginScriptPath(name); p != "" {
+	if p, err := plug.DiscoverPlugin(name); err == nil {
 		return true, p
 	}
 	return false, ""
 }
 
 func builtinExists(name string) bool {
-	path := filepath.Join("internal", "commands", name)
-	if fsx.Exists(path) {
-		return true
-	}
 	for _, b := range staticBuiltinCommands() {
 		if b == name {
 			return true
@@ -357,31 +315,17 @@ func showBuiltinHelp(name string) error {
 func builtinHelpShort(name string) string {
 	switch name {
 	case "init":
-		return "initialize prompts and worktree scaffolding"
-	case "new":
-		return "create a Task"
-	case "list":
-		return "list active tasks; --all includes archives"
-	case "show":
-		return "show a Task's FD or legacy checklist"
-	case "status":
-		return "update Task status"
-	case "done":
-		return "mark a Task done"
-	case "archive":
-		return "archive a completed Task"
-	case "context":
-		return "show implementation context"
-	case "decision":
-		return "legacy: create an OpenSpec change design.md"
-	case "spec":
-		return "create a long-lived spec"
-	case "prompts":
-		return "generate or merge prompt files"
-	case "task":
-		return "manage fresh-agent handoff and lineage"
-	case "wf":
-		return "manage Task work items and execution"
+		return "initialize project instructions and prompt templates"
+	case "ask":
+		return "ask the built-in LLM for AIW guidance"
+	case "completion":
+		return "generate shell completion scripts"
+	case "help":
+		return "show command help or search documentation"
+	case "version":
+		return "print the AIW version"
+	case "issue":
+		return "manage Issue records through the req plugin"
 	default:
 		return ""
 	}
@@ -390,33 +334,18 @@ func builtinHelpShort(name string) string {
 func builtinUsageText(name string) (string, bool) {
 	switch name {
 	case "init":
-		return "usage: aiw init [--no-setup] [--prompts] [--merge] [--force] [--template <name>]\n", true
-	case "new":
-		return "usage: aiw new <task-id> [--allow-unrelated-dirty]\n", true
-	case "list":
-		return "usage: aiw list [--all]\n", true
-	case "show":
-		return "usage: aiw show <task-id>\n", true
-	case "status":
-		return "usage: aiw status <task-id> <status>\n", true
-	case "done":
-		return "usage: aiw done <task-id>\n", true
-	case "archive":
-		return "usage: aiw archive <task-id> [--push] [--cleanup-wt] [--delete-branch] [--finalize]\n  --finalize is deprecated and never pushes implicitly.\n", true
-	case "context":
-		return "usage: aiw context <task-id>\n", true
-	case "decision":
-		return "usage: aiw decision <task-id>\nLegacy OpenSpec change template; write new Task decisions in docs/features/<task-id>.md.\n", true
-	case "spec":
-		return "usage: aiw spec <spec-id>\n", true
-	case "prompts":
-		return "usage: aiw prompts [list|<template>] [--merge] [--force]\n", true
-	case "task":
-		return "usage: aiw task <command> [args...]\n", true
+		return "usage: aiw init [--no-setup] [--prompts] [--merge] [--force] [--template <name>]\n  --no-setup skips creating base AGENTS.md and Copilot instructions.\n  With --merge, --force refreshes .agents/prompts while instruction files are merged.\n", true
+	case "help":
+		return "usage: aiw help [--json|command|topic]\n", true
+	case "version":
+		return "usage: aiw version\n", true
+	case "issue":
+		return "usage: aiw issue <command> [args...]\nAlias for the req plugin; run aiw help req for subcommand help.\n", true
 	default:
 		return "", false
 	}
 }
+
 func searchAndAnswer(query string) error {
 	fmt.Fprintf(os.Stderr, "Searching docs for: %s\n", query)
 	matches := searchDocs(query)
@@ -511,8 +440,14 @@ func buildHelpPrompt(query string, docs []string) string {
 }
 
 func pluginNameFromFile(filename string) (string, bool) {
-	if strings.HasPrefix(filename, "aiw-") && strings.HasSuffix(filename, ".py") {
-		return strings.TrimSuffix(strings.TrimPrefix(filename, "aiw-"), ".py"), true
+	if !strings.HasPrefix(filename, "aiw-") {
+		return "", false
+	}
+	ext := filepath.Ext(filename)
+	switch strings.ToLower(ext) {
+	case "", ".py", ".exe":
+		name := strings.TrimSuffix(strings.TrimPrefix(filename, "aiw-"), ext)
+		return name, name != ""
 	}
 	return "", false
 }

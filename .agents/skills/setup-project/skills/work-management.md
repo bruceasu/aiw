@@ -2,8 +2,18 @@
 
 Use this contract for AIW engineering Skills.
 
+This file is the canonical shared contract. A Skill that needs these rules
+should reference `skills/work-management.md` in its `SKILL.md` and keep its
+own instructions focused on its domain. Do not copy lifecycle rules into each
+Skill. `aiw skills install` and `sync` materialize this file beside the Skill
+when that reference is present; treat the installed copy as generated output.
+The same applies to `skills/reviewed-skill-contract.md`, so user-level
+installations remain usable outside the AIW repository.
+
 ## New FD workflow
 
+- FD-first is the normal path for new engineering work. OpenSpec supplements
+  it with stable capability requirements; it does not replace the FD plan.
 - A numbered file under `docs/features/FD-XXX_SLUG.md` is the source of truth
   for design, Work Items, status, Verification, and unresolved `%%` notes.
 - `docs/features/FEATURE_INDEX.md` is an index. Rebuild it from FD files; do
@@ -14,6 +24,19 @@ Use this contract for AIW engineering Skills.
   file saves and Git commits do not dispatch roles.
 - `.ai/fd/<fd-id>/` contains dispatch receipts and logs. It does not own FD
   status or replace the Markdown plan. Never write a fake event or review.
+- `docs/features/reports/` and `docs/features/reviews/` contain authored
+  evidence while an FD is active. `aiw fd close` archives its design at
+  `docs/features/archive/<FD-ID>/` and the FD's evidence in that directory's
+  `reports/` and `reviews/` subdirectories.
+  Prior evidence stays archived if a completed FD is reopened for review.
+- `aiw fd reopen <id> --reason <text>` returns an archived `Closed` or
+  `Deferred` FD to active `In Progress` with a fresh Worker handoff. It keeps
+  prior close metadata and evidence. Archived `Complete` uses `request-review`.
+  New reports and reviews need filenames distinct from archived evidence.
+- `aiw fd refresh-worker <id> --reason <text>` replaces a stale pending Worker
+  handoff for an active `Open` or `In Progress` FD. It cancels the old receipt,
+  records supersession, and creates a digest-bound `work-requested` event.
+  Claimed or in-flight handoffs cannot be replaced.
 - OpenSpec owns stable capability specs in `openspec/specs/`. Create an
   OpenSpec change only when the user explicitly asks for one.
 
@@ -21,9 +44,13 @@ Use this contract for AIW engineering Skills.
 
 PM creates and grooms an FD. Planner records options, decisions, acceptance,
 and numbered Work Items. Worker implements all ready items in dependency order.
-Reviewer checks the actual diff and evidence in a separate session. A failed
-review returns concrete findings to Worker. Human decisions and authorization
-stop automatic dispatch until answered.
+For FDs with `**Test policy:** Independent`, a separate Tester owns black-box
+case authorship, execution when authorized, and the test report. PM records a
+versioned acceptance or rejection with both coverage measures, exceptions,
+and residual risk before Reviewer checks the diff and evidence in a third
+session. Existing FDs without that policy retain the direct Reviewer route.
+A failed review returns concrete findings to Worker. Human decisions and
+authorization stop automatic dispatch until answered.
 
 Use an explicit stage event after the producing role has written its result.
 The event must name an existing project-relative artifact. If the host has a
@@ -41,25 +68,34 @@ Reviewer has recorded a passed result.
 
 ## Workspace and Git
 
-Use the primary workspace for ordinary sequential work. Use an FD worktree
-only for parallel writes, conflicting changes, or a user request. Record the
-parent branch and keep each FD's writing role in one workspace at a time.
-Worktree creation requires the FD plan to be committed so it is present in the
-new worktree. Do not mix unrelated files into an FD commit.
+Use the primary workspace for ordinary sequential work. When an implementation
+request asks for parallel work or isolation, or says to use a worktree/`wt`, run
+the FD in an isolated worktree. A question or design-only discussion that merely
+mentions these terms does not start implementation.
+
+Use `feature/<fd-id>` and `.wt/<fd-id>` for an isolated FD. Determine the
+current branch before creation. Commit the FD plan before creating its worktree
+so the plan is present there. `aiw fd worktree add` records `fd_id`,
+`parent_branch`, `branch`, and `worktree` in `.ai/fd/<fd-id>/workspace.json`.
+Read that file immediately after creation and verify all four values; use its
+`parent_branch` as the sole merge target. Stop if the file is missing or does
+not match the created worktree. Use `aiw fd worktree add/status` for FD
+worktrees. Before using
+`aiw wt` operations, check their current help and use them only if they accept
+an FD ID; never invent or create a Task to satisfy a Task-only command. If no
+FD-aware integration command is available, use scoped local Git operations for
+the requested FD branch. Keep each FD's writing role in one workspace at a
+time and do not mix unrelated files into its commits.
 
 The user permits local Git commits for the new FD workflow. A Worker may make
 a focused commit for an independently reviewable slice. A Reviewer checks a
-specific commit or diff. Commit does not authorize push, merge, release,
-deployment, worktree deletion, or archive. Follow any narrower local rule.
-
-## Legacy Task compatibility
-
-Existing `.ai/tasks/<task-id>/` records and Core state remain readable. A
-legacy Task may continue from its existing `docs/features/<task-id>.md` or
-OpenSpec `tasks.md`. Do not rewrite its completed items, evidence, Sessions, or
-Git lineage to make it look like a new FD. The old `aiw issue promote --task`
-and `aiw wf` commands remain compatibility paths until migrated explicitly.
-Do not start `aiw wf supervise` for new work.
+specific commit or diff. When an isolation request asks for the complete
+worktree lifecycle, it authorizes local commits, merging that FD branch into
+its recorded parent after a passed review, and archiving the FD after the merge
+succeeds. It does not authorize push, release, deployment, or worktree removal.
+For other requests, commit does not authorize merge or archive. A merge conflict
+or dirty parent workspace is a stop condition; preserve the worktree and active
+FD while resolving it. Follow any narrower local rule.
 
 ## Validation
 

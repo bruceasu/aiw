@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-014",
+  "source_event": "FD-014-000020-implementation-ready",
+  "human_report": "FD-014-test-authorization-r4-retry.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-014-000020-implementation-ready",
+    "fd_revision": 20,
+    "fd_digest": "f3b6924dfdbb7c8230e17f7aae47cd4df274009743d624b1778c25566c51e9ad",
+    "tester_session": "fd014-tester-20261002-f7f15d14",
+    "command": "python -B -m unittest tests.test_fd014_blackbox -v",
+    "working_directory": "repository root",
+    "scope": "One corrected rerun of the same 15 FD-014 public CLI black-box cases after the JSON label fix and two negative assertion refinements",
+    "expected_duration": "normally under 120 seconds; child process timeout 15 seconds",
+    "side_effects": "Read repository source and create then remove Git, FD, receipt, report and archive fixtures only inside per-case temporary directories.",
+    "risk_review": "Planner checked the exact command, test file changes and CLI path. The run is offline, inspectable and confined to temporary files, with no credentials, downloads, privilege changes, unrelated writes or final artifacts.",
+    "human_approval": "not required",
+    "planner_identity": "01a0f7b5-5fc4-70b0-ab29-69d25ce53239",
+    "decision_time": "2026-10-01T23:36:06+00:00"
+  }
+}

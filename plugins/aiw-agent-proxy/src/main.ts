@@ -1,5 +1,5 @@
 import { pathToFileURL } from "node:url";
-import { PORT } from "./config.js";
+import { HOST, PORT } from "./config.js";
 import { startService } from "./service.js";
 
 export async function main(args: string[] = process.argv.slice(2)): Promise<void> {
@@ -20,7 +20,7 @@ export async function main(args: string[] = process.argv.slice(2)): Promise<void
     }
   }
   const service = await startService(port);
-  process.stdout.write(`Agent Proxy listening on http://${"127.0.0.1"}:${port}\n`);
+  process.stdout.write(`Agent Proxy listening on http://${HOST}:${port}\n`);
   let stopping = false;
   const stop = (): void => {
     if (stopping) return;

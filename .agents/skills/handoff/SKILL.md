@@ -63,9 +63,7 @@ Redact secrets and personal information that the next agent does not need.
 ## Operational handoff
 
 Preparing the document is the default. Do not start a new Thread automatically.
-For a legacy managed Task, use `aiw wf run <task-id> --execute` only when the
-user explicitly asks to dispatch execution and the Task workflow requires it.
-For new FD work, follow the explicit event and role-handoff rules in
+For FD work, follow the explicit event and role-handoff rules in
 `skills/work-management.md`; an ordinary save or Git commit is not a dispatch.
 
 ## Completion

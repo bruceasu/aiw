@@ -36,12 +36,12 @@ Read `AGENTS.md` first, then `go/AGENTS.md`.
 ## Go Routing
 - service markers:
   `cmd/server`, `internal/`, handler packages, config packages
-  - also load `prompts/domains/go-service.md`
+  - also load `.agents/prompts/domains/go-service.md`
 - CLI markers:
   `cobra`, `urfave/cli`, command trees under `cmd/`
-  - also load `prompts/domains/go-cli.md`
+  - also load `.agents/prompts/domains/go-cli.md`
 - bugfix, feature, review, debugging, test, docs, or risky work:
-  also load the matching file in `prompts/task-modes/`
+  also load the matching file in `.agents/prompts/task-modes/`
 
 ## Defaults
 - inspect local tests, config, and public contracts first

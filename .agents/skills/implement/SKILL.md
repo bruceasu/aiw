@@ -1,65 +1,59 @@
 ---
 name: implement
-description: "Implement one selected work item from an AIW Task and its Feature Design, with optional OpenSpec specs."
+description: Implement all ready Work Items in one numbered FD, then hand the result to an independent Reviewer.
 ---
 
 # Implement
 
-Follow `skills/reviewed-skill-contract.md` and
-`skills/work-management.md`; read `docs/agents/work-management.md` when
-present.
+Read `skills/reviewed-skill-contract.md`, `skills/work-management.md`, and the
+repository instructions. Use this Skill after a numbered FD is Open, or when
+returning from a failed review. A user may limit work to one item; otherwise
+continue through all ready items in dependency order. Do not design a missing
+decision during implementation.
 
-## When To Use
+## Read and prepare
 
-Use this Skill to implement one selected, ready Work Item in an AIW Task. Do
-not use it to discover an Issue, design an FD, write a spec, or split the plan.
-The Task does not need an OpenSpec change.
+Resolve the FD ID from the user, active session, or unique Issue link. Read
+the FD, approved Issue evidence when present, relevant stable specs, code,
+tests, and workspace rules. Read a linked OpenSpec change only when it exists
+and affects the work. For an existing legacy AIW Task, continue under its
+original Task and Core contract; do not silently convert it.
 
-## Resolve Work And Readiness
+Before each item, check its outcome, dependencies, acceptance, and unresolved
+`%%` notes. Use the current workspace for sequential work. For parallel or
+conflicting writes, use an isolated worktree tied to the FD and ensure its plan
+is already committed. Stop at a real scope, authorization, or workspace
+conflict. Continue independent ready items when one item is blocked.
 
-Resolve one Task from the explicit ID or the Task's session, workspace, Issue,
-FD, or linked change. If several Tasks remain, ask for the Task ID. Read its
-`task.toml`, approved Issue handoff, linked FD, selected Work Item, relevant
-stable specs, and linked change only when present and relevant. For an older
-Task without an FD, use its existing OpenSpec `design.md` and `tasks.md`.
+When taking a pending Worker handoff in a host session, first claim its exact
+event with `aiw fd claim <id> <event-id> --session <host-session-id>`. A role
+runner dispatched by AIW has already claimed its event. Never take over an
+event that names another active or unknown session.
 
-Check that the selected item has a clear outcome, acceptance evidence, and
-required decisions. An FD marked `BLOCKED` prevents mapped work; an
-unrelated `%% NEEDS_INPUT` in a ready FD does not stop the selected item. Route a missing design
-decision to `fd-workflow` and an unclear item boundary to `to-tickets`. Use
-confirmed evidence and known user preferences for routine choices. Ask only
-when the missing answer changes scope, authorization, or the required behavior.
-Older Tasks without an FD readiness section are actionable when their existing
-design and specs make the selected item clear.
+## Implement and record
 
-## Implement And Verify
+Make the smallest complete change for each item. Update its checkbox only
+when the change and required evidence are real. Record TODO, Verification,
+unresolved `%%` notes, and paths or commits that a Reviewer should inspect.
+Focused local commits are allowed for independently reviewable slices when
+the repository rules permit them. Stage only files that belong to this FD and
+use `FD-XXX: description` unless the repository has a stronger convention.
 
-Use the Task's declared workspace; ordinary sequential work stays in the
-primary workspace. Use `aiw wt` for explicitly authorized isolation. Do not
-silently move work to another workspace. Apply the smallest complete change
-for the selected item, preserving unrelated work and stable interfaces.
+Follow the repository's validation budget. Review the final diff statically.
+After code edits, run one compile-only check. Do not run tests, final builds,
+formatters, linters, vet, or network checks without their required authority.
+Never write a passing result for an unrun command.
 
-Follow the repository's validation budget. Review the changed paths
-statically. After code changes, run one compile-only check: prefer a
-`scripts/compile*` or root `compile*` command; otherwise use the narrowest
-language-level compiler command without retaining a distributable artifact.
-If it fails, fix the source and rerun the same command once. Report a second
-failure. Do not run tests, final builds, formatters, linters, vet, or broad
-verification without authorization. Writing a focused test is allowed when
-the item needs it; running it follows the runtime authorization rules.
+When all scoped Work Items are resolved, emit `implementation-ready` with
+`--producer worker` and a project-relative implementation report as the
+artifact. Include the source event ID when completing a dispatched handoff.
+The event routes to an independent Tester for an FD with `**Test policy:**
+Independent`; older FDs without the marker route directly to Reviewer. Worker
+must not write the Tester report or PM decision. If a new decision is needed, emit
+`needs-decision` with a written question instead, then stop.
 
-## Complete The Item
+An independent Reviewer uses `fd-review` to check the FD, diff or commit, and actual evidence.
+It emits `changes-requested` with findings or `verification-passed` with its
+review report. A failed review returns to Worker; continue from the same FD.
+Do not claim verification passed because Worker checked the FD box.
 
-Update the selected FD checkbox, TODO, Verification, and remaining `%%` notes.
-For a legacy Task, update its selected `tasks.md` checkbox. Use the supported
-AIW sync operation to reconcile item progress; do not directly set Task
-display status, claim a lease, or fabricate an Attempt. Completing one Work
-Item does not complete the Task. Report the selected item, changed files,
-static evidence, commands run, skipped checks, unresolved Gates, and the
-recommended next Core transition.
-
-Mark the Task complete only when all work items and Verification are complete
-and its lifecycle transition is authorized. Do not automatically commit,
-merge, push, remove a worktree, delete a branch, or archive a change. A spec
-change discovered during implementation is a `to-spec` handoff; update the FD
-plan if its work items need to change.
