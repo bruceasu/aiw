@@ -14,6 +14,8 @@ export function validateRequest(value: unknown): RequestInput {
   if (row.effort !== undefined && (typeof row.effort !== "string" || !EFFORTS.includes(row.effort as Effort))) throw new ProxyError("invalid_effort", "effort must be minimal, low, medium, high, or xhigh");
   if (row.output_format !== "json" && row.output_format !== "markdown") throw new ProxyError("invalid_output_format", "output_format must be json or markdown");
   if (typeof row.prompt !== "string" || !row.prompt.trim() || row.prompt.length > MAX_PROMPT_CHARS) throw new ProxyError("invalid_prompt", `prompt must contain 1-${MAX_PROMPT_CHARS} characters`);
+  if (row.system_prompt !== undefined && (typeof row.system_prompt !== "string" || !row.system_prompt.trim() || row.system_prompt.length > MAX_PROMPT_CHARS)) throw new ProxyError("invalid_system_prompt", `system_prompt must contain 1-${MAX_PROMPT_CHARS} characters`);
+  if (row.include_reasoning_summary !== undefined && typeof row.include_reasoning_summary !== "boolean") throw new ProxyError("invalid_reasoning_summary", "include_reasoning_summary must be a boolean");
   return {
     client_id: row.client_id,
     ...(row.request_id === undefined ? {} : { request_id: row.request_id as string }),
@@ -22,5 +24,7 @@ export function validateRequest(value: unknown): RequestInput {
     ...(row.effort === undefined ? {} : { effort: row.effort as Effort }),
     output_format: row.output_format as OutputFormat,
     prompt: row.prompt,
+    ...(row.system_prompt === undefined ? {} : { system_prompt: row.system_prompt as string }),
+    ...(row.include_reasoning_summary === undefined ? {} : { include_reasoning_summary: row.include_reasoning_summary as boolean }),
   };
 }

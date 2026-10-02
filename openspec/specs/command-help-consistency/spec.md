@@ -31,10 +31,6 @@ AIW MUST keep README command summaries/examples and shell completion command lis
 - **WHEN** a user follows the workflow command summary or examples in README
 - **THEN** each referenced command and option is accepted by the CLI, and the summary does not omit a publicly callable workflow operation that is required for command discovery
 
-#### Scenario: Completion exposes documented workflow commands
-
-- **WHEN** a user requests completion after `wf`
-- **THEN** completion offers the same public workflow operation names represented in help, without stale or invented names
 
 #### Scenario: Consistency regression is detected
 

@@ -67,8 +67,10 @@ def detect_cli(provider: str, timeout: float = 5.0) -> CLIInfo:
             help_text = exec_help.stdout or exec_help.stderr
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise ProviderUnavailable(f"{provider} capability detection failed: {exc}") from exc
-    if version.returncode != 0 and help_result.returncode != 0:
-        raise ProviderUnavailable(f"{provider} does not provide usable version/help output")
+    if version.returncode != 0 or not (version.stdout or version.stderr).strip():
+        raise ProviderUnavailable(f"{provider} does not provide usable version output")
+    if help_result.returncode != 0 or not help_text.strip():
+        raise ProviderUnavailable(f"{provider} does not provide usable help output")
     return CLIInfo(
         provider=provider,
         command=command,
@@ -81,15 +83,15 @@ def _invocation(info: CLIInfo, prompt: str, model: str = "", last_message: str =
     if os.environ.get(f"CZ_{info.provider.upper()}_ARGS", "").strip():
         raise ProviderUnavailable(f"CZ_{info.provider.upper()}_ARGS cannot override the read-only CLI contract")
     if info.provider == "codex":
-        if "--json" not in info.help_text:
-            raise ProviderUnavailable("codex CLI has no detected --json mode")
+        if "--json" not in info.help_text or "--sandbox" not in info.help_text:
+            raise ProviderUnavailable("codex CLI has no detected read-only JSON mode")
         args = ["exec", "--sandbox", "read-only", "--json"]
         if last_message and "--output-last-message" in info.help_text:
             args.extend(("--output-last-message", last_message))
         args.append("-")
     else:
-        if "--output-format" not in info.help_text:
-            raise ProviderUnavailable("copilot CLI has no detected output-format mode")
+        if "--output-format" not in info.help_text or "--prompt" not in info.help_text:
+            raise ProviderUnavailable("copilot CLI has no detected non-interactive text mode")
         args = ["--output-format", "text", "--prompt", prompt]
     if model and "--model" not in args:
         args = ["--model", model, *args] if info.provider == "copilot" else [args[0], "--model", model, *args[1:]]

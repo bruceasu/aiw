@@ -15,8 +15,8 @@ COMPLETION_END = "# <<< aiw completion <<<"
 
 AGENT_SKILLS_BLOCK = """## Agent skills
 
-- Read `docs/agents/work-management.md` for lifecycle ownership.
-- Read `docs/agents/domain.md` for project-domain conventions.
+- Read `.agents/agents/work-management.md` for lifecycle ownership.
+- Read `.agents/agents/domain.md` for project-domain conventions.
 """
 
 WORK_MANAGEMENT_FALLBACK = """# Work Management

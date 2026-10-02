@@ -62,15 +62,15 @@ Follow `AGENTS.md` first.
 
 ## Normal Go Prompt Set
 - root `AGENTS.md` and `CODEX.md`
-- `../prompts/core/*.md`
-- `../prompts/repo-types/monorepo.md` only when the task spans more than one project
+- `.agents/prompts/core/*.md`
+- `.agents/prompts/repo-types/monorepo.md` only when the task spans more than one project
 - one Go domain prompt
 - one task-mode prompt
 
 ## Routing
-- if service markers exist, also load `../prompts/domains/go-service.md`
-- if CLI markers exist, also load `../prompts/domains/go-cli.md`
-- if the request is a bugfix, review, debugging, test, docs, feature, or risky change, also load the matching file in `../prompts/task-modes/`
+- if service markers exist, also load `.agents/prompts/domains/go-service.md`
+- if CLI markers exist, also load `.agents/prompts/domains/go-cli.md`
+- if the request is a bugfix, review, debugging, test, docs, feature, or risky change, also load the matching file in `.agents/prompts/task-modes/`
 
 ## Execution
 For non-trivial work, provide:

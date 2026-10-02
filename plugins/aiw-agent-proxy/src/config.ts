@@ -1,7 +1,8 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { isIP } from "node:net";
 
-export const HOST = "127.0.0.1" as const;
+export const HOST = parseHost(process.env.AIW_AGENT_PROXY_HOST);
 export const PORT = parsePort(process.env.AIW_AGENT_PROXY_PORT);
 export const RESULT_TTL_MS = 60 * 60 * 1000;
 export const REQUEST_TIMEOUT_MS = 60_000;
@@ -12,6 +13,12 @@ export const MAX_PENDING_RESULTS = 256;
 export const STATE_DIR = process.env.AIW_AGENT_PROXY_STATE_DIR || join(tmpdir(), "aiw-agent-proxy");
 export const RESULTS_DIR = join(STATE_DIR, "results");
 export const AUDIT_FILE = join(STATE_DIR, "audit.jsonl");
+
+function parseHost(raw: string | undefined): string {
+  if (!raw) return "127.0.0.1";
+  if (isIP(raw) !== 4) throw new Error("AIW_AGENT_PROXY_HOST must be an IPv4 address");
+  return raw;
+}
 
 function parsePort(raw: string | undefined): number {
   if (!raw) return 43127;

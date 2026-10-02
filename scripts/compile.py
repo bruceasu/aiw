@@ -33,7 +33,7 @@ def main() -> int:
     output = os.devnull
     environment = os.environ.copy()
     environment["GOCACHE"] = str(go_cache)
-    targets = ["./cmd/aiw", "./cmd/aiw-wf", "./cmd/aiw-req"]
+    targets = ["./cmd/aiw", "./cmd/aiw-req"]
     for target in targets:
         completed = subprocess.run(
             [go, "build", "-o", output, target],

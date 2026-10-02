@@ -1,5 +1,0 @@
-{
-  "scope": "One original three-test E05 save recovery run from the operator terminal",
-  "authorization_context": "Execution requires explicit operator approval for this bounded E05 save recovery group; the runner does not verify approval and implies no product grant",
-  "product_runner_grant": false
-}

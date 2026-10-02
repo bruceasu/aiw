@@ -13,6 +13,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -396,12 +397,31 @@ def write_manifest(path: Path, manifest: object) -> None:
             output.write("\n")
             output.flush()
             os.fsync(output.fileno())
-        os.replace(str(temp_path), str(path))
+        replace_path_with_retry(temp_path, path)
     finally:
         try:
             temp_path.unlink()
         except FileNotFoundError:
             pass
+
+
+def replace_path_with_retry(source: Path, destination: Path) -> None:
+    """Retry transient Windows sharing/access errors during directory publish."""
+    retryable_windows_errors = {5, 32, 33}
+    delay_seconds = 0.05
+    for attempt in range(7):
+        try:
+            os.replace(str(source), str(destination))
+            return
+        except OSError as exc:
+            if (
+                os.name != "nt"
+                or getattr(exc, "winerror", None) not in retryable_windows_errors
+                or attempt == 6
+            ):
+                raise
+            time.sleep(delay_seconds)
+            delay_seconds *= 2
 
 
 def load_manifest(path: Path) -> Dict[str, object]:
@@ -731,41 +751,73 @@ def install_skills_from_sources(
                     raise SkillError("Canonical Skill changed during installation.")
                 if os.path.lexists(str(destination)) and not managed_overwrite.get(skill.name):
                     raise SkillError("Target already exists: {}".format(destination))
-                if os.path.lexists(str(destination)) and managed_overwrite.get(skill.name):
-                    backup_root = Path(tempfile.mkdtemp(prefix=".aiw-backup-", dir=str(root)))
-                    backup_destination = backup_root / skill.name
+                backup_root: Optional[Path] = None
+                backup_destination: Optional[Path] = None
+                preserve_backup = False
+                published = False
+                had_previous_record = skill.name in managed_skills
+                previous_record = managed_skills.get(skill.name)
+                try:
+                    if os.path.lexists(str(destination)) and managed_overwrite.get(skill.name):
+                        backup_root = Path(
+                            tempfile.mkdtemp(prefix=".aiw-backup-", dir=str(root))
+                        )
+                        backup_destination = backup_root / skill.name
+                        replace_path_with_retry(destination, backup_destination)
+                    if os.path.lexists(str(destination)):
+                        raise SkillError(
+                            "Target appeared during installation; leaving it untouched: {}".format(
+                                destination
+                            )
+                        )
+                    replace_path_with_retry(staged_skill, destination)
+                    published = True
+
+                    managed_skills[skill.name] = {
+                        "mode": "copy",
+                        "sha256": staged_digest,
+                        "source_identity": str(skill.source),
+                        "source_revision": source_revision(skill.source),
+                    }
                     try:
-                        os.replace(str(destination), str(backup_destination))
-                        os.replace(str(staged_skill), str(destination))
-                    except Exception:
-                        if os.path.lexists(str(destination)):
-                            shutil.rmtree(str(destination), ignore_errors=True)
-                        if backup_destination.exists():
-                            os.replace(str(backup_destination), str(destination))
-                        raise
-                    finally:
+                        write_manifest(manifest_path(root), manifest)
+                    except (OSError, TypeError, ValueError) as exc:
+                        raise SkillError(
+                            "Unable to record managed Skill {}: {}".format(
+                                skill.name, exc
+                            )
+                        ) from exc
+                    last_digest = staged_digest
+                    installed.append(skill.name)
+                except Exception:
+                    if had_previous_record:
+                        managed_skills[skill.name] = previous_record
+                    else:
+                        managed_skills.pop(skill.name, None)
+                    if published:
+                        shutil.rmtree(str(destination), ignore_errors=True)
+                    if backup_destination and os.path.lexists(str(backup_destination)):
+                        try:
+                            if os.path.lexists(str(destination)):
+                                raise SkillError(
+                                    "Cannot restore previous Skill because the target reappeared: {}".format(
+                                        destination
+                                    )
+                                )
+                            replace_path_with_retry(backup_destination, destination)
+                        except Exception as restore_error:
+                            preserve_backup = True
+                            raise SkillError(
+                                "Could not restore the previous Skill; backup preserved at {}: {}".format(
+                                    backup_destination, restore_error
+                                )
+                            ) from restore_error
+                    raise
+                finally:
+                    if backup_root and not preserve_backup:
                         shutil.rmtree(str(backup_root), ignore_errors=True)
-                else:
-                    os.replace(str(staged_skill), str(destination))
-                last_digest = staged_digest
             finally:
                 shutil.rmtree(str(stage_root), ignore_errors=True)
-
-            managed_skills[skill.name] = {
-                "mode": "copy",
-                "sha256": last_digest,
-                "source_identity": str(skill.source),
-                "source_revision": source_revision(skill.source),
-            }
-            installed.append(skill.name)
-
-    if installed:
-        try:
-            write_manifest(manifest_path(root), manifest)
-        except (OSError, TypeError, ValueError) as exc:
-            for skill_name in installed:
-                shutil.rmtree(str(root / skill_name), ignore_errors=True)
-            raise SkillError("Unable to write managed manifest: {}".format(exc))
 
     if json_output:
         if installed:

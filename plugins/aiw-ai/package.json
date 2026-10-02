@@ -1,0 +1,11 @@
+{
+  "name": "aiw-agent-proxy-client",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "bin": {
+    "ai": "./ai.mjs"
+  }
+}

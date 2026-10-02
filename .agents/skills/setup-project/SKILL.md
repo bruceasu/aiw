@@ -1,64 +1,85 @@
 ---
 name: setup-project
-description: Configure AIW Issue, Feature Design, and Task lifecycle conventions, with optional OpenSpec specs and triage labels.
+description: Prepare a repository's AIW engineering conventions and agent instructions.
 disable-model-invocation: true
 ---
 
-# Setup Engineering Skills
+# Setup Project
 
-Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
-Setup may change configuration only when explicitly requested; it must report
-what was inspected and must not claim successful installation without evidence.
+Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md` when
+present. Resolve repository-relative paths from the repository root.
 
-Read `skills/work-management.md`.
+## Trigger and boundaries
 
-## Inspect
+Use only when the user explicitly invokes this Skill or requests repository
+setup for AIW engineering work. Do not infer setup authorization from requests
+to inspect a repository, use another Skill, create an Issue or FD, or discuss
+workflow conventions.
 
-Inspect only:
+This Skill configures local project documentation and agent instructions. It
+does not create Issues, Tasks, FDs, OpenSpec changes, external tracker
+configuration, branches, worktrees, commits, or run tests. Create an OpenSpec
+change only on a separate, explicit request.
 
-- existing `AGENTS.md` or `CLAUDE.md`;
-- AIW markers such as `task.toml`, `.wt/`, and available runtime help;
-- `openspec/changes/` and `openspec/specs/`;
-- `docs/agents/`, `CONTEXT.md`, `CONTEXT-MAP.md`, and ADR directories;
-- whether the `triage` Skill is installed;
-- clear monorepo markers.
+## Inputs and inspection
 
-Treat `.scratch` as legacy data.
+Required input is the target repository. Inspect its existing `AGENTS.md` or
+`CODEX.md`, AIW markers and available CLI help, `openspec/changes/` and
+`openspec/specs/`, `.agents/agents/`, `CONTEXT.md`, `CONTEXT-MAP.md`, ADR
+directories, installed triage Skill, and clear monorepo boundaries. Treat
+`.scratch` as legacy data. Read `skills/work-management.md` once when present.
 
-## Configure
+Use repository evidence for existing conventions. Do not guess domain facts,
+tracker choice, monorepo boundaries, or user preferences. Record missing facts
+as `%% NEEDS_INPUT: <question or missing evidence>` in the proposal; ask only
+for a decision that changes the proposed setup.
 
-Record this ownership split in `docs/agents/work-management.md`:
+## Prepare and approve the proposal
 
-- AIW owns Issue and Task lifecycle, branch, worktree, Session, and handoff state.
+Before writing any project files, present one concise proposal that names each
+file to create or change, summarizes its exact intended content, and identifies
+any unresolved choice. Include the proposed `## Agent skills` block. Wait for
+the user's confirmation before applying these project configuration changes.
+If no `AGENTS.md` or `CODEX.md` exists, include the choice of which file to
+create in that same proposal; do not create both. If both exist, inspect both
+and propose updating only the one that governs the relevant repository scope.
+
+Propose the AIW ownership contract in `.agents/agents/work-management.md`:
+
+- AIW owns Issue and Task lifecycle, branch, worktree, Session, and handoff
+  state.
 - FD owns design decisions and ordered work items.
 - OpenSpec owns stable capability specs; change artifacts are optional.
 - External Issues are optional projections used only on explicit request.
 
 Do not create a separate issue-tracker configuration for an AIW/OpenSpec
-repository.
+repository. If triage is installed, ask once whether to keep the default role
+labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`,
+`wontfix`). Propose `.agents/agents/triage-labels.md` only if the answer or
+existing project conventions require it. Use root `CONTEXT.md` and `docs/adr/`
+by default; propose a multi-context layout only when repository evidence shows
+clear monorepo boundaries.
 
-If `triage` is installed, ask once whether to keep the five default role labels:
-`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and
-`wontfix`. Write `docs/agents/triage-labels.md` only when needed.
+The Agent skills block points to `.agents/agents/work-management.md` and
+`.agents/agents/domain.md` only when those files exist or are included in the
+approved proposal. Point to `.agents/agents/triage-labels.md` only when triage is
+configured. Preserve surrounding instructions and update a single existing
+`## Agent skills` block instead of adding duplicates.
 
-Use a root `CONTEXT.md` and `docs/adr/` by default. Offer a multi-context layout
-only when clear monorepo boundaries exist.
+## Apply and finish
 
-## Update Agent Instructions
+After confirmation, apply only the approved file changes. Preserve unrelated
+user content. Do not overwrite existing project documentation wholesale; make
+focused edits and leave unsupported domain details unresolved. If the user
+changes scope, update the proposal and get confirmation for the changed files
+before writing them.
 
-Update the existing `AGENTS.md` or `CLAUDE.md`; do not create the other file.
-If neither exists, ask which one to create.
+Report each file actually changed, the resulting ownership split, evidence
+inspected, and any unresolved setup decisions. State checks actually run and
+checks skipped. Do not claim successful installation or validation without
+evidence.
 
-Add or update one `## Agent skills` block that points to:
-
-- `docs/agents/work-management.md`;
-- `docs/agents/domain.md`;
-- `docs/agents/triage-labels.md` when triage is configured.
-
-Show the proposed block and docs before writing. Preserve surrounding user
-content and avoid duplicate sections.
-
-## Finish
-
-Report the files updated and the ownership split. Do not create a Task,
-worktree, external Issue, or run tests during setup.
+Setup is complete when every approved file change is applied, agent
+instructions point only to available or approved documents, no unrelated
+content was replaced, and the report accurately records remaining unknowns and
+checks.

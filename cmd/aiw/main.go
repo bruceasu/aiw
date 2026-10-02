@@ -8,22 +8,23 @@ import (
 	askcmd "aiw/internal/commands/ask"
 	completioncmd "aiw/internal/commands/completion"
 	help "aiw/internal/commands/help"
+	initcmd "aiw/internal/commands/initcmd"
 	"aiw/internal/version"
 
 	plug "aiw/internal/plugin"
 )
 
 const (
-	openspecDir   = "openspec"
-	changesDir    = "openspec/changes"
-	specsDir      = "openspec/specs"
-	archiveDir    = "openspec/changes/archive"
-	worktreeDir   = ".wt"
-	gitignoreFile = ".gitignore"
-	promptsDir    = "docs/agent-templates"
-	agentsFile    = "AGENTS.md"
-	codexFile     = "CODEX.md"
-	copilotFile   = ".github/copilot-instructions.md"
+	openspecDir       = "openspec"
+	changesDir        = "openspec/changes"
+	specsDir          = "openspec/specs"
+	archiveDir        = "openspec/changes/archive"
+	worktreeDir       = ".wt"
+	gitignoreFile     = ".gitignore"
+	agentTemplatesDir = "agent-templates"
+	agentsFile        = "AGENTS.md"
+	codexFile         = "CODEX.md"
+	copilotFile       = ".github/copilot-instructions.md"
 )
 
 func main() {
@@ -39,6 +40,8 @@ func main() {
 		fmt.Println("aiw " + version.Label())
 	case "help":
 		err = help.Dispatch(os.Args[2:])
+	case "init":
+		err = initcmd.Dispatch(os.Args[2:])
 	// `wt` is implemented as an external plugin (aiw-wt.py) and will be
 	// handled by the plugin fallback below. Do not dispatch a built-in handler.
 	case "completion":

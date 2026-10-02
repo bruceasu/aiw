@@ -1,5 +1,0 @@
-{
-  "scope": "One original three-test E07 process run from the operator terminal",
-  "authorization_context": "Execution requires explicit operator approval for this bounded E07 process group; the runner does not verify approval and implies no product grant",
-  "product_runner_grant": false
-}

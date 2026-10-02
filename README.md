@@ -9,7 +9,7 @@ records remain available for compatibility.
 * Create numbered FDs and route PM, Planner, Worker, and Reviewer handoffs with `aiw fd`
 * Initialize AIW Task, FD, and optional OpenSpec directories and default instruction files
 * Automatically create or append `.wt/` entries to `.gitignore`
-* Generate or merge AI prompt files from `docs/agent-templates/`
+* Generate or merge AI prompt files from `agent-templates/`
 * Create, view, and update tasks
 * Capture, approve, split, and promote durable Issues before Task creation
 * Create dedicated Git worktrees for tasks
@@ -951,7 +951,7 @@ Plugins execute arbitrary external code and may pose security risks. Only instal
 * Creates directories such as `openspec/` and `.wt/`
 * Writes default template files only when missing
 * Creates or appends `.wt/` to `.gitignore`
-* Does not automatically merge templates from `docs/agent-templates/`
+* Does not automatically merge templates from `agent-templates/`
 
 Options:
 
@@ -1117,7 +1117,7 @@ Work Item. It does not change Task state.
 
 Features:
 
-* `aiw prompts list` lists available templates under `docs/agent-templates/`
+* `aiw prompts list` lists available templates under `agent-templates/`
 * Generates or merges repository-level AI prompt files
 
 Auto-detected templates:

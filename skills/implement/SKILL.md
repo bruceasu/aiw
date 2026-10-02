@@ -47,7 +47,9 @@ Never write a passing result for an unrun command.
 When all scoped Work Items are resolved, emit `implementation-ready` with
 `--producer worker` and a project-relative implementation report as the
 artifact. Include the source event ID when completing a dispatched handoff.
-The event routes to Reviewer. If a new decision is needed, emit
+The event routes to an independent Tester for an FD with `**Test policy:**
+Independent`; older FDs without the marker route directly to Reviewer. Worker
+must not write the Tester report or PM decision. If a new decision is needed, emit
 `needs-decision` with a written question instead, then stop.
 
 An independent Reviewer uses `fd-review` to check the FD, diff or commit, and actual evidence.

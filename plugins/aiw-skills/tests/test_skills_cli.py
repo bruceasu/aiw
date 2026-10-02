@@ -47,7 +47,7 @@ def make_windows_release_fixture(base: Path) -> tuple[Path, Path, dict[str, str]
     skills_root.mkdir()
     write_skill(skills_root, "packaged-skill", "Installed by release script.")
     (source_root / "docs" / "usage").mkdir(parents=True)
-    (source_root / "docs" / "agent-templates").mkdir(parents=True)
+    (source_root / ".agents" / "agent-templates").mkdir(parents=True)
     binary_dir = source_root / "bin"
     binary_dir.mkdir()
     (binary_dir / "aiw-windows-amd64.exe").write_bytes(b"test binary")

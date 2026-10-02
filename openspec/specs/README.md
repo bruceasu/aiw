@@ -1,4 +1,4 @@
-# AIW 代码行为基线
+﻿# AIW 代码行为基线
 
 本目录是根据当前工作区源码重建的 OpenSpec 稳定规格。基线日期：2026-09-16。
 源码定位基点：`7161d0f6525361686fd50be84309348b82e03dee`；取证以本次工作区实际文件为准，不假定其他未提交文件已进入该提交。
@@ -11,8 +11,7 @@
 |---|---|
 | [CLI 与扩展入口](cli-and-plugins/spec.md) | 内置命令、初始化、插件发现与执行、ask 和 cz |
 | [Task 生命周期](task-lifecycle/spec.md) | 工件归属、创建预检、元数据兼容、状态与归档 |
-| [Requirement 管理](requirement-management/spec.md) | 捕获、人工决定、推广、终止与来源校验 |
-| [Requirement 发现](requirement-discovery/spec.md) | 上下文、方法、覆盖评估、专业提问、恢复与就绪 |
+| [Requirement 管理与发现](requirement/spec.md) | Issue 生命周期、人工决策、推广、来源校验、发现上下文、覆盖评估、提问、恢复与就绪 |
 | [Agent Session](agent-session/spec.md) | 持久化会话、prompt 构造、后端调用与 turn 证据 |
 | [AI 路由](ai-routing/spec.md) | provider、profile、路由计划与监督请求快照 |
 | [Workflow 监督执行](workflow-supervision/spec.md) | Work Item、Attempt、结构化结果、重试与完成语义 |
@@ -52,3 +51,4 @@
 - 未运行测试、编译、OpenSpec CLI 校验、模型调用或网络请求；本次没有生产代码变更。
 
 %% 该静态检查不替代 OpenSpec CLI 的版本相关校验，也不证明实现行为通过运行验收。
+

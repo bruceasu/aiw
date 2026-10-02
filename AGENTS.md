@@ -1,7 +1,5 @@
 # AGENTS.md
-
 Always respond in Chinese.
-Write prompts in Easy English when asked to draft prompts.
 
 ## FD Workflow
 
@@ -50,6 +48,13 @@ Default budget for an ordinary implementation request:
 
 Implementation does not imply authorization to test or create final build
 artifacts.
+For an independent FD Tester, a Planner may approve one focused low-risk test
+command after inspecting its invoked code and recording the exact scope and
+revision-bound decision. This is an explicit exception to the zero-test
+default, not permission for broader validation.
+Place repository test code under the root `tests/` directory.
+For new FD reports, write human-readable Markdown in Chinese and a same-name
+JSON sidecar for machine/AI fields. Keep historical reports unchanged.
 
 Before the first edit, use no more than three targeted discovery batches unless
 the task is genuinely blocked. Batch related reads and searches. Read relevant
@@ -69,10 +74,19 @@ Run a test or executable validation other than compile-only only when:
 
 - the user explicitly asks for it;
 - the task is specifically to create or repair tests; or
-- runtime evidence is decisive and static analysis cannot answer the question.
+- runtime evidence is decisive and static analysis cannot answer the question; or
+- the FD Planner has recorded approval for that exact Tester command and
+  implementation revision.
 
 For the third case, pause first and state the exact command, why it is needed,
 expected duration, scope, and any network or permission risk. Wait for approval.
+For the Planner case, inspect the invoked test code and side effects first.
+Approve without human review only when the command is focused, offline,
+inspectable, and confined to its assigned workspace or temporary files.
+Escalate commands involving unrelated writes/deletes, secrets, network or
+external services, downloads, privilege changes, release artifacts, or unknown
+effects to the human before recording approval. A Tester handoff alone does
+not authorize execution.
 
 Even when runtime validation is authorized:
 
@@ -138,9 +152,9 @@ Keep the active instruction set and execution budget small.
 
 1. Apply this file.
 2. Prefer the nearest local `AGENTS.md` or `CODEX.md`.
-3. Load `prompts/core/resource-budget.md`,
-   `prompts/core/universal-principles.md`,
-   `prompts/core/validation.md`, and `prompts/core/communication.md`.
+3. Load `.agents/prompts/core/resource-budget.md`,
+   `.agents/prompts/core/universal-principles.md`,
+   `.agents/prompts/core/validation.md`, and `.agents/prompts/core/communication.md`.
 4. Add at most one repo-type prompt, one domain prompt, and one task-mode prompt.
 5. Use `project-local > domain > language > repo-type > root` precedence.
 
@@ -152,6 +166,8 @@ Do not load the whole prompt library.
 - Tests, final-artifact builds, formatters, linters, type checks, verification
   scripts, network calls, permission probes, privilege escalation,
   `codex-auto-review` has a default budget of zero.
+- An independent FD Tester may execute one exact, revision-bound command after
+  recorded Planner approval under the Runtime Authorization rule above.
 - After implementation, run one compile-only check: prefer `scripts/compile*`
   or root `compile*`, otherwise use the narrowest language-level compiler
   command. The command must not retain a final distributable artifact.
@@ -162,7 +178,7 @@ Do not load the whole prompt library.
 - Do not repeat unchanged failed commands; a compile-only check may be retried
   once after a relevant source fix.
 
-Follow `prompts/core/resource-budget.md` and `prompts/core/validation.md` for
+Follow `.agents/prompts/core/resource-budget.md` and `.agents/prompts/core/validation.md` for
 authorization and retry rules.
 
 ## Working Rules
@@ -193,12 +209,12 @@ concurrency, retries, timeouts, or shutdown behavior.
 
 ## Prompt Routing
 
-- Mixed-language repository: `prompts/repo-types/monorepo.md`
+- Mixed-language repository: `.agents/prompts/repo-types/monorepo.md`
 - Python: `python/AGENTS.md` or `python/CODEX.md`
 - Java: `java/AGENTS.md` or `java/CODEX.md`
 - Go: `go/AGENTS.md` or `go/CODEX.md`
-- Prompt changes: `prompts/domains/prompt-authoring.md`
-- Task mode: one matching file under `prompts/task-modes/`
+- Prompt changes: `.agents/prompts/domains/prompt-authoring.md`
+- Task mode: one matching file under `.agents/prompts/task-modes/`
 
 ## Final Report
 
@@ -221,10 +237,10 @@ Use it when the task is mostly Go or the current directory contains Go markers.
 ## Detect The Go Domain
 - Service markers:
   `cmd/server`, `internal/`, handler packages, config packages
-  - also load `../prompts/domains/go-service.md`
+  - also load `.agents/prompts/domains/go-service.md`
 - CLI markers:
   `cobra`, `urfave/cli`, command trees under `cmd/`, single-binary tools
-  - also load `../prompts/domains/go-cli.md`
+  - also load `.agents/prompts/domains/go-cli.md`
 
 Use one domain prompt by default.
 Load both only when the task truly spans both service and CLI code.

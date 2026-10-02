@@ -143,7 +143,8 @@ if errorlevel 8 exit /b 1
 exit /b 0
 
  :build_docs
-call cp-mirror.bat docs\usage %INSTALL_DIR%\docs\usage || exit /b 1
+xcopy /E /I /Y "docs\usage" "%INSTALL_DIR%\docs\usage" >nul || exit /b 1
+xcopy /E /I /Y "agent-templates" "%INSTALL_DIR%\agent-templates" >nul || exit /b 1
 exit /b 0
 
  :build_skills

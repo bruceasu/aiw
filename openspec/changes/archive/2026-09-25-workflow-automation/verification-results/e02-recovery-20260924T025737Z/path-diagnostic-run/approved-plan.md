@@ -1,1 +1,0 @@
-One diagnostic run of the original three E02 tests after adding root/target path error context. Same worktree and offline environment. No ACL changes, elevation, network, live Task migration, or weakening path validation. Preserve all outputs.

@@ -2,7 +2,7 @@
 
 This template describes GitLab as an explicit external projection. In an
 AIW/OpenSpec repository, OpenSpec remains the canonical local work manager and
-this file must not replace `docs/agents/work-management.md`.
+this file must not replace `.agents/agents/work-management.md`.
 
 Issues and PRDs for this repo live as GitLab issues. Use the [`glab`](https://gitlab.com/gitlab-org/cli) CLI for all operations.
 

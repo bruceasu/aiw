@@ -153,5 +153,5 @@ Engineering Skills 遵循 `skills/reviewed-skill-contract.md` 和
 
 - [Reviewed Skill Contract](reviewed-skill-contract.md)
 - [Work Management](work-management.md)
-- [AIW Work Management](../docs/agents/work-management.md)
+- [AIW Work Management](../.agents/agents/work-management.md)
 - [AIW 使用说明](../README.md)

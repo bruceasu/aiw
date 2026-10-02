@@ -1,0 +1,333 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-014",
+  "source_event": "FD-014-000020-implementation-ready",
+  "human_report": "FD-014-test-report-r4.md",
+  "data": {
+    "implementation_event": "FD-014-000020-implementation-ready",
+    "tested_fd_revision": 20,
+    "tested_fd_digest": "f3b6924dfdbb7c8230e17f7aae47cd4df274009743d624b1778c25566c51e9ad",
+    "tester_session": "fd014-tester-20261002-f7f15d14",
+    "applicable_scenarios": 34,
+    "covered_scenarios": 26,
+    "executed_behavior_tests": 15,
+    "passed_behavior_tests": 15,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 0,
+    "requirements_coverage": "76.47058823529412%",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": "not measured",
+    "coverage_unavailable_reason": "修订号 20 尚无业务代码分支覆盖率命令或授权；准备好的 CLI 黑盒用例不测量业务代码分支。",
+    "test_files": [
+      "tests/test_fd014_blackbox.py"
+    ],
+    "authorization_records": [
+      "docs/features/reports/FD-014-test-authorization-r4.md",
+      "docs/features/reports/FD-014-test-authorization-r4-retry.md"
+    ],
+    "commands": [
+      "python -B -m unittest tests.test_fd014_blackbox -v",
+      "python -B -m unittest tests.test_fd014_blackbox -v"
+    ],
+    "recommendation": "blocked",
+    "not_applicable_reason": "none",
+    "residual_risk": "复跑 15/15 通过，但 E21-E25、E27-E29 缺少本轮证据；业务代码分支覆盖率未测，需 PM 明确决定。",
+    "scenarios": [
+      {
+        "id": "E01",
+        "status": "passed",
+        "behavior": "新 FD 产生 Planner handoff",
+        "test_case": "ready_worker",
+        "test_cases": [
+          "test_independent_policy_routes_through_tester_and_pm"
+        ]
+      },
+      {
+        "id": "E02",
+        "status": "passed",
+        "behavior": "Planner 设计完成交给 Worker",
+        "test_case": "ready_worker",
+        "test_cases": [
+          "test_independent_policy_routes_through_tester_and_pm"
+        ]
+      },
+      {
+        "id": "E03",
+        "status": "passed",
+        "behavior": "独立测试 FD 的 Worker 完成后交给 Tester",
+        "test_case": "test_independent_policy_routes_through_tester_and_pm",
+        "test_cases": [
+          "test_independent_policy_routes_through_tester_and_pm"
+        ]
+      },
+      {
+        "id": "E04",
+        "status": "passed",
+        "behavior": "Worker 会话不能领取 Tester handoff",
+        "test_case": "test_independent_policy_routes_through_tester_and_pm",
+        "test_cases": [
+          "test_independent_policy_routes_through_tester_and_pm"
+        ]
+      },
+      {
+        "id": "E05",
+        "status": "passed",
+        "behavior": "Tester 报告交给 PM",
+        "test_case": "test_independent_policy_routes_through_tester_and_pm",
+        "test_cases": [
+          "test_independent_policy_routes_through_tester_and_pm"
+        ]
+      },
+      {
+        "id": "E06",
+        "status": "passed",
+        "behavior": "PM 接受后交给 Reviewer",
+        "test_case": "test_independent_policy_routes_through_tester_and_pm",
+        "test_cases": [
+          "test_independent_policy_routes_through_tester_and_pm"
+        ]
+      },
+      {
+        "id": "E07",
+        "status": "passed",
+        "behavior": "Tester 会话不能领取 Reviewer handoff",
+        "test_case": "test_independent_policy_routes_through_tester_and_pm",
+        "test_cases": [
+          "test_independent_policy_routes_through_tester_and_pm"
+        ]
+      },
+      {
+        "id": "E08",
+        "status": "passed",
+        "behavior": "PM 拒绝后退回 Worker",
+        "test_case": "test_pm_rejection_returns_to_worker_and_next_implementation_retests",
+        "test_cases": [
+          "test_pm_rejection_returns_to_worker_and_next_implementation_retests"
+        ]
+      },
+      {
+        "id": "E09",
+        "status": "passed",
+        "behavior": "Worker 再实现后重启 Tester 轮次",
+        "test_case": "test_pm_rejection_returns_to_worker_and_next_implementation_retests",
+        "test_cases": [
+          "test_pm_rejection_returns_to_worker_and_next_implementation_retests"
+        ]
+      },
+      {
+        "id": "E10",
+        "status": "passed",
+        "behavior": "旧 FD 无独立测试标记时直达 Reviewer",
+        "test_case": "test_legacy_fd_routes_directly_to_reviewer",
+        "test_cases": [
+          "test_legacy_fd_routes_directly_to_reviewer"
+        ]
+      },
+      {
+        "id": "E11",
+        "status": "passed",
+        "behavior": "Pending Test 不能用 request-review 绕过",
+        "test_case": "test_reviewer_cannot_bypass_pending_tester",
+        "test_cases": [
+          "test_reviewer_cannot_bypass_pending_tester"
+        ]
+      },
+      {
+        "id": "E12",
+        "status": "passed",
+        "behavior": "Pending Test 不能直接发 verification-passed",
+        "test_case": "test_reviewer_cannot_bypass_pending_tester",
+        "test_cases": [
+          "test_reviewer_cannot_bypass_pending_tester"
+        ]
+      },
+      {
+        "id": "E13",
+        "status": "passed",
+        "behavior": "Tester 报告缺会话字段被拒",
+        "test_case": "test_report_requires_labelled_tester_session",
+        "test_cases": [
+          "test_report_requires_labelled_tester_session"
+        ]
+      },
+      {
+        "id": "E14",
+        "status": "passed",
+        "behavior": "已执行测试缺授权被拒",
+        "test_case": "test_executed_evidence_requires_authorization",
+        "test_cases": [
+          "test_executed_evidence_requires_authorization"
+        ]
+      },
+      {
+        "id": "E15",
+        "status": "passed",
+        "behavior": "授权绑定其他实现事件被拒",
+        "test_case": "test_authorization_for_other_implementation_is_rejected",
+        "test_cases": [
+          "test_authorization_for_other_implementation_is_rejected"
+        ]
+      },
+      {
+        "id": "E16",
+        "status": "passed",
+        "behavior": "人工授权写 denied 被拒",
+        "test_case": "test_human_approval_denied_is_rejected",
+        "test_cases": [
+          "test_human_approval_denied_is_rejected"
+        ]
+      },
+      {
+        "id": "E17",
+        "status": "passed",
+        "behavior": "人工授权写 pending 被拒",
+        "test_case": "test_human_approval_pending_is_rejected",
+        "test_cases": [
+          "test_human_approval_pending_is_rejected"
+        ]
+      },
+      {
+        "id": "E18",
+        "status": "passed",
+        "behavior": "肯定人工授权引用通过格式门槛",
+        "test_case": "test_affirmative_human_approval_reference_is_accepted",
+        "test_cases": [
+          "test_affirmative_human_approval_reference_is_accepted"
+        ]
+      },
+      {
+        "id": "E19",
+        "status": "passed",
+        "behavior": "PM 不能接受实际失败的行为用例",
+        "test_case": "test_pm_cannot_accept_failed_executed_case",
+        "test_cases": [
+          "test_pm_cannot_accept_failed_executed_case"
+        ]
+      },
+      {
+        "id": "E20",
+        "status": "passed",
+        "behavior": "PM 明确例外可接受低于门槛或未测覆盖率",
+        "test_case": "test_independent_policy_routes_through_tester_and_pm",
+        "test_cases": [
+          "test_independent_policy_routes_through_tester_and_pm"
+        ]
+      },
+      {
+        "id": "E21",
+        "status": "uncovered",
+        "behavior": "PM 未记录必须的覆盖率例外时拒绝接受",
+        "test_case": null
+      },
+      {
+        "id": "E22",
+        "status": "uncovered",
+        "behavior": "PM 决策绑定过期 FD 修订或摘要时拒绝",
+        "test_case": null
+      },
+      {
+        "id": "E23",
+        "status": "uncovered",
+        "behavior": "场景计数与覆盖率不一致的报告被拒",
+        "test_case": null
+      },
+      {
+        "id": "E24",
+        "status": "uncovered",
+        "behavior": "授权 FD 修订或摘要不一致被拒",
+        "test_case": null
+      },
+      {
+        "id": "E25",
+        "status": "uncovered",
+        "behavior": "授权精确命令不一致被拒",
+        "test_case": null
+      },
+      {
+        "id": "E26",
+        "status": "passed",
+        "behavior": "分支覆盖率不可用时有原因且独立报告",
+        "test_case": "test_independent_policy_routes_through_tester_and_pm",
+        "test_cases": [
+          "test_independent_policy_routes_through_tester_and_pm"
+        ]
+      },
+      {
+        "id": "E27",
+        "status": "uncovered",
+        "behavior": "业务分支覆盖排除生成测试代码并注明不可达分支",
+        "test_case": null
+      },
+      {
+        "id": "E28",
+        "status": "uncovered",
+        "behavior": "过期待领 Worker handoff 可由 refresh-worker 替换",
+        "test_case": null
+      },
+      {
+        "id": "E29",
+        "status": "uncovered",
+        "behavior": "已领或在途 Worker handoff 不能被 refresh-worker 替换",
+        "test_case": null
+      },
+      {
+        "id": "E30",
+        "status": "passed",
+        "behavior": "Reviewer 通过后 Complete 归档 FD 证据",
+        "test_case": "test_dual_complete_archives_markdown_and_json",
+        "test_cases": [
+          "test_dual_complete_archives_markdown_and_json"
+        ]
+      },
+      {
+        "id": "E31",
+        "status": "passed",
+        "behavior": "中文 Markdown 与同名 JSON 匹配时 Tester 可交接",
+        "test_case": "test_dual_report_handoff_with_chinese_markdown_and_json",
+        "test_cases": [
+          "test_dual_report_handoff_with_chinese_markdown_and_json"
+        ]
+      },
+      {
+        "id": "E32",
+        "status": "passed",
+        "behavior": "缺 JSON 阻止 Tester handoff",
+        "test_case": "test_dual_report_missing_json_blocks_handoff",
+        "test_cases": [
+          "test_dual_report_missing_json_blocks_handoff"
+        ]
+      },
+      {
+        "id": "E33",
+        "status": "passed",
+        "behavior": "JSON 来源事件错配阻止 Tester handoff",
+        "test_case": "test_dual_report_mismatched_json_event_blocks_handoff",
+        "test_cases": [
+          "test_dual_report_mismatched_json_event_blocks_handoff"
+        ]
+      },
+      {
+        "id": "E34",
+        "status": "passed",
+        "behavior": "Complete 把 Markdown 与 JSON 成对归档",
+        "test_case": "test_dual_complete_archives_markdown_and_json",
+        "test_cases": [
+          "test_dual_complete_archives_markdown_and_json"
+        ]
+      }
+    ],
+    "static_exclusions": [
+      "报告场景清单和比例本身为书面证据；E23 单独检查 CLI 计数门槛。",
+      "根 tests 路径、中文 Markdown 可读性和黑盒测试写法由静态检查确认。",
+      "Planner 对命令风险的判断是人类决策；可执行授权门槛列于 E14 至 E18、E24 至 E25。",
+      "源和安装 Skill、规格、使用说明一致性需要静态比对。",
+      "r1 至 r3 历史报告保留属于文件证据，E09 和 E34 分别覆盖新轮次与归档行为。"
+    ],
+    "observations": [
+      "首跑退出码 1，Ran 15 tests in 13.534s; FAILED (failures=2)；Dual 正向 Tester handoff 和归档用例因旧 Markdown 字段映射失败。",
+      "Worker 修正 JSON implementation_event 映射，Tester 对两个 Dual 负例增加具体 stderr 原因断言。",
+      "获批重跑退出码 0，Ran 15 tests in 13.751s; OK；未运行分支覆盖率。"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-014",
+  "source_event": "FD-014-000021-test-report-ready",
+  "human_report": "FD-014-test-decision-r4.md",
+  "data": {
+    "disposition": "accepted",
+    "tester_report": "docs/features/reports/FD-014-test-report-r4.md",
+    "fd_revision": 21,
+    "fd_digest": "0706a609b36780c51600151749d0c1b02b7062abc1162c7d4d23269c4a5ed710",
+    "requirements_coverage": "76.47058823529412%",
+    "branch_coverage": "not measured",
+    "rationale": "本轮获批重跑的 15 项行为测试全部通过；34 个适用场景中 26 个有可归因的通过证据，需求场景覆盖率超过 70%，允许进入独立审查。首跑失败、修复和重跑均留有证据。",
+    "exceptions": "明确接受业务代码分支覆盖率未测的缺口；当前没有获授权的分支测量结果，不视为达到 70% 或通过。E21-E25、E27-E29 八个场景未获本轮执行证据，需求场景覆盖率 76.47058823529412% 仍低于 100% 目标。",
+    "residual_risk": "八个未覆盖场景和未知分支覆盖率仍可能隐藏拒绝路径、授权错配及 refresh-worker 边界问题；Reviewer 必须独立检查实现和证据。",
+    "pm_identity": "01a0f7b5-5fc4-70b0-ab29-69d25ce53239",
+    "decision_time": "2026-10-01T23:39:07+00:00"
+  }
+}

@@ -3,6 +3,8 @@
 **Status:** Planned  
 **Revision:** 1  
 **Priority:** Medium
+**Test policy:** Independent
+**Evidence policy:** Dual
 
 ## Problem
 
