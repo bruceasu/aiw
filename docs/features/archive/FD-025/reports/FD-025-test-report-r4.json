@@ -1,0 +1,424 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-025",
+  "source_event": "FD-025-000010-implementation-ready",
+  "human_report": "FD-025-test-report-r4.md",
+  "data": {
+    "implementation_event": "FD-025-000010-implementation-ready",
+    "tested_fd_revision": 10,
+    "tested_fd_digest": "ac7ac370bc33e29843e5b220e62943b8784cc204a1b6e9e8fe326cef5631741e",
+    "tester_session": "fd025-tester-20261004-a173fa",
+    "test_source_digest": "30fe778a4a1986aba6024e804751764211c52c2aee8ddef33141dc95149ebe77",
+    "installed_binary_digest": "97a6753035e944876d942ec48d7ec2de029f0a93e9d7f906f49cbdc49ef378a3",
+    "installed_entry_digest": "e9924962f30f39d5112a0eed1743fb6c6223c22127aeddb87e1f761ae44113c5",
+    "applicable_scenarios": 32,
+    "covered_scenarios": 12,
+    "executed_behavior_tests": 12,
+    "passed_behavior_tests": 12,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 20,
+    "requirements_coverage": "37.5%",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": [
+      "docs/features/reports/FD-025-test-results-r4.json"
+    ],
+    "coverage_unavailable_reason": "No branch instrumentation; only focused temporary loopback lifecycle; active models and broader acceptance paths not authorized",
+    "test_files": [
+      "tests/fd025_shutdown_blackbox.py"
+    ],
+    "authorization_records": [
+      "docs/features/reports/FD-025-test-authorization-r4.md"
+    ],
+    "commands": [
+      "python tests/fd025_shutdown_blackbox.py"
+    ],
+    "command_results": [
+      {
+        "exit_code": 0,
+        "duration_seconds": 1.6672538000000001,
+        "result": "12 passed; 0 failed; no retry"
+      }
+    ],
+    "recommendation": "pass",
+    "not_applicable_reason": "All 32 requirements inventoried; outside-scope requirements remain uncovered instead of removed",
+    "residual_risk": "20 of32 observable requirements not runtime-tested and branch coverage unavailable; PM needs explicit static-evidence/risk exception. No active backend cancellation, real timeout/error persistence, signal or remote-peer evidence. Installed current Windows lifecycle and default plugin stop succeeded only in isolated temporary configuration.",
+    "scenarios": [
+      {
+        "id": "FD025-S-01",
+        "behavior": "从任意工作目录启动脚本且临时loopback监听就绪",
+        "status": "passed",
+        "test_cases": [
+          "fd025_shutdown_blackbox.py::从任意工作目录启动脚本且临时loopback监听就绪"
+        ],
+        "execution_result": "passed",
+        "safe_detail": {
+          "process_exit_code": null,
+          "stderr_class": "stderr-present-unclassified"
+        }
+      },
+      {
+        "id": "FD025-S-02",
+        "behavior": "未认证POST拒绝且服务继续运行",
+        "status": "passed",
+        "test_cases": [
+          "fd025_shutdown_blackbox.py::未认证POST拒绝且服务继续运行"
+        ],
+        "execution_result": "passed",
+        "safe_detail": {
+          "http_status": 401
+        }
+      },
+      {
+        "id": "FD025-S-03",
+        "behavior": "无效合成Key拒绝且服务继续运行",
+        "status": "passed",
+        "test_cases": [
+          "fd025_shutdown_blackbox.py::无效合成Key拒绝且服务继续运行"
+        ],
+        "execution_result": "passed",
+        "safe_detail": {
+          "http_status": 401
+        }
+      },
+      {
+        "id": "FD025-S-04",
+        "behavior": "有效认证GET拒绝且服务继续运行",
+        "status": "passed",
+        "test_cases": [
+          "fd025_shutdown_blackbox.py::有效认证GET拒绝且服务继续运行"
+        ],
+        "execution_result": "passed",
+        "safe_detail": {
+          "http_status": 405
+        }
+      },
+      {
+        "id": "FD025-S-05",
+        "behavior": "有效认证query拒绝且服务继续运行",
+        "status": "passed",
+        "test_cases": [
+          "fd025_shutdown_blackbox.py::有效认证query拒绝且服务继续运行"
+        ],
+        "execution_result": "passed",
+        "safe_detail": {
+          "http_status": 400
+        }
+      },
+      {
+        "id": "FD025-S-06",
+        "behavior": "有效认证非空body拒绝且服务继续运行",
+        "status": "passed",
+        "test_cases": [
+          "fd025_shutdown_blackbox.py::有效认证非空body拒绝且服务继续运行"
+        ],
+        "execution_result": "passed",
+        "safe_detail": {
+          "http_status": 400
+        }
+      },
+      {
+        "id": "FD025-S-07",
+        "behavior": "stop脚本正常返回成功",
+        "status": "passed",
+        "test_cases": [
+          "fd025_shutdown_blackbox.py::stop脚本正常返回成功"
+        ],
+        "execution_result": "passed",
+        "safe_detail": {
+          "exit_code": 0
+        }
+      },
+      {
+        "id": "FD025-S-08",
+        "behavior": "Gateway及同步启动脚本正常退出0",
+        "status": "passed",
+        "test_cases": [
+          "fd025_shutdown_blackbox.py::Gateway及同步启动脚本正常退出0"
+        ],
+        "execution_result": "passed",
+        "safe_detail": {
+          "exit_code": 0
+        }
+      },
+      {
+        "id": "FD025-S-09",
+        "behavior": "临时监听关闭且gateway.lock释放",
+        "status": "passed",
+        "test_cases": [
+          "fd025_shutdown_blackbox.py::临时监听关闭且gateway.lock释放"
+        ],
+        "execution_result": "passed"
+      },
+      {
+        "id": "FD025-S-10",
+        "behavior": "重复stop返回成功",
+        "status": "passed",
+        "test_cases": [
+          "fd025_shutdown_blackbox.py::重复stop返回成功"
+        ],
+        "execution_result": "passed",
+        "safe_detail": {
+          "exit_code": 0
+        }
+      },
+      {
+        "id": "FD025-S-11",
+        "behavior": "不提交模型请求且没有执行或正文记录",
+        "status": "passed",
+        "test_cases": [
+          "fd025_shutdown_blackbox.py::不提交模型请求且没有执行或正文记录"
+        ],
+        "execution_result": "passed",
+        "safe_detail": {
+          "execution_records": 0,
+          "content_records": 0
+        }
+      },
+      {
+        "id": "FD025-S-12",
+        "behavior": "Ctrl+C入口保持兼容",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-13",
+        "behavior": "SIGTERM入口保持兼容",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-14",
+        "behavior": "活动后端及进程树取消并收敛",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-15",
+        "behavior": "shared下非loopback来源不能调用控制入口",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-16",
+        "behavior": "specific非loopback配置stop拒绝并指向控制台",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-17",
+        "behavior": "旧版本404给出升级提示",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-18",
+        "behavior": "安装不覆盖既有gateway.json",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-19",
+        "behavior": "审计存储不可写时仍允许安全stop",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-20",
+        "behavior": "周期内容清理收敛后才释放锁",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-21",
+        "behavior": "CLI接收202后等待监听及锁且最多15秒",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-22",
+        "behavior": "停止失败不强制结束进程",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-23",
+        "behavior": "停止失败不自动删除残留锁",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-24",
+        "behavior": "stop禁止HTTP重定向",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-25",
+        "behavior": "stop不自动重试",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-26",
+        "behavior": "CLI不输出凭据或原始响应错误",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-27",
+        "behavior": "所有enabled主体的Key可用于本地控制",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-28",
+        "behavior": "Windows/Linux安装入口可用",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-29",
+        "behavior": "Responses现有协议保留",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-30",
+        "behavior": "Models现有协议保留",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-31",
+        "behavior": "Usage现有协议保留",
+        "status": "uncovered",
+        "execution_result": "not-run",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "id": "FD025-S-32",
+        "behavior": "隔离插件默认配置stop不带config返回成功",
+        "status": "passed",
+        "test_cases": [
+          "fd025_shutdown_blackbox.py::隔离插件默认配置stop不带config返回成功"
+        ],
+        "execution_result": "passed",
+        "safe_detail": {
+          "exit_code": 0
+        }
+      }
+    ],
+    "static_exclusions": [
+      {
+        "requirement": "Ctrl+C入口保持兼容",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "SIGTERM入口保持兼容",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "活动后端及进程树取消并收敛",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "shared下非loopback来源不能调用控制入口",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "specific非loopback配置stop拒绝并指向控制台",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "旧版本404给出升级提示",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "安装不覆盖既有gateway.json",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "审计存储不可写时仍允许安全stop",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "周期内容清理收敛后才释放锁",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "CLI接收202后等待监听及锁且最多15秒",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "停止失败不强制结束进程",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "停止失败不自动删除残留锁",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "stop禁止HTTP重定向",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "stop不自动重试",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "CLI不输出凭据或原始响应错误",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "所有enabled主体的Key可用于本地控制",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "Windows/Linux安装入口可用",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "Responses现有协议保留",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "Models现有协议保留",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      },
+      {
+        "requirement": "Usage现有协议保留",
+        "reason": "Outside authorized temporary loopback lifecycle command; requires static evidence and PM risk exception"
+      }
+    ],
+    "cleanup_evidence": {
+      "temporary_workspace_removed": true,
+      "temporary_workspace_preserved": null,
+      "protected_port_43127_used": false
+    },
+    "history_refs": [
+      "docs/features/reports/FD-025-test-report-r2.md",
+      "docs/features/reports/FD-025-test-report-r3.md"
+    ],
+    "lifecycle_note": "Independent formal test report only; PM/Reviewer decision pending"
+  }
+}

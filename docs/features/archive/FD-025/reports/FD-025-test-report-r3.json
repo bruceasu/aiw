@@ -1,0 +1,261 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-025",
+  "source_event": "FD-025-000007-implementation-ready",
+  "human_report": "FD-025-test-report-r3.md",
+  "data": {
+    "implementation_event": "FD-025-000007-implementation-ready",
+    "tested_fd_revision": 7,
+    "tested_fd_digest": "c9e4889371818554e3f2826921c706c6b65faebe306b24dc4dd912b290dc3d47",
+    "tester_session": "fd025-tester-20261004-a173fa",
+    "applicable_scenarios": 31,
+    "covered_scenarios": 0,
+    "executed_behavior_tests": 0,
+    "passed_behavior_tests": 0,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 31,
+    "requirements_coverage": "0%",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": "not measured",
+    "coverage_unavailable_reason": "No tests executed; PM detected default stop entrypoint ordering defect after Tester claim",
+    "test_files": [
+      "tests/fd025_shutdown_blackbox.py"
+    ],
+    "authorization_records": "none",
+    "commands": "none",
+    "recommendation": "blocked",
+    "not_applicable_reason": "All 31 scenarios remain applicable but blocked pending product repair/new handoff",
+    "residual_risk": "PM static defect in default stop configuration insertion. No evidence for current installed binary; historical results cannot be applied. Further test requires fresh revision-bound authorization.",
+    "prepared_test_source_digest": "38de8d51da9b1ec1d7e16c28c1673650b6c3da53c9c1bdd05e57cdfc81630dbe",
+    "prepared_binary_digest": "97a6753035e944876d942ec48d7ec2de029f0a93e9d7f906f49cbdc49ef378a3",
+    "current_binary_tested": "not run",
+    "scenarios": [
+      {
+        "id": "FD025-S-01",
+        "behavior": "从任意工作目录启动脚本且临时loopback监听就绪",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-02",
+        "behavior": "未认证POST拒绝且服务继续运行",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-03",
+        "behavior": "无效合成Key拒绝且服务继续运行",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-04",
+        "behavior": "有效认证GET拒绝且服务继续运行",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-05",
+        "behavior": "有效认证query拒绝且服务继续运行",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-06",
+        "behavior": "有效认证非空body拒绝且服务继续运行",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-07",
+        "behavior": "stop脚本正常返回成功",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-08",
+        "behavior": "Gateway及同步启动脚本正常退出0",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-09",
+        "behavior": "临时监听关闭且gateway.lock释放",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-10",
+        "behavior": "重复stop返回成功",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-11",
+        "behavior": "不提交模型请求且没有执行或正文记录",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-12",
+        "behavior": "Ctrl+C入口保持兼容",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-13",
+        "behavior": "SIGTERM入口保持兼容",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-14",
+        "behavior": "活动后端及进程树取消并收敛",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-15",
+        "behavior": "shared下非loopback来源不能调用控制入口",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-16",
+        "behavior": "specific非loopback配置stop拒绝并指向控制台",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-17",
+        "behavior": "旧版本404给出升级提示",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-18",
+        "behavior": "安装不覆盖既有gateway.json",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-19",
+        "behavior": "审计存储不可写时仍允许安全stop",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-20",
+        "behavior": "周期内容清理收敛后才释放锁",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-21",
+        "behavior": "CLI接收202后等待监听及锁且最多15秒",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-22",
+        "behavior": "停止失败不强制结束进程",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-23",
+        "behavior": "停止失败不自动删除残留锁",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-24",
+        "behavior": "stop禁止HTTP重定向",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-25",
+        "behavior": "stop不自动重试",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-26",
+        "behavior": "CLI不输出凭据或原始响应错误",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-27",
+        "behavior": "所有enabled主体的Key可用于本地控制",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-28",
+        "behavior": "Windows/Linux安装入口可用",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-29",
+        "behavior": "Responses现有协议保留",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-30",
+        "behavior": "Models现有协议保留",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      },
+      {
+        "id": "FD025-S-31",
+        "behavior": "Usage现有协议保留",
+        "status": "blocked",
+        "execution_result": "not-run",
+        "reason": "PM requested default entrypoint repair before current authorized runtime"
+      }
+    ],
+    "static_exclusions": [
+      "No runtime test",
+      "No service/process/model/network operation",
+      "No product or FD edit",
+      "No new authorization",
+      "No historical result counted against current binary"
+    ],
+    "future_test_plan": "In fresh temporary directory copy installed plugin/exe and synthetic config as gateway.json; after stop run temporary plugin stop with no --config. Not added or executed in this cycle."
+  }
+}

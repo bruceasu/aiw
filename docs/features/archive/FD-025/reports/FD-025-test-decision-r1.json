@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-025",
+  "source_event": "FD-025-000005-test-report-ready",
+  "human_report": "FD-025-test-decision-r1.md",
+  "data": {
+    "disposition": "rejected",
+    "tester_report": "docs/features/reports/FD-025-test-report-r2.md",
+    "fd_revision": 5,
+    "fd_digest": "930297ff403f966e84c6e59693517289883a8f2103e61464125f198a351309f7",
+    "requirements_coverage": "19.35%",
+    "branch_coverage": "not measured",
+    "rationale": "实际正常 stop 返回非零，须修正 Windows 拒绝连接错误码判定后验证。",
+    "exceptions": "none",
+    "residual_risk": "24 个场景未执行，活动模型取消、Linux 运行及故障注入仅可静态评估。",
+    "pm_identity": "fd025-host-20261004-729bf1",
+    "decision_time": "2026-10-04T04:36:03+00:00"
+  }
+}

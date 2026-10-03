@@ -1,0 +1,128 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-021",
+  "source_event": null,
+  "human_report": "FD-021-test-report-r5.md",
+  "data": {
+    "implementation_event": null,
+    "tested_fd_revision": 4,
+    "tested_fd_digest": "2c08ae8653f87a30394e431a3dea21ce7c984bb62d9325ac34019b5b39c2d46f",
+    "test_source_digest": "4317e0dec4f06ba9653e2fdcfd58d9a5be7d74e8b450c8cff2d2dc933442c3b0",
+    "source_digests": {
+      "program/aiw-agent/src/providers.ts": "0cafbfec7809bd71cd8a7e3a775e256b60f3374daa63ecb1e2f04a48198691bb",
+      "program/aiw-agent/src/config.ts": "fe3b2de7078c8124b7b2ed93bb7193f2e93f97d69d82fd7c64e7626da455a205",
+      "program/aiw-agent/src/errors.ts": "b4b53b4ed69fbc81fcbd4be56233f5d5c4df11a5c0e45d26f6e15d8112f9c0ba"
+    },
+    "tester_session": "fd021-external-profile-tester-r5-20261004-fd021_tester",
+    "test_route": "External direct explicit user-authorized offline API profile testing",
+    "applicable_scenarios": 8,
+    "covered_scenarios": 8,
+    "executed_behavior_tests": 8,
+    "passed_behavior_tests": 8,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 0,
+    "blocked_behavior_tests": 0,
+    "requirements_coverage": {
+      "measurement": "Eight profile scenarios only, not full FD acceptance or code coverage",
+      "covered": 8,
+      "total": 8,
+      "percent": 100
+    },
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": [
+      "docs/features/reports/FD-021-test-results-r5.json"
+    ],
+    "coverage_unavailable_reason": "No coverage instrumentation; focused profile scenarios only",
+    "test_files": [
+      "tests/fd021_gateway_profile.mjs"
+    ],
+    "authorization_records": [
+      {
+        "type": "explicit-user-request",
+        "reference": "2026-10-04 approval of Gateway client profile and continued test/fix/review",
+        "scope": "One focused offline profile command; no additional live model budget"
+      }
+    ],
+    "commands": [
+      {
+        "command": "node tests/fd021_gateway_profile.mjs",
+        "attempt": 1,
+        "exit_code": 0,
+        "duration_seconds": 0.3423121,
+        "result": "8 passed / 0 failed / 0 blocked; zero network or model calls"
+      }
+    ],
+    "recommendation": "passed",
+    "not_applicable_reason": "Live Gateway/API budget exhausted; other FD shutdown work, full suites and service paths excluded",
+    "residual_risk": "New Gateway Provider profile not live-tested; R4 SDK minimal-subset success is historical only. R2/R3 suites not rerun on current revision. Remote token budget no longer fixed in gateway mode; current client result limits and other security controls require independent static review. No formal event provenance.",
+    "scenarios": [
+      {
+        "id": "FD021-R5-BB-01",
+        "name": "缺省official模式保留token上限和reasoning",
+        "result": "passed",
+        "behavior_reached": true,
+        "mock_request_count": 1
+      },
+      {
+        "id": "FD021-R5-BB-02",
+        "name": "显式official模式保留token上限和reasoning",
+        "result": "passed",
+        "behavior_reached": true,
+        "mock_request_count": 1
+      },
+      {
+        "id": "FD021-R5-BB-03",
+        "name": "Gateway最小文本参数与标准output/usage",
+        "result": "passed",
+        "behavior_reached": true,
+        "mock_request_count": 1
+      },
+      {
+        "id": "FD021-R5-BB-04",
+        "name": "Gateway instructions与JSON仅发送支持字段",
+        "result": "passed",
+        "behavior_reached": true,
+        "mock_request_count": 1
+      },
+      {
+        "id": "FD021-R5-BB-05",
+        "name": "Gateway effort调用前拒绝",
+        "result": "passed",
+        "behavior_reached": true,
+        "mock_request_count": 0
+      },
+      {
+        "id": "FD021-R5-BB-06",
+        "name": "Gateway reasoning summary调用前拒绝",
+        "result": "passed",
+        "behavior_reached": true,
+        "mock_request_count": 0
+      },
+      {
+        "id": "FD021-R5-BB-07",
+        "name": "未知profile配置调用前拒绝",
+        "result": "passed",
+        "behavior_reached": true,
+        "mock_request_count": 0
+      },
+      {
+        "id": "FD021-R5-BB-08",
+        "name": "空profile配置调用前拒绝",
+        "result": "passed",
+        "behavior_reached": true,
+        "mock_request_count": 0
+      }
+    ],
+    "static_exclusions": [
+      "No provider implementation read for test authorship",
+      "No production/config/service edits",
+      "No old evidence edits",
+      "No live model/network/socket calls",
+      "No downloads/final build/full suite/lint/formatter/vet/coverage instrumentation",
+      "No git writes",
+      "No other FD changes",
+      "No fabricated events"
+    ]
+  }
+}

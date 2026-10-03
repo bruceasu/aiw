@@ -1,0 +1,29 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-018",
+  "source_event": "FD-018-000006-review-requested",
+  "human_report": "FD-018-review-r6.md",
+  "data": {
+    "summary": "修订6当前实现独立静态审查通过；不补造历史Worker报告或完成事件。",
+    "reviewer_session": "codex-reviewer-FD018-20261004-r6",
+    "reviewed_revision": 6,
+    "reviewed_commit": "c9b6d51cd2308e1ffbaf51755d697f6acda3ad83",
+    "diff_base": "c9b6d51cd2308e1ffbaf51755d697f6acda3ad83^",
+    "scope": ["plugins/aiw-agent-gateway/aiw-agent-gateway.py", "plugins/aiw-agent-gateway/README.md", "plugins/aiw-agent-gateway/.gitignore", "build.bat"],
+    "worker_report": "unavailable_historical_state_recovery",
+    "findings": [],
+    "commands": [
+      {"command": "targeted Get-Content / rg", "kind": "static_read_only", "result": "source_contract_and_evidence_read"},
+      {"command": "aiw fd --help; aiw fd claim --help; aiw fd emit --help", "result": "help_read"},
+      {"command": "git rev-parse HEAD", "result": "c9b6d51cd2308e1ffbaf51755d697f6acda3ad83"},
+      {"command": "git log -3 --format='%h %s' -- plugins/aiw-agent-gateway/aiw-agent-gateway.py build.bat", "result": "scoped_history_read"},
+      {"command": "git show --format=fuller --stat HEAD -- plugins/aiw-agent-gateway/aiw-agent-gateway.py plugins/aiw-agent-gateway/README.md plugins/aiw-agent-gateway/.gitignore build.bat", "result": "135_insertions_1_deletion"},
+      {"command": "git diff -- plugins/aiw-agent-gateway build.bat", "result": "empty"},
+      {"command": "aiw fd claim FD-018 FD-018-000006-review-requested --session codex-reviewer-FD018-20261004-r6", "result": "claimed"},
+      {"command": "git diff HEAD^ HEAD -- plugins/aiw-agent-gateway/aiw-agent-gateway.py plugins/aiw-agent-gateway/README.md plugins/aiw-agent-gateway/.gitignore build.bat", "kind": "static_read_only", "result": "scoped_commit_diff_reviewed"}
+    ],
+    "results": {"independent_static_review": "passed", "blocking_findings": 0, "work_items": {"1.1": "supported_by_static_evidence", "1.2": "supported_by_static_evidence", "1.3": "supported_by_static_evidence", "1.4": "supported_by_static_evidence"}, "compile": "not_run", "runtime_tests": "not_run_external", "final_build": "not_run", "network": "not_run", "deployment": "not_run"},
+    "residual_risks": ["实际跨平台启动、标准流、退出码和Windows信号行为未运行验证", "当前已部署二进制可能仍为历史错误产物，本轮未重建或替换", "缺历史Worker报告，依据授权状态恢复和真实当前提交执行独立静态审查"]
+  }
+}

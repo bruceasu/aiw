@@ -1,0 +1,32 @@
+id = "REQ00006-agent-gateway"
+title = "Agent Proxy 迁移为 Go 共享 AI 网关"
+parent_id = ""
+status = "APPROVED"
+created = "2026-10-03"
+updated = "2026-10-03"
+revision = 3
+
+[approval]
+status = "APPROVED"
+by = "user"
+at = "2026-10-03T00:05:53+09:00"
+reason = "用户明确要求批准 REQ00006；批准当前已确认的 Go 共享网关迁移及 ai 客户端迁移需求计划"
+source_digest = "f78fe329d578fddc777184adf475ea5ebde9872c91e018493aab29a8ca1ca7f4"
+
+[promotion]
+status = "NOT_STARTED"
+task_id = ""
+
+[conversation]
+session_id = ""
+
+[terminal]
+by = ""
+at = ""
+reason = ""
+
+[artifact]
+requirement-plan = "docs/requirements/REQ00006-agent-proxy-shared-gateway/requirement-plan.md"
+
+[digest]
+requirement-plan = "e4789111e9fa0bbaca5c63b07653aa1ef952c6e730ad28d503d3489d22228d17"

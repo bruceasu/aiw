@@ -1,0 +1,114 @@
+{
+  "fd_id": "FD-021",
+  "fd_revision": 4,
+  "fd_digest": "24fee3ad97b7ebc1f65b34548ad9046a3857fe70803bfc54980f4b892bae554c",
+  "test_source_digest": "bb76a5285e0abfa102c65d7a935c551b254b009fed5c61f9b78d9023f43d42c9",
+  "source_digests": {
+    "program/aiw-agent/src/providers.ts": "adcd853cf15b82db74caca48ad1ea76f03bb1a820eceec3a21fd1a2e88f45f35",
+    "program/aiw-agent/src/config.ts": "fe3b2de7078c8124b7b2ed93bb7193f2e93f97d69d82fd7c64e7626da455a205",
+    "program/aiw-agent/src/errors.ts": "b4b53b4ed69fbc81fcbd4be56233f5d5c4df11a5c0e45d26f6e15d8112f9c0ba"
+  },
+  "sdk_version": "6.49.0",
+  "transport": "in-process fetch mock; real installed SDK; no network/socket",
+  "timer_policy": "Only configured 60000ms timeout accelerated to 5ms for cancellation case",
+  "results": [
+    {
+      "name": "文本请求字段、SDK端点、文本与usage映射",
+      "status": "passed"
+    },
+    {
+      "name": "JSON请求与有效JSON结果",
+      "status": "passed"
+    },
+    {
+      "name": "无效JSON结果拒绝",
+      "status": "passed"
+    },
+    {
+      "name": "usage nested details缺失保持null",
+      "status": "passed"
+    },
+    {
+      "name": "usage nested details显式null保持已知tokens",
+      "status": "passed"
+    },
+    {
+      "name": "usage完全缺失保持null",
+      "status": "passed"
+    },
+    {
+      "name": "reasoning summary返回与缺失",
+      "status": "passed"
+    },
+    {
+      "name": "HTTP 401错误脱敏与不重试",
+      "status": "passed"
+    },
+    {
+      "name": "HTTP 429错误脱敏与不重试",
+      "status": "passed"
+    },
+    {
+      "name": "HTTP 500错误脱敏与不重试",
+      "status": "passed"
+    },
+    {
+      "name": "连接错误脱敏与不重试",
+      "status": "passed"
+    },
+    {
+      "name": "60秒SDK超时配置、取消与不重试（缩短定时器）",
+      "status": "passed"
+    },
+    {
+      "name": "HTTP 200 headers后body仍受完整响应deadline约束（缩短定时器）",
+      "status": "passed"
+    },
+    {
+      "name": "HTTP 500 headers后body仍受完整响应deadline约束（缩短定时器）",
+      "status": "passed"
+    },
+    {
+      "name": "OPENAI_LOG=debug不泄露请求或上游正文canary",
+      "status": "passed"
+    },
+    {
+      "name": "允许URL http://localhost:43127/v1",
+      "status": "passed"
+    },
+    {
+      "name": "允许URL http://[::1]:43127/v1",
+      "status": "passed"
+    },
+    {
+      "name": "允许URL https://example.invalid/v1",
+      "status": "passed"
+    },
+    {
+      "name": "拒绝URL http://example.invalid/v1",
+      "status": "passed"
+    },
+    {
+      "name": "拒绝URL ftp://127.0.0.1/v1",
+      "status": "passed"
+    },
+    {
+      "name": "拒绝URL not-a-url",
+      "status": "passed"
+    },
+    {
+      "name": "缺少API key在发送前拒绝",
+      "status": "passed"
+    },
+    {
+      "name": "结果256Ki字符边界允许",
+      "status": "passed"
+    },
+    {
+      "name": "结果超过256Ki字符拒绝",
+      "status": "passed"
+    }
+  ],
+  "passed": 24,
+  "failed": 0
+}

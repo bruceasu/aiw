@@ -1,0 +1,58 @@
+{
+  "fd_id": "FD-021",
+  "fd_revision": 4,
+  "fd_digest": "2c08ae8653f87a30394e431a3dea21ce7c984bb62d9325ac34019b5b39c2d46f",
+  "test_source_digest": "4317e0dec4f06ba9653e2fdcfd58d9a5be7d74e8b450c8cff2d2dc933442c3b0",
+  "source_digests": {
+    "program/aiw-agent/src/providers.ts": "0cafbfec7809bd71cd8a7e3a775e256b60f3374daa63ecb1e2f04a48198691bb",
+    "program/aiw-agent/src/config.ts": "fe3b2de7078c8124b7b2ed93bb7193f2e93f97d69d82fd7c64e7626da455a205",
+    "program/aiw-agent/src/errors.ts": "b4b53b4ed69fbc81fcbd4be56233f5d5c4df11a5c0e45d26f6e15d8112f9c0ba"
+  },
+  "sdk_version": "6.49.0",
+  "transport": "real installed SDK; in-process fetch mock; zero network/socket/model execution",
+  "results": [
+    {
+      "name": "缺省official模式保留token上限和reasoning",
+      "status": "passed",
+      "request_count": 1
+    },
+    {
+      "name": "显式official模式保留token上限和reasoning",
+      "status": "passed",
+      "request_count": 1
+    },
+    {
+      "name": "Gateway最小文本参数与标准output/usage",
+      "status": "passed",
+      "request_count": 1
+    },
+    {
+      "name": "Gateway instructions与JSON仅发送支持字段",
+      "status": "passed",
+      "request_count": 1
+    },
+    {
+      "name": "Gateway effort调用前拒绝",
+      "status": "passed",
+      "request_count": 0
+    },
+    {
+      "name": "Gateway reasoning summary调用前拒绝",
+      "status": "passed",
+      "request_count": 0
+    },
+    {
+      "name": "未知profile配置调用前拒绝",
+      "status": "passed",
+      "request_count": 0
+    },
+    {
+      "name": "空profile配置调用前拒绝",
+      "status": "passed",
+      "request_count": 0
+    }
+  ],
+  "passed": 8,
+  "failed": 0,
+  "raw_path": "docs/features/reports/FD-021-test-results-r5.json"
+}

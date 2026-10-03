@@ -1,0 +1,27 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-025",
+  "source_event": "FD-025-000004-implementation-ready",
+  "human_report": "FD-025-test-authorization-r2.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-025-000004-implementation-ready",
+    "fd_revision": 4,
+    "fd_digest": "48434b4de48b862943635a4e936d0d6d8bb802e8eb4f4308d4632237feb77fb6",
+    "tester_session": "fd025-tester-20261004-a173fa",
+    "test_source_digest": "075986116c3a6f55ddfd46b0fa06826928947d9b4235997e15f3a4e7141345fa",
+    "installed_binary_digest": "94990c8de93f72f35c4858ea7cc6f8cfd93b15b1ab75324f9455ff78b3e33cdc",
+    "command": "python tests/fd025_shutdown_blackbox.py",
+    "working_directory": "repository root",
+    "scope": "同一临时 loopback 启停范围，唯一 Windows cmd 入口引用纠正重试；零真实模型",
+    "expected_duration": "通常少于5秒，故障等待约30秒以内",
+    "side_effects": "自有临时配置/日志/状态目录及独占r2原始JSON；不影响43127与真实状态；失败不强杀不删锁",
+    "risk_review": "原始cmd命令string避免二次引用，日志只在自有temp且输出限错误类别；其余r1安全边界不变",
+    "human_approval": "not required",
+    "planner_identity": "fd025-host-20261004-729bf1",
+    "decision_time": "2026-10-04T04:31:31+00:00",
+    "retry_of": "docs/features/reports/FD-025-test-authorization-r1.json"
+  }
+}

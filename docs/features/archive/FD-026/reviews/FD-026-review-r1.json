@@ -1,0 +1,73 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-026",
+  "source_event": "FD-026-000007-test-accepted",
+  "human_report": "FD-026-review-r1.md",
+  "data": {
+    "reviewer_session": "fd026-reviewer-20261004-6b9a2d",
+    "worker_session": "fd026-worker-20261004-c19b",
+    "tester_session": "fd026-tester-20261004-a7e31c",
+    "fd_revision": 7,
+    "reviewed_diff_base": "c9b6d51cd2308e1ffbaf51755d697f6acda3ad83",
+    "result": "changes-requested",
+    "findings": [
+      {
+        "id": "FD026-R1-001",
+        "severity": "medium",
+        "path": "tests/fd021_gateway_acceptance.mjs",
+        "line": 9,
+        "summary": "验收夹具仍从旧插件目录读取安装二进制。",
+        "evidence": "install 常量为 C:/green/aiw/plugins/aiw-agent-gateway，后续从该目录读取 agent-gateway.exe。",
+        "required_change": "将插件目录引用更新为 plugins/aiw-gw，同时保留既有状态目录约定。"
+      },
+      {
+        "id": "FD026-R1-002",
+        "severity": "medium",
+        "path": "tests/fd021_gateway_live.mjs",
+        "line": 46,
+        "summary": "Live 夹具仍从旧插件目录读取 gateway.json。",
+        "evidence": "配置读取路径为 D:/green/aiw/plugins/aiw-agent-gateway/gateway.json。",
+        "required_change": "将插件目录引用更新为 plugins/aiw-gw，同时保留既有状态目录约定。"
+      }
+    ],
+    "acceptance_results": [
+      {
+        "condition": "aiw gw start|stop 通过插件发现调用短名目录入口",
+        "static_evidence": "DiscoverPlugin 使用 aiw-<name> 查找；aiw-gw.py 使用同目录默认配置并转发 start/stop 参数。",
+        "runtime_status": "not-run"
+      },
+      {
+        "condition": "新安装将入口和 Windows/Linux 网关二进制放入 plugins/aiw-gw/",
+        "static_evidence": "build.bat 的网关编译输出、安装来源及目标使用短名目录。",
+        "runtime_status": "not-run"
+      },
+      {
+        "condition": "旧命令不再有入口或当前文档用法",
+        "static_evidence": "旧插件入口已删除，当前使用说明使用 aiw gw；两个测试夹具仍含旧目录路径，见发现。",
+        "runtime_status": "not-run"
+      },
+      {
+        "condition": "配置 schema、HTTP 契约、绝对状态路径不变且旧配置不迁移",
+        "static_evidence": "改名实现路径仅涉及插件入口/位置和文档；未运行配置或 HTTP 行为验证。",
+        "runtime_status": "not-run"
+      }
+    ],
+    "commands": [
+      "aiw fd --help",
+      "aiw fd claim --help",
+      "aiw fd emit --help",
+      "aiw fd show FD-026",
+      "aiw fd claim FD-026 FD-026-000007-test-accepted --session fd026-reviewer-20261004-6b9a2d",
+      "git rev-parse HEAD",
+      "git diff -- build.bat plugins/aiw-agent-gateway plugins/aiw-gw plugins/aiw-ai/README.md plugins/aiw-ai/aiw-ai.mjs program/agent-gateway/README.md scripts/start-gateway.bat scripts/stop-gateway.bat tests/fd025_shutdown_blackbox.py",
+      "rg -n --glob '!docs/features/archive/**' --glob '!docs/features/reviews/**' 'aiw agent-gateway|aiw-agent-gateway|plugins/aiw-agent-gateway' docs plugins program scripts build.bat cmd internal",
+      "git diff --check -- docs/features/FD-026_GATEWAY_SHORT_COMMAND.md docs/features/reviews/FD-026-review-r1.md docs/features/reviews/FD-026-review-r1.json"
+    ],
+    "skipped_checks": [
+      "行为测试和覆盖率：未运行；PM 接受的 0% 覆盖例外仅允许进入静态审查。",
+      "网关进程、compile-only、最终产物构建、安装及部署：未运行。"
+    ],
+    "residual_risk": "aiw gw start/stop、安装布局、配置加载和旧命令不可用性均无运行时验证；旧安装配置不会自动迁移。"
+  }
+}

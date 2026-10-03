@@ -1,0 +1,28 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-024",
+  "source_event": "FD-024-000010-test-accepted",
+  "human_report": "FD-024-review-r2.md",
+  "data": {
+    "reviewer_session": "fd024-reviewer-r2-20261004-0c559b98",
+    "reviewed_base": "c9b6d51 and FD-024 scoped working tree diff",
+    "fd_revision": 10,
+    "fd_digest": "7aecbbbef7508229df892044efa198a0a173688c1198ffa59d6f0eab3059882b",
+    "disposition": "verification-passed",
+    "findings": [],
+    "results": [
+      {"kind": "document-repair", "result": "第 1 轮乱码发现已修复"},
+      {"kind": "implementation-static", "result": "验收行为有对应实现路径；五项未运行行为仅有静态证据"},
+      {"kind": "tester-evidence", "result": "本轮授权命令一次运行，4 项通过；场景覆盖 9/14，PM 例外有效；分支未测"},
+      {"kind": "runtime", "result": "Reviewer 未运行"}
+    ],
+    "commands": [
+      "aiw fd resume FD-024",
+      "aiw fd claim FD-024 FD-024-000010-test-accepted --session fd024-reviewer-r2-20261004-0c559b98",
+      "Get-Content / git diff --numstat (FD-024 静态读取)"
+    ],
+    "skipped_checks": "测试、覆盖率、编译、构建、格式化、lint、网络及 Git 写入均未运行。",
+    "residual_risk": "五项行为场景无运行证据，故障注入回滚未验证；分支覆盖率未知，Tester 原始终端日志未单独保存。"
+  }
+}

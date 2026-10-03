@@ -1,0 +1,102 @@
+{
+  "fd_id": "FD-025",
+  "source_event": "FD-025-000010-implementation-ready",
+  "tester_session": "fd025-tester-20261004-a173fa",
+  "fd_revision": 10,
+  "fd_digest": "ac7ac370bc33e29843e5b220e62943b8784cc204a1b6e9e8fe326cef5631741e",
+  "test_source_digest": "30fe778a4a1986aba6024e804751764211c52c2aee8ddef33141dc95149ebe77",
+  "installed_binary_digest": "97a6753035e944876d942ec48d7ec2de029f0a93e9d7f906f49cbdc49ef378a3",
+  "installed_entry_digest": "e9924962f30f39d5112a0eed1743fb6c6223c22127aeddb87e1f761ae44113c5",
+  "authorization_record": "docs/features/reports/FD-025-test-authorization-r4.json",
+  "transport": "isolated loopback shutdown only; no model requests",
+  "protected_port_43127_used": false,
+  "results": [
+    {
+      "name": "从任意工作目录启动脚本且临时loopback监听就绪",
+      "status": "passed",
+      "safe_detail": {
+        "process_exit_code": null,
+        "stderr_class": "stderr-present-unclassified"
+      }
+    },
+    {
+      "name": "未认证POST拒绝且服务继续运行",
+      "status": "passed",
+      "safe_detail": {
+        "http_status": 401
+      }
+    },
+    {
+      "name": "无效合成Key拒绝且服务继续运行",
+      "status": "passed",
+      "safe_detail": {
+        "http_status": 401
+      }
+    },
+    {
+      "name": "有效认证GET拒绝且服务继续运行",
+      "status": "passed",
+      "safe_detail": {
+        "http_status": 405
+      }
+    },
+    {
+      "name": "有效认证query拒绝且服务继续运行",
+      "status": "passed",
+      "safe_detail": {
+        "http_status": 400
+      }
+    },
+    {
+      "name": "有效认证非空body拒绝且服务继续运行",
+      "status": "passed",
+      "safe_detail": {
+        "http_status": 400
+      }
+    },
+    {
+      "name": "stop脚本正常返回成功",
+      "status": "passed",
+      "safe_detail": {
+        "exit_code": 0
+      }
+    },
+    {
+      "name": "Gateway及同步启动脚本正常退出0",
+      "status": "passed",
+      "safe_detail": {
+        "exit_code": 0
+      }
+    },
+    {
+      "name": "临时监听关闭且gateway.lock释放",
+      "status": "passed"
+    },
+    {
+      "name": "重复stop返回成功",
+      "status": "passed",
+      "safe_detail": {
+        "exit_code": 0
+      }
+    },
+    {
+      "name": "不提交模型请求且没有执行或正文记录",
+      "status": "passed",
+      "safe_detail": {
+        "execution_records": 0,
+        "content_records": 0
+      }
+    },
+    {
+      "name": "隔离插件默认配置stop不带config返回成功",
+      "status": "passed",
+      "safe_detail": {
+        "exit_code": 0
+      }
+    }
+  ],
+  "passed": 12,
+  "failed": 0,
+  "temporary_workspace_removed": true,
+  "temporary_workspace_preserved": null
+}

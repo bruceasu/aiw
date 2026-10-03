@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-026",
+  "source_event": "FD-026-000010-test-report-ready",
+  "human_report": "FD-026-test-decision-r2.md",
+  "data": {
+    "disposition": "accepted",
+    "tester_report": "docs/features/reports/FD-026-test-report-r2.md",
+    "fd_revision": 10,
+    "fd_digest": "14a03368d4c8cc84d17e59dd76ad97e922889fab26ce03ce49d0fbd3b3197ffd",
+    "requirements_coverage": "0%",
+    "branch_coverage": "not measured",
+    "rationale": "Accept the report as an accurate record and allow independent static review under the repository's default zero-test budget. This is not behavior-test acceptance.",
+    "exceptions": [
+      "No behavior tests were run; all 13 applicable scenarios remain uncovered.",
+      "Continue to independent static review without treating uncovered scenarios as passing."
+    ],
+    "residual_risk": "Runtime behavior, platform installation layout, legacy command removal, configuration and HTTP contracts, and state paths have no execution evidence.",
+    "pm_identity": "fd026-pm-r2-20261004-main",
+    "decision_time": "2026-10-04T05:56:42Z"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-026",
+  "source_event": "FD-026-000006-test-report-ready",
+  "human_report": "FD-026-test-decision-r1.md",
+  "data": {
+    "disposition": "accepted",
+    "tester_report": "docs/features/reports/FD-026-test-report-r1.md",
+    "fd_revision": 6,
+    "fd_digest": "a7963e7adf4a5fc23b844965a8e11918f5d4f03de314c0bef433e23d60b43fd4",
+    "requirements_coverage": "0%",
+    "branch_coverage": "not measured",
+    "rationale": "接受并带例外进入独立 Reviewer 静态审查。仓库默认预算禁止未获授权的测试；命令改名范围有限，Reviewer 可静态核对调用链。未运行行为不得描述为通过。",
+    "exceptions": "需求覆盖率 0%（4 个适用场景全部未运行）；分支覆盖率未测量。未记录退出码的 compile-only 命令不作为通过证据。",
+    "residual_risk": "aiw gw start/stop、安装布局和旧命令不可用性均未运行验证；旧安装配置未迁移。Reviewer 需独立检查实现路径。",
+    "pm_identity": "fd026-pm-20261004-main",
+    "decision_time": "2026-10-04T05:38:55+00:00"
+  }
+}

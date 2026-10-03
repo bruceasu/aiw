@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-020",
+  "source_event": "FD-020-000008-test-requested",
+  "human_report": "FD-020-test-authorization-r1.md",
+  "data": {
+    "decision": "approved",
+    "basis": "human-approved",
+    "implementation_event": "FD-020-000008-test-requested",
+    "fd_revision": 8,
+    "fd_digest": "1c878661ac18e3aa6be4ea7c741e673229bcbd9496e4567320e1a16f614d4115",
+    "tester_session": "fd020-tester-20261004-c6a92b",
+    "command": "python tests/fd020_observability_blackbox.py",
+    "working_directory": "D:\\03_projects\\AI-tools\\aiw",
+    "scope": "FD-020 临时隔离网关的公开 HTTP/元数据黑盒契约",
+    "expected_duration": "20–90 秒；临时编译 timeout 120 秒",
+    "side_effects": "临时 Go exe、配置/state/log/fake node；loopback HTTP；终止测试进程并清理临时目录；Go缓存；写 docs/features/reports/FD-020-test-raw-r1.json",
+    "risk_review": "已检查完整测试脚本及计数修正；无真实凭据/外部 AI/远端网络/下载/Git 写；所有状态及进程归属本测试",
+    "human_approval": "approved:user-message:fd020-test-then-review-20261004",
+    "planner_identity": "fd020-pm-20261004-root",
+    "decision_time": "2026-10-04T02:19:18+00:00",
+    "test_source_sha256": "fae2c024262621b720c5457d212932cf2257f63e69abd66277e8250de5f7b57f"
+  }
+}

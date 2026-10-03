@@ -1,0 +1,12 @@
+{
+  "schema":"aiw.fd.evidence.v1","kind":"pm-decision","fd_id":"FD-021","source_event":null,"human_report":"FD-021-external-acceptance-r6.md",
+  "data": {
+    "disposition":"accepted","tester_report":"docs/features/reports/FD-021-test-report-r6.md","fd_revision":4,"fd_digest":"7a8a9d4ed224b34e653e2d48d4bbb5ca1bf528f900e425579d164cc04e09af98",
+    "requirements_coverage":"37.5%","current_run_requirements_coverage":"17.5%","branch_coverage":"not measured","applicable_scenarios":40,"current_executed":7,"current_passed":7,"current_failed":0,"current_unrun":33,"matching_historical_scenarios":8,"uncovered_current_source_scenarios":25,
+    "rationale":"当前Gateway模式单Provider真实调用及关联审计通过，R5当前源/SDK/测试摘要匹配历史有效；其余要求交独立静态审查。",
+    "exceptions":"明确接受运行证据覆盖37.5%低于70%及分支未测量的例外；当前只执行7/40，其余历史或静态证据不升格为本轮运行。",
+    "residual_risk":"HTTP/WebSocket服务、其他Provider、真实错误和超时、JSON与其余25场景未在当前版本实测；Reviewer必须核实安全和兼容性。",
+    "lifecycle_policy":"External","formal_test_handoff":false,"history_reconciliation":"保持过去实现/Tester事件缺失历史；本次PM authored接受后转Pending Verification，创建真实request-review，不补造旧事件。",
+    "pm_identity":"fd025-host-20261004-729bf1","decision_time":"2026-10-04T04:56:10+00:00"
+  }
+}

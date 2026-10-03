@@ -19,6 +19,8 @@ plugins/aiw-wf/aiw-wf.exe
 plugins/aiw-wf/aiw-wf
 plugins/aiw-req/aiw-req.exe
 plugins/aiw-req/aiw-req
+plugins\aiw-agent-gateway\agent-gateway.exe
+plugins\aiw-agent-gateway\agent-gateway
 .ai/
 .scratch/
 grant.bat

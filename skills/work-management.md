@@ -35,6 +35,12 @@ installations remain usable outside the AIW repository.
   `--artifact`. Both files are archived together. Older Markdown-only
   evidence remains historical.
   Prior evidence stays archived if a completed FD is reopened for review.
+- `aiw fd refresh-tester <id> --reason <text> --artifact <report>` replaces
+  only a stale unclaimed pending Tester handoff for an independent Pending Test
+  FD. It retains Worker identity and implementation provenance, validates the
+  current report, and creates a PM-produced `test-requested` event. Tester
+  claims that event and cites its ID in reports and new test authorization;
+  refreshing grants no permission to execute tests or reuse old approvals.
 - `aiw fd reopen <id> --reason <text>` returns an archived `Closed` or
   `Deferred` FD to active `In Progress` with a fresh Worker handoff. It keeps
   prior close metadata and evidence. Archived `Complete` uses `request-review`.

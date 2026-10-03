@@ -1,0 +1,34 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-024",
+  "source_event": "FD-024-000006-test-accepted",
+  "human_report": "FD-024-review-r1.md",
+  "data": {
+    "reviewer_session": "fd024-reviewer-20261004-a5013da6",
+    "reviewed_base": "c9b6d51 and FD-024 scoped working tree diff",
+    "fd_revision": 6,
+    "fd_digest": "704da4ac148cc6a1011990c243fe3a14d5bdd6c8713260c99915d1efae5b30d3",
+    "disposition": "changes-requested",
+    "findings": [
+      {
+        "severity": "major",
+        "path": "docs/features/FD-024_REFRESH_STALE_TESTER_HANDOFF.md",
+        "related_path": "docs/features/reports/FD-024-implementation-r1.md",
+        "summary": "FD 验证记录与 Worker 人类报告及 JSON 中存在成片字面问号，须恢复可读中文证据。"
+      }
+    ],
+    "results": [
+      {"kind": "implementation-static", "result": "主要验收路径吻合；五项未测行为仅有静态证据"},
+      {"kind": "tester-evidence", "result": "4 项最终通过；需求场景 9/14，PM 例外有效；分支覆盖率未测"},
+      {"kind": "runtime", "result": "Reviewer 未运行"}
+    ],
+    "commands": [
+      "aiw fd resume FD-024",
+      "aiw fd claim FD-024 FD-024-000006-test-accepted --session fd024-reviewer-20261004-a5013da6",
+      "Get-Content / rg / git status --short / git diff / git log (静态读取)"
+    ],
+    "skipped_checks": "测试、覆盖率、编译、构建、格式化、lint、网络及 Git 写入均未运行。",
+    "residual_risk": "五项未运行场景仅经静态审查，故障回滚无运行证据；分支覆盖率未知，Tester 原始终端日志未单独保存。"
+  }
+}

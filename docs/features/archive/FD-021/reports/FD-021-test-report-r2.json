@@ -1,0 +1,220 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-021",
+  "source_event": null,
+  "human_report": "FD-021-test-report-r2.md",
+  "data": {
+    "implementation_event": null,
+    "tested_fd_revision": 4,
+    "tested_fd_digest": "24fee3ad97b7ebc1f65b34548ad9046a3857fe70803bfc54980f4b892bae554c",
+    "test_source_digest": "bb76a5285e0abfa102c65d7a935c551b254b009fed5c61f9b78d9023f43d42c9",
+    "source_digests": {
+      "program/aiw-agent/src/providers.ts": "adcd853cf15b82db74caca48ad1ea76f03bb1a820eceec3a21fd1a2e88f45f35",
+      "program/aiw-agent/src/config.ts": "fe3b2de7078c8124b7b2ed93bb7193f2e93f97d69d82fd7c64e7626da455a205",
+      "program/aiw-agent/src/errors.ts": "b4b53b4ed69fbc81fcbd4be56233f5d5c4df11a5c0e45d26f6e15d8112f9c0ba"
+    },
+    "tester_session": "fd021-external-tester-r2-20261004-fd021_tester",
+    "test_route": "External direct explicit user request; no formal dispatch receipts",
+    "applicable_scenarios": 24,
+    "covered_scenarios": 24,
+    "executed_behavior_tests": 24,
+    "passed_behavior_tests": 24,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 0,
+    "blocked_behavior_tests": 0,
+    "requirements_coverage": {
+      "measurement": "Enumerated focused black-box scenarios, not code coverage or full FD acceptance coverage",
+      "covered": 24,
+      "total": 24,
+      "percent": 100,
+      "uncovered": [
+        "Live Gateway/API interoperability",
+        "Dependency retention and extension architecture documentation require static review"
+      ]
+    },
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": [
+      "docs/features/reports/FD-021-test-results-r2.json"
+    ],
+    "coverage_unavailable_reason": "No branch/code coverage instrumentation authorized; scenario coverage only",
+    "test_files": [
+      "tests/fd021_sdk_blackbox.mjs"
+    ],
+    "authorization_records": [
+      {
+        "type": "explicit-user-request",
+        "reference": "2026-10-04 user continuation: test and fix then review",
+        "scope": "One same-scope offline focused command after parent inspection and production fixes"
+      }
+    ],
+    "commands": [
+      {
+        "command": "node tests/fd021_sdk_blackbox.mjs",
+        "cwd": "D:/03_projects/AI-tools/aiw",
+        "attempt": 1,
+        "exit_code": 0,
+        "duration_seconds": 0.4110084,
+        "result": "24 passed / 0 failed / 0 blocked"
+      }
+    ],
+    "recommendation": "passed",
+    "not_applicable_reason": "Live Gateway/API, service transports/store/audit, other providers and repository-wide tests outside this focused provider run",
+    "residual_risk": "60-second timers accelerated to 5ms; real wall-clock/network slow streaming not tested. Live Gateway interoperability and code branch coverage remain unverified. No formal event provenance.",
+    "scenarios": [
+      {
+        "id": "FD021-R2-BB-01",
+        "name": "文本请求字段、SDK端点、文本与usage映射",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-02",
+        "name": "JSON请求与有效JSON结果",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-03",
+        "name": "无效JSON结果拒绝",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-04",
+        "name": "usage nested details缺失保持null",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-05",
+        "name": "usage nested details显式null保持已知tokens",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-06",
+        "name": "usage完全缺失保持null",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-07",
+        "name": "reasoning summary返回与缺失",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-08",
+        "name": "HTTP 401错误脱敏与不重试",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-09",
+        "name": "HTTP 429错误脱敏与不重试",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-10",
+        "name": "HTTP 500错误脱敏与不重试",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-11",
+        "name": "连接错误脱敏与不重试",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-12",
+        "name": "60秒SDK超时配置、取消与不重试（缩短定时器）",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-13",
+        "name": "HTTP 200 headers后body仍受完整响应deadline约束（缩短定时器）",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-14",
+        "name": "HTTP 500 headers后body仍受完整响应deadline约束（缩短定时器）",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-15",
+        "name": "OPENAI_LOG=debug不泄露请求或上游正文canary",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-16",
+        "name": "允许URL http://localhost:43127/v1",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-17",
+        "name": "允许URL http://[::1]:43127/v1",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-18",
+        "name": "允许URL https://example.invalid/v1",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-19",
+        "name": "拒绝URL http://example.invalid/v1",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-20",
+        "name": "拒绝URL ftp://127.0.0.1/v1",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-21",
+        "name": "拒绝URL not-a-url",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-22",
+        "name": "缺少API key在发送前拒绝",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-23",
+        "name": "结果256Ki字符边界允许",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R2-BB-24",
+        "name": "结果超过256Ki字符拒绝",
+        "result": "passed",
+        "behavior_reached": true
+      }
+    ],
+    "static_exclusions": [
+      "No provider implementation read for test authorship",
+      "No production edits by Tester",
+      "No network/socket/download",
+      "No final build/lint/formatter/vet/verification scripts",
+      "No git writes",
+      "No fabricated events/receipts",
+      "Historical r1 reports/results preserved"
+    ]
+  }
+}

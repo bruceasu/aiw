@@ -1,0 +1,460 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-025",
+  "source_event": "FD-025-000004-implementation-ready",
+  "human_report": "FD-025-test-report-r2.md",
+  "data": {
+    "implementation_event": "FD-025-000004-implementation-ready",
+    "tested_fd_revision": 4,
+    "tested_fd_digest": "48434b4de48b862943635a4e936d0d6d8bb802e8eb4f4308d4632237feb77fb6",
+    "tester_session": "fd025-tester-20261004-a173fa",
+    "worker_session": "fd025-host-20261004-729bf1",
+    "test_source_digest": "075986116c3a6f55ddfd46b0fa06826928947d9b4235997e15f3a4e7141345fa",
+    "installed_binary_digest": "94990c8de93f72f35c4858ea7cc6f8cfd93b15b1ab75324f9455ff78b3e33cdc",
+    "applicable_scenarios": 31,
+    "covered_scenarios": 6,
+    "executed_behavior_tests": 7,
+    "passed_behavior_tests": 6,
+    "failed_behavior_tests": 1,
+    "unrun_behavior_tests": 24,
+    "requirements_coverage": "19.35%",
+    "requirements_coverage_details": {
+      "measurement": "CLI coverage counts passed scenarios only; separately 7 behaviors reached including failed stop",
+      "covered": 6,
+      "behavior_reached": 7,
+      "total": 31,
+      "percent": 19.35,
+      "focused_runtime_plan": 11,
+      "blocked_focused_scenarios": 4,
+      "static_or_unrun_exclusions": 20
+    },
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": [
+      "docs/features/reports/FD-025-test-results-r1.json",
+      "docs/features/reports/FD-025-test-results-r2.json"
+    ],
+    "coverage_unavailable_reason": "No branch instrumentation; authorized narrow lifecycle test only; stop failure blocks remaining runtime checks",
+    "test_files": [
+      "tests/fd025_shutdown_blackbox.py"
+    ],
+    "authorization_records": [
+      "docs/features/reports/FD-025-test-authorization-r1.md",
+      "docs/features/reports/FD-025-test-authorization-r2.md"
+    ],
+    "commands": ["python tests/fd025_shutdown_blackbox.py", "python tests/fd025_shutdown_blackbox.py"],
+    "command_results": [
+      {
+        "command": "python tests/fd025_shutdown_blackbox.py",
+        "attempt": 1,
+        "exit_code": 1,
+        "duration_seconds": 0.6158408,
+        "test_source_digest": "d586cec0cc151e6472cf051218b24dc3619325af80d0228e9abd3debfa4b5881",
+        "result": "Startup readiness failed; later cases unrun; diagnosed shell-entrypoint harness quoting"
+      },
+      {
+        "command": "python tests/fd025_shutdown_blackbox.py",
+        "attempt": 2,
+        "exit_code": 1,
+        "initial_tool_wait_seconds": 10.0141028,
+        "total_duration_seconds": null,
+        "test_source_digest": "075986116c3a6f55ddfd46b0fa06826928947d9b4235997e15f3a4e7141345fa",
+        "result": "6 passed / 1 failed; stop exit1; 4 planned followups blocked; no third execution"
+      }
+    ],
+    "recommendation": "fail",
+    "not_applicable_reason": "None of listed observable acceptance requirements silently excluded; unavailable runtime explicitly enumerated",
+    "residual_risk": "Normal stop returns1 despite later cleanup conditions showing process exited and lock absent. Cause not established by black box. Remaining checks unrun; complete inventory runtime coverage below70 and branch coverage unavailable. Actual failure cannot be waived as pass.",
+    "scenarios": [
+      {
+        "id": "FD025-S-01",
+        "behavior": "从任意工作目录启动脚本且临时loopback监听就绪",
+        "status": "passed",
+        "test_cases": ["fd025_shutdown_blackbox.py::从任意工作目录启动脚本且临时loopback监听就绪"],
+        "name": "从任意工作目录启动脚本且临时loopback监听就绪",
+        "result": "passed",
+        "behavior_reached": true,
+        "safe_detail": {
+          "process_exit_code": null,
+          "stderr_class": "stderr-present-unclassified"
+        }
+      },
+      {
+        "id": "FD025-S-02",
+        "behavior": "未认证POST拒绝且服务继续运行",
+        "status": "passed",
+        "test_cases": ["fd025_shutdown_blackbox.py::未认证POST拒绝且服务继续运行"],
+        "name": "未认证POST拒绝且服务继续运行",
+        "result": "passed",
+        "behavior_reached": true,
+        "safe_detail": {
+          "http_status": 401
+        }
+      },
+      {
+        "id": "FD025-S-03",
+        "behavior": "无效合成Key拒绝且服务继续运行",
+        "status": "passed",
+        "test_cases": ["fd025_shutdown_blackbox.py::无效合成Key拒绝且服务继续运行"],
+        "name": "无效合成Key拒绝且服务继续运行",
+        "result": "passed",
+        "behavior_reached": true,
+        "safe_detail": {
+          "http_status": 401
+        }
+      },
+      {
+        "id": "FD025-S-04",
+        "behavior": "有效认证GET拒绝且服务继续运行",
+        "status": "passed",
+        "test_cases": ["fd025_shutdown_blackbox.py::有效认证GET拒绝且服务继续运行"],
+        "name": "有效认证GET拒绝且服务继续运行",
+        "result": "passed",
+        "behavior_reached": true,
+        "safe_detail": {
+          "http_status": 405
+        }
+      },
+      {
+        "id": "FD025-S-05",
+        "behavior": "有效认证query拒绝且服务继续运行",
+        "status": "passed",
+        "test_cases": ["fd025_shutdown_blackbox.py::有效认证query拒绝且服务继续运行"],
+        "name": "有效认证query拒绝且服务继续运行",
+        "result": "passed",
+        "behavior_reached": true,
+        "safe_detail": {
+          "http_status": 400
+        }
+      },
+      {
+        "id": "FD025-S-06",
+        "behavior": "有效认证非空body拒绝且服务继续运行",
+        "status": "passed",
+        "test_cases": ["fd025_shutdown_blackbox.py::有效认证非空body拒绝且服务继续运行"],
+        "name": "有效认证非空body拒绝且服务继续运行",
+        "result": "passed",
+        "behavior_reached": true,
+        "safe_detail": {
+          "http_status": 400
+        }
+      },
+      {
+        "id": "FD025-S-07",
+        "behavior": "stop脚本正常返回成功",
+        "status": "uncovered",
+        "execution_result": "failed",
+        "name": "stop脚本正常返回成功",
+        "result": "failed",
+        "behavior_reached": true,
+        "safe_detail": {
+          "exit_code": 1
+        }
+      },
+      {
+        "id": "FD025-S-08",
+        "behavior": "Gateway及同步启动脚本正常退出0",
+        "status": "blocked",
+        "name": "Gateway及同步启动脚本正常退出0",
+        "result": "unrun-blocked",
+        "behavior_reached": false,
+        "reason": "Normal stop returned nonzero; remaining assertions aborted"
+      },
+      {
+        "id": "FD025-S-09",
+        "behavior": "临时监听关闭且gateway.lock释放",
+        "status": "blocked",
+        "name": "临时监听关闭且gateway.lock释放",
+        "result": "unrun-blocked",
+        "behavior_reached": false,
+        "reason": "Normal stop returned nonzero; remaining assertions aborted"
+      },
+      {
+        "id": "FD025-S-10",
+        "behavior": "重复stop返回成功",
+        "status": "blocked",
+        "name": "重复stop返回成功",
+        "result": "unrun-blocked",
+        "behavior_reached": false,
+        "reason": "Normal stop returned nonzero; remaining assertions aborted"
+      },
+      {
+        "id": "FD025-S-11",
+        "behavior": "不提交模型请求且没有执行或正文记录",
+        "status": "blocked",
+        "name": "不提交模型请求且没有执行或正文记录",
+        "result": "unrun-blocked",
+        "behavior_reached": false,
+        "reason": "Normal stop returned nonzero; remaining assertions aborted"
+      },
+      {
+        "id": "FD025-S-12",
+        "behavior": "Ctrl+C入口保持兼容",
+        "status": "uncovered",
+        "name": "Ctrl+C入口保持兼容",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "没有向真实或临时控制台发信号"
+      },
+      {
+        "id": "FD025-S-13",
+        "behavior": "SIGTERM入口保持兼容",
+        "status": "uncovered",
+        "name": "SIGTERM入口保持兼容",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "Windows聚焦脚本不执行该信号路径"
+      },
+      {
+        "id": "FD025-S-14",
+        "behavior": "活动后端及进程树取消并收敛",
+        "status": "uncovered",
+        "name": "活动后端及进程树取消并收敛",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "明确禁止启动模型或伪后端"
+      },
+      {
+        "id": "FD025-S-15",
+        "behavior": "shared下非loopback来源不能调用控制入口",
+        "status": "uncovered",
+        "name": "shared下非loopback来源不能调用控制入口",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "仅临时loopback实例，未绑定远程网卡"
+      },
+      {
+        "id": "FD025-S-16",
+        "behavior": "specific非loopback配置stop拒绝并指向控制台",
+        "status": "uncovered",
+        "name": "specific非loopback配置stop拒绝并指向控制台",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "本命令只配置loopback"
+      },
+      {
+        "id": "FD025-S-17",
+        "behavior": "旧版本404给出升级提示",
+        "status": "uncovered",
+        "name": "旧版本404给出升级提示",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "只测试当前已安装二进制"
+      },
+      {
+        "id": "FD025-S-18",
+        "behavior": "安装不覆盖既有gateway.json",
+        "status": "uncovered",
+        "name": "安装不覆盖既有gateway.json",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "本命令不安装；由Worker静态与既有构建证据负责"
+      },
+      {
+        "id": "FD025-S-19",
+        "behavior": "审计存储不可写时仍允许安全stop",
+        "status": "uncovered",
+        "name": "审计存储不可写时仍允许安全stop",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "没有制造存储失败"
+      },
+      {
+        "id": "FD025-S-20",
+        "behavior": "周期内容清理收敛后才释放锁",
+        "status": "uncovered",
+        "name": "周期内容清理收敛后才释放锁",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "没有创建活跃清理数据或延迟清理"
+      },
+      {
+        "id": "FD025-S-21",
+        "behavior": "CLI接收202后等待监听及锁且最多15秒",
+        "status": "uncovered",
+        "name": "CLI接收202后等待监听及锁且最多15秒",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "失败只记录脚本exit1，未测量内部期限或202过程"
+      },
+      {
+        "id": "FD025-S-22",
+        "behavior": "停止失败不强制结束进程",
+        "status": "uncovered",
+        "name": "停止失败不强制结束进程",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "没有制造活跃且超期的停机失败"
+      },
+      {
+        "id": "FD025-S-23",
+        "behavior": "停止失败不自动删除残留锁",
+        "status": "uncovered",
+        "name": "停止失败不自动删除残留锁",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "没有制造残留锁失败条件"
+      },
+      {
+        "id": "FD025-S-24",
+        "behavior": "stop禁止HTTP重定向",
+        "status": "uncovered",
+        "name": "stop禁止HTTP重定向",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "没有伪服务或重定向场景"
+      },
+      {
+        "id": "FD025-S-25",
+        "behavior": "stop不自动重试",
+        "status": "uncovered",
+        "name": "stop不自动重试",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "没有仪器或伪服务计数stop内部网络尝试"
+      },
+      {
+        "id": "FD025-S-26",
+        "behavior": "CLI不输出凭据或原始响应错误",
+        "status": "uncovered",
+        "name": "CLI不输出凭据或原始响应错误",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "日志未输出但未做产品输出内容脱敏断言"
+      },
+      {
+        "id": "FD025-S-27",
+        "behavior": "所有enabled主体的Key可用于本地控制",
+        "status": "uncovered",
+        "name": "所有enabled主体的Key可用于本地控制",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "只构造一个主体一个合成Key"
+      },
+      {
+        "id": "FD025-S-28",
+        "behavior": "Windows/Linux安装入口可用",
+        "status": "uncovered",
+        "name": "Windows/Linux安装入口可用",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "仅Windows已安装入口聚焦运行，Linux仅既有编译/安装证据"
+      },
+      {
+        "id": "FD025-S-29",
+        "behavior": "Responses现有协议保留",
+        "status": "uncovered",
+        "name": "Responses现有协议保留",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "禁止调用/v1/responses或启动模型"
+      },
+      {
+        "id": "FD025-S-30",
+        "behavior": "Models现有协议保留",
+        "status": "uncovered",
+        "name": "Models现有协议保留",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "未调用该API"
+      },
+      {
+        "id": "FD025-S-31",
+        "behavior": "Usage现有协议保留",
+        "status": "uncovered",
+        "name": "Usage现有协议保留",
+        "result": "unrun-static-exclusion",
+        "behavior_reached": false,
+        "reason": "未调用该API"
+      }
+    ],
+    "static_exclusions": [
+      {
+        "requirement": "Ctrl+C入口保持兼容",
+        "reason": "没有向真实或临时控制台发信号"
+      },
+      {
+        "requirement": "SIGTERM入口保持兼容",
+        "reason": "Windows聚焦脚本不执行该信号路径"
+      },
+      {
+        "requirement": "活动后端及进程树取消并收敛",
+        "reason": "明确禁止启动模型或伪后端"
+      },
+      {
+        "requirement": "shared下非loopback来源不能调用控制入口",
+        "reason": "仅临时loopback实例，未绑定远程网卡"
+      },
+      {
+        "requirement": "specific非loopback配置stop拒绝并指向控制台",
+        "reason": "本命令只配置loopback"
+      },
+      {
+        "requirement": "旧版本404给出升级提示",
+        "reason": "只测试当前已安装二进制"
+      },
+      {
+        "requirement": "安装不覆盖既有gateway.json",
+        "reason": "本命令不安装；由Worker静态与既有构建证据负责"
+      },
+      {
+        "requirement": "审计存储不可写时仍允许安全stop",
+        "reason": "没有制造存储失败"
+      },
+      {
+        "requirement": "周期内容清理收敛后才释放锁",
+        "reason": "没有创建活跃清理数据或延迟清理"
+      },
+      {
+        "requirement": "CLI接收202后等待监听及锁且最多15秒",
+        "reason": "失败只记录脚本exit1，未测量内部期限或202过程"
+      },
+      {
+        "requirement": "停止失败不强制结束进程",
+        "reason": "没有制造活跃且超期的停机失败"
+      },
+      {
+        "requirement": "停止失败不自动删除残留锁",
+        "reason": "没有制造残留锁失败条件"
+      },
+      {
+        "requirement": "stop禁止HTTP重定向",
+        "reason": "没有伪服务或重定向场景"
+      },
+      {
+        "requirement": "stop不自动重试",
+        "reason": "没有仪器或伪服务计数stop内部网络尝试"
+      },
+      {
+        "requirement": "CLI不输出凭据或原始响应错误",
+        "reason": "日志未输出但未做产品输出内容脱敏断言"
+      },
+      {
+        "requirement": "所有enabled主体的Key可用于本地控制",
+        "reason": "只构造一个主体一个合成Key"
+      },
+      {
+        "requirement": "Windows/Linux安装入口可用",
+        "reason": "仅Windows已安装入口聚焦运行，Linux仅既有编译/安装证据"
+      },
+      {
+        "requirement": "Responses现有协议保留",
+        "reason": "禁止调用/v1/responses或启动模型"
+      },
+      {
+        "requirement": "Models现有协议保留",
+        "reason": "未调用该API"
+      },
+      {
+        "requirement": "Usage现有协议保留",
+        "reason": "未调用该API"
+      }
+    ],
+    "cleanup_evidence": {
+      "temporary_workspace_removed": true,
+      "temporary_workspace_preserved": null,
+      "protected_port_43127_used": false,
+      "note": "Finally cleanup predicate not a substitute for blocked assertions"
+    }
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "build_exit": 0,
+  "cases": [
+    {
+      "id": "models_success",
+      "passed": true
+    },
+    {
+      "id": "unauthenticated",
+      "passed": true
+    },
+    {
+      "id": "disabled_key",
+      "passed": true
+    },
+    {
+      "id": "unknown_key",
+      "passed": true
+    },
+    {
+      "id": "former_digest_key",
+      "passed": true
+    },
+    {
+      "id": "digest_conversion_not_accepted",
+      "passed": true
+    },
+    {
+      "id": "parameter_rejection",
+      "passed": true
+    },
+    {
+      "id": "model_rejection",
+      "passed": true
+    },
+    {
+      "id": "usage_query_rejection",
+      "passed": true
+    },
+    {
+      "id": "unknown_route",
+      "passed": true
+    },
+    {
+      "id": "unknown_method",
+      "passed": true
+    },
+    {
+      "id": "unknown_method_normalization",
+      "passed": true
+    },
+    {
+      "id": "caller_b_models",
+      "passed": true
+    },
+    {
+      "id": "usage_isolation_and_no_execution",
+      "passed": true
+    },
+    {
+      "id": "http_status_error_duration_aggregation",
+      "passed": true
+    },
+    {
+      "id": "backend_failure_and_linkage",
+      "passed": true
+    },
+    {
+      "id": "backend_timeout",
+      "passed": true
+    },
+    {
+      "id": "concurrency_rejection",
+      "passed": true
+    },
+    {
+      "id": "failed_execution_quota_unknown_tokens",
+      "passed": true
+    },
+    {
+      "id": "log_linkage_and_privacy",
+      "passed": true
+    },
+    {
+      "id": "rotation_old_key_rejected",
+      "passed": true
+    },
+    {
+      "id": "rotation_new_key",
+      "passed": true
+    },
+    {
+      "id": "rotation_quota_preserved",
+      "passed": true
+    },
+    {
+      "id": "rpm_rejection",
+      "passed": true
+    },
+    {
+      "id": "interrupted_recovery",
+      "passed": true
+    },
+    {
+      "id": "duplicate_keys_rejected",
+      "passed": true
+    },
+    {
+      "id": "key_hashes_rejected",
+      "passed": true
+    },
+    {
+      "id": "corrupt_manifest_rejected",
+      "passed": true
+    },
+    {
+      "id": "missing_upgraded_directory_rejected",
+      "passed": true
+    }
+  ],
+  "passed": 29,
+  "failed": 0,
+  "coverage": "branch coverage not measured; black-box process has no branch instrumentation"
+}

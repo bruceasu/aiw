@@ -1,0 +1,33 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-026",
+  "source_event": "FD-026-000004-design-ready",
+  "human_report": "FD-026-implementation-r1.md",
+  "data": {
+    "summary": "将网关插件、构建/安装路径及当前操作说明统一为 gw 短命令。",
+    "worker_session": "fd026-worker-20261004-c19b",
+    "fd_revision": 4,
+    "changed_paths": [
+      "build.bat",
+      "plugins/aiw-gw/README.md",
+      "plugins/aiw-gw/aiw-gw.py",
+      "program/agent-gateway/README.md",
+      "tests/fd025_shutdown_blackbox.py",
+      "plugins/aiw-ai/README.md",
+      "plugins/aiw-ai/aiw-ai.mjs",
+      "scripts/start-gateway.bat",
+      "scripts/stop-gateway.bat",
+      "docs/features/FD-026_GATEWAY_SHORT_COMMAND.md"
+    ],
+    "commands": [
+      "go build -o NUL ./cmd/aiw"
+    ],
+    "results": [
+      "Compile-only 命令未输出诊断；执行工具未显示退出码，结果未确认，未重跑。",
+      "静态检查覆盖插件发现、参数转发、默认配置、构建输出和安装来源。",
+      "测试、安装、部署和最终产物构建未运行。"
+    ],
+    "residual_risk": "compile-only 退出状态未确认；未运行测试；既有安装配置不自动迁移。"
+  }
+}

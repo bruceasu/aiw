@@ -6,6 +6,6 @@
     "node": ">=22.12.0"
   },
   "bin": {
-    "ai": "./ai.mjs"
+    "ai": "./aiw-ai.mjs"
   }
 }

@@ -1,0 +1,73 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-021",
+  "source_event": null,
+  "human_report": "FD-021-review-r3.md",
+  "data": {
+    "reviewer_session": "fd021_reviewer",
+    "tester_session": "fd021-external-tester-r3-20261004-fd021_tester",
+    "reviewed_base": "c9b6d51cd2308e1ffbaf51755d697f6acda3ad83",
+    "revision": 4,
+    "tested_fd_digest": "178e04dec0b1866820fc670d8a384c1b1048832259d0d3758b2469b00fbbbaff",
+    "tested_provider_digest": "dbac61df7776afece4fd2a9e7e603f8b51e65c53df3d7a8440193454cc674aaf",
+    "tested_script_digest": "8ee746ef2a6c5aba48e961119fc1679b85fe88e83179208a1564cdbd667c0bb2",
+    "conclusion": "passed-within-reviewed-fix-scope",
+    "formal_handoff": false,
+    "formal_verification_passed": false,
+    "fd_complete": false,
+    "new_findings": [],
+    "resolved_findings": [
+      {
+        "id": "FD021-R3-01",
+        "severity": "P2",
+        "status": "resolved",
+        "file": "program/aiw-agent/src/providers.ts",
+        "line": 142,
+        "evidence": "公开typed SDK POST保留wire output_text，legacy/usage/POST/defaultBearer运行通过"
+      }
+    ],
+    "sdk_static_evidence": {
+      "public_post": "client.d.ts:224; client.mjs:348-349",
+      "default_bearer": "client.mjs:395,662,668; Authorization:269",
+      "api_error_and_retries": "client.mjs:460-491; maxRetries:0",
+      "body_type": "ResponseCreateParamsNonStreaming namespace公开导出"
+    },
+    "test_evidence": {
+      "report": "docs/features/reports/FD-021-test-report-r3.md",
+      "raw_initial": "docs/features/reports/FD-021-test-results-r3-initial.json",
+      "raw_retry": "docs/features/reports/FD-021-test-results-r3-retry.json",
+      "command": "node tests/fd021_sdk_edges.mjs",
+      "authorization": "explicit-user-continuation",
+      "initial": {
+        "exit_code": 1,
+        "passed": 25,
+        "failed": 1,
+        "duration_seconds": 0.4574613
+      },
+      "retry": {
+        "exit_code": 0,
+        "passed": 26,
+        "failed": 0,
+        "duration_seconds": 0.4310404
+      },
+      "r2_rerun": false,
+      "current_combined_50_cases_passed_claim": false,
+      "branch_coverage": "not measured",
+      "network": false
+    },
+    "compile_evidence": {
+      "command": ".\\node_modules\\.bin\\tsc.cmd --noEmit -p tsconfig.json",
+      "cwd": "program/aiw-agent",
+      "exit_code": 0,
+      "reviewer_rerun": false
+    },
+    "reviewer_runtime_validation": "not run",
+    "risks": [
+      "真实Gateway既有字段子集兼容验收仍pending",
+      "R2主字段/body截止/debug当前源码未重跑，只有历史运行与本轮静态证据",
+      "无正式生命周期回执，不能Complete",
+      "真实网络/服务入口/审计存储及分支覆盖未验证"
+    ]
+  }
+}

@@ -1,0 +1,522 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-020",
+  "source_event": "FD-020-000008-test-requested",
+  "human_report": "FD-020-test-report-r1.md",
+  "data": {
+    "implementation_event": "FD-020-000008-test-requested",
+    "tested_fd_revision": 8,
+    "tested_fd_digest": "1c878661ac18e3aa6be4ea7c741e673229bcbd9496e4567320e1a16f614d4115",
+    "tester_session": "fd020-tester-20261004-c6a92b",
+    "applicable_scenarios": 54,
+    "covered_scenarios": 40,
+    "executed_behavior_tests": 29,
+    "passed_behavior_tests": 29,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 14,
+    "requirements_coverage": "74.07%",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": "docs/features/reports/FD-020-test-raw-r2.json",
+    "coverage_unavailable_reason": "公开HTTP/持久文件黑盒进程没有分支插桩；未将Go语句覆盖等同分支覆盖。",
+    "test_files": [
+      "tests/fd020_observability_blackbox.py"
+    ],
+    "authorization_records": [
+      "docs/features/reports/FD-020-test-authorization-r1.md",
+      "docs/features/reports/FD-020-test-authorization-r2.md"
+    ],
+    "commands": [
+      "python tests/fd020_observability_blackbox.py",
+      "python tests/fd020_observability_blackbox.py"
+    ],
+    "recommendation": "pass",
+    "not_applicable_reason": "",
+    "residual_risk": "14个可观察验收场景未覆盖，分支覆盖未知；本轮不证明完整生产行为。首轮并发状态码假设修正后重跑，未修改实施源码。",
+    "scenarios": [
+      {
+        "id": "models_success",
+        "behavior": "Models 成功查询记录 HTTP 200 与已知处理耗时",
+        "status": "passed",
+        "test_cases": [
+          "models_success"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "stable_principal",
+        "behavior": "已认证请求关联稳定主体和服务端 request-id",
+        "status": "passed",
+        "test_cases": [
+          "models_success"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "missing_key",
+        "behavior": "缺少 Key 返回401且主体为空",
+        "status": "passed",
+        "test_cases": [
+          "unauthenticated"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "disabled_key",
+        "behavior": "禁用主体的Key返回401且主体为空",
+        "status": "passed",
+        "test_cases": [
+          "disabled_key"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "unknown_key",
+        "behavior": "未匹配Key返回401且主体为空",
+        "status": "passed",
+        "test_cases": [
+          "unknown_key"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "opaque_digest_key",
+        "behavior": "hex样式原摘要可作为不透明Key直接认证",
+        "status": "passed",
+        "test_cases": [
+          "former_digest_key"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "no_digest_conversion",
+        "behavior": "请求发送配置Key的SHA256不能获得认证",
+        "status": "passed",
+        "test_cases": [
+          "digest_conversion_not_accepted"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "invalid_parameter",
+        "behavior": "未知执行参数在启动前400拒绝并保留主体",
+        "status": "passed",
+        "test_cases": [
+          "parameter_rejection"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "model_rejection",
+        "behavior": "未配置模型拒绝且不记录任意模型原文",
+        "status": "passed",
+        "test_cases": [
+          "model_rejection"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "invalid_usage",
+        "behavior": "非法日期查询拒绝且保留主体和Usage请求记录",
+        "status": "passed",
+        "test_cases": [
+          "usage_query_rejection"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "unknown_route",
+        "behavior": "未知路径归other且不记录路径查询原文",
+        "status": "passed",
+        "test_cases": [
+          "unknown_route"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "wrong_method",
+        "behavior": "Models错误方法拒绝并持久化请求",
+        "status": "passed",
+        "test_cases": [
+          "unknown_method"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "method_other",
+        "behavior": "未知BREW方法归other",
+        "status": "passed",
+        "test_cases": [
+          "unknown_method_normalization"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "caller_b",
+        "behavior": "第二主体使用自己的Key成功调用Models",
+        "status": "passed",
+        "test_cases": [
+          "caller_b_models"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "usage_principal",
+        "behavior": "Usage响应只标识当前主体",
+        "status": "passed",
+        "test_cases": [
+          "usage_isolation_and_no_execution"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "usage_isolation",
+        "behavior": "Usage GET Models分组不包含B或未认证请求",
+        "status": "passed",
+        "test_cases": [
+          "usage_isolation_and_no_execution"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "no_execution_groups",
+        "behavior": "执行前拒绝及查询不新增执行groups或executed数",
+        "status": "passed",
+        "test_cases": [
+          "usage_isolation_and_no_execution"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "no_rejection_quota",
+        "behavior": "执行前拒绝及查询不消耗每日额度",
+        "status": "passed",
+        "test_cases": [
+          "usage_isolation_and_no_execution"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "query_in_progress",
+        "behavior": "Usage查询自身按in_progress计入HTTP分组",
+        "status": "passed",
+        "test_cases": [
+          "usage_isolation_and_no_execution"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "method_groups",
+        "behavior": "POST拒绝与未知方法拒绝形成独立方法分组",
+        "status": "passed",
+        "test_cases": [
+          "usage_isolation_and_no_execution"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "error_status_counts",
+        "behavior": "HTTP分组包含拒绝数、400状态计数和错误码计数",
+        "status": "passed",
+        "test_cases": [
+          "http_status_error_duration_aggregation"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "duration_samples",
+        "behavior": "已知终态数等于duration_samples，总时长非负",
+        "status": "passed",
+        "test_cases": [
+          "http_status_error_duration_aggregation"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "backend_failed",
+        "behavior": "模拟后端失败记录failed、502和确认启动",
+        "status": "passed",
+        "test_cases": [
+          "backend_failure_and_linkage"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "execution_linkage",
+        "behavior": "HTTP request-id与既有执行元数据文件名一致",
+        "status": "passed",
+        "test_cases": [
+          "backend_failure_and_linkage"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "timeout",
+        "behavior": "模拟后端超时记录timed_out、504和确认启动",
+        "status": "passed",
+        "test_cases": [
+          "backend_timeout"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "concurrency",
+        "behavior": "主体并发即时拒绝、错误码非空且不启动执行",
+        "status": "passed",
+        "test_cases": [
+          "concurrency_rejection"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "failed_quota",
+        "behavior": "已启动失败或超时均扣一次额度且不退回",
+        "status": "passed",
+        "test_cases": [
+          "failed_execution_quota_unknown_tokens"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "unknown_tokens",
+        "behavior": "缺失token单独计unknown_usage_requests",
+        "status": "passed",
+        "test_cases": [
+          "failed_execution_quota_unknown_tokens"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "log_linkage",
+        "behavior": "Models开始与结束日志通过request-id关联",
+        "status": "passed",
+        "test_cases": [
+          "log_linkage_and_privacy"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "redaction",
+        "behavior": "日志和HTTP记录不含测试Key、Authorization、提示词及查询路径原文",
+        "status": "passed",
+        "test_cases": [
+          "log_linkage_and_privacy"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "old_key",
+        "behavior": "轮换重启后旧Key不能认证",
+        "status": "passed",
+        "test_cases": [
+          "rotation_old_key_rejected"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "new_key",
+        "behavior": "新Key关联原稳定主体",
+        "status": "passed",
+        "test_cases": [
+          "rotation_new_key"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "rotation_quota",
+        "behavior": "轮换保持已有实际执行额度",
+        "status": "passed",
+        "test_cases": [
+          "rotation_quota_preserved"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "rpm",
+        "behavior": "RPM即时拒绝且不启动执行",
+        "status": "passed",
+        "test_cases": [
+          "rpm_rejection"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "recovery_state",
+        "behavior": "持久in_progress重启变为interrupted/request_interrupted",
+        "status": "passed",
+        "test_cases": [
+          "interrupted_recovery"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "recovery_time",
+        "behavior": "恢复未完成请求不编造finished_at和duration_ms",
+        "status": "passed",
+        "test_cases": [
+          "interrupted_recovery"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "duplicate_keys",
+        "behavior": "不同主体重复Key拒绝配置加载",
+        "status": "passed",
+        "test_cases": [
+          "duplicate_keys_rejected"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "removed_field",
+        "behavior": "keys存在时也拒绝已移除key_hashes字段",
+        "status": "passed",
+        "test_cases": [
+          "key_hashes_rejected"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "corrupt_manifest",
+        "behavior": "HTTP存储标记损坏拒绝启动",
+        "status": "passed",
+        "test_cases": [
+          "corrupt_manifest_rejected"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "missing_directory",
+        "behavior": "已升级requests目录缺失拒绝启动",
+        "status": "passed",
+        "test_cases": [
+          "missing_upgraded_directory_rejected"
+        ],
+        "evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      },
+      {
+        "id": "ai_success",
+        "behavior": "AI Responses成功结果与已知token累计",
+        "status": "uncovered",
+        "reason": "没有实现模拟成功JSONL协议，不调用外部AI",
+        "test_cases": []
+      },
+      {
+        "id": "sse_failure",
+        "behavior": "SSE已输出200后失败/超时仍可辨认执行结果",
+        "status": "uncovered",
+        "reason": "本轮只非流式HTTP",
+        "test_cases": []
+      },
+      {
+        "id": "cancellation",
+        "behavior": "客户端取消单独计cancelled并保留已启动额度",
+        "status": "uncovered",
+        "reason": "未引入断连/取消测试",
+        "test_cases": []
+      },
+      {
+        "id": "delivery",
+        "behavior": "交付失败单独计delivery_failed且不返还额度",
+        "status": "uncovered",
+        "reason": "未模拟传输故障",
+        "test_cases": []
+      },
+      {
+        "id": "cross_midnight",
+        "behavior": "HTTP接收日与执行启动日跨午夜分属两日",
+        "status": "uncovered",
+        "reason": "未修改系统时间或注入服务时钟",
+        "test_cases": []
+      },
+      {
+        "id": "legacy_upgrade",
+        "behavior": "升级旧存储保持历史执行、主体和额度",
+        "status": "uncovered",
+        "reason": "未建立旧版本执行存储",
+        "test_cases": []
+      },
+      {
+        "id": "write_failure",
+        "behavior": "HTTP入口/终态写入故障脱敏并阻止新执行",
+        "status": "uncovered",
+        "reason": "未模拟存储权限或IO故障",
+        "test_cases": []
+      },
+      {
+        "id": "record_corruption",
+        "behavior": "请求记录损坏及未知schema拒绝启动",
+        "status": "uncovered",
+        "reason": "仅覆盖manifest损坏和目录缺失",
+        "test_cases": []
+      },
+      {
+        "id": "same_principal_duplicate",
+        "behavior": "同主体重复Key拒绝加载",
+        "status": "uncovered",
+        "reason": "仅验证跨主体重复Key",
+        "test_cases": []
+      },
+      {
+        "id": "key_bounds",
+        "behavior": "非法长度/空白Bearer Key拒绝且脱敏",
+        "status": "uncovered",
+        "reason": "仅验证缺失、未匹配、禁用及摘要转换",
+        "test_cases": []
+      },
+      {
+        "id": "confirmed_recovery",
+        "behavior": "HTTP恢复actual executed只依据已确认执行元数据",
+        "status": "uncovered",
+        "reason": "本轮恢复的是未执行Models记录",
+        "test_cases": []
+      },
+      {
+        "id": "global_concurrency",
+        "behavior": "全局并发即时拒绝及其统计",
+        "status": "uncovered",
+        "reason": "仅覆盖主体并发",
+        "test_cases": []
+      },
+      {
+        "id": "response_redaction",
+        "behavior": "AI响应正文不出现在日志或HTTP元数据",
+        "status": "uncovered",
+        "reason": "模拟后端失败没有取得响应正文",
+        "test_cases": []
+      },
+      {
+        "id": "every_route_logs",
+        "behavior": "所有路由提前返回均有开始/终止日志",
+        "status": "uncovered",
+        "reason": "只对Models成功逐条断言日志对；其他请求断言持久化终态",
+        "test_cases": []
+      }
+    ],
+    "static_exclusions": [
+      {
+        "behavior": "认证使用常量时间直接比较且实现内部无摘要计算",
+        "reason": "内部实现要求由独立Reviewer静态检查；黑盒只验证不接受摘要转换行为。"
+      }
+    ],
+    "history": [
+      {
+        "round": 1,
+        "executed": 29,
+        "passed": 28,
+        "failed": 1,
+        "exit_code": 1,
+        "reason": "测试假定并发拒绝HTTP429，公共契约未指定该状态",
+        "raw_evidence": "docs/features/reports/FD-020-test-raw-r1.json"
+      },
+      {
+        "round": 2,
+        "executed": 29,
+        "passed": 29,
+        "failed": 0,
+        "exit_code": 0,
+        "raw_evidence": "docs/features/reports/FD-020-test-raw-r2.json"
+      }
+    ]
+  }
+}

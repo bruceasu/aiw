@@ -1,0 +1,581 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-021",
+  "source_event": null,
+  "human_report": "FD-021-test-report-r6.md",
+  "data": {
+    "implementation_event": null,
+    "tested_fd_revision": 4,
+    "tested_fd_digest": "7a8a9d4ed224b34e653e2d48d4bbb5ca1bf528f900e425579d164cc04e09af98",
+    "tester_session": "fd021-external-acceptance-20261004-c813f0",
+    "test_source_digest": "76838479dfeabd55c4fc875ec26b4826938db351796c4645984d3dcfdfbb0131",
+    "source_digests": {
+      "program/aiw-agent/src/providers.ts": "0cafbfec7809bd71cd8a7e3a775e256b60f3374daa63ecb1e2f04a48198691bb",
+      "program/aiw-agent/src/config.ts": "fe3b2de7078c8124b7b2ed93bb7193f2e93f97d69d82fd7c64e7626da455a205",
+      "program/aiw-agent/src/errors.ts": "b4b53b4ed69fbc81fcbd4be56233f5d5c4df11a5c0e45d26f6e15d8112f9c0ba"
+    },
+    "gateway_binary_digest": "97a6753035e944876d942ec48d7ec2de029f0a93e9d7f906f49cbdc49ef378a3",
+    "sdk_version": "6.49.0",
+    "test_route": "External direct human-authorized one real Provider request; no fabricated events",
+    "applicable_scenarios": 40,
+    "covered_scenarios": 15,
+    "executed_behavior_tests": 7,
+    "passed_behavior_tests": 7,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 33,
+    "requirements_coverage": "37.5%",
+    "requirements_coverage_details": {
+      "current_live_covered": 7,
+      "current_live_percent": 17.5,
+      "valid_available_digest_scope_history": 8,
+      "combined_runtime_evidence_covered": 15,
+      "total": 40,
+      "combined_percent": 37.5,
+      "uncovered_current_source": 25,
+      "note": "R5 history not counted as execution in this run; R2/R3 stale source digests excluded"
+    },
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": [
+      "docs/features/reports/FD-021-test-results-r6.json",
+      "docs/features/reports/FD-021-test-results-r5.json"
+    ],
+    "coverage_unavailable_reason": "No branch instrument; one current live request only; matched R5 history retained distinctly; other current behavior needs independent static evidence",
+    "test_files": [
+      "tests/fd021_gateway_acceptance.mjs"
+    ],
+    "authorization_records": [
+      "docs/features/reports/FD-021-test-authorization-r6.md"
+    ],
+    "commands": [
+      "node tests/fd021_gateway_acceptance.mjs"
+    ],
+    "command_results": [
+      {
+        "exit_code": 0,
+        "duration_seconds": 6.2033522,
+        "result": "Single real Provider POST; HTTP200; all seven checks passed; no retries/fallback"
+      }
+    ],
+    "recommendation": "pass",
+    "not_applicable_reason": "All40 inventory items retained; outside current execution remain explicit history/uncovered",
+    "residual_risk": "One minimal text request does not cover current error/deadline/security/JSON/reasoning edge behavior. R5 history matches available digest scope only; R2/R3 source hashes differ. 25 items lack current runtime evidence and branch coverage unavailable. PM needs explicit static review and risk exceptions. Formal implementation/Tester receipts remain historically absent.",
+    "live_request_count": 1,
+    "model_execution_limit": 1,
+    "requests": [
+      {
+        "method": "POST",
+        "redirect": "error",
+        "request_fields": [
+          "input",
+          "model"
+        ],
+        "http_status": 200,
+        "request_id": "resp_4bb86213f415c62ead5a4ed6a110bbd7"
+      }
+    ],
+    "usage": {
+      "input_tokens": 11557,
+      "output_tokens": 9,
+      "cost": null,
+      "openai_usage": {
+        "response_id": "resp_4bb86213f415c62ead5a4ed6a110bbd7",
+        "response_model": "gpt-6-luna",
+        "service_tier": null,
+        "response_status": "completed",
+        "total_tokens": 11566,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": null,
+        "reasoning_output_tokens": null
+      }
+    },
+    "text_presence_and_match": {
+      "text_present": true,
+      "text_match": true
+    },
+    "audit": {
+      "request_id": "resp_4bb86213f415c62ead5a4ed6a110bbd7",
+      "http_status": 200,
+      "state": "succeeded",
+      "execution_started": true
+    },
+    "historical_evidence": [
+      {
+        "path": "docs/features/reports/FD-021-test-results-r2.json",
+        "available_digest_scope_matches": false,
+        "historical_passed": 24,
+        "historical_failed": 0,
+        "counted_as_current_execution": false
+      },
+      {
+        "path": "docs/features/reports/FD-021-test-results-r3-retry.json",
+        "available_digest_scope_matches": false,
+        "historical_passed": 26,
+        "historical_failed": 0,
+        "counted_as_current_execution": false
+      },
+      {
+        "path": "docs/features/reports/FD-021-test-results-r5.json",
+        "available_digest_scope_matches": true,
+        "historical_passed": 8,
+        "historical_failed": 0,
+        "counted_as_current_execution": false
+      }
+    ],
+    "scenarios": [
+      {
+        "id": "R6-LIVE-01",
+        "behavior": "当前Provider通过已安装官方SDK完成真实Gateway请求",
+        "status": "passed",
+        "execution_this_run": "yes",
+        "provenance": "R6 current live Provider",
+        "test_cases": [
+          "tests/fd021_gateway_acceptance.mjs::R6-LIVE-01"
+        ]
+      },
+      {
+        "id": "R6-LIVE-02",
+        "behavior": "Gateway模式真实请求仅input/model且POST/redirect:error",
+        "status": "passed",
+        "execution_this_run": "yes",
+        "provenance": "R6 current live Provider",
+        "test_cases": [
+          "tests/fd021_gateway_acceptance.mjs::R6-LIVE-02"
+        ]
+      },
+      {
+        "id": "R6-LIVE-03",
+        "behavior": "真实文本结果精确匹配标记",
+        "status": "passed",
+        "execution_this_run": "yes",
+        "provenance": "R6 current live Provider",
+        "test_cases": [
+          "tests/fd021_gateway_acceptance.mjs::R6-LIVE-03"
+        ]
+      },
+      {
+        "id": "R6-LIVE-04",
+        "behavior": "返回completed并映射响应标识/模型/状态元数据",
+        "status": "passed",
+        "execution_this_run": "yes",
+        "provenance": "R6 current live Provider",
+        "test_cases": [
+          "tests/fd021_gateway_acceptance.mjs::R6-LIVE-04"
+        ]
+      },
+      {
+        "id": "R6-LIVE-05",
+        "behavior": "Provider用量等于安全响应映射且合法未知字段为null",
+        "status": "passed",
+        "execution_this_run": "yes",
+        "provenance": "R6 current live Provider",
+        "test_cases": [
+          "tests/fd021_gateway_acceptance.mjs::R6-LIVE-05"
+        ]
+      },
+      {
+        "id": "R6-LIVE-06",
+        "behavior": "本次成功路径仅一次HTTP请求且无fallback",
+        "status": "passed",
+        "execution_this_run": "yes",
+        "provenance": "R6 current live Provider",
+        "test_cases": [
+          "tests/fd021_gateway_acceptance.mjs::R6-LIVE-06"
+        ]
+      },
+      {
+        "id": "R6-LIVE-07",
+        "behavior": "关联HTTP审计succeeded且execution_started为true",
+        "status": "passed",
+        "execution_this_run": "yes",
+        "provenance": "R6 current live Provider",
+        "test_cases": [
+          "tests/fd021_gateway_acceptance.mjs::R6-LIVE-07"
+        ]
+      },
+      {
+        "id": "FD021-A-01",
+        "behavior": "缺省openai模式保留8192和reasoning",
+        "status": "passed",
+        "execution_this_run": "no",
+        "provenance": "R5 same available source/SDK/test-digest scope; historical offline execution",
+        "test_cases": [
+          "tests/fd021_gateway_profile.mjs::缺省official模式保留token上限和reasoning"
+        ]
+      },
+      {
+        "id": "FD021-A-02",
+        "behavior": "显式openai模式保留8192和reasoning",
+        "status": "passed",
+        "execution_this_run": "no",
+        "provenance": "R5 same available source/SDK/test-digest scope; historical offline execution",
+        "test_cases": [
+          "tests/fd021_gateway_profile.mjs::显式official模式保留token上限和reasoning"
+        ]
+      },
+      {
+        "id": "FD021-A-03",
+        "behavior": "Gateway离线标准output和usage映射",
+        "status": "passed",
+        "execution_this_run": "no",
+        "provenance": "R5 same available source/SDK/test-digest scope; historical offline execution",
+        "test_cases": [
+          "tests/fd021_gateway_profile.mjs::Gateway最小文本参数与标准output/usage"
+        ]
+      },
+      {
+        "id": "FD021-A-04",
+        "behavior": "Gateway instructions与JSON支持字段",
+        "status": "passed",
+        "execution_this_run": "no",
+        "provenance": "R5 same available source/SDK/test-digest scope; historical offline execution",
+        "test_cases": [
+          "tests/fd021_gateway_profile.mjs::Gateway instructions与JSON仅发送支持字段"
+        ]
+      },
+      {
+        "id": "FD021-A-05",
+        "behavior": "Gateway effort发送前拒绝",
+        "status": "passed",
+        "execution_this_run": "no",
+        "provenance": "R5 same available source/SDK/test-digest scope; historical offline execution",
+        "test_cases": [
+          "tests/fd021_gateway_profile.mjs::Gateway effort调用前拒绝"
+        ]
+      },
+      {
+        "id": "FD021-A-06",
+        "behavior": "Gateway summary=true发送前拒绝",
+        "status": "passed",
+        "execution_this_run": "no",
+        "provenance": "R5 same available source/SDK/test-digest scope; historical offline execution",
+        "test_cases": [
+          "tests/fd021_gateway_profile.mjs::Gateway reasoning summary调用前拒绝"
+        ]
+      },
+      {
+        "id": "FD021-A-07",
+        "behavior": "未知profile发送前拒绝",
+        "status": "passed",
+        "execution_this_run": "no",
+        "provenance": "R5 same available source/SDK/test-digest scope; historical offline execution",
+        "test_cases": [
+          "tests/fd021_gateway_profile.mjs::未知profile配置调用前拒绝"
+        ]
+      },
+      {
+        "id": "FD021-A-08",
+        "behavior": "空profile发送前拒绝",
+        "status": "passed",
+        "execution_this_run": "no",
+        "provenance": "R5 same available source/SDK/test-digest scope; historical offline execution",
+        "test_cases": [
+          "tests/fd021_gateway_profile.mjs::空profile配置调用前拒绝"
+        ]
+      },
+      {
+        "id": "FD021-A-09",
+        "behavior": "非法JSON结果明确拒绝",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-10",
+        "behavior": "官方模式instructions保持",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-11",
+        "behavior": "published reasoning summary提取与缺失",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-12",
+        "behavior": "reasoning summary16Ki边界与超界拒绝",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-13",
+        "behavior": "headers前60秒超时取消且错误分类保持",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-14",
+        "behavior": "成功正文完整读取受deadline保护",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-15",
+        "behavior": "错误正文完整读取受deadline保护",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-16",
+        "behavior": "HTTP401/429/500错误脱敏及不重试",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-17",
+        "behavior": "连接错误脱敏及不重试",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-18",
+        "behavior": "SDK debug日志不泄露请求和响应正文",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-19",
+        "behavior": "文本结果256Ki边界及超界拒绝",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-20",
+        "behavior": "usage完全缺失及显式null nested details容错",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-21",
+        "behavior": "非法usage计数和identifier净化",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-22",
+        "behavior": "loopbackIPv4/IPv6/localhost HTTP允许",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-23",
+        "behavior": "远程HTTP拒绝和远程HTTPS允许",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-24",
+        "behavior": "URL userinfo/query/fragment/非法协议拒绝",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-25",
+        "behavior": "缺失API key发送前拒绝",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-26",
+        "behavior": "默认官方baseURL保持",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-27",
+        "behavior": "重定向拒绝且错误不重试",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-28",
+        "behavior": "空输出拒绝并保usage",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-29",
+        "behavior": "legacy顶层output_text兼容",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-30",
+        "behavior": "成功/HTTP错误/JSON解析错误后timer清理",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-31",
+        "behavior": "ws及其类型和TypeScript仍保留",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-32",
+        "behavior": "扩展文档记录request/provider/storage/audit与无知识库",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "id": "FD021-A-33",
+        "behavior": "服务HTTP/WebSocket/Copilot/Codex既有契约未改变",
+        "status": "uncovered",
+        "execution_this_run": "no",
+        "provenance": "not runtime-verified on current source version",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      }
+    ],
+    "static_exclusions": [
+      {
+        "requirement": "非法JSON结果明确拒绝",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "官方模式instructions保持",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "published reasoning summary提取与缺失",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "reasoning summary16Ki边界与超界拒绝",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "headers前60秒超时取消且错误分类保持",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "成功正文完整读取受deadline保护",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "错误正文完整读取受deadline保护",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "HTTP401/429/500错误脱敏及不重试",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "连接错误脱敏及不重试",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "SDK debug日志不泄露请求和响应正文",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "文本结果256Ki边界及超界拒绝",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "usage完全缺失及显式null nested details容错",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "非法usage计数和identifier净化",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "loopbackIPv4/IPv6/localhost HTTP允许",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "远程HTTP拒绝和远程HTTPS允许",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "URL userinfo/query/fragment/非法协议拒绝",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "缺失API key发送前拒绝",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "默认官方baseURL保持",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "重定向拒绝且错误不重试",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "空输出拒绝并保usage",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "legacy顶层output_text兼容",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "成功/HTTP错误/JSON解析错误后timer清理",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "ws及其类型和TypeScript仍保留",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "扩展文档记录request/provider/storage/audit与无知识库",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      },
+      {
+        "requirement": "服务HTTP/WebSocket/Copilot/Codex既有契约未改变",
+        "reason": "No additional network/model or broad suite budget; R2/R3 source digests differ; independent static review and PM residual-risk exception required"
+      }
+    ],
+    "runtime_limits": "No service/config/source edits, no fallback/retry, no further model calls"
+  }
+}

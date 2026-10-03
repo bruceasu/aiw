@@ -1,0 +1,15 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-021",
+  "source_event": null,
+  "human_report": "FD-021-implementation-r3.md",
+  "data": {
+    "summary": "使用官方 SDK 公开 typed POST 保留历史 output_text 兼容形态，澄清 Gateway 支持子集限制。",
+    "changed_paths": ["program/aiw-agent/src/providers.ts", "program/aiw-agent/README.md", "docs/features/FD-021_AIW_AGENT_OPENAI_SDK.md"],
+    "commands": [{"command": ".\\node_modules\\.bin\\tsc.cmd --noEmit -p tsconfig.json", "cwd": "program/aiw-agent", "exit_code": 0}],
+    "results": ["compile-only passed; no distributable artifacts", "Initial edge tests: 25/26 passed; legacy output_text overwritten by generated helper", "One focused retry after fix: 26/26 passed", "Independent R3 review: legacy finding resolved, no new material findings", "R2 cases not rerun on R3 implementation; do not aggregate as 50/50"],
+    "formal_handoff": false,
+    "residual_risk": "真实 Gateway 与 API 未运行，正式生命周期回执缺失；最终测试与复评以 R3 报告为准。"
+  }
+}

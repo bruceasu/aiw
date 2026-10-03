@@ -1,0 +1,63 @@
+{
+  "fd_id": "FD-021",
+  "fd_revision": 4,
+  "fd_digest": "796f11312fbea0d033d668b372bc0ccf5b249d934fae63f983e70fb059fc1cce",
+  "test_source_digest": "e85cbbf182295d5770f49add1be37f05eddef63d16468e03cdb4ba199e859ace",
+  "source_digests": {
+    "program/aiw-agent/src/providers.ts": "dbac61df7776afece4fd2a9e7e603f8b51e65c53df3d7a8440193454cc674aaf",
+    "program/aiw-agent/src/config.ts": "fe3b2de7078c8124b7b2ed93bb7193f2e93f97d69d82fd7c64e7626da455a205",
+    "program/aiw-agent/src/errors.ts": "b4b53b4ed69fbc81fcbd4be56233f5d5c4df11a5c0e45d26f6e15d8112f9c0ba"
+  },
+  "sdk_version": "6.49.0",
+  "endpoint": "http://127.0.0.1:43127/v1/responses",
+  "model": "gpt-6-luna",
+  "requests": [
+    {
+      "phase": "provider",
+      "method": "POST",
+      "request_fields": [
+        "input",
+        "max_output_tokens",
+        "model"
+      ],
+      "http_status": 400,
+      "request_id": "resp_9236f447e795032e0a3ab825dfb58b0f"
+    },
+    {
+      "phase": "direct_sdk",
+      "method": "POST",
+      "request_fields": [
+        "input",
+        "model"
+      ],
+      "http_status": 200,
+      "request_id": "resp_cee7aa0ae2db7a7e3ab5551cb7cbefb7"
+    }
+  ],
+  "provider": {
+    "outcome": "failed",
+    "error_code": "provider_error",
+    "service_status": 502,
+    "upstream_http_status": 400
+  },
+  "direct_sdk": {
+    "outcome": "succeeded",
+    "text_present": true,
+    "text_match": true,
+    "response_status": "completed",
+    "usage": {
+      "input_tokens": 11557,
+      "output_tokens": 7,
+      "total_tokens": 11564,
+      "cached_input_tokens": 0,
+      "reasoning_output_tokens": null,
+      "cost": null
+    }
+  },
+  "model_execution_limit": 1,
+  "model_completion_observed": true,
+  "authorization": "Explicit user: allow one minimal real model request; no retry",
+  "raw_path": "docs/features/reports/FD-021-test-results-r4.json",
+  "live_request_count": 2,
+  "fallback_policy": "Only exact Provider HTTP 400 pre-Runner rejection permits one minimal direct SDK request; all other failures stop."
+}

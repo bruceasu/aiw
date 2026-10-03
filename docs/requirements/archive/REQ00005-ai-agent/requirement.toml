@@ -1,0 +1,32 @@
+id = "REQ00005-ai-agent"
+title = "本机 TypeScript Agent"
+parent_id = ""
+status = "ARCHIVED"
+created = "2026-10-01"
+updated = "2026-10-04"
+revision = 4
+
+[approval]
+status = "APPROVED"
+by = "user"
+at = "2026-10-01T00:16:29+09:00"
+reason = "用户明确批准 Agent Proxy Issue 需求计划"
+source_digest = "b63343b7253c5d514dd77268d030c4edb5af82e8cb3ba286f8f6d1fdbabfea79"
+
+[promotion]
+status = "NOT_STARTED"
+task_id = ""
+
+[conversation]
+session_id = ""
+
+[terminal]
+by = "LAPTOP-P8VM6T16\\suk"
+at = "2026-10-04T11:05:13+09:00"
+reason = "finished"
+
+[artifact]
+requirement-plan = "docs/requirements/REQ00005-ai-agent/requirement-plan.md"
+
+[digest]
+requirement-plan = "9cee6985f089578431f7a88d94c5a4c487ce4de3b519a13b4dc3830bd8c7167b"

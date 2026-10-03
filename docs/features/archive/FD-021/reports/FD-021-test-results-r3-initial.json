@@ -1,0 +1,150 @@
+{
+  "fd_id": "FD-021",
+  "fd_revision": 4,
+  "fd_digest": "e9eeaca26a85843be4809fb23b39e9e300b68d5b3d5a825753c81b1fee464470",
+  "test_source_digest": "d8820caeefb673594fec6f44251bc6304e399135862cd53ef867abbfef12f0ca",
+  "source_digests": {
+    "program/aiw-agent/src/providers.ts": "adcd853cf15b82db74caca48ad1ea76f03bb1a820eceec3a21fd1a2e88f45f35",
+    "program/aiw-agent/src/config.ts": "fe3b2de7078c8124b7b2ed93bb7193f2e93f97d69d82fd7c64e7626da455a205",
+    "program/aiw-agent/src/errors.ts": "b4b53b4ed69fbc81fcbd4be56233f5d5c4df11a5c0e45d26f6e15d8112f9c0ba"
+  },
+  "sdk_version": "6.49.0",
+  "raw_path": "docs/features/reports/FD-021-test-results-r3-initial.json",
+  "transport": "real installed SDK with in-process fetch mock; no sockets/network",
+  "timer_policy": "60000ms timers accelerated to 5ms only in cleanup cases; original 15ms timer observes cleanup",
+  "results": [
+    {
+      "name": "空输出或无文本输出拒绝且保usage []",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "空输出或无文本输出拒绝且保usage [{\"type\":\"reasoning\",\"summary\":[]}]",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "reasoning summary字符边界 16384",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "reasoning summary字符边界 16385",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "未请求summary时忽略超长摘要且不返回字段",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "非法usage计数归null -1",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "非法usage计数归null 1.5",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "非法usage计数归null \"12\"",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "非法usage计数归null 9007199254740992",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "非法usage identifier归null \"invalid identifier canary\"",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "非法usage identifier归null \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "非法usage identifier归null 42",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "合法identifier128字符边界",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "非JSON HTTP正文错误脱敏 200",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "非JSON HTTP正文错误脱敏 500",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "拒绝URL组件 https://user:password@host.invalid/v1",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "拒绝URL组件 https://host.invalid/v1?canary=query",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "拒绝URL组件 https://host.invalid/v1#canary",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "fetch redirect:error且拒绝无重试",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "缺省baseURL使用官方Responses端点仅mock",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "成功后60秒timer清理且signal不再abort（缩短定时器）",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "HTTP错误后60秒timer清理且signal不再abort（缩短定时器）",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "JSON解析错误后60秒timer清理且signal不再abort（缩短定时器）",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "legacy顶层output_text兼容且output为空数组",
+      "contract": "Legacy pre-SDK accepted shape; not a promise of standard OpenAI wire shape or Gateway support",
+      "status": "failed",
+      "message": "OpenAI returned no text"
+    },
+    {
+      "name": "usage非对象false/null保持未知 false",
+      "contract": "existing public contract",
+      "status": "passed"
+    },
+    {
+      "name": "usage非对象false/null保持未知 null",
+      "contract": "existing public contract",
+      "status": "passed"
+    }
+  ],
+  "passed": 25,
+  "failed": 1
+}

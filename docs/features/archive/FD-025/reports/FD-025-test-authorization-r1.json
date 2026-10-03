@@ -1,0 +1,26 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-025",
+  "source_event": "FD-025-000004-implementation-ready",
+  "human_report": "FD-025-test-authorization-r1.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-025-000004-implementation-ready",
+    "fd_revision": 4,
+    "fd_digest": "48434b4de48b862943635a4e936d0d6d8bb802e8eb4f4308d4632237feb77fb6",
+    "tester_session": "fd025-tester-20261004-a173fa",
+    "test_source_digest": "d586cec0cc151e6472cf051218b24dc3619325af80d0228e9abd3debfa4b5881",
+    "installed_binary_digest": "94990c8de93f72f35c4858ea7cc6f8cfd93b15b1ab75324f9455ff78b3e33cdc",
+    "command": "python tests/fd025_shutdown_blackbox.py",
+    "working_directory": "repository root",
+    "scope": "临时 loopback Gateway 认证与启停，零 Responses/真实模型，保护用户 43127 与真实状态",
+    "expected_duration": "通常少于5秒，故障等待约30秒以内",
+    "side_effects": "自有临时目录及独占测试原始JSON；隐藏后台启停；退出且锁释放后才删除验证边界内的临时目录",
+    "risk_review": "已审阅完整代码及脚本，临时loopback不访问外网，不泄露凭据，不强杀，不移除遗留锁，不构建或下载",
+    "human_approval": "not required",
+    "planner_identity": "fd025-host-20261004-729bf1",
+    "decision_time": "2026-10-04T13:29:18+09:00"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-020",
+  "source_event": "FD-020-000010-test-accepted",
+  "human_report": "FD-020-review-r1.md",
+  "data": {
+    "disposition": "passed",
+    "reviewer_session": "fd020-reviewer-20261004-93d81a",
+    "reviewed_fd_revision": 10,
+    "reviewed_fd_digest": "7fc3d07f5601a9388866844345f1a0f8ed90a681742749b7b83d1d5a31f5f928",
+    "reviewed_commit": "c9b6d51cd2308e1ffbaf51755d697f6acda3ad83",
+    "diff_base": "9ae91484d4835a50dad6d2aebbcad93c509583f9",
+    "findings": [],
+    "requirements_coverage": "74.07%",
+    "branch_coverage": "not measured",
+    "tester_report": "docs/features/reports/FD-020-test-report-r1.md",
+    "pm_decision": "docs/features/reports/FD-020-test-decision-r1.md",
+    "results": [
+      {"kind": "independent-static-review", "result": "passed", "scope": "认证、全部Handler收敛、SSE/交付、统计跨日、恢复、存储fail-closed、规格一致性"},
+      {"kind": "tester-evidence-review", "result": "consistent", "executed_cases": 29, "passed_cases": 29, "covered_scenarios": 40, "total_scenarios": 54, "uncovered_scenarios": 14},
+      {"kind": "coverage-exception", "result": "respected", "reason": "PM明确接受分支覆盖未测量；未测不计通过"},
+      {"kind": "reviewer-runtime-validation", "result": "not-run"}
+    ],
+    "commands": [
+      "Get-Content / rg / Get-FileHash（定向只读）",
+      "git rev-parse HEAD; git rev-parse HEAD^; git status --short",
+      "git log -6 --oneline -- program/agent-gateway/observation.go",
+      "git diff -- program/agent-gateway openspec/specs/agent-proxy/spec.md",
+      "git diff HEAD^ HEAD --stat -- program/agent-gateway openspec/specs/agent-proxy/spec.md plugins/aiw-agent-gateway/README.md",
+      "git diff HEAD^ HEAD -- program/agent-gateway/config.go program/agent-gateway/server.go program/agent-gateway/runner.go program/agent-gateway/storage.go",
+      "aiw fd --help / claim --help / emit --help",
+      "aiw fd claim FD-020 FD-020-000010-test-accepted --session fd020-reviewer-20261004-93d81a",
+      "aiw fd emit FD-020 verification-passed --producer reviewer --artifact docs/features/reviews/FD-020-review-r1.md --source-event FD-020-000010-test-accepted"
+    ],
+    "source_sha256": {
+      "observation.go": "411daaaba1445c646e624c1b5e039d0da42dafc4c06fbb473026c388d16eb77a",
+      "config.go": "468c9a229affad2660f4ebbf87fe3ee562678f6566ff70b990a16110633b7256",
+      "server.go": "d00454e1f2f41a6c7289235737d995f527a3969f26c4d9458d17aba032677396",
+      "storage.go": "50dc92ad24f8702a5bc06e40a8a56868943ee3b3380fbd8a2238161b8c383771",
+      "runner.go": "99edcf75aa13ebf28a7c47aa07aedb1728d3af14a789008f50a2faa113072965"
+    },
+    "residual_risk": "14场景没有运行覆盖，分支覆盖未知；真实Codex、生产部署、高流量与长期元数据增长未验证。静态审查不是新增运行测试。"
+  }
+}

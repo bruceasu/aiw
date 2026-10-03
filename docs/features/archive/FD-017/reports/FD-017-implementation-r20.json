@@ -1,0 +1,16 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-017",
+  "source_event": "FD-017-000020-changes-requested",
+  "human_report": "FD-017-implementation-r20.md",
+  "data": {
+    "summary": "R1a：额度日期改为持存储锁时的实际当前日，保留跨日预留及真实启动归属。",
+    "worker_session": "fd017-worker-20261003-9059c335",
+    "changed_paths": ["plugins/aiw-agent-proxy/storage.go", "docs/features/FD-017_GO_SHARED_AI_GATEWAY.md"],
+    "findings_addressed": ["R1a"],
+    "commands": [{"command": "python plugins/aiw-agent-proxy/scripts/compile.py", "runs": 1, "exit_code": 0, "scope": "Windows/Linux amd64 离线 compile-only，无最终产物"}, {"command": "storage.go targeted source excerpt", "kind": "static_read_only"}],
+    "results": {"compile_only": "passed", "runtime_tests": "not_run", "independent_review": "pending", "scoped_items_authored": 45, "cancelled_items": 8},
+    "residual_risk": "跨日竞争未运行验证；原共容器隔离、平台API、文件耐久性和离线预留核实风险保留。"
+  }
+}

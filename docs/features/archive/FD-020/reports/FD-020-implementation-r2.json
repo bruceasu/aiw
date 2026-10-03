@@ -1,0 +1,33 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-020",
+  "source_event": "",
+  "human_report": "FD-020-implementation-r2.md",
+  "data": {
+    "summary": "按用户确认移除 key_hashes 与所有 Key 摘要计算，仅支持 keys 原字符串认证。",
+    "fd_revision": 6,
+    "authorization": "用户明确要求无须再支持 key_hashes，已将原摘要值作为 keys 使用。",
+    "changed_paths": [
+      "program/agent-gateway/config.go",
+      "program/agent-gateway/README.md",
+      "plugins/aiw-agent-gateway/README.md",
+      "openspec/specs/agent-proxy/spec.md",
+      "docs/features/FD-020_AGENT_GATEWAY_REQUEST_OBSERVABILITY.md"
+    ],
+    "commands": [
+      {"command": "Get-Content / rg", "purpose": "定向读取及一次实现后静态检查"},
+      {"command": "aiw fd --help", "exit_code": 0},
+      {"command": "aiw fd emit --help", "exit_code": 0},
+      {"command": "aiw fd show FD-020", "purpose": "确认旧 Tester 事件绑定 revision 5"},
+      {"command": "python program/agent-gateway/scripts/compile.py", "exit_code": 0, "targets": ["windows/amd64", "linux/amd64"], "network": false, "retained_distributable": false}
+    ],
+    "results": [
+      {"kind": "static", "result": "直接匹配、重复 Key、禁用、未知字段拒绝及规格一致性已检查"},
+      {"kind": "compile-only", "result": "passed", "exit_code": 0},
+      {"kind": "runtime-tests", "result": "not-run"},
+      {"kind": "handoff", "result": "blocked", "obsolete_event": "FD-020-000005-implementation-ready", "reason": "旧 Tester 事件绑定 revision 5；当前 CLI 无 Pending Test 范围修订/重发入口，无本轮派发事件。"}
+    ],
+    "residual_risk": "现有二进制未替换、服务和测试未运行；客户端需发送 keys 中的同一字符串；待测交接需正式恢复入口，不能复用旧修订事件。"
+  }
+}

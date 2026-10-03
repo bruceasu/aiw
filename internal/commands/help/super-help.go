@@ -107,6 +107,8 @@ func listAll() error {
 		"                               Request review for a pending or completed FD.\n" +
 		"  fd refresh-worker <fd-id> --reason <text>\n" +
 		"                               Replace a stale pending Worker handoff.\n" +
+		"  fd refresh-tester <fd-id> --reason <text> --artifact <report>\n" +
+		"                               Replace a stale unclaimed Tester handoff.\n" +
 		"  fd reopen <fd-id> --reason <text>\n" +
 		"                               Resume an archived Closed or Deferred FD.\n" +
 		"  fd reopen <fd-id> --reason <text> --correct-reason\n" +

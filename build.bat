@@ -6,6 +6,9 @@ cd /d "%~dp0"
 set INSTALL_DIR=c:\green\aiw
 if not defined AIW_VERSION set "AIW_VERSION=dev"
 set "AIW_GOFLAGS=-ldflags=-X=aiw/internal/version.Version=%AIW_VERSION%"
+set "GOPROXY=off"
+set "GOSUMDB=off"
+set "GOTOOLCHAIN=local"
 
 if /i "%~1"=="-h" goto :help
 if /i "%~1"=="--help" goto :help
@@ -44,6 +47,7 @@ endlocal & cd /d "%CWD%" & exit /b %RESULT%
 if /i "%~1"=="windows" goto :build_windows
 if /i "%~1"=="linux" goto :build_linux
 if /i "%~1"=="req" goto :build_req
+if /i "%~1"=="gateway" goto :build_gateway
 if /i "%~1"=="cz" goto :build_cz
 if /i "%~1"=="plugins" goto :build_plugins
 if /i "%~1"=="docs" goto :build_docs
@@ -51,6 +55,8 @@ if /i "%~1"=="skills" goto :build_skills
 if /i "%~1"=="bin" (
     call :build_windows || exit /b 1
     call :build_linux || exit /b 1
+    call :build_gateway || exit /b 1
+    call :install_gateway || exit /b 1
     exit /b 0
 )
 if /i "%~1"=="all" (
@@ -130,8 +136,52 @@ xcopy /E /I /Y "plugins\aiw-cz\locales" "plugins\aiw-cz\release\locales" >nul ||
 echo Python cz plugin release prepared in plugins\aiw-cz\release.
 exit /b 0
 
+:build_gateway
+if not exist "plugins\aiw-gw" md "plugins\aiw-gw" || exit /b 1
+pushd "program\agent-gateway" || exit /b 1
+set "GOFLAGS="
+
+set "GOOS=windows"
+set "GOARCH=amd64"
+go build -trimpath -ldflags="-s -w" -o "%~dp0plugins\aiw-gw\agent-gateway.exe" .
+if errorlevel 1 (
+    set "GOOS="
+    set "GOARCH="
+    echo Error: Windows agent-gateway build failed.
+    popd
+    exit /b 1
+)
+
+set "GOOS=linux"
+set "GOARCH=amd64"
+go build -trimpath -ldflags="-s -w" -o "%~dp0plugins\aiw-gw\agent-gateway" .
+if errorlevel 1 (
+    set "GOOS="
+    set "GOARCH="
+    echo Error: Linux agent-gateway build failed.
+    popd
+    exit /b 1
+)
+
+set "GOOS="
+set "GOARCH="
+popd
+echo agent gateway plugin binaries built in plugins\aiw-gw .
+call :install_gateway || exit /b 1
+exit /b 0
+
+:install_gateway
+if not exist "%INSTALL_DIR%\plugins\aiw-gw" mkdir "%INSTALL_DIR%\plugins\aiw-gw" || exit /b 1
+copy /Y "program\agent-gateway\gateway-example.json" "%INSTALL_DIR%\plugins\aiw-gw\gateway-new.json" >nul || exit /b 1
+copy /Y "plugins\aiw-gw\agent-gateway.exe" "%INSTALL_DIR%\plugins\aiw-gw\agent-gateway.exe" >nul || exit /b 1
+copy /Y "plugins\aiw-gw\agent-gateway" "%INSTALL_DIR%\plugins\aiw-gw\agent-gateway" >nul || exit /b 1
+copy /Y "plugins\aiw-gw\aiw-gw.py" "%INSTALL_DIR%\plugins\aiw-gw\aiw-gw.py" >nul || exit /b 1
+echo Gateway installed; existing gateway.json preserved.
+exit /b 0
+
  :build_plugins
 call :build_req || exit /b 1
+call :build_gateway || exit /b 1
 call :build_cz || exit /b 1
 if not exist "%INSTALL_DIR%\plugins" mkdir "%INSTALL_DIR%\plugins" || exit /b 1
 robocopy plugins "%INSTALL_DIR%\plugins" /S /Z /MT:32 /R:1 /W:1 /FFT /XD "%CD%\plugins\aiw-cz" /NFL /NDL /NP
@@ -157,14 +207,16 @@ call cp-mul.bat "%~1" "%~2" || exit /b 1
 exit /b 0
 
  :help
-echo Usage: build.bat [windows] [linux] [req] [cz] [plugins] [docs] [skills]
+echo Usage: build.bat [windows] [linux] [req] [gateway] [cz] [plugins] [docs] [skills]
 echo.
 echo Actions can be combined and run in the specified order.
 echo With no arguments, only the Windows build is performed.
 echo.
 echo   windows  Build and install the Windows executable.
 echo   linux    Build and install the Linux executable.
+echo   bin      Build and install AIW and Gateway binaries; preserve Gateway config.
 echo   req      Build Windows and Linux req plugin binaries.
+echo   gateway  Build Windows and Linux agent gateway binaries.
 echo   cz       Prepare the Python cz release.
 echo   plugins  Build plugin binaries and install the curated cz release.
 echo   docs     Copy usage documentation to the install directory.

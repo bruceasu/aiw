@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-023",
+  "source_event": "FD-023-000006-test-report-ready",
+  "human_report": "FD-023-test-decision-r1.md",
+  "data": {
+    "disposition": "accepted",
+    "tester_report": "docs/features/reports/FD-023-test-report-r1.md",
+    "fd_revision": 6,
+    "fd_digest": "5abc59be9d6849eb531b711b1fe56f2706a9e644db103cbbb4797e9fb658ee92",
+    "requirements_coverage": "45.5%",
+    "branch_coverage": "not measured",
+    "rationale": "当前获批的离线客户端黑盒测试 10/10 通过，首轮 fixture 错误已修正且两轮原始结果保留；交由独立 Reviewer 审查。",
+    "exceptions": "接受需求场景覆盖率 45.5% 低于 70% 及分支覆盖率未测的证据缺口；本轮仅授权聚焦的本地客户端命令，不豁免 FD 验收行为。",
+    "residual_risk": "Gateway 实际默认与显式配置、真实服务端取消清理、300/660 秒实际期限、HTTPS/错误/大小/JSON 边界及部署后的长请求未运行验证。",
+    "pm_identity": "fd023-pm-20261004",
+    "decision_time": "2026-10-04T05:12:49+00:00"
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-021",
+  "source_event": null,
+  "human_report": "FD-021-review-r4.md",
+  "data": {
+    "reviewer_session": "fd021_reviewer",
+    "tester_session": "fd021-external-live-tester-r4-20261004-fd021_tester",
+    "revision": 4,
+    "tested_fd_digest": "796f11312fbea0d033d668b372bc0ccf5b249d934fae63f983e70fb059fc1cce",
+    "tested_provider_digest": "dbac61df7776afece4fd2a9e7e603f8b51e65c53df3d7a8440193454cc674aaf",
+    "tested_script_digest": "e85cbbf182295d5770f49add1be37f05eddef63d16468e03cdb4ba199e859ace",
+    "conclusion": "changes-required-for-gateway-compatibility",
+    "formal_handoff": false,
+    "formal_verification_passed": false,
+    "fd_complete": false,
+    "new_sdk_regressions": [],
+    "findings": [
+      {
+        "id": "R4-01",
+        "severity": "P1",
+        "file": "program/aiw-agent/src/providers.ts",
+        "line": 146,
+        "category": "existing-gateway-acceptance-gap",
+        "evidence": "Provider真实HTTP400拒绝max_output_tokens，直接SDK只input/model真实200成功",
+        "decision_required": true
+      }
+    ],
+    "design_gate": {
+      "status": "awaiting-human-decision",
+      "candidate": "explicit opt-in Gateway client profile",
+      "default_contract": "preserve 8192 and options",
+      "gateway_candidate": "omit internal max_output_tokens; reject reasoning explicitly; preserve client/Gateway size limits",
+      "token_limit_not_equivalent_to_byte_limit": true,
+      "implemented": false
+    },
+    "test_evidence": {
+      "report": "docs/features/reports/FD-021-test-report-r4.md",
+      "raw": "docs/features/reports/FD-021-test-results-r4.json",
+      "command": "node tests/fd021_gateway_live.mjs",
+      "attempts": 1,
+      "tool_exit_code": 1,
+      "script_expected_fallback_success_exit_code": 2,
+      "exit_difference": "unresolved; no rerun",
+      "duration_seconds": 5.2978509,
+      "http_requests": 2,
+      "provider": "failed HTTP400 mapped provider_error/502",
+      "direct_sdk": "succeeded HTTP200 completed text match",
+      "authorization": "explicit user one minimal real model execution",
+      "additional_requests": false
+    },
+    "safe_local_audit": [
+      {
+        "request_id": "resp_9236f447e795032e0a3ab825dfb58b0f",
+        "state": "rejected",
+        "http_status": 400,
+        "execution_started": false,
+        "executed": null
+      },
+      {
+        "request_id": "resp_cee7aa0ae2db7a7e3ab5551cb7cbefb7",
+        "state": "succeeded",
+        "http_status": 200,
+        "execution_started": true,
+        "executed": null
+      }
+    ],
+    "budget_evidence": "one execution_started among two correlated requests; one completion observed; not global service count",
+    "reviewer_network_requests": 0,
+    "reviewer_tests": 0,
+    "reviewer_business_changes": false,
+    "risks": [
+      "需用户批准配置/参数语义设计后才能fix真实Provider兼容",
+      "真实SDK最小成功不等同Provider通过",
+      "工具exit1与脚本fallbacksuccess2差异未解释",
+      "其他协议选项/模型/限额/超时未覆盖",
+      "正式事件回执缺失不能Complete"
+    ]
+  }
+}

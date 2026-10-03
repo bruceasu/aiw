@@ -1,0 +1,16 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-020",
+  "source_event": "",
+  "human_report": "FD-020-implementation-r3.md",
+  "data": {
+    "summary": "汇总既有实施和当前测试恢复说明；未产生新的Worker完成事件或实施结果",
+    "fd_revision": 7,
+    "changed_paths": ["docs/features/FD-020_AGENT_GATEWAY_REQUEST_OBSERVABILITY.md"],
+    "historical_evidence": ["docs/features/reports/FD-020-implementation-r1.md", "docs/features/reports/FD-020-implementation-r2.md"],
+    "commands": ["aiw fd refresh-tester FD-020 --reason \"Run independent tests and review against current key contract\" --artifact docs/features/reports/FD-020-implementation-r2.md"],
+    "results": [{"kind": "runtime-tests", "result": "not-run"}],
+    "residual_risk": "独立测试和审查待完成；长期存储增长及真实后端未验证"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-025",
+  "source_event": "FD-025-000006-test-rejected",
+  "human_report": "FD-025-implementation-r2.md",
+  "data": {
+    "summary": "修正 Windows Winsock 拒绝连接错误码识别，Linux 保持原判定；已重新编译安装。",
+    "worker_session": "fd025-host-20261004-729bf1",
+    "changed_paths": ["program/agent-gateway/shutdown.go", "program/agent-gateway/shutdown_windows.go", "program/agent-gateway/shutdown_linux.go"],
+    "commands": [{"command":"python program/agent-gateway/scripts/compile.py","exit_code":0}, {"command":"cmd.exe /d /c build.bat bin","exit_code":0,"authorization":"用户明确授权 build.bat bin 安装，修复后安装新版本"}],
+    "results": ["Windows/Linux amd64 compile-only passed", "Authorized install passed"],
+    "residual_risk": "同范围修复验证及独立审查待交接；活动模型取消、Linux运行和故障注入未实测。"
+  }
+}

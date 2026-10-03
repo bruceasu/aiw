@@ -1,0 +1,323 @@
+{
+  "fd_id": "FD-021",
+  "source_event": null,
+  "tester_session": "fd021-external-acceptance-20261004-c813f0",
+  "fd_revision": 4,
+  "fd_digest": "7a8a9d4ed224b34e653e2d48d4bbb5ca1bf528f900e425579d164cc04e09af98",
+  "test_source_digest": "76838479dfeabd55c4fc875ec26b4826938db351796c4645984d3dcfdfbb0131",
+  "source_digests": {
+    "program/aiw-agent/src/providers.ts": "0cafbfec7809bd71cd8a7e3a775e256b60f3374daa63ecb1e2f04a48198691bb",
+    "program/aiw-agent/src/config.ts": "fe3b2de7078c8124b7b2ed93bb7193f2e93f97d69d82fd7c64e7626da455a205",
+    "program/aiw-agent/src/errors.ts": "b4b53b4ed69fbc81fcbd4be56233f5d5c4df11a5c0e45d26f6e15d8112f9c0ba"
+  },
+  "sdk_version": "6.49.0",
+  "gateway_binary_digest": "97a6753035e944876d942ec48d7ec2de029f0a93e9d7f906f49cbdc49ef378a3",
+  "profile": "aiw_gateway",
+  "endpoint": "http://127.0.0.1:43127/v1/responses",
+  "model": "gpt-6-luna",
+  "requests": [
+    {
+      "method": "POST",
+      "redirect": "error",
+      "request_fields": [
+        "input",
+        "model"
+      ],
+      "http_status": 200,
+      "request_id": "resp_4bb86213f415c62ead5a4ed6a110bbd7"
+    }
+  ],
+  "results": [
+    {
+      "id": "R6-LIVE-01",
+      "behavior": "当前Provider通过已安装官方SDK完成真实Gateway请求",
+      "status": "passed"
+    },
+    {
+      "id": "R6-LIVE-02",
+      "behavior": "Gateway模式真实请求仅input/model且POST/redirect:error",
+      "status": "passed"
+    },
+    {
+      "id": "R6-LIVE-03",
+      "behavior": "真实文本结果精确匹配标记",
+      "status": "passed"
+    },
+    {
+      "id": "R6-LIVE-04",
+      "behavior": "返回completed并映射响应标识/模型/状态元数据",
+      "status": "passed"
+    },
+    {
+      "id": "R6-LIVE-05",
+      "behavior": "Provider用量等于安全响应映射且合法未知字段为null",
+      "status": "passed"
+    },
+    {
+      "id": "R6-LIVE-06",
+      "behavior": "本次成功路径仅一次HTTP请求且无fallback",
+      "status": "passed"
+    },
+    {
+      "id": "R6-LIVE-07",
+      "behavior": "关联HTTP审计succeeded且execution_started为true",
+      "status": "passed"
+    }
+  ],
+  "historical_evidence": [
+    {
+      "path": "docs/features/reports/FD-021-test-results-r2.json",
+      "available_digest_scope_matches": false,
+      "historical_passed": 24,
+      "historical_failed": 0,
+      "counted_as_current_execution": false
+    },
+    {
+      "path": "docs/features/reports/FD-021-test-results-r3-retry.json",
+      "available_digest_scope_matches": false,
+      "historical_passed": 26,
+      "historical_failed": 0,
+      "counted_as_current_execution": false
+    },
+    {
+      "path": "docs/features/reports/FD-021-test-results-r5.json",
+      "available_digest_scope_matches": true,
+      "historical_passed": 8,
+      "historical_failed": 0,
+      "counted_as_current_execution": false
+    }
+  ],
+  "scenario_inventory": [
+    {
+      "id": "R6-LIVE-01",
+      "behavior": "当前Provider通过已安装官方SDK完成真实Gateway请求",
+      "evidence_route": "current-single-live-request"
+    },
+    {
+      "id": "R6-LIVE-02",
+      "behavior": "Gateway模式真实请求仅input/model且POST/redirect:error",
+      "evidence_route": "current-single-live-request"
+    },
+    {
+      "id": "R6-LIVE-03",
+      "behavior": "真实文本结果精确匹配标记",
+      "evidence_route": "current-single-live-request"
+    },
+    {
+      "id": "R6-LIVE-04",
+      "behavior": "返回completed并映射响应标识/模型/状态元数据",
+      "evidence_route": "current-single-live-request"
+    },
+    {
+      "id": "R6-LIVE-05",
+      "behavior": "Provider用量等于安全响应映射且合法未知字段为null",
+      "evidence_route": "current-single-live-request"
+    },
+    {
+      "id": "R6-LIVE-06",
+      "behavior": "本次成功路径仅一次HTTP请求且无fallback",
+      "evidence_route": "current-single-live-request"
+    },
+    {
+      "id": "R6-LIVE-07",
+      "behavior": "关联HTTP审计succeeded且execution_started为true",
+      "evidence_route": "current-single-live-request"
+    },
+    {
+      "id": "FD021-A-01",
+      "behavior": "缺省openai模式保留8192和reasoning",
+      "evidence_route": "R5 history only if all available source/SDK/test digests match"
+    },
+    {
+      "id": "FD021-A-02",
+      "behavior": "显式openai模式保留8192和reasoning",
+      "evidence_route": "R5 history only if all available source/SDK/test digests match"
+    },
+    {
+      "id": "FD021-A-03",
+      "behavior": "Gateway离线标准output和usage映射",
+      "evidence_route": "R5 history only if all available source/SDK/test digests match"
+    },
+    {
+      "id": "FD021-A-04",
+      "behavior": "Gateway instructions与JSON支持字段",
+      "evidence_route": "R5 history only if all available source/SDK/test digests match"
+    },
+    {
+      "id": "FD021-A-05",
+      "behavior": "Gateway effort发送前拒绝",
+      "evidence_route": "R5 history only if all available source/SDK/test digests match"
+    },
+    {
+      "id": "FD021-A-06",
+      "behavior": "Gateway summary=true发送前拒绝",
+      "evidence_route": "R5 history only if all available source/SDK/test digests match"
+    },
+    {
+      "id": "FD021-A-07",
+      "behavior": "未知profile发送前拒绝",
+      "evidence_route": "R5 history only if all available source/SDK/test digests match"
+    },
+    {
+      "id": "FD021-A-08",
+      "behavior": "空profile发送前拒绝",
+      "evidence_route": "R5 history only if all available source/SDK/test digests match"
+    },
+    {
+      "id": "FD021-A-09",
+      "behavior": "非法JSON结果明确拒绝",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-10",
+      "behavior": "官方模式instructions保持",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-11",
+      "behavior": "published reasoning summary提取与缺失",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-12",
+      "behavior": "reasoning summary16Ki边界与超界拒绝",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-13",
+      "behavior": "headers前60秒超时取消且错误分类保持",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-14",
+      "behavior": "成功正文完整读取受deadline保护",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-15",
+      "behavior": "错误正文完整读取受deadline保护",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-16",
+      "behavior": "HTTP401/429/500错误脱敏及不重试",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-17",
+      "behavior": "连接错误脱敏及不重试",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-18",
+      "behavior": "SDK debug日志不泄露请求和响应正文",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-19",
+      "behavior": "文本结果256Ki边界及超界拒绝",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-20",
+      "behavior": "usage完全缺失及显式null nested details容错",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-21",
+      "behavior": "非法usage计数和identifier净化",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-22",
+      "behavior": "loopbackIPv4/IPv6/localhost HTTP允许",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-23",
+      "behavior": "远程HTTP拒绝和远程HTTPS允许",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-24",
+      "behavior": "URL userinfo/query/fragment/非法协议拒绝",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-25",
+      "behavior": "缺失API key发送前拒绝",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-26",
+      "behavior": "默认官方baseURL保持",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-27",
+      "behavior": "重定向拒绝且错误不重试",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-28",
+      "behavior": "空输出拒绝并保usage",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-29",
+      "behavior": "legacy顶层output_text兼容",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-30",
+      "behavior": "成功/HTTP错误/JSON解析错误后timer清理",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-31",
+      "behavior": "ws及其类型和TypeScript仍保留",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-32",
+      "behavior": "扩展文档记录request/provider/storage/audit与无知识库",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    },
+    {
+      "id": "FD021-A-33",
+      "behavior": "服务HTTP/WebSocket/Copilot/Codex既有契约未改变",
+      "evidence_route": "unrun-current-version; static review or stale history required"
+    }
+  ],
+  "model_execution_limit": 1,
+  "fallback_policy": "none",
+  "raw_path": "docs/features/reports/FD-021-test-results-r6.json",
+  "text_present": true,
+  "text_match": true,
+  "usage": {
+    "input_tokens": 11557,
+    "output_tokens": 9,
+    "cost": null,
+    "openai_usage": {
+      "response_id": "resp_4bb86213f415c62ead5a4ed6a110bbd7",
+      "response_model": "gpt-6-luna",
+      "service_tier": null,
+      "response_status": "completed",
+      "total_tokens": 11566,
+      "cached_input_tokens": 0,
+      "cache_write_input_tokens": null,
+      "reasoning_output_tokens": null
+    }
+  },
+  "audit": {
+    "request_id": "resp_4bb86213f415c62ead5a4ed6a110bbd7",
+    "http_status": 200,
+    "state": "succeeded",
+    "execution_started": true
+  },
+  "live_request_count": 1,
+  "passed": 7,
+  "failed": 0,
+  "unrun_live_checks": 0,
+  "outcome": "passed"
+}

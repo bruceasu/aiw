@@ -20,7 +20,7 @@ META = {
     "name": "aiw-fd",
     "short": "manage numbered Feature Designs and role handoffs",
     "description": "Create, inspect, and advance FD-first work.",
-    "commands": ["new", "list", "show", "emit", "claim", "resume", "request-review", "refresh-worker", "reopen", "close", "worktree"],
+    "commands": ["new", "list", "show", "emit", "claim", "resume", "request-review", "refresh-worker", "refresh-tester", "reopen", "close", "worktree"],
     "readOnly": False,
     "mutatesFiles": True,
     "requiresConfirmation": False,
@@ -243,7 +243,7 @@ def current_test_acceptance(base: Path, name: str) -> dict | None:
         event = json.loads(path.read_text(encoding="utf-8"))
         if event.get("event_type") == "test-accepted":
             return event
-        if event.get("event_type") == "implementation-ready":
+        if event.get("event_type") in {"implementation-ready", "test-requested"}:
             return None
     return None
 
@@ -751,6 +751,81 @@ def refresh_worker(base: Path, name: str, reason: str) -> None:
     dispatch(base, target, event)
 
 
+def refresh_tester(base: Path, name: str, reason: str, artifact: str) -> None:
+    if not reason.strip() or len(reason) > 500 or any(char in reason for char in "\r\n"):
+        raise FDError("refresh-tester requires a one-line --reason of at most 500 characters")
+    with fd_lock(base, name):
+        fd_path = resolve_fd(base, name)
+        if fd_path.parent != feature_dir(base):
+            raise FDError("refresh-tester requires an active FD")
+        original = fd_path.read_text(encoding="utf-8")
+        if status(original) != "Pending Test" or not independent_testing(original):
+            raise FDError("refresh-tester requires an independent Pending Test FD")
+        item = latest_event(base, name)
+        if not item:
+            raise FDError("refresh-tester requires a pending Tester handoff")
+        old_path, old_event = item
+        fd_ref = fd_path.relative_to(base).as_posix()
+        if (old_event.get("fd_id") != name or old_event.get("fd_path") != fd_ref
+                or old_event.get("target_role") != "tester"
+                or old_event.get("dispatch_state") != "pending"
+                or old_event.get("event_type") not in {"implementation-ready", "test-requested"}
+                or old_event.get("session_ref") or old_event.get("pid")):
+            raise FDError("refresh-tester requires the latest unclaimed pending Tester handoff")
+        if (old_event["fd_revision"] == revision(original)
+                and old_event["fd_sha256"] == fd_digest(original)):
+            raise FDError("Tester handoff already matches the current FD")
+        worker_session = old_event.get("worker_session_ref")
+        if not isinstance(worker_session, str) or not worker_session.strip():
+            raise FDError("refresh-tester requires a known Worker session")
+        artifact_ref = safe_artifact(base, artifact)
+        if dual_evidence(original):
+            evidence = structured_evidence(base, artifact_ref, "worker-report", name)
+            report_revision = evidence["data"].get("fd_revision")
+            if report_revision is not None and report_revision != revision(original):
+                raise FDError("implementation report revision differs from the current FD")
+        new_revision = revision(original) + 1
+        if new_revision <= old_event["fd_revision"]:
+            raise FDError("FD revision is behind the Tester handoff; reconcile manually")
+        updated = REVISION_RE.sub(f"**Revision:** {new_revision}", original, count=1)
+        event_id = f"{name}-{new_revision:06d}-test-requested"
+        target = runtime_dir(base, name) / "events" / f"{new_revision:06d}-test-requested.json"
+        if target.exists() or target.is_symlink():
+            raise FDError(f"event already exists: {event_id}")
+        event = {"event_id": event_id, "fd_id": name,
+                 "event_type": "test-requested", "fd_revision": new_revision,
+                 "producer": "pm", "fd_sha256": fd_digest(updated),
+                 "artifact_ref": artifact_ref, "fd_path": fd_ref,
+                 "target_role": "tester", "dispatch_state": "pending",
+                 "reason": reason.strip(), "supersedes": old_event["event_id"],
+                 "implementation_event": old_event.get("implementation_event", old_event["event_id"]),
+                 "worker_session_ref": worker_session,
+                 "created_at": datetime.now(timezone.utc).isoformat()}
+        cancelled = {**old_event, "dispatch_state": "cancelled", "superseded_by": event_id}
+        try:
+            atomic_json(target, {**event, "dispatch_state": "preparing"})
+            atomic_text(fd_path, updated)
+            atomic_json(old_path, cancelled)
+            update_index(base)
+            atomic_json(target, event)
+        except (OSError, FDError) as exc:
+            rollback_errors = []
+            restores = [lambda: target.unlink(missing_ok=True),
+                        lambda: atomic_text(fd_path, original),
+                        lambda: atomic_json(old_path, old_event),
+                        lambda: update_index(base)]
+            for restore in restores:
+                try:
+                    restore()
+                except (OSError, FDError) as rollback_error:
+                    rollback_errors.append(str(rollback_error))
+            if rollback_errors:
+                raise FDError("refresh-tester rollback incomplete: "
+                              + "; ".join(rollback_errors)) from exc
+            raise
+    dispatch(base, target, event)
+
+
 def reopen(base: Path, name: str, reason: str) -> None:
     if not reason.strip() or len(reason) > 500 or any(char in reason for char in "\r\n"):
         raise FDError("reopen requires a one-line --reason of at most 500 characters")
@@ -910,8 +985,8 @@ def prepare_event(base: Path, name: str, kind: str, producer: str, artifact: str
                             or fd_digest(content) != previous[1]["fd_sha256"]):
             raise FDError("FD changed since test handoff; reconcile before continuing")
     if kind == "test-report-ready":
-        if previous[1]["event_type"] != "implementation-ready":
-            raise FDError("test report requires an implementation-ready handoff")
+        if previous[1]["event_type"] not in {"implementation-ready", "test-requested"}:
+            raise FDError("test report requires an implementation-ready or test-requested handoff")
         test_summary = validate_test_report(base, artifact_ref, previous[1])
     elif kind in {"test-accepted", "test-rejected"}:
         validate_test_decision(base, artifact_ref, previous[1],
@@ -1165,7 +1240,7 @@ def close_locked(base: Path, name: str, outcome: str, reason: str) -> None:
                 try:
                     source.parent.mkdir(parents=True, exist_ok=True)
                     target.replace(source)
-                except OSError as rollback_error:
+                except (OSError, FDError) as rollback_error:
                     rollback_errors.append(str(rollback_error))
         if event_path and original_event:
             try:
@@ -1252,6 +1327,11 @@ def main() -> int:
     refreshed = commands.add_parser("refresh-worker", help="replace a stale pending Worker handoff")
     refreshed.add_argument("fd_id")
     refreshed.add_argument("--reason", required=True)
+    tester_refresh = commands.add_parser("refresh-tester", help="replace a stale unclaimed Tester handoff")
+    tester_refresh.add_argument("fd_id")
+    tester_refresh.add_argument("--reason", required=True)
+    tester_refresh.add_argument("--artifact", required=True,
+                                help="current implementation report inside the repository")
     reopened = commands.add_parser("reopen", help="resume an archived Closed or Deferred FD")
     reopened.add_argument("fd_id")
     reopened.add_argument("--reason", required=True)
@@ -1288,6 +1368,8 @@ def main() -> int:
             request_review(base, fd_id(args.fd_id), args.reason)
         elif args.command == "refresh-worker":
             refresh_worker(base, fd_id(args.fd_id), args.reason)
+        elif args.command == "refresh-tester":
+            refresh_tester(base, fd_id(args.fd_id), args.reason, args.artifact)
         elif args.command == "reopen":
             if args.correct_reason:
                 correct_reopen_reason(base, fd_id(args.fd_id), args.reason)
