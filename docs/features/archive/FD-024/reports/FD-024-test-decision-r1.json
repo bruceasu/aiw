@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-024",
+  "source_event": "FD-024-000005-test-report-ready",
+  "human_report": "FD-024-test-decision-r1.md",
+  "data": {
+    "disposition": "accepted",
+    "tester_report": "docs/features/reports/FD-024-test-report-r1.md",
+    "fd_revision": 5,
+    "fd_digest": "bc844fe46f4d565c31485a66e93ae02460457af95208d1d29621be7540c41c2a",
+    "requirements_coverage": "64.3%",
+    "branch_coverage": "not measured",
+    "rationale": "最终授权的四个公开 CLI 行为测试全部通过；首轮夹具错误已记录。核心刷新与交接路径有运行证据，未覆盖路径交给独立 Reviewer 静态核查。",
+    "exceptions": "需求场景覆盖率低于 70% 且分支覆盖率未测量；允许进入静态评审，不将五项未运行场景视为通过，也不豁免验收行为。",
+    "residual_risk": "错误状态或在途交接、Worker 身份与 Dual sidecar、故障回滚、旧授权拒绝未运行；分支覆盖率未知。",
+    "pm_identity": "fd024-pm-20261004-6c30ba",
+    "decision_time": "2026-10-04T05:20:11+00:00"
+  }
+}

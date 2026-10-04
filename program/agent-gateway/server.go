@@ -1,0 +1,205 @@
+package main
+
+import (
+    "context"
+    "encoding/json"
+    "errors"
+    "io"
+    "net"
+    "net/http"
+    "sort"
+    "strconv"
+    "strings"
+    "sync"
+    "time"
+)
+
+func intString(value int) string { return strconv.Itoa(value) }
+
+type Gateway struct {
+    config Config
+    store *Store
+    ctx context.Context
+    mu sync.Mutex
+    active int
+    principalActive map[string]int
+    rpm map[string][]time.Time
+    shutdown context.CancelFunc
+}
+
+func newGateway(ctx context.Context,c Config,s *Store) *Gateway {
+    return &Gateway{config:c,store:s,ctx:ctx,principalActive:map[string]int{},rpm:map[string][]time.Time{}}
+}
+
+func writeJSON(w http.ResponseWriter,status int,data any) {
+    _=http.NewResponseController(w).SetWriteDeadline(time.Now().Add(5*time.Second))
+    w.Header().Set("Content-Type","application/json");w.WriteHeader(status);_ = json.NewEncoder(w).Encode(data)
+}
+
+func fail(w http.ResponseWriter,status int,code string) {
+    if observed,ok:=w.(*observedWriter);ok {
+        observed.record.ErrorCode=code
+        if observed.record.State=="in_progress" { observed.record.State="rejected" }
+    }
+    kind:="invalid_request_error"
+    switch status { case 401:kind="authentication_error";case 429:kind="rate_limit_error";case 500,502,503,504:kind="server_error" }
+    if status==429||status==503 { w.Header().Set("Retry-After","60") }
+    writeJSON(w,status,map[string]any{"error":map[string]any{"message":"Gateway request rejected: "+code,"type":kind,"param":nil,"code":code}})
+}
+
+func (g *Gateway) acquire(p Principal) string {
+    g.mu.Lock();defer g.mu.Unlock()
+    now:=time.Now();old:=g.rpm[p.ID];times:=old[:0]
+    for _,at:=range old { if now.Sub(at)<time.Minute { times=append(times,at) } }
+    g.rpm[p.ID]=times
+    if len(times)>=p.RPM { return "rpm_limit" }
+    g.rpm[p.ID]=append(times,now)
+    if g.active>=g.config.GlobalConcurrency||g.principalActive[p.ID]>=p.Concurrency { return "capacity_error" }
+    g.active++;g.principalActive[p.ID]++;return ""
+}
+
+func (g *Gateway) release(p Principal) { g.mu.Lock();g.active--;g.principalActive[p.ID]--;g.mu.Unlock() }
+
+func (g *Gateway) ServeHTTP(w http.ResponseWriter,r *http.Request) {
+    started:=time.Now()
+    id:=newID();w.Header().Set("x-request-id",id)
+    observed:=&observedWriter{ResponseWriter:w,record:HTTPRequestRecord{SchemaVersion:1,ID:id,Method:observedMethod(r.Method),Route:observedRoute(r.URL.Path),ReceivedAt:started.UTC(),State:"in_progress"}}
+    w=observed
+    rejection:=""
+    if g.config.Mode=="development" {
+        host,_,err:=net.SplitHostPort(r.RemoteAddr);ip:=net.ParseIP(host)
+        if err!=nil||ip==nil||!ip.IsLoopback() { rejection="local_only" }
+    }
+    var p *Principal
+    if rejection=="" {
+        p=g.config.authenticate(r.Header.Get("Authorization"))
+        if p==nil { rejection="invalid_api_key" } else { observed.record.Principal=p.ID }
+    }
+    logHTTPRequest("request_started",observed.record)
+    defer func(){
+        panicValue:=recover()
+        g.finishHTTPRequest(observed,r,started,panicValue)
+        if panicValue!=nil { panic(panicValue) }
+    }()
+    if err:=g.store.PutHTTPRequest(observed.record);err!=nil {
+        if r.URL.Path!="/internal/shutdown" { fail(w,503,"storage_error");return }
+        logShutdownAuditFailure()
+    }
+    if rejection!="" { fail(w,401,rejection);return }
+    select { case <-g.ctx.Done():fail(w,503,"shutting_down");return;default: }
+    switch r.URL.Path {
+    case "/internal/shutdown":g.requestShutdown(w,r)
+    case "/v1/models":
+        if r.Method!="GET" { fail(w,405,"method_not_allowed");return }
+        if r.URL.RawQuery!="" { fail(w,400,"unsupported_query");return }
+        models:=[]any{}
+        for _,model:=range p.AllowedModels { models=append(models,map[string]any{"id":model,"object":"model","created":0,"owned_by":"aiw"}) }
+        writeJSON(w,200,map[string]any{"object":"list","data":models})
+    case "/v1/usage":g.usage(w,r,*p)
+    case "/v1/responses":g.responses(w,r,*p,id)
+    default:fail(w,404,"not_found")
+    }
+}
+
+func (g *Gateway) usage(w http.ResponseWriter,r *http.Request,p Principal) {
+    if r.Method!="GET" { fail(w,405,"method_not_allowed");return }
+    query,err:=parseUsageQuery(r.URL.RawQuery)
+    if err!=nil { fail(w,400,"invalid_date_range");return }
+    today:=time.Now().In(g.config.zone).Format("2006-01-02")
+    start,end:=query["start_date"],query["end_date"]
+    if start=="" { start=today };if end=="" { end=today }
+    first,e1:=time.ParseInLocation("2006-01-02",start,g.config.zone);last,e2:=time.ParseInLocation("2006-01-02",end,g.config.zone)
+    if e1!=nil||e2!=nil||first.After(last)||first.Format("2006-01-02")!=start||last.Format("2006-01-02")!=end||first.AddDate(0,0,365).Before(last) { fail(w,400,"invalid_date_range");return }
+    groups,used,reserved:=g.store.Aggregate(p,start,end,g.config.zone)
+    sort.Slice(groups,func(i,j int)bool{if groups[i].Date==groups[j].Date{return groups[i].Model<groups[j].Model};return groups[i].Date<groups[j].Date})
+    httpGroups:=g.store.AggregateHTTP(p,start,end,g.config.zone)
+    writeJSON(w,200,map[string]any{"principal":p.ID,"timezone":g.config.Timezone,"start_date":start,"end_date":end,"daily_limit":p.DailyLimit,"today_used":used,"today_reserved":reserved,"groups":groups,"http_groups":httpGroups})
+}
+
+func (g *Gateway) responses(w http.ResponseWriter,httpRequest *http.Request,p Principal,id string) {
+    if httpRequest.Method!="POST" { fail(w,405,"method_not_allowed");return }
+    if httpRequest.URL.RawQuery!="" { fail(w,400,"unsupported_query");return }
+    media:=strings.TrimSpace(strings.Split(httpRequest.Header.Get("Content-Type"),";")[0])
+    if media!="application/json" { fail(w,400,"invalid_content_type");return }
+    data,err:=io.ReadAll(http.MaxBytesReader(w,httpRequest.Body,maxBody))
+    if err!=nil { var sizeError *http.MaxBytesError;if errors.As(err,&sizeError) { fail(w,413,"payload_too_large") }else{fail(w,400,"invalid_body")};return }
+    request,err:=decodeRequest(data)
+    if err!=nil { fail(w,400,"invalid_request");return }
+    if observed,ok:=w.(*observedWriter);ok {
+        if _,configured:=g.config.Models[request.Model];configured { observed.record.Model=request.Model }
+        if err=g.store.PutHTTPRequest(observed.record);err!=nil { fail(w,500,"storage_error");return }
+    }
+    if !p.allows(request.Model) { fail(w,400,"model_not_allowed");return }
+    code:=g.acquire(p)
+    if code!="" { status:=429;if code=="capacity_error" { status=503 };fail(w,status,code);return }
+    defer g.release(p)
+    ctx,cancel:=context.WithTimeout(httpRequest.Context(),time.Duration(g.config.TimeoutSeconds)*time.Second)
+    defer cancel()
+    stop:=context.AfterFunc(g.ctx,cancel);defer stop()
+    created:=time.Now().UTC()
+    stream:=&eventStream{writer:w,request:request,id:id,created:created,texts:[]string{}}
+    var emit func(string)error
+    deliveryError:=func(err error) {
+        if err!=nil { if observed,ok:=w.(*observedWriter);ok { observed.deliveryFailed=true } }
+    }
+    if request.Stream { emit=func(text string)error { err:=stream.text(text);deliveryError(err);return err } }
+    result:=execute(ctx,g.config,g.store,p,request,id,created,emit)
+    if observed,ok:=w.(*observedWriter);ok {
+        observed.record.State=result.State;observed.record.ErrorCode=result.Code;observed.record.ExecutionStarted=result.Started
+        if !result.Started { observed.record.State="rejected" }
+    }
+    if request.Stream&&stream.started {
+        status:="completed";event:="response.completed"
+        if result.State!="succeeded" { status="failed";event="response.failed" }
+        deliveryError(stream.send(event,map[string]any{"response":responseObject(id,created,request,status,result.Texts,result.ToolCall,result.Usage,result.Code)}))
+        return
+    }
+    if result.State!="succeeded" { fail(w,result.HTTP,result.Code);return }
+    if request.Stream {
+        if err=stream.begin();err!=nil { deliveryError(err);return }
+        deliveryError(stream.send("response.completed",map[string]any{"response":responseObject(id,created,request,"completed",result.Texts,result.ToolCall,result.Usage,"")}));return
+    }
+    writeJSON(w,200,responseObject(id,created,request,"completed",result.Texts,result.ToolCall,result.Usage,""))
+}
+
+type eventStream struct {
+    writer http.ResponseWriter
+    request Request
+    id string
+    created time.Time
+    sequence int
+    started bool
+    texts []string
+}
+
+func (s *eventStream) send(kind string,data map[string]any) error {
+    controller:=http.NewResponseController(s.writer)
+    if err:=controller.SetWriteDeadline(time.Now().Add(5*time.Second));err!=nil { return err }
+    data["type"]=kind;data["sequence_number"]=s.sequence;s.sequence++
+    encoded,err:=json.Marshal(data);if err!=nil { return err }
+    if _,err=io.WriteString(s.writer,"event: "+kind+"\ndata: "+string(encoded)+"\n\n");err!=nil { return err }
+    return controller.Flush()
+}
+
+func (s *eventStream) begin() error {
+    if s.started { return nil }
+    s.writer.Header().Set("Content-Type","text/event-stream");s.writer.Header().Set("Cache-Control","no-cache");s.writer.Header().Set("X-Accel-Buffering","no")
+    s.started=true
+    for _,kind:=range []string{"response.created","response.in_progress"} { if err:=s.send(kind,map[string]any{"response":responseObject(s.id,s.created,s.request,"in_progress",nil,nil,nil,"")});err!=nil { return err } }
+    return nil
+}
+
+func (s *eventStream) text(text string) error {
+    if err:=s.begin();err!=nil { return err }
+    index:=len(s.texts);itemID:=s.id+"_msg_"+intString(index)
+    s.texts=append(s.texts,text)
+    events:=[]struct{kind string;data map[string]any}{
+        {"response.output_item.added",map[string]any{"output_index":index,"item":map[string]any{"id":itemID,"type":"message","role":"assistant","status":"in_progress","content":[]any{}}}},
+        {"response.content_part.added",map[string]any{"item_id":itemID,"output_index":index,"content_index":0,"part":textPart("")}},
+        {"response.output_text.delta",map[string]any{"item_id":itemID,"output_index":index,"content_index":0,"delta":text,"logprobs":[]any{}}},
+        {"response.output_text.done",map[string]any{"item_id":itemID,"output_index":index,"content_index":0,"text":text,"logprobs":[]any{}}},
+        {"response.content_part.done",map[string]any{"item_id":itemID,"output_index":index,"content_index":0,"part":textPart(text)}},
+        {"response.output_item.done",map[string]any{"output_index":index,"item":message(itemID,text,"completed")}},
+    }
+    for _,event:=range events { if err:=s.send(event.kind,event.data);err!=nil { return err } };return nil
+}

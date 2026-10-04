@@ -1,0 +1,8 @@
+{
+  "schema":"aiw.fd.evidence.v1","kind":"planner-authorization","fd_id":"FD-025","source_event":"FD-025-000010-implementation-ready","human_report":"FD-025-test-authorization-r4.md",
+  "data": {
+    "decision":"approved","basis":"planner-low-risk","implementation_event":"FD-025-000010-implementation-ready","fd_revision":10,"fd_digest":"ac7ac370bc33e29843e5b220e62943b8784cc204a1b6e9e8fe326cef5631741e","tester_session":"fd025-tester-20261004-a173fa",
+    "test_source_digest":"30fe778a4a1986aba6024e804751764211c52c2aee8ddef33141dc95149ebe77","installed_binary_digest":"97a6753035e944876d942ec48d7ec2de029f0a93e9d7f906f49cbdc49ef378a3","installed_entry_digest":"e9924962f30f39d5112a0eed1743fb6c6223c22127aeddb87e1f761ae44113c5",
+    "command":"python tests/fd025_shutdown_blackbox.py","working_directory":"repository root","scope":"唯一产品修复验证：12项临时loopback启停及默认配置入口行为；零真实模型","expected_duration":"通常少于5秒，故障等待约30秒以内","side_effects":"自有临时配置/日志/状态/入口二进制副本及独占r4原始JSON；确认进程退出且锁释放后清理；不影响真实配置与43127","risk_review":"已审阅摘要前置gate、合成Key、临时复制边界、无强杀/残留锁删除、固定输出分类；只本地控制请求，无模型或外部网络","human_approval":"not required","planner_identity":"fd025-host-20261004-729bf1","decision_time":"2026-10-04T04:40:08+00:00","retry_of":"docs/features/reports/FD-025-test-authorization-r2.json"
+  }
+}

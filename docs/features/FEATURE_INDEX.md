@@ -28,9 +28,18 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-014](archive/FD-014/FD-014_INDEPENDENT_TESTING_AND_PM_ACCEPTANCE_IN_FD_WORK.md) | Independent testing and PM acceptance in FD workflow | Complete | High |
 | [FD-015](archive/FD-015/FD-015_REFRESH_STALE_WORKER_HANDOFFS_FOR_ACTIVE_FDS.md) | Refresh stale Worker handoffs for active FDs | Complete | High |
 | [FD-016](archive/FD-016/FD-016_ARCHIVE_EACH_FD_IN_ITS_OWN_DIRECTORY.md) | Archive each FD in its own directory | Complete | Medium |
+| [FD-017](archive/FD-017/FD-017_GO_SHARED_AI_GATEWAY.md) | Go Shared AI Gateway | Complete | Medium |
+| [FD-018](archive/FD-018/FD-018_AGENT_GATEWAY_PLUGIN_ENTRY.md) | Agent Gateway plugin entry | Complete | Medium |
+| [FD-019](archive/FD-019/FD-019_AI_CLIENT_HELP_AND_DEFAULT_MODEL.md) | AI client help and default model | Complete | Medium |
+| [FD-020](archive/FD-020/FD-020_AGENT_GATEWAY_REQUEST_OBSERVABILITY.md) | Agent Gateway request observability | Complete | Medium |
+| [FD-021](archive/FD-021/FD-021_AIW_AGENT_OPENAI_SDK.md) | AIW Agent OpenAI SDK integration | Complete | Medium |
+| [FD-023](archive/FD-023/FD-023_AGENT_GATEWAY_AND_CLIENT_CONFIGURABLE_TIMEOUT.md) | Agent Gateway and client configurable timeout | Complete | Medium |
+| [FD-024](archive/FD-024/FD-024_REFRESH_STALE_TESTER_HANDOFF.md) | Refresh stale Tester handoff | Complete | Medium |
+| [FD-025](archive/FD-025/FD-025_GATEWAY_GRACEFUL_SHUTDOWN_AND_STOP_SCRIPT.md) | Gateway graceful shutdown and stop script | Complete | Medium |
+| [FD-026](archive/FD-026/FD-026_GATEWAY_SHORT_COMMAND.md) | Gateway short command | Complete | Low |
 
 ## Deferred / Closed
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-022](archive/FD-022/FD-022_AGENT_GATEWAY_OPENAI_AGENTS_SDK.md) | Agent Gateway OpenAI Agents SDK compatibility | Deferred | Medium |

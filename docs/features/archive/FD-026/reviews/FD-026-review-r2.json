@@ -1,0 +1,81 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-026",
+  "source_event": "FD-026-000011-test-accepted",
+  "human_report": "FD-026-review-r2.md",
+  "data": {
+    "reviewer_session": "fd026-reviewer-r2-20261004-5d72",
+    "worker_session": "fd026-worker-r2-20261004-9f4e",
+    "tester_session": "fd026-tester-r2-20261004-a71c",
+    "fd_revision": 11,
+    "fd_digest": "585af32ebe27f2378f16ec9baa19329046c9957377a0d8da10a1ddedff35033e",
+    "reviewed_diff_base": "c9b6d51cd2308e1ffbaf51755d697f6acda3ad83",
+    "result": "verification-passed",
+    "findings": [],
+    "resolved_prior_findings": [
+      {
+        "id": "FD026-R1-001",
+        "path": "tests/fd021_gateway_acceptance.mjs",
+        "result": "fixed; installation directory now uses plugins/aiw-gw"
+      },
+      {
+        "id": "FD026-R1-002",
+        "path": "tests/fd021_gateway_live.mjs",
+        "result": "fixed; gateway configuration path now uses plugins/aiw-gw"
+      }
+    ],
+    "test_review": {
+      "tester_report": "docs/features/reports/FD-026-test-report-r2.md",
+      "pm_decision": "docs/features/reports/FD-026-test-decision-r2.md",
+      "applicable_scenarios": 13,
+      "covered_scenarios": 0,
+      "unrun_scenarios": 13,
+      "requirements_coverage": "0%",
+      "branch_coverage": "not measured",
+      "pm_exception": "PM accepted the report as an accurate record and allowed static review under the zero-test budget; unrun scenarios are not passed evidence."
+    },
+    "acceptance_results": [
+      {
+        "condition": "aiw gw start|stop dispatches through plugin discovery to the entrypoint in the short-name directory",
+        "static_evidence": "cmd/aiw uses the plugin fallback; internal/plugin searches for aiw-<name>; plugins/aiw-gw/aiw-gw.py forwards start/stop and defaults config beside itself.",
+        "runtime_status": "not-run"
+      },
+      {
+        "condition": "New installation places the plugin entrypoint and Windows/Linux gateway binaries in plugins/aiw-gw/",
+        "static_evidence": "build.bat build outputs, install copy targets, and plugin tree copy target use aiw-gw.",
+        "runtime_status": "not-run"
+      },
+      {
+        "condition": "aiw agent-gateway has no entrypoint or current command usage",
+        "static_evidence": "Old plugin entrypoint is deleted; current command documentation and start/stop scripts use aiw gw. Historical FD/report references are retained.",
+        "runtime_status": "not-run"
+      },
+      {
+        "condition": "gateway.json schema, HTTP contract, existing absolute state paths, and no automatic legacy config migration are preserved",
+        "static_evidence": "The reviewed rename paths do not change gateway implementation contracts; README retains the existing absolute state path example and installer preserves gateway.json.",
+        "runtime_status": "not-run"
+      }
+    ],
+    "commands": [
+      "Get-Content -Raw 'C:\\Users\\suk\\.agents\\skills\\fd-review\\SKILL.md'",
+      "Get-Content -Raw 'skills/work-management.md'",
+      "aiw fd --help",
+      "aiw fd show FD-026",
+      "aiw fd claim FD-026 FD-026-000011-test-accepted --session fd026-reviewer-r2-20261004-5d72",
+      "git status --short",
+      "git rev-parse HEAD",
+      "git diff -- build.bat plugins/aiw-agent-gateway plugins/aiw-gw plugins/aiw-ai/README.md plugins/aiw-ai/aiw-ai.mjs program/agent-gateway/README.md scripts/start-gateway.bat scripts/stop-gateway.bat tests/fd025_shutdown_blackbox.py tests/fd021_gateway_acceptance.mjs tests/fd021_gateway_live.mjs",
+      "rg -n --glob '!docs/features/archive/**' --glob '!docs/features/reviews/**' 'aiw agent-gateway|aiw-agent-gateway|plugins/aiw-agent-gateway' docs plugins program scripts build.bat",
+      "rg -n -C 3 'build_plugins|build_gateway|install_gateway|plugin' build.bat",
+      "rg -n -C 2 'DiscoverPlugin|aiw-' internal/plugin/discover.go cmd/aiw/main.go",
+      "rg -n 'plugins/aiw-gw|aiw gw|agent-gateway' scripts/start-gateway.bat scripts/stop-gateway.bat plugins/aiw-ai/README.md plugins/aiw-ai/aiw-ai.mjs program/agent-gateway/README.md",
+      "rg -n -C 2 'aiw-gw|aiw-agent-gateway|gateway.json' tests/fd021_gateway_live.mjs"
+    ],
+    "skipped_checks": [
+      "Behavior tests and coverage: not run; all 13 scenarios remain uncovered.",
+      "Gateway process/runtime, compile-only, final build, install, deployment, and network checks: not run."
+    ],
+    "residual_risk": "Command discovery and execution, cross-platform installation, configuration loading, HTTP compatibility, state path behavior, and legacy command unavailability lack runtime evidence. The shared worktree contains unrelated dirty changes and no FD-specific commit for commit-level comparison."
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-023",
+  "source_event": "FD-023-000003-design-ready",
+  "human_report": "FD-023-implementation-r1.md",
+  "data": {
+    "summary": "Gateway 默认 600 秒，客户端默认 660 秒并提供 1–3660 秒参数；原生 HTTP(S) 请求使用同一信号限制完整响应读取。",
+    "changed_paths": [
+      "program/agent-gateway/config.go",
+      "program/agent-gateway/gateway-example.json",
+      "program/agent-gateway/README.md",
+      "plugins/aiw-ai/aiw-ai.mjs",
+      "plugins/aiw-ai/README.md",
+      "openspec/specs/agent-proxy/spec.md",
+      "openspec/specs/agent-proxy-client/spec.md",
+      "docs/features/FD-023_AGENT_GATEWAY_AND_CLIENT_CONFIGURABLE_TIMEOUT.md",
+      "docs/features/reports/FD-023-implementation-r1.md",
+      "docs/features/reports/FD-023-implementation-r1.json"
+    ],
+    "commands": [
+      "node --check plugins/aiw-ai/aiw-ai.mjs",
+      "python program/agent-gateway/scripts/compile.py"
+    ],
+    "results": [
+      "两项 compile-only 检查通过",
+      "已静态检查参数解析、请求及响应信号、Gateway 配置与相关文档",
+      "测试、最终构建、部署和网络请求未运行"
+    ],
+    "residual_risk": "长请求、断连和取消后的服务端清理尚未运行验证；安装目录显式配置与二进制尚未更新，较长期限可能增加并发占用。"
+  }
+}

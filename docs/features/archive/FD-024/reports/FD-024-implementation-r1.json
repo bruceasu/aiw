@@ -1,0 +1,46 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-024",
+  "source_event": "FD-024-000003-design-ready",
+  "human_report": "FD-024-implementation-r1.md",
+  "data": {
+    "summary": "实现 refresh-tester，恢复过期的独立 Tester 交接并保留 Worker 实施来源。",
+    "changed_paths": [
+      "plugins/aiw-fd.py",
+      "internal/commands/completion/completion.go",
+      "internal/commands/help/super-help.go",
+      "openspec/specs/fd-workflow/spec.md",
+      "skills/work-management.md",
+      ".agents/skills/fd-workflow/SKILL.md",
+      ".agents/skills/fd-workflow/references/portable-operations.md",
+      "docs/features/FD-024_REFRESH_STALE_TESTER_HANDOFF.md",
+      "docs/features/FEATURE_INDEX.md"
+    ],
+    "commands": [
+      "Get-Content / rg / git status --short",
+      "aiw fd new \"Refresh stale Tester handoff\"",
+      "aiw fd claim FD-024 FD-024-000002-design-requested --session fd024-host-20261004-c39a71",
+      "aiw fd emit FD-024 design-ready --producer planner --artifact docs/features/FD-024_REFRESH_STALE_TESTER_HANDOFF.md --source-event FD-024-000002-design-requested",
+      "aiw fd claim FD-024 FD-024-000003-design-ready --session fd024-host-20261004-c39a71",
+      "Python in-memory compile",
+      "python scripts/compile.py",
+      "git diff / Get-Content (one static post-edit check)"
+    ],
+    "results": [
+      {
+        "kind": "compile-only",
+        "exit_code": 0
+      },
+      {
+        "kind": "runtime-tests",
+        "result": "not-run"
+      },
+      {
+        "kind": "static",
+        "result": "reviewed; index rollback refined after inspection"
+      }
+    ],
+    "residual_risk": "实施时未运行测试；故障回滚和完整独立测试闭环需后续验证。FD-020 的过期交接尚待使用新命令恢复。"
+  }
+}

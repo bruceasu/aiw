@@ -1,0 +1,16 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-017",
+  "source_event": "FD-017-000018-changes-requested",
+  "human_report": "FD-017-implementation-r18.md",
+  "data": {
+    "summary": "修复 R1 跨零点额度超售和 R2 根退出后 pipe 读取不能取消。",
+    "worker_session": "fd017-worker-20261003-9059c335",
+    "changed_paths": ["plugins/aiw-agent-proxy/storage.go", "plugins/aiw-agent-proxy/runner.go", "plugins/aiw-agent-proxy/README.md", "openspec/specs/agent-proxy/spec.md", "docs/features/FD-017_GO_SHARED_AI_GATEWAY.md"],
+    "findings_addressed": ["R1", "R2"],
+    "commands": [{"command": "python plugins/aiw-agent-proxy/scripts/compile.py", "runs": 1, "exit_code": 0, "scope": "Windows/Linux amd64 离线 compile-only，无最终产物"}, {"command": "scoped git diff and storage/runner source excerpts", "kind": "static_read_only"}],
+    "results": {"compile_only": "passed", "runtime_tests": "not_run", "independent_review": "pending", "scoped_items_authored": 45, "cancelled_items": 8},
+    "residual_risk": "共容器跨读、Linux 脱组、Windows 原生 API 运行未验证、文件系统耐久性与预留离线核实；运行竞争/超时行为未测试。"
+  }
+}

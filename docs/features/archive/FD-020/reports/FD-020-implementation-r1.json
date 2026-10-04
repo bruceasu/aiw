@@ -1,0 +1,38 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-020",
+  "source_event": "FD-020-000004-design-ready",
+  "human_report": "FD-020-implementation-r1.md",
+  "data": {
+    "summary": "明文 Key 直接匹配；覆盖全部 HTTP Handler 请求的脱敏日志、独立持久化及主体隔离统计。",
+    "session": "fd020-worker-20261003-bf319e",
+    "changed_paths": [
+      "program/agent-gateway/config.go",
+      "program/agent-gateway/runner.go",
+      "program/agent-gateway/storage.go",
+      "program/agent-gateway/server.go",
+      "program/agent-gateway/observation.go",
+      "program/agent-gateway/README.md",
+      "plugins/aiw-agent-gateway/README.md",
+      "openspec/specs/agent-proxy/spec.md",
+      "docs/features/FD-020_AGENT_GATEWAY_REQUEST_OBSERVABILITY.md"
+    ],
+    "commands": [
+      {"command": "Get-Content / rg", "purpose": "定向读取及一次实现后静态检查", "runtime_validation": false},
+      {"command": "git status --short", "purpose": "确认既有工作区变更", "runtime_validation": false},
+      {"command": "aiw fd show FD-020", "purpose": "确认 Planner 事件"},
+      {"command": "aiw fd emit FD-020 design-ready --producer planner --artifact docs/features/FD-020_AGENT_GATEWAY_REQUEST_OBSERVABILITY.md --source-event FD-020-000002-design-requested", "purpose": "Planner 交接"},
+      {"command": "aiw fd claim FD-020 FD-020-000004-design-ready --session fd020-worker-20261003-bf319e", "purpose": "Worker 认领"},
+      {"command": "python program/agent-gateway/scripts/compile.py", "exit_code": 0, "targets": ["windows/amd64", "linux/amd64"], "network": false, "retained_distributable": false}
+    ],
+    "results": [
+      {"kind": "static", "result": "认证兼容、HTTP 提前返回、SSE flush/deadline、存储升级恢复、主体隔离和分组口径已检查"},
+      {"kind": "compile-only", "result": "passed", "exit_code": 0},
+      {"kind": "runtime-tests", "result": "not-run"},
+      {"kind": "independent-review", "result": "pending"},
+      {"kind": "deployment", "result": "not-run"}
+    ],
+    "residual_risk": "运行行为未验证，现有二进制和真实配置未替换；明文配置需私有权限；请求文件长期增长，未评估高流量；存储失败可能只保留未完成记录，重启标中断；无历史 HTTP 数据回填。"
+  }
+}

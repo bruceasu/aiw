@@ -1,0 +1,15 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-021",
+  "source_event": null,
+  "human_report": "FD-021-implementation-r2.md",
+  "data": {
+    "summary": "修复完整响应截止时间、稀疏用量字段兼容性及 SDK 调试日志正文泄露；独立测试 24/24 通过，独立复评未发现新的实质缺陷。",
+    "changed_paths": ["program/aiw-agent/src/providers.ts", "docs/features/FD-021_AIW_AGENT_OPENAI_SDK.md"],
+    "commands": [{"command": ".\\node_modules\\.bin\\tsc.cmd --noEmit -p tsconfig.json", "cwd": "program/aiw-agent", "exit_code": 0}],
+    "results": ["compile-only passed; no distributable artifacts", "Independent Tester: 24/24 passed, FD-021-test-report-r2.md", "Independent Reviewer: R1 findings resolved; no new material findings, ../reviews/FD-021-review-r2.md"],
+    "formal_handoff": false,
+    "residual_risk": "真实 Gateway 与 API 未运行，分支覆盖率未测量；正式生命周期回执缺失；聚焦测试及独立复评以 R2 报告为准。"
+  }
+}

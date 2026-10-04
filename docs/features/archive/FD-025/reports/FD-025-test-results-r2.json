@@ -1,0 +1,68 @@
+{
+  "fd_id": "FD-025",
+  "source_event": "FD-025-000004-implementation-ready",
+  "tester_session": "fd025-tester-20261004-a173fa",
+  "fd_revision": 4,
+  "fd_digest": "48434b4de48b862943635a4e936d0d6d8bb802e8eb4f4308d4632237feb77fb6",
+  "test_source_digest": "075986116c3a6f55ddfd46b0fa06826928947d9b4235997e15f3a4e7141345fa",
+  "installed_binary_digest": "94990c8de93f72f35c4858ea7cc6f8cfd93b15b1ab75324f9455ff78b3e33cdc",
+  "authorization_record": "docs/features/reports/FD-025-test-authorization-r2.json",
+  "transport": "isolated loopback shutdown only; no model requests",
+  "protected_port_43127_used": false,
+  "results": [
+    {
+      "name": "从任意工作目录启动脚本且临时loopback监听就绪",
+      "status": "passed",
+      "safe_detail": {
+        "process_exit_code": null,
+        "stderr_class": "stderr-present-unclassified"
+      }
+    },
+    {
+      "name": "未认证POST拒绝且服务继续运行",
+      "status": "passed",
+      "safe_detail": {
+        "http_status": 401
+      }
+    },
+    {
+      "name": "无效合成Key拒绝且服务继续运行",
+      "status": "passed",
+      "safe_detail": {
+        "http_status": 401
+      }
+    },
+    {
+      "name": "有效认证GET拒绝且服务继续运行",
+      "status": "passed",
+      "safe_detail": {
+        "http_status": 405
+      }
+    },
+    {
+      "name": "有效认证query拒绝且服务继续运行",
+      "status": "passed",
+      "safe_detail": {
+        "http_status": 400
+      }
+    },
+    {
+      "name": "有效认证非空body拒绝且服务继续运行",
+      "status": "passed",
+      "safe_detail": {
+        "http_status": 400
+      }
+    },
+    {
+      "name": "stop脚本正常返回成功",
+      "status": "failed",
+      "safe_detail": {
+        "exit_code": 1
+      }
+    }
+  ],
+  "passed": 6,
+  "failed": 1,
+  "temporary_workspace_removed": true,
+  "temporary_workspace_preserved": null
+}

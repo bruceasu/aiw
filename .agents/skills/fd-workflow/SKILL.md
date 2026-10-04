@@ -32,6 +32,30 @@ Verification plan. Use `%% NEEDS_INPUT: ...` for material unknowns. Do not
 turn a routine technical choice with clear evidence into a human question.
 Keep Work Item IDs stable after implementation starts.
 
+### Work Item size and splitting
+
+Before marking a design ready, assess every Work Item's size and difficulty.
+Each item must be small, with low or medium difficulty, and deliver one result
+that can be reviewed on its own. Aim for half a day or less per item; this is
+a planning estimate, not a time guarantee.
+
+Record the size, difficulty, dependencies, and completion criteria for each
+item. Split items that combine several outcomes, mechanisms, or independent
+decisions. Separate unresolved design work from implementation, and keep
+shared logic in one owner item rather than duplicating it across the split.
+
+Splitting does not remove technical uncertainty or security risk. If an item
+depends on an unknown external contract, platform strategy, or security
+design, record a `%% NEEDS_INPUT` Gate and resolve it before treating the
+implementation as low or medium difficulty. Split again if the resolved work
+still exceeds the size or difficulty target.
+
+Preserve scope and acceptance coverage when splitting. Record how the old
+items map to the new ones, update dependencies, TODO, and Verification, and
+keep IDs stable after implementation starts. After implementation starts, add
+new child IDs and explicitly cancel superseded unfinished items with a reason;
+do not reuse IDs or erase completed work. Do not aim for a fixed item count.
+
 If the human later changes an acceptance or verification decision, reconcile
 the FD before requesting another review: record the decision and its scope,
 update the affected Work Items and Verification plan, and remove superseded
@@ -75,6 +99,17 @@ no longer matches the FD revision or digest, PM uses `aiw fd refresh-worker
 `work-requested` Worker handoff bound to the current FD. Claim the new event
 and cite it on `implementation-ready`. Never use this operation to replace
 a claimed or in-flight handoff, or edit the old receipt by hand.
+
+For an independent `Pending Test` FD with a stale unclaimed pending Tester
+handoff, PM uses `aiw fd refresh-tester <id> --reason "..." --artifact
+<current-implementation-report>`. This validates the report, preserves Worker
+identity and original implementation provenance, cancels the old event, and
+creates a digest-bound PM `test-requested` handoff. It does not fabricate
+Worker completion or grant test execution permission. Tester must claim the
+new event, use it as `source_event` and the report/authorization's
+`Implementation event`, and obtain new revision-bound authorization before
+execution. Never replace a current, claimed, launching, or dispatched event.
+Read the current report and revised acceptance before requesting tests.
 
 To continue an archived `Closed` or `Deferred` FD, use `aiw fd reopen <id>
 --reason "..."`. It preserves the earlier disposition and evidence, returns

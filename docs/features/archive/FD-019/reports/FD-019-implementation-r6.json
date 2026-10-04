@@ -1,0 +1,15 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-019",
+  "source_event": "FD-019-000006-changes-requested",
+  "human_report": "FD-019-implementation-r6.md",
+  "data": {
+    "summary": "修复 R1：当前配置指引统一使用 keys 相同字符串，明确 key_hashes 已废除，哈希 BAT 不再作为配置步骤。",
+    "session_ref": "codex-worker-FD019-20261004-r6-a71c",
+    "changed_paths": ["plugins/aiw-ai/aiw-ai.mjs", "plugins/aiw-ai/README.md", "openspec/specs/agent-proxy-client/spec.md", "docs/features/FD-019_AI_CLIENT_HELP_AND_DEFAULT_MODEL.md"],
+    "commands": ["aiw fd claim FD-019 FD-019-000006-changes-requested --session codex-worker-FD019-20261004-r6-a71c", "node --check plugins/aiw-ai/aiw-ai.mjs"],
+    "results": ["Worker 交接领取成功", "Node 语法编译退出码 0，无产物；后续帮助文字调整未重跑", "等待独立复审"],
+    "residual_risk": "测试和真实请求未运行；本机安装副本未同步；跨平台编辑器及信号行为仍待外部验证。"
+  }
+}

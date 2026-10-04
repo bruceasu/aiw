@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-020",
+  "source_event": "FD-020-000009-test-report-ready",
+  "human_report": "FD-020-test-decision-r1.md",
+  "data": {
+    "disposition": "accepted",
+    "tester_report": "docs/features/reports/FD-020-test-report-r1.md",
+    "fd_revision": 9,
+    "fd_digest": "461fc40825354dbd2f672a275e787552aa4f34376e0fb605f86e69920e08580c",
+    "requirements_coverage": "74.07%",
+    "branch_coverage": "not measured",
+    "rationale": "修正后29项全通过，需求40/54；已检查源码、两轮精确授权及原始证据，首轮失败是未指定的HTTP状态码测试假设，历史保留。接受报告进入独立静态审查。",
+    "exceptions": "明确接受分支覆盖未测量例外；14个未覆盖场景不计通过，Reviewer静态检查当前功能要求，发现缺陷仍须退回。",
+    "residual_risk": "成功AI/token、SSE、取消/交付、跨日、升级/写入故障及部分配置/存储分支未运行；真实后端、发布部署和性能未验证。",
+    "pm_identity": "fd020-pm-20261004-root",
+    "decision_time": "2026-10-04T02:22:12+00:00"
+  }
+}

@@ -2,61 +2,36 @@
 
 ## Purpose
 
-Provide a small one-shot `ai` command for the existing Agent Proxy
-without changing the separate `aiw ask` guidance command.
+提供单次 ai 命令调用 Go 网关 Responses 支持子集，不改变独立 aiw ask。
 
 ## Requirements
 
-### Requirement: Explicit input selection
+### Requirement: Explicit bounded input
 
-The client MUST accept one positional question, `-` for complete stdin input,
-or one interactive terminal line when no positional input is supplied. It
-MUST NOT call Agent Proxy for blank/EOF input. Without a terminal and without
-`-`, it MUST fail promptly and explain how to read stdin.
+客户端 MUST 将多个非选项位置参数以空格组成 Prompt，保留单个参数内容。单独的 `-` 读取完整 stdin，不与其它提示词参数混用；`--` 后参数不解析为选项。无参数时读取一行交互输入。空白/EOF MUST 不请求；非终端且未用 `-` MUST 立即报错。system @ 文件 MUST 在本地以 UTF-8 有界读取，缺失/空/无效/过大在请求前失败且不泄露内容。
 
-#### Scenario: Empty interactive question
+交互输入时 Ctrl+E MUST 使用 EDITOR 编辑当前输入，支持多行。EDITOR 为程序及参数，支持带引号的路径，不解释 shell 表达式；Windows 使用真实 exe。编辑器继承终端，保存并正常退出后提交；空内容、启动失败、非零/信号退出、无效 UTF-8、超限和清理失败 MUST 不请求。临时文件 MUST 在请求前清理，Unix 初始文件权限 0600；Windows 使用当前用户临时目录的 ACL。GUI 编辑器等待行为由运营者配置。
 
-- **WHEN** the user presses Enter or sends EOF before entering text
-- **THEN** the command exits without sending a request
+### Requirement: Gateway identity and Responses mapping
 
-### Requirement: Separate system instruction
+AIW_AI_API_KEY MUST 必填且至少 43 字符、无空白。AIW_AI_MODEL 为可选逻辑模型，未设置或为空时 MUST 默认 gpt-6-luna；非空设置覆盖默认值。所选模型仍须由网关配置并为当前主体授权。旧 AIW_AI_PROVIDER MUST 明确报已移除，不读取上游凭证。--url MUST 接受 HTTP(S) origin 并追加 /v1/responses，拒绝 URL 凭证、路径、query/fragment；默认 loopback 与 AIW_AGENT_PROXY_PORT 保留。
 
-`--system <content>` MUST send a separate system instruction. If the value
-begins with `@`, the client MUST read the remainder as a local UTF-8 file path
-before requesting; relative paths resolve from the current directory.
-Missing, unreadable, invalid UTF-8, empty, or oversized files MUST fail before
-any request and MUST NOT expose their contents in errors. The client MUST NOT
-silently prepend system instructions to the ordinary question.
+-h 与 --help MUST 显示用法、选项、输入方式、最少配置、默认模型和地址，以及 Windows/Linux 设置示例；帮助 MUST 无需凭据且不发请求。Key 缺失或格式错误 MUST 提示最低要求和帮助入口，不泄露 Key。
 
-#### Scenario: System prompt file
+最少配置指引 MUST 使用服务端 `principals[].keys` 与客户端 `AIW_AI_API_KEY` 相同的网关 Key 字符串。`key_hashes` 已废除，网关不计算摘要并拒绝该字段；文档 MUST 不将哈希工具列为当前认证配置步骤。旧摘要若被用作不透明 Key，两端 MUST 使用该摘要字符串，不能发送摘要计算前的原始 Key。
 
-- **WHEN** `--system @instructions.txt` is provided
-- **THEN** the file contents become `system_prompt` in the one Agent Proxy
-  request, or a local error occurs before any request
+客户端 MUST 发送一次 Bearer 认证的 POST Responses，input 为文本，--system 为独立 instructions，--json 为 text.format.json_object；不直接访问 Provider、不自动重试、不持久保存问题。EDITOR 输入可短暂写入本机临时文件，正常或可捕获失败路径须清理；强制终止及编辑器备份由本机使用者管理。
 
-### Requirement: One bounded request and honest output
+### Requirement: Honest output
 
-The client MUST call only the configured Agent Proxy HTTP endpoint and
-MUST NOT call Providers directly, retry a paid request automatically, or
-persist the question. `--json` MUST request JSON output and keep stdout a
-single JSON value. `--verbose` MUST show only a published reasoning summary
-and reported usage/cost; missing summary or cost MUST be labelled unavailable
-or unknown, not invented. Diagnostics MUST remain separate from stdout JSON.
+客户端 MUST 从标准 completed Response 的 assistant output_text 读取文本；--json MUST 校验为单个 JSON object，stdout 与诊断分离。--verbose MUST 仅 stderr 显示响应 ID/模型/可得 token，缺失费用为 unknown、推理摘要 unavailable，不能编造金额或展示隐藏推理。客户端请求总期限默认 660 秒，包含完整响应读取，响应有界；`--timeout-seconds` MUST 只接受 1–3660 的十进制整数秒，缺值、重复和非法值 MUST 在请求前以退出码 2 报错。此参数 MUST 不进入 Prompt 或 Responses JSON，不改变服务端执行上限。超时取消后不能恢复该次执行。
 
-`--url` MUST accept an HTTP(S) service origin and append `/v1/requests`.
-It MUST reject credentials, a path other than `/`, query, fragment, or an
-unsupported scheme before sending a request. When omitted, the client MUST
-use the existing loopback address and `AIW_AGENT_PROXY_PORT` behavior.
+#### Scenario: Key rotation
 
-#### Scenario: URL override
+- WHEN 服务端为同一主体配置新 Key 并重启、调用者更换 AIW_AI_API_KEY
+- THEN 新请求仍关联同一主体，客户端不需要 Provider 登录材料
 
-- **WHEN** `--url http://192.0.2.10:43127` is supplied
-- **THEN** the client sends one request to `http://192.0.2.10:43127/v1/requests`
-  regardless of `AIW_AGENT_PROXY_PORT`
+#### Scenario: JSON output
 
-#### Scenario: Proxy omits cost and reasoning summary
-
-- **WHEN** a successful response has token counts but `cost: null` and no
-  published reasoning summary
-- **THEN** verbose output reports the counts, unknown cost, and unavailable
-  summary without calculating a charge or displaying hidden reasoning
+- WHEN --json 的结果不是 JSON object
+- THEN 客户端报错，不输出伪成功的 JSON

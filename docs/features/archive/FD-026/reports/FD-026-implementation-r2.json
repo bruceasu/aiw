@@ -1,0 +1,26 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-026",
+  "source_event": "FD-026-000008-changes-requested",
+  "human_report": "FD-026-implementation-r2.md",
+  "data": {
+    "summary": "修正两个 FD-021 当前夹具引用的插件目录，使其指向 plugins/aiw-gw。",
+    "worker_session": "fd026-worker-r2-20261004-9f4e",
+    "fd_revision": 8,
+    "changed_paths": [
+      "tests/fd021_gateway_acceptance.mjs",
+      "tests/fd021_gateway_live.mjs",
+      "docs/features/FD-026_GATEWAY_SHORT_COMMAND.md"
+    ],
+    "commands": [
+      "aiw fd claim FD-026 FD-026-000008-changes-requested --session fd026-worker-r2-20261004-9f4e"
+    ],
+    "results": [
+      "两个夹具路径已更新为 plugins/aiw-gw。",
+      "未运行测试、Node 检查、构建、安装或部署。",
+      "没有 Go 源码变化；先前 compile-only 命令的退出码未确认，未重跑。"
+    ],
+    "residual_risk": "夹具路径改动未运行验证；所有网关命令和安装行为仍无运行时证据。"
+  }
+}

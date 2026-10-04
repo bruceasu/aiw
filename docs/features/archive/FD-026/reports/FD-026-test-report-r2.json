@@ -1,0 +1,63 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-026",
+  "source_event": "FD-026-000009-implementation-ready",
+  "human_report": "FD-026-test-report-r2.md",
+  "data": {
+    "implementation_event": "FD-026-000009-implementation-ready",
+    "tested_fd_revision": 9,
+    "tested_fd_digest": "9b408f9c3c9cefc4ecf530b17a8a59ce7346ccbfaafb734bf1c81f995e74b85a",
+    "tester_session": "fd026-tester-r2-20261004-a71c",
+    "applicable_scenarios": 13,
+    "covered_scenarios": 0,
+    "executed_behavior_tests": 0,
+    "passed_behavior_tests": 0,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 13,
+    "requirements_coverage": "0%",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": "No runtime or coverage command was authorized or run.",
+    "coverage_unavailable_reason": "Runtime execution was expressly disallowed for this Tester stage; no exact revision-bound test authorization exists.",
+    "test_files": [
+      "tests/fd021_gateway_acceptance.mjs",
+      "tests/fd021_gateway_live.mjs"
+    ],
+    "authorization_records": [],
+    "commands": [
+      "Get-Content AGENTS.md",
+      "Get-Content .agents/skills/work-management.md",
+      "Get-Content docs/features/FD-026_GATEWAY_SHORT_COMMAND.md",
+      "aiw fd show FD-026",
+      "aiw fd resume FD-026",
+      "Get-Content docs/features/TEST_REPORT_TEMPLATE.md",
+      "Get-Content docs/features/TEST_REPORT_DATA_TEMPLATE.json",
+      "Get-Content docs/features/reports/FD-026-implementation-r2.md",
+      "Get-Content docs/features/reports/FD-026-implementation-r2.json",
+      "aiw fd claim FD-026 FD-026-000009-implementation-ready --session fd026-tester-r2-20261004-a71c",
+      "aiw fd resume FD-026"
+    ],
+    "recommendation": "blocked",
+    "not_applicable_reason": "All 13 acceptance scenarios apply; none are not applicable.",
+    "residual_risk": "No runtime evidence exists for command discovery, start/stop behavior, installation contents on either OS, removed legacy entrypoint/docs, configuration or HTTP compatibility, state paths, migration behavior, or the two corrected fixture references.",
+    "scenarios": [
+      {"id":"gw-start-discovery","behavior":"aiw gw start dispatches through plugin discovery to the gateway entrypoint in the short-name directory","status":"uncovered","test_cases":[],"evidence":"Not run; no runtime authorization."},
+      {"id":"gw-stop-discovery","behavior":"aiw gw stop dispatches through plugin discovery to the gateway entrypoint in the short-name directory","status":"uncovered","test_cases":[],"evidence":"Not run; no runtime authorization."},
+      {"id":"install-entrypoint-location","behavior":"New installation places the plugin entrypoint in plugins/aiw-gw/","status":"uncovered","test_cases":[],"evidence":"Not run; no install or filesystem behavior validation."},
+      {"id":"install-windows-binary-location","behavior":"New Windows installation places the gateway binary in plugins/aiw-gw/","status":"uncovered","test_cases":[],"evidence":"Not run; no install or filesystem behavior validation."},
+      {"id":"install-linux-binary-location","behavior":"New Linux installation places the gateway binary in plugins/aiw-gw/","status":"uncovered","test_cases":[],"evidence":"Not run; no install or filesystem behavior validation."},
+      {"id":"legacy-command-removed","behavior":"The legacy aiw agent-gateway command no longer has an entrypoint","status":"uncovered","test_cases":[],"evidence":"Not run; no command invocation."},
+      {"id":"legacy-doc-usage-removed","behavior":"Current user documentation no longer gives the legacy command usage","status":"uncovered","test_cases":[],"evidence":"Not run; no documentation acceptance check."},
+      {"id":"gateway-json-schema-stable","behavior":"gateway.json schema remains unchanged","status":"uncovered","test_cases":[],"evidence":"Not run; no runtime/configuration compatibility check."},
+      {"id":"http-contract-stable","behavior":"Gateway HTTP contract remains unchanged","status":"uncovered","test_cases":[],"evidence":"Not run; no gateway process or HTTP check."},
+      {"id":"absolute-state-path-stable","behavior":"Existing absolute state paths remain unchanged","status":"uncovered","test_cases":[],"evidence":"Not run; no runtime state-path check."},
+      {"id":"no-old-config-migration","behavior":"Old installation configuration is not automatically migrated","status":"uncovered","test_cases":[],"evidence":"Not run; no migration behavior check."},
+      {"id":"acceptance-fixture-location","behavior":"Contract reference tests/fd021_gateway_acceptance.mjs uses the short-name plugin installation directory","status":"uncovered","test_cases":[],"evidence":"Worker r2 report lists this corrected fixture location; fixture contents were not inspected or executed."},
+      {"id":"live-fixture-config-location","behavior":"Contract reference tests/fd021_gateway_live.mjs uses the short-name plugin configuration path","status":"uncovered","test_cases":[],"evidence":"Worker r2 report lists this corrected fixture location; fixture contents were not inspected or executed."}
+    ],
+    "static_exclusions": [
+      "Implementation source and test fixture source were not read, per Tester assignment.",
+      "No tests, app/runtime commands, compile, build, install, network, or deployment commands were run."
+    ]
+  }
+}

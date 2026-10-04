@@ -339,6 +339,51 @@ leave no claimable orphan and restore the prior FD and receipt state.
 - **WHEN** the latest Worker event is current, claimed, or in flight
 - **THEN** refreshing is rejected without changing the FD or receipts
 
+### Requirement: Refresh a stale Tester handoff
+
+PM MAY run `aiw fd refresh-tester <fd-id> --reason <text> --artifact <report>`
+for an active independent `Pending Test` FD whose latest unclaimed pending
+Tester receipt has a different revision or normalized content digest. The
+one-line reason MUST be retained and limited to 500 characters. The report
+MUST exist inside the repository; Dual evidence MUST validate its worker-report
+sidecar and FD identity. If the report declares `data.fd_revision`, it MUST
+match the FD before the refresh. A known Worker session MUST be retained.
+
+The operation MUST increment the FD revision, preserve status and Work Items,
+cancel the old receipt with `superseded_by`, and create a PM-produced
+`test-requested` receipt with the current digest, supplied report, `supersedes`,
+Worker session and original `implementation_event` provenance. Repeated
+refreshes MUST retain that original implementation reference. This operation
+MUST NOT represent a Worker result, Tester result, or test authorization.
+Current, claimed, launching, dispatched, wrong-role and archived handoffs MUST
+be rejected before writes. Failed writes MUST restore the prior FD, receipt
+and index and leave no claimable orphan; incomplete rollback MUST be reported.
+
+Tester MUST claim the new event and cite it as `source_event` and evidence's
+`Implementation event`; `test-report-ready` MUST accept this PM recovery
+handoff while retaining all existing revision, identity, coverage and PM
+decision checks. Any execution requires fresh authorization for this event
+and revision. Earlier test approvals or PM decisions MUST NOT be reused.
+
+#### Scenario: Recover after acceptance revision
+
+- **WHEN** an independent Pending Test FD has changed after its unclaimed
+  Tester handoff and PM supplies the current implementation report
+- **THEN** the old receipt is cancelled, the new receipt binds the current
+  revision/report, and independent Tester can claim it and report normally
+
+#### Scenario: Reject unsafe replacement
+
+- **WHEN** the handoff is current or owned/in flight, the FD is not independent
+  Pending Test, or the report/Worker identity is missing or invalid
+- **THEN** refresh is rejected without changing the FD or receipts
+
+#### Scenario: Refresh write failure
+
+- **WHEN** a mutation fails after a preparing receipt was written
+- **THEN** rollback restores the prior FD, receipt and index and removes the
+  new receipt; any incomplete rollback is explicitly reported
+
 ### Requirement: Recover an active FD review handoff
 
 An operator MAY request review of an active Pending Verification FD when its

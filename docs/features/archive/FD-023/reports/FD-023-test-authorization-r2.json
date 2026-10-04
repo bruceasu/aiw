@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-023",
+  "source_event": "FD-023-000005-implementation-ready",
+  "human_report": "FD-023-test-authorization-r2.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-023-000005-implementation-ready",
+    "fd_revision": 5,
+    "fd_digest": "ab5b7b1897ec96ec1441100adcde6afa5e06c87bb2f0d696faad8d86008fc642",
+    "tester_session": "fd023-tester-20261004-a9e4bd",
+    "command": "node tests/fd023_client_blackbox.mjs",
+    "working_directory": "D:\\03_projects\\AI-tools\\aiw",
+    "scope": "修正 mock Responses object 字段后的同一组 10 个本地客户端黑盒场景",
+    "expected_duration": "3–6 秒",
+    "side_effects": "仅独占新建 docs/features/reports/FD-023-test-results-r1-retry.json；短暂监听 127.0.0.1 临时端口并启动 Node 子进程",
+    "risk_review": "已复查当前测试代码和首轮证据；相关 fixture 修正允许一次重试，仍离线且只写指定证据文件",
+    "human_approval": "not required",
+    "planner_identity": "fd023-pm-20261004",
+    "decision_time": "2026-10-04T05:10:31+00:00"
+  }
+}

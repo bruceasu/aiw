@@ -1,0 +1,19 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-017",
+  "source_event": "FD-017-000016-design-ready",
+  "human_report": "FD-017-implementation-r16.md",
+  "data": {
+    "summary": "Go 网关、持久统计与七天内容、平台进程树、标准 Responses/SSE 和 ai 客户端迁移已编写完成，待独立审查。",
+    "worker_session": "fd017-worker-20261003-9059c335",
+    "base_commit": "9ae91484d4835a50dad6d2aebbcad93c509583f9",
+    "changed_paths": ["plugins/aiw-agent-proxy/", "plugins/aiw-ai/", "openspec/specs/agent-proxy/spec.md", "openspec/specs/agent-proxy-client/spec.md", "docs/features/FD-017_GO_SHARED_AI_GATEWAY.md"],
+    "commands": [
+      {"command": "python plugins/aiw-agent-proxy/scripts/compile.py", "runs": 2, "exit_codes": [0, 0], "scope": "独立插件 Windows/Linux amd64 离线 compile-only，第二次覆盖最终源码，无发布产物"},
+      {"command": "git diff --stat; scoped git diff; source/schema reads; git status --short", "kind": "static_read_only", "result": "已检查范围、调用契约与 Windows handle 生命周期；个别定向 rg 路径不存在"}
+    ],
+    "results": {"scoped_items_authored": 45, "cancelled_items": 8, "compile_only": "passed", "runtime_tests": "not_run", "sdk_runtime": "not_run", "deployment": "external", "independent_review": "pending"},
+    "residual_risk": "共容器跨读、Linux 脱组、Windows 原生 API 运行未验证、崩溃预留需人工核实、文件系统断电耐久性、完成消息粒度 SSE 及文件扫描性能。"
+  }
+}

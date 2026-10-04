@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-024",
+  "source_event": "FD-024-000008-implementation-ready",
+  "human_report": "FD-024-test-authorization-r2.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-024-000008-implementation-ready",
+    "fd_revision": 8,
+    "fd_digest": "88137748eb4d6bf3c6bf7ef7a43f06beb83947f5dbc046de232327c74f760f76",
+    "tester_session": "fd024-tester-r2-20261004-0e8de67e",
+    "command": "python -B -m unittest tests.test_fd024_refresh_tester_blackbox -v",
+    "working_directory": "D:\\03_projects\\AI-tools\\aiw",
+    "scope": "tests.test_fd024_refresh_tester_blackbox 的四个公开 CLI 黑盒场景",
+    "expected_duration": "10–30 秒",
+    "side_effects": "仅系统临时目录中的测试仓库与回执；临时 git init；测试后清理。工作区无写入。",
+    "risk_review": "已复核测试模块、修正后的场景顺序和复用夹具；离线、聚焦，无服务、下载、提权或发布产物。",
+    "human_approval": "not required",
+    "planner_identity": "fd024-host-pm-20261004",
+    "decision_time": "2026-10-04T05:24:01+00:00"
+  }
+}

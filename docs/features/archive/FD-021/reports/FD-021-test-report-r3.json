@@ -1,0 +1,289 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-021",
+  "source_event": null,
+  "human_report": "FD-021-test-report-r3.md",
+  "data": {
+    "implementation_event": null,
+    "tested_fd_revision": 4,
+    "tested_fd_digest": "178e04dec0b1866820fc670d8a384c1b1048832259d0d3758b2469b00fbbbaff",
+    "test_source_digest": "8ee746ef2a6c5aba48e961119fc1679b85fe88e83179208a1564cdbd667c0bb2",
+    "source_digests": {
+      "program/aiw-agent/src/providers.ts": "dbac61df7776afece4fd2a9e7e603f8b51e65c53df3d7a8440193454cc674aaf",
+      "program/aiw-agent/src/config.ts": "fe3b2de7078c8124b7b2ed93bb7193f2e93f97d69d82fd7c64e7626da455a205",
+      "program/aiw-agent/src/errors.ts": "b4b53b4ed69fbc81fcbd4be56233f5d5c4df11a5c0e45d26f6e15d8112f9c0ba"
+    },
+    "tester_session": "fd021-external-tester-r3-20261004-fd021_tester",
+    "test_route": "External explicit user-requested focused edge tests; missing formal receipts",
+    "applicable_scenarios": 26,
+    "covered_scenarios": 26,
+    "executed_behavior_tests": 26,
+    "passed_behavior_tests": 26,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 0,
+    "blocked_behavior_tests": 0,
+    "requirements_coverage": {
+      "measurement": "Enumerated edge scenarios only, not total FD acceptance or branch coverage",
+      "covered": 26,
+      "total": 26,
+      "percent": 100
+    },
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": [
+      "docs/features/reports/FD-021-test-results-r3-initial.json",
+      "docs/features/reports/FD-021-test-results-r3-retry.json"
+    ],
+    "coverage_unavailable_reason": "No instrumentation; only focused edge scenario counts",
+    "test_files": [
+      "tests/fd021_sdk_edges.mjs"
+    ],
+    "authorization_records": [
+      {
+        "type": "explicit-user-request",
+        "reference": "2026-10-04 continuation: test fix review",
+        "scope": "One focused offline edge command; one related fix retry approved after inspecting added POST/mock authorization assertions"
+      }
+    ],
+    "commands": [
+      {
+        "command": "node tests/fd021_sdk_edges.mjs",
+        "attempt": 1,
+        "exit_code": 1,
+        "duration_seconds": 0.4574613,
+        "passed": 25,
+        "failed": 1,
+        "raw_path": "docs/features/reports/FD-021-test-results-r3-initial.json",
+        "fd_digest": "e9eeaca26a85843be4809fb23b39e9e300b68d5b3d5a825753c81b1fee464470",
+        "test_source_digest": "d8820caeefb673594fec6f44251bc6304e399135862cd53ef867abbfef12f0ca",
+        "source_digests": {
+          "program/aiw-agent/src/providers.ts": "adcd853cf15b82db74caca48ad1ea76f03bb1a820eceec3a21fd1a2e88f45f35",
+          "program/aiw-agent/src/config.ts": "fe3b2de7078c8124b7b2ed93bb7193f2e93f97d69d82fd7c64e7626da455a205",
+          "program/aiw-agent/src/errors.ts": "b4b53b4ed69fbc81fcbd4be56233f5d5c4df11a5c0e45d26f6e15d8112f9c0ba"
+        }
+      },
+      {
+        "command": "node tests/fd021_sdk_edges.mjs",
+        "attempt": 2,
+        "exit_code": 0,
+        "duration_seconds": 0.4310404,
+        "passed": 26,
+        "failed": 0,
+        "raw_path": "docs/features/reports/FD-021-test-results-r3-retry.json",
+        "fd_digest": "178e04dec0b1866820fc670d8a384c1b1048832259d0d3758b2469b00fbbbaff",
+        "test_source_digest": "8ee746ef2a6c5aba48e961119fc1679b85fe88e83179208a1564cdbd667c0bb2",
+        "source_digests": {
+          "program/aiw-agent/src/providers.ts": "dbac61df7776afece4fd2a9e7e603f8b51e65c53df3d7a8440193454cc674aaf",
+          "program/aiw-agent/src/config.ts": "fe3b2de7078c8124b7b2ed93bb7193f2e93f97d69d82fd7c64e7626da455a205",
+          "program/aiw-agent/src/errors.ts": "b4b53b4ed69fbc81fcbd4be56233f5d5c4df11a5c0e45d26f6e15d8112f9c0ba"
+        }
+      }
+    ],
+    "recommendation": "passed",
+    "not_applicable_reason": "Live network/Gateway, service transports/storage/audit, other providers, full suites and final artifacts excluded",
+    "residual_risk": "R2 cases not rerun on new Provider revision; R2 is historical evidence only. Accelerated timers do not measure real 60-second wall-clock. Legacy top-level output_text compatibility is not a standard wire/Gateway promise. Current Gateway parameter subset remains incompatible by baseURL switch alone. No formal event provenance.",
+    "findings": [
+      {
+        "id": "FD021-R3-01",
+        "summary": "Legacy object response top-level output_text with empty output lost during SDK migration",
+        "initial_result": "failed: OpenAI returned no text",
+        "final_result": "passed",
+        "scope": "Existing legacy compatibility only; not new standard wire support"
+      }
+    ],
+    "scenarios": [
+      {
+        "id": "FD021-R3-BB-01",
+        "name": "空输出或无文本输出拒绝且保usage []",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-02",
+        "name": "空输出或无文本输出拒绝且保usage [{\"type\":\"reasoning\",\"summary\":[]}]",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-03",
+        "name": "reasoning summary字符边界 16384",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-04",
+        "name": "reasoning summary字符边界 16385",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-05",
+        "name": "未请求summary时忽略超长摘要且不返回字段",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-06",
+        "name": "非法usage计数归null -1",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-07",
+        "name": "非法usage计数归null 1.5",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-08",
+        "name": "非法usage计数归null \"12\"",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-09",
+        "name": "非法usage计数归null 9007199254740992",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-10",
+        "name": "非法usage identifier归null \"invalid identifier canary\"",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-11",
+        "name": "非法usage identifier归null \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-12",
+        "name": "非法usage identifier归null 42",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-13",
+        "name": "合法identifier128字符边界",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-14",
+        "name": "非JSON HTTP正文错误脱敏 200",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-15",
+        "name": "非JSON HTTP正文错误脱敏 500",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-16",
+        "name": "拒绝URL组件 https://user:password@host.invalid/v1",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-17",
+        "name": "拒绝URL组件 https://host.invalid/v1?canary=query",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-18",
+        "name": "拒绝URL组件 https://host.invalid/v1#canary",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-19",
+        "name": "fetch redirect:error且拒绝无重试",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-20",
+        "name": "缺省baseURL使用官方Responses端点仅mock",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-21",
+        "name": "成功后60秒timer清理且signal不再abort（缩短定时器）",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-22",
+        "name": "HTTP错误后60秒timer清理且signal不再abort（缩短定时器）",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-23",
+        "name": "JSON解析错误后60秒timer清理且signal不再abort（缩短定时器）",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-24",
+        "name": "legacy顶层output_text兼容且output为空数组",
+        "contract": "Legacy pre-SDK accepted shape; not a promise of standard OpenAI wire shape or Gateway support",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-25",
+        "name": "usage非对象false/null保持未知 false",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-R3-BB-26",
+        "name": "usage非对象false/null保持未知 null",
+        "contract": "existing public contract",
+        "result": "passed",
+        "behavior_reached": true
+      }
+    ],
+    "static_exclusions": [
+      "No provider implementation read for case authorship",
+      "Tester did not edit production",
+      "No R2 rerun",
+      "No network/socket/download",
+      "No final build/lint/formatter/vet/verification scripts",
+      "No git writes",
+      "No fabricated lifecycle events",
+      "R1/R2 and initial R3 raw retained"
+    ]
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-021",
+  "source_event": null,
+  "human_report": "FD-021-test-report-r4.md",
+  "data": {
+    "implementation_event": null,
+    "tested_fd_revision": 4,
+    "tested_fd_digest": "796f11312fbea0d033d668b372bc0ccf5b249d934fae63f983e70fb059fc1cce",
+    "test_source_digest": "e85cbbf182295d5770f49add1be37f05eddef63d16468e03cdb4ba199e859ace",
+    "source_digests": {
+      "program/aiw-agent/src/providers.ts": "dbac61df7776afece4fd2a9e7e603f8b51e65c53df3d7a8440193454cc674aaf",
+      "program/aiw-agent/src/config.ts": "fe3b2de7078c8124b7b2ed93bb7193f2e93f97d69d82fd7c64e7626da455a205",
+      "program/aiw-agent/src/errors.ts": "b4b53b4ed69fbc81fcbd4be56233f5d5c4df11a5c0e45d26f6e15d8112f9c0ba"
+    },
+    "tester_session": "fd021-external-live-tester-r4-20261004-fd021_tester",
+    "test_route": "External direct explicit user-authorized one minimal real model execution",
+    "applicable_scenarios": 2,
+    "covered_scenarios": 2,
+    "executed_behavior_tests": 2,
+    "passed_behavior_tests": 1,
+    "failed_behavior_tests": 1,
+    "unrun_behavior_tests": 0,
+    "requirements_coverage": {
+      "measurement": "Two sequential live stages only; not full FD acceptance or branch coverage",
+      "provider_compatibility": "failed HTTP400",
+      "direct_sdk_minimal_subset": "passed HTTP200 completed exact text match"
+    },
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": [
+      "docs/features/reports/FD-021-test-results-r4.json"
+    ],
+    "coverage_unavailable_reason": "No code coverage instrumentation; one real model execution only",
+    "test_files": [
+      "tests/fd021_gateway_live.mjs"
+    ],
+    "authorization_records": [
+      {
+        "type": "explicit-user-request",
+        "reference": "2026-10-04 user: 允许一次最小真实模型请求",
+        "scope": "Only loopback POST /v1/responses; Provider first; only exact pre-Runner HTTP400 allows one minimal direct SDK fallback; at most one model execution; no retry"
+      }
+    ],
+    "commands": [
+      {
+        "command": "node tests/fd021_gateway_live.mjs",
+        "attempt": 1,
+        "exit_code": 1,
+        "duration_seconds": 5.2978509,
+        "result": "Provider failed HTTP400; direct SDK minimal subset succeeded HTTP200 with exact text marker"
+      }
+    ],
+    "recommendation": "provider-incompatible-direct-sdk-minimal-subset-passed",
+    "exit_code_note": { "script_branch_intended_exit_code": 2, "tool_reported_exit_code": 1, "investigated": false, "reporting_policy": "Record actual returned tool result; no extra live request or command" },
+    "not_applicable_reason": "No additional live requests or broader protocol/features authorized",
+    "residual_risk": "Provider sends unsupported control fields and remains incompatible by baseURL-only switch. Successful minimal SDK request does not validate other options, models, timeout, service paths or full lifecycle. One model completion observed; no additional attempts permitted.",
+    "live_request_count": 2,
+    "model_execution_limit": 1,
+    "model_completion_observed": true,
+    "provider": {
+      "outcome": "failed",
+      "error_code": "provider_error",
+      "service_status": 502,
+      "upstream_http_status": 400
+    },
+    "direct_sdk": {
+      "outcome": "succeeded",
+      "text_present": true,
+      "text_match": true,
+      "response_status": "completed",
+      "usage": {
+        "input_tokens": 11557,
+        "output_tokens": 7,
+        "total_tokens": 11564,
+        "cached_input_tokens": 0,
+        "reasoning_output_tokens": null,
+        "cost": null
+      }
+    },
+    "scenarios": [
+      {
+        "id": "FD021-R4-LIVE-01",
+        "name": "Existing Provider minimal text request to real Gateway",
+        "result": "failed",
+        "http_status": 400,
+        "pre_runner_rejection": true,
+        "request_fields": [
+          "input",
+          "max_output_tokens",
+          "model"
+        ],
+        "request_id": "resp_9236f447e795032e0a3ab825dfb58b0f"
+      },
+      {
+        "id": "FD021-R4-LIVE-02",
+        "name": "Official SDK minimal supported subset to real Gateway",
+        "result": "passed",
+        "http_status": 200,
+        "text_present": true,
+        "text_match": true,
+        "response_status": "completed",
+        "usage": {
+          "input_tokens": 11557,
+          "output_tokens": 7,
+          "total_tokens": 11564,
+          "cached_input_tokens": 0,
+          "reasoning_output_tokens": null,
+          "cost": null
+        },
+        "request_fields": [
+          "input",
+          "model"
+        ],
+        "request_id": "resp_cee7aa0ae2db7a7e3ab5551cb7cbefb7"
+      }
+    ],
+    "static_exclusions": [
+      "No keys/Authorization/prompt/response/raw error bodies recorded",
+      "No config/production edits",
+      "No service start/stop",
+      "No downloads/final builds/full suites",
+      "No git writes",
+      "No retries or additional model requests",
+      "No fabricated lifecycle events"
+    ]
+  }
+}

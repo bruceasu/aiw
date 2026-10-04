@@ -1,0 +1,32 @@
+{
+  "mode": "development",
+  "listen": "127.0.0.1:43127",
+  "state_dir": "D:\\playground\\ai-playground\\state",
+  "workspace_dir": "D:\\playground\\ai-playground\\work",
+  "codex_path": "C:/green/nodejs/node.exe",
+  "timezone": "UTC",
+  "timeout_seconds": 600,
+  "global_concurrency": 4,
+  "models": {
+    "gateway-default": "gpt-6-luna",
+    "gpt-6-luna": "gpt-6-luna"
+  },
+  "principals": [
+    {
+      "id": "team-a",
+      "enabled": true,
+      "keys": [
+        "df11c91346f9836ddd828ce256efd3827068b6e082ce50816ac3745016859128",
+        "fbf233cd659a483392663ee9b85c8eeebb03d12490614c9ec47ff4bc9fedb661"
+      ],
+      "allowed_models": [
+        "gateway-default",
+        "gpt-6-luna"
+      ],
+      "rpm": 10,
+      "daily_limit": 100,
+      "concurrency": 2
+    }
+  ],
+  "codex_script": "C:/green/nodejs/node_modules/@openai/codex/bin/codex.js"
+}

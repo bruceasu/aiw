@@ -1,0 +1,209 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-021",
+  "source_event": null,
+  "human_report": "FD-021-test-report-r1.md",
+  "data": {
+    "implementation_event": null,
+    "tested_fd_revision": 4,
+    "tested_fd_digest": "ab621e640cfaea752e0366be49af603040ba6d267c74091fda1d38277818d344",
+    "tester_session": "fd021-external-tester-20261004-fd021_tester",
+    "test_route": "External direct user-requested testing; missing dispatch receipts",
+    "applicable_scenarios": 22,
+    "covered_scenarios": 20,
+    "executed_behavior_tests": 20,
+    "passed_behavior_tests": 18,
+    "failed_behavior_tests": 2,
+    "unrun_behavior_tests": 2,
+    "blocked_behavior_tests": 2,
+    "raw_runner_counts": { "attempted": 22, "passed": 18, "failed": 4 },
+    "requirements_coverage": {
+      "measurement": "scenario behavior reached, not code coverage",
+      "covered": 20,
+      "total": 22,
+      "percent": 90.9,
+      "uncovered": [
+        "Request option/full usage mapping assertions blocked by loader rewriting provider literal",
+        "OPENAI_LOG debug canary blocked by loader rewriting provider literal"
+      ]
+    },
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": [
+      "docs/features/reports/FD-021-test-results-r1.json"
+    ],
+    "coverage_unavailable_reason": "No branch/code coverage instrumentation; real SDK fetch mocking only",
+    "test_files": [
+      "tests/fd021_sdk_blackbox.mjs"
+    ],
+    "authorization_records": [
+      {
+        "type": "explicit-user-request",
+        "reference": "2026-10-04 user: test and review the FD-021",
+        "scope": "One focused offline test command; one allowed package-path correction retry"
+      }
+    ],
+    "commands": [
+      {
+        "command": "node tests/fd021_sdk_blackbox.mjs",
+        "attempt": 1,
+        "exit_code": 1,
+        "duration_seconds": 2.85,
+        "result": "Reporter package subpath exports error; no persisted business results"
+      },
+      {
+        "command": "node tests/fd021_sdk_blackbox.mjs",
+        "attempt": 2,
+        "exit_code": 1,
+        "duration_seconds": 0.43,
+        "result": "18 passed / 4 failed; reporter package.json path corrected only"
+      }
+    ],
+    "recommendation": "changes-requested",
+    "not_applicable_reason": "Service transport/storage/audit, other providers and live Gateway/API outside focused provider scope",
+    "residual_risk": "Missing nullable usage details fail; deadline ends before body completes. Initial loader replaced provider literals and blocked two cases; loader now fixed but not rerun. Debug leakage and full request/usage mapping not exercised. Real 60-second wall time and Gateway interoperability unverified. Source digests represent original files, not semantically unmodified transformed code.",
+    "scenarios": [
+      {
+        "id": "FD021-BB-01",
+        "name": "文本请求字段、SDK端点、文本与usage映射",
+        "result": "blocked-test-loader",
+        "behavior_reached": false
+      },
+      {
+        "id": "FD021-BB-02",
+        "name": "JSON请求与有效JSON结果",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-03",
+        "name": "无效JSON结果拒绝",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-04",
+        "name": "usage nested details缺失保持null",
+        "result": "failed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-05",
+        "name": "usage完全缺失保持null",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-06",
+        "name": "reasoning summary返回与缺失",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-07",
+        "name": "HTTP 401错误脱敏与不重试",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-08",
+        "name": "HTTP 429错误脱敏与不重试",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-09",
+        "name": "HTTP 500错误脱敏与不重试",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-10",
+        "name": "连接错误脱敏与不重试",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-11",
+        "name": "60秒SDK超时配置、取消与不重试（缩短定时器）",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-12",
+        "name": "headers后body仍受完整响应deadline约束（缩短定时器）",
+        "result": "failed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-13",
+        "name": "OPENAI_LOG=debug不泄露请求或上游正文canary",
+        "result": "blocked-test-loader",
+        "behavior_reached": false
+      },
+      {
+        "id": "FD021-BB-14",
+        "name": "允许URL http://localhost:43127/v1",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-15",
+        "name": "允许URL http://[::1]:43127/v1",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-16",
+        "name": "允许URL https://example.invalid/v1",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-17",
+        "name": "拒绝URL http://example.invalid/v1",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-18",
+        "name": "拒绝URL ftp://127.0.0.1/v1",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-19",
+        "name": "拒绝URL not-a-url",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-20",
+        "name": "缺少API key在发送前拒绝",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-21",
+        "name": "结果256Ki字符边界允许",
+        "result": "passed",
+        "behavior_reached": true
+      },
+      {
+        "id": "FD021-BB-22",
+        "name": "结果超过256Ki字符拒绝",
+        "result": "passed",
+        "behavior_reached": true
+      }
+    ],
+    "static_exclusions": [
+      "No provider implementation inspection for case authorship",
+      "No code fixes",
+      "No tests beyond focused script",
+      "No network/socket/download",
+      "No build/lint/format/vet/verification scripts",
+      "No git writes",
+      "No fake lifecycle events"
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-023",
+  "source_event": "FD-023-000007-test-accepted",
+  "human_report": "FD-023-review-r1.md",
+  "data": {
+    "reviewer_session": "fd023-reviewer-20261004-b6f1e2",
+    "reviewed_base": "HEAD c9b6d51cd2308e1ffbaf51755d697f6acda3ad83 to FD-023 scoped uncommitted workspace diff",
+    "fd_revision": 7,
+    "outcome": "verification-passed",
+    "findings": [],
+    "test_evidence": {
+      "applicable_scenarios": 22,
+      "covered_scenarios": 10,
+      "passed_current_behavior_tests": 10,
+      "failed_current_behavior_tests": 0,
+      "first_run_passed": 8,
+      "first_run_failed": 2,
+      "requirements_coverage": "45.5%",
+      "branch_coverage": "not measured",
+      "pm_exception": "accepted evidence gap only",
+      "authorizations": ["FD-023-test-authorization-r1.md", "FD-023-test-authorization-r2.md"],
+      "raw_results": ["FD-023-test-results-r1.json", "FD-023-test-results-r1-retry.json"]
+    },
+    "reviewer_runtime_checks": "none",
+    "residual_risk": "真实 300/660 秒等待、Gateway 取消清理、HTTPS、输出边界、部署长请求未运行；安装配置及二进制未更新。"
+  }
+}

@@ -54,6 +54,20 @@ recorded feature branch and parent branch. Merge after a passed review; archive
 the FD only after the merge succeeds. A conflict leaves the FD active and the
 worktree intact.
 
+## Recover a stale Tester handoff
+
+Use `aiw fd refresh-tester FD-020 --reason "Updated authentication contract"
+--artifact docs/features/reports/FD-020-implementation-r2.md` for an independent
+Pending Test FD whose latest Tester event is stale, pending, and unclaimed.
+The report must exist inside the repository; Dual evidence requires its
+worker-report JSON sidecar. The command increments the revision, preserves
+status and Work Items, retains Worker identity and implementation provenance,
+and cancels the old receipt with a successor link. Tester claims the new
+`test-requested` event and cites it in reports and any fresh authorization.
+Current or in-flight handoffs cannot be replaced. Refreshing is not approval
+to run tests, nor a test result. Failed writes roll back the FD, receipts and
+index without leaving a claimable new event.
+
 ## Auto
 
 `$fd-workflow auto` is a host Skill operation, not an `aiw fd auto` CLI

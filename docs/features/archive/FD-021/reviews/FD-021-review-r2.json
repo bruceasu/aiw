@@ -1,0 +1,55 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-021",
+  "source_event": null,
+  "human_report": "FD-021-review-r2.md",
+  "data": {
+    "reviewer_session": "fd021_reviewer",
+    "tester_session": "fd021-external-tester-r2-20261004-fd021_tester",
+    "reviewed_base": "c9b6d51cd2308e1ffbaf51755d697f6acda3ad83",
+    "reviewed_scope": "当前未提交差异及R1修复、测试装载器、R2执行证据",
+    "tested_fd_revision": 4,
+    "tested_fd_digest": "24fee3ad97b7ebc1f65b34548ad9046a3857fe70803bfc54980f4b892bae554c",
+    "tested_provider_digest": "adcd853cf15b82db74caca48ad1ea76f03bb1a820eceec3a21fd1a2e88f45f35",
+    "tested_script_digest": "bb76a5285e0abfa102c65d7a935c551b254b009fed5c61f9b78d9023f43d42c9",
+    "conclusion": "passed-within-reviewed-fix-scope",
+    "formal_handoff": false,
+    "formal_verification_passed": false,
+    "fd_complete": false,
+    "new_findings": [],
+    "resolved_findings": [
+      {"id": "R1-01", "status": "resolved", "file": "program/aiw-agent/src/providers.ts", "line": 138, "evidence": "完整create await独立timer及signal；本地abort优先timeout；所有try出口finally清timer；headers前及200/500正文延迟测试通过"},
+      {"id": "R1-02", "status": "resolved", "file": "program/aiw-agent/src/providers.ts", "line": 163, "evidence": "嵌套可选访问；details缺失/null与整个usage null测试通过"},
+      {"id": "R1-03", "status": "resolved", "file": "program/aiw-agent/src/providers.ts", "line": 134, "evidence": "logLevel off优先于环境配置；debug成功/错误日志canary测试通过"}
+    ],
+    "test_evidence": {
+      "report": "docs/features/reports/FD-021-test-report-r2.md",
+      "sidecar": "docs/features/reports/FD-021-test-report-r2.json",
+      "raw": "docs/features/reports/FD-021-test-results-r2.json",
+      "command": "node tests/fd021_sdk_blackbox.mjs",
+      "executed_by": "Tester",
+      "attempts": 1,
+      "exit_code": 0,
+      "duration_seconds": 0.4110084,
+      "cases": 24,
+      "passed": 24,
+      "failed": 0,
+      "branch_coverage": "not measured",
+      "full_fd_acceptance_runtime_coverage": "not measured",
+      "authorization": "explicit-user-continuation: test and fix then review",
+      "planner_authorization": null,
+      "network": false,
+      "timer_acceleration": "60000ms to 5ms; mechanism only"
+    },
+    "compile_evidence": {"command": ".\\node_modules\\.bin\\tsc.cmd --noEmit -p tsconfig.json", "cwd": "program/aiw-agent", "exit_code": 0, "source": "implementation-r2 report; parent actual execution", "rerun_by_reviewer": false},
+    "reviewer_commands": ["git diff -- program/aiw-agent/src/providers.ts", "Get-Content 定向读取当前FD、实现记录、测试源码、R2raw与Tester报告"],
+    "reviewer_runtime_validation": "not run",
+    "risks": [
+      "真实Gateway支持子集不包含历史max_output_tokens/reasoning，仍不能仅改base URL完成当前TS请求；并非本次新增回归",
+      "未实际测试60秒wall-clock、真实网络、Gateway/API、DNS/重定向或服务入口",
+      "SDK标准输出聚合更严格，非标准兼容端点仍有风险",
+      "无正式source事件/回执，直接复评不能使FD Complete或emit verification-passed"
+    ]
+  }
+}

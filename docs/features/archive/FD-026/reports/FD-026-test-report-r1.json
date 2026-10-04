@@ -1,0 +1,63 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-026",
+  "source_event": "FD-026-000005-implementation-ready",
+  "human_report": "FD-026-test-report-r1.md",
+  "data": {
+    "implementation_event": "FD-026-000005-implementation-ready",
+    "tested_fd_revision": 5,
+    "tested_fd_digest": "c10172399ac3efbe66a194de734bfecc62a81e8e4ce2eceb35827ccfb79bffab",
+    "tester_session": "fd026-tester-20261004-a7e31c",
+    "applicable_scenarios": 4,
+    "covered_scenarios": 0,
+    "executed_behavior_tests": 0,
+    "passed_behavior_tests": 0,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 4,
+    "requirements_coverage": "0%",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": "No test or coverage command executed; no raw coverage evidence available.",
+    "coverage_unavailable_reason": "Repository instructions prohibit tests absent explicit authorization; no authorization was recorded.",
+    "test_files": [],
+    "authorization_records": [],
+    "commands": [],
+    "recommendation": "blocked",
+    "not_applicable_reason": "",
+    "residual_risk": "No runtime behavior verified for gw start/stop, plugin/install layout, default config lookup, or removal of the old command. Worker compile-only result was reported as unconfirmed.",
+    "scenarios": [
+      {
+        "id": "GW-01",
+        "behavior": "aiw gw start starts the gateway from the plugin directory and uses the expected default configuration location.",
+        "status": "uncovered",
+        "test_cases": [],
+        "uncovered_reason": "Not run: no test execution authorization."
+      },
+      {
+        "id": "GW-02",
+        "behavior": "Fresh installation places the entrypoint and Windows/Linux gateway binary under plugins/aiw-gw/ and runtime can locate the entrypoint and default configuration.",
+        "status": "uncovered",
+        "test_cases": [],
+        "uncovered_reason": "Not run: no test execution authorization."
+      },
+      {
+        "id": "GW-03",
+        "behavior": "aiw gw stop stops the gateway through the short command.",
+        "status": "uncovered",
+        "test_cases": [],
+        "uncovered_reason": "Not run: no test execution authorization."
+      },
+      {
+        "id": "GW-04",
+        "behavior": "aiw agent-gateway is no longer available as a command or documented usage.",
+        "status": "uncovered",
+        "test_cases": [],
+        "uncovered_reason": "Not run: no test execution authorization; CLI and current user documentation behavior remain unverified."
+      }
+    ],
+    "static_exclusions": [
+      "No implementation source was read, per independent black-box Tester assignment.",
+      "Worker's compile-only command is not behavior test evidence and its result was reported unconfirmed."
+    ]
+  }
+}

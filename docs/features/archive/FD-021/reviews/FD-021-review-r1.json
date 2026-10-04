@@ -1,0 +1,67 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-021",
+  "source_event": null,
+  "markdown": "FD-021-review-r1.md",
+  "reviewer_session": "fd021_reviewer",
+  "reviewed_base": "c9b6d51cd2308e1ffbaf51755d697f6acda3ad83",
+  "revision": 4,
+  "tested_fd_digest": "ab621e640cfaea752e0366be49af603040ba6d267c74091fda1d38277818d344",
+  "test_authorization": {"kind": "explicit-user-request", "reference": "test and review the FD-021", "policy": "External", "planner_authorization": null},
+  "tester_command": "node tests/fd021_sdk_blackbox.mjs",
+  "tester_execution": {"attempts": 2, "first": "reporter package exports path failure", "retry": "exit 1; 22 cases; 18 passed; 4 failed", "further_run": false},
+  "outcome": "changes-requested",
+  "formal_handoff": false,
+  "findings": [
+    {
+      "id": "R1-01",
+      "severity": "P1",
+      "file": "program/aiw-agent/src/providers.ts",
+      "line": 129,
+      "title": "SDK timeout 不覆盖响应正文读取",
+      "evidence": "installed SDK client.mjs:528-552 fetch后清timer；internal/parse.mjs:32随后读取正文",
+      "runtime_reproduced": true
+    },
+    {
+      "id": "R1-02",
+      "severity": "P2",
+      "file": "program/aiw-agent/src/providers.ts",
+      "line": 159,
+      "title": "缺少嵌套 usage details 时成功结果变为 502",
+      "evidence": "usage对象存在且input_tokens_details缺失/null时属性访问抛TypeError；旧实现分别{}guard",
+      "runtime_reproduced": true
+    },
+    {
+      "id": "R1-03",
+      "severity": "P2",
+      "file": "program/aiw-agent/src/providers.ts",
+      "line": 129,
+      "title": "SDK OPENAI_LOG=debug 暴露请求和响应正文",
+      "evidence": "SDK读取环境log level；debug记录request options和response body，仅headers脱敏",
+      "runtime_reproduced": false
+    }
+  ],
+  "results": {
+    "static_review": "completed",
+    "tester_evidence": "docs/features/reports/FD-021-test-results-r1.json",
+    "tester_results": {"cases": 22, "passed": 18, "failed": 4, "valid_product_failures": 2, "loader_contaminated_cases": 2, "source_changed_after_run": true, "timeout_timer_accelerated": true},
+    "compile": "not-run-by-reviewer",
+    "tests": "not-run-by-reviewer",
+    "network": "not-run",
+    "event_emission": "not-run"
+  },
+  "risks": [
+    "当前Go Gateway拒绝旧有max_output_tokens与reasoning，并非新增SDK回归",
+    "稳定agent-proxy规格已替代历史TypeScript接口",
+    "SDK标准output_text增强比旧手工解析更严格",
+    "没有实现报告/派发回执，不能作正式验证通过"
+  ],
+  "commands": [
+    "Get-Content 定向读取规则、FD、spec、source与installed SDK",
+    "rg 定向符号/文件检索",
+    "git diff -- program/aiw-agent/src/providers.ts program/aiw-agent/package.json program/aiw-agent/README.md",
+    "git diff --stat -- program/aiw-agent/src/providers.ts program/aiw-agent/package.json program/aiw-agent/package-lock.json program/aiw-agent/README.md docs/features/FD-021_AIW_AGENT_OPENAI_SDK.md",
+    "git rev-parse HEAD"
+  ]
+}

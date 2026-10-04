@@ -10,14 +10,14 @@ var rootCommands = []string{
 }
 
 var fdCommands = []string{
-	"new", "list", "show", "emit", "claim", "resume", "request-review", "refresh-worker", "reopen", "close", "worktree",
+	"new", "list", "show", "emit", "claim", "resume", "request-review", "refresh-worker", "refresh-tester", "reopen", "close", "worktree",
 }
 
 var fdWorktreeCommands = []string{"add", "status"}
 var fdOutcomes = []string{"Complete", "Deferred", "Closed"}
 
 var fdIDCommands = []string{
-	"show", "emit", "claim", "resume", "request-review", "refresh-worker", "reopen", "close", "worktree",
+	"show", "emit", "claim", "resume", "request-review", "refresh-worker", "refresh-tester", "reopen", "close", "worktree",
 }
 
 var worktreeCommands = []string{

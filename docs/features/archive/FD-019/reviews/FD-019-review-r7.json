@@ -1,0 +1,21 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-019",
+  "source_event": "FD-019-000007-implementation-ready",
+  "human_report": "FD-019-review-r7.md",
+  "data": {
+    "session_ref": "codex-reviewer-FD019-20261004-r7-82de",
+    "worker_session_ref": "codex-worker-FD019-20261004-r6-a71c",
+    "fd_revision": 7,
+    "diff_base": "c9b6d51cd2308e1ffbaf51755d697f6acda3ad83",
+    "reviewed_diff": "HEAD 到当前工作区的 FD-019 定向差异",
+    "result": "verification-passed",
+    "findings": [],
+    "resolved_findings": ["R1：帮助、README 和客户端稳定规格使用 keys 同字符串，明确废除 key_hashes，删除当前配置形式的哈希 BAT 步骤"],
+    "results": ["八项既有实现获得当前源码与上一轮静态证据支持", "认证实现未改变", "External 策略保留；未运行检查不计为通过"],
+    "commands": ["定向 Get-Content / Get-ChildItem / rg / rg --files", "git status --short", "git rev-parse HEAD", "git diff -- plugins/aiw-ai/aiw-ai.mjs plugins/aiw-ai/README.md openspec/specs/agent-proxy-client/spec.md", "aiw fd --help", "aiw fd claim --help", "aiw fd emit --help", "aiw fd claim FD-019 FD-019-000007-implementation-ready --session codex-reviewer-FD019-20261004-r7-82de", "一次编辑后静态读取 FD 与报告", "aiw fd emit FD-019 verification-passed --producer reviewer --artifact docs/features/reviews/FD-019-review-r7.md --source-event FD-019-000007-implementation-ready"],
+    "skipped_checks": ["测试", "编译", "客户端/编辑器/BAT 执行", "网络和认证/模型请求", "构建", "安装副本同步", "Git 写操作"],
+    "residual_risk": "本机安装副本未更新；真实认证、模型可用性和跨平台终端/编辑器/信号行为待外部验证；强制退出或编辑器备份可能残留临时 Prompt。Worker 本轮语法检查后仅改帮助措辞未重跑，Reviewer 不声称重验。"
+  }
+}

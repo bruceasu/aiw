@@ -1,0 +1,71 @@
+{
+  "fd_id": "FD-023",
+  "source_event": "FD-023-000005-implementation-ready",
+  "tester_session": "fd023-tester-20261004-a9e4bd",
+  "command": "node tests/fd023_client_blackbox.mjs",
+  "environment": "Node local child process and loopback HTTP mock only",
+  "scenarios": [
+    {
+      "id": "T01",
+      "description": "帮助显示独立的客户端 660 秒期限且不发请求",
+      "status": "passed",
+      "detail": "exit 0; help contains 660 and option; no request"
+    },
+    {
+      "id": "T02",
+      "description": "缺值在发请求前退出 2",
+      "status": "passed",
+      "detail": "exit 2; no request"
+    },
+    {
+      "id": "T03",
+      "description": "重复在发请求前退出 2",
+      "status": "passed",
+      "detail": "exit 2; no request"
+    },
+    {
+      "id": "T04",
+      "description": "零值在发请求前退出 2",
+      "status": "passed",
+      "detail": "exit 2; no request"
+    },
+    {
+      "id": "T05",
+      "description": "超过上限在发请求前退出 2",
+      "status": "passed",
+      "detail": "exit 2; no request"
+    },
+    {
+      "id": "T06",
+      "description": "非十进制整数在发请求前退出 2",
+      "status": "passed",
+      "detail": "exit 2; no request"
+    },
+    {
+      "id": "T07",
+      "description": "300 秒参数不进入 Prompt 或 Responses JSON，保留认证与输出",
+      "status": "passed",
+      "detail": "one authenticated POST; expected prompt and output; no timeout field"
+    },
+    {
+      "id": "T08",
+      "description": "双连字符后 timeout 字样保留为 Prompt",
+      "status": "passed",
+      "detail": "one request; literal prompt retained"
+    },
+    {
+      "id": "T09",
+      "description": "请求头前超时并取消",
+      "status": "passed",
+      "detail": "nonzero exit; elapsed 1195ms; local socket closed"
+    },
+    {
+      "id": "T10",
+      "description": "响应体未完成时超时并取消",
+      "status": "passed",
+      "detail": "nonzero exit; elapsed 1196ms; local socket closed"
+    }
+  ],
+  "passed": 10,
+  "failed": 0
+}

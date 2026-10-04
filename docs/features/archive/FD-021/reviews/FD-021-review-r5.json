@@ -1,0 +1,64 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-021",
+  "source_event": null,
+  "human_report": "FD-021-review-r5.md",
+  "data": {
+    "reviewer_session": "fd021_reviewer",
+    "tester_session": "fd021-external-profile-tester-r5-20261004-fd021_tester",
+    "revision": 4,
+    "tested_fd_digest": "2c08ae8653f87a30394e431a3dea21ce7c984bb62d9325ac34019b5b39c2d46f",
+    "tested_provider_digest": "0cafbfec7809bd71cd8a7e3a775e256b60f3374daa63ecb1e2f04a48198691bb",
+    "tested_script_digest": "4317e0dec4f06ba9653e2fdcfd58d9a5be7d74e8b450c8cff2d2dc933442c3b0",
+    "conclusion": "passed-within-approved-profile-scope",
+    "scoped_task_complete": true,
+    "formal_handoff": false,
+    "formal_verification_passed": false,
+    "fd_complete": false,
+    "new_findings": [],
+    "design_gate": "resolved by explicit user approval of aiw_gateway profile",
+    "resolved_scope": [
+      {
+        "file": "program/aiw-agent/src/providers.ts",
+        "line": 114,
+        "behavior": "explicit profile; unset defaults openai; unknown/empty503; gatewayreasoning400beforefetch"
+      },
+      {
+        "file": "program/aiw-agent/src/providers.ts",
+        "line": 153,
+        "behavior": "official retains8192 and options; gateway omits max_output_tokens; instructions/JSON preserved"
+      }
+    ],
+    "security_static": "URL/SDKauth/no retries/logs off/redirecterror/fullbodytimer/finallycleanup/usage/resultcap preserved",
+    "test_evidence": {
+      "report": "docs/features/reports/FD-021-test-report-r5.md",
+      "raw": "docs/features/reports/FD-021-test-results-r5.json",
+      "command": "node tests/fd021_gateway_profile.mjs",
+      "attempts": 1,
+      "exit_code": 0,
+      "duration_seconds": 0.3423121,
+      "passed": 8,
+      "failed": 0,
+      "network": false,
+      "model_calls": 0,
+      "live_new_profile": "not run",
+      "r2_r3_rerun": false,
+      "branch_coverage": "not measured"
+    },
+    "compile_evidence": {
+      "command": ".\\node_modules\\.bin\\tsc.cmd --noEmit -p tsconfig.json",
+      "cwd": "program/aiw-agent",
+      "exit_code": 0,
+      "reviewer_rerun": false
+    },
+    "reviewer_business_changes": false,
+    "risks": [
+      "R5新Providerprofile未真实Gateway重测，R4仅directSDK最小成功",
+      "Gateway模式结果字符/字节上限不等价token预算",
+      "R2/R3未重跑当前版本，不合并case数",
+      "缺少正式事件回执，不Complete",
+      "shutdown属于另FD，不纳入本评审"
+    ]
+  }
+}

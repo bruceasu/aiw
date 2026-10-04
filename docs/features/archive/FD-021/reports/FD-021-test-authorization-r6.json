@@ -1,0 +1,9 @@
+{
+  "schema":"aiw.fd.evidence.v1","kind":"planner-authorization","fd_id":"FD-021","source_event":null,"human_report":"FD-021-test-authorization-r6.md",
+  "data": {
+    "decision":"approved","basis":"human-approved","implementation_event":null,"fd_revision":4,"fd_digest":"7a8a9d4ed224b34e653e2d48d4bbb5ca1bf528f900e425579d164cc04e09af98","tester_session":"fd021-external-acceptance-20261004-c813f0",
+    "test_source_digest":"76838479dfeabd55c4fc875ec26b4826938db351796c4645984d3dcfdfbb0131","gateway_binary_digest":"97a6753035e944876d942ec48d7ec2de029f0a93e9d7f906f49cbdc49ef378a3",
+    "source_digests":{"program/aiw-agent/src/providers.ts":"0cafbfec7809bd71cd8a7e3a775e256b60f3374daa63ecb1e2f04a48198691bb","program/aiw-agent/src/config.ts":"fe3b2de7078c8124b7b2ed93bb7193f2e93f97d69d82fd7c64e7626da455a205","program/aiw-agent/src/errors.ts":"b4b53b4ed69fbc81fcbd4be56233f5d5c4df11a5c0e45d26f6e15d8112f9c0ba"},
+    "command":"node tests/fd021_gateway_acceptance.mjs","working_directory":"repository root","scope":"一次当前Provider真实Gateway最小请求及7个关联验收断言，模型执行上限1，无重试/回退","expected_duration":"通常数秒，整体截止65秒，审计只读等待最多1.5秒","side_effects":"一次真实Codex执行和正常Gateway审计/用量/内容持久化，独占R6安全JSON；不改配置或服务","risk_review":"真实Key仅内存；硬限制单次loopback目标POST；固定安全失败分类和摘要；文件路径严格request-id及realpath限定；不输出正文与凭据","human_approval":"approved:user-message:fd021-test-acceptance-20261004","human_approval_text":"那么现在FD-021 可以测试和验收了","planner_identity":"fd025-host-20261004-729bf1","decision_time":"2026-10-04T04:54:12+00:00"
+  }
+}

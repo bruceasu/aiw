@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-017",
+  "source_event": "FD-017-000017-implementation-ready",
+  "human_report": "FD-017-review-r17.md",
+  "data": {
+    "summary": "首轮独立静态审查发现跨日额度超售及根进程退出后超时无法解除 stdout 阻塞，退回 Worker 修复。",
+    "reviewer_session": "fd017-reviewer-20261003-a7d204",
+    "worker_session": "fd017-worker-20261003-9059c335",
+    "reviewed_revision": 17,
+    "base_commit": "9ae91484d4835a50dad6d2aebbcad93c509583f9",
+    "reviewed_scope": ["plugins/aiw-agent-proxy/", "plugins/aiw-ai/", "openspec/specs/agent-proxy/spec.md", "openspec/specs/agent-proxy-client/spec.md", "docs/features/FD-017_GO_SHARED_AI_GATEWAY.md", "docs/features/reports/FD-017-implementation-r16.md", "docs/features/reports/FD-017-implementation-r16.json"],
+    "findings": [
+      {"id": "R1", "severity": "high", "blocking": true, "title": "跨日预留转启动没有保护新日额度", "locations": ["plugins/aiw-agent-proxy/storage.go:121", "plugins/aiw-agent-proxy/storage.go:129", "plugins/aiw-agent-proxy/runner.go:82"], "requirement": "按 started_at 自然日扣费且预留防超售", "requested_change": "额度校验保守计入全部未确认预留，或采用等效原子跨日占用机制；维持成功启动不退额度及 started_at 归属。"},
+      {"id": "R2", "severity": "high", "blocking": true, "title": "自然根退出后超时 watcher 提前消失导致读取可永久悬挂", "locations": ["plugins/aiw-agent-proxy/runner.go:96", "plugins/aiw-agent-proxy/runner.go:102", "plugins/aiw-agent-proxy/runner.go:110"], "requirement": "请求取消/超时始终解除读取并进行有界收尾", "requested_change": "整个输出消费阶段维持取消驱动的管道关闭 watcher，根自然退出不可提前解除；明确 stdout/stderr/stdin 关闭与 watcher 收尾所有权。"}
+    ],
+    "commands": [
+      {"command": "aiw fd claim FD-017 FD-017-000017-implementation-ready --session fd017-reviewer-20261003-a7d204", "result": "claimed"},
+      {"command": "aiw fd --help; aiw fd emit --help; scoped Get-Content/rg; git diff --stat", "kind": "static_read_only", "result": "已读取实现与契约；两次路径错误后使用已知目录定向读取"}
+    ],
+    "results": {"independent_static_review": "changes_requested", "blocking_findings": 2, "reviewer_compile": "not_run", "worker_reported_compile": "passed_windows_linux_amd64", "runtime_tests": "not_run_external", "sdk_runtime": "not_run", "deployment": "external"},
+    "residual_risk": "共容器跨读、Linux 脱组、Windows 原生 API 未运行、SDK/竞争/重启未运行、文件系统断电耐久性、异常预留离线核实。"
+  }
+}

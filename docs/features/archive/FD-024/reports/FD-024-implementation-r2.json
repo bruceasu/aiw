@@ -1,0 +1,26 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-024",
+  "source_event": "FD-024-000007-changes-requested",
+  "human_report": "FD-024-implementation-r2.md",
+  "data": {
+    "summary": "修复 FD 实施记录和首轮实施报告中的不可读文字，行为代码未变。",
+    "changed_paths": [
+      "docs/features/FD-024_REFRESH_STALE_TESTER_HANDOFF.md",
+      "docs/features/reports/FD-024-implementation-r1.md",
+      "docs/features/reports/FD-024-implementation-r1.json",
+      "docs/features/reports/FD-024-implementation-r2.md",
+      "docs/features/reports/FD-024-implementation-r2.json"
+    ],
+    "commands": [
+      "aiw fd claim FD-024 FD-024-000007-changes-requested --session fd024-worker-repair-20261004-9ce14a",
+      "Get-Content / apply_patch"
+    ],
+    "results": [
+      {"kind": "document-repair", "result": "恢复中文可读性，待独立复审"},
+      {"kind": "runtime-tests", "result": "not-run-this-round"}
+    ],
+    "residual_risk": "五项验收场景和业务分支覆盖率仍无运行证据；当前修订需重新独立交接。"
+  }
+}

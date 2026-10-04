@@ -1,0 +1,198 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-023",
+  "source_event": "FD-023-000005-implementation-ready",
+  "human_report": "FD-023-test-report-r1.md",
+  "data": {
+    "implementation_event": "FD-023-000005-implementation-ready",
+    "tested_fd_revision": 5,
+    "tested_fd_digest": "ab5b7b1897ec96ec1441100adcde6afa5e06c87bb2f0d696faad8d86008fc642",
+    "tester_session": "fd023-tester-20261004-a9e4bd",
+    "applicable_scenarios": 22,
+    "covered_scenarios": 10,
+    "executed_behavior_tests": 10,
+    "passed_behavior_tests": 10,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 12,
+    "requirements_coverage": "45.5%",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": "not measured",
+    "coverage_unavailable_reason": "唯一获批命令为离线黑盒 Node 脚本，未启用业务代码覆盖率插桩。",
+    "test_files": [
+      "tests/fd023_client_blackbox.mjs"
+    ],
+    "authorization_records": [
+      "docs/features/reports/FD-023-test-authorization-r1.md",
+      "docs/features/reports/FD-023-test-authorization-r2.md"
+    ],
+    "commands": [
+      "node tests/fd023_client_blackbox.mjs",
+      "node tests/fd023_client_blackbox.mjs"
+    ],
+    "recommendation": "pass",
+    "not_applicable_reason": "",
+    "residual_risk": "Gateway 实际默认/显式配置、长达 300/660 秒的真实期限、HTTPS/错误/大小/JSON 契约及服务端执行树清理未运行；需求场景覆盖率低于 70%，需 PM 明确例外。",
+    "scenarios": [
+      {
+        "id": "T01",
+        "behavior": "帮助显示客户端默认 660 秒及参数，无请求",
+        "status": "passed",
+        "test_cases": [
+          "T01"
+        ]
+      },
+      {
+        "id": "T02",
+        "behavior": "缺少期限值在请求前退出 2",
+        "status": "passed",
+        "test_cases": [
+          "T02"
+        ]
+      },
+      {
+        "id": "T03",
+        "behavior": "重复期限在请求前退出 2",
+        "status": "passed",
+        "test_cases": [
+          "T03"
+        ]
+      },
+      {
+        "id": "T04",
+        "behavior": "零值在请求前退出 2",
+        "status": "passed",
+        "test_cases": [
+          "T04"
+        ]
+      },
+      {
+        "id": "T05",
+        "behavior": "3661 越界值在请求前退出 2",
+        "status": "passed",
+        "test_cases": [
+          "T05"
+        ]
+      },
+      {
+        "id": "T06",
+        "behavior": "非十进制整数在请求前退出 2",
+        "status": "passed",
+        "test_cases": [
+          "T06"
+        ]
+      },
+      {
+        "id": "T07",
+        "behavior": "300 参数请求不泄漏期限且保留认证、Prompt 和文本输出",
+        "status": "passed",
+        "test_cases": [
+          "T07"
+        ]
+      },
+      {
+        "id": "T08",
+        "behavior": "双连字符后字面参数进入 Prompt",
+        "status": "passed",
+        "test_cases": [
+          "T08"
+        ]
+      },
+      {
+        "id": "T09",
+        "behavior": "请求头前 1 秒超时关闭本地连接",
+        "status": "passed",
+        "test_cases": [
+          "T09"
+        ]
+      },
+      {
+        "id": "T10",
+        "behavior": "响应体读取中 1 秒超时关闭本地连接",
+        "status": "passed",
+        "test_cases": [
+          "T10"
+        ]
+      },
+      {
+        "id": "U01",
+        "behavior": "Gateway 不配置 timeout_seconds 时实际默认为 600 秒",
+        "status": "uncovered",
+        "test_cases": []
+      },
+      {
+        "id": "U02",
+        "behavior": "Gateway 显式期限及 1–3600 校验保留，重启后生效",
+        "status": "uncovered",
+        "test_cases": []
+      },
+      {
+        "id": "U03",
+        "behavior": "客户端不传参数时实际在 660 秒总期限取消",
+        "status": "uncovered",
+        "test_cases": []
+      },
+      {
+        "id": "U04",
+        "behavior": "客户端 300 秒参数实际在 300 秒总期限取消",
+        "status": "uncovered",
+        "test_cases": []
+      },
+      {
+        "id": "U05",
+        "behavior": "客户端接受上界 3660 秒",
+        "status": "uncovered",
+        "test_cases": []
+      },
+      {
+        "id": "U06",
+        "behavior": "客户端响应大小上限保留",
+        "status": "uncovered",
+        "test_cases": []
+      },
+      {
+        "id": "U07",
+        "behavior": "JSON 对象输出与非法 JSON 拒绝保留",
+        "status": "uncovered",
+        "test_cases": []
+      },
+      {
+        "id": "U08",
+        "behavior": "verbose 诊断与 stdout 分离保留",
+        "status": "uncovered",
+        "test_cases": []
+      },
+      {
+        "id": "U09",
+        "behavior": "HTTP 错误不重试及错误诊断保留",
+        "status": "uncovered",
+        "test_cases": []
+      },
+      {
+        "id": "U10",
+        "behavior": "HTTPS 请求保留",
+        "status": "uncovered",
+        "test_cases": []
+      },
+      {
+        "id": "U11",
+        "behavior": "真实 Gateway 在客户端取消后的执行树与临时目录清理",
+        "status": "uncovered",
+        "test_cases": []
+      },
+      {
+        "id": "U12",
+        "behavior": "真实模型调用与部署后的长请求",
+        "status": "uncovered",
+        "test_cases": []
+      }
+    ],
+    "static_exclusions": [
+      "文档内容和示例 JSON 字面值属于静态审查，不计入可观察运行场景覆盖率。"
+    ],
+    "raw_results": [
+      "docs/features/reports/FD-023-test-results-r1.json",
+      "docs/features/reports/FD-023-test-results-r1-retry.json"
+    ]
+  }
+}

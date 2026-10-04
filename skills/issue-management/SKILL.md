@@ -65,17 +65,47 @@ assumptions, and remaining decisions.
    changes scope or risk. Ask at most three high-impact questions per turn;
    do not repeat settled questions. Continue only when the remaining unknowns
    are explicit and their effect on readiness is recorded.
-4. **Split only for independent outcomes.** If smaller Issues can stand alone,
-   retain the original scope and record which outcome belongs to each child.
+4. **Assess size and split independent outcomes.** Apply the Issue size and
+   splitting rules below. Retain the original scope and record which outcome
+   belongs to each child.
    Link each child to its parent with `aiw issue link-parent <child-id> <parent-id>`
    before child approval, and record the relationship in both
-   plans. Account for each outcome once across Issue and Task handoffs.
+   plans. Account for each outcome once across Issue, FD, and legacy Task handoffs.
 5. **Prepare a durable action.** Use the supported CLI to prepare a draft or
    action. In chat mode, show its target, summary, and write scope, then use
    the host's confirmation checkpoint for that action. Model output, a draft,
    and Session memory are not human approval. If sources or revisions drift,
    reassess before acting. Retain an invalid model response with diagnostics;
    do not accept it through repeated retries.
+
+## Issue size and splitting
+
+Assess scope size, expected difficulty, and uncertainty before seeking approval
+or handing an Issue to an FD. Record the assessment and the reason to keep or
+split the Issue. Aim for one bounded outcome that can be approved and accepted
+on its own and handed to a manageable FD with small Work Items.
+
+If an Issue combines several independently useful outcomes, rollout stages,
+or acceptance boundaries, prepare smaller child Issue drafts. Each child must
+state its goal, scope, non-goals, acceptance examples, dependencies, and Gates.
+Split by user-visible outcome, not by files or technical layers alone. If the
+outcome is inseparable, keep one Issue and reduce scope where authorized, or
+leave the implementation breakdown to `fd-workflow`.
+
+Map every original outcome to a child or an explicitly retained or deferred
+parent scope. Keep cross-child safety and release Gates, including dependencies
+that prevent an early child from being released on its own. Do not duplicate
+delivery scope or describe deferred work as completed.
+
+Prepare the split before asking for confirmation. Create and link child Issues
+only within the confirmed write scope, using the supported CLI; never invent
+IDs. Parent approval does not approve a child. Preserve already approved
+sources and existing FD handoffs; a later split must not silently rewrite their
+scope or repeat their delivery.
+
+Do not set a fixed child count or treat splitting as proof of low difficulty.
+Mark unresolved scope or acceptance conflicts with `%% NEEDS_INPUT`; do not
+declare the affected Issue ready for approval or FD handoff until resolved.
 
 ## Readiness and handoff
 

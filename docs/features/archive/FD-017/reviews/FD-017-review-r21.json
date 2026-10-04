@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-017",
+  "source_event": "FD-017-000021-implementation-ready",
+  "human_report": "FD-017-review-r21.md",
+  "data": {
+    "summary": "第三轮独立静态审查通过，R1/R1a/R2 修复闭环，无剩余阻塞发现；External 测试与部署未执行。",
+    "reviewer_session": "fd017-reviewer-20261003-a7d204",
+    "worker_session": "fd017-worker-20261003-9059c335",
+    "reviewed_revision": 21,
+    "review_round": 3,
+    "base_commit": "9ae91484d4835a50dad6d2aebbcad93c509583f9",
+    "findings": [],
+    "prior_findings": [{"id": "R1", "result": "resolved_by_static_evidence"}, {"id": "R1a", "result": "resolved_by_static_evidence", "location": "plugins/aiw-agent-proxy/storage.go:136"}, {"id": "R2", "result": "resolved_by_static_evidence", "location": "plugins/aiw-agent-proxy/runner.go:87"}],
+    "commands": [{"command": "aiw fd claim FD-017 FD-017-000021-implementation-ready --session fd017-reviewer-20261003-a7d204", "result": "claimed"}, {"command": "scoped Get-Content UTF8 and rg source/report/receipt/FD excerpts", "kind": "static_read_only"}],
+    "results": {"independent_static_review": "passed", "blocking_findings": 0, "scoped_items_authored": 45, "cancelled_items": 8, "reviewer_compile": "not_run", "worker_reported_compile": "passed_windows_linux_amd64", "runtime_tests": "not_run_external", "sdk_runtime": "not_run", "deployment": "external"},
+    "residual_risk": "共容器跨读、Linux 脱组、Windows/SDK 运行未验证、文件系统断电耐久性、预留离线核实、文件扫描性能；通过只覆盖已授权应用静态交付。"
+  }
+}
