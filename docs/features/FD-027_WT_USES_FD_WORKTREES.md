@@ -1,7 +1,7 @@
 # FD-027: Make `aiw wt` use FD worktrees
 
-**Status:** Planned  
-**Revision:** 1  
+**Status:** Open
+**Revision:** 3
 **Priority:** High  
 **Test policy:** Independent  
 **Evidence policy:** Dual
