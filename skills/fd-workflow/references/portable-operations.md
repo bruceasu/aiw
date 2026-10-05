@@ -38,10 +38,14 @@ business decision uses `needs-decision` and later `decision-recorded`.
 
 Run only checks allowed by the repository. Local focused commits are allowed
 under the project rules; commits do not authorize merge, push, or release.
-An implementation request that asks for parallel work, isolation, a worktree,
-or `wt` enters the isolated FD workflow; an informational or design-only
-mention does not. Capture the current branch and commit the FD plan, then create
-the worktree with `aiw fd worktree add FD-001`. The command records the FD ID,
+Every numbered FD uses an isolated worktree before implementation starts; this
+keeps parallel FD work from sharing writable files. An informational or
+design-only discussion does not create a worktree. Capture the current branch,
+commit the ready FD plan on the parent branch, and make sure the parent
+workspace is clean before creating the worktree with
+`aiw fd worktree add FD-001`. Commit unrelated parent changes separately; do
+not mix them into the FD plan commit. Keep the parent clean while the FD is in
+flight when possible, and wait to merge if it becomes dirty. The command records the FD ID,
 parent branch, feature branch, and worktree path in
 `.ai/fd/FD-001/workspace.json`. Read and verify that record immediately after
 creation; use its parent branch as the merge target. Stop if the record is

@@ -146,9 +146,14 @@ publishing, or worktree removal. Follow narrower repository rules.
    Worker, `Pending Test` to an independent Tester, `Pending Test Acceptance`
    to PM, `Pending Verification` to an independent Reviewer, and an active
    `Complete` FD with a current pass to close. Skip already completed stages;
-   an archived Complete FD is already done. For isolation, capture the current
-   branch, commit the ready FD plan, then create the branch/worktree with
-   `aiw fd worktree add <id>` (`feature/<id>` and `.wt/<id>`). Immediately read
+   an archived Complete FD is already done. Before any implementation, capture
+   the current branch, commit the ready FD plan on the parent branch, and make
+   sure the parent workspace is clean. Do not mix unrelated changes into the FD
+   plan commit; if other parent changes are uncommitted, resolve and commit
+   them separately first. Then create the branch/worktree with
+   `aiw fd worktree add <id>` (`feature/<id>` and `.wt/<id>`). This is the
+   default for every numbered FD, not only requests that mention isolation or
+   parallel work. Immediately read
    `.ai/fd/<id>/workspace.json` and verify `fd_id`, `parent_branch`, `branch`,
    and `worktree` against the created worktree. This file records the exact
    parent for the later merge; stop if it is missing or inconsistent. Keep all
@@ -247,7 +252,8 @@ publishing, or worktree removal. Follow narrower repository rules.
    the recorded `branch` into the recorded `parent_branch` with scoped local
    Git operations from the primary workspace.
    On a conflict or dirty parent, stop with the FD active and worktree intact;
-   do not claim delivery. After a successful merge, close with
+   do not claim delivery or commit unrelated parent changes on the user's
+   behalf. Resume the merge only after the parent is clean. After a successful merge, close with
    `aiw fd close <id> Complete` from the parent workspace and commit only the
    archive/index changes. A close rejection is a Gate, never a reason to edit
    a receipt or archive manually. Do not remove the worktree automatically.

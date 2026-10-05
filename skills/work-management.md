@@ -87,14 +87,21 @@ Reviewer has recorded a passed result.
 
 ## Workspace and Git
 
-Use the primary workspace for ordinary sequential work. When an implementation
-request asks for parallel work or isolation, or says to use a worktree/`wt`, run
-the FD in an isolated worktree. A question or design-only discussion that merely
-mentions these terms does not start implementation.
+Use the primary workspace for FD design and planning. By default, every numbered
+FD moves to its isolated worktree before implementation starts, so parallel FD
+work does not share writable files. A question or design-only discussion does
+not start implementation and does not create a worktree. Legacy Tasks keep
+their existing Task worktree policy.
 
 Use `feature/<fd-id>` and `.wt/<fd-id>` for an isolated FD. Determine the
-current branch before creation. Commit the FD plan before creating its worktree
-so the plan is present there. `aiw fd worktree add` records `fd_id`,
+current branch before creation. Before creating the worktree, commit the ready
+FD plan on the parent branch and make sure the parent workspace is clean. Do
+not mix unrelated changes into the FD plan commit; if other parent changes are
+uncommitted, resolve and commit them separately before proceeding. Keep the
+parent clean while the FD is in flight when possible; if it becomes dirty,
+wait to merge until it is clean again. These focused commits are part of the
+default FD implementation workflow.
+`aiw fd worktree add` records `fd_id`,
 `parent_branch`, `branch`, and `worktree` in `.ai/fd/<fd-id>/workspace.json`.
 Read that file immediately after creation and verify all four values; use its
 `parent_branch` as the sole merge target. Stop if the file is missing or does
@@ -114,7 +121,7 @@ its recorded parent after a passed review, and archiving the FD after the merge
 succeeds. It does not authorize push, release, deployment, or worktree removal.
 For other requests, commit does not authorize merge or archive. A merge conflict
 or dirty parent workspace is a stop condition; preserve the worktree and active
-FD while resolving it. Follow any narrower local rule.
+FD until the parent is clean. Follow any narrower local rule.
 
 ## Validation
 

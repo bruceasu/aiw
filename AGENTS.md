@@ -22,13 +22,16 @@ An OpenSpec change is optional.
 - Update stable specs or design notes only when their requirements or decisions
   changed.
 
-When a dedicated branch or worktree is needed for a numbered FD:
+Before implementing any numbered FD, use its dedicated branch and worktree:
 
 - branch: `feature/<fd-id>`
 - worktree: `.wt/<fd-id>`
 
-Use `aiw fd worktree add <fd-id>` after the FD is committed. Legacy Tasks keep
-their existing `feature/<task-id>` and `.wt/<task-id>` conventions.
+Commit the ready FD plan on the parent branch and ensure the parent workspace
+is clean before using `aiw fd worktree add <fd-id>`. Keep the parent clean
+while the FD is in flight when possible; a dirty parent blocks merge until it
+is clean again. Do not mix unrelated changes into the FD plan commit. Legacy
+Tasks keep their existing `feature/<task-id>` and `.wt/<task-id>` conventions.
 
 ## Resource Budget
 
