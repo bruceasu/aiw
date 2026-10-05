@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-027](FD-027_WT_USES_FD_WORKTREES.md) | Make `aiw wt` use FD worktrees | Open | High |
 
 ## Completed
 
