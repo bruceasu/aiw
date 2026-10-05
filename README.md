@@ -71,7 +71,6 @@ build.bat wf
 copying the plugin tree to the install directory. The command is:
 
 ```text
-aiw wf <operation> ...
 ```
 
 Requirement Management is also distributed as the `aiw-req` plugin.
@@ -119,49 +118,23 @@ aiw issue <command> ... # preferred alias for aiw req
 aiw issue link-parent <child-id> <parent-id>
 aiw issue children <parent-id>
 
-aiw wt add <task-id> [base-branch]
-aiw wt rm <task-id> [--delete-branch] [--force]
-aiw wt commit <task-id> "message"
-aiw wt pull <task-id> [--conflict-handoff]
-aiw wt status <task-id>
-aiw wt list [--porcelain]
-aiw wt prune [--dry-run]
-aiw wt lock <task-id> [reason]
-aiw wt unlock <task-id>
-aiw wt repair
-aiw wt ignore
+aiw wt add <fd-id>
+aiw wt status <fd-id>
+aiw wt commit <fd-id> "message"
+aiw wt local-merge <fd-id>
+aiw wt list
 
 aiw context <task-id>
 aiw spec <spec-id>
-aiw wf <operation> <task-id> [arguments/options]
-aiw wf repair-metadata [task-id] [--dry-run]
-aiw workspace <operation> <task-id>
-aiw wf run <task-id> [--execute] [--primary] [--provider NAME] [--model MODEL]
-aiw wf supervise <task-id> <start|status|stop> [--provider NAME] [--model MODEL]
-aiw wf help --all
-aiw completion <powershell|bash|zsh|fish>
-aiw session status <task-id>
-aiw session list
-aiw session get <task-id>
-aiw session finish <task-id>
-aiw session archive <task-id>
-aiw session delete <task-id> --yes
-aiw session memory <append|show> <task-id> [TEXT]
-aiw session handoff [show] <task-id> [focus]
+Numbered FDs use explicit lifecycle and worktree commands:
 
-aiw skills <list|discover|adopt|install|sync> [options]
-
-aiw ask [--chat|--resume] [--system-prompt TEXT] [--system-prompt-file FILE] [--allow-path PATH] "PROMPT"
-
-aiw prompts list
-aiw prompts [template] [--merge] [--force]
-
-aiw tcc [args...]       # TCC wrapper with automatic include/lib defaults
-aiw git <subcommand>    # run: aiw git help
-aiw cxs <subcommand>   # inspect and resume Codex CLI sessions
-aiw github <subcommand> # GitHub Issues and PRs
-aiw cz [options]       # Conventional Commit wizard
-aiw exec-java [args...] # run a Java main class through Maven
+```text
+aiw fd list
+aiw fd show FD-001
+aiw wt add FD-001
+aiw wt status FD-001
+aiw wt commit FD-001 "message"
+aiw wt local-merge FD-001
 ```
 
 Use `aiw --help` or `aiw help <command>` for command discovery. Plugins provide
@@ -232,114 +205,50 @@ Record Task design decisions in `docs/features/payment-retry.md`. Use
 `/to-spec` helps write or update its rules. `aiw done payment-retry` records
 Task completion; it does not commit, push, merge, or publish code.
 
-### Work in an isolated worktree
+### Work in an isolated FD worktree
 
-Use a worktree when the Task should not modify the parent workspace, or when
-multiple Tasks or agents need to work in parallel:
+Commit the ready FD plan on a clean parent, then create the dedicated worktree:
 
 ```powershell
-aiw wt add payment-retry office
-cd .wt\payment-retry
-
-# edit files in this directory
-git status
-git add internal\retry.go
-git commit -m "implement retry logic"
+aiw wt add FD-027
+cd .wt\FD-027
 ```
 
-The equivalent AIW command stages all changes in that Task worktree:
+`aiw wt` stores the FD ID, parent branch, feature branch, and worktree path in
+`.ai/fd/<fd-id>/workspace.json`. Use the FD ID for status and commits:
 
 ```powershell
-aiw wt commit payment-retry "implement retry logic"
+aiw wt status FD-027
+aiw wt commit FD-027 "implement feature"
 ```
 
-`aiw wt` resolves the worktree from Task metadata, so you do not need to pass
-`-C` when using `aiw wt commit`, `aiw wt status`, or `aiw wt pull`. Use `git -C`
-only when running Git directly:
+After review, deliver to the recorded parent branch:
 
 ```powershell
-git -C .wt\payment-retry status
-git -C .wt\payment-retry add internal\retry.go
+aiw wt local-merge FD-027
 ```
 
-### Check before merging
+If delivery conflicts in the parent, `local-merge` confirms the conflict,
+aborts that merge, verifies that the parent is clean, and merges the parent
+branch into the FD worktree. Resolve and commit conflicts there, then rerun
+`local-merge` explicitly. If the abort or recovery checks fail, the command
+stops and preserves the current Git state.
 
-Run status before delivery to see the worktree branch, changed files, latest
-commits, parent workspace state, ahead/behind counts, and merge preview:
+### Advance a numbered FD
 
-```powershell
-aiw wt status payment-retry
-```
-
-If the worktree is clean and the merge preview is ready, merge the Task branch
-back into its parent branch:
-
-```powershell
-aiw wt pull payment-retry
-```
-
-If that merge conflicts, AIW preserves Git's unresolved merge by default. An
-operator may explicitly request a bounded, agent-assisted proposal for eligible
-text files:
+Use explicit FD handoffs for planning, implementation, testing, and review.
+Create the isolated worktree with `aiw wt add` after committing the ready FD
+plan and cleaning the parent workspace. After review, deliver with
+`aiw wt local-merge`; parent-side content conflicts are recovered in the FD
+worktree and require an explicit retry after resolution.
 
 ```powershell
-aiw wt pull payment-retry --conflict-handoff
-```
-
-This option is off by default. On eligible conflicts it writes
-`proposal-request.md` and prints its path as `proposal handoff: ...`.
-No Agent is started: give that file to an Agent to produce `proposal.patch`
-and `proposal.md`, then use `aiw wt resolve review <task-id>` and, after review,
-`aiw wt resolve apply <task-id> --confirm`. The old option is not accepted.
-
-The proposal is for review only. It never changes protected lifecycle or
-metadata files, binary files, lockfiles, dependency lockfiles, or configured
-sensitive paths; those conflicts require manual resolution. Reviewing or
-accepting a proposal can stage only the approved eligible files. It never
-creates a commit or completes the merge, so inspect the staged result and use
-the normal Git merge flow deliberately.
-
-After `pull`, review the result and archive explicitly when the Task is ready:
-
-```powershell
-aiw status payment-retry DONE
-aiw archive payment-retry --cleanup-wt --delete-branch
-```
-
-Do not use `--delete-branch` until the branch has been merged or is otherwise
-safe to remove. Use `aiw wt rm <task-id> --force` only when deliberately
-discarding an isolated worktree.
-
-### Run one bounded workflow step
-
-Use the managed workflow when implementation should be prepared, evidenced,
-and executed one bounded step at a time:
-
-```powershell
-aiw wf plan payment-retry
-aiw wf run payment-retry
-```
-
-The first `run` prepares the next request without starting an Agent; it may
-write Task state. Execute one authorized step with:
-
-```powershell
-aiw wf run payment-retry --execute
-```
-
-AIW uses an isolated worktree by default for an executing step. Use
-`--primary` only when you explicitly intend to run in the parent workspace:
-
-```powershell
-aiw wf run payment-retry --execute --primary
-```
-
-Inspect a blocked or interrupted workflow with:
-
-```powershell
-aiw wf diagnose payment-retry
-aiw wf recover payment-retry
-aiw wf repair payment-retry
+aiw fd list
+aiw fd show FD-027
+aiw wt add FD-027
+aiw wt status FD-027
+aiw wt commit FD-027 "implement FD work"
+aiw wt local-merge FD-027
 ```
 
 ### Preserve an Issue before creating a Task
@@ -485,267 +394,18 @@ approves, defers, rejects, or promotes. Confirm a displayed action with
 `confirm` or `确认`; the compatible lower-level `aiw req ...`
 commands remain available for scripts and automation.
 
-## Automatic development workflow
+## FD development workflow
 
-AIW separates Task orchestration from AI Session execution:
+Numbered FDs are the workflow for new engineering work. Use `aiw fd` for FD
+lifecycle and handoffs, and `aiw wt` for isolated worktrees, focused commits,
+and local delivery. The removed `aiw wf` Task workflow is not an available
+command. Existing Task records remain historical data; they are not converted
+or used to create new work.
 
-* `aiw wf` owns the managed Task plan, Work Items, Attempts, Gates,
-  Evidence, write leases, recovery, and derived progress.
-* `aiw session` manages persisted AIW Sessions, their memory, handoffs, and backend resume IDs.
-* FD owns engineering decisions and the human-authored work items; OpenSpec
-  owns stable capability specs and optional change artifacts.
-
-The normal flow is:
-
-```text
-Issue -> approved Task and FD -> mapped Work Items
-  -> prepared Attempt -> one bounded agent turn -> Evidence/Gate
-  -> next Work Item or human decision
-```
-
-### End-to-end example
-
-Start with a Task whose FD has numbered work items. For an Issue-led change,
-use Issue Management first:
-
-```text
-aiw issue chat daily-withdrawal-report
-aiw issue approve daily-withdrawal-report APPROVED --by alice --reason "scope approved"
-aiw issue promote daily-withdrawal-report --task daily-withdrawal-report
-```
-
-Complete `docs/features/daily-withdrawal-report.md`, set its Design Readiness
-to `FD_APPLIED` or `FD_NOT_REQUIRED`, then prepare and inspect the managed plan:
-
-```text
-aiw wf plan daily-withdrawal-report
-aiw show daily-withdrawal-report
-```
-
-`run` without `--execute` selects a dependency-satisfied Work Item and prepares
-an Attempt-bound request. It does not start a model, but may write Task state:
-
-```text
-aiw wf run daily-withdrawal-report
-```
-
-Execute exactly one managed agent turn only when that is authorized. Automated
-execution creates or reuses an isolated `.wt/<task-id>` worktree by default:
-
-```text
-aiw wf run daily-withdrawal-report --execute
-```
-
-To deliberately execute in the verified primary workspace, use the explicit
-opt-out:
-
-```text
-aiw wf run daily-withdrawal-report --execute --primary
-```
-
-The workflow facade dispatches `plan`, `sync`, `advance`, `run`,
-`supervise`, `recommend-routing`, `attempt`, `evidence`, `gate`,
-`skip-focused-test`, `complete`, `retry-policy`, `reopen`, `force-close`,
-`focused-test`, `local-merge`, `delivery-failed`, `report`,
-`diagnose`, `recover`, and `repair`. `repair-metadata` is a special form:
-`aiw wf repair-metadata [task-id] [--dry-run]`. Run and `supervise ... start`
-accept `--provider NAME`
-and `--model MODEL`; `run` also accepts `--execute` and `--primary`, and
-`--primary` requires `--execute`. Supervisor overrides apply only to `start`.
-
-For example, delivery failures record their stage and detail, while the
-focused-test operation takes an Attempt ID:
-
-```text
-aiw wf delivery-failed payment-retry merge "conflict in parent branch"
-aiw wf focused-test payment-retry attempt-123
-aiw wf repair-metadata payment-retry --dry-run
-```
-
-`--primary` is rejected without `--execute`; preview commands never create a
-worktree.
-
-The Runner creates a minimal Task-local `artifacts/handoff.md` when needed and
-hands the selected Work Item to the internal Agent adapter. Existing handoff
-content is preserved. A second write-capable Attempt for the same workspace is refused
-while its lease is active.
-
-### Supervised bounded execution
-
-Tasks use the Coder/compile/repair loop described below.
-
-For a long-running local loop, start supervision explicitly. Supervisor
-execution uses the same isolated-worktree default:
-
-```text
-aiw wf recommend-routing daily-withdrawal-report
-aiw wf supervise daily-withdrawal-report start
-aiw wf supervise daily-withdrawal-report status
-aiw wf supervise daily-withdrawal-report stop
-```
-
-Supervisor dispatches sequential, non-interactive Agent turns. A completed
-Session must return a valid structured outcome bound to the expected Attempt
-and Session turn. Only `completed` proceeds to the frozen Compile Plan;
-`blocked` opens a Gate, and `no-progress` follows the ordinary retry policy.
-Compiler failures prepare repair turns in the same Attempt. Three consecutive
-failures stop repair; a successful compile resets the separate counter.
-
-Generate routing before starting a manually created Task. Requirement
-promotion invokes `recommend-routing` automatically. A missing frozen Compile
-Plan opens a Gate and requires a fresh prepared request after planning.
-Do not prewarm a supervise run with `advance` or `run`: those commands can
-persist a request before the supervised Compile Plan is frozen. Use `status`,
-`diagnose`, and `report` for observation. `--primary` belongs to single-step
-`run --execute`, not to `supervise`.
-
-When an isolated Task completes execution and satisfies validation and Gate
-checks, supervise automatically commits its changes, merges into its recorded
-parent branch, verifies ancestry, and removes the merged Task worktree and
-branch. It does not push or archive. Delivery failures preserve recovery
-information. This automatic delivery describes the default schema 9 path.
-See [Supervise](docs/supervise.md) for operation and recovery, and
-[automatic coding](docs/auto-coding.md) for state ownership and execution boundaries.
-
-Named models are defined under `[ai.profiles.<name>]` with `provider` and
-`model`. Default routes are `analysis=fast`, `coder/tester=balanced`, and
-`verifier=reasoning`; the current supervised dispatcher selects the `coder`
-route. Missing or incomplete Profiles fall back to global `[ai]`. New requests
-snapshot the resolved choice, including `start --provider/--model` overrides;
-recovery and compiler repairs reuse it. The default schema 9 dispatcher does
-not escalate models automatically.
-
-Raw Session output is archived before interpretation. Requests with frozen
-input references additionally require a matching implementation report,
-including input identity, change references, and explicit fact sections.
-An invalid report can receive one report-only supplement; a further failure
-opens `report-manual-review`. A saved report alone does not accept the Work Item.
-
-### Evidence, completion, and recovery
-
-Agent output is evidence for review; it is not an automatic authorization to
-declare the work complete. Use the managed workflow commands to record the
-result and satisfy explicit preconditions:
-
-```text
-aiw wf evidence <task-id> <evidence-id> <work-item-id> <kind> <state> [reference]
-aiw wf gate <task-id> <gate-id> <resolved|waived>
-aiw wf complete <task-id> <work-item-id>
-```
-
-When a transition or projection is interrupted, inspect and repair the durable
-record before continuing:
-
-```text
-aiw wf diagnose <task-id>
-aiw wf report <task-id>
-aiw wf recover <task-id>
-aiw wf repair <task-id>
-```
-
-These commands do not replay an external agent turn. A pending Gate or missing
-Evidence remains a blocker until the required human decision or authorized
-validation is recorded.
-
-If runtime state is missing, `supervise start` can initialize an inactive
-projection only from valid, ID-matching Task metadata. A change directory or
-migration marker cannot restore missing Attempt history. `status` does not
-initialize missing state.
-
-### Retry limits and terminal cancellation
-
-In the default schema 9 path, each Work Item has an automatic Attempt limit of three. The operator
-may set a limit from one through five, but only for that Work Item:
-
-```powershell
-aiw wf retry-policy daily-withdrawal-report wi-0001 3
-```
-
-Only structured no-progress outcomes consume this limit in supervise; blocked
-outcomes do not. Git preflight failures create a deduplicated workspace-access
-Gate before a new Attempt starts. Compiler failures have their own three-failure
-limit and do not consume ordinary retries. At exhaustion, AIW blocks
-the Work Item, clears its prepared request, releases its lease, and retains the
-last output reference for diagnosis. It does not silently retry or mark the
-checklist item complete. Reopen an exhausted Work Item only with an explicit
-reason; reopening resets that item's count and does not affect other Work
-Items. A blocked outcome must have its relevant Gates resolved before explicit
-reopening; a non-exhausted ordinary retry count is preserved:
-
-```powershell
-aiw wf reopen daily-withdrawal-report wi-0001 "validation authorization granted"
-```
-
-When a managed Task must stop without fabricating completion, use a reasoned
-force-close with an explicit delivery outcome:
-
-```powershell
-aiw wf force-close daily-withdrawal-report discarded "superseded by a replacement task"
-```
-
-Force-close cancels managed Attempts, releases execution ownership, and records
-`CANCELLED` with either `merged` or `discarded` delivery. It never marks
-incomplete Work Items or pending validation as passed. `merged` is allowed only
-after clean preflight confirms committed Task-branch content and the recorded
-parent branch; a failed preflight or merge leaves the Task, branch, worktree,
-conflict state, and recovery evidence intact. Cleanup, branch deletion, and
-archive are separate, explicit operations that are permitted only after terminal
-delivery is durable.
-
-### Automation boundaries
-
-Automatic development is deliberately bounded. AIW does not automatically:
-
-* approve or promote a Requirement;
-* resolve a Gate or grant validation authorization;
-* run tests, builds, migrations, or broad verification without authorization;
-* push, publish pull requests, or archive after supervised local delivery;
-* create a background scheduler.
-
-Use `aiw wf run` to preview the next action and
-`aiw wf run --execute` or `supervise ... start` only with the
-appropriate authorization. Default schema 9 supervision includes compile validation and automatic
-local delivery for eligible isolated Tasks; ordinary `aiw done` does not itself
-perform that delivery. Task completion and verified Git delivery remain distinct
-states. Review the parent branch before pushing.
-
-### Focused-test pilot
-
-Go work uses compile evidence and independent static review. This repository
-does not retain Go test files. The focused-test pilot remains available for
-applicable non-Go checks when explicitly authorized.
-
-The task-bound `focused-test` path is a pilot for this AIW repository only. It
-is disabled by default for every Task. It runs one selected check only after a
-human has explicitly authorized the current normalized Verification Plan
-digest for the `focused-test` profile. The authorization records the approver
-and approval time; changing the Plan makes that approval stale.
-
-For a participating Task, keep the human-authored Plan at
-`openspec/changes/<task-id>/artifacts/verification-plan.json`. A test agent
-may select only a Plan `check_id`, with rationale and supplied evidence
-references. It cannot provide a command, argv, directory, environment, or
-network override. The controlled runner reads that stored selection and runs
-the Plan entry in the owning Attempt worktree:
-
-```text
-aiw wf focused-test <task-id> <attempt-id>
-```
-
-The command does not grant authorization. Invalid Plan or selection data, and
-an Attempt worktree that cannot contain the declared directory, stop before
-process creation. Missing or stale approval, and an unenforceable
-`network: deny` boundary, also stop before process creation and leave an
-actionable Gate. A completed invocation stores bounded output and a result
-artifact, then Workflow Core records the related command Evidence.
-
-This pilot does not permit network-enabled tests, Git delivery, generic shell
-or custom-script execution, automatic repair or retry loops, permission
-escalation, or automatic Gate resolution.
-
-For Session inspection, handoff, or native-resume-ID lookup, use `aiw session`. For inspecting or resuming native Codex
-sessions, use `aiw cxs`. See the command-specific `--help` output before using
-an unfamiliar operation.
+After a reviewed FD change, `aiw wt local-merge <fd-id>` delivers the feature
+branch to its recorded parent. If that merge has content conflicts, the
+command aborts the parent-side merge and merges the parent into the FD
+worktree. Resolve and commit there, then rerun `local-merge` to deliver.
 
 # Plugin System
 
@@ -979,7 +639,7 @@ docs/features/<task-id>.md
 ```
 
 The FD starts `BLOCKED` and needs confirmed decisions and numbered work items
-before `aiw wf plan` can map them. Use `--backend openspec` only when an
+before creating a numbered FD. Use `--backend openspec` only when an
 OpenSpec change is wanted.
 
 Default metadata:
@@ -1074,38 +734,17 @@ Options:
 
 ## 8. `aiw wt <subcommand>`
 
-Worktree management commands (`aiw wt help` for details).
+`aiw wt` is the sole worktree interface and accepts numbered FD IDs. It reads
+the parent branch, feature branch, and worktree path from
+`.ai/fd/<fd-id>/workspace.json`; Task IDs are rejected.
 
-| Subcommand             | Description                                                                 |
-| ---------------------- | --------------------------------------------------------------------------- |
-| `add <task-id> [base]` | Explicitly isolate a Task on branch `feature/<task-id>` using its recorded parent branch by default |
-| `commit <task-id> "message"` | Stage and commit changes in the Task worktree |
-| `pull <task-id>` | Merge the Task branch into its recorded parent branch |
-| `status <task-id>` | Show worktree state and merge readiness |
-| `discard <task-id> --yes` | Discard a confirmed isolated experiment |
-| `rm <task-id>`         | Remove a worktree                                                           |
-| `list`                 | List all worktrees                                                          |
-| `prune`                | Remove stale worktree metadata                                              |
-| `lock`                 | Protect a worktree from accidental removal                                  |
-| `unlock`               | Unlock a worktree                                                           |
-| `repair`               | Repair worktree links after path relocation                                 |
-| `ignore`               | Add `.wt/` to `.gitignore`                                                  |
-
-`add` executes:
-
-```bash
-git worktree add .wt/<task-id> -b feature/<task-id> <base>
-```
-
-and updates:
-
-```text
-branch
-worktree
-updated
-```
-
-in `task.toml`.
+| Subcommand | Description |
+| --- | --- |
+| `add <fd-id>` | Create `feature/<fd-id>` at `.wt/<fd-id>` and record its coordinates |
+| `status <fd-id>` | Show the parent and FD worktree status |
+| `commit <fd-id> "message"` | Stage and commit changes in the FD worktree |
+| `local-merge <fd-id>` | Deliver to parent and recover conflicts in the FD worktree |
+| `list` | List registered Git worktrees |
 
 ## 9. `aiw context <task-id>`
 
@@ -1328,20 +967,12 @@ aiw init
 aiw init --prompts --merge
 aiw init --prompts --template go
 
-# Task workflow
-aiw new payment-retry
-aiw wt add payment-retry
-aiw context payment-retry
-aiw status payment-retry IN_PROGRESS
-aiw done payment-retry
-aiw archive payment-retry --cleanup-wt --delete-branch
-
-# Worktrees
+# FD worktree workflow
+aiw wt add FD-027
+aiw wt status FD-027
+aiw wt commit FD-027 "implement feature"
+aiw wt local-merge FD-027
 aiw wt list
-aiw wt prune --dry-run
-aiw wt lock payment-retry "in review"
-aiw wt rm payment-retry --delete-branch
-aiw wt ignore
 
 # Git utilities
 aiw git st

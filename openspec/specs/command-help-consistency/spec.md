@@ -7,15 +7,12 @@ TBD - created by archiving change command-help-consistency. Update Purpose after
 
 AIW MUST expose help text whose command names, aliases, subcommand forms, argument shapes, and documented options match the commands accepted by the source-code dispatch and validation paths.
 
-#### Scenario: Workflow help lists every callable operation
+#### Scenario: FD worktree help matches the command surface
 
-- **WHEN** a user requests workflow help through `aiw wf`
-- **THEN** the help lists every publicly dispatchable workflow operation, including planning, execution, recovery, delivery, focused-test, routing, reporting, and metadata-repair operations
-
-#### Scenario: Workflow option documentation matches parsing
-
-- **WHEN** a workflow command accepts command-line options
-- **THEN** help documents the supported options and their constraints, including execution, primary-workspace, provider/model, and dry-run options where applicable
+- **WHEN** a user requests `aiw wt` help
+- **THEN** help lists only supported FD operations, including add, status,
+  commit, local-merge, and list
+- **AND** examples describe conflict recovery in the FD worktree
 
 #### Scenario: Task and top-level help remain consistent
 
@@ -26,10 +23,12 @@ AIW MUST expose help text whose command names, aliases, subcommand forms, argume
 
 AIW MUST keep README command summaries/examples and shell completion command lists aligned with the source-code command surface and the canonical help output.
 
-#### Scenario: README workflow documentation is complete
+#### Scenario: README FD worktree documentation is complete
 
-- **WHEN** a user follows the workflow command summary or examples in README
-- **THEN** each referenced command and option is accepted by the CLI, and the summary does not omit a publicly callable workflow operation that is required for command discovery
+- **WHEN** a user follows README FD workflow commands
+- **THEN** each command and option is supported and uses FD IDs
+- **AND** the removed `aiw wf` and `aiw fd worktree` commands are not presented
+  as available commands
 
 
 #### Scenario: Consistency regression is detected

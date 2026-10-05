@@ -126,23 +126,17 @@ If a process crashes while holding `.ai/fd/<id>/.mutation-lock`, inspect the
 original process and event receipt before removing the stale lock. Never
 remove it while the role may still be writing.
 
-When an implementation request asks for parallel work, isolation, a worktree,
-or `wt`, use the isolated FD workflow; an informational or design-only mention
-does not start implementation. Commit the FD plan, then run
-`aiw fd worktree add FD-002`. It writes the FD ID, parent branch, feature
-branch, and worktree path to `.ai/fd/FD-002/workspace.json`; read and verify
-that record immediately, then use its `parent_branch` for the later merge.
-`aiw fd worktree status FD-002` shows Git worktrees. Sequential work may stay
-in the primary checkout.
-
-Before using `aiw wt` operations, check `aiw help wt` and use them only if they
-accept the FD ID. Do not create a Task for a Task-only command. When no FD-aware
-merge command is available, use scoped local Git operations for
-`feature/<fd-id>` and the recorded parent. After a passed review, merge first;
-archive the FD only after the merge succeeds. A conflict leaves the FD active
-and worktree intact. This isolated lifecycle authorizes local commits and the
-requested merge/archive; it does not authorize push, release, deployment, or
-worktree removal.
+When implementation uses isolation or `wt`, commit the ready FD plan and
+create its worktree with `aiw wt add FD-002`. It writes the FD ID, parent
+branch, feature branch, and worktree path to
+`.ai/fd/FD-002/workspace.json`; read and verify that record immediately.
+Inspect both worktrees with `aiw wt status FD-002`. After a passed review,
+deliver with `aiw wt local-merge FD-002`. If the parent-side merge has content
+conflicts, the command aborts it and merges the parent into the FD worktree.
+Resolve and commit there, then rerun `local-merge` explicitly. Archive only
+after delivery succeeds. This authorizes local commits and the requested
+merge/archive; it does not authorize push, release, deployment, or worktree
+removal.
 
 After a passed review, run `aiw fd close FD-002 Complete` once any requested
 isolated merge has succeeded. Use `--reason "..."` for `Deferred` and `Closed`
@@ -186,8 +180,8 @@ independent Reviewer session. Outstanding `%% NEEDS_INPUT` notes still block a
 Reviewer pass; the Reviewer can issue `changes-requested` to return work to
 Worker. An in-flight event must be reconciled before requesting review.
 
-Old `aiw issue promote --task`, `aiw task`, and `aiw wf` remain compatibility
-commands for existing Task records. Do not use `aiw wf supervise` for a new FD.
+Legacy Task records remain readable, but `aiw wf` has been removed. New
+engineering work uses numbered FDs and the `aiw fd` / `aiw wt` commands.
 Stable specs still live in `openspec/specs/`; create an OpenSpec change only
 when explicitly requested.
 

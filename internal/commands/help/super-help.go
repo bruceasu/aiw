@@ -115,8 +115,6 @@ func listAll() error {
 		"                               Correct an unclaimed reopen handoff reason.\n" +
 		"  fd close <fd-id> <Complete|Deferred|Closed> [--reason <text>]\n" +
 		"                               Archive an FD with the required evidence.\n" +
-		"  fd worktree <add|status> <fd-id>\n" +
-		"                               Add or inspect an FD worktree.\n" +
 		"  issue <...>                  Manage Issue intake, split lineage, and promotion.\n" +
 		"  req <...>                    Compatibility alias for Issue records.\n\n")
 

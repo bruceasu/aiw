@@ -151,7 +151,7 @@ publishing, or worktree removal. Follow narrower repository rules.
    sure the parent workspace is clean. Do not mix unrelated changes into the FD
    plan commit; if other parent changes are uncommitted, resolve and commit
    them separately first. Then create the branch/worktree with
-   `aiw fd worktree add <id>` (`feature/<id>` and `.wt/<id>`). This is the
+   `aiw wt add <id>` (`feature/<id>` and `.wt/<id>`). This is the
    default for every numbered FD, not only requests that mention isolation or
    parallel work. Immediately read
    `.ai/fd/<id>/workspace.json` and verify `fd_id`, `parent_branch`, `branch`,
@@ -172,8 +172,7 @@ publishing, or worktree removal. Follow narrower repository rules.
    report and same-basename JSON using `docs/features/REPORT_DATA_TEMPLATE.json`;
    point `--artifact` to Markdown. If isolated, inspect the worktree status and
    commit only FD-scoped changes so the Reviewer has a stable diff. Use
-   `aiw wt commit <id>` only if `aiw help wt` confirms FD IDs are supported;
-   otherwise use scoped local Git operations in `.wt/<id>`. If authorization or
+   `aiw wt commit <id>` for focused local commits. If authorization or
    design is missing, stop with the FD active. Emit `implementation-ready
    --producer worker --artifact <implementation-report> --source-event
    <claimed-worker-event>` only after all scoped items and required evidence
@@ -246,14 +245,12 @@ publishing, or worktree removal. Follow narrower repository rules.
    `verification-passed`, verify the latest receipt matches the current FD
    revision and content. Read `.ai/fd/<id>/workspace.json` and take its
    `parent_branch`, `branch`, and `worktree` as the merge coordinates. Confirm
-   the parent branch is clean and still matches the recorded parent. Check
-   `aiw help wt`; use `aiw wt pull <id>` only if the
-   current command explicitly supports FD IDs. Otherwise merge only
-   the recorded `branch` into the recorded `parent_branch` with scoped local
-   Git operations from the primary workspace.
-   On a conflict or dirty parent, stop with the FD active and worktree intact;
-   do not claim delivery or commit unrelated parent changes on the user's
-   behalf. Resume the merge only after the parent is clean. After a successful merge, close with
+   the parent branch is clean and still matches the recorded parent. Run
+   `aiw wt local-merge <id>` for delivery. On a parent-side content conflict,
+   the command aborts the failed parent merge and merges the parent into the FD
+   worktree for resolution. Resolve and commit there, then rerun `local-merge`
+   explicitly. If recovery fails, leave the FD active and worktree intact.
+   After a successful merge, close with
    `aiw fd close <id> Complete` from the parent workspace and commit only the
    archive/index changes. A close rejection is a Gate, never a reason to edit
    a receipt or archive manually. Do not remove the worktree automatically.

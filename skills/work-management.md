@@ -101,17 +101,17 @@ uncommitted, resolve and commit them separately before proceeding. Keep the
 parent clean while the FD is in flight when possible; if it becomes dirty,
 wait to merge until it is clean again. These focused commits are part of the
 default FD implementation workflow.
-`aiw fd worktree add` records `fd_id`,
+`aiw wt add` records `fd_id`,
 `parent_branch`, `branch`, and `worktree` in `.ai/fd/<fd-id>/workspace.json`.
 Read that file immediately after creation and verify all four values; use its
 `parent_branch` as the sole merge target. Stop if the file is missing or does
-not match the created worktree. Use `aiw fd worktree add/status` for FD
-worktrees. Before using
-`aiw wt` operations, check their current help and use them only if they accept
-an FD ID; never invent or create a Task to satisfy a Task-only command. If no
-FD-aware integration command is available, use scoped local Git operations for
-the requested FD branch. Keep each FD's writing role in one workspace at a
-time and do not mix unrelated files into its commits.
+not match the created worktree. Use `aiw wt status <fd-id>` for both worktrees,
+`aiw wt commit <fd-id> "message"` for focused commits, and
+`aiw wt local-merge <fd-id>` for delivery after review. If delivery finds a
+content conflict, `local-merge` aborts the parent merge and merges the parent
+into the FD worktree for resolution; commit there and rerun `local-merge` to
+deliver. Do not create a Task to satisfy a Task-only command. Keep each FD's
+writing role in one workspace at a time and do not mix unrelated files into its commits.
 
 The user permits local Git commits for the new FD workflow. A Worker may make
 a focused commit for an independently reviewable slice. A Reviewer checks a

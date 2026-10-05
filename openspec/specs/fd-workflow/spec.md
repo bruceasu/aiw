@@ -418,5 +418,11 @@ release, deployment, worktree deletion, or archive.
 ### Requirement: Legacy records remain readable
 
 Existing Task and Workflow Core records MUST NOT be rewritten as FD events or
-evidence. The old Task and `aiw wf` paths MAY remain available as explicit
-compatibility commands while new FD work avoids Supervisor.
+evidence. New engineering work MUST use numbered FDs. The removed `aiw wf`
+command MUST NOT be presented as an available path. The `aiw wt` plugin MUST
+be the sole worktree command surface for FDs; `wt add` directly creates the
+recorded worktree and workspace metadata. After review, `wt local-merge`
+delivers the FD branch to its recorded parent. On a parent-side content
+conflict, it MUST abort the failed merge, verify parent recovery, and merge the
+parent into the FD worktree for resolution. Delivery MUST require a second
+explicit `local-merge` invocation after that resolution is committed.
