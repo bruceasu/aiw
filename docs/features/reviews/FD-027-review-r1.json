@@ -1,0 +1,40 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-027",
+  "source_event": "FD-027-000006-test-accepted",
+  "human_report": "FD-027-review-r1.md",
+  "data": {
+    "reviewer_session": "fd027-reviewer-20261006-bd79a1",
+    "reviewed_base": "develop",
+    "reviewed_head": "86b4b38",
+    "outcome": "changes-requested",
+    "findings": [
+      {
+        "severity": "high",
+        "path": "plugins/aiw-wt.py",
+        "line": 146,
+        "summary": "add 未检查 .ai/ 和 .wt/ 是否被忽略，可从干净 parent 创建出阻断 local-merge 的脏 parent。",
+        "required_action": "在 add 改动 Git 前保证两类生成路径不令 parent 变脏，或可操作地拒绝缺少忽略规则的仓库；补对应黑盒场景。"
+      },
+      {
+        "severity": "medium",
+        "path": "README.md",
+        "line": 793,
+        "summary": "README 仍发布已移除的 aiw wt ignore 命令，并在第 63 行指导构建已移除的 aiw-wf。",
+        "required_action": "同步 README 到 FD-only wt 命令接口。"
+      },
+      {
+        "severity": "medium",
+        "path": "docs/features/FD-027_WT_USES_FD_WORKTREES.md",
+        "line": 133,
+        "summary": "Verification 和 TODO 尚未反映真实 Tester、PM 和 Worker 交接记录。",
+        "required_action": "修复后按实际收据、测试结果与未覆盖风险更新 FD 文档。"
+      }
+    ],
+    "test_evidence": "第 2 轮授权绑定修订和 Tester 会话；9/9 通过，14/19 场景有证据，分支覆盖率未测；PM 例外不等于行为豁免。",
+    "commands": ["Get-Content", "rg", "git diff", "git log", "git status", "Get-FileHash", "aiw fd claim FD-027 FD-027-000006-test-accepted --session fd027-reviewer-20261006-bd79a1"],
+    "unrun_checks": ["tests", "coverage", "Go compile", "final build"],
+    "residual_risk": "S15–S19 无运行时通过证据；主工作区 FD-028 未提交改动阻止交付。"
+  }
+}
