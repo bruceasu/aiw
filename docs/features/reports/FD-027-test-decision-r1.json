@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-027",
+  "source_event": "FD-027-000005-test-report-ready",
+  "human_report": "FD-027-test-decision-r1.md",
+  "data": {
+    "disposition": "accepted",
+    "tester_report": ".wt/FD-027/docs/features/reports/FD-027-test-report-r1.md",
+    "fd_revision": 5,
+    "fd_digest": "17c07ab468e5356fa2a64985ec96bbf0f94409218806e189d35ca6aeda660d12",
+    "requirements_coverage": "73.68%",
+    "branch_coverage": "not measured",
+    "rationale": "修正测试夹具后 9/9 通过，首次 7/9 夹具失败保留；报告如实区分 14/19 有证据场景与 5 个未覆盖场景。",
+    "exceptions": "业务代码分支覆盖率未测量；5 个场景未获运行证据。允许有边界报告进入独立审查，不视作行为豁免或通过。",
+    "residual_risk": "顶层帮助、补全、非内容冲突错误、abort/恢复失败及全路径资源保留需 Reviewer 结合静态证据核查。",
+    "pm_identity": "fd027-host-pm-20261006",
+    "decision_time": "2026-10-06T14:34:33+00:00"
+  }
+}
