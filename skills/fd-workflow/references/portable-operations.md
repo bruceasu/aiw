@@ -54,6 +54,9 @@ missing or inconsistent. Use `aiw wt status FD-001` to inspect both worktrees.
 Use `aiw wt local-merge FD-001` for delivery after review. Content conflicts
 are recovered in the FD worktree and require an explicit retry. Never create a
 Task to satisfy a Task-only command. Archive only after the merge succeeds.
+Before the handoff for testing or review, commit each completed Work Item
+separately, then rebase the clean FD worktree onto its recorded parent branch
+once after all Work Items are done.
 
 ## Auto
 

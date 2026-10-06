@@ -207,6 +207,15 @@ When a human explicitly requests `$fd-workflow auto`, the host agent MAY
 create or resume one numbered FD, design and split its Work Items, implement
 them, request independent review, repair findings, archive a passed FD, and
 remove its clean worktree and merged branch after the archive commit.
+It MUST commit each completed, independently reviewable Work Item with only
+that item's changes. After all Work Items are committed, it MUST start one
+rebase of the clean FD branch onto its recorded parent before the Tester or
+Reviewer handoff. A conflict MUST be resolved within that rebase and the
+resulting diff inspected, or the rebase MUST be aborted and reported as a Gate.
+FD Verification MUST record the parent commit and rebase result before the
+final evidence commit and handoff, so a resumed auto run does not repeat it.
+It MUST NOT start another automatic rebase in the same implementation cycle or
+rewrite reviewed commits after review evidence is recorded.
 The operation MUST use the existing role receipt, exact claim, source-event,
 revision, and digest gates. Tester and Reviewer MUST each run in separate
 subagents for an independent-policy FD; the PM/Planner/Worker host MUST NOT

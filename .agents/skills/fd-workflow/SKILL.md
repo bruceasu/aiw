@@ -172,10 +172,20 @@ publishing. Follow narrower repository rules.
    remaining `%%` notes with actual evidence and skipped checks. Apply the
    repo's validation budget. For a Dual evidence FD, write a Chinese Markdown
    report and same-basename JSON using `docs/features/REPORT_DATA_TEMPLATE.json`;
-   point `--artifact` to Markdown. If isolated, inspect the worktree status and
-   commit only FD-scoped changes so the Reviewer has a stable diff. Use
-   `aiw wt commit <id>` for focused local commits. If authorization or
-   design is missing, stop with the FD active. Emit `implementation-ready
+   point `--artifact` to Markdown. In the FD worktree, inspect the diff and
+   commit each completed, independently reviewable Work Item before starting
+   the next. Stage only that item's files; use `aiw wt commit <id>` only when
+   every uncommitted change belongs to it, otherwise use path-scoped `git add`
+   and `git commit`. After all Work Items are committed, verify both worktrees
+   are clean and the recorded parent branch, then start one
+   `git rebase <parent_branch>` in the FD worktree before the Tester or
+   Reviewer handoff. Resolve conflicts within that rebase and inspect the
+   resulting diff; if resolution is unsafe, abort the rebase and report a Gate.
+   Record the parent commit and rebase result in FD Verification, then commit
+   the final FD evidence. On resume, read that record before deciding whether
+   the one rebase already happened. Do not start another automatic rebase in
+   the same implementation cycle or rebase after review evidence is recorded.
+   If authorization or design is missing, stop with the FD active. Emit `implementation-ready
    --producer worker --artifact <implementation-report> --source-event
    <claimed-worker-event>` only after all scoped items and required evidence
    are resolved. New FDs have `**Test policy:** Independent`, so this event

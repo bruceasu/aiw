@@ -133,6 +133,14 @@ content conflict, `local-merge` aborts the parent merge and merges the parent
 into the FD worktree for resolution; commit there and rerun `local-merge` to
 deliver. Do not create a Task to satisfy a Task-only command. Keep each FD's
 writing role in one workspace at a time and do not mix unrelated files into its commits.
+Commit each completed, independently reviewable Work Item before starting the
+next, staging only its files. After all Work Items are committed, rebase the
+clean FD worktree onto its recorded parent branch once, before Tester or
+Reviewer receives the implementation. Resolve conflicts in that rebase and
+review the final diff; abort and report a Gate if resolution is unsafe. Record
+the parent commit and result in FD Verification, then commit final FD evidence
+before handoff. Read that record on resume; do not automatically rebase again
+in that implementation cycle or rewrite commits after review evidence is recorded.
 
 The user permits local Git commits for the new FD workflow. A Worker may make
 a focused commit for an independently reviewable slice. A Reviewer checks a
