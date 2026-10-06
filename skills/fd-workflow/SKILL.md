@@ -150,7 +150,8 @@ publishing, or worktree removal. Follow narrower repository rules.
    the current branch, commit the ready FD plan on the parent branch, and make
    sure the parent workspace is clean. Do not mix unrelated changes into the FD
    plan commit; if other parent changes are uncommitted, resolve and commit
-   them separately first. Then create the branch/worktree with
+   them separately first. Ensure `.wt/` and `.ai/` are ignored by Git;
+   `wt add` rejects missing rules before changing Git state. Then create the branch/worktree with
    `aiw wt add <id>` (`feature/<id>` and `.wt/<id>`). This is the
    default for every numbered FD, not only requests that mention isolation or
    parallel work. Immediately read

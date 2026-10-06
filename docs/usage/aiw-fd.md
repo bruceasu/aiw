@@ -127,7 +127,9 @@ original process and event receipt before removing the stale lock. Never
 remove it while the role may still be writing.
 
 When implementation uses isolation or `wt`, commit the ready FD plan and
-create its worktree with `aiw wt add FD-002`. It writes the FD ID, parent
+ensure `.wt/` and `.ai/` are ignored by Git, then create its worktree with
+`aiw wt add FD-002`. Add checks these paths before changing Git state and
+reports missing ignore rules. It writes the FD ID, parent
 branch, feature branch, and worktree path to
 `.ai/fd/FD-002/workspace.json`; read and verify that record immediately.
 Inspect both worktrees with `aiw wt status FD-002`. After a passed review,

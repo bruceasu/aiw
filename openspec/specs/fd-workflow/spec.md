@@ -414,6 +414,10 @@ unresolved `%% NEEDS_INPUT` notes MUST still prevent `verification-passed`.
 An FD MAY have an isolated worktree once its plan is committed. Local focused
 commits MAY be made when authorized. Commit MUST NOT imply push, merge,
 release, deployment, worktree deletion, or archive.
+Before `aiw wt add` creates a worktree or metadata, it MUST confirm that the
+FD worktree path and `.ai` metadata path are ignored by Git. If either path is
+not ignored, add MUST fail without changing Git state and tell the user which
+ignore rule to add and commit.
 
 ### Requirement: Legacy records remain readable
 

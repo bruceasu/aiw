@@ -8,7 +8,7 @@ records remain available for compatibility.
 
 * Create numbered FDs and route PM, Planner, Worker, and Reviewer handoffs with `aiw fd`
 * Initialize AIW Task, FD, and optional OpenSpec directories and default instruction files
-* Automatically create or append `.wt/` entries to `.gitignore`
+* Create and deliver dedicated FD worktrees through `aiw wt`
 * Generate or merge AI prompt files from `agent-templates/`
 * Create, view, and update tasks
 * Capture, approve, split, and promote durable Issues before Task creation
@@ -58,19 +58,6 @@ Windows executable:
 
 ```powershell
 .\aiw.exe init
-```
-
-The workflow CLI is distributed as the `aiw-wf` plugin. Build both Windows
-and Linux workflow binaries into `plugins/aiw-wf` with:
-
-```bat
-build.bat wf
-```
-
-`build.bat plugins` and `build.bat all` also build the workflow binaries before
-copying the plugin tree to the install directory. The command is:
-
-```text
 ```
 
 Requirement Management is also distributed as the `aiw-req` plugin.
@@ -207,7 +194,9 @@ Task completion; it does not commit, push, merge, or publish code.
 
 ### Work in an isolated FD worktree
 
-Commit the ready FD plan on a clean parent, then create the dedicated worktree:
+Commit the ready FD plan on a clean parent. Ensure `.wt/` and `.ai/` are
+ignored by Git, then create the dedicated worktree. `wt add` checks both
+paths before changing Git state and explains which ignore rule is missing.
 
 ```powershell
 aiw wt add FD-027
@@ -789,16 +778,6 @@ merged
 wrote
 skipped existing
 ```
-
-## 11. `aiw wt ignore`
-
-Creates `.gitignore` or appends:
-
-```text
-.wt/
-```
-
-If the rule already exists, no duplicate entry is added.
 
 # Git Utilities
 

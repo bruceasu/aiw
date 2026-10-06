@@ -169,6 +169,19 @@ def worktree_add(raw_id: str) -> int:
             raise WorktreeError("FD metadata directories must stay inside the repository")
     if metadata_path.exists() or metadata_path.is_symlink():
         raise WorktreeError(f"FD workspace record already exists: {metadata_path}")
+    unignored: list[str] = []
+    for relative, rule in ((f".wt/{fd_id}", ".wt/"),
+                           (f".ai/fd/{fd_id}/workspace.json", ".ai/")):
+        ignored = git(root, "check-ignore", "-q", "--", relative)
+        if ignored.returncode == 1:
+            unignored.append(rule)
+        elif ignored.returncode:
+            raise WorktreeError(ignored.stderr.strip() or
+                                f"cannot check Git ignore rules for {relative}")
+    if unignored:
+        raise WorktreeError("FD management paths must be ignored before add; "
+                            "add " + ", ".join(f"`{rule}`" for rule in unignored) +
+                            " to .gitignore, commit it, and retry")
     created = git(root, "worktree", "add", "-b", branch, str(target), "HEAD")
     command_output(created)
     if created.returncode:

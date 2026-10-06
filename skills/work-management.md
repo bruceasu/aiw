@@ -103,6 +103,8 @@ wait to merge until it is clean again. These focused commits are part of the
 default FD implementation workflow.
 `aiw wt add` records `fd_id`,
 `parent_branch`, `branch`, and `worktree` in `.ai/fd/<fd-id>/workspace.json`.
+Before creating the worktree, ensure `.wt/` and `.ai/` are ignored by Git;
+`wt add` checks both paths and rejects missing rules before changing Git state.
 Read that file immediately after creation and verify all four values; use its
 `parent_branch` as the sole merge target. Stop if the file is missing or does
 not match the created worktree. Use `aiw wt status <fd-id>` for both worktrees,
