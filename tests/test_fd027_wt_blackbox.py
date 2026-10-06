@@ -106,6 +106,31 @@ class FDWorktreeBlackBox(unittest.TestCase):
         self.assert_wt_error("add", "FD-027")
         self.assertFalse((self.root / ".wt" / "FD-027").exists())
 
+    def assert_missing_ignore_blocks_add(self, rules, missing_rules):
+        (self.root / ".gitignore").write_text(rules, encoding="utf-8")
+        self.git("add", ".gitignore")
+        self.git("commit", "-m", "set management ignore rules")
+        parent_before = self.git("rev-parse", "HEAD")
+        result = self.assert_wt_error("add", "FD-027")
+        diagnostic = result.stdout + result.stderr
+        for rule in missing_rules:
+            self.assertIn(rule, diagnostic)
+        self.assertEqual(self.git("rev-parse", "HEAD"), parent_before)
+        self.assertEqual(self.git("status", "--porcelain"), "")
+        self.assertFalse((self.root / ".wt" / "FD-027").exists())
+        self.assertFalse((self.root / ".ai" / "fd" / "FD-027" / "workspace.json").exists())
+        branches = self.git("branch", "--list", "feature/FD-027")
+        self.assertEqual(branches, "")
+
+    def test_add_rejects_when_both_management_paths_are_unignored(self):
+        self.assert_missing_ignore_blocks_add("", (".wt/", ".ai/"))
+
+    def test_add_rejects_when_worktree_path_is_unignored(self):
+        self.assert_missing_ignore_blocks_add(".ai/\n", (".wt/",))
+
+    def test_add_rejects_when_metadata_path_is_unignored(self):
+        self.assert_missing_ignore_blocks_add(".wt/\n", (".ai/",))
+
     def test_rejects_malformed_record_before_commit(self):
         tree = self.add()
         record_path = self.root / ".ai/fd/FD-027/workspace.json"

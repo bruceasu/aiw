@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-027",
+  "source_event": "FD-027-000009-test-report-ready",
+  "human_report": "FD-027-test-decision-r2.md",
+  "data": {
+    "disposition": "accepted",
+    "tester_report": ".wt/FD-027/docs/features/reports/FD-027-test-report-r2.md",
+    "fd_revision": 9,
+    "fd_digest": "ec59311ded07c43367d511495c1a386eea801f25a2a971aa517f2da930698bd4",
+    "requirements_coverage": "77.27%",
+    "branch_coverage": "not measured",
+    "rationale": "R2 12/12 黑盒测试通过，新增忽略规则预检三场景通过；22 场景中 17 项有本轮运行证据，R1 历史未混入计数。",
+    "exceptions": "业务代码分支覆盖率未测量；S15-S19 五项无运行证据。准许有边界报告进入独立审查，不视作行为豁免或通过。",
+    "residual_risk": "帮助、补全、非内容冲突 Git 错误、abort/恢复失败和全路径资源保留仍需 Reviewer 结合静态证据判断。",
+    "pm_identity": "fd027-host-pm-20261006",
+    "decision_time": "2026-10-06T14:42:44+00:00"
+  }
+}

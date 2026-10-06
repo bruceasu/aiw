@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-027",
+  "source_event": "FD-027-000008-implementation-ready",
+  "human_report": "FD-027-test-authorization-r3.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-027-000008-implementation-ready",
+    "fd_revision": 8,
+    "fd_digest": "e34b0e28ad0133604cd887aef1955facf4f21a798f9b74a7651bd20f28387618",
+    "tester_session": "fd027-tester-20261006-r2-5f8c1d",
+    "command": "python -B -m unittest tests.test_fd027_wt_blackbox -v",
+    "working_directory": "D:\\03_projects\\AI-tools\\aiw\\.wt\\FD-027",
+    "scope": "仅 tests/test_fd027_wt_blackbox.py 的 12 个临时 Git 仓库黑盒场景",
+    "expected_duration": "15 秒以内",
+    "side_effects": "只写系统临时目录并在结束时清理；无持久产物；-B 不写 pycache",
+    "risk_review": "已检查新增 3 例仅修改临时仓库 .gitignore，断言缺规则时无分支、worktree、metadata 或 parent 状态变化；测试 SHA-256 9867222CF909D97DB7026D541EA0C0671749FAE0FBA75DC521EBAF1BCE243D69；离线、无提权或发布产物",
+    "human_approval": "not required",
+    "planner_identity": "fd027-host-planner-20261006",
+    "decision_time": "2026-10-06T14:41:02+00:00"
+  }
+}
