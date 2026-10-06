@@ -2,8 +2,9 @@
 
 ## Resource Guard
 - perform one static review pass by default
-- do not invoke `codex-auto-review`, sub-agents, tests, builds, or permission
+- do not invoke `codex-auto-review`, tests, builds, or permission
   probes unless the user explicitly asks
+- bounded sub-agents may perform independent parts of the same static review
 - avoid rereading unchanged files or repeating the same finding search
 
 ## Output Order

@@ -1,0 +1,36 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-028",
+  "source_event": "FD-028-000008-test-accepted",
+  "human_report": "FD-028-review-r1.md",
+  "data": {
+    "outcome": "verification-passed",
+    "reviewer_session": "fd028-reviewer-20261007-91f0c7",
+    "reviewed_commit": "cce1cfb8c3bd93c1d40a99f88fddc5bfc5cb1c89",
+    "diff_base": "7b16ff16f6561f618bb1293dfb5bc548c95dca7b",
+    "findings": [],
+    "results": {
+      "template_and_example_consistent": true,
+      "skill_contract_spec_consistent": true,
+      "archive_path_static_match": true,
+      "tester_exclusions_reviewed": 8,
+      "executed_behavior_tests": 0,
+      "requirements_coverage": "not applicable",
+      "branch_coverage": "not measured",
+      "pm_exception_respected": true
+    },
+    "commands": [
+      "aiw fd resume FD-028",
+      "aiw fd claim FD-028 FD-028-000008-test-accepted --session fd028-reviewer-20261007-91f0c7",
+      "aiw fd show FD-028",
+      "git status --short",
+      "git log --oneline develop..HEAD",
+      "git diff --stat develop...HEAD",
+      "git diff develop...HEAD -- relevant paths",
+      "git rev-parse HEAD develop",
+      "rg and Get-Content for targeted static evidence"
+    ],
+    "residual_risk": "实际归档及清理尚未发生；历史兼容性没有运行回归证据。"
+  }
+}

@@ -127,6 +127,36 @@ worktree and branch after the archive commit. It does not authorize tests,
 final builds, network access, permission escalation, push, deployment, or
 publishing. Follow narrower repository rules.
 
+### Blocker feedback for every stop
+
+Whenever Auto cannot continue at any preflight, design, Worker, Tester, PM,
+Reviewer, delivery, archive, or cleanup Gate, write one factual feedback pair
+under `docs/features/reports/FD-XXX-blocker-<unique-suffix>.md` and `.json`
+before reporting the stop. Use
+`docs/features/BLOCKER_FEEDBACK_TEMPLATE.md` and
+`BLOCKER_FEEDBACK_DATA_TEMPLATE.json`; the Markdown must be Chinese and
+contain one same-directory `aiw-data` reference. Use the FD ID, stage, role,
+exact source event when available, observed symptom, confirmed cause or
+unknown, actual recovery attempts and outcomes, unresolved status, human
+decision need, next step or risk, and a concrete reusable improvement or
+`none`. If no event exists, use JSON `source_event: null` and explain why
+in the report. Make the suffix unique across resumes and archived records.
+Keep the pair in the writing role's workspace and commit tracked feedback
+before a handoff or merge; do not edit an active handoff's FD body or receipt
+merely to record a blocker. Feedback is supplemental evidence, not a new
+handoff artifact, and does not itself authorize tests, rule changes, Gate
+overrides, or risky recovery.
+
+When a blocker is resolved, update that pair with the actual resolution and
+time, preserving the original facts and failed attempts. If the writing role
+cannot safely update it, add a linked follow-up pair. At the start of each
+Auto resume and before archive, review this FD's active and archived blocker
+records. State which repeated or reusable issues warrant a specific skill,
+stable spec, or template change; use the normal FD scope, authorization, and
+review process for any such change. An unresolved record stays unresolved
+until evidence supports a result. Include the record path and current status
+in the user-facing Gate and final report.
+
 1. **Preflight and resolve.** Read the repository instructions and this FD's
    Issue, stable specs, and current receipt. If `AIW_FD_ROLE_RUNNER` is set,
    stop before creating or claiming a handoff: the configured runner owns

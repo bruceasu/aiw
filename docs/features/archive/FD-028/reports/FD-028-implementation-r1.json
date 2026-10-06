@@ -1,0 +1,33 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-028",
+  "source_event": "FD-028-000005-work-requested",
+  "human_report": "FD-028-implementation-r1.md",
+  "data": {
+    "fd_revision": 5,
+    "summary": "Added persistent blocker feedback templates and Auto workflow guidance, updated stable contract, and recorded a resolved handoff mismatch.",
+    "changed_paths": [
+      "docs/features/BLOCKER_FEEDBACK_TEMPLATE.md",
+      "docs/features/BLOCKER_FEEDBACK_DATA_TEMPLATE.json",
+      "skills/fd-workflow/SKILL.md",
+      ".agents/skills/fd-workflow/SKILL.md",
+      "skills/work-management.md",
+      "openspec/specs/fd-workflow/spec.md",
+      "docs/features/FD-028_RECORD_AUTOMATION_WORKFLOW_BLOCKERS_AND_IMPROVEM.md",
+      "docs/features/reports/FD-028-blocker-20261006T160143Z-6c94b2.md",
+      "docs/features/reports/FD-028-blocker-20261006T160143Z-6c94b2.json",
+      "docs/feedback.md"
+    ],
+    "commands": [
+      "aiw fd refresh-worker FD-028 --reason ...",
+      "aiw fd claim FD-028 FD-028-000005-work-requested --session fd028-worker-20261007-6c94b2",
+      "git merge --ff-only develop",
+      "git diff develop"
+    ],
+    "results": [
+      "All five Work Items have authored static evidence; tests and compile were not run for documentation-only changes."
+    ],
+    "residual_risk": "Archive movement is statically supported but not yet observed in this cycle; no CLI validation was added for blocker feedback."
+  }
+}

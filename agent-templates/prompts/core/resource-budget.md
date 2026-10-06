@@ -12,7 +12,9 @@ For an ordinary implementation request:
   distributable artifact.
 - network calls and dependency downloads: `0`
 - permission probes and privilege escalation requests: `0`
-- `codex-auto-review`, sub-agents, and repeated review passes: `0`
+- `codex-auto-review` and repeated review passes: `0`
+- sub-agents: allowed for bounded delegated work; each follows this same
+  runtime and validation budget
 - post-edit command validation: at most `1` static/read-only command
 
 Implementation does not imply authorization for tests, final-artifact builds,

@@ -201,6 +201,29 @@ remain unchanged. Task-owned FD archive layouts MUST remain unchanged.
   file
 - **THEN** it fails before moving files or rewriting path references.
 
+### Requirement: Persistent automatic workflow blocker feedback
+
+When an automatic FD lifecycle stops at a Gate, its operator MUST record the
+observed blocker in a separate FD-prefixed Markdown report and same-basename
+JSON sidecar under `docs/features/reports/`. The pair MUST identify FD,
+stage, role, source event when one exists, observed facts, confirmed cause or
+unknown, actual recovery attempts, resolved or unresolved state, human
+decision need, and a reusable improvement suggestion or none. An unresolved
+blocker MUST remain explicitly unresolved until its actual resolution is
+recorded. A later automatic resume and pre-archive check MUST inspect the FD's
+feedback and identify reusable improvements. Feedback MUST NOT require editing
+the FD body or receipt while a handoff is active, nor authorize a Gate bypass,
+test execution, or rule change. FD-prefixed feedback files MUST follow the
+existing per-FD evidence archive path; historical evidence remains valid.
+
+#### Scenario: Stop, resume, and archive
+
+- **WHEN** automatic processing stops at a Gate and later resumes
+- **THEN** the operator records known facts and unresolved status, then
+  checks the feedback on resume and adds any evidenced resolution.
+- **AND** closing the FD moves its Markdown and JSON feedback with its other
+  `reports/` evidence, without changing an earlier handoff digest.
+
 ### Requirement: Bounded host-operated automatic FD lifecycle
 
 When a human explicitly requests `$fd-workflow auto`, the host agent MAY

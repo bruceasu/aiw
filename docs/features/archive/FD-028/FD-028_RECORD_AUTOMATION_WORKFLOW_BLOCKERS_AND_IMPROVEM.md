@@ -1,7 +1,7 @@
 # FD-028：记录自动化流程阻塞与改进
 
-**Status:** Open
-**Revision:** 4
+**Status:** Complete
+**Revision:** 9
 **Priority:** Medium  
 **Test policy:** Independent  
 **Evidence policy:** Dual
@@ -36,11 +36,17 @@ FD 自动化流程遇到无法继续的情况时，目前会在对话或 handoff
 
 ## Work items
 
-- [ ] 1.1 定义反馈记录字段及 Markdown/JSON 模板。Size: S; difficulty: Low; dependencies: none. Complete when 一条记录可关联 FD、阶段、阻塞原因、尝试、解决/未解决状态、人工决策和改进建议，且 Markdown 与 JSON 字段语义一致。
-- [ ] 1.2 在 FD 自动流程技能中加入阻塞时记录、恢复后补全、续跑时复查的操作规则。Size: S; difficulty: Medium; dependencies: 1.1. Complete when 所有会停止自动流程的 Gate 都有明确记录步骤，并保留未解决状态及权限限制。
-- [ ] 1.3 更新稳定 FD workflow 规范及归档约定。Size: S; difficulty: Medium; dependencies: 1.1. Complete when 反馈记录可随 FD 归档、不会要求修改正在使用的 FD 收据，且已有 FD 记录兼容。
-- [ ] 1.4 静态审阅模板、技能与规范的一致性并更新 Verification。Size: S; difficulty: Low; dependencies: 1.1–1.3. Complete when 每项验收均有可审阅的静态证据，未授权的测试或运行检查保持未执行。
-- [ ] 1.5 整个任务完成时，summary 这次任务的反馈处理经验，统一记录到docs\feedback.md文件中。
+- [x] 1.1 定义反馈记录字段及 Markdown/JSON 模板。Size: S; difficulty: Low; dependencies: none. Complete when 一条记录可关联 FD、阶段、阻塞原因、尝试、解决/未解决状态、人工决策和改进建议，且 Markdown 与 JSON 字段语义一致。
+- [x] 1.2 在 FD 自动流程技能中加入阻塞时记录、恢复后补全、续跑时复查的操作规则。Size: S; difficulty: Medium; dependencies: 1.1. Complete when 所有会停止自动流程的 Gate 都有明确记录步骤，并保留未解决状态及权限限制。
+- [x] 1.3 更新稳定 FD workflow 规范及归档约定。Size: S; difficulty: Medium; dependencies: 1.1. Complete when 反馈记录可随 FD 归档、不会要求修改正在使用的 FD 收据，且已有 FD 记录兼容。
+- [x] 1.4 静态审阅模板、技能与规范的一致性并更新 Verification。Size: S; difficulty: Low; dependencies: 1.1–1.3. Complete when 每项验收均有可审阅的静态证据，未授权的测试或运行检查保持未执行。
+- [x] 1.5 汇总本次任务的反馈处理经验到 `docs/feedback.md`。Size: S; difficulty: Low; dependencies: 1.1–1.4. Complete when 文档记录本次实际阻塞、恢复与可复用改进建议。
+
+## TODO
+
+- [x] 模板、自动流程技能、稳定规范与共享约定已更新。
+- [x] 本次失配交接的真实反馈及经验已记录。
+- [x] 静态核对归档命名规则；待独立 Tester/Reviewer 按交接流程完成各自报告。
 
 ## Acceptance
 
@@ -53,12 +59,15 @@ FD 自动化流程遇到无法继续的情况时，目前会在对话或 handoff
 
 ## Verification
 
-- Not run; design only.
-- Planned: 静态检查技能中每个停止/Gate 路径是否指向同一记录格式，并核对规范、模板、归档路径一致。
-- Runtime tests and compile checks are not applicable to documentation-only scope unless implementation changes executable code.
+- 静态证据：`docs/features/BLOCKER_FEEDBACK_TEMPLATE.md` 与同名 JSON 模板均含 FD、事件、阶段/角色、事实、根因、尝试、状态、人工决策、解决和建议字段；本次实际记录使用同一结构。
+- 静态证据：两份 `fd-workflow/SKILL.md` 的通用 Gate 段覆盖 preflight、设计、Worker、Tester、PM、Reviewer、交付、归档及清理，并要求恢复补记和续跑复查。
+- 静态证据：`plugins/aiw-fd.py` 的 `evidence_moves` 遍历 `reports/` 中 `FD-028-*.md/.json`，现有归档路径可搬运反馈；稳定规范与共享约定明确不改有效收据。
+- 未运行测试、最终产物构建、格式化、lint 或网络命令。此次仅改文档，编译检查不适用；实际归档结果待完成独立评审后核对。
 
 ## Sources
 
 - 用户请求：自动化流程受阻时记录原因和解决方案，以便改进流程。
 - `.agents/skills/fd-workflow/SKILL.md`：自动流程、Gate、续跑与归档约定。
 - `openspec/specs/fd-workflow/spec.md`：FD handoff、证据与归档稳定要求。
+
+**Completed:** 2026-10-06

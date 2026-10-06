@@ -35,6 +35,13 @@ installations remain usable outside the AIW repository.
   `--artifact`. Both files are archived together. Older Markdown-only
   evidence remains historical.
   Prior evidence stays archived if a completed FD is reopened for review.
+- An automatic FD workflow Gate has a separate FD-prefixed blocker feedback
+  Markdown report and same-basename JSON sidecar under `docs/features/reports/`.
+  Use `docs/features/BLOCKER_FEEDBACK_TEMPLATE.md` and its JSON template.
+  Record observed facts, unknowns, attempts, unresolved or resolved state,
+  human decision needs, and reusable improvements. Review existing feedback
+  on resume and before archive. FD-prefixed pairs follow the normal `reports/`
+  archive move; they do not alter an active FD handoff or authorize recovery.
 - `aiw fd refresh-tester <id> --reason <text> --artifact <report>` replaces
   only a stale unclaimed pending Tester handoff for an independent Pending Test
   FD. It retains Worker identity and implementation provenance, validates the
