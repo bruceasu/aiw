@@ -1,0 +1,14 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-029",
+  "source_event": "FD-029-000014-changes-requested",
+  "human_report": "FD-029-implementation-r3.md",
+  "data": {
+    "summary": "修复重复 local-merge 产生空提交的问题，新增黑盒回归用例。",
+    "changed_paths": ["plugins/aiw-wt.py", "tests/test_fd029_wt_squash.py", "docs/features/FD-029_SQUASH_FD_LOCAL_DELIVERY_WITHOUT_REBASE.md"],
+    "commands": ["python -c \"from pathlib import Path; p=Path('plugins/aiw-wt.py'); compile(p.read_text(encoding='utf-8'), str(p), 'exec'); p=Path('tests/test_fd029_wt_squash.py'); compile(p.read_text(encoding='utf-8'), str(p), 'exec')\""],
+    "results": ["插件和测试模块内存编译退出 0；新增测试尚未运行。"],
+    "residual_risk": "重复交付用例和归档清理 S11–S12 尚无本轮运行证据。"
+  }
+}

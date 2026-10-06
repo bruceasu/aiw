@@ -51,20 +51,19 @@ parent branch, feature branch, and worktree path in
 creation; use its parent branch as the merge target. Stop if the record is
 missing or inconsistent. Use `aiw wt status FD-001` to inspect both worktrees.
 
-Use `aiw wt local-merge FD-001` for delivery after review. Content conflicts
-are recovered in the FD worktree and require an explicit retry. Never create a
-Task to satisfy a Task-only command. Archive only after the merge succeeds.
-Before the handoff for testing or review, commit each completed Work Item
-separately, then rebase the clean FD worktree onto its recorded parent branch
-once after all Work Items are done.
+Use `aiw wt local-merge FD-001` for squash delivery after review. Content
+conflicts are recovered in the FD worktree and require an explicit retry.
+Never create a Task to satisfy a Task-only command. Archive only after delivery
+succeeds. Commit each completed Work Item separately before the handoff for
+testing or review. Do not rebase either branch.
 
 ## Auto
 
 `$fd-workflow auto` is a host Skill operation, not an `aiw fd auto` CLI
 command. Follow `../SKILL.md`: one numbered FD, exact handoff claims,
 independent Reviewer subagents, and at most three Reviewer outcomes across
-resumes of the same implementation cycle. With an isolation trigger, merge the
-reviewed FD branch to its recorded parent before closing and archiving. Stop
+resumes of the same implementation cycle. With an isolation trigger,
+squash-deliver the reviewed FD result to its recorded parent before closing and archiving. Stop
 without merge or archive when a review, parent state, or merge gate fails.
 
 ## Close

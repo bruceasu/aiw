@@ -38,6 +38,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-025](archive/FD-025/FD-025_GATEWAY_GRACEFUL_SHUTDOWN_AND_STOP_SCRIPT.md) | Gateway graceful shutdown and stop script | Complete | Medium |
 | [FD-026](archive/FD-026/FD-026_GATEWAY_SHORT_COMMAND.md) | Gateway short command | Complete | Low |
 | [FD-027](archive/FD-027/FD-027_WT_USES_FD_WORKTREES.md) | Make `aiw wt` use FD worktrees | Complete | High |
+| [FD-029](archive/FD-029/FD-029_SQUASH_FD_LOCAL_DELIVERY_WITHOUT_REBASE.md) | Squash FD local delivery without rebase | Complete | Medium |
 
 ## Deferred / Closed
 

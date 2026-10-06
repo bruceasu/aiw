@@ -133,12 +133,13 @@ reports missing ignore rules. It writes the FD ID, parent
 branch, feature branch, and worktree path to
 `.ai/fd/FD-002/workspace.json`; read and verify that record immediately.
 Inspect both worktrees with `aiw wt status FD-002`. After a passed review,
-deliver with `aiw wt local-merge FD-002`. If the parent-side merge has content
-conflicts, the command aborts it and merges the parent into the FD worktree.
+deliver one squash commit with `aiw wt local-merge FD-002`. If the parent-side
+squash has content conflicts, the command resets it and merges the parent into the FD worktree.
 Resolve and commit there, then rerun `local-merge` explicitly. Archive only
 after delivery succeeds. This authorizes local commits and the requested
-merge/archive; it does not authorize push, release, deployment, or worktree
-removal.
+squash/archive; it does not authorize push, release, or deployment. The auto
+workflow removes the worktree and branch after checking the squash source
+commit recorded on the parent.
 
 After a passed review, run `aiw fd close FD-002 Complete` once any requested
 isolated merge has succeeded. Use `--reason "..."` for `Deferred` and `Closed`

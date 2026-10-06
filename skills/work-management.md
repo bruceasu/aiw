@@ -128,28 +128,30 @@ Read that file immediately after creation and verify all four values; use its
 `parent_branch` as the sole merge target. Stop if the file is missing or does
 not match the created worktree. Use `aiw wt status <fd-id>` for both worktrees,
 `aiw wt commit <fd-id> "message"` for focused commits, and
-`aiw wt local-merge <fd-id>` for delivery after review. If delivery finds a
-content conflict, `local-merge` aborts the parent merge and merges the parent
-into the FD worktree for resolution; commit there and rerun `local-merge` to
-deliver. Do not create a Task to satisfy a Task-only command. Keep each FD's
-writing role in one workspace at a time and do not mix unrelated files into its commits.
+`aiw wt local-merge <fd-id>` for squash delivery after review. It creates one
+single-parent commit on the recorded parent branch with an `FD-Source` trailer
+naming the delivered FD HEAD; individual Work Item commits remain on the FD
+branch. If delivery finds a content conflict, `local-merge` resets the failed
+parent squash and merges the parent into the FD worktree for resolution; commit
+there and rerun `local-merge` to deliver. Do not create a Task to satisfy a
+Task-only command. Keep each FD's writing role in one workspace at a time and
+do not mix unrelated files into its commits.
 Commit each completed, independently reviewable Work Item before starting the
-next, staging only its files. After all Work Items are committed, rebase the
-clean FD worktree onto its recorded parent branch once, before Tester or
-Reviewer receives the implementation. Resolve conflicts in that rebase and
-review the final diff; abort and report a Gate if resolution is unsafe. Record
-the parent commit and result in FD Verification, then commit final FD evidence
-before handoff. Read that record on resume; do not automatically rebase again
-in that implementation cycle or rewrite commits after review evidence is recorded.
+next, staging only its files. Commit final FD evidence before handoff to Tester
+or Reviewer. Do not rebase either branch as part of the FD workflow. After the
+archive commit, remove the clean FD worktree and delete its branch only after
+checking that parent history contains this FD's squash commit and its
+`FD-Source` trailer equals the current FD HEAD. The FD branch is not an ancestor
+after squash, so use `git branch -D` only after that check.
 
 The user permits local Git commits for the new FD workflow. A Worker may make
 a focused commit for an independently reviewable slice. A Reviewer checks a
 specific commit or diff. When an isolation request asks for the complete
-worktree lifecycle, it authorizes local commits, merging that FD branch into
-its recorded parent after a passed review, archiving the FD after the merge
-succeeds, and removing that FD's clean worktree and merged branch after the
+worktree lifecycle, it authorizes local commits, squash-delivering that FD
+result to its recorded parent after a passed review, archiving after delivery
+succeeds, and removing that FD's clean worktree and delivered branch after the
 archive commit. It does not authorize push, release, or deployment.
-For other requests, commit does not authorize merge or archive. A merge conflict
+For other requests, commit does not authorize delivery or archive. A squash conflict
 or dirty parent workspace is a stop condition; preserve the worktree and active
 FD until the parent is clean. Follow any narrower local rule.
 

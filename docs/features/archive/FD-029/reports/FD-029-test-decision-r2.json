@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-029",
+  "source_event": "FD-029-000010-test-report-ready",
+  "human_report": "FD-029-test-decision-r2.md",
+  "data": {
+    "disposition": "accepted",
+    "tester_report": "docs/features/reports/FD-029-test-report-r2.md",
+    "fd_revision": 10,
+    "fd_digest": "a6ab6b4e2dfc6a1bb4277626ed67c2e0953285dc5a21c48dd9d8ffa7806f2922",
+    "requirements_coverage": "83.33%",
+    "branch_coverage": "not measured",
+    "rationale": "用户授权的单次聚焦黑盒命令退出 0，5/5 通过，10/12 场景有运行证据；报告适合进入独立静态复审。",
+    "exceptions": "业务分支覆盖率未测量；归档清理 S11–S12 未执行，保留风险且不视为通过。",
+    "residual_risk": "归档后 FD-Source 核对与 worktree/分支清理没有运行证据；业务分支覆盖率未知。",
+    "pm_identity": "codex-root-fd029",
+    "decision_time": "2026-10-06T15:39:54+00:00"
+  }
+}

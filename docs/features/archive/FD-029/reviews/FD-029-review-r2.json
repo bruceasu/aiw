@@ -1,0 +1,28 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-029",
+  "source_event": "FD-029-000017-test-accepted",
+  "human_report": "FD-029-review-r2.md",
+  "data": {
+    "outcome": "verification-passed",
+    "reviewer_session": "fd029-reviewer-r2-20261007",
+    "reviewed_commit": "56a401a65f0c16114113de93f6fc8d3f51a544c9",
+    "diff_base": "4aacd6475c72bf4c2ade00b22f5ff7a74ee0b80b",
+    "findings": [],
+    "results": {
+      "r1_duplicate_delivery_fixed": true,
+      "test_command_reported": "python -B -m unittest tests.test_fd029_wt_squash -v",
+      "executed_by_reviewer": false,
+      "reported_tests_passed": "6/6",
+      "runtime_scenarios": "11/13",
+      "requirements_coverage": "84.62%",
+      "branch_coverage": "not measured",
+      "uncovered_scenarios": ["S11", "S12"],
+      "static_diff_check": "no whitespace errors",
+      "authorized_test_file_sha256": "E7146235127D79DFDC6C020F6874AEF638E8037F4CF41C97EDB49441FA5D2A0F"
+    },
+    "commands": ["git diff develop...HEAD -- ...", "git diff --check develop...HEAD", "git rev-parse HEAD", "Get-Content -Encoding utf8", "rg -n", "Get-FileHash -Algorithm SHA256 tests/test_fd029_wt_squash.py"],
+    "residual_risk": "S11–S12 归档清理没有本轮运行证据；业务代码分支覆盖率未测量。"
+  }
+}

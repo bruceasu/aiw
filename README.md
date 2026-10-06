@@ -211,16 +211,16 @@ aiw wt status FD-027
 aiw wt commit FD-027 "implement feature"
 ```
 
-After review, deliver to the recorded parent branch:
+After review, deliver one squash commit to the recorded parent branch:
 
 ```powershell
 aiw wt local-merge FD-027
 ```
 
 If delivery conflicts in the parent, `local-merge` confirms the conflict,
-aborts that merge, verifies that the parent is clean, and merges the parent
+resets that squash, verifies that the parent is clean, and merges the parent
 branch into the FD worktree. Resolve and commit conflicts there, then rerun
-`local-merge` explicitly. If the abort or recovery checks fail, the command
+`local-merge` explicitly. If the reset or recovery checks fail, the command
 stops and preserves the current Git state.
 
 ### Advance a numbered FD
@@ -228,8 +228,9 @@ stops and preserves the current Git state.
 Use explicit FD handoffs for planning, implementation, testing, and review.
 Create the isolated worktree with `aiw wt add` after committing the ready FD
 plan and cleaning the parent workspace. After review, deliver with
-`aiw wt local-merge`; parent-side content conflicts are recovered in the FD
-worktree and require an explicit retry after resolution.
+`aiw wt local-merge`; it creates one parent commit without retaining individual
+FD commits. Parent-side content conflicts are recovered in the FD worktree and
+require an explicit retry after resolution. The workflow does not rebase.
 
 ```powershell
 aiw fd list
@@ -391,9 +392,9 @@ and local delivery. The removed `aiw wf` Task workflow is not an available
 command. Existing Task records remain historical data; they are not converted
 or used to create new work.
 
-After a reviewed FD change, `aiw wt local-merge <fd-id>` delivers the feature
-branch to its recorded parent. If that merge has content conflicts, the
-command aborts the parent-side merge and merges the parent into the FD
+After a reviewed FD change, `aiw wt local-merge <fd-id>` squash-delivers the
+feature result to its recorded parent. If that squash has content conflicts,
+the command resets the parent-side attempt and merges the parent into the FD
 worktree. Resolve and commit there, then rerun `local-merge` to deliver.
 
 # Plugin System
@@ -732,7 +733,7 @@ the parent branch, feature branch, and worktree path from
 | `add <fd-id>` | Create `feature/<fd-id>` at `.wt/<fd-id>` and record its coordinates |
 | `status <fd-id>` | Show the parent and FD worktree status |
 | `commit <fd-id> "message"` | Stage and commit changes in the FD worktree |
-| `local-merge <fd-id>` | Deliver to parent and recover conflicts in the FD worktree |
+| `local-merge <fd-id>` | Squash-deliver one commit to parent and recover conflicts in the FD worktree |
 | `list` | List registered Git worktrees |
 
 ## 9. `aiw context <task-id>`

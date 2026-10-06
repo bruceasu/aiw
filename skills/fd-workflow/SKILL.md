@@ -121,8 +121,8 @@ with parallelism/isolation/worktree/`wt`. The host agent is PM, Planner, and
 Worker; independent Tester and Reviewer stages use separate subagents. An
 isolation request uses
 the recorded FD branch and worktree. Under the shared work-management contract,
-this request authorizes local commits, merge to the recorded parent after a
-passed review, FD archive after a successful merge, and removal of that FD's
+this request authorizes local commits, squash delivery to the recorded parent
+after a passed review, FD archive after successful delivery, and removal of that FD's
 worktree and branch after the archive commit. It does not authorize tests,
 final builds, network access, permission escalation, push, deployment, or
 publishing. Follow narrower repository rules.
@@ -176,15 +176,9 @@ publishing. Follow narrower repository rules.
    commit each completed, independently reviewable Work Item before starting
    the next. Stage only that item's files; use `aiw wt commit <id>` only when
    every uncommitted change belongs to it, otherwise use path-scoped `git add`
-   and `git commit`. After all Work Items are committed, verify both worktrees
-   are clean and the recorded parent branch, then start one
-   `git rebase <parent_branch>` in the FD worktree before the Tester or
-   Reviewer handoff. Resolve conflicts within that rebase and inspect the
-   resulting diff; if resolution is unsafe, abort the rebase and report a Gate.
-   Record the parent commit and rebase result in FD Verification, then commit
-   the final FD evidence. On resume, read that record before deciding whether
-   the one rebase already happened. Do not start another automatic rebase in
-   the same implementation cycle or rebase after review evidence is recorded.
+   and `git commit`. Commit final FD evidence before the Tester or Reviewer
+   handoff. Do not rebase either branch as part of this workflow; delivery
+   squashes the reviewed FD result onto the recorded parent branch.
    If authorization or design is missing, stop with the FD active. Emit `implementation-ready
    --producer worker --artifact <implementation-report> --source-event
    <claimed-worker-event>` only after all scoped items and required evidence
@@ -258,19 +252,21 @@ publishing. Follow narrower repository rules.
    revision and content. Read `.ai/fd/<id>/workspace.json` and take its
    `parent_branch`, `branch`, and `worktree` as the merge coordinates. Confirm
    the parent branch is clean and still matches the recorded parent. Run
-   `aiw wt local-merge <id>` for delivery. On a parent-side content conflict,
-   the command aborts the failed parent merge and merges the parent into the FD
-   worktree for resolution. Resolve and commit there, then rerun `local-merge`
-   explicitly. If recovery fails, leave the FD active and worktree intact.
-   After a successful merge, close with
+   `aiw wt local-merge <id>` for one squash commit on the parent branch. On a
+   parent-side content conflict, the command resets the failed squash, verifies
+   the parent is clean, and merges the parent into the FD worktree for resolution.
+   Resolve and commit there, then rerun `local-merge` explicitly. If recovery
+   fails, leave the FD active and worktree intact. After successful delivery, close with
    `aiw fd close <id> Complete` from the parent workspace and commit only the
    archive/index changes. A close rejection is a Gate, never a reason to edit
    a receipt or archive manually. After the archive commit, confirm the FD
-   worktree is clean, its branch is an ancestor of the recorded parent, and
-   the resolved worktree path matches `.wt/<id>` inside this repository. Then
-   run `git worktree remove -- .wt/<id>` and `git branch -d feature/<id>` from
-   the parent workspace. Never force either removal; if a check or command
-   fails, preserve the remaining worktree or branch and report the Gate.
+   worktree is clean, the resolved worktree path matches `.wt/<id>` inside this
+   repository, and parent history contains this FD's single-parent squash
+   commit with `FD-Source: <sha>` equal to the current FD HEAD. Then run
+   `git worktree remove -- .wt/<id>` and `git branch -D feature/<id>` from the
+   parent workspace. Squash does not make the FD branch an ancestor, so `-D`
+   is allowed only after that source check. If a check or command fails,
+   preserve the remaining worktree or branch and report the Gate.
    Report the merge result, archive path, review count, commands actually run,
    unrun checks, and residual risks.
 

@@ -15,7 +15,7 @@ from pathlib import Path
 META = {
     "name": "aiw-wt",
     "short": "manage FD worktrees and local delivery",
-    "description": "Create, inspect, commit, and locally merge numbered FD worktrees.",
+    "description": "Create, inspect, commit, and squash-deliver numbered FD worktrees.",
     "commands": ["add", "status", "commit", "local-merge", "list"],
     "readOnly": False,
     "mutatesFiles": True,
@@ -269,23 +269,52 @@ def local_merge(raw_id: str) -> int:
     clean_worktree(parent_path, "parent worktree")
     clean_worktree(worktree_path, "FD worktree")
 
-    print(f"Merging {data['branch']} into {expected_parent}.")
-    delivery = git(parent_path, "merge", "--no-edit", data["branch"])
+    source = git(worktree_path, "rev-parse", "--verify", "HEAD")
+    if source.returncode or not source.stdout.strip():
+        raise WorktreeError("cannot identify the FD branch head for squash delivery")
+    source_oid = source.stdout.strip()
+    parent_before = git(parent_path, "rev-parse", "--verify", "HEAD")
+    if parent_before.returncode or not parent_before.stdout.strip():
+        raise WorktreeError("cannot identify the parent head before squash delivery")
+    delivered = git(parent_path, "log", "--format=%H", "--extended-regexp",
+                    f"--grep=^FD-Source: {source_oid}$")
+    if delivered.returncode:
+        raise WorktreeError("cannot inspect prior FD squash deliveries")
+    if delivered.stdout.strip():
+        raise WorktreeError(f"FD source {source_oid} was already delivered to {expected_parent}")
+
+    print(f"Squashing {data['branch']} into {expected_parent}.")
+    delivery = git(parent_path, "merge", "--squash", data["branch"])
     command_output(delivery)
     if delivery.returncode == 0:
-        print(f"delivery: merged {data['branch']} into {expected_parent}")
+        committed = git(parent_path, "commit", "-m",
+                        f"Squash {fd_id} from {data['branch']}",
+                        "-m", f"FD-Source: {source_oid}")
+        command_output(committed)
+        if committed.returncode:
+            print("Squash commit failed; inspect the parent worktree before retrying.",
+                  file=sys.stderr)
+            return committed.returncode
+        print(f"delivery: squashed {data['branch']} into {expected_parent}; "
+              f"source {source_oid}")
         return 0
-    if not content_conflict(parent_path):
-        print("Delivery merge failed without a detected content conflict; "
+    unmerged = git(parent_path, "ls-files", "--unmerged")
+    if unmerged.returncode or not unmerged.stdout.strip():
+        print("Squash delivery failed without a detected content conflict; "
               "parent state is preserved for manual inspection.", file=sys.stderr)
         return delivery.returncode
 
-    print("Content conflicts detected in the parent; aborting that merge before recovery.",
+    current_parent = git(parent_path, "rev-parse", "--verify", "HEAD")
+    if current_parent.returncode or current_parent.stdout.strip() != parent_before.stdout.strip():
+        print("Parent HEAD changed during squash; inspect it before recovery.",
+              file=sys.stderr)
+        return 2
+    print("Squash conflicts detected in the parent; resetting that attempt before recovery.",
           file=sys.stderr)
-    aborted = git(parent_path, "merge", "--abort")
+    aborted = git(parent_path, "reset", "--merge")
     command_output(aborted)
     if aborted.returncode:
-        print("Could not abort the parent merge. Both worktrees are preserved; "
+        print("Could not reset the parent squash. Both worktrees are preserved; "
               "inspect the parent before continuing.", file=sys.stderr)
         return aborted.returncode
     try:
@@ -323,7 +352,7 @@ def usage() -> None:
     print("  add <fd-id>                         Create the managed FD worktree.")
     print("  status <fd-id>                      Show parent and FD worktree status.")
     print('  commit <fd-id> "message"             Commit changes in the FD worktree.')
-    print("  local-merge <fd-id>                 Deliver to parent with conflict recovery.")
+    print("  local-merge <fd-id>                 Squash-deliver to parent with conflict recovery.")
     print("  list                                List registered Git worktrees.")
 
 

@@ -1,0 +1,48 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-029",
+  "source_event": "FD-029-000015-implementation-ready",
+  "human_report": "FD-029-test-report-r3.md",
+  "data": {
+    "implementation_event": "FD-029-000015-implementation-ready",
+    "tested_fd_revision": 15,
+    "tested_fd_digest": "8430f6b55b4dcdc8f41850215880546228dfb3826f77776b6275cccd37672c6b",
+    "tester_session": "fd029-tester-r3-4e7b19c2",
+    "applicable_scenarios": 13,
+    "covered_scenarios": 11,
+    "executed_behavior_tests": 6,
+    "passed_behavior_tests": 6,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 2,
+    "requirements_coverage": "84.62%",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": "本报告命令与风险节保留单次执行输出；未生成业务代码分支覆盖率原始数据",
+    "coverage_unavailable_reason": "授权的单次 unittest 命令未采集分支覆盖率；没有额外覆盖率命令授权。",
+    "test_files": ["tests/test_fd029_wt_squash.py"],
+    "authorization_records": ["docs/features/reports/FD-029-test-authorization-r3.md"],
+    "commands": ["python -B -m unittest tests.test_fd029_wt_squash -v"],
+    "recommendation": "pass",
+    "not_applicable_reason": "",
+    "residual_risk": "归档后基于 FD-Source 的 worktree 与分支清理无本轮运行证据；业务代码分支覆盖率未测量。",
+    "scenarios": [
+      {"id": "S01", "behavior": "多个 Work Item 提交在 FD 分支保留", "status": "passed", "test_cases": ["test_multiple_work_items_become_one_single_parent_delivery"]},
+      {"id": "S02", "behavior": "父分支只新增含 FD ID 与 FD-Source 的单父 squash 提交", "status": "passed", "test_cases": ["test_multiple_work_items_become_one_single_parent_delivery"]},
+      {"id": "S03", "behavior": "Work Item 提交不成为父分支祖先", "status": "passed", "test_cases": ["test_multiple_work_items_become_one_single_parent_delivery"]},
+      {"id": "S04", "behavior": "只向 workspace.json 记录的父分支交付", "status": "passed", "test_cases": ["test_delivery_uses_recorded_parent_branch"]},
+      {"id": "S05", "behavior": "父工作区脏时在父分支改变前拒绝", "status": "passed", "test_cases": ["test_dirty_parent_or_fd_tree_is_rejected_before_delivery"]},
+      {"id": "S06", "behavior": "FD worktree 脏时在父分支改变前拒绝", "status": "passed", "test_cases": ["test_dirty_parent_or_fd_tree_is_rejected_before_delivery"]},
+      {"id": "S07", "behavior": "父或 FD 工作区处于错误分支时拒绝", "status": "passed", "test_cases": ["test_wrong_parent_or_fd_branch_is_rejected"]},
+      {"id": "S08", "behavior": "squash 内容冲突后父 HEAD 不变且父工作区干净", "status": "passed", "test_cases": ["test_conflict_restores_parent_and_requires_explicit_retry"]},
+      {"id": "S09", "behavior": "内容冲突转入 FD worktree 供解决", "status": "passed", "test_cases": ["test_conflict_restores_parent_and_requires_explicit_retry"]},
+      {"id": "S10", "behavior": "解决并提交冲突后仅显式重试才交付", "status": "passed", "test_cases": ["test_conflict_restores_parent_and_requires_explicit_retry"]},
+      {"id": "S11", "behavior": "FD-Source 与当前 FD HEAD 不同时保留 worktree 与分支", "status": "uncovered", "test_cases": [], "reason": "未执行归档清理"},
+      {"id": "S12", "behavior": "FD-Source 与当前 FD HEAD 相同且归档后清理 worktree 与分支", "status": "uncovered", "test_cases": [], "reason": "未执行归档生命周期"},
+      {"id": "S13", "behavior": "对同一 FD HEAD 重复执行 local-merge 不产生第二笔提交", "status": "passed", "test_cases": ["test_repeated_delivery_keeps_the_first_squash_commit"]}
+    ],
+    "static_exclusions": [
+      {"id": "E01", "behavior": "技能、规格与文档取消自动 rebase 规则", "reason": "纯静态文档要求，交由独立 Reviewer 静态审查"},
+      {"id": "E02", "behavior": "legacy Task 命令保持不变", "reason": "兼容性范围要求，交由独立 Reviewer 静态审查"}
+    ]
+  }
+}

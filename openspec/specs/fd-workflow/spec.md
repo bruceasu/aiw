@@ -206,16 +206,14 @@ remain unchanged. Task-owned FD archive layouts MUST remain unchanged.
 When a human explicitly requests `$fd-workflow auto`, the host agent MAY
 create or resume one numbered FD, design and split its Work Items, implement
 them, request independent review, repair findings, archive a passed FD, and
-remove its clean worktree and merged branch after the archive commit.
+remove its clean worktree and delivered branch after the archive commit.
 It MUST commit each completed, independently reviewable Work Item with only
-that item's changes. After all Work Items are committed, it MUST start one
-rebase of the clean FD branch onto its recorded parent before the Tester or
-Reviewer handoff. A conflict MUST be resolved within that rebase and the
-resulting diff inspected, or the rebase MUST be aborted and reported as a Gate.
-FD Verification MUST record the parent commit and rebase result before the
-final evidence commit and handoff, so a resumed auto run does not repeat it.
-It MUST NOT start another automatic rebase in the same implementation cycle or
-rewrite reviewed commits after review evidence is recorded.
+that item's changes and MUST NOT rebase either branch as part of the workflow.
+After review, local delivery MUST squash the FD result into one single-parent
+commit on the recorded parent branch, with the delivered FD HEAD recorded as
+`FD-Source`. The parent MUST NOT inherit the FD's individual Work Item commits.
+After archive, branch removal MUST require the current FD HEAD to match that
+trailer in the parent's delivery history.
 The operation MUST use the existing role receipt, exact claim, source-event,
 revision, and digest gates. Tester and Reviewer MUST each run in separate
 subagents for an independent-policy FD; the PM/Planner/Worker host MUST NOT
@@ -436,7 +434,21 @@ evidence. New engineering work MUST use numbered FDs. The removed `aiw wf`
 command MUST NOT be presented as an available path. The `aiw wt` plugin MUST
 be the sole worktree command surface for FDs; `wt add` directly creates the
 recorded worktree and workspace metadata. After review, `wt local-merge`
-delivers the FD branch to its recorded parent. On a parent-side content
-conflict, it MUST abort the failed merge, verify parent recovery, and merge the
-parent into the FD worktree for resolution. Delivery MUST require a second
-explicit `local-merge` invocation after that resolution is committed.
+MUST squash the FD result into one single-parent commit on its recorded parent,
+including `FD-Source: <FD-HEAD>` in the commit message. On a parent-side squash
+content conflict, it MUST reset the failed squash, verify parent recovery, and
+merge the parent into the FD worktree for resolution. Delivery MUST require a
+second explicit `local-merge` invocation after that resolution is committed.
+
+#### Scenario: Squash multiple Work Item commits
+
+- **WHEN** a clean FD branch contains several completed Work Item commits
+- **THEN** `local-merge` creates one commit on the recorded parent whose sole
+  parent is the prior parent HEAD and whose `FD-Source` names the FD HEAD
+- **AND** the Work Item commit IDs do not become ancestors of the parent branch
+
+#### Scenario: Recover a squash conflict
+
+- **WHEN** the parent and FD branch change the same content incompatibly
+- **THEN** the failed squash leaves the parent HEAD and worktree unchanged,
+  merges the parent into the FD worktree, and requires an explicit retry

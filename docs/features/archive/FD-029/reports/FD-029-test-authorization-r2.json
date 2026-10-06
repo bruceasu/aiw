@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-029",
+  "source_event": "FD-029-000009-implementation-ready",
+  "human_report": "FD-029-test-authorization-r2.md",
+  "data": {
+    "decision": "approved",
+    "basis": "human-approved",
+    "implementation_event": "FD-029-000009-implementation-ready",
+    "fd_revision": 9,
+    "fd_digest": "e11364415ebf4e1198d65cfa508a38948e6d5cb0ae46d0d12d71649e7c01ad05",
+    "tester_session": "fd029-tester-r2-9f52347690eb",
+    "command": "python -B -m unittest tests.test_fd029_wt_squash -v",
+    "working_directory": "D:\\03_projects\\AI-tools\\aiw\\.wt\\FD-029",
+    "scope": "五项聚焦黑盒测试：squash 提交形状与来源、记录父分支、脏/错误分支拒绝、冲突恢复与显式重试；仅系统临时 Git 仓库。",
+    "expected_duration": "5–20 秒",
+    "side_effects": "在系统临时目录创建并清理五个 Git 仓库/worktree；不写真实项目分支，不访问网络，不提权，不产生发布产物。",
+    "risk_review": "已检查测试代码及 SHA-256；禁用全局/系统 Git 配置和 hooks，公开 CLI 仅作用于临时仓库；仅准许运行一次精确命令。",
+    "human_approval": "approved:conversation:fd029-squash-test-confirm-20261007",
+    "planner_identity": "codex-root-fd029",
+    "decision_time": "2026-10-06T15:38:15+00:00"
+  }
+}
