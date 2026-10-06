@@ -1,0 +1,30 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-027",
+  "source_event": "FD-027-000003-design-ready",
+  "human_report": "FD-027-implementation-r1.md",
+  "data": {
+    "summary": "aiw wt 已改为 FD 唯一 worktree 入口，含直接 add 与冲突恢复 local-merge。",
+    "changed_paths": [
+      "plugins/aiw-wt.py",
+      "plugins/aiw-fd.py",
+      "internal/commands/completion/completion.go",
+      "internal/commands/help/super-help.go",
+      "README.md",
+      "docs/usage/aiw-fd.md",
+      "docs/features/FD-027_WT_USES_FD_WORKTREES.md",
+      "openspec/specs/fd-workflow/spec.md"
+    ],
+    "commands": [
+      "git diff --check",
+      "python -c \"from pathlib import Path; compile(Path('plugins/aiw-wt.py').read_text(encoding='utf-8'), 'plugins/aiw-wt.py', 'exec'); compile(Path('plugins/aiw-fd.py').read_text(encoding='utf-8'), 'plugins/aiw-fd.py', 'exec')\""
+    ],
+    "results": [
+      "静态差异检查无错误，存在换行符提示",
+      "两个 Python 插件的 compile-only 检查退出 0",
+      "行为测试及最终构建未运行"
+    ],
+    "residual_risk": "尚无真实 Git 冲突恢复的运行时证据；parent 工作区另有 FD-028 未提交变更，合并前须清理。"
+  }
+}

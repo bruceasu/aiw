@@ -73,15 +73,15 @@ contract.
   wrong-branch worktrees are rejected before merge and success targets only
   the recorded parent.
 - [x] 1.4 Detect a parent-side content conflict, safely abort it, and confirm
-  Low; dependencies: 1.1, 1.3-1.5, 1.7. Complete when all current command guidance
+  parent recovery. Size: S; difficulty: Medium; dependencies: 1.3. Complete
   when non-conflict Git failures and abort/recovery failures stop without
   starting the reverse merge.
 - [x] 1.5 Merge parent into the FD worktree after confirmed recovery and report
   the manual resolution/retry path. Size: S; difficulty: Medium; dependencies:
   1.4. Complete when the parent is clean after recovery, conflicts remain
   isolated in the FD worktree, and no delivery retry happens automatically.
-- [ ] 1.6 Align help and docs, update the stable FD worktree contract, and
-  record static/compile and independent review evidence. Size: S; difficulty:
+- [x] 1.6 Align help and docs, update the stable FD worktree contract, and
+  record static/compile evidence. Size: S; difficulty:
   Low; dependencies: 1.1, 1.3-1.5, 1.7. Complete when all current command guidance
   describes FD identity and local-merge behavior.
 - [x] 1.7 Implement direct `wt add` creation and metadata writing, then remove
@@ -130,16 +130,16 @@ merge. No command automatically removes a worktree or branch.
 
 ## TODO
 
-- [ ] Reconcile the formal Worker completion handoff with the primary
-  worktree's `.ai/fd/FD-027` receipts; the FD worktree has no shared `.ai`
-  receipt directory. Do not synthesize or copy role receipts.
+- [ ] Submit the formal Worker completion through the primary worktree's
+  `.ai/fd/FD-027` receipts, referencing the report committed in this FD
+  worktree. Do not synthesize or copy role receipts.
 - [ ] Complete the independent Tester report and PM decision under the
   no-runtime-test authorization boundary.
 - [ ] Complete independent Reviewer verification and then deliver/close via
   the recorded `aiw wt` workflow.
 
 %% RISK: FD role receipts are stored under the primary worktree's ignored
-%% `.ai` directory and are not shared with `.wt/FD-027`. The Worker can edit
-%% its branch but cannot use the role CLI there to claim/emit without a
-%% separate control-plane mechanism. Resolve before asserting automated
-%% end-to-end handoff completion.
+%% `.ai` directory and are not shared with `.wt/FD-027`. Submit lifecycle
+%% events from the primary worktree against the genuine receipt chain, and
+%% keep implementation artifacts in this FD worktree. The primary workspace
+%% contains unrelated FD-028 edits; preserve them during review and delivery.
