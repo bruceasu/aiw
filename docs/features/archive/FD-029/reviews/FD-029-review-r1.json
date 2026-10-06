@@ -1,0 +1,36 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-029",
+  "source_event": "FD-029-000013-review-requested",
+  "human_report": "FD-029-review-r1.md",
+  "data": {
+    "outcome": "changes-requested",
+    "reviewer_session": "fd029-reviewer-r1-20261007",
+    "reviewed_commit": "6c366ff1de8957a84694e79f00529e73f2ebcef5",
+    "diff_base": "3b82fdcce306aaa719cc392ff4b48972bf817449",
+    "findings": [
+      {
+        "severity": "medium",
+        "path": "plugins/aiw-wt.py",
+        "symbol": "local_merge",
+        "summary": "重复调用可通过 --allow-empty 创建第二笔空交付提交",
+        "requirement": "FD-029 Acceptance：父分支只增加一笔 squash 交付提交",
+        "requested_change": "在父分支写入前拒绝或幂等处理相同 FD-Source 的重复交付和空差异，并补充聚焦测试"
+      }
+    ],
+    "results": {
+      "test_command_reported": "python -B -m unittest tests.test_fd029_wt_squash -v",
+      "executed_by_reviewer": false,
+      "reported_tests_passed": "5/5",
+      "runtime_scenarios": "10/12",
+      "requirements_coverage": "83.33%",
+      "branch_coverage": "not measured",
+      "uncovered_scenarios": ["S11", "S12"],
+      "static_diff_check": "no whitespace errors",
+      "authorized_test_file_sha256": "5734D3235E64B27C1DB9047A7F95D1375785B65099EED82F4BD058B8ADAF89F4"
+    },
+    "commands": ["git diff develop...feature/FD-029 -- ...", "git log --oneline", "git diff --check develop...feature/FD-029", "Get-Content -Encoding utf8", "rg -n", "Get-FileHash -Algorithm SHA256 tests/test_fd029_wt_squash.py"],
+    "residual_risk": "S11–S12 归档清理没有运行证据；业务代码分支覆盖率未测量；重复交付问题尚无本轮运行复现。"
+  }
+}

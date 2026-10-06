@@ -1,0 +1,47 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-029",
+  "source_event": "FD-029-000006-implementation-ready",
+  "human_report": "FD-029-test-report-r1.md",
+  "data": {
+    "implementation_event": "FD-029-000006-implementation-ready",
+    "tested_fd_revision": 6,
+    "tested_fd_digest": "578ef035c3ec7df2cde5d8f223f9a328813f6c5cbc352bb6bb0ad3af3dc0dce2",
+    "tester_session": "fd029-tester-117ba825dcf0",
+    "applicable_scenarios": 12,
+    "covered_scenarios": 0,
+    "executed_behavior_tests": 0,
+    "passed_behavior_tests": 0,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 12,
+    "requirements_coverage": "0%",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": "none",
+    "coverage_unavailable_reason": "本轮未获精确测试与覆盖率命令授权，且未执行行为测试或覆盖率采集。",
+    "test_files": [],
+    "authorization_records": [],
+    "commands": [],
+    "recommendation": "blocked",
+    "not_applicable_reason": "",
+    "residual_risk": "squash 提交图与 FD-Source、状态拒绝、冲突恢复、显式重试和归档清理均无本轮运行证据；业务代码分支覆盖率未测量。",
+    "scenarios": [
+      {"id": "S01", "behavior": "多个 Work Item 提交在 FD 分支保留", "status": "uncovered", "test_cases": [], "reason": "未运行"},
+      {"id": "S02", "behavior": "父分支只新增含 FD ID 与 FD-Source 的单父 squash 提交", "status": "uncovered", "test_cases": [], "reason": "未运行"},
+      {"id": "S03", "behavior": "Work Item 提交不成为父分支祖先", "status": "uncovered", "test_cases": [], "reason": "未运行"},
+      {"id": "S04", "behavior": "只向 workspace.json 记录的父分支交付", "status": "uncovered", "test_cases": [], "reason": "未运行"},
+      {"id": "S05", "behavior": "父工作区脏时在父分支改变前拒绝", "status": "uncovered", "test_cases": [], "reason": "未运行"},
+      {"id": "S06", "behavior": "FD worktree 脏时在父分支改变前拒绝", "status": "uncovered", "test_cases": [], "reason": "未运行"},
+      {"id": "S07", "behavior": "父或 FD 工作区处于错误分支时拒绝", "status": "uncovered", "test_cases": [], "reason": "未运行"},
+      {"id": "S08", "behavior": "squash 内容冲突后父 HEAD 不变且父工作区干净", "status": "uncovered", "test_cases": [], "reason": "未运行"},
+      {"id": "S09", "behavior": "内容冲突转入 FD worktree 供解决", "status": "uncovered", "test_cases": [], "reason": "未运行"},
+      {"id": "S10", "behavior": "解决并提交冲突后仅显式重试才交付", "status": "uncovered", "test_cases": [], "reason": "未运行"},
+      {"id": "S11", "behavior": "FD-Source 与当前 FD HEAD 不同时保留 worktree 与分支", "status": "uncovered", "test_cases": [], "reason": "未运行"},
+      {"id": "S12", "behavior": "FD-Source 与当前 FD HEAD 相同且归档后清理 worktree 与分支", "status": "uncovered", "test_cases": [], "reason": "未运行"}
+    ],
+    "static_exclusions": [
+      {"id": "E01", "behavior": "技能、规格与文档取消自动 rebase 规则", "reason": "纯静态文档要求，交由独立 Reviewer 静态审查"},
+      {"id": "E02", "behavior": "legacy Task 命令保持不变", "reason": "兼容性范围要求，交由独立 Reviewer 静态审查"}
+    ]
+  }
+}

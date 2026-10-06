@@ -1,0 +1,28 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-027",
+  "source_event": "FD-027-000010-test-accepted",
+  "human_report": "FD-027-review-r2.md",
+  "data": {
+    "reviewer_session": "fd027-reviewer-20261006-r2-84b7c2",
+    "reviewed_base": "develop",
+    "reviewed_head": "53ee5f8",
+    "fd_revision": 10,
+    "fd_digest": "3c8e01f668240410ae68dfd3afed9e6e693518e5895eb5c7f1829eea3aceb987",
+    "outcome": "verification-passed",
+    "findings": [],
+    "r1_resolution": [
+      "add 在 Git 变更前拒绝缺少 .wt/ 或 .ai/ 忽略规则；S20-S22 均有 R2 通过证据",
+      "README 删除无效 aiw-wf 构建与 aiw wt ignore 指南；帮助、补全及 FD 插件与 FD-only 接口一致",
+      "FD Verification/TODO 同步真实 R1 交接与未覆盖风险，R2 测试链可追溯"
+    ],
+    "test_evidence": "授权 r3 绑定事件 FD-027-000008、revision 8、摘要、独立 Tester 会话及测试文件 SHA-256；Tester R2 一次精确命令 12/12 通过、17/22 场景（77.27%），PM 决策 r2 明确保留五项未覆盖和未测分支覆盖率例外。",
+    "requirements_coverage": "77.27%",
+    "branch_coverage": "not measured",
+    "uncovered_scenarios": ["S15", "S16", "S17", "S18", "S19"],
+    "commands": ["Get-Content", "rg", "git status", "git log", "git diff", "git hash-object", "Get-FileHash", "aiw fd show FD-027", "aiw fd claim FD-027 FD-027-000010-test-accepted --session fd027-reviewer-20261006-r2-84b7c2"],
+    "unrun_checks": ["tests", "coverage", "Go compile", "final build", "lint", "formatter"],
+    "residual_risk": "S15-S19 无运行时证据，业务分支覆盖率未测；主工作区 FD-028 未提交改动当前阻止 local-merge。"
+  }
+}

@@ -20,7 +20,7 @@ META = {
     "name": "aiw-fd",
     "short": "manage numbered Feature Designs and role handoffs",
     "description": "Create, inspect, and advance FD-first work.",
-    "commands": ["new", "list", "show", "emit", "claim", "resume", "request-review", "refresh-worker", "refresh-tester", "reopen", "close", "worktree"],
+    "commands": ["new", "list", "show", "emit", "claim", "resume", "request-review", "refresh-worker", "refresh-tester", "reopen", "close"],
     "readOnly": False,
     "mutatesFiles": True,
     "requiresConfirmation": False,
@@ -1260,46 +1260,6 @@ def close_locked(base: Path, name: str, outcome: str, reason: str) -> None:
     print(f"archived {name}: {archive}")
 
 
-def worktree(base: Path, name: str, operation: str) -> None:
-    fd_path = resolve_fd(base, name)
-    target = base / ".wt" / name
-    branch = "feature/" + name
-    if operation == "status":
-        result = subprocess.run(["git", "worktree", "list", "--porcelain"], cwd=base,
-                                text=True, capture_output=True, check=False)
-        if result.returncode:
-            raise FDError(result.stderr.strip() or "cannot inspect worktrees")
-        print(result.stdout)
-        return
-    if is_archived_fd(base, fd_path):
-        raise FDError("cannot create a worktree for an archived FD")
-    relative = fd_path.relative_to(base).as_posix()
-    tracked = subprocess.run(["git", "ls-files", "--error-unmatch", "--", relative],
-                             cwd=base, capture_output=True, check=False)
-    committed = subprocess.run(["git", "diff", "--quiet", "HEAD", "--", relative],
-                               cwd=base, check=False)
-    if tracked.returncode or committed.returncode:
-        raise FDError("commit the FD plan before creating its isolated worktree")
-    if target.exists() or target.is_symlink():
-        raise FDError(f"worktree target already exists: {target}")
-    exists = subprocess.run(["git", "show-ref", "--verify", "--quiet",
-                             "refs/heads/" + branch], cwd=base, check=False)
-    if exists.returncode == 0:
-        raise FDError(f"branch already exists: {branch}; inspect it before reuse")
-    parent = subprocess.run(["git", "symbolic-ref", "--quiet", "--short", "HEAD"],
-                            cwd=base, text=True, capture_output=True, check=False)
-    if parent.returncode:
-        raise FDError("cannot create an FD worktree from a detached HEAD")
-    result = subprocess.run(["git", "worktree", "add", "-b", branch, str(target), "HEAD"],
-                            cwd=base, text=True, capture_output=True, check=False)
-    if result.returncode:
-        raise FDError(result.stderr.strip() or "worktree add failed")
-    atomic_json(runtime_dir(base, name) / "workspace.json",
-                {"fd_id": name, "parent_branch": parent.stdout.strip(),
-                 "branch": branch, "worktree": str(target)})
-    print(f"created {target} on {branch}")
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(prog="aiw fd", description="FD-first role handoffs")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -1341,9 +1301,6 @@ def main() -> int:
     closed.add_argument("fd_id")
     closed.add_argument("outcome", choices=["Complete", "Deferred", "Closed"])
     closed.add_argument("--reason", default="")
-    isolated = commands.add_parser("worktree", help="inspect or add an FD worktree")
-    isolated.add_argument("operation", choices=["add", "status"])
-    isolated.add_argument("fd_id")
     args = parser.parse_args()
     try:
         base = root()
@@ -1377,8 +1334,6 @@ def main() -> int:
                 reopen(base, fd_id(args.fd_id), args.reason)
         elif args.command == "close":
             close(base, fd_id(args.fd_id), args.outcome, args.reason)
-        elif args.command == "worktree":
-            worktree(base, fd_id(args.fd_id), args.operation)
     except (FDError, OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"fd: {exc}", file=sys.stderr)
         return 1

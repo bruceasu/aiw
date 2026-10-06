@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-028",
+  "source_event": "FD-028-000007-test-report-ready",
+  "human_report": "FD-028-test-decision-r1.md",
+  "data": {
+    "disposition": "accepted",
+    "tester_report": "docs/features/reports/FD-028-test-report-r1.md",
+    "fd_revision": 7,
+    "fd_digest": "76e9f25cc61033fbda4514ad447941d75a9e65cfd86115546fbd00b9e54108da",
+    "requirements_coverage": "not applicable",
+    "branch_coverage": "not measured",
+    "rationale": "All eight acceptance items are documentation-only static exclusions; there are zero applicable behavior scenarios and no failed executed tests. Independent Reviewer must inspect the actual diff and evidence.",
+    "exceptions": "Behavior requirements coverage is not applicable and business-code branch coverage is unavailable; no test or coverage command was run.",
+    "residual_risk": "Template and workflow consistency, historical compatibility, and actual archive movement have no runtime test evidence; inspect statically and verify archive after delivery.",
+    "pm_identity": "fd028-pm-20261007-6c94b2",
+    "decision_time": "2026-10-06T16:05:57Z"
+  }
+}

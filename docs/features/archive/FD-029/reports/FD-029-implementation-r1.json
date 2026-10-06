@@ -1,0 +1,32 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-029",
+  "source_event": "FD-029-000004-design-ready",
+  "human_report": "FD-029-implementation-r1.md",
+  "data": {
+    "summary": "取消自动 rebase；local-merge 将 FD 改动 squash 为父分支的一笔提交，冲突在 FD worktree 恢复；归档后以 FD-Source 核对分支删除。",
+    "changed_paths": [
+      "plugins/aiw-wt.py",
+      "skills/fd-workflow/SKILL.md",
+      "skills/fd-workflow/references/portable-operations.md",
+      "skills/work-management.md",
+      "openspec/specs/fd-workflow/spec.md",
+      "README.md",
+      "docs/usage/aiw-fd.md",
+      "docs/features/FD-029_SQUASH_FD_LOCAL_DELIVERY_WITHOUT_REBASE.md"
+    ],
+    "commands": [
+      "git diff --check develop...HEAD",
+      "git diff develop...HEAD -- plugins/aiw-wt.py",
+      "python -c \"from pathlib import Path; compile(Path('plugins/aiw-wt.py').read_text(encoding='utf-8'), 'plugins/aiw-wt.py', 'exec'); print('compile-only: ok')\""
+    ],
+    "results": [
+      "差异空白检查无错误",
+      "静态检查了 squash、提交来源标记和冲突恢复路径",
+      "plugins/aiw-wt.py 无产物编译退出 0",
+      "未运行行为测试或最终产物构建"
+    ],
+    "residual_risk": "squash 成功、冲突恢复与显式重试尚无本轮运行证据；提交钩子失败时父工作区保留供检查；归档清理须核对 FD-Source。"
+  }
+}

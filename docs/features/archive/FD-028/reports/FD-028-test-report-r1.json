@@ -1,0 +1,40 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-028",
+  "source_event": "FD-028-000006-implementation-ready",
+  "human_report": "FD-028-test-report-r1.md",
+  "data": {
+    "implementation_event": "FD-028-000006-implementation-ready",
+    "tested_fd_revision": 6,
+    "tested_fd_digest": "614f566420a1c552accefb5f00b43727500b78a943d1cf5db82290a09f4b310f",
+    "tester_session": "fd028-tester-20261007-1b88b017",
+    "applicable_scenarios": 0,
+    "covered_scenarios": 0,
+    "executed_behavior_tests": 0,
+    "passed_behavior_tests": 0,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 0,
+    "requirements_coverage": "not applicable",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": "not measured",
+    "coverage_unavailable_reason": "FD-028 仅交付文档、模板和流程约定；未获测试命令授权，也未运行行为测试或覆盖率命令。",
+    "test_files": [],
+    "authorization_records": [],
+    "commands": [],
+    "recommendation": "pass",
+    "not_applicable_reason": "所有验收事项均为文档、模板或既有归档约定的静态审阅事项；本 FD 没有新增可运行行为接口。",
+    "residual_risk": "未通过测试确认模板与流程一致性、实际归档搬运或历史行为兼容；需独立 Reviewer 静态审阅及后续真实归档核对。",
+    "scenarios": [],
+    "static_exclusions": [
+      {"id": "E1", "behavior": "反馈模板关联 FD、事件、阶段和角色", "reason": "文档模板字段审阅；无新增可运行创建接口。"},
+      {"id": "E2", "behavior": "记录事实、根因或未知、尝试、状态、人工决策、结果和建议", "reason": "模板及示例记录的静态字段审阅。"},
+      {"id": "E3", "behavior": "恢复后补全结果并保留未解决状态", "reason": "流程文字与示例记录审阅。"},
+      {"id": "E4", "behavior": "有效 handoff 期间不要求修改 FD 正文或 receipt digest", "reason": "文档约定和路径关系审阅；未运行状态转换。"},
+      {"id": "E5", "behavior": "续跑复查反馈且规则修改遵守既有授权和评审", "reason": "流程文字审阅。"},
+      {"id": "E6", "behavior": "Markdown 与同名 JSON 满足 Dual evidence", "reason": "模板及实际记录的静态审阅。"},
+      {"id": "E7", "behavior": "FD 前缀反馈文件随 FD 归档", "reason": "既有归档约定审阅；实际归档未发生。"},
+      {"id": "E8", "behavior": "历史 FD、报告和 handoff 兼容", "reason": "文档兼容性约定审阅；未执行回归测试。"}
+    ]
+  }
+}

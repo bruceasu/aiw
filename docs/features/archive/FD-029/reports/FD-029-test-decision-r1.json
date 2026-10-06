@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-029",
+  "source_event": "FD-029-000007-test-report-ready",
+  "human_report": "FD-029-test-decision-r1.md",
+  "data": {
+    "disposition": "rejected",
+    "tester_report": "docs/features/reports/FD-029-test-report-r1.md",
+    "fd_revision": 7,
+    "fd_digest": "e5fc681ef6a1f411394ec7e779fd842e7cd0b3371f768e35b4915a85d0ec5867",
+    "requirements_coverage": "0%",
+    "branch_coverage": "not measured",
+    "rationale": "12 个场景均未执行，squash 提交图及冲突恢复缺少运行证据；用户已授权下一轮聚焦黑盒测试。",
+    "exceptions": "none",
+    "residual_risk": "新测试运行前，所有 12 个行为场景仍缺少运行证据。",
+    "pm_identity": "codex-root-fd029",
+    "decision_time": "2026-10-06T15:35:49+00:00"
+  }
+}

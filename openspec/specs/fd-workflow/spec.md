@@ -201,11 +201,42 @@ remain unchanged. Task-owned FD archive layouts MUST remain unchanged.
   file
 - **THEN** it fails before moving files or rewriting path references.
 
+### Requirement: Persistent automatic workflow blocker feedback
+
+When an automatic FD lifecycle stops at a Gate, its operator MUST record the
+observed blocker in a separate FD-prefixed Markdown report and same-basename
+JSON sidecar under `docs/features/reports/`. The pair MUST identify FD,
+stage, role, source event when one exists, observed facts, confirmed cause or
+unknown, actual recovery attempts, resolved or unresolved state, human
+decision need, and a reusable improvement suggestion or none. An unresolved
+blocker MUST remain explicitly unresolved until its actual resolution is
+recorded. A later automatic resume and pre-archive check MUST inspect the FD's
+feedback and identify reusable improvements. Feedback MUST NOT require editing
+the FD body or receipt while a handoff is active, nor authorize a Gate bypass,
+test execution, or rule change. FD-prefixed feedback files MUST follow the
+existing per-FD evidence archive path; historical evidence remains valid.
+
+#### Scenario: Stop, resume, and archive
+
+- **WHEN** automatic processing stops at a Gate and later resumes
+- **THEN** the operator records known facts and unresolved status, then
+  checks the feedback on resume and adds any evidenced resolution.
+- **AND** closing the FD moves its Markdown and JSON feedback with its other
+  `reports/` evidence, without changing an earlier handoff digest.
+
 ### Requirement: Bounded host-operated automatic FD lifecycle
 
 When a human explicitly requests `$fd-workflow auto`, the host agent MAY
 create or resume one numbered FD, design and split its Work Items, implement
-them, request independent review, repair findings, and archive a passed FD.
+them, request independent review, repair findings, archive a passed FD, and
+remove its clean worktree and delivered branch after the archive commit.
+It MUST commit each completed, independently reviewable Work Item with only
+that item's changes and MUST NOT rebase either branch as part of the workflow.
+After review, local delivery MUST squash the FD result into one single-parent
+commit on the recorded parent branch, with the delivered FD HEAD recorded as
+`FD-Source`. The parent MUST NOT inherit the FD's individual Work Item commits.
+After archive, branch removal MUST require the current FD HEAD to match that
+trailer in the parent's delivery history.
 The operation MUST use the existing role receipt, exact claim, source-event,
 revision, and digest gates. Tester and Reviewer MUST each run in separate
 subagents for an independent-policy FD; the PM/Planner/Worker host MUST NOT
@@ -414,9 +445,33 @@ unresolved `%% NEEDS_INPUT` notes MUST still prevent `verification-passed`.
 An FD MAY have an isolated worktree once its plan is committed. Local focused
 commits MAY be made when authorized. Commit MUST NOT imply push, merge,
 release, deployment, worktree deletion, or archive.
+Before `aiw wt add` creates a worktree or metadata, it MUST confirm that the
+FD worktree path and `.ai` metadata path are ignored by Git. If either path is
+not ignored, add MUST fail without changing Git state and tell the user which
+ignore rule to add and commit.
 
 ### Requirement: Legacy records remain readable
 
 Existing Task and Workflow Core records MUST NOT be rewritten as FD events or
-evidence. The old Task and `aiw wf` paths MAY remain available as explicit
-compatibility commands while new FD work avoids Supervisor.
+evidence. New engineering work MUST use numbered FDs. The removed `aiw wf`
+command MUST NOT be presented as an available path. The `aiw wt` plugin MUST
+be the sole worktree command surface for FDs; `wt add` directly creates the
+recorded worktree and workspace metadata. After review, `wt local-merge`
+MUST squash the FD result into one single-parent commit on its recorded parent,
+including `FD-Source: <FD-HEAD>` in the commit message. On a parent-side squash
+content conflict, it MUST reset the failed squash, verify parent recovery, and
+merge the parent into the FD worktree for resolution. Delivery MUST require a
+second explicit `local-merge` invocation after that resolution is committed.
+
+#### Scenario: Squash multiple Work Item commits
+
+- **WHEN** a clean FD branch contains several completed Work Item commits
+- **THEN** `local-merge` creates one commit on the recorded parent whose sole
+  parent is the prior parent HEAD and whose `FD-Source` names the FD HEAD
+- **AND** the Work Item commit IDs do not become ancestors of the parent branch
+
+#### Scenario: Recover a squash conflict
+
+- **WHEN** the parent and FD branch change the same content incompatibly
+- **THEN** the failed squash leaves the parent HEAD and worktree unchanged,
+  merges the parent into the FD worktree, and requires an explicit retry

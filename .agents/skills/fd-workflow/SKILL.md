@@ -100,17 +100,6 @@ no longer matches the FD revision or digest, PM uses `aiw fd refresh-worker
 and cite it on `implementation-ready`. Never use this operation to replace
 a claimed or in-flight handoff, or edit the old receipt by hand.
 
-For an independent `Pending Test` FD with a stale unclaimed pending Tester
-handoff, PM uses `aiw fd refresh-tester <id> --reason "..." --artifact
-<current-implementation-report>`. This validates the report, preserves Worker
-identity and original implementation provenance, cancels the old event, and
-creates a digest-bound PM `test-requested` handoff. It does not fabricate
-Worker completion or grant test execution permission. Tester must claim the
-new event, use it as `source_event` and the report/authorization's
-`Implementation event`, and obtain new revision-bound authorization before
-execution. Never replace a current, claimed, launching, or dispatched event.
-Read the current report and revised acceptance before requesting tests.
-
 To continue an archived `Closed` or `Deferred` FD, use `aiw fd reopen <id>
 --reason "..."`. It preserves the earlier disposition and evidence, returns
 the FD as `In Progress`, and creates a new Worker handoff. Claim that exact
@@ -132,10 +121,41 @@ with parallelism/isolation/worktree/`wt`. The host agent is PM, Planner, and
 Worker; independent Tester and Reviewer stages use separate subagents. An
 isolation request uses
 the recorded FD branch and worktree. Under the shared work-management contract,
-this request authorizes local commits, merge to the recorded parent after a
-passed review, and FD archive after a successful merge. It does not authorize
-tests, final builds, network access, permission escalation, push, deployment,
-publishing, or worktree removal. Follow narrower repository rules.
+this request authorizes local commits, squash delivery to the recorded parent
+after a passed review, FD archive after successful delivery, and removal of that FD's
+worktree and branch after the archive commit. It does not authorize tests,
+final builds, network access, permission escalation, push, deployment, or
+publishing. Follow narrower repository rules.
+
+### Blocker feedback for every stop
+
+Whenever Auto cannot continue at any preflight, design, Worker, Tester, PM,
+Reviewer, delivery, archive, or cleanup Gate, write one factual feedback pair
+under `docs/features/reports/FD-XXX-blocker-<unique-suffix>.md` and `.json`
+before reporting the stop. Use
+`docs/features/BLOCKER_FEEDBACK_TEMPLATE.md` and
+`BLOCKER_FEEDBACK_DATA_TEMPLATE.json`; the Markdown must be Chinese and
+contain one same-directory `aiw-data` reference. Use the FD ID, stage, role,
+exact source event when available, observed symptom, confirmed cause or
+unknown, actual recovery attempts and outcomes, unresolved status, human
+decision need, next step or risk, and a concrete reusable improvement or
+`none`. If no event exists, use JSON `source_event: null` and explain why
+in the report. Make the suffix unique across resumes and archived records.
+Keep the pair in the writing role's workspace and commit tracked feedback
+before a handoff or merge; do not edit an active handoff's FD body or receipt
+merely to record a blocker. Feedback is supplemental evidence, not a new
+handoff artifact, and does not itself authorize tests, rule changes, Gate
+overrides, or risky recovery.
+
+When a blocker is resolved, update that pair with the actual resolution and
+time, preserving the original facts and failed attempts. If the writing role
+cannot safely update it, add a linked follow-up pair. At the start of each
+Auto resume and before archive, review this FD's active and archived blocker
+records. State which repeated or reusable issues warrant a specific skill,
+stable spec, or template change; use the normal FD scope, authorization, and
+review process for any such change. An unresolved record stays unresolved
+until evidence supports a result. Include the record path and current status
+in the user-facing Gate and final report.
 
 1. **Preflight and resolve.** Read the repository instructions and this FD's
    Issue, stable specs, and current receipt. If `AIW_FD_ROLE_RUNNER` is set,
@@ -157,9 +177,15 @@ publishing, or worktree removal. Follow narrower repository rules.
    Worker, `Pending Test` to an independent Tester, `Pending Test Acceptance`
    to PM, `Pending Verification` to an independent Reviewer, and an active
    `Complete` FD with a current pass to close. Skip already completed stages;
-   an archived Complete FD is already done. For isolation, capture the current
-   branch, commit the ready FD plan, then create the branch/worktree with
-   `aiw fd worktree add <id>` (`feature/<id>` and `.wt/<id>`). Immediately read
+   an archived Complete FD is already done. Before any implementation, capture
+   the current branch, commit the ready FD plan on the parent branch, and make
+   sure the parent workspace is clean. Do not mix unrelated changes into the FD
+   plan commit; if other parent changes are uncommitted, resolve and commit
+   them separately first. Ensure `.wt/` and `.ai/` are ignored by Git;
+   `wt add` rejects missing rules before changing Git state. Then create the branch/worktree with
+   `aiw wt add <id>` (`feature/<id>` and `.wt/<id>`). This is the
+   default for every numbered FD, not only requests that mention isolation or
+   parallel work. Immediately read
    `.ai/fd/<id>/workspace.json` and verify `fd_id`, `parent_branch`, `branch`,
    and `worktree` against the created worktree. This file records the exact
    parent for the later merge; stop if it is missing or inconsistent. Keep all
@@ -176,11 +202,14 @@ publishing, or worktree removal. Follow narrower repository rules.
    remaining `%%` notes with actual evidence and skipped checks. Apply the
    repo's validation budget. For a Dual evidence FD, write a Chinese Markdown
    report and same-basename JSON using `docs/features/REPORT_DATA_TEMPLATE.json`;
-   point `--artifact` to Markdown. If isolated, inspect the worktree status and
-   commit only FD-scoped changes so the Reviewer has a stable diff. Use
-   `aiw wt commit <id>` only if `aiw help wt` confirms FD IDs are supported;
-   otherwise use scoped local Git operations in `.wt/<id>`. If authorization or
-   design is missing, stop with the FD active. Emit `implementation-ready
+   point `--artifact` to Markdown. In the FD worktree, inspect the diff and
+   commit each completed, independently reviewable Work Item before starting
+   the next. Stage only that item's files; use `aiw wt commit <id>` only when
+   every uncommitted change belongs to it, otherwise use path-scoped `git add`
+   and `git commit`. Commit final FD evidence before the Tester or Reviewer
+   handoff. Do not rebase either branch as part of this workflow; delivery
+   squashes the reviewed FD result onto the recorded parent branch.
+   If authorization or design is missing, stop with the FD active. Emit `implementation-ready
    --producer worker --artifact <implementation-report> --source-event
    <claimed-worker-event>` only after all scoped items and required evidence
    are resolved. New FDs have `**Test policy:** Independent`, so this event
@@ -252,16 +281,22 @@ publishing, or worktree removal. Follow narrower repository rules.
    `verification-passed`, verify the latest receipt matches the current FD
    revision and content. Read `.ai/fd/<id>/workspace.json` and take its
    `parent_branch`, `branch`, and `worktree` as the merge coordinates. Confirm
-   the parent branch is clean and still matches the recorded parent. Check
-   `aiw help wt`; use `aiw wt pull <id>` only if the
-   current command explicitly supports FD IDs. Otherwise merge only
-   the recorded `branch` into the recorded `parent_branch` with scoped local
-   Git operations from the primary workspace.
-   On a conflict or dirty parent, stop with the FD active and worktree intact;
-   do not claim delivery. After a successful merge, close with
+   the parent branch is clean and still matches the recorded parent. Run
+   `aiw wt local-merge <id>` for one squash commit on the parent branch. On a
+   parent-side content conflict, the command resets the failed squash, verifies
+   the parent is clean, and merges the parent into the FD worktree for resolution.
+   Resolve and commit there, then rerun `local-merge` explicitly. If recovery
+   fails, leave the FD active and worktree intact. After successful delivery, close with
    `aiw fd close <id> Complete` from the parent workspace and commit only the
    archive/index changes. A close rejection is a Gate, never a reason to edit
-   a receipt or archive manually. Do not remove the worktree automatically.
+   a receipt or archive manually. After the archive commit, confirm the FD
+   worktree is clean, the resolved worktree path matches `.wt/<id>` inside this
+   repository, and parent history contains this FD's single-parent squash
+   commit with `FD-Source: <sha>` equal to the current FD HEAD. Then run
+   `git worktree remove -- .wt/<id>` and `git branch -D feature/<id>` from the
+   parent workspace. Squash does not make the FD branch an ancestor, so `-D`
+   is allowed only after that source check. If a check or command fails,
+   preserve the remaining worktree or branch and report the Gate.
    Report the merge result, archive path, review count, commands actually run,
    unrun checks, and residual risks.
 

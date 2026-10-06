@@ -38,43 +38,32 @@ business decision uses `needs-decision` and later `decision-recorded`.
 
 Run only checks allowed by the repository. Local focused commits are allowed
 under the project rules; commits do not authorize merge, push, or release.
-An implementation request that asks for parallel work, isolation, a worktree,
-or `wt` enters the isolated FD workflow; an informational or design-only
-mention does not. Capture the current branch and commit the FD plan, then create
-the worktree with `aiw fd worktree add FD-001`. The command records the FD ID,
+Every numbered FD uses an isolated worktree before implementation starts; this
+keeps parallel FD work from sharing writable files. An informational or
+design-only discussion does not create a worktree. Capture the current branch,
+commit the ready FD plan on the parent branch, and make sure the parent
+workspace is clean before creating the worktree with
+`aiw wt add FD-001`. Commit unrelated parent changes separately; do
+not mix them into the FD plan commit. Keep the parent clean while the FD is in
+flight when possible, and wait to merge if it becomes dirty. The command records the FD ID,
 parent branch, feature branch, and worktree path in
 `.ai/fd/FD-001/workspace.json`. Read and verify that record immediately after
 creation; use its parent branch as the merge target. Stop if the record is
-missing or inconsistent. Use `aiw fd worktree status` to inspect Git worktrees.
+missing or inconsistent. Use `aiw wt status FD-001` to inspect both worktrees.
 
-Check `aiw help wt` before using its operations. Use them only if they accept
-the FD ID; never create a Task to satisfy a Task-only command. If no FD-aware
-merge command is available, use scoped local Git operations for the recorded
-recorded feature branch and parent branch. Merge after a passed review; archive
-the FD only after the merge succeeds. A conflict leaves the FD active and the
-worktree intact.
-
-## Recover a stale Tester handoff
-
-Use `aiw fd refresh-tester FD-020 --reason "Updated authentication contract"
---artifact docs/features/reports/FD-020-implementation-r2.md` for an independent
-Pending Test FD whose latest Tester event is stale, pending, and unclaimed.
-The report must exist inside the repository; Dual evidence requires its
-worker-report JSON sidecar. The command increments the revision, preserves
-status and Work Items, retains Worker identity and implementation provenance,
-and cancels the old receipt with a successor link. Tester claims the new
-`test-requested` event and cites it in reports and any fresh authorization.
-Current or in-flight handoffs cannot be replaced. Refreshing is not approval
-to run tests, nor a test result. Failed writes roll back the FD, receipts and
-index without leaving a claimable new event.
+Use `aiw wt local-merge FD-001` for squash delivery after review. Content
+conflicts are recovered in the FD worktree and require an explicit retry.
+Never create a Task to satisfy a Task-only command. Archive only after delivery
+succeeds. Commit each completed Work Item separately before the handoff for
+testing or review. Do not rebase either branch.
 
 ## Auto
 
 `$fd-workflow auto` is a host Skill operation, not an `aiw fd auto` CLI
 command. Follow `../SKILL.md`: one numbered FD, exact handoff claims,
 independent Reviewer subagents, and at most three Reviewer outcomes across
-resumes of the same implementation cycle. With an isolation trigger, merge the
-reviewed FD branch to its recorded parent before closing and archiving. Stop
+resumes of the same implementation cycle. With an isolation trigger,
+squash-deliver the reviewed FD result to its recorded parent before closing and archiving. Stop
 without merge or archive when a review, parent state, or merge gate fails.
 
 ## Close

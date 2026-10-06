@@ -6,24 +6,25 @@
 
 ## Requirements
 
-### Requirement: 鍐呯疆涓庢彃浠跺垎娲?
+### Requirement: Built-in and plugin dispatch
 
-涓诲叆鍙?MUST 浼樺厛澶勭悊鍐呯疆鍛戒护锛汿ask 鍛戒护鏀寔椤跺眰鍏ュ彛鍙?`task <command>` 璺緞銆傛湭鐭ラ《灞傚悕绉?MUST 灏濊瘯鍙戠幇 `aiw-<name>` 鎻掍欢銆倃t MUST 缁忔彃浠跺叆鍙ｆ墽琛屻€?
+AIW MUST dispatch built-in commands before external plugins. Unknown commands
+MUST resolve through the `aiw-<name>` plugin convention. The removed `aiw wf`
+command MUST NOT be advertised as available. Numbered FD worktrees MUST be
+managed through the FD-only `aiw wt` plugin, which directly creates and records
+worktrees and provides status, commit, local-merge, and list operations.
 
-#### Scenario: 璋冪敤宸ヤ綔娴佸懡浠?
+#### Scenario: Call an FD worktree command
 
-- **WHEN** 使用 `aiw wf ...`
-- **THEN** 命令进入 Workflow facade，并统一分派到 Task workflow。
+- **WHEN** a user runs `aiw wt add FD-001` or another supported `aiw wt`
+  operation
+- **THEN** the plugin resolves the FD workspace record and performs that
+  operation without creating or requiring a Task
 
-#### Scenario: 璋冪敤澶栭儴鎵╁睍
+#### Scenario: Removed Task workflow command
 
-- **WHEN** 椤跺眰鍛戒护娌℃湁鍐呯疆澶勭悊鍣ㄤ笖鍙戠幇浜嗗搴旀彃浠?
-- **THEN** 绯荤粺鎶婂墿浣欏弬鏁颁氦缁欐彃浠舵墽琛岋紝骞朵紶鍏ユ彃浠跺悕绉般€佽矾寰勫拰 AIW 璋冪敤鐜銆?
-
-#### Scenario: 旧工作流入口已移除
-
-- **WHEN** 使用 `aiw workflow ...` 或 `aiw task workflow ...`
-- **THEN** AIW 拒绝调用并提示使用 `aiw wf ...`。
+- **WHEN** a user invokes the removed `aiw wf` command
+- **THEN** AIW does not advertise it as a supported command
 
 ### Requirement: 鎻掍欢鍙戠幇涓庡瓙杩涚▼缁撴灉
 

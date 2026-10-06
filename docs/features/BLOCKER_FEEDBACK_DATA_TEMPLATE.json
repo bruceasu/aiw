@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-XXX",
+  "source_event": "FD-XXX-000000-event",
+  "human_report": "FD-XXX-blocker-YYYYMMDDTHHMMSS-unique.md",
+  "data": {
+    "stage": "replace-with-stage",
+    "role": "replace-with-role",
+    "recorded_at": "YYYY-MM-DDTHH:MM:SS+00:00",
+    "recorder_session": "replace-with-session",
+    "observed_blocker": "replace-with-observed-facts-and-stop-point",
+    "confirmed_cause": null,
+    "cause_status": "unknown",
+    "recovery_attempts": [],
+    "status": "unresolved",
+    "human_decision_required": null,
+    "human_decision_detail": "replace-with-decision-or-why-none-is-needed",
+    "actual_resolution": null,
+    "resolved_at": null,
+    "residual_risk_or_next_step": "replace-with-risk-or-next-step",
+    "reusable_improvement": "replace-with-proposed-improvement-or-none",
+    "improvement_status": "proposed"
+  }
+}

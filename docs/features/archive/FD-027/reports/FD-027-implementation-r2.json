@@ -1,0 +1,29 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-027",
+  "source_event": "FD-027-000007-changes-requested",
+  "human_report": "FD-027-implementation-r2.md",
+  "data": {
+    "summary": "修复 R1 三项发现：add 预检 Git 忽略规则，移除 README 旧命令，FD 证据与真实收据同步。",
+    "changed_paths": [
+      "plugins/aiw-wt.py",
+      "README.md",
+      "docs/features/FD-027_WT_USES_FD_WORKTREES.md",
+      "docs/usage/aiw-fd.md",
+      "openspec/specs/fd-workflow/spec.md",
+      "skills/work-management.md",
+      "skills/fd-workflow/SKILL.md"
+    ],
+    "commands": [
+      "git diff --check",
+      "python -c \"from pathlib import Path; p=Path('plugins/aiw-wt.py'); compile(p.read_text(encoding='utf-8'), str(p), 'exec')\""
+    ],
+    "results": [
+      "差异空白检查无错误，存在换行符提示",
+      "plugins/aiw-wt.py 内存 compile-only 退出 0",
+      "R2 行为测试尚未执行"
+    ],
+    "residual_risk": "新增忽略规则预检待独立 Tester 的 R2 运行证据；S17-S19 及业务代码分支覆盖率仍未测量；parent 有 FD-028 无关未提交内容。"
+  }
+}

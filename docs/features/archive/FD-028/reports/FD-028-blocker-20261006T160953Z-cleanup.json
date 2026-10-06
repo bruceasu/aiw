@@ -1,0 +1,27 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-028",
+  "source_event": "FD-028-000009-verification-passed",
+  "human_report": "FD-028-blocker-20261006T160953Z-cleanup.md",
+  "data": {
+    "stage": "post-archive cleanup",
+    "role": "pm",
+    "recorded_at": "2026-10-06T16:09:53Z",
+    "recorder_session": "fd028-pm-20261007-6c94b2",
+    "observed_blocker": "PowerShell Remove-Item on worktree .ai junction raised NullReferenceException; after git worktree removal, parent .ai directory was empty and FD-028 receipts were missing.",
+    "confirmed_cause": null,
+    "cause_status": "unknown",
+    "recovery_attempts": [
+      {"action": "Read-only inspection of .ai, Git status, archive files, and squash delivery", "result": "Git delivery and archive intact; runtime receipts absent"}
+    ],
+    "status": "unresolved",
+    "human_decision_required": true,
+    "human_decision_detail": "Decide whether to restore .ai from a trusted backup and assess other FD runtime state.",
+    "actual_resolution": null,
+    "resolved_at": null,
+    "residual_risk_or_next_step": "Original .ai event/session/workspace metadata may be lost; do not recreate receipts from transcript output.",
+    "reusable_improvement": "On Windows, remove only a junction link with a verified method and confirm target .ai contents before removing the worktree.",
+    "improvement_status": "proposed"
+  }
+}

@@ -10,19 +10,17 @@ var rootCommands = []string{
 }
 
 var fdCommands = []string{
-	"new", "list", "show", "emit", "claim", "resume", "request-review", "refresh-worker", "refresh-tester", "reopen", "close", "worktree",
+	"new", "list", "show", "emit", "claim", "resume", "request-review", "refresh-worker", "refresh-tester", "reopen", "close",
 }
 
-var fdWorktreeCommands = []string{"add", "status"}
 var fdOutcomes = []string{"Complete", "Deferred", "Closed"}
 
 var fdIDCommands = []string{
-	"show", "emit", "claim", "resume", "request-review", "refresh-worker", "refresh-tester", "reopen", "close", "worktree",
+	"show", "emit", "claim", "resume", "request-review", "refresh-worker", "refresh-tester", "reopen", "close",
 }
 
 var worktreeCommands = []string{
-	"add", "rm", "commit", "pull", "status", "discard", "list", "prune",
-	"lock", "unlock", "repair", "ignore",
+	"add", "status", "commit", "local-merge", "list",
 }
 
 func Dispatch(args []string) error {
@@ -70,7 +68,6 @@ func printPowerShell() {
     }
     $rootCommands = @(__ROOT_COMMANDS__)
     $fdCommands = @(__FD_COMMANDS__)
-    $fdWorktreeCommands = @(__FD_WORKTREE_COMMANDS__)
     $fdOutcomes = @(__FD_OUTCOMES__)
     $fdIdCommands = @(__FD_ID_COMMANDS__)
     $worktreeCommands = @(__WORKTREE_COMMANDS__)
@@ -87,10 +84,6 @@ func printPowerShell() {
     if ($aiwArgs.Count -eq 0) { $candidates = $rootCommands }
     elseif ($aiwArgs[0] -eq "fd") {
         if ($aiwArgs.Count -eq 1) { $candidates = $fdCommands }
-        elseif ($aiwArgs[1] -eq "worktree") {
-            if ($aiwArgs.Count -eq 2) { $candidates = $fdWorktreeCommands }
-            elseif ($aiwArgs.Count -eq 3) { $candidates = $fdIds }
-        }
         elseif ($aiwArgs[1] -in $fdIdCommands) {
             if ($aiwArgs.Count -eq 2) { $candidates = $fdIds }
             elseif ($aiwArgs[1] -eq "close" -and $aiwArgs.Count -eq 3) { $candidates = $fdOutcomes }
@@ -108,7 +101,6 @@ func printPowerShell() {
 	fmt.Print(render(script,
 		"__ROOT_COMMANDS__", quoted(rootCommands),
 		"__FD_COMMANDS__", quoted(fdCommands),
-		"__FD_WORKTREE_COMMANDS__", quoted(fdWorktreeCommands),
 		"__FD_OUTCOMES__", quoted(fdOutcomes),
 		"__FD_ID_COMMANDS__", quoted(fdIDCommands),
 		"__WORKTREE_COMMANDS__", quoted(worktreeCommands),
@@ -138,10 +130,6 @@ _aiw_complete() {
     if (( ${#args[@]} == 0 )); then candidates=(__ROOT_COMMANDS__)
     elif [[ "${args[0]}" == fd ]]; then
         if (( ${#args[@]} == 1 )); then candidates=(__FD_COMMANDS__)
-        elif [[ "${args[1]}" == worktree ]]; then
-            if (( ${#args[@]} == 2 )); then candidates=(__FD_WORKTREE_COMMANDS__)
-            elif (( ${#args[@]} == 3 )); then candidates=("${fd_ids[@]}")
-            fi
         elif [[ " ${fd_id_commands[*]} " == *" ${args[1]} "* ]]; then
             if (( ${#args[@]} == 2 )); then candidates=("${fd_ids[@]}")
             elif [[ "${args[1]}" == close ]] && (( ${#args[@]} == 3 )); then candidates=(__FD_OUTCOMES__)
@@ -159,7 +147,6 @@ complete -F _aiw_complete aiw
 	fmt.Print(render(script,
 		"__ROOT_COMMANDS__", strings.Join(rootCommands, " "),
 		"__FD_COMMANDS__", strings.Join(fdCommands, " "),
-		"__FD_WORKTREE_COMMANDS__", strings.Join(fdWorktreeCommands, " "),
 		"__FD_OUTCOMES__", strings.Join(fdOutcomes, " "),
 		"__FD_ID_COMMANDS__", strings.Join(fdIDCommands, " "),
 		"__WORKTREE_COMMANDS__", strings.Join(worktreeCommands, " "),
@@ -183,10 +170,6 @@ _aiw_complete() {
         compadd -- __ROOT_COMMANDS__
     elif [[ $words[2] == fd ]] && (( CURRENT == 3 )); then
         compadd -- __FD_COMMANDS__
-    elif [[ $words[2] == fd && $words[3] == worktree ]] && (( CURRENT == 4 )); then
-        compadd -- __FD_WORKTREE_COMMANDS__
-    elif [[ $words[2] == fd && $words[3] == worktree ]] && (( CURRENT == 5 )); then
-        compadd -- "${fd_ids[@]}"
     elif [[ $words[2] == fd && " __FD_ID_COMMANDS__ " == *" $words[3] "* ]] && (( CURRENT == 4 )); then
         compadd -- "${fd_ids[@]}"
     elif [[ $words[2] == fd && $words[3] == close ]] && (( CURRENT == 5 )); then
@@ -200,7 +183,6 @@ compdef _aiw_complete aiw
 	fmt.Print(render(script,
 		"__ROOT_COMMANDS__", strings.Join(rootCommands, " "),
 		"__FD_COMMANDS__", strings.Join(fdCommands, " "),
-		"__FD_WORKTREE_COMMANDS__", strings.Join(fdWorktreeCommands, " "),
 		"__FD_OUTCOMES__", strings.Join(fdOutcomes, " "),
 		"__FD_ID_COMMANDS__", strings.Join(fdIDCommands, " "),
 		"__WORKTREE_COMMANDS__", strings.Join(worktreeCommands, " "),
@@ -222,30 +204,21 @@ function __aiw_fd_command_position
     test (count $tokens) -eq 2; and test "$tokens[2]" = fd
 end
 
-function __aiw_fd_worktree_position
-    set tokens (commandline -opc)
-    test (count $tokens) -eq 3; and test "$tokens[2]" = fd; and test "$tokens[3]" = worktree
-end
-
 function __aiw_fd_id_position
     set tokens (commandline -opc)
     if test (count $tokens) -eq 3; and test "$tokens[2]" = fd
         contains -- "$tokens[3]" __FD_ID_COMMANDS__
-    else if test (count $tokens) -eq 4; and test "$tokens[2]" = fd; and test "$tokens[3]" = worktree
-        contains -- "$tokens[4]" __FD_WORKTREE_COMMANDS__
     end
 end
 
 complete -c aiw -f -n '__fish_use_subcommand' -a '__ROOT_COMMANDS__'
 complete -c aiw -f -n '__aiw_fd_command_position' -a '__FD_COMMANDS__'
-complete -c aiw -f -n '__aiw_fd_worktree_position' -a '__FD_WORKTREE_COMMANDS__'
 complete -c aiw -f -n '__aiw_fd_id_position' -a '(__aiw_fd_ids)'
 complete -c aiw -f -n '__fish_seen_subcommand_from wt; and test (count (commandline -opc)) -eq 2' -a '__WORKTREE_COMMANDS__'
 `
 	fmt.Print(render(script,
 		"__ROOT_COMMANDS__", strings.Join(rootCommands, " "),
 		"__FD_COMMANDS__", strings.Join(fdCommands, " "),
-		"__FD_WORKTREE_COMMANDS__", strings.Join(fdWorktreeCommands, " "),
 		"__FD_ID_COMMANDS__", strings.Join(fdIDCommands, " "),
 		"__WORKTREE_COMMANDS__", strings.Join(worktreeCommands, " "),
 	))

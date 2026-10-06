@@ -1,0 +1,19 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-029",
+  "source_event": "FD-029-000008-test-rejected",
+  "human_report": "FD-029-implementation-r2.md",
+  "data": {
+    "summary": "第 1 轮 0/12 场景缺少运行证据而退回；用户已授权独立 Tester 新增并运行一次聚焦黑盒测试，本轮未修改交付代码。",
+    "changed_paths": [
+      "docs/features/reports/FD-029-implementation-r2.md",
+      "docs/features/reports/FD-029-implementation-r2.json"
+    ],
+    "commands": [],
+    "results": [
+      "本轮未执行测试或编译；等待独立 Tester 的新证据"
+    ],
+    "residual_risk": "squash 提交形状及冲突恢复尚待用户授权的聚焦测试实际运行。"
+  }
+}

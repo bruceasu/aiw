@@ -46,10 +46,10 @@ Task 或 OpenSpec change。完整用法见 [FD 工作流](aiw-fd.md)。
 根据已批准 Issue 来源填写，不能把模板文字当作已决定的实现范围。
 
 在 FD 中写明目标、约束、决策、验收证据、TODO、Verification 和有序工作项。
-工作项用 `- [ ] 1.1 ...` 形式。完成后运行 `aiw wf plan <task-id>` 将其
+For new engineering work, create a numbered FD and use the explicit FD lifecycle; do not route it through the removed Task workflow.
 映射到 Workflow Core，再以同一 Issue 和 Task ID 重试 promote，完成
 `FD_READY` 记录。FD 为 `BLOCKED` 或没有工作项时，推广停在可恢复的
-`TASK_CREATED`；`aiw wf plan` 不会映射被整体阻塞的 FD 工作项。
+For new engineering work, create a numbered FD and use the explicit FD lifecycle; do not route it through the removed Task workflow.
 
 如稳定行为改变，更新相关 `openspec/specs/`。只有用户明确要求使用
 OpenSpec change 时才创建或绑定 change；更新稳定规格本身不创建 change。
@@ -57,7 +57,7 @@ Task 的实现和完成不依赖它。
 
 ## 本地交付
 
-旧 Schema 9 的手动 `aiw wf local-merge <task-id> <merge-message>` 与 Task 完成状态分离，
+Legacy Schema 9 local delivery guidance is historical only; new FD delivery uses `aiw wt local-merge <fd-id>`.
 要求隔离工作树干净、相关改动已经提交，并检查分支、在途写入和 Git 合并安全条件。未完成 Task
 合并成功后在 primary 继续推进，保留原工作项、证据和 Session 关联。
 

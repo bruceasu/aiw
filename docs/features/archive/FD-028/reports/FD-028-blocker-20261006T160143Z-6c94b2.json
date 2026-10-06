@@ -1,0 +1,29 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-028",
+  "source_event": "FD-028-000004-design-ready",
+  "human_report": "FD-028-blocker-20261006T160143Z-6c94b2.md",
+  "data": {
+    "stage": "pre-implementation handoff",
+    "role": "worker",
+    "recorded_at": "2026-10-06T16:01:43Z",
+    "recorder_session": "fd028-worker-20261007-6c94b2",
+    "observed_blocker": "Original Worker claim failed because FD content changed since the handoff.",
+    "confirmed_cause": "Work Item 1.5 was added after revision 4 design-ready; the pending event digest no longer matched.",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      {"action": "Claim FD-028-000004-design-ready", "result": "Rejected: FD changed since the handoff"},
+      {"action": "Refresh Worker event, commit plan, fast-forward worktree, claim FD-028-000005-work-requested from parent", "result": "Succeeded"}
+    ],
+    "status": "resolved",
+    "prior_status": "unresolved",
+    "human_decision_required": false,
+    "human_decision_detail": "The pending stale Worker receipt has a documented refresh path.",
+    "actual_resolution": "Replaced the stale pending handoff with FD-028-000005-work-requested and claimed it.",
+    "resolved_at": "2026-10-06T16:01:43Z",
+    "residual_risk_or_next_step": "Review current FD and new receipt consistency before implementation-ready.",
+    "reusable_improvement": "Compare FD digest with pending handoff before worktree creation; refresh and commit a stale plan first.",
+    "improvement_status": "proposed"
+  }
+}

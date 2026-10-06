@@ -35,6 +35,13 @@ installations remain usable outside the AIW repository.
   `--artifact`. Both files are archived together. Older Markdown-only
   evidence remains historical.
   Prior evidence stays archived if a completed FD is reopened for review.
+- An automatic FD workflow Gate has a separate FD-prefixed blocker feedback
+  Markdown report and same-basename JSON sidecar under `docs/features/reports/`.
+  Use `docs/features/BLOCKER_FEEDBACK_TEMPLATE.md` and its JSON template.
+  Record observed facts, unknowns, attempts, unresolved or resolved state,
+  human decision needs, and reusable improvements. Review existing feedback
+  on resume and before archive. FD-prefixed pairs follow the normal `reports/`
+  archive move; they do not alter an active FD handoff or authorize recovery.
 - `aiw fd refresh-tester <id> --reason <text> --artifact <report>` replaces
   only a stale unclaimed pending Tester handoff for an independent Pending Test
   FD. It retains Worker identity and implementation provenance, validates the
@@ -120,25 +127,38 @@ uncommitted, resolve and commit them separately before proceeding. Keep the
 parent clean while the FD is in flight when possible; if it becomes dirty,
 wait to merge until it is clean again. These focused commits are part of the
 default FD implementation workflow.
-`aiw fd worktree add` records `fd_id`,
+`aiw wt add` records `fd_id`,
 `parent_branch`, `branch`, and `worktree` in `.ai/fd/<fd-id>/workspace.json`.
+Before creating the worktree, ensure `.wt/` and `.ai/` are ignored by Git;
+`wt add` checks both paths and rejects missing rules before changing Git state.
 Read that file immediately after creation and verify all four values; use its
 `parent_branch` as the sole merge target. Stop if the file is missing or does
-not match the created worktree. Use `aiw fd worktree add/status` for FD
-worktrees. Before using
-`aiw wt` operations, check their current help and use them only if they accept
-an FD ID; never invent or create a Task to satisfy a Task-only command. If no
-FD-aware integration command is available, use scoped local Git operations for
-the requested FD branch. Keep each FD's writing role in one workspace at a
-time and do not mix unrelated files into its commits.
+not match the created worktree. Use `aiw wt status <fd-id>` for both worktrees,
+`aiw wt commit <fd-id> "message"` for focused commits, and
+`aiw wt local-merge <fd-id>` for squash delivery after review. It creates one
+single-parent commit on the recorded parent branch with an `FD-Source` trailer
+naming the delivered FD HEAD; individual Work Item commits remain on the FD
+branch. If delivery finds a content conflict, `local-merge` resets the failed
+parent squash and merges the parent into the FD worktree for resolution; commit
+there and rerun `local-merge` to deliver. Do not create a Task to satisfy a
+Task-only command. Keep each FD's writing role in one workspace at a time and
+do not mix unrelated files into its commits.
+Commit each completed, independently reviewable Work Item before starting the
+next, staging only its files. Commit final FD evidence before handoff to Tester
+or Reviewer. Do not rebase either branch as part of the FD workflow. After the
+archive commit, remove the clean FD worktree and delete its branch only after
+checking that parent history contains this FD's squash commit and its
+`FD-Source` trailer equals the current FD HEAD. The FD branch is not an ancestor
+after squash, so use `git branch -D` only after that check.
 
 The user permits local Git commits for the new FD workflow. A Worker may make
 a focused commit for an independently reviewable slice. A Reviewer checks a
 specific commit or diff. When an isolation request asks for the complete
-worktree lifecycle, it authorizes local commits, merging that FD branch into
-its recorded parent after a passed review, and archiving the FD after the merge
-succeeds. It does not authorize push, release, deployment, or worktree removal.
-For other requests, commit does not authorize merge or archive. A merge conflict
+worktree lifecycle, it authorizes local commits, squash-delivering that FD
+result to its recorded parent after a passed review, archiving after delivery
+succeeds, and removing that FD's clean worktree and delivered branch after the
+archive commit. It does not authorize push, release, or deployment.
+For other requests, commit does not authorize delivery or archive. A squash conflict
 or dirty parent workspace is a stop condition; preserve the worktree and active
 FD until the parent is clean. Follow any narrower local rule.
 
