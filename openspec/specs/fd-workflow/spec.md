@@ -205,7 +205,8 @@ remain unchanged. Task-owned FD archive layouts MUST remain unchanged.
 
 When a human explicitly requests `$fd-workflow auto`, the host agent MAY
 create or resume one numbered FD, design and split its Work Items, implement
-them, request independent review, repair findings, and archive a passed FD.
+them, request independent review, repair findings, archive a passed FD, and
+remove its clean worktree and merged branch after the archive commit.
 The operation MUST use the existing role receipt, exact claim, source-event,
 revision, and digest gates. Tester and Reviewer MUST each run in separate
 subagents for an independent-policy FD; the PM/Planner/Worker host MUST NOT

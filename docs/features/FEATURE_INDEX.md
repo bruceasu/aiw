@@ -12,7 +12,6 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-027](FD-027_WT_USES_FD_WORKTREES.md) | Make `aiw wt` use FD worktrees | Complete | High |
 | [FD-001](archive/FD-001/FD-001_EVENT_DRIVEN_FD_WORKFLOW.md) | 事件驱动的 FD 工作流 | Complete | High |
 | [FD-002](archive/FD-002/FD-002_ACTIONABLE_FD_HANDOFF_RECOVERY_HINTS.md) | Actionable FD handoff recovery hints | Complete | Medium |
 | [FD-003](archive/FD-003/FD-003_COMPACT_CZ_RELEASE.md) | 精简 aiw-cz 发布包 | Complete | Medium |
@@ -38,6 +37,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-024](archive/FD-024/FD-024_REFRESH_STALE_TESTER_HANDOFF.md) | Refresh stale Tester handoff | Complete | Medium |
 | [FD-025](archive/FD-025/FD-025_GATEWAY_GRACEFUL_SHUTDOWN_AND_STOP_SCRIPT.md) | Gateway graceful shutdown and stop script | Complete | Medium |
 | [FD-026](archive/FD-026/FD-026_GATEWAY_SHORT_COMMAND.md) | Gateway short command | Complete | Low |
+| [FD-027](archive/FD-027/FD-027_WT_USES_FD_WORKTREES.md) | Make `aiw wt` use FD worktrees | Complete | High |
 
 ## Deferred / Closed
 

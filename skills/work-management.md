@@ -138,8 +138,9 @@ The user permits local Git commits for the new FD workflow. A Worker may make
 a focused commit for an independently reviewable slice. A Reviewer checks a
 specific commit or diff. When an isolation request asks for the complete
 worktree lifecycle, it authorizes local commits, merging that FD branch into
-its recorded parent after a passed review, and archiving the FD after the merge
-succeeds. It does not authorize push, release, deployment, or worktree removal.
+its recorded parent after a passed review, archiving the FD after the merge
+succeeds, and removing that FD's clean worktree and merged branch after the
+archive commit. It does not authorize push, release, or deployment.
 For other requests, commit does not authorize merge or archive. A merge conflict
 or dirty parent workspace is a stop condition; preserve the worktree and active
 FD until the parent is clean. Follow any narrower local rule.

@@ -122,9 +122,10 @@ Worker; independent Tester and Reviewer stages use separate subagents. An
 isolation request uses
 the recorded FD branch and worktree. Under the shared work-management contract,
 this request authorizes local commits, merge to the recorded parent after a
-passed review, and FD archive after a successful merge. It does not authorize
-tests, final builds, network access, permission escalation, push, deployment,
-publishing, or worktree removal. Follow narrower repository rules.
+passed review, FD archive after a successful merge, and removal of that FD's
+worktree and branch after the archive commit. It does not authorize tests,
+final builds, network access, permission escalation, push, deployment, or
+publishing. Follow narrower repository rules.
 
 1. **Preflight and resolve.** Read the repository instructions and this FD's
    Issue, stable specs, and current receipt. If `AIW_FD_ROLE_RUNNER` is set,
@@ -254,7 +255,12 @@ publishing, or worktree removal. Follow narrower repository rules.
    After a successful merge, close with
    `aiw fd close <id> Complete` from the parent workspace and commit only the
    archive/index changes. A close rejection is a Gate, never a reason to edit
-   a receipt or archive manually. Do not remove the worktree automatically.
+   a receipt or archive manually. After the archive commit, confirm the FD
+   worktree is clean, its branch is an ancestor of the recorded parent, and
+   the resolved worktree path matches `.wt/<id>` inside this repository. Then
+   run `git worktree remove -- .wt/<id>` and `git branch -d feature/<id>` from
+   the parent workspace. Never force either removal; if a check or command
+   fails, preserve the remaining worktree or branch and report the Gate.
    Report the merge result, archive path, review count, commands actually run,
    unrun checks, and residual risks.
 
