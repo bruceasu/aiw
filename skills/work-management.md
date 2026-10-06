@@ -49,6 +49,13 @@ installations remain usable outside the AIW repository.
   handoff for an active `Open` or `In Progress` FD. It cancels the old receipt,
   records supersession, and creates a digest-bound `work-requested` event.
   Claimed or in-flight handoffs cannot be replaced.
+- In the normal workflow, when a pending FD task or handoff has expired after
+  a long pause, refresh it automatically when the workflow resumes; do not wait
+  for human intervention. Use the applicable `refresh-worker` or
+  `refresh-tester` operation, preserve its required reason and provenance, and
+  continue from the new handoff. Do not treat elapsed time alone as proof that
+  a claimed or in-flight handoff expired; inspect its recorded session or log
+  before deciding how to recover it.
 - OpenSpec owns stable capability specs in `openspec/specs/`. Create an
   OpenSpec change only when the user explicitly asks for one.
 
@@ -84,6 +91,18 @@ FD Work Item checkboxes record authored progress. Mark one complete only when
 the required change and real evidence exist. Report checks that were not run.
 Do not mark the FD Complete until all scoped items are resolved and the
 Reviewer has recorded a passed result.
+
+PM has final authority over the FD workflow and may explicitly override its
+normal gates. PM may directly change an FD's status, waive any test or
+verification stage, and accept without supporting test or review evidence.
+PM may make any decision needed to advance the FD regardless of whether a
+handoff is missing, stale, expired, or otherwise incomplete. PM may bypass or
+supersede that handoff and directly change the FD's status without Tester,
+Reviewer, or other role approval. Keep the FD record truthful: skipped stages,
+missing or stale handoffs, and absent evidence remain identified as such, and
+must never be represented as performed or passed. Do not invent a handoff,
+receipt, report, or verification result to make an override appear to have
+followed the normal route.
 
 ## Workspace and Git
 
