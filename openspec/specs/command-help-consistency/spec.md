@@ -9,10 +9,11 @@ AIW MUST expose help text whose command names, aliases, subcommand forms, argume
 
 #### Scenario: FD worktree help matches the command surface
 
-- **WHEN** a user requests `aiw wt` help
+- **WHEN** a user requests `aiw git wt` help
 - **THEN** help lists only supported FD operations, including add, status,
   commit, local-merge, and list
 - **AND** examples describe conflict recovery in the FD worktree
+- **AND** successful local delivery documents automatic worktree and branch cleanup
 
 #### Scenario: Task and top-level help remain consistent
 

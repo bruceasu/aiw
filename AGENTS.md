@@ -28,7 +28,7 @@ Before implementing any numbered FD, use its dedicated branch and worktree:
 - worktree: `.wt/<fd-id>`
 
 Commit the ready FD plan on the parent branch and ensure the parent workspace
-is clean before using `aiw wt add <fd-id>`. Keep the parent clean
+is clean before using `aiw git wt add <fd-id>`. Keep the parent clean
 while the FD is in flight when possible; a dirty parent blocks merge until it
 is clean again. Do not mix unrelated changes into the FD plan commit. Legacy
 Tasks keep their existing `feature/<task-id>` and `.wt/<task-id>` conventions.

@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-030",
+  "source_event": "FD-030-000010-implementation-ready",
+  "human_report": "FD-030-test-authorization-r1.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-030-000010-implementation-ready",
+    "fd_revision": 10,
+    "fd_digest": "339471324719e2421b025959ec3d25acf0193aab2f741e353329f0e89be9e4ec",
+    "tester_session": "fd030-tester-20261008-a71c9e",
+    "command": "python -c \"import unittest; names=['test_fd027_wt_blackbox','test_fd029_wt_squash','test_fd030_conflict_recovery','test_fd030_worktree_blackbox','test_fd030_junction_cleanup']; suite=unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromName(n) for n in names); result=unittest.TextTestRunner(verbosity=2).run(suite); raise SystemExit(not result.wasSuccessful())\"",
+    "working_directory": "D:/03_projects/AI-tools/aiw/.wt/FD-030",
+    "scope": "Five focused black-box test modules: tests/test_fd027_wt_blackbox.py, tests/test_fd029_wt_squash.py, tests/test_fd030_conflict_recovery.py, tests/test_fd030_worktree_blackbox.py, and tests/test_fd030_junction_cleanup.py.",
+    "expected_duration": "Approximately 1-5 minutes; offline Go CLI build has a 180-second timeout, remaining Git/CLI operations are local.",
+    "side_effects": "Creates and removes disposable Git repositories, worktrees, branches, Go cache, and a temporary executable under system temp or auto-cleaned .fd030-* directories within the FD worktree. No network, source edits, or retained distributable. An interrupted run may leave temporary directories.",
+    "risk_review": "Inspected all five test modules, the invoked aiw-git dispatcher and FD worktree cleanup paths, and the aiw-fd CLI entry point. Tests isolate Git configuration and hooks, use temporary repositories, and perform destructive Git cleanup only inside those fixtures. Go module downloads and checksum networking are disabled; no production or current repository worktree path is passed as a fixture target.",
+    "human_approval": "not required",
+    "planner_identity": "codex-fd030-planner-20261008",
+    "decision_time": "2026-10-07T15:13:39Z"
+  }
+}

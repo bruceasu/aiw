@@ -8,7 +8,7 @@ files, Git state, Tasks, or OpenSpec artifacts.
 ```text
 aiw ask "How do I start a Task?"
 aiw ask --system-prompt "Answer for a Go service team." "How do I use a handoff?"
-aiw ask --system-prompt-file .aiw/ask-prompt.txt "Explain aiw wt status."
+aiw ask --system-prompt-file .aiw/ask-prompt.txt "Explain aiw git wt status."
 aiw ask --allow-path C:\docs "What should I check in this guide?"
 aiw ask --chat
 aiw ask --resume

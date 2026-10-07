@@ -445,7 +445,7 @@ unresolved `%% NEEDS_INPUT` notes MUST still prevent `verification-passed`.
 An FD MAY have an isolated worktree once its plan is committed. Local focused
 commits MAY be made when authorized. Commit MUST NOT imply push, merge,
 release, deployment, worktree deletion, or archive.
-Before `aiw wt add` creates a worktree or metadata, it MUST confirm that the
+Before `aiw git wt add` creates a worktree or metadata, it MUST confirm that the
 FD worktree path and `.ai` metadata path are ignored by Git. If either path is
 not ignored, add MUST fail without changing Git state and tell the user which
 ignore rule to add and commit.
@@ -454,14 +454,24 @@ ignore rule to add and commit.
 
 Existing Task and Workflow Core records MUST NOT be rewritten as FD events or
 evidence. New engineering work MUST use numbered FDs. The removed `aiw wf`
-command MUST NOT be presented as an available path. The `aiw wt` plugin MUST
-be the sole worktree command surface for FDs; `wt add` directly creates the
-recorded worktree and workspace metadata. After review, `wt local-merge`
-MUST squash the FD result into one single-parent commit on its recorded parent,
-including `FD-Source: <FD-HEAD>` in the commit message. On a parent-side squash
-content conflict, it MUST reset the failed squash, verify parent recovery, and
-merge the parent into the FD worktree for resolution. Delivery MUST require a
-second explicit `local-merge` invocation after that resolution is committed.
+command MUST NOT be presented as an available path. The `aiw git wt` command
+provided by `aiw-git` MUST be the sole FD worktree interface. A standalone
+`aiw wt` command MUST NOT be provided. `wt add` directly creates the recorded
+worktree and workspace metadata. After review,
+`wt local-merge` MUST squash the FD result into one single-parent commit on its
+recorded parent, including `FD-Source: <FD-HEAD>` in the commit message. On a
+parent-side squash content conflict, it MUST reset the failed squash, verify
+parent recovery, and merge the parent into the FD worktree for resolution.
+Delivery MUST require a second explicit `local-merge` invocation after that
+resolution is committed. After a successful squash and validation of the
+single-parent commit, recorded coordinates, clean FD worktree, and matching
+`FD-Source`, `local-merge` MUST remove that FD worktree and local branch. Before
+Git removes a worktree whose `.ai` is a junction or symbolic link, the command
+MUST verify that the link targets the primary workspace `.ai` and remove only
+the link itself. Unknown reparse points or mismatched targets MUST stop cleanup
+without deleting the target. Cleanup MUST preserve `.ai/fd/<FD-ID>` receipts.
+If cleanup partially fails, the command MUST report the completed steps and
+recovery action without rolling back the delivered commit.
 
 #### Scenario: Squash multiple Work Item commits
 
@@ -475,3 +485,13 @@ second explicit `local-merge` invocation after that resolution is committed.
 - **WHEN** the parent and FD branch change the same content incompatibly
 - **THEN** the failed squash leaves the parent HEAD and worktree unchanged,
   merges the parent into the FD worktree, and requires an explicit retry
+
+#### Scenario: Clean up after verified delivery
+
+- **WHEN** `local-merge` creates the expected single-parent squash commit and
+  its `FD-Source` matches the clean FD worktree HEAD
+- **THEN** the command removes only the recorded `.wt/<FD-ID>` worktree and
+  `feature/<FD-ID>` branch
+- **AND** it preserves `.ai/fd/<FD-ID>` receipts and other runtime records
+- **AND** an unsafe `.ai` junction or partial cleanup failure is reported while
+  preserving all resources that have not yet been safely removed

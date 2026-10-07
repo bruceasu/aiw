@@ -1,0 +1,48 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-030",
+  "source_event": "FD-030-000004-design-ready",
+  "human_report": "FD-030-implementation-r1.md",
+  "data": {
+    "summary": "将 FD worktree 命令合并进 aiw-git，交付成功后清理 worktree 与分支，并修复 FD 收据对共享 .ai/fd 的定位。",
+    "changed_paths": [
+      "plugins/aiw-git/git-wt.py",
+      "plugins/aiw-wt.py",
+      "plugins/aiw-fd.py",
+      "README.md",
+      "AGENTS.md",
+      "cmd/aiw/main.go",
+      "docs/usage/aiw-ask.md",
+      "docs/usage/aiw-fd.md",
+      "docs/usage/aiw-issue.md",
+      "docs/features/FD-030_FD_WORKTREE_AIW_GIT.md",
+      "docs/features/reports/FD-030-implementation-r1.md",
+      "docs/features/reports/FD-030-implementation-r1.json",
+      "openspec/specs/fd-workflow/spec.md",
+      "openspec/specs/cli-and-plugins/spec.md",
+      "openspec/specs/command-help-consistency/spec.md",
+      "skills/work-management.md",
+      "skills/fd-workflow/SKILL.md",
+      "skills/fd-workflow/references/portable-operations.md",
+      "skills/fd-workflow/roles/pm.md",
+      "skills/fd-workflow/roles/planner.md",
+      "skills/fd-workflow/roles/worker.md",
+      "skills/fd-workflow/roles/tester.md",
+      "skills/fd-workflow/roles/reviewer.md",
+      "skills/wayfinder/SKILL.md"
+    ],
+    "commands": [
+      "python -c \"from pathlib import Path; files=('plugins/aiw-git/git-wt.py','plugins/aiw-git/aiw-git.py','plugins/aiw-fd.py'); [compile(Path(name).read_text(encoding='utf-8'), name, 'exec') for name in files]\"",
+      "python plugins/aiw-fd.py emit FD-030 implementation-ready --producer worker --artifact docs/features/reports/FD-030-implementation-r1.md --source-event FD-030-000004-design-ready"
+    ],
+    "results": [
+      "已静态追踪 FD worktree 命令、清理前置条件与共享收据调用路径。",
+      "已静态检查共享角色契约、自动流程路由与阶段角色提示一致性。",
+      "Worker handoff 已成功写入共享 .ai，生成 FD-030-000006-implementation-ready，目标为 Tester。",
+      "未运行测试、最终构建、格式化、lint、网络或部署。",
+      "Git worktree/分支清理、Windows junction、Tester/PM/Reviewer 阶段和角色提示跨主机编排尚无运行时验证。"
+    ],
+    "residual_risk": "FD-029 重复交付用例和现有黑盒测试仍引用已删除入口的生命周期或路径，尚未迁移或执行；Worker handoff 已登记，但测试、PM 接受、独立审查及角色提示端到端编排未完成；FD-030 处于 Pending Test。"
+  }
+}

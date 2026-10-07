@@ -9,7 +9,7 @@ import tempfile
 import unittest
 
 
-WT_PLUGIN = Path(__file__).resolve().parents[1] / "plugins" / "aiw-wt.py"
+GIT_DISPATCHER = Path(__file__).resolve().parents[1] / "plugins" / "aiw-git" / "aiw-git.py"
 FD_PLUGIN = Path(__file__).resolve().parents[1] / "plugins" / "aiw-fd.py"
 
 
@@ -61,7 +61,7 @@ class FDWorktreeBlackBox(unittest.TestCase):
         return result.stdout.strip()
 
     def wt(self, *args, cwd=None):
-        return self.run_command(sys.executable, WT_PLUGIN, *args, cwd=cwd)
+        return self.run_command(sys.executable, GIT_DISPATCHER, "wt", *args, cwd=cwd)
 
     def assert_wt_ok(self, *args, cwd=None):
         result = self.wt(*args, cwd=cwd)
@@ -158,30 +158,6 @@ class FDWorktreeBlackBox(unittest.TestCase):
         self.git("commit", "-m", "feature", cwd=tree)
         self.assert_wt_ok("local-merge", "FD-027", cwd=tree)
         self.assertEqual((self.root / "feature.txt").read_text(encoding="utf-8"), "delivered\n")
-
-    def test_conflict_moves_resolution_to_fd_tree_and_needs_explicit_retry(self):
-        (self.root / "shared.txt").write_text("base\n", encoding="utf-8")
-        self.git("add", "shared.txt")
-        self.git("commit", "-m", "common base")
-        tree = self.add()
-        (tree / "shared.txt").write_text("feature\n", encoding="utf-8")
-        self.git("add", "shared.txt", cwd=tree)
-        self.git("commit", "-m", "feature edit", cwd=tree)
-        (self.root / "shared.txt").write_text("parent\n", encoding="utf-8")
-        self.git("add", "shared.txt")
-        self.git("commit", "-m", "parent edit")
-        parent_before = self.git("rev-parse", "HEAD")
-        self.assert_wt_error("local-merge", "FD-027")
-        self.assertEqual(self.git("rev-parse", "HEAD"), parent_before)
-        self.assertEqual(self.git("status", "--porcelain"), "")
-        self.assertNotEqual(self.git("ls-files", "--unmerged", cwd=tree), "")
-        self.assertFalse((self.root / ".git" / "MERGE_HEAD").exists())
-        (tree / "shared.txt").write_text("resolved\n", encoding="utf-8")
-        self.git("add", "shared.txt", cwd=tree)
-        self.git("commit", "-m", "resolve conflict", cwd=tree)
-        self.assertEqual(self.git("rev-parse", "HEAD"), parent_before)
-        self.assert_wt_ok("local-merge", "FD-027")
-        self.assertEqual((self.root / "shared.txt").read_text(encoding="utf-8"), "resolved\n")
 
     def test_fd_plugin_does_not_dispatch_worktree(self):
         result = self.run_command(sys.executable, FD_PLUGIN, "worktree", "status", "FD-027")

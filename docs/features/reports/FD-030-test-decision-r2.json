@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-030",
+  "source_event": "FD-030-000011-test-report-ready",
+  "human_report": "FD-030-test-decision-r2.md",
+  "data": {
+    "disposition": "accepted",
+    "tester_report": "docs/features/reports/FD-030-test-report-r2.md",
+    "fd_revision": 11,
+    "fd_digest": "c75ea3933dbb73fe1466b22c09b3ef0757132e8cdb357b3b5711a7e6937d70f2",
+    "requirements_coverage": "0%",
+    "branch_coverage": "not measured",
+    "rationale": "Accept the Tester R2 report only to proceed to independent review under the user's explicit FD-specific waiver. The authorized runner could not import five test modules; zero behavior tests ran. This is not a test pass or runtime behavior approval. The user will validate behavior during actual use.",
+    "exceptions": "User explicitly waived further tests for FD-030 on 2026-10-08: no more testing is needed; the user will test during use because Tester tests cannot start.",
+    "residual_risk": "Coverage remains 0/20 and branch coverage is not measured. Worktree/branch cleanup, Windows junction/reparse handling, conflict recovery, shared linked-worktree receipts, and partial cleanup remain without runtime evidence pending user validation during use.",
+    "pm_identity": "/root; session codex-fd030-pm-waiver-20261008-0026",
+    "decision_time": "2026-10-08T00:26:05+09:00"
+  }
+}

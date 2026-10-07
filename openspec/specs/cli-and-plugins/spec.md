@@ -11,12 +11,13 @@
 AIW MUST dispatch built-in commands before external plugins. Unknown commands
 MUST resolve through the `aiw-<name>` plugin convention. The removed `aiw wf`
 command MUST NOT be advertised as available. Numbered FD worktrees MUST be
-managed through the FD-only `aiw wt` plugin, which directly creates and records
-worktrees and provides status, commit, local-merge, and list operations.
+managed through `aiw git wt` in the `aiw-git` plugin, which directly creates
+and records worktrees and provides status, commit, local-merge, and list
+operations. No standalone `aiw wt` command is provided.
 
 #### Scenario: Call an FD worktree command
 
-- **WHEN** a user runs `aiw wt add FD-001` or another supported `aiw wt`
+- **WHEN** a user runs `aiw git wt add FD-001` or another supported `aiw git wt`
   operation
 - **THEN** the plugin resolves the FD workspace record and performs that
   operation without creating or requiring a Task

@@ -57,7 +57,7 @@ Task 的实现和完成不依赖它。
 
 ## 本地交付
 
-Legacy Schema 9 local delivery guidance is historical only; new FD delivery uses `aiw wt local-merge <fd-id>`.
+Legacy Schema 9 local delivery guidance is historical only; new FD delivery uses `aiw git wt local-merge <fd-id>`.
 要求隔离工作树干净、相关改动已经提交，并检查分支、在途写入和 Git 合并安全条件。未完成 Task
 合并成功后在 primary 继续推进，保留原工作项、证据和 Session 关联。
 

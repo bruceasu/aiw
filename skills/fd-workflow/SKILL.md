@@ -122,10 +122,17 @@ Worker; independent Tester and Reviewer stages use separate subagents. An
 isolation request uses
 the recorded FD branch and worktree. Under the shared work-management contract,
 this request authorizes local commits, squash delivery to the recorded parent
-after a passed review, FD archive after successful delivery, and removal of that FD's
-worktree and branch after the archive commit. It does not authorize tests,
+after a passed review, automatic verified cleanup by `local-merge`, and FD
+archive after successful delivery. It does not authorize tests,
 final builds, network access, permission escalation, push, deployment, or
 publishing. Follow narrower repository rules.
+
+Load the stage prompt in `roles/` only when performing that role: `pm.md`,
+`planner.md`, `worker.md`, `tester.md`, or `reviewer.md`. The shared lifecycle,
+handoff, and authorization contract remains in `skills/work-management.md`;
+these short prompts define the current role's inputs, output, and boundaries.
+The host may combine PM, Planner, and Worker, but Tester and Reviewer evidence
+must come from sessions separate from Worker and from each other.
 
 ### Blocker feedback for every stop
 
@@ -183,28 +190,28 @@ in the user-facing Gate and final report.
    plan commit; if other parent changes are uncommitted, resolve and commit
    them separately first. Ensure `.wt/` and `.ai/` are ignored by Git;
    `wt add` rejects missing rules before changing Git state. Then create the branch/worktree with
-   `aiw wt add <id>` (`feature/<id>` and `.wt/<id>`). This is the
+   `aiw git wt add <id>` (`feature/<id>` and `.wt/<id>`). This is the
    default for every numbered FD, not only requests that mention isolation or
    parallel work. Immediately read
    `.ai/fd/<id>/workspace.json` and verify `fd_id`, `parent_branch`, `branch`,
    and `worktree` against the created worktree. This file records the exact
    parent for the later merge; stop if it is missing or inconsistent. Keep all
    Worker writes in that worktree.
-2. **Plan and split when in Design.** As Planner, resolve routine choices from evidence and
+2. **Plan and split when in Design.** Load `roles/planner.md`. As Planner, resolve routine choices from evidence and
    write Problem, options and decision, scope, ordered numbered Work Items,
    acceptance, TODO, Verification, and relevant spec updates. Split items by
    independently reviewable outcome and dependency order; keep IDs stable.
    Stop for a material `%% NEEDS_INPUT` decision. When ready, emit
    `design-ready --producer planner --artifact <fd-path> --source-event
    <claimed-design-event>`. Claim the resulting Worker handoff as this host.
-3. **Implement when assigned Worker.** Complete all ready Work Items in order, making
+3. **Implement when assigned Worker.** Load `roles/worker.md`. Complete all ready Work Items in order, making
    minimal code/doc changes. Update checkboxes, TODO, Verification, and
    remaining `%%` notes with actual evidence and skipped checks. Apply the
    repo's validation budget. For a Dual evidence FD, write a Chinese Markdown
    report and same-basename JSON using `docs/features/REPORT_DATA_TEMPLATE.json`;
    point `--artifact` to Markdown. In the FD worktree, inspect the diff and
    commit each completed, independently reviewable Work Item before starting
-   the next. Stage only that item's files; use `aiw wt commit <id>` only when
+   the next. Stage only that item's files; use `aiw git wt commit <id>` only when
    every uncommitted change belongs to it, otherwise use path-scoped `git add`
    and `git commit`. Commit final FD evidence before the Tester or Reviewer
    handoff. Do not rebase either branch as part of this workflow; delivery
@@ -215,7 +222,7 @@ in the user-facing Gate and final report.
    are resolved. New FDs have `**Test policy:** Independent`, so this event
    routes to Tester; older FDs without the marker retain the direct Reviewer
    route.
-3a. **Independent Tester for Pending Test.** Spawn a separate Tester subagent
+3a. **Independent Tester for Pending Test.** Load `roles/tester.md` and spawn a separate Tester subagent
    with the pending event, FD acceptance, public contract, report template at
    `docs/features/TEST_REPORT_TEMPLATE.md`, and authorization limits. It must
    use a different session from Worker and Reviewer, claim the exact Tester
@@ -257,7 +264,7 @@ in the user-facing Gate and final report.
    uncertain, stop for human input. Emit `test-accepted` to Reviewer or
    `test-rejected` to Worker with `--producer pm`, the decision artifact, and
    `--source-event <test-report-ready-event>`.
-4. **Independent review when Pending Verification.** Count Reviewer outcome events for this FD's active
+4. **Independent review when Pending Verification.** Load `roles/reviewer.md`. Count Reviewer outcome events for this FD's active
    implementation cycle, including earlier auto invocations; the limit is
    three, not three new attempts on every resume. Spawn one separate Reviewer
    subagent through the host's subagent capability. Give it the FD ID, exact
@@ -282,21 +289,19 @@ in the user-facing Gate and final report.
    revision and content. Read `.ai/fd/<id>/workspace.json` and take its
    `parent_branch`, `branch`, and `worktree` as the merge coordinates. Confirm
    the parent branch is clean and still matches the recorded parent. Run
-   `aiw wt local-merge <id>` for one squash commit on the parent branch. On a
+   `aiw git wt local-merge <id>` for one squash commit on the parent branch. On a
    parent-side content conflict, the command resets the failed squash, verifies
    the parent is clean, and merges the parent into the FD worktree for resolution.
    Resolve and commit there, then rerun `local-merge` explicitly. If recovery
-   fails, leave the FD active and worktree intact. After successful delivery, close with
-   `aiw fd close <id> Complete` from the parent workspace and commit only the
-   archive/index changes. A close rejection is a Gate, never a reason to edit
-   a receipt or archive manually. After the archive commit, confirm the FD
-   worktree is clean, the resolved worktree path matches `.wt/<id>` inside this
-   repository, and parent history contains this FD's single-parent squash
-   commit with `FD-Source: <sha>` equal to the current FD HEAD. Then run
-   `git worktree remove -- .wt/<id>` and `git branch -D feature/<id>` from the
-   parent workspace. Squash does not make the FD branch an ancestor, so `-D`
-   is allowed only after that source check. If a check or command fails,
-   preserve the remaining worktree or branch and report the Gate.
+   fails, leave the FD active and preserve the worktree and branch. On success,
+   `local-merge` verifies the clean FD HEAD, exact recorded coordinates, the
+   single-parent squash, and its `FD-Source` before removing the worktree and
+   branch. It safely detaches only a verified `.ai` junction to the primary
+   workspace and preserves `.ai/fd/<id>` receipts. If cleanup partly fails,
+   report the delivered commit and remaining resources; do not roll back the
+   delivery. Then close with `aiw fd close <id> Complete` from the parent
+   workspace and commit only the archive/index changes. A close rejection is a
+   Gate, never a reason to edit a receipt or archive manually.
    Report the merge result, archive path, review count, commands actually run,
    unrun checks, and residual risks.
 

@@ -68,22 +68,36 @@ installations remain usable outside the AIW repository.
 
 ## Roles and handoffs
 
-PM creates and grooms an FD. Planner records options, decisions, acceptance,
-and numbered Work Items. Worker implements all ready items in dependency order.
-For FDs with `**Test policy:** Independent`, a separate Tester owns black-box
-case authorship, execution when authorized, and the test report. PM records a
-versioned acceptance or rejection with both coverage measures, exceptions,
-and residual risk before Reviewer checks the diff and evidence in a third
-session. Existing FDs without that policy retain the direct Reviewer route.
-A failed review returns concrete findings to Worker. Human decisions and
-authorization stop automatic dispatch until answered.
-Planner reviews each Tester command and its invoked code before execution.
-A Tester writes repository test code under the root `tests/` directory.
-A focused, offline command confined to assigned or temporary paths may receive
-a recorded, revision-bound low-risk approval without human review. Dangerous
-or unclear effects require human approval and a recorded reference. Tester
-must cite the authorization in any report of executed tests or measured
-coverage; the handoff itself grants no permission.
+PM owns workflow state and human decisions. Planner turns approved intent into
+options, decisions, acceptance, and ordered Work Items. Worker implements the
+ready scope and reports actual evidence and limits. Reviewer independently
+checks the current diff against the FD and records actionable findings or a
+pass. Each handoff names one role, one source event, and an existing artifact;
+the receiver checks that the artifact and FD revision still match before work.
+
+For `**Test policy:** Independent`, a Tester must use a session separate from
+Worker and Reviewer, derive black-box cases from acceptance without inspecting
+implementation source, and report both executed and uncovered scenarios. A
+Tester handoff does not authorize execution. Before any test or coverage
+command, Planner inspects its invoked code and records a revision-bound
+authorization for that exact command, or obtains the required human approval.
+A Tester writes repository test code under root `tests/` and cites the
+authorization in any report of execution or measured coverage. PM separately
+accepts or rejects the report with both coverage measures, exceptions, and
+residual risk before Reviewer checks implementation and evidence. For older
+FDs without Independent policy, use the direct Reviewer route.
+
+The host may combine PM, Planner, and Worker duties, but must not claim
+independent Tester or Reviewer evidence from its own session. PM may explicitly
+override workflow gates; the record must identify skipped stages and missing
+evidence, which remain unperformed rather than being represented as passed.
+A failed review returns concrete, actionable findings to Worker. Material
+human decisions and missing execution authorization stop only the affected
+stage; continue independent work that does not depend on them.
+
+Stage-specific role prompts live under `skills/fd-workflow/roles/`. Load only
+the prompt for the role handling the current event; the contract here remains
+the shared source for lifecycle and authorization rules.
 
 Use an explicit stage event after the producing role has written its result.
 The event must name an existing project-relative artifact. If the host has a
@@ -127,37 +141,42 @@ uncommitted, resolve and commit them separately before proceeding. Keep the
 parent clean while the FD is in flight when possible; if it becomes dirty,
 wait to merge until it is clean again. These focused commits are part of the
 default FD implementation workflow.
-`aiw wt add` records `fd_id`,
+`aiw git wt add` records `fd_id`,
 `parent_branch`, `branch`, and `worktree` in `.ai/fd/<fd-id>/workspace.json`.
 Before creating the worktree, ensure `.wt/` and `.ai/` are ignored by Git;
 `wt add` checks both paths and rejects missing rules before changing Git state.
 Read that file immediately after creation and verify all four values; use its
 `parent_branch` as the sole merge target. Stop if the file is missing or does
-not match the created worktree. Use `aiw wt status <fd-id>` for both worktrees,
-`aiw wt commit <fd-id> "message"` for focused commits, and
-`aiw wt local-merge <fd-id>` for squash delivery after review. It creates one
+not match the created worktree. Use `aiw git wt status <fd-id>` for both worktrees,
+`aiw git wt commit <fd-id> "message"` for focused commits, and
+`aiw git wt local-merge <fd-id>` for squash delivery after review. It creates one
 single-parent commit on the recorded parent branch with an `FD-Source` trailer
 naming the delivered FD HEAD; individual Work Item commits remain on the FD
 branch. If delivery finds a content conflict, `local-merge` resets the failed
 parent squash and merges the parent into the FD worktree for resolution; commit
-there and rerun `local-merge` to deliver. Do not create a Task to satisfy a
-Task-only command. Keep each FD's writing role in one workspace at a time and
-do not mix unrelated files into its commits.
+there and rerun `local-merge` to deliver. After verified delivery, the command
+removes the recorded clean FD worktree and branch automatically. Before Git
+removes a worktree `.ai` junction, it verifies that the target is the primary
+workspace `.ai` and removes only the link itself. It preserves FD receipts; if
+a cleanup check or step fails, it reports the state and preserves resources
+not already safely removed. Do not create a Task to satisfy a Task-only
+command. Keep each FD's writing role in one workspace at a time and do not mix
+unrelated files into its commits.
 Commit each completed, independently reviewable Work Item before starting the
 next, staging only its files. Commit final FD evidence before handoff to Tester
-or Reviewer. Do not rebase either branch as part of the FD workflow. After the
-archive commit, remove the clean FD worktree and delete its branch only after
-checking that parent history contains this FD's squash commit and its
-`FD-Source` trailer equals the current FD HEAD. The FD branch is not an ancestor
-after squash, so use `git branch -D` only after that check.
+or Reviewer. Do not rebase either branch as part of the FD workflow. Successful
+`local-merge` performs worktree and branch cleanup only after checking that
+parent history contains this FD's single-parent squash commit and its
+`FD-Source` trailer equals the current clean FD HEAD. The FD branch is not an
+ancestor after squash, so use `git branch -D` only after that check.
 
 The user permits local Git commits for the new FD workflow. A Worker may make
 a focused commit for an independently reviewable slice. A Reviewer checks a
 specific commit or diff. When an isolation request asks for the complete
 worktree lifecycle, it authorizes local commits, squash-delivering that FD
-result to its recorded parent after a passed review, archiving after delivery
-succeeds, and removing that FD's clean worktree and delivered branch after the
-archive commit. It does not authorize push, release, or deployment.
+result to its recorded parent after a passed review, and the verified cleanup
+that `local-merge` performs. It authorizes archiving after delivery succeeds,
+but not push, release, or deployment.
 For other requests, commit does not authorize delivery or archive. A squash conflict
 or dirty parent workspace is a stop condition; preserve the worktree and active
 FD until the parent is clean. Follow any narrower local rule.

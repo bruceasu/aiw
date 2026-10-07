@@ -1,0 +1,77 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-030",
+  "source_event": "FD-030-000010-implementation-ready",
+  "human_report": "FD-030-test-report-r2.md",
+  "data": {
+    "implementation_event": "FD-030-000010-implementation-ready",
+    "tested_fd_revision": 10,
+    "tested_fd_digest": "339471324719e2421b025959ec3d25acf0193aab2f741e353329f0e89be9e4ec",
+    "tester_session": "fd030-tester-20261008-a71c9e",
+    "applicable_scenarios": 20,
+    "covered_scenarios": 0,
+    "executed_behavior_tests": 0,
+    "passed_behavior_tests": 0,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 20,
+    "requirements_coverage": "0%",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": "Five module import errors: ModuleNotFoundError for test_fd027_wt_blackbox, test_fd029_wt_squash, test_fd030_conflict_recovery, test_fd030_worktree_blackbox, and test_fd030_junction_cleanup; unittest summary Ran 5 tests in 0.001s; FAILED (errors=5). No behavior assertions or coverage instrumentation ran.",
+    "coverage_unavailable_reason": "The authorized Python command did not put tests/ on sys.path, so unittest could not import any module. No behavior code or coverage instrumentation ran.",
+    "test_files": [
+      "tests/test_fd027_wt_blackbox.py",
+      "tests/test_fd029_wt_squash.py",
+      "tests/test_fd030_conflict_recovery.py",
+      "tests/test_fd030_worktree_blackbox.py",
+      "tests/test_fd030_junction_cleanup.py"
+    ],
+    "authorization_records": [
+      {
+        "markdown": "docs/features/reports/FD-030-test-authorization-r1.md",
+        "json": "docs/features/reports/FD-030-test-authorization-r1.json",
+        "command": "python -c \"import unittest; names=['test_fd027_wt_blackbox','test_fd029_wt_squash','test_fd030_conflict_recovery','test_fd030_worktree_blackbox','test_fd030_junction_cleanup']; suite=unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromName(n) for n in names); result=unittest.TextTestRunner(verbosity=2).run(suite); raise SystemExit(not result.wasSuccessful())\"",
+        "result": "Executed once after correcting PowerShell parsing; five unittest module import errors, no behavior tests ran."
+      }
+    ],
+    "commands": [
+      {
+        "command": "python --% -c \"import unittest; names=['test_fd027_wt_blackbox','test_fd029_wt_squash','test_fd030_conflict_recovery','test_fd030_worktree_blackbox','test_fd030_junction_cleanup']; suite=unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromName(n) for n in names); result=unittest.TextTestRunner(verbosity=2).run(suite); raise SystemExit(not result.wasSuccessful())\"",
+        "working_directory": "D:\\03_projects\\AI-tools\\aiw\\.wt\\FD-030",
+        "authorization": "docs/features/reports/FD-030-test-authorization-r1.md/.json",
+        "exit_code": 1,
+        "result": "Five ModuleNotFoundError import errors; Ran 5 tests in 0.001s; FAILED (errors=5). No behavior tests ran.",
+        "raw_output_excerpt": "ModuleNotFoundError: No module named 'test_fd027_wt_blackbox'; same import failure for test_fd029_wt_squash, test_fd030_conflict_recovery, test_fd030_worktree_blackbox, and test_fd030_junction_cleanup."
+      }
+    ],
+    "recommendation": "blocked",
+    "not_applicable_reason": "All 20 listed FD-030 scenarios apply; none are excluded from the scenario inventory.",
+    "residual_risk": "No FD-030 behavior has runtime evidence. The authorized runner command did not include tests/ on sys.path. A corrected command requires a new exact Planner authorization. Worktree lifecycle, conflict recovery, Windows junction/reparse handling, shared handoffs, and partial cleanup failure remain unverified.",
+    "scenarios": [
+      {"id":"FD030-S01","behavior":"aiw git wt add creates the FD worktree and feature branch.","status":"blocked","test_cases":["test_add_records_exact_worktree_coordinates"]},
+      {"id":"FD030-S02","behavior":"aiw git wt status reports the managed worktree status.","status":"blocked","test_cases":["test_status_and_commit_use_recorded_fd_tree"]},
+      {"id":"FD030-S03","behavior":"aiw git wt commit commits changes in the FD worktree.","status":"blocked","test_cases":["test_status_and_commit_use_recorded_fd_tree"]},
+      {"id":"FD030-S04","behavior":"Successful local-merge creates a single-parent squash whose FD-Source equals the delivered FD HEAD, removes the worktree and branch, and retains .ai/fd receipts.","status":"blocked","test_cases":["test_multiple_work_items_become_one_single_parent_delivery","test_successful_delivery_is_terminal_after_worktree_cleanup","test_successful_delivery_cleans_worktree_and_branch_but_keeps_receipts"]},
+      {"id":"FD030-S05","behavior":"aiw git wt list lists managed FD worktrees.","status":"uncovered","test_cases":[]},
+      {"id":"FD030-S06","behavior":"The standalone aiw wt entrypoint is unavailable.","status":"blocked","test_cases":["test_standalone_aiw_wt_entrypoint_is_not_available"]},
+      {"id":"FD030-S07","behavior":"An incomplete squash delivery leaves the worktree and feature branch in place.","status":"blocked","test_cases":["test_failed_delivery_keeps_worktree_and_branch"]},
+      {"id":"FD030-S08","behavior":"An unsuccessful conflict recovery leaves the worktree and feature branch in place; a resolved result requires explicit retry.","status":"blocked","test_cases":["test_conflict_recovers_in_fd_tree_and_requires_explicit_retry","test_conflict_restores_parent_and_requires_explicit_retry"]},
+      {"id":"FD030-S09","behavior":"A failed FD-Source validation prevents cleanup and retains resources.","status":"uncovered","test_cases":[]},
+      {"id":"FD030-S10","behavior":"A recorded worktree path mismatch prevents cleanup.","status":"uncovered","test_cases":[]},
+      {"id":"FD030-S11","behavior":"A recorded feature-branch mismatch prevents cleanup.","status":"blocked","test_cases":["test_rejects_wrong_branch_and_dirty_worktree_before_merge","test_wrong_parent_or_fd_branch_is_rejected"]},
+      {"id":"FD030-S12","behavior":"A workspace-metadata mismatch prevents cleanup.","status":"uncovered","test_cases":[]},
+      {"id":"FD030-S13","behavior":"An FD or parent workspace that is not clean prevents cleanup.","status":"blocked","test_cases":["test_add_rejects_dirty_parent","test_dirty_parent_or_fd_tree_is_rejected_before_delivery"]},
+      {"id":"FD030-S14","behavior":"A verified .ai junction to the primary workspace is removed as a link only, preserving its target and .ai/fd receipts.","status":"blocked","test_cases":["test_successful_delivery_removes_link_body_and_preserves_shared_evidence"]},
+      {"id":"FD030-S15","behavior":"An unknown reparse type or unexpected junction target blocks cleanup and preserves resources.","status":"uncovered","test_cases":[]},
+      {"id":"FD030-S16","behavior":"Partial cleanup failure does not roll back the squash and reports completed steps and recovery information.","status":"uncovered","test_cases":[]},
+      {"id":"FD030-S17","behavior":"FD commands from a linked worktree use the primary workspace .ai/fd store for handoffs and locks.","status":"uncovered","test_cases":[]},
+      {"id":"FD030-S18","behavior":"FD commands from a linked worktree read the FD document from the current project tree.","status":"uncovered","test_cases":[]},
+      {"id":"FD030-S19","behavior":"README, CLI help, stable specifications, and active documentation consistently describe the unique entrypoint and cleanup behavior.","status":"uncovered","test_cases":[]},
+      {"id":"FD030-S20","behavior":"Tester and Reviewer responsibilities and session separation are consistent across role workflow documentation.","status":"uncovered","test_cases":[]}
+    ],
+    "static_exclusions": [
+      "S19 and S20 are static documentation requirements; this run performed no static documentation review, so neither is claimed passed.",
+      "No runtime outcome is claimed from test modules that failed import."
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-030",
+  "source_event": "FD-030-000006-implementation-ready",
+  "human_report": "FD-030-test-authorization-r2.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-030-000006-implementation-ready",
+    "fd_revision": 6,
+    "fd_digest": "5bb6333ca24b65f58d6fb708312166fecd7367108c54ecdcfdce1f8741474793",
+    "tester_session": "fd030-tester-20261007-7c56c2",
+    "command": "python -B -m unittest tests.test_fd030_worktree_blackbox",
+    "working_directory": "D:\\03_projects\\AI-tools\\aiw\\.wt\\FD-030",
+    "scope": "One rerun after moving temporary paths into the assigned FD worktree. Three black-box CLI scenarios: standalone aiw wt is unavailable; failed delivery retains worktree and branch; successful delivery removes worktree and branch while retaining FD receipts and the single-parent FD-Source commit.",
+    "expected_duration": "2-4 minutes",
+    "side_effects": "Creates and removes a temporary Go CLI binary, Go build cache, copied aiw-git plugin, and temporary Git repositories/worktrees/branches/hooks/templates under the assigned FD worktree. Reads the pre-existing local Go module cache; GOPROXY=off, GOSUMDB=off, GOTOOLCHAIN=local, GOWORK=off, GOENV=off, and -mod=readonly prevent downloads and module-file edits. No retained build artifacts. The previous failed system TEMP path may remain and is excluded from this authorization.",
+    "risk_review": "Inspected revised tests/test_fd030_worktree_blackbox.py. TemporaryDirectory uses REPO as its explicit parent, so new writes are confined to the assigned worktree and cleaned by the harness. Inherited GIT_* and GO* overrides are cleared before dedicated values are applied. CLI/plugin are sourced from the current FD worktree. The first attempt failed before tests with WinError 5 under system TEMP and ran zero tests; this is the only authorized rerun after the relevant harness path fix.",
+    "human_approval": "not required",
+    "planner_identity": "FD-030 Planner (/root)",
+    "decision_time": "2026-10-07T14:19:00+00:00"
+  }
+}

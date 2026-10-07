@@ -9,7 +9,7 @@ import tempfile
 import unittest
 
 
-WT_PLUGIN = Path(__file__).resolve().parents[1] / "plugins" / "aiw-wt.py"
+GIT_DISPATCHER = Path(__file__).resolve().parents[1] / "plugins" / "aiw-git" / "aiw-git.py"
 FD_ID = "FD-029"
 
 
@@ -56,7 +56,7 @@ class SquashDeliveryBlackBox(unittest.TestCase):
         return result.stdout.strip()
 
     def wt(self, *args, cwd=None):
-        return self.command(sys.executable, WT_PLUGIN, *args, cwd=cwd)
+        return self.command(sys.executable, GIT_DISPATCHER, "wt", *args, cwd=cwd)
 
     def wt_ok(self, *args, cwd=None):
         result = self.wt(*args, cwd=cwd)
@@ -115,13 +115,17 @@ class SquashDeliveryBlackBox(unittest.TestCase):
         self.assertEqual(self.git("rev-parse", "develop"), develop_before)
         self.assertEqual((self.root / "feature.txt").read_text(encoding="utf-8"), "delivered\n")
 
-    def test_repeated_delivery_keeps_the_first_squash_commit(self):
+    def test_successful_delivery_is_terminal_after_worktree_cleanup(self):
         tree = self.add()
         source = self.commit_file("feature.txt", "delivered\n", "Work Item", cwd=tree)
         self.wt_ok("local-merge", FD_ID, cwd=tree)
         delivered = self.git("rev-parse", "HEAD")
-        rejected = self.wt_error("local-merge", FD_ID, cwd=tree)
-        self.assertIn("already delivered", rejected.stderr)
+        self.assertFalse(tree.exists())
+        self.assertEqual(self.git("branch", "--list", f"feature/{FD_ID}"), "")
+        self.assertFalse((self.root / ".ai" / "fd" / FD_ID / "workspace.json").exists())
+        self.assertTrue((self.root / ".ai" / "fd" / FD_ID / "events").is_dir())
+        rejected = self.wt_error("local-merge", FD_ID, cwd=self.root)
+        self.assertIn("not registered", rejected.stderr)
         self.assertEqual(self.git("rev-parse", "HEAD"), delivered)
         self.assertEqual(self.git("status", "--porcelain"), "")
         self.assertIn(f"FD-Source: {source}", self.git("log", "-1", "--format=%B"))
