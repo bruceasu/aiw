@@ -128,18 +128,18 @@ remove it while the role may still be writing.
 
 When implementation uses isolation or `wt`, commit the ready FD plan and
 ensure `.wt/` and `.ai/` are ignored by Git, then create its worktree with
-`aiw wt add FD-002`. Add checks these paths before changing Git state and
+`aiw git wt add FD-002`. Add checks these paths before changing Git state and
 reports missing ignore rules. It writes the FD ID, parent
 branch, feature branch, and worktree path to
 `.ai/fd/FD-002/workspace.json`; read and verify that record immediately.
-Inspect both worktrees with `aiw wt status FD-002`. After a passed review,
-deliver one squash commit with `aiw wt local-merge FD-002`. If the parent-side
+Inspect both worktrees with `aiw git wt status FD-002`. After a passed review,
+deliver one squash commit with `aiw git wt local-merge FD-002`. If the parent-side
 squash has content conflicts, the command resets it and merges the parent into the FD worktree.
-Resolve and commit there, then rerun `local-merge` explicitly. Archive only
-after delivery succeeds. This authorizes local commits and the requested
-squash/archive; it does not authorize push, release, or deployment. The auto
-workflow removes the worktree and branch after checking the squash source
-commit recorded on the parent.
+Resolve and commit there, then rerun `local-merge` explicitly. Successful
+delivery verifies the squash source, then removes the FD worktree and branch
+while preserving `.ai/fd/<FD-ID>` receipts. Archive only after delivery
+succeeds. This authorizes local commits and the requested squash/archive; it
+does not authorize push, release, or deployment.
 
 After a passed review, run `aiw fd close FD-002 Complete` once any requested
 isolated merge has succeeded. Use `--reason "..."` for `Deferred` and `Closed`
@@ -184,7 +184,7 @@ Reviewer pass; the Reviewer can issue `changes-requested` to return work to
 Worker. An in-flight event must be reconciled before requesting review.
 
 Legacy Task records remain readable, but `aiw wf` has been removed. New
-engineering work uses numbered FDs and the `aiw fd` / `aiw wt` commands.
+engineering work uses numbered FDs and the `aiw fd` / `aiw git wt` commands.
 Stable specs still live in `openspec/specs/`; create an OpenSpec change only
 when explicitly requested.
 

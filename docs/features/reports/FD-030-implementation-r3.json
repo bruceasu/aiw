@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-030",
+  "source_event": "FD-030-000014-changes-requested",
+  "human_report": "FD-030-implementation-r3.md",
+  "data": {
+    "summary": "删除 aiw git wt 的未记录 ls 别名，统一只接受已声明的 list 命令。",
+    "changed_paths": [
+      "plugins/aiw-git/git-wt.py",
+      "docs/features/FD-030_FD_WORKTREE_AIW_GIT.md",
+      "docs/features/reports/FD-030-implementation-r3.md",
+      "docs/features/reports/FD-030-implementation-r3.json"
+    ],
+    "commands": [
+      "python -c \"from pathlib import Path; name='plugins/aiw-git/git-wt.py'; compile(Path(name).read_text(encoding='utf-8'), name, 'exec')\""
+    ],
+    "results": [
+      "Python 内存编译通过，无编译产物。",
+      "未运行测试，遵循用户对 FD-030 的测试豁免。",
+      "静态确认 list 是唯一列表命令。"
+    ],
+    "residual_risk": "Tester R2 覆盖为 0/20；worktree 清理、Windows junction、冲突恢复和共享 handoff 等运行时行为仍待用户实际使用验证。"
+  }
+}

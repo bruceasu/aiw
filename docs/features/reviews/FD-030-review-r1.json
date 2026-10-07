@@ -1,0 +1,106 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-030",
+  "source_event": "FD-030-000008-test-accepted",
+  "human_report": "FD-030-review-r1.md",
+  "data": {
+    "outcome": "changes-requested",
+    "reviewer_session": "fd030-reviewer-20261007-29a71c",
+    "reviewed_fd_revision": 8,
+    "reviewed_fd_digest": "0854b89fb86af2c365dac7890ebcc0f3eb4e5156c619c4e11f5a960435ee0c32",
+    "reviewed_commit": "ea0731445e6b0d37b93ca70468bd4c91edfc0bcb",
+    "implementation_commit": "155158a",
+    "diff_base": "bf53cf1936d7553ee34b37a9b467c9d76059d848",
+    "findings": [
+      {
+        "id": "FD030-RV-01",
+        "severity": "P2",
+        "file": "tests/test_fd027_wt_blackbox.py",
+        "line": 12,
+        "summary": "Test fixture resolves the removed plugins/aiw-wt.py path.",
+        "evidence": "The implementation moved the command module to plugins/aiw-git/git-wt.py and deleted plugins/aiw-wt.py. The test still points at the deleted file, so it cannot exercise the current public command.",
+        "required_action": "Migrate the fixture to invoke aiw git wt through the aiw-git dispatcher and keep the test under root tests/."
+      },
+      {
+        "id": "FD030-RV-02",
+        "severity": "P2",
+        "file": "tests/test_fd029_wt_squash.py",
+        "line": 12,
+        "additional_lines": [121, 123],
+        "summary": "Test uses the removed plugin path and retries from a worktree that successful delivery deletes.",
+        "evidence": "Line 12 points to plugins/aiw-wt.py. The first local-merge at line 121 now removes the worktree; line 123 then tries to start another command with that removed directory as cwd.",
+        "required_action": "Migrate the test to aiw git wt and model a cleanup retry while the registration and worktree still exist, or assert the terminal successful-cleanup state."
+      },
+      {
+        "id": "FD030-RV-03",
+        "severity": "P2",
+        "file": "plugins/aiw_wt_test.py",
+        "line": 10,
+        "summary": "Conflict recovery fixture resolves the deleted sibling aiw-wt.py.",
+        "evidence": "The configured PLUGIN path no longer exists after the implementation moved the FD command into plugins/aiw-git/git-wt.py.",
+        "required_action": "Move the fixture into root tests/ and adapt it to exercise the supported aiw git wt interface and current FD behavior."
+      }
+    ],
+    "test_evidence": {
+      "tester_report": "docs/features/reports/FD-030-test-report-r1.md",
+      "tester_report_json": "docs/features/reports/FD-030-test-report-r1.json",
+      "tester_session": "fd030-tester-20261007-7c56c2",
+      "applicable_scenarios": 20,
+      "covered_scenarios": 0,
+      "requirements_coverage": "0%",
+      "branch_coverage": "not measured",
+      "executed_behavior_tests": 0,
+      "passed_behavior_tests": 0,
+      "failed_behavior_tests": 0,
+      "unrun_behavior_tests": 20,
+      "authorized_commands": [
+        {
+          "command": "python -B -m unittest tests.test_fd030_worktree_blackbox",
+          "authorization": "docs/features/reports/FD-030-test-authorization-r1.md",
+          "fd_revision": 6,
+          "fd_digest": "5bb6333ca24b65f58d6fb708312166fecd7367108c54ecdcfdce1f8741474793",
+          "result": "failed in setUpClass with PermissionError [WinError 5]; Ran 0 tests"
+        },
+        {
+          "command": "python -B -m unittest tests.test_fd030_worktree_blackbox",
+          "authorization": "docs/features/reports/FD-030-test-authorization-r2.md",
+          "fd_revision": 6,
+          "fd_digest": "5bb6333ca24b65f58d6fb708312166fecd7367108c54ecdcfdce1f8741474793",
+          "result": "failed in setUpClass with PermissionError [WinError 5]; Ran 0 tests"
+        }
+      ],
+      "pm_decision": "docs/features/reports/FD-030-test-decision-r1.md",
+      "pm_decision_json": "docs/features/reports/FD-030-test-decision-r1.json",
+      "pm_decision_source_event": "FD-030-000007-test-report-ready",
+      "human_exception": "Accepted 0% coverage exception solely to proceed with independent static review; no test pass was recorded."
+    },
+    "static_review": {
+      "entrypoint": "Source inspection confirms aiw-git discovers git-wt.py and the standalone plugin was deleted.",
+      "cleanup": "Source inspection confirms pre-removal checks for clean worktrees, source HEAD, parent history, single parent, FD-Source, and reparse target.",
+      "shared_receipts": "Source inspection confirms FD receipt and lock paths resolve from the first Git worktree path.",
+      "documentation": "Active README, docs, specs, and Skills use aiw git wt; the findings are remaining test references.",
+      "runtime_validation": "not run by Reviewer"
+    },
+    "reviewer_commands": [
+      "aiw fd resume FD-030",
+      "aiw fd claim FD-030 FD-030-000008-test-accepted --session fd030-reviewer-20261007-29a71c",
+      "aiw fd --help",
+      "aiw fd emit --help",
+      "git status --short --branch",
+      "git log -5 --oneline --decorate",
+      "git rev-parse HEAD",
+      "git diff --stat bf53cf1936d7553ee34b37a9b467c9d76059d848 HEAD",
+      "git diff --name-status bf53cf1936d7553ee34b37a9b467c9d76059d848 HEAD",
+      "git diff -M bf53cf1936d7553ee34b37a9b467c9d76059d848 HEAD -- plugins/aiw-wt.py plugins/aiw-git/git-wt.py",
+      "rg -n --glob '!docs/features/archive/**' --glob '!**/.git/**' 'plugins/aiw-wt\\.py|aiw-wt\\.py|\baiw wt\b|aiw git wt|git wt' README.md docs openspec skills tests plugins cmd",
+      "Get-FileHash docs/features/FD-030_FD_WORKTREE_AIW_GIT.md -Algorithm SHA256"
+    ],
+    "not_run": [
+      "All Reviewer-side tests",
+      "Go build or other builds",
+      "Runtime validation of cleanup, Windows reparse points, linked-worktree handoffs, and conflict recovery"
+    ],
+    "residual_risk": "There is no runtime evidence for any FD-030 behavior: 0 of 20 scenarios were covered and branch coverage was not measured. Tester setup failures may have left temporary directories, which were not inspected or cleaned. Windows junction cleanup, linked-worktree shared receipts, conflict recovery, and partial cleanup behavior remain unverified."
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-030",
+  "source_event": "FD-030-000009-changes-requested",
+  "human_report": "FD-030-implementation-r2.md",
+  "data": {
+    "summary": "修复 Reviewer R1 的三项测试迁移 finding，改用 aiw-git dispatcher 并以 FD 场景替代旧 Task-only 测试。",
+    "changed_paths": [
+      "tests/test_fd027_wt_blackbox.py",
+      "tests/test_fd029_wt_squash.py",
+      "tests/test_fd030_conflict_recovery.py",
+      "plugins/aiw_wt_test.py",
+      "docs/features/FD-030_FD_WORKTREE_AIW_GIT.md",
+      "docs/features/FEATURE_INDEX.md",
+      "docs/features/reports/FD-030-implementation-r2.md",
+      "docs/features/reports/FD-030-implementation-r2.json"
+    ],
+    "commands": [
+      "python -c \"from pathlib import Path; names=('tests/test_fd027_wt_blackbox.py','tests/test_fd029_wt_squash.py','tests/test_fd030_conflict_recovery.py','tests/test_fd030_worktree_blackbox.py'); [compile(Path(name).read_text(encoding='utf-8'), name, 'exec') for name in names]; sources='\\n'.join(Path(name).read_text(encoding='utf-8') for name in names); assert 'plugins/aiw-wt.py' not in sources; assert 'aiw-git' in sources; assert not Path('plugins/aiw_wt_test.py').exists(); print('Python in-memory compile and stale-entry static checks passed')\""
+    ],
+    "results": [
+      "Python in-memory compile and static stale-entry assertions passed.",
+      "Tests were not run; previous authorization is bound to revision 6 and does not authorize the revised test code.",
+      "Reviewer R1 findings were translated into aiw-git dispatcher and FD-specific test scenarios."
+    ],
+    "residual_risk": "Tester R1 recorded 0/20 coverage and no behavior test execution. Runtime cleanup, Windows junctions, conflict recovery, and shared receipt behavior remain unverified pending a new Tester authorization for the current revision."
+  }
+}

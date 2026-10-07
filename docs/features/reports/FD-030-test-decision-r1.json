@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-030",
+  "source_event": "FD-030-000007-test-report-ready",
+  "human_report": "FD-030-test-decision-r1.md",
+  "data": {
+    "disposition": "accepted",
+    "tester_report": "docs/features/reports/FD-030-test-report-r1.md",
+    "fd_revision": 7,
+    "fd_digest": "8f445bb96e7c9c8c4068b0d758a9a2178b01d3127e026ee60c25c363ceed69ae",
+    "requirements_coverage": "0%",
+    "branch_coverage": "not measured",
+    "rationale": "Accept the Tester report only to advance to independent static review, under the user's explicit 0% coverage exception. Both authorized attempts failed in setUpClass with WinError 5 and Ran 0 tests; no behavior test passed or ran. This acceptance is not a test pass or runtime behavior approval.",
+    "exceptions": "User explicitly approved proceeding to Reviewer despite 0/20 scenarios executed: '接受 0% 覆盖例外，继续 Reviewer 静态审查'. Reviewer may inspect implementation and evidence but must preserve the no-runtime-validation finding.",
+    "residual_risk": "No FD-030 runtime behavior is verified. Worktree/branch cleanup, Windows junction/reparse handling, conflict recovery, source validation, and linked-worktree handoff remain unverified. Two failed TemporaryDirectory cleanups may have left paths recorded in the Tester report and this PM report.",
+    "pm_identity": "FD-030 PM (/root), session fd030-pm-20261007-5fd8c1",
+    "decision_time": "2026-10-07T14:25:00+00:00"
+  }
+}

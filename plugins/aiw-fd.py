@@ -208,7 +208,15 @@ def atomic_json(path: Path, value: dict) -> None:
 
 
 def runtime_dir(base: Path, name: str) -> Path:
-    return base / ".ai" / "fd" / name
+    result = subprocess.run(["git", "-C", str(base), "worktree", "list", "--porcelain"],
+                            text=True, capture_output=True, check=False)
+    if result.returncode:
+        raise FDError("could not locate the shared .ai directory for this Git worktree")
+    primary = next((line.removeprefix("worktree ") for line in result.stdout.splitlines()
+                    if line.startswith("worktree ")), None)
+    if not primary:
+        raise FDError("Git did not report a primary worktree for the shared .ai directory")
+    return Path(primary).resolve() / ".ai" / "fd" / name
 
 
 @contextmanager

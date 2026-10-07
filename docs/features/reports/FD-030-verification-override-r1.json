@@ -1,0 +1,36 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-030",
+  "source_event": "FD-030-000016-review-requested",
+  "human_report": "FD-030-verification-override-r1.md",
+  "data": {
+    "disposition": "pm-override-complete",
+    "decision_date": "2026-10-08",
+    "user_instruction": "Verification Pass",
+    "fd_status_before": "Pending Verification",
+    "fd_status_after": "Complete",
+    "fd_revision_before": 16,
+    "fd_revision_after": 17,
+    "independent_review": "not_completed",
+    "reviewer_r2_finding": "changes-requested; Worker R3 removed the undocumented ls alias, but Reviewer R3 did not independently verify the fix",
+    "review_request_event": {
+      "event_id": "FD-030-000016-review-requested",
+      "receipt_state": "pending and unchanged",
+      "bound_fd_revision": 16,
+      "current_fd_revision": 17,
+      "usable_as_current_verification": false
+    },
+    "testing": {
+      "disposition": "waived by the user",
+      "tester_r2_coverage": "0/20 behavior scenarios",
+      "branch_coverage": "not measured",
+      "runtime_validation_run": false
+    },
+    "static_evidence": [
+      "Worker R3 removed the undocumented ls alias; commit 61d98f4",
+      "Python in-memory compilation of plugins/aiw-git/git-wt.py passed"
+    ],
+    "residual_risk": "Automatic worktree and branch cleanup, Windows junction/reparse handling, conflict recovery, shared handoffs, and partial cleanup failures have no runtime evidence; the user plans to validate during use."
+  }
+}

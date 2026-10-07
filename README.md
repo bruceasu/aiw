@@ -8,7 +8,7 @@ records remain available for compatibility.
 
 * Create numbered FDs and route PM, Planner, Worker, and Reviewer handoffs with `aiw fd`
 * Initialize AIW Task, FD, and optional OpenSpec directories and default instruction files
-* Create and deliver dedicated FD worktrees through `aiw wt`
+* Create and deliver dedicated FD worktrees through `aiw git wt`
 * Generate or merge AI prompt files from `agent-templates/`
 * Create, view, and update tasks
 * Capture, approve, split, and promote durable Issues before Task creation
@@ -105,11 +105,11 @@ aiw issue <command> ... # preferred alias for aiw req
 aiw issue link-parent <child-id> <parent-id>
 aiw issue children <parent-id>
 
-aiw wt add <fd-id>
-aiw wt status <fd-id>
-aiw wt commit <fd-id> "message"
-aiw wt local-merge <fd-id>
-aiw wt list
+aiw git wt add <fd-id>
+aiw git wt status <fd-id>
+aiw git wt commit <fd-id> "message"
+aiw git wt local-merge <fd-id>
+aiw git wt list
 
 aiw context <task-id>
 aiw spec <spec-id>
@@ -118,10 +118,10 @@ Numbered FDs use explicit lifecycle and worktree commands:
 ```text
 aiw fd list
 aiw fd show FD-001
-aiw wt add FD-001
-aiw wt status FD-001
-aiw wt commit FD-001 "message"
-aiw wt local-merge FD-001
+aiw git wt add FD-001
+aiw git wt status FD-001
+aiw git wt commit FD-001 "message"
+aiw git wt local-merge FD-001
 ```
 
 Use `aiw --help` or `aiw help <command>` for command discovery. Plugins provide
@@ -199,46 +199,52 @@ ignored by Git, then create the dedicated worktree. `wt add` checks both
 paths before changing Git state and explains which ignore rule is missing.
 
 ```powershell
-aiw wt add FD-027
+aiw git wt add FD-027
 cd .wt\FD-027
 ```
 
-`aiw wt` stores the FD ID, parent branch, feature branch, and worktree path in
+`aiw git wt` stores the FD ID, parent branch, feature branch, and worktree path in
 `.ai/fd/<fd-id>/workspace.json`. Use the FD ID for status and commits:
 
 ```powershell
-aiw wt status FD-027
-aiw wt commit FD-027 "implement feature"
+aiw git wt status FD-027
+aiw git wt commit FD-027 "implement feature"
 ```
 
 After review, deliver one squash commit to the recorded parent branch:
 
 ```powershell
-aiw wt local-merge FD-027
+aiw git wt local-merge FD-027
 ```
 
 If delivery conflicts in the parent, `local-merge` confirms the conflict,
 resets that squash, verifies that the parent is clean, and merges the parent
 branch into the FD worktree. Resolve and commit conflicts there, then rerun
 `local-merge` explicitly. If the reset or recovery checks fail, the command
-stops and preserves the current Git state.
+stops and preserves the current Git state. After a successful squash,
+`local-merge` verifies the source SHA, then removes the recorded worktree and
+branch. It preserves `.ai/fd/<FD-ID>` receipts and stops safely if a shared
+`.ai` junction cannot be verified.
 
 ### Advance a numbered FD
 
 Use explicit FD handoffs for planning, implementation, testing, and review.
-Create the isolated worktree with `aiw wt add` after committing the ready FD
+Create the isolated worktree with `aiw git wt add` after committing the ready FD
 plan and cleaning the parent workspace. After review, deliver with
-`aiw wt local-merge`; it creates one parent commit without retaining individual
+`aiw git wt local-merge`; it creates one parent commit without retaining individual
 FD commits. Parent-side content conflicts are recovered in the FD worktree and
 require an explicit retry after resolution. The workflow does not rebase.
+Successful delivery automatically removes the FD worktree and local feature
+branch after checking the squash source; FD handoff receipts remain under
+`.ai/fd/`.
 
 ```powershell
 aiw fd list
 aiw fd show FD-027
-aiw wt add FD-027
-aiw wt status FD-027
-aiw wt commit FD-027 "implement FD work"
-aiw wt local-merge FD-027
+aiw git wt add FD-027
+aiw git wt status FD-027
+aiw git wt commit FD-027 "implement FD work"
+aiw git wt local-merge FD-027
 ```
 
 ### Preserve an Issue before creating a Task
@@ -387,12 +393,12 @@ commands remain available for scripts and automation.
 ## FD development workflow
 
 Numbered FDs are the workflow for new engineering work. Use `aiw fd` for FD
-lifecycle and handoffs, and `aiw wt` for isolated worktrees, focused commits,
+lifecycle and handoffs, and `aiw git wt` for isolated worktrees, focused commits,
 and local delivery. The removed `aiw wf` Task workflow is not an available
 command. Existing Task records remain historical data; they are not converted
 or used to create new work.
 
-After a reviewed FD change, `aiw wt local-merge <fd-id>` squash-delivers the
+After a reviewed FD change, `aiw git wt local-merge <fd-id>` squash-delivers the
 feature result to its recorded parent. If that squash has content conflicts,
 the command resets the parent-side attempt and merges the parent into the FD
 worktree. Resolve and commit there, then rerun `local-merge` to deliver.
@@ -722,10 +728,10 @@ Options:
 
   It never pushes implicitly; use `--push` explicitly when that is intended.
 
-## 8. `aiw wt <subcommand>`
+## 8. `aiw git wt <subcommand>`
 
-`aiw wt` is the sole worktree interface and accepts numbered FD IDs. It reads
-the parent branch, feature branch, and worktree path from
+`aiw git wt` is the canonical FD worktree interface and accepts numbered FD IDs.
+It reads the parent branch, feature branch, and worktree path from
 `.ai/fd/<fd-id>/workspace.json`; Task IDs are rejected.
 
 | Subcommand | Description |
@@ -733,8 +739,15 @@ the parent branch, feature branch, and worktree path from
 | `add <fd-id>` | Create `feature/<fd-id>` at `.wt/<fd-id>` and record its coordinates |
 | `status <fd-id>` | Show the parent and FD worktree status |
 | `commit <fd-id> "message"` | Stage and commit changes in the FD worktree |
-| `local-merge <fd-id>` | Squash-deliver one commit to parent and recover conflicts in the FD worktree |
+| `local-merge <fd-id>` | Squash-deliver one commit, recover conflicts in the FD worktree, and clean up after verified delivery |
 | `list` | List registered Git worktrees |
+
+After the squash commit and its `FD-Source` are verified against the clean FD
+worktree, `local-merge` removes that worktree and its `feature/<fd-id>` branch.
+It retains `.ai/fd/<fd-id>` receipts. If the worktree `.ai` is a junction to
+the primary workspace, cleanup removes only the verified junction itself. An
+unsafe link or partial cleanup failure stops further deletion and reports the
+remaining resources.
 
 ## 9. `aiw context <task-id>`
 
@@ -948,11 +961,11 @@ aiw init --prompts --merge
 aiw init --prompts --template go
 
 # FD worktree workflow
-aiw wt add FD-027
-aiw wt status FD-027
-aiw wt commit FD-027 "implement feature"
-aiw wt local-merge FD-027
-aiw wt list
+aiw git wt add FD-027
+aiw git wt status FD-027
+aiw git wt commit FD-027 "implement feature"
+aiw git wt local-merge FD-027
+aiw git wt list
 
 # Git utilities
 aiw git st

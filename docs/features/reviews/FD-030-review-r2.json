@@ -1,0 +1,68 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-030",
+  "source_event": "FD-030-000013-review-requested",
+  "human_report": "FD-030-review-r2.md",
+  "data": {
+    "outcome": "changes-requested",
+    "reviewer_session": "fd030-reviewer-20261008-a8c6d1",
+    "reviewed_fd_revision": 13,
+    "reviewed_fd_digest": "64494c4d174ae31402591f64bb48fa66c670998a18b16ce2a63ce659bf839f6b",
+    "reviewed_commit": "c455294e431ef052e54cd6e08b4920c7bdf5e810",
+    "diff_base": "bf53cf1936d7553ee34b37a9b467c9d76059d848",
+    "findings": [
+      {
+        "id": "FD030-RV-04",
+        "severity": "P2",
+        "file": "plugins/aiw-git/git-wt.py",
+        "line": 504,
+        "summary": "The dispatcher accepts an undocumented `ls` alias.",
+        "evidence": "The command branch accepts both `list` and `ls`, while META.commands, usage/help, README, and the stable command surface list only `list`. The command-help-consistency spec requires aliases and accepted dispatch forms to match.",
+        "required_action": "Remove the `ls` alias to preserve FD-030's selected command surface, or document it consistently in metadata, help, README, and the stable specification."
+      }
+    ],
+    "test_evidence": {
+      "tester_report": "docs/features/reports/FD-030-test-report-r2.md",
+      "tester_report_json": "docs/features/reports/FD-030-test-report-r2.json",
+      "tester_session": "fd030-tester-20261008-a71c9e",
+      "applicable_scenarios": 20,
+      "covered_scenarios": 0,
+      "requirements_coverage": "0%",
+      "branch_coverage": "not measured",
+      "executed_behavior_tests": 0,
+      "passed_behavior_tests": 0,
+      "failed_behavior_tests": 0,
+      "unrun_behavior_tests": 20,
+      "pm_decision": "docs/features/reports/FD-030-test-decision-r2.md",
+      "human_exception": "User explicitly waived further tests for FD-030; the PM decision accepts the Tester report only to proceed to review and does not represent a test pass."
+    },
+    "static_review": {
+      "worker_r1_findings": "All three R1 findings were statically checked as addressed in the current diff.",
+      "cleanup": "Static review checked coordinate, branch, clean-worktree, squash-parent, source-OID, FD-Source, and reparse-target guards before deletion.",
+      "shared_receipts": "Static review checked aiw-fd resolution of the primary worktree .ai/fd directory.",
+      "documentation": "Active README, docs, skills, and stable specs use aiw git wt; accepted ls alias is missing from the documented surface.",
+      "runtime_validation": "not run; tests were explicitly waived"
+    },
+    "reviewer_commands": [
+      "aiw fd show FD-030",
+      "aiw fd resume FD-030",
+      "aiw fd claim FD-030 FD-030-000013-review-requested --session fd030-reviewer-20261008-a8c6d1",
+      "git status --short --branch",
+      "git log --oneline --decorate -6",
+      "git diff --stat develop...HEAD",
+      "git diff --name-status develop...HEAD",
+      "git diff develop...HEAD -- plugins/aiw-git/git-wt.py plugins/aiw-fd.py cmd/aiw/main.go README.md docs/usage/aiw-fd.md",
+      "git diff develop...HEAD -- skills/fd-workflow/SKILL.md skills/fd-workflow/references/portable-operations.md skills/fd-workflow/roles/*.md skills/work-management.md AGENTS.md openspec/specs/fd-workflow/spec.md",
+      "rg -n --glob '!docs/features/archive/**' --glob '!**/.git/**' 'plugins/aiw-wt\\.py|aiw-wt\\.py|\\baiw wt\\b|aiw git wt' README.md docs openspec skills tests plugins cmd",
+      "git rev-parse HEAD",
+      "git merge-base develop HEAD"
+    ],
+    "not_run": [
+      "Tests",
+      "Builds",
+      "Runtime validation of cleanup, Windows junctions, conflict recovery, and linked-worktree handoffs"
+    ],
+    "residual_risk": "Coverage remains 0/20 and branch coverage is not measured. Windows reparse cleanup, conflict recovery, partial cleanup failure, and linked-worktree handoffs have no runtime evidence under the recorded user waiver."
+  }
+}

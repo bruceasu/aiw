@@ -42,8 +42,8 @@ func main() {
 		err = help.Dispatch(os.Args[2:])
 	case "init":
 		err = initcmd.Dispatch(os.Args[2:])
-	// `wt` is implemented as an external plugin (aiw-wt.py) and will be
-	// handled by the plugin fallback below. Do not dispatch a built-in handler.
+	// FD worktree commands are provided by the aiw-git subcommand dispatcher
+	// as `aiw git wt`; do not dispatch standalone `wt` as a built-in command.
 	case "completion":
 		err = completioncmd.Dispatch(os.Args[2:])
 	case "ask":

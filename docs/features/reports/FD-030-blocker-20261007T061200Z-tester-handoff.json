@@ -1,0 +1,29 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-030",
+  "source_event": "FD-030-000010-implementation-ready",
+  "human_report": "FD-030-blocker-20261007T061200Z-tester-handoff.md",
+  "data": {
+    "stage": "tester-preflight",
+    "role": "tester",
+    "recorded_at": "2026-10-07T06:12:00Z",
+    "recorder_session": "fd030-tester-preflight-20261007-0612",
+    "observed_blocker": "Pending implementation-ready event binds revision 10 and a digest that do not match the checked-out FD file at revision 4. The referenced Worker implementation report and prior Reviewer report are absent.",
+    "confirmed_cause": "Workspace FD/evidence state is inconsistent with the latest dispatch receipt, and the referenced Worker artifact is missing; why the files are absent is unknown.",
+    "cause_status": "partially confirmed",
+    "recovery_attempts": [
+      "Read aiw fd help, show/resume output, and latest event JSON; show reported revision mismatch.",
+      "Checked workspace metadata, branch/worktree state, and paths referenced by Worker and Reviewer events; both reports were absent.",
+      "Read refresh-tester, claim, and emit command options; a valid current implementation artifact is required to refresh, so no state-changing recovery command was run."
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "No policy choice was needed. The revision-10 FD and Worker report were found in the recorded .wt/FD-030 worktree, and aiw fd show there confirmed the pending receipt matched.",
+    "actual_resolution": "Located and verified the revision-10 FD and R2 Worker report in .wt/FD-030; the existing pending Tester handoff is valid, so no refresh was needed.",
+    "resolved_at": "2026-10-07T15:10:13Z",
+    "residual_risk_or_next_step": "Independent Tester should claim the original event in .wt/FD-030. Prior test authorization does not cover this revision; the exact proposed command must be reviewed before execution.",
+    "reusable_improvement": "Consider a preflight check that compares receipt revision/digest with the FD and confirms the Worker artifact exists before Tester dispatch.",
+    "improvement_status": "proposed"
+  }
+}

@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import stat
 import subprocess
 import sys
 import uuid
@@ -13,9 +14,11 @@ from pathlib import Path
 
 
 META = {
-    "name": "aiw-wt",
+    "name": "wt",
     "short": "manage FD worktrees and local delivery",
-    "description": "Create, inspect, commit, and squash-deliver numbered FD worktrees.",
+    "long": "Create, inspect, commit, and squash-deliver numbered FD worktrees; successful delivery removes the verified worktree and branch.",
+    "usage": "aiw git wt <subcommand> [args...]",
+    "examples": ["aiw git wt add FD-001", "aiw git wt local-merge FD-001"],
     "commands": ["add", "status", "commit", "local-merge", "list"],
     "readOnly": False,
     "mutatesFiles": True,
@@ -88,7 +91,7 @@ def workspace(root: Path, raw_id: str) -> tuple[str, dict[str, str], Path, Path]
         if path.is_symlink():
             raise WorktreeError(f"FD workspace metadata cannot use symlinks: {path}")
     if not metadata_path.is_file():
-        raise WorktreeError(f"FD worktree is not registered: {fd_id}; run `aiw wt add {fd_id}`")
+        raise WorktreeError(f"FD worktree is not registered: {fd_id}; run `aiw git wt add {fd_id}`")
     if not metadata_path.resolve().is_relative_to(root):
         raise WorktreeError("FD workspace metadata is outside the repository")
     try:
@@ -257,8 +260,123 @@ def content_conflict(path: Path) -> bool:
     return merge_head.returncode == 0 and unmerged.returncode == 0 and bool(unmerged.stdout.strip())
 
 
+def remove_shared_ai_link(root: Path, worktree_path: Path) -> None:
+    """Detach only a verified .ai link to the primary workspace before Git removes the worktree."""
+    ai_path = worktree_path / ".ai"
+    try:
+        info = ai_path.lstat()
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        raise WorktreeError(f"cannot inspect worktree .ai before cleanup: {exc}") from exc
+
+    attributes = getattr(info, "st_file_attributes", 0)
+    reparse_tag = getattr(info, "st_reparse_tag", None)
+    is_posix_symlink = stat.S_ISLNK(info.st_mode)
+    if not (is_posix_symlink or attributes & 0x400):  # FILE_ATTRIBUTE_REPARSE_POINT
+        return
+
+    expected_target = (root / ".ai").resolve()
+    try:
+        actual_target = ai_path.resolve(strict=True)
+    except OSError as exc:
+        raise WorktreeError(f"worktree .ai link cannot be resolved safely: {exc}") from exc
+    if actual_target != expected_target or not actual_target.is_dir():
+        raise WorktreeError("worktree .ai link does not target the primary workspace .ai; cleanup stopped")
+
+    if os.name == "nt":
+        if reparse_tag == 0xA0000003:  # IO_REPARSE_TAG_MOUNT_POINT (junction)
+            os.rmdir(ai_path)
+        elif reparse_tag == 0xA000000C:  # IO_REPARSE_TAG_SYMLINK
+            ai_path.unlink()
+        else:
+            raise WorktreeError(f"worktree .ai uses an unknown reparse tag {reparse_tag!r}; cleanup stopped")
+    elif is_posix_symlink:
+        ai_path.unlink()
+    else:
+        raise WorktreeError("worktree .ai uses an unsupported reparse point; cleanup stopped")
+
+    if not expected_target.is_dir():
+        raise WorktreeError("primary workspace .ai disappeared while detaching the worktree link")
+
+
+def cleanup_delivered_worktree(
+        root: Path, fd_id: str, data: dict[str, str], worktree_path: Path,
+        parent_path: Path, source_oid: str, delivered_oid: str,
+        expected_parent_before_oid: str | None) -> int:
+    """Remove the exact FD worktree and branch only after validating its squash delivery."""
+    try:
+        clean_worktree(parent_path, "parent worktree after squash delivery")
+        clean_worktree(worktree_path, "FD worktree before cleanup")
+        current_source = git(worktree_path, "rev-parse", "--verify", "HEAD")
+        if current_source.returncode or current_source.stdout.strip() != source_oid:
+            raise WorktreeError("FD HEAD changed after squash delivery; worktree and branch were preserved")
+
+        parent_branch = git(parent_path, "branch", "--show-current")
+        if parent_branch.returncode or parent_branch.stdout.strip() != data["parent_branch"]:
+            raise WorktreeError("parent worktree left its recorded branch; worktree and branch were preserved")
+        parent_head = git(parent_path, "rev-parse", "--verify", "HEAD")
+        if parent_head.returncode:
+            raise WorktreeError("cannot inspect the recorded parent branch; worktree and branch were preserved")
+        delivered_ancestor = git(parent_path, "merge-base", "--is-ancestor",
+                                 delivered_oid, parent_head.stdout.strip())
+        if delivered_ancestor.returncode:
+            raise WorktreeError("verified squash is not on the recorded parent history; worktree and branch were preserved")
+
+        parents = git(parent_path, "rev-list", "--parents", "-n", "1", delivered_oid)
+        if parents.returncode:
+            raise WorktreeError("cannot inspect squash commit parents; worktree and branch were preserved")
+        parent_fields = parents.stdout.split()
+        if (len(parent_fields) != 2 or
+                (expected_parent_before_oid is not None and
+                 parent_fields[1] != expected_parent_before_oid)):
+            raise WorktreeError("squash delivery is not the expected single-parent commit; worktree and branch were preserved")
+        message = git(parent_path, "show", "-s", "--format=%B", delivered_oid)
+        if message.returncode or f"FD-Source: {source_oid}" not in message.stdout.splitlines():
+            raise WorktreeError("squash commit FD-Source does not match the current FD HEAD; worktree and branch were preserved")
+
+        # Windows cannot remove a worktree while this process is using it as cwd.
+        os.chdir(parent_path)
+        remove_shared_ai_link(root, worktree_path)
+        removed = git(parent_path, "worktree", "remove", "--", str(worktree_path))
+        command_output(removed)
+        if removed.returncode:
+            print("Delivery succeeded, but worktree cleanup failed; the branch was preserved.", file=sys.stderr)
+            return removed.returncode
+
+        deleted = git(parent_path, "branch", "-D", "--", data["branch"])
+        command_output(deleted)
+        if deleted.returncode:
+            print(f"Delivery succeeded and the worktree was removed, but branch cleanup failed; "
+                  f"remove it after inspection with `git branch -D -- {data['branch']}`.", file=sys.stderr)
+            return deleted.returncode
+
+        metadata_path = root / ".ai" / "fd" / fd_id / "workspace.json"
+        if metadata_path.is_symlink() or not metadata_path.resolve().is_relative_to(root):
+            print("Delivery and Git cleanup succeeded, but workspace metadata is unsafe and was retained.",
+                  file=sys.stderr)
+            return 2
+        try:
+            metadata_path.unlink()
+        except OSError as exc:
+            print(f"Delivery and Git cleanup succeeded, but stale workspace metadata remains: {exc}",
+                  file=sys.stderr)
+            return 2
+    except WorktreeError as exc:
+        print(f"Delivery succeeded, but automatic cleanup stopped: {exc}", file=sys.stderr)
+        return 2
+    except OSError as exc:
+        print(f"Delivery succeeded, but automatic cleanup failed safely: {exc}; "
+              "inspect the worktree and branch before retrying.", file=sys.stderr)
+        return 2
+
+    print(f"cleanup: removed {worktree_path} and {data['branch']}; FD receipts were retained")
+    return 0
+
+
 def local_merge(raw_id: str) -> int:
-    fd_id, data, worktree_path, parent_path = workspace(repository_root(), raw_id)
+    root = repository_root()
+    fd_id, data, worktree_path, parent_path = workspace(root, raw_id)
     expected_parent = data["parent_branch"]
     parent_branch = git(parent_path, "branch", "--show-current")
     fd_branch = git(worktree_path, "branch", "--show-current")
@@ -281,7 +399,11 @@ def local_merge(raw_id: str) -> int:
     if delivered.returncode:
         raise WorktreeError("cannot inspect prior FD squash deliveries")
     if delivered.stdout.strip():
-        raise WorktreeError(f"FD source {source_oid} was already delivered to {expected_parent}")
+        prior_delivery_oid = delivered.stdout.splitlines()[0].strip()
+        print(f"FD source {source_oid} is already delivered; retrying verified cleanup.")
+        return cleanup_delivered_worktree(root, fd_id, data, worktree_path,
+                                          parent_path, source_oid,
+                                          prior_delivery_oid, None)
 
     print(f"Squashing {data['branch']} into {expected_parent}.")
     delivery = git(parent_path, "merge", "--squash", data["branch"])
@@ -297,7 +419,15 @@ def local_merge(raw_id: str) -> int:
             return committed.returncode
         print(f"delivery: squashed {data['branch']} into {expected_parent}; "
               f"source {source_oid}")
-        return 0
+        delivered_oid = git(parent_path, "rev-parse", "--verify", "HEAD")
+        if delivered_oid.returncode:
+            print("Squash commit exists, but its ID could not be verified; "
+                  "the worktree and branch were preserved.", file=sys.stderr)
+            return 2
+        return cleanup_delivered_worktree(root, fd_id, data, worktree_path,
+                                          parent_path, source_oid,
+                                          delivered_oid.stdout.strip(),
+                                          parent_before.stdout.strip())
     unmerged = git(parent_path, "ls-files", "--unmerged")
     if unmerged.returncode or not unmerged.stdout.strip():
         print("Squash delivery failed without a detected content conflict; "
@@ -329,14 +459,14 @@ def local_merge(raw_id: str) -> int:
     if recovery.returncode:
         if content_conflict(worktree_path):
             print(f"Resolve conflicts in {worktree_path}, commit with "
-                  f"`aiw wt commit {fd_id} \"<message>\"`, then rerun "
-                  f"`aiw wt local-merge {fd_id}`.", file=sys.stderr)
+                  f"`aiw git wt commit {fd_id} \"<message>\"`, then rerun "
+                  f"`aiw git wt local-merge {fd_id}`.", file=sys.stderr)
         else:
             print("Parent-to-FD merge failed without a detected content conflict; "
                   "inspect the FD worktree before continuing.", file=sys.stderr)
         return recovery.returncode
     print("Parent was merged into the FD worktree. Review the result, then rerun "
-          f"`aiw wt local-merge {fd_id}` to deliver explicitly.")
+          f"`aiw git wt local-merge {fd_id}` to deliver explicitly.")
     return 2
 
 
@@ -347,7 +477,7 @@ def list_worktrees() -> int:
 
 
 def usage() -> None:
-    print("Usage: aiw wt <command> [args...]")
+    print("Usage: aiw git wt <command> [args...]")
     print("Commands:")
     print("  add <fd-id>                         Create the managed FD worktree.")
     print("  status <fd-id>                      Show parent and FD worktree status.")
@@ -371,12 +501,12 @@ def main(args: list[str] | None = None) -> int:
             return worktree_commit(rest[0], rest[1])
         if command == "local-merge" and len(rest) == 1:
             return local_merge(rest[0])
-        if command in {"list", "ls"} and not rest:
+        if command == "list" and not rest:
             return list_worktrees()
         if command in {"add", "status", "commit", "local-merge"}:
-            print(f"usage: aiw wt {command} <fd-id>", file=sys.stderr)
+            print(f"usage: aiw git wt {command} <fd-id>", file=sys.stderr)
             return 2
-        print(f"unknown wt command: {command}; run `aiw wt help`", file=sys.stderr)
+        print(f"unknown wt command: {command}; run `aiw git wt help`", file=sys.stderr)
         return 2
     except (OSError, WorktreeError) as exc:
         print(f"wt: {exc}", file=sys.stderr)
