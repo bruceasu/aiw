@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-XXX",
+  "source_event": "FD-XXX-000000-test-report-ready",
+  "human_report": "FD-XXX-test-risk-assessment-rN-a.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-XXX-test-report-rN.md",
+    "fd_revision": 0,
+    "fd_digest": "replace-with-test-report-ready-receipt-digest",
+    "assessor_session": "replace-with-independent-session",
+    "assessment_focus": "acceptance-impact",
+    "vote": "repair",
+    "severity": "replace-with-severity-and-reason",
+    "impact_scope": "replace-with-affected-users-and-paths",
+    "estimated_repair_time": "replace-with-estimate-or-unknown-and-reason",
+    "delivery_impact": "replace-with-delivery-effect-or-unknown-and-reason",
+    "rationale": "replace-with-evidence-based-reason",
+    "residual_risk": "replace-with-risk-if-accepted",
+    "uncertainty": "replace-with-unknowns-or-none",
+    "assessment_time": "2026-10-08T00:00:00+00:00"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-031",
+  "source_event": "FD-031-000012-changes-requested",
+  "human_report": "FD-031-implementation-r4.md",
+  "data": {
+    "session_ref": "fd031-worker-repair-20261008-4e367cb0",
+    "summary": "修复 recover-worker 在索引解码异常后绕过回滚的问题，并保存索引原始字节供回滚恢复。",
+    "changed_paths": [
+      "plugins/aiw-fd.py",
+      "docs/features/FD-031_RESTORE_ISSUE_PROMOTE_AS_FD_WORKFLOW_ENTRY.md",
+      "docs/features/reports/FD-031-implementation-r4.md",
+      "docs/features/reports/FD-031-implementation-r4.json"
+    ],
+    "commands": [
+      "aiw fd claim FD-031 FD-031-000012-changes-requested --session fd031-worker-repair-20261008-4e367cb0",
+      "python -c \"from pathlib import Path; compile(Path('plugins/aiw-fd.py').read_bytes(), 'plugins/aiw-fd.py', 'exec')\"",
+      "git diff --check",
+      "python -c \"import json,pathlib; json.loads(pathlib.Path('docs/features/reports/FD-031-implementation-r4.json').read_text(encoding='utf-8'))\""
+    ],
+    "results": [
+      "新 Worker 事件与 FD revision 12 和摘要匹配，认领成功。",
+      "Python 插件内存编译通过，无产物。",
+      "静态差异检查及 r4 JSON 解析通过。",
+      "静态追踪索引解码异常可进入回滚，索引按原始字节快照恢复，回滚失败明确列出步骤。",
+      "本轮未运行测试；上一轮测试结果不覆盖本修复。"
+    ],
+    "residual_risk": "索引解码失败及回滚本身失败尚无独立运行时验证；需 Tester 基于新修订重新授权测试并由 PM 决定接纳。"
+  }
+}

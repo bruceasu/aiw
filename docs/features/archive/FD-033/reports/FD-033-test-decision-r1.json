@@ -1,0 +1,28 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-033",
+  "source_event": "FD-033-000006-test-report-ready",
+  "human_report": "FD-033-test-decision-r1.md",
+  "data": {
+    "disposition": "accepted-with-risk",
+    "tester_report": "docs/features/reports/FD-033-test-report-r1.md",
+    "fd_revision": 6,
+    "fd_digest": "41b1a80e61fdf457666a34d4d8e416b1ac42633c3852d1e314921908b0a47d6a",
+    "requirements_coverage": "0% (0/14 behavior scenarios executed)",
+    "branch_coverage": "not measured",
+    "failed_behavior_tests": 0,
+    "assessments": [
+      "docs/features/reports/FD-033-test-risk-assessment-r1-a.md",
+      "docs/features/reports/FD-033-test-risk-assessment-r1-b.md",
+      "docs/features/reports/FD-033-test-risk-assessment-r1-c.md"
+    ],
+    "accept_votes": 0,
+    "repair_votes": 3,
+    "rationale": "PM explicitly overrides the 3 repair votes to waive runtime test acceptance under the repository's default zero-test resource budget and proceed to an independent static Reviewer. This accepts the evidence risk only; it does not report uncovered behavior as passed.",
+    "exceptions": "No tests, AI provider calls, Git runtime scenarios, or coverage commands were run. The standard test-accepted emit was rejected because the three assessor votes were repair; no test-accepted event was recorded. PM explicitly overrides the test gate through a truthful direct status change and a separate review-requested event. A later runtime verification requires exact command authorization bound to the implementation revision.",
+    "residual_risk": "All 14 applicable scenarios remain uncovered, including Git side effects, provider fallback, output boundaries, and aiw cz compatibility. Product runtime behavior is not established.",
+    "pm_identity": "AIW host PM / fd033-pm-20261008-c2b60d",
+    "decision_time": "2026-10-08T03:50:31+00:00"
+  }
+}

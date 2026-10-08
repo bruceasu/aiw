@@ -1,0 +1,37 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-031",
+  "source_event": "FD-031-000008-work-requested",
+  "human_report": "FD-031-implementation-r3.md",
+  "data": {
+    "session_ref": "fd031-worker-repair-20261008-4e367cb0",
+    "summary": "认领恢复的 Worker 事件，复核 Issue promote 修复和 PM Worker 恢复命令，并提交当前实现证据。",
+    "changed_paths": [
+      "internal/issue/store.go",
+      "tests/test_fd031_promote_blackbox.py",
+      "plugins/aiw-fd.py",
+      "docs/usage/aiw-fd.md",
+      "openspec/specs/fd-workflow/spec.md",
+      "skills/work-management.md",
+      ".agents/skills/fd-workflow/SKILL.md",
+      "docs/features/FD-031_RESTORE_ISSUE_PROMOTE_AS_FD_WORKFLOW_ENTRY.md",
+      "docs/features/reports/FD-031-implementation-r3.md",
+      "docs/features/reports/FD-031-implementation-r3.json"
+    ],
+    "commands": [
+      "aiw fd claim FD-031 FD-031-000008-work-requested --session fd031-worker-repair-20261008-4e367cb0",
+      "python -c \"from pathlib import Path; compile(Path('plugins/aiw-fd.py').read_bytes(), 'plugins/aiw-fd.py', 'exec')\"",
+      "git diff --check",
+      "python -c \"import json,pathlib; json.loads(pathlib.Path('docs/features/reports/FD-031-implementation-r3.json').read_text(encoding='utf-8'))\""
+    ],
+    "results": [
+      "新事件 revision 8 和 FD 摘要一致，Worker 认领成功。",
+      "Python FD 插件内存编译通过，无产物。",
+      "静态差异检查与 r3 JSON 解析通过。",
+      "Issue 标题还原、promote 参数传递、模板失败夹具及 recover-worker 匹配和回滚路径已静态复核。",
+      "本轮未执行黑箱测试或恢复命令失败注入；旧 Tester 的 6/8 不代表当前版本。"
+    ],
+    "residual_risk": "当前修复及恢复失败路径缺独立运行时证据；Tester 必须对新的实现事件和修订取得精确授权，PM 决定报告接纳。"
+  }
+}

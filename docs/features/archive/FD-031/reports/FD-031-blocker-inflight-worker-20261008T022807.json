@@ -1,0 +1,32 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-031",
+  "source_event": "FD-031-000006-test-rejected",
+  "human_report": "FD-031-blocker-inflight-worker-20261008T022807.md",
+  "data": {
+    "stage": "Auto preflight / Worker recovery gate",
+    "role": "pm",
+    "recorded_at": "2026-10-08T02:28:07+00:00",
+    "recorder_session": "fd031-auto-20261008-022807",
+    "observed_blocker": "The latest test-rejected event FD-031-000006-test-rejected is dispatched to worker session fd031-worker-repair-20261008-01, claimed at 2026-10-08T02:22:17.938429+00:00. No later Worker result event or event log is present. The Tester report has two failed behavior cases and 69.2% requirements coverage; PM rejected the report. A direct review report has findings but no formal Reviewer event.",
+    "confirmed_cause": null,
+    "cause_status": "unknown",
+    "recovery_attempts": [
+      "Read the FD-031 worktree document and workspace coordinates.",
+      "Read the implementation-ready, test-report-ready, and test-rejected receipts.",
+      "Read the Tester report, PM rejection decision, and direct review report.",
+      "Checked for the test-rejected event log; it is absent.",
+      "Checked the current collaboration agent list; the referenced Worker session is not in this thread.",
+      "Did not claim, replace, or edit the in-flight Worker handoff."
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "The user confirmed that the Tester stopped and the original workflow was interrupted, and directed Auto to resume. This resolves the wait-versus-resume decision.",
+    "actual_resolution": "PM will resume as directed. The Worker receipt remains unchanged; a separate follow-up blocker records that the CLI has no safe takeover operation for a dispatched Worker handoff.",
+    "resolved_at": "2026-10-08T02:33:45+00:00",
+    "residual_risk_or_next_step": "Resolve docs/features/reports/FD-031-blocker-no-override-20261008T023345.md before continuing worker repair.",
+    "reusable_improvement": "none; one missing event log is insufficient evidence for a general workflow change",
+    "improvement_status": "not_applicable"
+  }
+}

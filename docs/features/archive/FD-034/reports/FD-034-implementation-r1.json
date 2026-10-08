@@ -1,0 +1,19 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-034",
+  "source_event": "FD-034-000005-design-ready",
+  "human_report": "FD-034-implementation-r1.md",
+  "data": {
+    "summary": "Implemented guided Git patch creation and application, with a companion Markdown guide and recovery advice.",
+    "changed_paths": [
+      "plugins/aiw-git/git-patch.py",
+      "docs/usage/aiw-git-patch.md",
+      "openspec/specs/cli-and-plugins/spec.md",
+      "docs/features/FD-034_GIT.md"
+    ],
+    "commands": ["python -m py_compile plugins/aiw-git/git-patch.py (twice, before and after final code edit)"],
+    "results": ["Python compile-only checks passed", "Static source and contract review completed", "Runtime patch scenarios not executed"],
+    "residual_risk": "No runtime evidence for create/apply behavior, Windows paths, or recovery messages; independent Tester and Reviewer stages remain outstanding."
+  }
+}

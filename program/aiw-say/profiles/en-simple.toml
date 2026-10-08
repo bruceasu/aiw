@@ -1,0 +1,4 @@
+[profile]
+target = "en"
+polite = "polite"
+simplify = true

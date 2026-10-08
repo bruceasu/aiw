@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000015-test-report-ready",
+  "human_report": "FD-036-test-risk-assessment-r2-b.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-036-test-report-r2.md",
+    "fd_revision": 15,
+    "fd_digest": "8a27b890461b8899f79a646f6814a4031afe6fb3407b2892169b579deb5d981e",
+    "assessor_session": "fd036-risk-b-20261008-082826",
+    "assessment_focus": "technical-repair",
+    "vote": "repair",
+    "severity": "中：19项行为测试通过且无产品失败，但5/15个验收场景未完整覆盖，包含配置优先级、枚举变体和未实现选项边界。",
+    "impact_scope": "FD-036的配置优先级（S08）、枚举校验（S09）、未实现选项（S14），以及损坏TOML（S05）和跨平台/样例复制流程（S15）的完整验收结论。",
+    "estimated_repair_time": "约2–4小时补充和审阅配置、枚举及选项的可执行用例；Linux/WSL及S15手动复制/不覆盖流程的验证方式和耗时未知。若补测发现产品问题，实际修复时间另计。",
+    "delivery_impact": "补齐关键CLI用例后再决定验收会带来短暂延迟；S15文档工作流和跨平台项的验证方式可能需另行界定，延迟范围未知。",
+    "rationale": "Tester报告的19项测试在修正夹具后全部通过，首轮失败定位为测试夹具设置，未报告产品行为失败。Revision 14实现收据先于Revision 15 test-report-ready事件，属于正常事件顺序，不构成证据缺陷。仍有5/15场景未完整覆盖：S08未运行安装配置到profile/CLI的完整优先级矩阵；S09和S14只抽测部分枚举和一个未实现选项；S05未测语法损坏TOML；S15只检查样例文件存在。配置与CLI边界覆盖不足，故建议repair。",
+    "residual_risk": "未覆盖场景的实际行为未知；配置优先级、未逐项枚举校验、其他未实现选项可能存在未发现问题。Linux/WSL路径及样例复制不覆盖工作流没有充分证据。",
+    "uncertainty": "本评估未运行测试或核验实现。补测可能暴露产品缺陷；S15手动流程和跨平台路径的验收责任、可验证方式及耗时未知。",
+    "assessment_time": "2026-10-08T08:28:26+00:00"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-039",
+  "source_event": "FD-039-000005-changes-requested",
+  "human_report": "FD-039-implementation-r2.md",
+  "data": {
+    "summary": "修复 Reviewer 指出的 FD-039 Verification 字符损坏，将 form-feed 恢复为字面 $fd-test。",
+    "changed_paths": [
+      "docs/features/FD-039_SEPARATE_FD_TEST_SKILL_FROM_FD_WORKFLOW.md",
+      "docs/features/reports/FD-039-implementation-r2.md",
+      "docs/features/reports/FD-039-implementation-r2.json"
+    ],
+    "commands": [
+      "python -c \"from pathlib import Path; p=Path('docs/features/FD-039_SEPARATE_FD_TEST_SKILL_FROM_FD_WORKFLOW.md'); d=p.read_bytes(); old=bytes([12])+b'd-test'; new=bytes([36])+b'fd-test'; count=d.count(old); assert count==1, count; p.write_bytes(d.replace(old,new)); print('replaced', count)\"",
+      "python -c \"from pathlib import Path; s=Path('docs/features/FD-039_SEPARATE_FD_TEST_SKILL_FROM_FD_WORKFLOW.md').read_text(encoding='utf-8'); a=s.index('## Verification'); b=s.index('## TODO',a); print(ascii(s[a:b]))\"",
+      "python -c \"from pathlib import Path; compile(Path('plugins/aiw-fd.py').read_text(encoding='utf-8'), 'plugins/aiw-fd.py', 'exec')\""
+    ],
+    "results": [
+      "目标控制字符序列恰好出现一次，已替换为字面 $fd-test。",
+      "回读结果确认 Verification 中保留字面 $fd-test。",
+      "R1 的 plugins/aiw-fd.py 内存式 compile-only 检查通过，R2 未重跑，因为只修改 Markdown。",
+      "未运行测试、coverage、最终构建、格式化或 lint。"
+    ],
+    "residual_risk": "本次字符修复未增加运行时验证；fd-test 行为和旧 Tester CLI 执行能力未运行验证。"
+  }
+}

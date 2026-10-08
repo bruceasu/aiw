@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-031",
+  "source_event": "FD-031-000013-implementation-ready",
+  "human_report": "FD-031-test-authorization-r3.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-031-000013-implementation-ready",
+    "fd_revision": 13,
+    "fd_digest": "7a5783b35df0209e193dbfc330bcb6af6204b00c7f5235465695ef8fdd16464a",
+    "tester_session": "fd031-tester-r2-20261008-4433f97b",
+    "command": "python -B -m unittest tests.test_fd031_promote_blackbox tests.test_fd031_recover_worker_blackbox -v",
+    "working_directory": "C:\\Users\\svictor\\workspace\\tools\\ai-tools\\aiw\\.wt\\FD-031",
+    "scope": "13 black-box cases in the two named unittest modules, including S21 index-decode failure rollback",
+    "expected_duration": "25-45 seconds",
+    "side_effects": "Reads worktree and local Go module cache; writes and removes only system temporary directories containing offline CLI binaries, Go caches, isolated Git/FD fixtures, receipts, index and one invalid-UTF-8 fixture FD.",
+    "risk_review": "Planner inspected both test modules and the new failure-injection path. Network is disabled, and writes/deletes stay inside temporary fixture directories; no unrelated repository writes, external services or privilege changes are indicated.",
+    "human_approval": "not required",
+    "planner_identity": "fd031-host-planner-20261008",
+    "decision_time": "2026-10-08T02:58:03+00:00"
+  }
+}

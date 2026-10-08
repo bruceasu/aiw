@@ -1,0 +1,48 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-033",
+  "source_event": "FD-033-000005-implementation-ready",
+  "human_report": "FD-033-test-report-r1.md",
+  "data": {
+    "implementation_event": "FD-033-000005-implementation-ready",
+    "tested_fd_revision": 5,
+    "tested_fd_digest": "2fe68584999b2a080117408fb376117caf817382ac685b5a594656b510bf5900",
+    "tester_session": "fd033-tester-20261008-a91f52",
+    "applicable_scenarios": 14,
+    "covered_scenarios": 0,
+    "executed_behavior_tests": 0,
+    "passed_behavior_tests": 0,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 14,
+    "requirements_coverage": "0%",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": "not measured",
+    "coverage_unavailable_reason": "No test authorization was provided; product tests, AI calls, Git runtime scenarios, and coverage commands were not run.",
+    "test_files": [],
+    "authorization_records": [],
+    "commands": [],
+    "recommendation": "blocked",
+    "not_applicable_reason": "All 14 scenarios are applicable; none are marked not applicable.",
+    "residual_risk": "New aiw git commands, CZ provider integration and fallback, failure behavior, output boundaries, repository immutability, and aiw cz compatibility have no runtime evidence.",
+    "scenarios": [
+      {"id":"FD033-T01","behavior":"aic stages tracked, untracked, and deleted changes and commits after successful generation.","status":"uncovered","test_cases":[],"uncovered_reason":"No authorization for AI/Git runtime validation."},
+      {"id":"FD033-T02","behavior":"aic produces a Conventional Commits message and passes the complete multiline message to Git.","status":"uncovered","test_cases":[],"uncovered_reason":"No authorization to call the model or run a Git commit."},
+      {"id":"FD033-T03","behavior":"On generation failure aic returns nonzero, does not run commit, and retains staged content.","status":"uncovered","test_cases":[],"uncovered_reason":"No authorization to simulate provider failure or run Git."},
+      {"id":"FD033-T04","behavior":"aic clearly fails with a nonzero result when there are no committable changes.","status":"uncovered","test_cases":[],"uncovered_reason":"No authorization for AI/Git runtime validation."},
+      {"id":"FD033-T05","behavior":"aic returns nonzero when Git commit fails.","status":"uncovered","test_cases":[],"uncovered_reason":"No authorization to run Git commit or inject a failure."},
+      {"id":"FD033-T06","behavior":"air sends only the staged diff to the model and prints the review response to stdout.","status":"uncovered","test_cases":[],"uncovered_reason":"No authorization to call the model or validate an actual staged diff."},
+      {"id":"FD033-T07","behavior":"With no staged diff air clearly errors and leaves index, worktree, and commit history unchanged.","status":"uncovered","test_cases":[],"uncovered_reason":"No authorization for AI/Git runtime validation."},
+      {"id":"FD033-T08","behavior":"By default aib summarizes only one-line commit history from main..HEAD.","status":"uncovered","test_cases":[],"uncovered_reason":"No authorization for AI/Git runtime validation."},
+      {"id":"FD033-T09","behavior":"aib --base REF summarizes only one-line commit history from REF..HEAD.","status":"uncovered","test_cases":[],"uncovered_reason":"No authorization for AI/Git runtime validation."},
+      {"id":"FD033-T10","behavior":"aib clearly fails for an invalid base ref without changing the repository.","status":"uncovered","test_cases":[],"uncovered_reason":"No authorization for AI/Git runtime validation."},
+      {"id":"FD033-T11","behavior":"aib clearly fails for an empty commit history without changing the repository.","status":"uncovered","test_cases":[],"uncovered_reason":"No authorization for AI/Git runtime validation."},
+      {"id":"FD033-T12","behavior":"aib clearly fails on provider failure without changing the repository.","status":"uncovered","test_cases":[],"uncovered_reason":"No authorization to call the model or simulate provider failure."},
+      {"id":"FD033-T13","behavior":"AI commands use CZ configuration and provider fallback, avoid shell-interpolating command arguments, and keep logs out of model text and commit messages.","status":"uncovered","test_cases":[],"uncovered_reason":"Provider, argument-boundary, and output-stream behavior needs authorized runtime validation."},
+      {"id":"FD033-T14","behavior":"The existing aiw cz candidate, preview, edit/cancel, and commit workflow remains usable.","status":"uncovered","test_cases":[],"uncovered_reason":"No authorization to run the aiw cz interactive workflow."}
+    ],
+    "static_exclusions": [
+      "Branch coverage was not measured because no runtime validation or coverage command was authorized."
+    ]
+  }
+}

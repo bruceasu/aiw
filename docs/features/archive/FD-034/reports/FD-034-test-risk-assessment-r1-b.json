@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-034",
+  "source_event": "FD-034-000015-test-report-ready",
+  "human_report": "FD-034-test-risk-assessment-r1-b.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-034-test-report-r1.md",
+    "fd_revision": 15,
+    "fd_digest": "57c1a2da912f434b1f4a5706e209e0dec70c16a9c8e409e66b09bd2ffa901aec",
+    "assessor_session": "fd034-assessor-b-20261008-dea4706064d84091",
+    "vote": "accept-with-risk",
+    "severity": "中等：S13 的预检后实际应用失败未覆盖，可能需人工核对局部工作区改动；其余 12/13 场景有通过证据。",
+    "impact_scope": "在 git apply --check 与实际 git apply 之间发生外部目标文件变化的 patch apply 用户；常规创建、应用及预检失败路径已有证据。",
+    "estimated_repair_time": "补充可控竞态黑盒用例粗估半天以内，取决于夹具稳定性；当前无已证实的实现缺陷需修复。",
+    "delivery_impact": "接受并披露风险可继续审查交付；若必须补测 S13，需修订测试、重新授权并延后交付，无法据此承诺日期。",
+    "rationale": "Tester 的唯一授权重跑 9/9 通过，13 个可观察场景覆盖 12 个，最终失败 0；首次 4 个失败经测试断言修正后消失。S13 为两次 Git 调用之间外部变化的窄场景，FD 已定义非零退出与人工检查建议。",
+    "residual_risk": "S13 无运行证据；预检通过后的外部变化可能导致实际应用失败及局部工作区改动。业务代码分支覆盖率、全部失败路径、无网络行为和易用性未获完整运行时证明。",
+    "uncertainty": "没有独立保存的完整测试控制台日志；结果依据 Tester 报告和测试源码。S13 的真实失败形态与可稳定模拟性未知。",
+    "assessment_time": "2026-10-08T06:04:04+00:00"
+  }
+}

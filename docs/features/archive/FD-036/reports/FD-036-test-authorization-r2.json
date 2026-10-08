@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000014-implementation-ready",
+  "human_report": "FD-036-test-authorization-r2.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-036-000014-implementation-ready",
+    "fd_revision": 14,
+    "fd_digest": "914ae9b1043fa69226b2c7e00fed2ff4c2efe7b7e9ffad7f84c56ae8f83ad537",
+    "tester_session": "fd036-host-20261008-27cf10",
+    "command": "$baseTemp=[IO.Path]::GetFullPath($env:TEMP); $sandbox=Join-Path $baseTemp ('aiw-say-fd036-'+[guid]::NewGuid().ToString('N')); $oldTemp=$env:TEMP; $oldTmp=$env:TMP; $oldTmpdir=$env:TMPDIR; $oldGoCache=$env:GOCACHE; $oldGoProxy=$env:GOPROXY; $oldGoSum=$env:GOSUMDB; $oldPy=$env:PYTHONDONTWRITEBYTECODE; try { New-Item -ItemType Directory -Path $sandbox | Out-Null; $env:TEMP=$sandbox; $env:TMP=$sandbox; $env:TMPDIR=$sandbox; $env:GOCACHE=Join-Path $sandbox 'gocache'; $env:GOPROXY='off'; $env:GOSUMDB='off'; $env:PYTHONDONTWRITEBYTECODE='1'; $testExe=Join-Path $sandbox 'aiw-say.exe'; go build -o $testExe ./cmd/aiw-say; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; $env:AIW_SAY_BIN=$testExe; python -B -m unittest -v tests.test_fd036_say_blackbox; exit $LASTEXITCODE } finally { if ($null -eq $oldTemp) { Remove-Item Env:TEMP -ErrorAction SilentlyContinue } else { $env:TEMP=$oldTemp }; if ($null -eq $oldTmp) { Remove-Item Env:TMP -ErrorAction SilentlyContinue } else { $env:TMP=$oldTmp }; if ($null -eq $oldTmpdir) { Remove-Item Env:TMPDIR -ErrorAction SilentlyContinue } else { $env:TMPDIR=$oldTmpdir }; if ($null -eq $oldGoCache) { Remove-Item Env:GOCACHE -ErrorAction SilentlyContinue } else { $env:GOCACHE=$oldGoCache }; if ($null -eq $oldGoProxy) { Remove-Item Env:GOPROXY -ErrorAction SilentlyContinue } else { $env:GOPROXY=$oldGoProxy }; if ($null -eq $oldGoSum) { Remove-Item Env:GOSUMDB -ErrorAction SilentlyContinue } else { $env:GOSUMDB=$oldGoSum }; if ($null -eq $oldPy) { Remove-Item Env:PYTHONDONTWRITEBYTECODE -ErrorAction SilentlyContinue } else { $env:PYTHONDONTWRITEBYTECODE=$oldPy }; Remove-Item Env:AIW_SAY_BIN -ErrorAction SilentlyContinue; $resolvedSandbox=[IO.Path]::GetFullPath($sandbox); if ($resolvedSandbox.StartsWith($baseTemp+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase) -and (Split-Path $resolvedSandbox -Leaf).StartsWith('aiw-say-fd036-')) { Remove-Item -LiteralPath $resolvedSandbox -Recurse -Force -ErrorAction SilentlyContinue } }",
+    "working_directory": ".wt/FD-036",
+    "scope": "Build cmd/aiw-say in a unique isolated TEMP sandbox, then run only tests.test_fd036_say_blackbox against the local loopback mock.",
+    "expected_duration": "under 2 minutes",
+    "side_effects": "Unique TEMP sandbox containing executable, isolated Go build cache, and Python temporary files; the sandbox is verified as a child of system TEMP and removed in finally. Python bytecode is disabled. Environment variables are restored or removed in finally. No repository writes, user configuration writes, external API calls, or downloads.",
+    "risk_review": "Inspected the test methods, standard-library mock server, temporary config and subprocess isolation. GOPROXY=off and GOSUMDB=off prevent module/checksum network access. The cleanup path is constrained to the unique prefixed sandbox under system TEMP. No release artifact or privilege change.",
+    "human_approval": "not required",
+    "planner_identity": "fd036-host-20261008-27cf10",
+    "decision_time": "2026-10-08T08:27:00Z"
+  }
+}

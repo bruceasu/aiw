@@ -1,0 +1,29 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000013-work-requested",
+  "human_report": "FD-036-implementation-r3.md",
+  "data": {
+    "summary": "Expanded and mapped deterministic black-box acceptance tests after PM rejected the initial test evidence for a material coverage gap. Added Work Item 1.10 to the FD. Tests were not run.",
+    "changed_paths": [
+      "tests/test_fd036_say_blackbox.py",
+      "docs/features/FD-036_AIW_SAY_CLI.md",
+      "docs/features/reports/FD-036-implementation-r3.md",
+      "docs/features/reports/FD-036-implementation-r3.json"
+    ],
+    "commands": [
+      "go build -o NUL ./cmd/aiw-say",
+      "git add docs/features/FD-036_AIW_SAY_CLI.md tests/test_fd036_say_blackbox.py",
+      "git commit -m \"test(fd-036): expand say acceptance scenarios\"",
+      "git add tests/test_fd036_say_blackbox.py",
+      "git commit -m \"test(fd-036): complete scenario mapping and error cases\""
+    ],
+    "results": [
+      "Compile-only command succeeded and retained no final executable artifact.",
+      "Static review mapped S01-S15 to deterministic cases or explicitly recorded static/manual scope boundaries.",
+      "No Python test, coverage command, live API request, or final build was run; the exact Tester command has not been newly authorized."
+    ],
+    "residual_risk": "All behavioral tests remain unrun. Runtime acceptance, real model/API behavior, cross-platform installation, and manual profile-copy/no-overwrite behavior are not established by this worker report."
+  }
+}

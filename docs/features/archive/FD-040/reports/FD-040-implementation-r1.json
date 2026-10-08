@@ -1,0 +1,35 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-040",
+  "source_event": "FD-040-000003-design-ready",
+  "human_report": "FD-040-implementation-r1.md",
+  "data": {
+    "summary": "将 FD 模板迁至 docs/templates，并同步程序、技能、文档及 smoke/黑盒 fixture 路径。",
+    "changed_paths": [
+      "docs/features/FD-040_MOVE_FEATURE_TEMPLATES_TO_DOCS_TEMPLATES.md",
+      "docs/templates/",
+      "plugins/aiw-fd.py",
+      "skills/work-management.md",
+      "skills/fd-workflow/SKILL.md",
+      "skills/fd-workflow/references/portable-operations.md",
+      "skills/fd-test/SKILL.md",
+      "docs/usage/aiw-fd.md",
+      "scripts/fd_smoke.py",
+      "tests/test_fd014_blackbox.py",
+      "tests/test_fd031_promote_blackbox.py",
+      "tests/test_fd031_recover_worker_blackbox.py",
+      "docs/features/reports/FD-040-implementation-r1.md",
+      "docs/features/reports/FD-040-implementation-r1.json"
+    ],
+    "commands": [
+      "PowerShell here-string piped to python -: compile() in memory for plugins/aiw-fd.py, scripts/fd_smoke.py, tests/test_fd014_blackbox.py, tests/test_fd031_promote_blackbox.py, tests/test_fd031_recover_worker_blackbox.py"
+    ],
+    "results": [
+      "5 个 Python 文件均通过内存编译；未生成文件。",
+      "静态路径扫描确认当前模板引用位于 docs/templates/；FD 和 evidence 路径仍位于 docs/features/。",
+      "未运行测试、smoke、最终构建、lint 或格式化。"
+    ],
+    "residual_risk": "未运行 CLI 或测试 fixture；运行时模板发现行为未验证。"
+  }
+}

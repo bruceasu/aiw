@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000030-test-report-ready",
+  "human_report": "FD-036-test-risk-assessment-r5-a.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-036-test-report-r5.md",
+    "fd_revision": 30,
+    "fd_digest": "8fc52ef381ac87a4932b0784c36a338ac540785cb732fd479e3d719ec7e05510",
+    "assessor_session": "fd036-assessor-a-20261008-r5-acceptance-9f24",
+    "assessment_focus": "acceptance-impact",
+    "vote": "repair",
+    "severity": "medium: one core default-configuration scenario is unverified due to ERROR; root cause is unknown, and no implementation failure is established",
+    "impact_scope": "S04 default configuration behavior and its acceptance evidence; users relying on built-in defaults could be affected if a product defect exists, but actual behavior failure is not established",
+    "estimated_repair_time": "unknown: the report lacks traceback, final test summary, and exit code, so the cause and necessary work cannot be estimated",
+    "delivery_impact": "test acceptance and Reviewer handoff should wait for a diagnosable S04 result; schedule impact is unknown",
+    "rationale": "Tester r5 reports 20 passing behavior tests and one ERROR in test_missing_default_config_uses_defaults_and_requires_explicit_model. The tool output lacked traceback, unittest summary, and usable exit code. S04 therefore cannot be counted complete. This does not establish whether implementation, fixture, or runtime caused the error. The one-time Planner r7 authorization does not authorize another run.",
+    "residual_risk": "If accepted without resolving S04, default configuration behavior remains unverified and a possible regression could reach users. S08/S09/S14/S15 remain incompletely covered, branch coverage is unmeasured, and real API behavior, cross-platform behavior, and translation quality were not established by this mock-based run.",
+    "uncertainty": "The S04 ERROR root cause is unknown; no traceback, final summary, or exit code was available. Whether diagnosis requires a code fix, fixture change, environment correction, or a newly authorized run is unknown.",
+    "assessment_time": "2026-10-08T09:32:22Z"
+  }
+}

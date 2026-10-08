@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.test-report.v1",
+  "kind": "fd-test-report",
+  "fd_id": "FD-XXX",
+  "human_report": "FD-XXX-fd-test-rN.md",
+  "data": {
+    "tested_fd_revision": 0,
+    "tester_session": "replace-with-session-reference",
+    "applicable_scenarios": 0,
+    "executed_scenarios": 0,
+    "passed_scenarios": 0,
+    "failed_scenarios": 0,
+    "blocked_scenarios": 0,
+    "unrun_scenarios": 0,
+    "requirements_coverage": "not measured",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": "not measured",
+    "coverage_unavailable_reason": "replace-if-unavailable",
+    "scenarios": [],
+    "test_files": [],
+    "commands": [],
+    "limitations": [],
+    "residual_risks": []
+  }
+}

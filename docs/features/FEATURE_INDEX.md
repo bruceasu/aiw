@@ -6,12 +6,14 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
+| [FD-037](FD-037_AIW_SAY.md) | AIW Say 跨平台剪贴板与图形入口 | Open | Medium |
+| [FD-041](FD-041_COLORIZE_AIW_FD_LIST_TERMINAL_OUTPUT.md) | 为 aiw fd list 提供终端表格与颜色 | Open | Medium |
+| [FD-011](archive/FD-011/FD-011_GIT_MERGE_TO.md) | Merge branches in an isolated worktree | Completed | Medium |
 
 ## Completed
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-030](FD-030_FD_WORKTREE_AIW_GIT.md) | 将 FD worktree 管理并入 aiw-git 并在交付后清理 | Complete | High |
 | [FD-001](archive/FD-001/FD-001_EVENT_DRIVEN_FD_WORKFLOW.md) | 事件驱动的 FD 工作流 | Complete | High |
 | [FD-002](archive/FD-002/FD-002_ACTIONABLE_FD_HANDOFF_RECOVERY_HINTS.md) | Actionable FD handoff recovery hints | Complete | Medium |
 | [FD-003](archive/FD-003/FD-003_COMPACT_CZ_RELEASE.md) | 精简 aiw-cz 发布包 | Complete | Medium |
@@ -40,6 +42,16 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-027](archive/FD-027/FD-027_WT_USES_FD_WORKTREES.md) | Make `aiw wt` use FD worktrees | Complete | High |
 | [FD-028](archive/FD-028/FD-028_RECORD_AUTOMATION_WORKFLOW_BLOCKERS_AND_IMPROVEM.md) | 记录自动化流程阻塞与改进 | Complete | Medium |
 | [FD-029](archive/FD-029/FD-029_SQUASH_FD_LOCAL_DELIVERY_WITHOUT_REBASE.md) | Squash FD local delivery without rebase | Complete | Medium |
+| [FD-030](archive/FD-030/FD-030_FD_WORKTREE_AIW_GIT.md) | 将 FD worktree 管理并入 aiw-git 并在交付后清理 | Complete | High |
+| [FD-031](archive/FD-031/FD-031_RESTORE_ISSUE_PROMOTE_AS_FD_WORKFLOW_ENTRY.md) | Restore issue promote as FD workflow entry | Complete | Medium |
+| [FD-032](archive/FD-032/FD-032_THREE_AGENT_RISK_DECISION_FOR_TESTER_REPORTS.md) | Three-agent risk decision for Tester reports | Complete | Medium |
+| [FD-033](archive/FD-033/FD-033_AI_ASSISTED_GIT_COMMIT_REVIEW_AND_BRANCH_SUMMARY.md) | AI 辅助 Git 提交、审查与分支摘要 | Complete | Medium |
+| [FD-034](archive/FD-034/FD-034_GIT.md) | Git 补丁生成、应用与恢复建议 | Complete | Medium |
+| [FD-035](archive/FD-035/FD-035_ADAPTIVE_RISK_ASSESSMENT_FOR_FD_TEST_REPORTS.md) | Adaptive risk assessment for FD test reports | Complete | Medium |
+| [FD-036](archive/FD-036/FD-036_AIW_SAY_CLI.md) | AIW Say 核心 CLI 翻译闭环 | Complete | Medium |
+| [FD-038](archive/FD-038/FD-038_IMPROVE_FD_REPORT_REVIEW_AND_STATUS_INSPECTION.md) | Improve FD report, review, and status inspection | Complete | Medium |
+| [FD-039](archive/FD-039/FD-039_SEPARATE_FD_TEST_SKILL_FROM_FD_WORKFLOW.md) | Separate FD Test Skill from FD Workflow | Complete | Medium |
+| [FD-040](archive/FD-040/FD-040_MOVE_FEATURE_TEMPLATES_TO_DOCS_TEMPLATES.md) | Move feature templates to docs/templates | Complete | Medium |
 
 ## Deferred / Closed
 

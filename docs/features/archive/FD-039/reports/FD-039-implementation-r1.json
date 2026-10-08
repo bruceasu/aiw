@@ -1,0 +1,45 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-039",
+  "source_event": "FD-039-000003-design-ready",
+  "human_report": "FD-039-implementation-r1.md",
+  "data": {
+    "summary": "新增独立 fd-test Skill；新 FD 默认由 Worker 编译与静态检查后直接交 Reviewer，测试报告与覆盖指标不参与验收；保留旧 Tester CLI 兼容路径。",
+    "changed_paths": [
+      "skills/fd-test/SKILL.md",
+      "docs/features/FD_TEST_REPORT_TEMPLATE.md",
+      "docs/features/FD_TEST_REPORT_DATA_TEMPLATE.json",
+      "skills/fd-workflow/SKILL.md",
+      "skills/fd-workflow/roles/planner.md",
+      "skills/fd-workflow/roles/pm.md",
+      "skills/fd-workflow/roles/reviewer.md",
+      "skills/fd-workflow/roles/worker.md",
+      "skills/fd-workflow/roles/tester.md",
+      "skills/fd-review/SKILL.md",
+      "skills/implement/SKILL.md",
+      "skills/work-management.md",
+      "skills/fd-workflow/references/portable-operations.md",
+      ".agents/prompts/core/resource-budget.md",
+      ".agents/prompts/core/validation.md",
+      "docs/features/TEMPLATE.md",
+      "docs/features/FD-039_SEPARATE_FD_TEST_SKILL_FROM_FD_WORKFLOW.md",
+      "docs/features/reports/FD-039-implementation-r1.md",
+      "docs/features/reports/FD-039-implementation-r1.json",
+      "docs/usage/aiw-fd.md",
+      "openspec/specs/README.md",
+      "openspec/specs/fd-workflow/spec.md",
+      "plugins/aiw-fd.py"
+    ],
+    "commands": [
+      "python -c \"from pathlib import Path; compile(Path('plugins/aiw-fd.py').read_text(encoding='utf-8'), 'plugins/aiw-fd.py', 'exec')\"",
+      "git diff 676e52d -- docs/features/TEMPLATE.md plugins/aiw-fd.py docs/usage/aiw-fd.md openspec/specs/README.md openspec/specs/fd-workflow/spec.md docs/features/FD-039_SEPARATE_FD_TEST_SKILL_FROM_FD_WORKFLOW.md skills/fd-workflow/SKILL.md skills/fd-workflow/roles skills/fd-review/SKILL.md skills/implement/SKILL.md skills/work-management.md skills/fd-workflow/references/portable-operations.md .agents/prompts/core/resource-budget.md .agents/prompts/core/validation.md skills/fd-test/SKILL.md docs/features/FD_TEST_REPORT_TEMPLATE.md docs/features/FD_TEST_REPORT_DATA_TEMPLATE.json"
+    ],
+    "results": [
+      "Python 内存式 compile-only 检查 plugins/aiw-fd.py 通过，退出码 0。",
+      "静态复核了 FD-039 默认路径变更、可选测试报告边界和旧 Tester CLI 兼容说明。",
+      "未运行测试、coverage、最终构建、格式化或 lint。"
+    ],
+    "residual_risk": "未执行运行时验证；fd-test 的场景质量和测试命令效果未实跑。具有 Test policy: Independent 的历史 FD 仍保留 CLI Tester / PM 兼容路径，新 FD 默认不启用。"
+  }
+}

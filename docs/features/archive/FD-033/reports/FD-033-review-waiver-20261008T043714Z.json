@@ -1,0 +1,28 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-review-waiver",
+  "fd_id": "FD-033",
+  "source_event": "FD-033-000007-review-requested",
+  "human_report": "FD-033-review-waiver-20261008T043714Z.md",
+  "data": {
+    "decision": "skip-independent-review-and-accept-missing-review-evidence",
+    "authorization": "explicit user message in the current conversation",
+    "pm_session": "fd033-pm-20261008-c2b60d",
+    "decision_time": "2026-10-08T04:37:14+00:00",
+    "reviewer_event": "FD-033-000007-review-requested",
+    "reviewer_claimed": false,
+    "verification_passed_event": null,
+    "test_accepted_event": null,
+    "applicable_scenarios": 14,
+    "executed_behavior_tests": 0,
+    "requirements_coverage": "0%",
+    "branch_coverage": "not measured",
+    "risk_assessment_votes": {"accept_with_risk": 0, "repair": 3},
+    "delivery_commit": "fc03b100a572c423d40097acec793fd8002a5dfe",
+    "fd_source_commit": "15510e72e87b96a76d31a4a80cac1bb206298b0b",
+    "checks_run": ["Python compile-only check", "Worker static source review"],
+    "checks_not_run": ["runtime tests", "AI provider calls", "Git behavior tests", "independent code review"],
+    "residual_risk": "All runtime behavior and aiw cz compatibility remain unverified; independent review evidence is absent.",
+    "archive_method": "PM directly moved the FD and 18 evidence files into docs/features/archive/FD-033 after local delivery; aiw fd close Complete requires a verification-passed event and cannot represent this waiver"
+  }
+}

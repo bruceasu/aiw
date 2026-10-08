@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-035",
+  "source_event": "FD-035-000005-test-report-ready",
+  "human_report": "FD-035-test-risk-assessment-r1-b.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-035-test-report-r1.md",
+    "fd_revision": 5,
+    "fd_digest": "876e8ecd61c67ca9a0a5b9b31c4b8274dc7fe09b4d2f215729264b789ff70022",
+    "assessor_session": "fd035-assessor-b-20261008",
+    "assessment_focus": "technical-repair",
+    "vote": "accept-with-risk",
+    "severity": "中等证据风险：S20–S24 涉及错误 PM 决策或评估的拒绝路径，S25 涉及低覆盖率下的单份策略；没有已证实的产品行为失败。",
+    "impact_scope": "FD-035 的 adaptive-v1 PM 风险决策及 Reviewer 交接；19/25 个场景有通过的黑箱断言，S20–S25 和业务代码分支覆盖率未知。",
+    "estimated_repair_time": "当前无已确认缺陷，实际修复时间 unknown；补齐六个场景的聚焦夹具估计约 1–3 小时，若发现缺陷则需另行估算。",
+    "delivery_impact": "建议进入独立 Reviewer 静态核查；若发现真实缺陷则退回 Worker，交付延迟目前 unknown。",
+    "rationale": "最终获批的聚焦命令报告 8/8 通过且无行为断言失败；首次失败源于夹具复用并在拆分后重跑。CLI 静态分支检查来源、修订、摘要、风险字段、侧重点、模式及票数，但六个负向或低覆盖率场景仍没有行为断言，不视为通过。",
+    "residual_risk": "S20–S25 无独立行为证据，业务代码分支覆盖率未测；CLI 不能证明 PM 声称的 pm-disagreement 是否确实存在。若 Reviewer 查到实际缺陷，应要求修复。",
+    "uncertainty": "未重新运行测试或测量分支覆盖率；1–3 小时仅为补充聚焦夹具的粗略估计，实际缺陷修复耗时 unknown。",
+    "assessment_time": "2026-10-08T06:26:37+00:00"
+  }
+}

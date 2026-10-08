@@ -1,0 +1,56 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000023-implementation-ready",
+  "human_report": "FD-036-test-report-r4.md",
+  "data": {
+    "implementation_event": "FD-036-000023-implementation-ready",
+    "tested_fd_revision": 23,
+    "tested_fd_digest": "ec7adbbb1e50c75d8e95834321a3f5d71f0765299d3934ddcee80694851f1c27",
+    "tester_session": "fd036-tester-20261008-r4-independent",
+    "applicable_scenarios": 18,
+    "covered_scenarios": 14,
+    "executed_behavior_tests": 21,
+    "passed_behavior_tests": 21,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 0,
+    "requirements_coverage": "77.78%",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": "Planner r6 authorized command exit code 0; go build succeeded; Ran 21 tests in 2.272s; OK. 21 passed, 0 failed. 14 of 18 scenarios are fully covered; S08/S09/S14/S15 remain incomplete. Branch coverage was not instrumented.",
+    "coverage_unavailable_reason": "The authorized command did not instrument branch coverage; four acceptance scenarios remain partially or not covered.",
+    "test_files": [
+      "tests/test_fd036_say_blackbox.py"
+    ],
+    "authorization_records": [
+      "docs/features/reports/FD-036-test-authorization-r6.md"
+    ],
+    "commands": [
+      "$tag='aiw-say-fd036-r4-'+[guid]::NewGuid().ToString('N'); $testExe=Join-Path $env:TEMP ($tag+'.exe'); $env:GOCACHE=Join-Path $env:TEMP ($tag+'-cache'); $env:GOPROXY='off'; $env:GOSUMDB='off'; $env:PYTHONDONTWRITEBYTECODE='1'; go build -o $testExe ./cmd/aiw-say; if ($LASTEXITCODE -ne 0) { throw 'go build failed' }; $env:AIW_SAY_BIN=$testExe; python -B -m unittest -v tests.test_fd036_say_blackbox"
+    ],
+    "recommendation": "blocked",
+    "not_applicable_reason": "All 18 scenarios apply.",
+    "residual_risk": "S08 full default-to-install precedence, S09 complete enum validation, S14 all unsupported options, and S15 copy/no-overwrite plus cross-platform behavior remain incomplete. Real API behavior and translation quality are outside mock evidence.",
+    "scenarios": [
+      {"status":"passed","test_cases":["test_argument_translation_keeps_source_in_user_message"],"id":"S01","behavior":"参数文本翻译并以纯译文输出；原文作为 user 内容"},
+      {"status":"passed","test_cases":["test_stdin_translation_preserves_utf8"],"id":"S02","behavior":"UTF-8 stdin 翻译并保留输入"},
+      {"status":"passed","test_cases":["test_empty_input_fails_without_request_or_partial_stdout","test_argument_and_stdin_are_mutually_exclusive"],"id":"S03","behavior":"空输入或 stdin/参数冲突时非零退出且无部分输出"},
+      {"status":"passed","test_cases":["test_missing_default_config_uses_defaults_and_requires_explicit_model","test_valid_explicit_config_replaces_base_settings"],"id":"S04","behavior":"缺少默认配置使用默认行为；有效显式配置应用设置"},
+      {"status":"passed","test_cases":["test_invalid_explicit_config_fails_without_partial_output"],"id":"S05","behavior":"缺失或 TOML 语法损坏的显式配置报错且 stdout 为空"},
+      {"status":"passed","test_cases":["test_profile_overlays_base_and_cli_overlays_profile","test_missing_profile_and_unsafe_profile_name_fail_before_request"],"id":"S06","behavior":"profile overlay 正常，缺失/无效 profile 报错"},
+      {"status":"passed","test_cases":["test_missing_profile_and_unsafe_profile_name_fail_before_request"],"id":"S07","behavior":"拒绝 profile 路径分隔符和目录遍历"},
+      {"status":"uncovered","test_cases":["test_profile_overlays_base_and_cli_overlays_profile"],"id":"S08","behavior":"内置默认、安装配置、profile、CLI 的完整优先级；只覆盖后两级 overlay"},
+      {"status":"uncovered","test_cases":["test_invalid_cli_options_and_missing_model_fail_before_request"],"id":"S09","behavior":"所有枚举和 provider/model/timeout/target 的完整校验"},
+      {"status":"passed","test_cases":["test_argument_translation_keeps_source_in_user_message","test_stdin_translation_preserves_utf8"],"id":"S10","behavior":"Unicode、换行、引号及伪指令作为普通源文本"},
+      {"status":"passed","test_cases":["test_missing_credentials_fails_without_leaking_source","test_auth_failure_has_no_partial_stdout","test_rate_limit_exhaustion_fails_without_partial_output","test_request_timeout_fails_without_partial_stdout","test_invalid_api_response_fails_without_partial_stdout_or_body_leak"],"id":"S11","behavior":"凭据、认证、限流、超时和响应错误不泄露内容且无部分输出"},
+      {"status":"passed","test_cases":["test_rate_limit_retries_are_bounded","test_rate_limit_exhaustion_fails_without_partial_output"],"id":"S12","behavior":"重试次数有界且失败无部分输出"},
+      {"status":"passed","test_cases":["test_help_and_version_do_not_call_provider"],"id":"S13","behavior":"help/version 和流/退出码契约"},
+      {"status":"uncovered","test_cases":["test_unimplemented_option_fails_before_request"],"id":"S14","behavior":"所有未实现选项均明确报错；只覆盖 --clipboard"},
+      {"status":"uncovered","test_cases":["test_profile_examples_exist_for_copy_based_user_installation"],"id":"S15","behavior":"headless 使用、示例复制不覆盖和跨平台行为"},
+      {"status":"passed","test_cases":["test_valid_explicit_config_replaces_base_settings"],"id":"S16","behavior":"[say] 与 [say.llm] 表头行尾注释解析且配置生效"},
+      {"status":"passed","test_cases":["test_invalid_config_values_fall_back_and_unknown_keys_are_ignored","test_invalid_profile_values_preserve_lower_precedence_settings"],"id":"S17","behavior":"配置无效值回退到默认值；profile 无效值保留低优先级设置"},
+      {"status":"passed","test_cases":["test_invalid_config_values_fall_back_and_unknown_keys_are_ignored","test_invalid_profile_values_preserve_lower_precedence_settings"],"id":"S18","behavior":"忽略安装配置和 profile 中的未知键"}
+    ],
+    "static_exclusions": []
+  }
+}

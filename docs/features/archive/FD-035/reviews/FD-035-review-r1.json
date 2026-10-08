@@ -1,0 +1,42 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-035",
+  "source_event": "FD-035-000006-test-accepted",
+  "human_report": "FD-035-review-r1.md",
+  "data": {
+    "outcome": "verification-passed",
+    "reviewer_session": "fd035-reviewer-20261008-01",
+    "reviewed_fd_revision": 6,
+    "reviewed_fd_digest": "d75b4783c84b6c337e16c1579baa0f0f1102bb720297211ad980ebd70432534d",
+    "reviewed_commit": "c97b6809b21780d6774183f90ff7bff2bbb35d99",
+    "diff_base": "32f059b807fb6ba179ec683421e512b515980a8a",
+    "findings": [],
+    "static_review": {
+      "acceptance": "Adaptive single/escalated modes, vote thresholds, focus order, evidence binding, legacy three-vote compatibility, and Reviewer session isolation were traced in the actual diff.",
+      "documentation": "Stable spec, evidence templates, workflow and reviewer skills, roles, and usage describe the adaptive policy consistently.",
+      "pm_gap_judgment": "PM identified S20-S25 as material with scenario-specific impact; no numeric coverage threshold was used."
+    },
+    "test_evidence": {
+      "tester_report": "docs/features/reports/FD-035-test-report-r1.md",
+      "tester_session": "fd035-tester-20261008-8f4ac2",
+      "authorizations": ["docs/features/reports/FD-035-test-authorization-r1.md", "docs/features/reports/FD-035-test-authorization-r2.md"],
+      "command": "python -B -m unittest tests.test_fd032_risk_decision_blackbox -v",
+      "first_attempt": "7 methods; 6 passed, 1 fixture setup failure; not a product behavior assertion failure.",
+      "final_attempt": "8 methods passed after test fixture isolation change; 0 product behavior assertion failures.",
+      "applicable_scenarios": 25,
+      "covered_scenarios": 19,
+      "requirements_coverage": "76%",
+      "branch_coverage": "not measured",
+      "uncovered_scenarios": ["S20", "S21", "S22", "S23", "S24", "S25"],
+      "pm_decision": "docs/features/reports/FD-035-test-decision-r1.md",
+      "assessments": ["docs/features/reports/FD-035-test-risk-assessment-r1-a.md", "docs/features/reports/FD-035-test-risk-assessment-r1-b.md", "docs/features/reports/FD-035-test-risk-assessment-r1-c.md"],
+      "accept_votes": 3,
+      "repair_votes": 0,
+      "raw_evidence_limit": "Full line-by-line console output was not retained; Tester report summaries and test source were inspected."
+    },
+    "reviewer_commands": ["python plugins/aiw-fd.py claim FD-035 FD-035-000006-test-accepted --session fd035-reviewer-20261008-01", "Get-Content (targeted FD, reports, source, spec, and skills)", "rg (targeted paths and symbols)", "git status --short", "git log", "git diff develop...HEAD", "git diff --check develop...HEAD", "git merge-base develop HEAD", "git rev-parse HEAD", "python -B -c (static review JSON, Markdown, FD linkage, and git diff --check)"],
+    "not_run": ["Reviewer tests", "Coverage measurement", "Builds", "Linters", "Formatters", "Network calls"],
+    "residual_risk": "S20-S25 have no behavior test evidence, business branch coverage is unknown, and no full per-line console log was retained. PM judgment and assessor draft isolation rely on recorded process evidence."
+  }
+}

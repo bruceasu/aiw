@@ -1,0 +1,22 @@
+{
+    "schema":  "aiw.fd.evidence.v1",
+    "kind":  "test-risk-assessment",
+    "fd_id":  "FD-033",
+    "source_event":  "FD-033-000006-test-report-ready",
+    "human_report":  "FD-033-test-risk-assessment-r1-b.md",
+    "data":  {
+                 "tester_report":  "docs/features/reports/FD-033-test-report-r1.md",
+                 "fd_revision":  6,
+                 "fd_digest":  "41b1a80e61fdf457666a34d4d8e416b1ac42633c3852d1e314921908b0a47d6a",
+                 "assessor_session":  "fd033-assessor-b-20261008-4cb8d1",
+                 "vote":  "repair",
+                 "severity":  "high: 14/14 验收场景均未覆盖，且未执行命令或测试；涉及 Git 提交和 AI 调用行为，无法从运行证据判断正确性。",
+                 "impact_scope":  "aiw git aic、air、aib [--base REF]、AI provider 调用及其与 aiw cz 的兼容行为。",
+                 "estimated_repair_time":  "约 0.5–1 个工作日用于授权后发现问题的修复与复核；具体时间取决于验证发现。",
+                 "delivery_impact":  "建议暂缓测试验收通过，直至取得经授权的关键场景验证结果或由 PM 明确接受该覆盖风险。",
+                 "rationale":  "Tester 报告记录 14 个 distinct scenarios 全部 uncovered、0/14 覆盖、未执行命令/测试且未授权。没有失败测试，亦没有运行时成功证据。test-report-ready 评估绑定 revision 6 和 digest 41b1a80e61fdf457666a34d4d8e416b1ac42633c3852d1e314921908b0a47d6a；Tester 报告中的 tested FD revision 5、digest 2fe68584999b2a080117408fb376117caf817382ac685b5a594656b510bf5900 属于 implementation-ready 事件，两个绑定分别对应不同事件。",
+                 "residual_risk":  "若接受当前证据，全部 14 个验收场景仍未经验证；提交副作用、错误路径、AI provider 行为和 aiw cz 兼容性可能存在未知问题，实际概率与影响无法估计。",
+                 "uncertainty":  "无法判断未覆盖场景中的实现是否正确；测试未获授权且未执行，因此没有运行时证据。",
+                 "assessment_time":  "2026-10-08T03:48:28+00:00"
+             }
+}

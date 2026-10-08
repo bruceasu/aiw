@@ -105,7 +105,11 @@ OpenAI 使用标准库 HTTP 和 JSON，不引入 OpenAI SDK。`requirements.txt`
 - 1.8：已同步 `openspec/specs/cz-configuration-priority/spec.md`，新增 `openspec/specs/cz-python-runtime/spec.md` 和 Python runtime 使用说明。
 - Review fixes：保留安装目录中的 `cz.toml`/`.cz.toml`；修复 OS locale 选择、staged 前置检查、`--retry`、CLI 参数契约、多候选选择和 CLI help 能力门控；同步 CZ 插件规格入口。静态修复已复核通过，运行证据仍待补。
 - 本轮跟进：CLI 版本和 help 必须各自成功且有输出；Codex 必须声明 `--sandbox` 和 `--json`，Copilot 必须声明 `--output-format` 和 `--prompt`，否则按 provider 不可用回退。`docs/usage/cz-configuration.md` 已改为 Python/CLI/HTTP 发布与配置说明。用户已明确跳过 1.3 和 1.4 的运行测试；真实 CLI 版本兼容性与 HTTP 响应仍未经运行验证。
+<<<<<<<< HEAD:docs/features/archive/FD-005_AIW_CZ_TYPESCRIPT_PYTHON.md
+- FD Review：`docs/features/reviews/FD-005-review.md` 和 `docs/features/reviews/FD-005-review-r2.md` 的 `CHANGES_REQUESTED` 是修订前结论。其后已补入 1.6/1.7 用户证据、1.5 逐项静态证据，并记录用户不运行 1.3/1.4 测试的决定；修订后的 FD 仍需独立 Reviewer 重新判断，不能把旧报告当作通过。
+========
 - FD Review：`docs/features/archive/FD-005/reviews/FD-005-review.md` 和 `docs/features/archive/FD-005/reviews/FD-005-review-r2.md` 的 `CHANGES_REQUESTED` 是修订前结论。其后已补入 1.6/1.7 用户证据、1.5 逐项静态证据，并记录用户不运行 1.3/1.4 测试的决定；修订后的 FD 仍需独立 Reviewer 重新判断，不能把旧报告当作通过。
+>>>>>>>> main:docs/features/archive/FD-005/FD-005_AIW_CZ_TYPESCRIPT_PYTHON.md
 
 ## Review follow-up gate
 
@@ -115,9 +119,15 @@ OpenAI 使用标准库 HTTP 和 JSON，不引入 OpenAI SDK。`requirements.txt`
 - 在独立 Reviewer 对当前 FD 与报告给出 `verification-passed` 前，FD 不得进入 Complete。
 - 本会话未运行测试、构建、CLI provider、TUI 或 OpenAI 请求验证；TUI 证据由用户提供。
 - 实施阶段按单个 Work Item 执行 compile-only 检查；独立复核仍需记录结果。
+<<<<<<<< HEAD:docs/features/archive/FD-005_AIW_CZ_TYPESCRIPT_PYTHON.md
+- 独立复核 r2（修订前）：`docs/features/reviews/FD-005-review-r2.md`，结论 `CHANGES_REQUESTED`。本次已更新其指出的过期运行门槛和 1.5 证据缺口；尚无新的生命周期评审结论。
+- 独立复核 r3：`docs/features/reviews/FD-005-review-r3.md`，结论 `CHANGES_REQUESTED`。已接受 1.3/1.4 的免测决定；`cz_openai.py` 对合法 JSON 非对象响应抛出未捕获异常，阻断无效候选回退 TUI。修复后需重新评审。
+- 独立复核 r4：`docs/features/reviews/FD-005-review-r4.md`，结论 `VERIFICATION_PASSED`。r3 的异常响应回退缺口已静态复核修复；1.3/1.4 免测及配置保留运行验证缺失继续作为上述残余风险记录。
+========
 - 独立复核 r2（修订前）：`docs/features/archive/FD-005/reviews/FD-005-review-r2.md`，结论 `CHANGES_REQUESTED`。本次已更新其指出的过期运行门槛和 1.5 证据缺口；尚无新的生命周期评审结论。
 - 独立复核 r3：`docs/features/archive/FD-005/reviews/FD-005-review-r3.md`，结论 `CHANGES_REQUESTED`。已接受 1.3/1.4 的免测决定；`cz_openai.py` 对合法 JSON 非对象响应抛出未捕获异常，阻断无效候选回退 TUI。修复后需重新评审。
 - 独立复核 r4：`docs/features/archive/FD-005/reviews/FD-005-review-r4.md`，结论 `VERIFICATION_PASSED`。r3 的异常响应回退缺口已静态复核修复；1.3/1.4 免测及配置保留运行验证缺失继续作为上述残余风险记录。
+>>>>>>>> main:docs/features/archive/FD-005/FD-005_AIW_CZ_TYPESCRIPT_PYTHON.md
 
 ## Sources
 

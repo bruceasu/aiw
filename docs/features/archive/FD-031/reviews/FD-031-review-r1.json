@@ -1,0 +1,33 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-031",
+  "source_event": "FD-031-000011-test-accepted",
+  "human_report": "FD-031-review-r1.md",
+  "data": {
+    "session_ref": "fd031-reviewer-r1-20261008-69bc92e1",
+    "outcome": "changes-requested",
+    "reviewed_commit": "dd99dcbcca36fda805ba8bd107df644401c90687",
+    "diff_base": "de304afce52a5956f807024d5ac526fde70a07da",
+    "findings": [
+      {
+        "severity": "P2",
+        "file": "plugins/aiw-fd.py",
+        "line": 813,
+        "summary": "UnicodeDecodeError from update_index bypasses recover_worker rollback after FD and old receipt were mutated",
+        "correction": "Route post-write exceptions through rollback; report rollback failures explicitly and avoid relying on the same failing index read when restoring prior state."
+      }
+    ],
+    "test_evidence": {
+      "tester_report": "docs/features/reports/FD-031-test-report-r2.md",
+      "pm_decision": "docs/features/reports/FD-031-test-decision-r2.md",
+      "passed_behavior_tests": 12,
+      "requirements_coverage": "85.7%",
+      "branch_coverage": "not measured",
+      "uncovered_scenarios": ["S13", "S20", "S21"]
+    },
+    "checks_run_by_reviewer": ["static diff and call-path review"],
+    "checks_not_run_by_reviewer": ["tests", "compile", "build", "coverage", "formatter", "linter", "vet", "network"],
+    "residual_risk": "The failed-mutation recovery path is defective; filesystem failure injection was not run."
+  }
+}

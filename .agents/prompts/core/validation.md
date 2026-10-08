@@ -24,15 +24,16 @@ Executable validation other than compile-only is allowed only when:
 - the user explicitly requests it;
 - the task is specifically to create or repair tests; or
 - static analysis cannot answer a decisive question; or
-- an independent FD Tester has a Planner approval record for the exact command
-  and implementation revision.
+- the user explicitly requests execution through the standalone `fd-test`
+  Skill, or a legacy CLI Tester has the Planner approval record required for
+  that exact command and implementation revision.
 
 For the decisive-runtime-evidence case, ask first. State the exact command, purpose, expected duration,
 scope, and any network or permission risk.
-For the Planner case, inspect invoked test code and side effects. Approve a
-focused offline command confined to assigned or temporary paths; escalate
-destructive, external, privileged, secret-bearing, or unclear effects to the
-human. Record the decision before execution.
+For a legacy Planner approval, inspect invoked test code and side effects.
+Approve a focused offline command confined to assigned or temporary paths;
+escalate destructive, external, privileged, secret-bearing, or unclear effects
+to the human. Record the decision before execution.
 
 ## Runtime Budget
 

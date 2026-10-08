@@ -1,0 +1,46 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-032",
+  "source_event": "FD-032-000009-test-accepted",
+  "human_report": "FD-032-review-r1.md",
+  "data": {
+    "outcome": "verification-passed",
+    "reviewer_session": "fd032-reviewer-20261008-7b6ea4",
+    "reviewed_fd_revision": 9,
+    "reviewed_fd_digest": "e20b2ded5a36671c625d886870b7cc3b20cd24a4b5d70b0e212165ce90682f8d",
+    "reviewed_commit": "70cdde192314f1fe1e40dba6e9cb66f53129b02f",
+    "diff_base": "ecacfb38075c47356a60013e28da2953bbae3854",
+    "findings": [],
+    "test_evidence": {
+      "tester_report": "docs/features/reports/FD-032-test-report-r2.md",
+      "authorization": "docs/features/reports/FD-032-test-authorization-r3.md",
+      "tester_session": "fd032-tester-r2-20261008-c7b942",
+      "command": "python -B -m unittest tests.test_fd032_risk_decision_blackbox -v",
+      "test_outcome": "reported by Tester: 3 unittest methods passed, 13/13 observable scenarios passed",
+      "first_round": "r1: two fixture setup failures, 0/13 scenarios executed",
+      "requirements_coverage": "100%",
+      "branch_coverage": "not measured",
+      "failed_behavior_tests": 0,
+      "assessments": [
+        "docs/features/reports/FD-032-test-risk-assessment-r2-a.md",
+        "docs/features/reports/FD-032-test-risk-assessment-r2-b.md",
+        "docs/features/reports/FD-032-test-risk-assessment-r2-c.md"
+      ],
+      "votes": "accept-with-risk 3; repair 0",
+      "pm_decision": "docs/features/reports/FD-032-test-decision-r2.md"
+    },
+    "static_review": {
+      "cli": "Three current dual-evidence assessments, unique identities and majority are validated; failed test and coverage facts remain bound to the Tester receipt.",
+      "identity": "Reviewer claim excludes Worker, Tester and all assessor sessions; independent claim succeeded.",
+      "documentation": "Stable spec, templates and role guidance reflect three-assessor majority and factual risk reporting.",
+      "historical_compatibility": "No archived evidence changed; new assessment validation applies to new PM decision handoffs. Runtime compatibility not exercised."
+    },
+    "commands_run": [
+      "python plugins/aiw-fd.py claim FD-032 FD-032-000009-test-accepted --session fd032-reviewer-20261008-7b6ea4",
+      "Get-Content, rg, git diff, git log, git status, git rev-parse static reads scoped to FD-032 evidence and source"
+    ],
+    "checks_not_run": ["Reviewer-side tests", "branch coverage", "compile", "build", "lint", "formatter", "network"],
+    "residual_risk": "Business branch coverage, full repository regression and historical archived-report runtime compatibility were not measured; PM and three assessors explicitly accepted these evidence gaps."
+  }
+}

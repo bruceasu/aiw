@@ -20,7 +20,7 @@ META = {
     "name": "aiw-fd",
     "short": "manage numbered Feature Designs and role handoffs",
     "description": "Create, inspect, and advance FD-first work.",
-    "commands": ["new", "list", "show", "emit", "claim", "resume", "request-review", "refresh-worker", "refresh-tester", "reopen", "close"],
+    "commands": ["new", "list", "show", "show-report", "show-review", "emit", "claim", "resume", "request-review", "refresh-worker", "recover-worker", "refresh-tester", "reopen", "close"],
     "readOnly": False,
     "mutatesFiles": True,
     "requiresConfirmation": False,
@@ -62,7 +62,6 @@ DEFAULT_TEMPLATE = """# {{FD_ID}}: {{TITLE}}
 **Status:** Planned
 **Revision:** 1
 **Priority:** Medium
-**Test policy:** Independent
 **Evidence policy:** Dual
 
 ## Problem
@@ -91,7 +90,8 @@ DEFAULT_TEMPLATE = """# {{FD_ID}}: {{TITLE}}
 
 ## Verification
 
-- Not run.
+- Compile-only check and static review by default. Optional tests use `$fd-test`
+  when requested and do not gate FD acceptance.
 
 ## Sources
 
@@ -194,9 +194,13 @@ def dual_evidence(content: str) -> bool:
 
 
 def atomic_text(path: Path, content: str) -> None:
+    atomic_bytes(path, content.encode("utf-8"))
+
+
+def atomic_bytes(path: Path, content: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + f".tmp-{os.getpid()}-{uuid.uuid4().hex}")
-    with temporary.open("x", encoding="utf-8", newline="\n") as stream:
+    with temporary.open("xb") as stream:
         stream.write(content)
         stream.flush()
         os.fsync(stream.fileno())
@@ -244,6 +248,341 @@ def latest_event(base: Path, name: str) -> tuple[Path, dict] | None:
         return None
     path = paths[-1]
     return path, json.loads(path.read_text(encoding="utf-8"))
+
+
+def git_result(base: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["git", "-C", str(base), *args], text=True,
+                          encoding="utf-8", errors="replace",
+                          capture_output=True, check=False)
+
+
+def registered_worktrees(base: Path) -> list[dict[str, str]]:
+    result = git_result(base, "worktree", "list", "--porcelain")
+    if result.returncode:
+        raise FDError(result.stderr.strip() or "could not list Git worktrees")
+    entries: list[dict[str, str]] = []
+    current: dict[str, str] = {}
+    for line in result.stdout.splitlines() + [""]:
+        if not line:
+            if current:
+                entries.append(current)
+                current = {}
+        elif line.startswith("worktree "):
+            current["path"] = line.removeprefix("worktree ")
+        elif line.startswith("branch "):
+            current["branch"] = line.removeprefix("branch ").removeprefix("refs/heads/")
+        elif line == "detached":
+            current["branch"] = ""
+    return entries
+
+
+def valid_local_branch(base: Path, branch: str) -> bool:
+    if not branch.strip() or git_result(base, "check-ref-format", "--branch", branch).returncode:
+        return False
+    return git_result(base, "show-ref", "--verify", "--quiet",
+                      f"refs/heads/{branch}").returncode == 0
+
+
+def workspace_info(base: Path, name: str) -> tuple[dict | None, list[str]]:
+    warnings: list[str] = []
+    try:
+        runtime = runtime_dir(base, name)
+        primary = runtime.parents[2]
+        metadata_path = runtime / "workspace.json"
+        if not metadata_path.exists() and not metadata_path.is_symlink():
+            return None, warnings
+        if (metadata_path.is_symlink() or (primary / ".ai").is_symlink()
+                or (primary / ".ai" / "fd").is_symlink()
+                or metadata_path.parent.is_symlink()
+                or not metadata_path.is_file()
+                or not metadata_path.resolve().is_relative_to(primary)):
+            raise FDError("workspace metadata path is missing or unsafe")
+        data = json.loads(metadata_path.read_text(encoding="utf-8"))
+        required = ("fd_id", "parent_branch", "branch", "worktree")
+        if not isinstance(data, dict) or any(
+                not isinstance(data.get(key), str) or not data[key].strip()
+                for key in required):
+            raise FDError("workspace metadata is incomplete")
+        expected_branch = f"feature/{name}"
+        worktree_path = primary / ".wt" / name
+        expected_worktree = worktree_path.resolve()
+        actual_worktree = Path(data["worktree"])
+        if not actual_worktree.is_absolute():
+            actual_worktree = primary / actual_worktree
+        if (
+            data["fd_id"].upper() != name
+            or data["branch"] != expected_branch
+            or not expected_worktree.is_relative_to(primary.resolve())
+            or actual_worktree.resolve() != expected_worktree
+            or (primary / ".wt").is_symlink()
+            or worktree_path.is_symlink()
+            or not expected_worktree.is_dir()
+        ):
+            raise FDError("workspace metadata does not match the expected FD worktree")
+        matching = [entry for entry in registered_worktrees(base)
+                    if Path(entry.get("path", "")).resolve() == expected_worktree]
+        if len(matching) != 1 or matching[0].get("branch") != expected_branch:
+            raise FDError("Git does not register the recorded FD worktree and branch")
+        if not valid_local_branch(base, data["branch"]):
+            raise FDError("recorded FD branch is not a valid local ref")
+        if not valid_local_branch(base, data["parent_branch"]):
+            raise FDError("recorded parent branch is not a valid local ref")
+        data["worktree"] = str(expected_worktree)
+        return data, warnings
+    except (FDError, OSError, RuntimeError, json.JSONDecodeError) as exc:
+        warnings.append(f"cannot use FD workspace metadata: {exc}")
+        return None, warnings
+
+
+def evidence_source_locations(base: Path, name: str) -> tuple[list[dict[str, str]], list[str]]:
+    branch_result = git_result(base, "symbolic-ref", "--quiet", "--short", "HEAD")
+    current_branch = branch_result.stdout.strip() if branch_result.returncode == 0 else ""
+    current_label = current_branch or "detached HEAD"
+    sources = [
+        {"kind": "worktree", "path": str(base.resolve()),
+         "label": f"worktree {current_label}"},
+        {"kind": "git", "ref": "HEAD", "label": f"HEAD ({current_label})"},
+    ]
+    data, warnings = workspace_info(base, name)
+    if data:
+        worktree = Path(data["worktree"])
+        if worktree.resolve() != base.resolve():
+            sources.append({"kind": "worktree", "path": str(worktree),
+                            "label": f"worktree {data['branch']}"})
+        known_refs = {current_branch} if current_branch else set()
+        for branch in (data["branch"], data["parent_branch"]):
+            if branch not in known_refs:
+                sources.append({"kind": "git", "ref": branch, "label": f"branch {branch}"})
+                known_refs.add(branch)
+    return sources, warnings
+
+
+def evidence_directories(name: str, kind: str) -> tuple[str, str]:
+    folder = {"report": "reports", "review": "reviews"}.get(kind)
+    if not folder:
+        raise FDError(f"unsupported evidence kind: {kind}")
+    return (f"docs/features/{folder}",
+            f"docs/features/archive/{name}/{folder}")
+
+
+def is_fd_markdown(path: str, name: str) -> bool:
+    filename = path.rsplit("/", 1)[-1]
+    return filename.startswith(name + "-") and filename.lower().endswith(".md")
+
+
+def add_evidence_record(inventory: dict, kind: str, relative: str, content: bytes,
+                        modified_at: float, source_label: str, sidecar: str,
+                        warnings: list[str]) -> None:
+    normalized = content.replace(b"\r\n", b"\n")
+    digest = hashlib.sha256(normalized).hexdigest()
+    key = (kind, digest)
+    item = inventory.get(key)
+    if item is None:
+        try:
+            rendered = normalized.decode("utf-8")
+        except UnicodeDecodeError:
+            warnings.append(f"skip non-UTF-8 evidence file: {relative} on {source_label}")
+            return
+        item = {"kind": kind, "digest": digest, "content": rendered,
+                "modified_at": modified_at, "sources": set(), "sidecars": set()}
+        inventory[key] = item
+    item["modified_at"] = max(item["modified_at"], modified_at)
+    item["sources"].add(f"{source_label}:{relative}")
+    if sidecar:
+        item["sidecars"].add(f"{source_label}:{sidecar}")
+
+
+def scan_worktree_evidence(base: Path, repo_root: Path, name: str, kind: str,
+                           source: dict[str, str], inventory: dict,
+                           warnings: list[str]) -> None:
+    source_root = Path(source["path"])
+    source_label = source["label"]
+    if source_root.is_symlink():
+        warnings.append(f"skip linked evidence worktree: {source_root}")
+        return
+    try:
+        source_root = source_root.resolve(strict=True)
+        if not source_root.is_relative_to(repo_root) or not source_root.is_dir():
+            warnings.append(f"skip unsafe evidence worktree: {source_root}")
+            return
+    except (OSError, RuntimeError) as exc:
+        warnings.append(f"cannot inspect evidence worktree {source_label}: {exc}")
+        return
+    for directory in evidence_directories(name, kind):
+        folder = source_root / Path(directory)
+        if not folder.exists() and not folder.is_symlink():
+            continue
+        if folder.is_symlink() or not folder.is_dir():
+            warnings.append(f"skip unsafe evidence directory: {directory} in {source_label}")
+            continue
+        try:
+            if not folder.resolve(strict=True).is_relative_to(repo_root):
+                warnings.append(f"skip evidence directory outside repository: {directory}")
+                continue
+            candidates = sorted(folder.iterdir())
+        except (OSError, RuntimeError) as exc:
+            warnings.append(f"cannot list evidence directory {directory}: {exc}")
+            continue
+        for candidate in candidates:
+            if not is_fd_markdown(candidate.name, name):
+                continue
+            relative = candidate.relative_to(source_root).as_posix()
+            try:
+                resolved = candidate.resolve(strict=True)
+                if (candidate.is_symlink() or not resolved.is_relative_to(repo_root)
+                        or not resolved.is_file()):
+                    warnings.append(f"skip unsafe evidence file: {relative}")
+                    continue
+                content = resolved.read_bytes()
+                modified_at = resolved.stat().st_mtime
+            except (OSError, RuntimeError) as exc:
+                warnings.append(f"cannot read evidence file {relative}: {exc}")
+                continue
+            sidecar_path = candidate.with_suffix(".json")
+            sidecar = ""
+            if not sidecar_path.is_symlink() and sidecar_path.is_file():
+                try:
+                    sidecar_resolved = sidecar_path.resolve(strict=True)
+                    if sidecar_resolved.is_relative_to(repo_root) and sidecar_resolved.is_file():
+                        sidecar = sidecar_path.relative_to(source_root).as_posix()
+                except (OSError, RuntimeError):
+                    pass
+            add_evidence_record(inventory, kind, relative, content, modified_at,
+                                source_label, sidecar, warnings)
+
+
+def git_tree_evidence(base: Path, name: str, kind: str, ref: str,
+                      source_label: str, inventory: dict,
+                      warnings: list[str]) -> None:
+    directories = evidence_directories(name, kind)
+    result = git_result(base, "ls-tree", "-r", "-z", ref, "--", *directories)
+    if result.returncode:
+        warnings.append(f"cannot list evidence on {source_label}: {result.stderr.strip()}")
+        return
+    records = {}
+    for raw in result.stdout.split("\0"):
+        if not raw or "\t" not in raw:
+            continue
+        metadata, relative = raw.split("\t", 1)
+        parts = metadata.split()
+        if len(parts) != 3 or parts[1] != "blob" or parts[0] == "120000":
+            continue
+        records[relative] = parts[0]
+    paths = set(records)
+    for relative, mode in records.items():
+        if mode not in {"100644", "100755"} or not is_fd_markdown(relative, name):
+            continue
+        blob = subprocess.run(["git", "-C", str(base), "show", f"{ref}:{relative}"],
+                              capture_output=True, check=False)
+        if blob.returncode:
+            warnings.append(f"cannot read evidence {relative} from {source_label}")
+            continue
+        timestamp = git_result(base, "log", "-1", "--format=%ct", ref, "--", relative)
+        try:
+            modified_at = float(timestamp.stdout.strip())
+        except ValueError:
+            warnings.append(f"cannot determine evidence time for {relative} on {source_label}")
+            continue
+        sidecar = relative[:-3] + ".json"
+        if sidecar not in paths or records.get(sidecar) == "120000":
+            sidecar = ""
+        add_evidence_record(inventory, kind, relative, blob.stdout, modified_at,
+                            source_label, sidecar, warnings)
+
+
+def evidence_inventory(base: Path, name: str, kind: str) -> tuple[list[dict], list[str]]:
+    repo_root = runtime_dir(base, name).parents[2]
+    sources, warnings = evidence_source_locations(base, name)
+    inventory: dict[tuple[str, str], dict] = {}
+    for source in sources:
+        if source["kind"] == "worktree":
+            scan_worktree_evidence(base, repo_root, name, kind, source, inventory, warnings)
+        else:
+            git_tree_evidence(base, name, kind, source["ref"], source["label"],
+                              inventory, warnings)
+    items = sorted(inventory.values(),
+                   key=lambda item: (-item["modified_at"], sorted(item["sources"])))
+    return items, warnings
+
+
+def evidence_time(timestamp: float) -> str:
+    return datetime.fromtimestamp(timestamp, timezone.utc).isoformat(timespec="seconds").replace(
+        "+00:00", "Z")
+
+
+def print_evidence_list(items: list[dict]) -> None:
+    for index, item in enumerate(items, start=1):
+        print(f"{index}. {evidence_time(item['modified_at'])}")
+        for source in sorted(item["sources"]):
+            print(f"   Markdown: {source}")
+        sidecars = sorted(item["sidecars"])
+        if sidecars:
+            for sidecar in sidecars:
+                print(f"   JSON: {sidecar}")
+        else:
+            print("   JSON: 无")
+
+
+def show_evidence(base: Path, name: str, kind: str, last: bool) -> None:
+    items, warnings = evidence_inventory(base, name, kind)
+    items = items[:20]
+    for warning in warnings:
+        print(f"fd: warning: {warning}", file=sys.stderr)
+    if not items:
+        print(f"{name} 没有可用的 {kind} 证据。")
+        return
+    if last:
+        print(items[0]["content"].rstrip())
+        return
+
+    print_evidence_list(items)
+    if not (sys.stdin.isatty() and sys.stdout.isatty()):
+        print(f"请在交互式终端运行 aiw fd show-{kind} {name} 后选择编号，或使用 --last。")
+        return
+
+    while True:
+        try:
+            choice = input("选择编号（回车或 q 取消）：").strip()
+        except EOFError:
+            return
+        if not choice or choice.lower() == "q":
+            return
+        if choice.isdecimal() and 1 <= int(choice) <= len(items):
+            print(items[int(choice) - 1]["content"].rstrip())
+            return
+        print(f"请输入 1 到 {len(items)} 之间的编号，或输入 q 取消。")
+
+
+def show_status_summary(base: Path, name: str, content: str,
+                        latest: tuple[Path, dict] | None) -> None:
+    print("\nStatus summary:")
+    print("Status:", status(content))
+    workspace, warnings = workspace_info(base, name)
+    if workspace:
+        print("Verified worktree:", workspace["worktree"])
+        print("Verified branch:", workspace["branch"])
+        print("Verified parent branch:", workspace["parent_branch"])
+    elif warnings:
+        print("Verified workspace: unavailable")
+        for warning in warnings:
+            print(f"Workspace warning: {warning}")
+    else:
+        print("Verified workspace: not configured")
+        print("Verified branch: not configured")
+
+    if not latest:
+        print("Current handoff: none")
+        print("Latest event: none")
+        return
+
+    event = latest[1]
+    if event.get("dispatch_state") in {"pending", "launching", "dispatched"}:
+        print(f"Current handoff ({event.get('created_at', '未记录')}):")
+        print(json.dumps(event, ensure_ascii=False, indent=2))
+    else:
+        print("Current handoff: none")
+    print(f"Latest event ({event.get('created_at', '未记录')}):")
+    print(json.dumps(event, ensure_ascii=False, indent=2))
 
 
 def current_test_acceptance(base: Path, name: str) -> dict | None:
@@ -484,15 +823,53 @@ def validate_test_report(base: Path, artifact_ref: str, previous: dict) -> dict:
             "failed_behavior_tests": counts["Failed behavior tests"]}
 
 
+def validate_test_risk_assessment(base: Path, raw_ref: str, previous: dict,
+                                  excluded_sessions: set[str],
+                                  expected_focus: str = "") -> tuple[str, str]:
+    ref = safe_artifact(base, raw_ref)
+    path = Path(ref)
+    if (path.parent.as_posix() != "docs/features/reports"
+            or not path.name.startswith(previous["fd_id"] + "-")):
+        raise FDError("risk assessment must be an FD-prefixed report")
+    structured_evidence(base, ref, "test-risk-assessment",
+                        previous["fd_id"], previous["event_id"])
+    fields = labelled_fields(base, ref)
+    for name, expected in (("Tester report", previous["artifact_ref"]),
+                           ("FD revision", str(previous["fd_revision"])),
+                           ("FD digest", previous["fd_sha256"])):
+        if required_field(fields, name) != expected:
+            raise FDError(f"risk assessment {name} differs from Tester evidence")
+    session = required_field(fields, "Assessor session")
+    if (not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}", session)
+            or session in excluded_sessions):
+        raise FDError("risk assessors need distinct sessions from PM, Worker, and Tester")
+    vote = required_field(fields, "Vote")
+    if vote not in {"accept-with-risk", "repair"}:
+        raise FDError("risk assessment vote must be accept-with-risk or repair")
+    if expected_focus and required_field(fields, "Assessment focus") != expected_focus:
+        raise FDError(f"risk assessment focus must be {expected_focus}")
+    for name in ("Severity", "Impact scope", "Estimated repair time",
+                 "Delivery impact", "Rationale", "Residual risk", "Uncertainty"):
+        required_field(fields, name)
+    try:
+        assessed_at = datetime.fromisoformat(required_field(fields, "Assessment time"))
+    except ValueError as exc:
+        raise FDError("risk assessment time must be ISO 8601") from exc
+    if assessed_at.tzinfo is None:
+        raise FDError("risk assessment time needs a timezone")
+    return session, vote
+
+
 def validate_test_decision(base: Path, artifact_ref: str, previous: dict,
-                           disposition: str) -> None:
+                           disposition: str) -> list[str]:
     fields = labelled_fields(base, artifact_ref)
     for name, expected in (("Disposition", disposition),
                            ("Tester report", previous["artifact_ref"]),
                            ("FD revision", str(previous["fd_revision"])),
                            ("FD digest", previous["fd_sha256"]),
                            ("Requirements coverage", previous["test_summary"]["requirements_coverage"]),
-                           ("Branch coverage", previous["test_summary"]["branch_coverage"])):
+                           ("Branch coverage", previous["test_summary"]["branch_coverage"]),
+                           ("Failed behavior tests", str(previous["test_summary"]["failed_behavior_tests"]))):
         if required_field(fields, name) != expected:
             raise FDError(f"PM decision {name} differs from Tester evidence")
     for name in ("Rationale", "Exceptions", "Residual risk", "PM identity", "Decision time"):
@@ -503,16 +880,66 @@ def validate_test_decision(base: Path, artifact_ref: str, previous: dict,
         raise FDError("PM decision time must be ISO 8601") from exc
     if decision_time.tzinfo is None:
         raise FDError("PM decision time needs a timezone")
-    summary = previous["test_summary"]
-    if disposition == "accepted":
-        if summary["failed_behavior_tests"]:
-            raise FDError("PM cannot accept failed executed behavior tests")
-        low_or_missing = any(coverage_value(summary[key]) is None
-                             or coverage_value(summary[key]) < 70
-                             for key in ("requirements_coverage", "branch_coverage"))
-        if low_or_missing and required_field(fields, "Exceptions").casefold() in {
-                "none", "n/a", "not applicable"}:
-            raise FDError("accepting a coverage gap requires an exception")
+    try:
+        assessments = json.loads(required_field(fields, "Assessments"))
+    except json.JSONDecodeError as exc:
+        raise FDError("PM assessments must be a JSON array") from exc
+    policy = fields.get("Assessment policy", "").strip()
+    failed_tests = previous["test_summary"]["failed_behavior_tests"]
+    if policy == "":
+        # Existing in-flight three-assessor decisions keep their original format.
+        mode = "legacy-three"
+        expected_count = 3
+    elif policy == "adaptive-v1":
+        mode = required_field(fields, "Assessment mode")
+        if mode not in {"single", "escalated"}:
+            raise FDError("PM assessment mode must be single or escalated")
+        reason = required_field(fields, "Escalation reason")
+        required_field(fields, "Escalation detail")
+        gap = required_field(fields, "Coverage gap disposition")
+        required_field(fields, "Coverage gap reason")
+        if gap not in {"bounded", "material"}:
+            raise FDError("PM coverage gap disposition must be bounded or material")
+        if mode == "single":
+            if failed_tests or gap != "bounded" or reason != "none":
+                raise FDError("single assessment requires no failed tests, a bounded gap, and no escalation")
+            expected_count = 1
+        else:
+            if reason not in {"failed-tests", "material-evidence-gap", "pm-disagreement"}:
+                raise FDError("escalated assessment needs a supported reason")
+            if reason == "failed-tests" and not failed_tests:
+                raise FDError("failed-tests escalation requires a failed behavior test")
+            if reason == "material-evidence-gap" and gap != "material":
+                raise FDError("material-evidence-gap escalation requires a material gap")
+            expected_count = 3
+    else:
+        raise FDError("unsupported PM assessment policy")
+    if (not isinstance(assessments, list) or len(assessments) != expected_count
+            or not all(isinstance(ref, str) and ref.strip() for ref in assessments)
+            or len({ref.casefold() for ref in assessments}) != expected_count):
+        raise FDError(f"PM decision requires {expected_count} distinct risk assessment reports")
+    excluded = {previous["worker_session_ref"], previous["tester_session_ref"],
+                required_field(fields, "PM identity")}
+    sessions = []
+    votes = []
+    focuses = ("acceptance-impact", "technical-repair", "delivery-operations")
+    for index, ref in enumerate(assessments):
+        focus = focuses[index] if policy == "adaptive-v1" else ""
+        session, vote = validate_test_risk_assessment(base, ref, previous, excluded, focus)
+        excluded.add(session)
+        sessions.append(session)
+        votes.append(vote)
+    accept_votes = votes.count("accept-with-risk")
+    repair_votes = votes.count("repair")
+    for name, expected in (("Accept votes", accept_votes), ("Repair votes", repair_votes)):
+        raw = required_field(fields, name)
+        if not raw.isdecimal() or int(raw) != expected:
+            raise FDError(f"PM decision {name} differs from risk assessments")
+    required_accepts = 1 if mode == "single" else 2
+    result = "accepted" if accept_votes >= required_accepts else "rejected"
+    if disposition != result:
+        raise FDError("PM disposition differs from the assessor vote result")
+    return sessions
 
 
 def update_index(base: Path) -> None:
@@ -759,6 +1186,77 @@ def refresh_worker(base: Path, name: str, reason: str) -> None:
     dispatch(base, target, event)
 
 
+def recover_worker(base: Path, name: str, expected_event: str,
+                   expected_session: str, reason: str) -> None:
+    if not reason.strip() or len(reason) > 500 or any(char in reason for char in "\r\n"):
+        raise FDError("recover-worker requires a one-line --reason of at most 500 characters")
+    with fd_lock(base, name):
+        fd_path = resolve_fd(base, name)
+        if fd_path.parent != feature_dir(base):
+            raise FDError("recover-worker requires an active FD")
+        original = fd_path.read_text(encoding="utf-8")
+        if status(original) not in {"Open", "In Progress"}:
+            raise FDError("recover-worker requires an Open or In Progress FD")
+        item = latest_event(base, name)
+        if not item:
+            raise FDError("recover-worker requires a dispatched Worker handoff")
+        old_path, old_event = item
+        fd_ref = fd_path.relative_to(base).as_posix()
+        if (old_event.get("fd_id") != name or old_event.get("fd_path") != fd_ref
+                or old_event.get("event_id") != expected_event
+                or old_event.get("target_role") != "worker"
+                or old_event.get("dispatch_state") != "dispatched"
+                or old_event.get("session_ref") != expected_session):
+            raise FDError("latest dispatched Worker event and session must match expectations")
+        current_revision = revision(original)
+        if current_revision < old_event["fd_revision"]:
+            raise FDError("FD revision is behind the Worker handoff; reconcile manually")
+        if (current_revision == old_event["fd_revision"]
+                and fd_digest(original) != old_event["fd_sha256"]):
+            raise FDError("FD changed without a revision; reconcile manually")
+        new_revision = current_revision + 1
+        updated = REVISION_RE.sub(f"**Revision:** {new_revision}", original, count=1)
+        event_id = f"{name}-{new_revision:06d}-work-requested"
+        target = runtime_dir(base, name) / "events" / f"{new_revision:06d}-work-requested.json"
+        if target.exists() or target.is_symlink():
+            raise FDError(f"event already exists: {event_id}")
+        index_path = feature_dir(base) / "FEATURE_INDEX.md"
+        original_index = index_path.read_bytes() if index_path.exists() else None
+        now = datetime.now(timezone.utc).isoformat()
+        event = {"event_id": event_id, "fd_id": name,
+                 "event_type": "work-requested", "fd_revision": new_revision,
+                 "producer": "pm", "fd_sha256": fd_digest(updated),
+                 "artifact_ref": fd_ref, "fd_path": fd_ref,
+                 "target_role": "worker", "dispatch_state": "pending",
+                 "reason": reason.strip(), "supersedes": old_event["event_id"],
+                 "abandoned_session_ref": expected_session, "created_at": now}
+        cancelled = {**old_event, "dispatch_state": "cancelled",
+                     "superseded_by": event_id, "recovery_reason": reason.strip(),
+                     "recovered_at": now}
+        try:
+            atomic_json(target, {**event, "dispatch_state": "preparing"})
+            atomic_text(fd_path, updated)
+            atomic_json(old_path, cancelled)
+            update_index(base)
+            atomic_json(target, event)
+        except Exception as exc:
+            rollback_errors = []
+            for label, restore in (("new event", lambda: target.unlink(missing_ok=True)),
+                                   ("FD", lambda: atomic_text(fd_path, original)),
+                                   ("old receipt", lambda: atomic_json(old_path, old_event)),
+                                   ("index", lambda: atomic_bytes(index_path, original_index)
+                                    if original_index is not None else index_path.unlink(missing_ok=True))):
+                try:
+                    restore()
+                except Exception as rollback_error:
+                    rollback_errors.append(f"{label}: {type(rollback_error).__name__}: {rollback_error}")
+            if rollback_errors:
+                raise FDError("recover-worker rollback incomplete: "
+                              + "; ".join(rollback_errors)) from exc
+            raise
+    dispatch(base, target, event)
+
+
 def refresh_tester(base: Path, name: str, reason: str, artifact: str) -> None:
     if not reason.strip() or len(reason) > 500 or any(char in reason for char in "\r\n"):
         raise FDError("refresh-tester requires a one-line --reason of at most 500 characters")
@@ -992,13 +1490,15 @@ def prepare_event(base: Path, name: str, kind: str, producer: str, artifact: str
         if not previous or (revision(content) != previous[1]["fd_revision"]
                             or fd_digest(content) != previous[1]["fd_sha256"]):
             raise FDError("FD changed since test handoff; reconcile before continuing")
+    assessor_sessions = []
     if kind == "test-report-ready":
         if previous[1]["event_type"] not in {"implementation-ready", "test-requested"}:
             raise FDError("test report requires an implementation-ready or test-requested handoff")
         test_summary = validate_test_report(base, artifact_ref, previous[1])
     elif kind in {"test-accepted", "test-rejected"}:
-        validate_test_decision(base, artifact_ref, previous[1],
-                               "accepted" if kind == "test-accepted" else "rejected")
+        assessor_sessions = validate_test_decision(
+            base, artifact_ref, previous[1],
+            "accepted" if kind == "test-accepted" else "rejected")
     new_revision = revision(content) + 1
     if target_role == "resume":
         target_role = {"Design": "planner", "Open": "worker", "In Progress": "worker",
@@ -1030,6 +1530,7 @@ def prepare_event(base: Path, name: str, kind: str, producer: str, artifact: str
     elif kind in {"test-accepted", "test-rejected"}:
         event["worker_session_ref"] = previous[1]["worker_session_ref"]
         event["tester_session_ref"] = previous[1]["tester_session_ref"]
+        event["assessor_session_refs"] = assessor_sessions
         event["test_summary"] = previous[1]["test_summary"]
     # A receipt is written first. A failed FD write leaves a diagnosable pending
     # event; resume refuses to dispatch it until the FD revision matches.
@@ -1070,8 +1571,9 @@ def new_fd(base: Path, name: str, issue: str) -> None:
         target = feature_dir(base) / f"{ident}_{slug(name)}.md"
         if target.exists():
             raise FDError(f"FD already exists: {target}")
-        template = feature_dir(base) / "TEMPLATE.md"
+        template = base / "docs" / "templates" / "TEMPLATE.md"
         if not template.is_file():
+            template.parent.mkdir(parents=True, exist_ok=True)
             atomic_text(template, DEFAULT_TEMPLATE)
         source = f"- Issue: {issue}" if issue else "- Issue: none"
         content = (template.read_text(encoding="utf-8")
@@ -1121,14 +1623,16 @@ def claim(base: Path, name: str, event_id: str, session_ref: str) -> None:
             raise FDError("Tester must use a separate session from Worker")
         if event["target_role"] == "reviewer":
             refs = {event.get("worker_session_ref"), event.get("tester_session_ref")}
+            refs.update(event.get("assessor_session_refs", []))
             if independent_testing(fd_path.read_text(encoding="utf-8")):
                 accepted = current_test_acceptance(base, name)
                 if not accepted:
                     raise FDError("independent Reviewer requires current PM test acceptance")
                 refs.update({accepted.get("worker_session_ref"),
                              accepted.get("tester_session_ref")})
+                refs.update(accepted.get("assessor_session_refs", []))
             if session_ref in refs:
-                raise FDError("Reviewer must use a separate session from Worker and Tester")
+                raise FDError("Reviewer must use a separate session from Worker, Tester, and assessors")
         if event["dispatch_state"] == "dispatched" and event.get("session_ref") == session_ref:
             print(f"already claimed {event_id} by {session_ref}")
             return
@@ -1277,6 +1781,11 @@ def main() -> int:
     commands.add_parser("list", help="show the FD index")
     shown = commands.add_parser("show", help="show an FD and its last handoff")
     shown.add_argument("fd_id")
+    for command, kind in (("show-report", "report"), ("show-review", "review")):
+        evidence = commands.add_parser(command, help=f"list or display FD {kind} evidence")
+        evidence.add_argument("fd_id")
+        evidence.add_argument("--last", action="store_true",
+                              help="display the most recent verified evidence without prompting")
     emitted = commands.add_parser("emit", help="record a stage result and route the next role")
     emitted.add_argument("fd_id")
     emitted.add_argument("event_type", choices=sorted(ALLOWED))
@@ -1295,6 +1804,11 @@ def main() -> int:
     refreshed = commands.add_parser("refresh-worker", help="replace a stale pending Worker handoff")
     refreshed.add_argument("fd_id")
     refreshed.add_argument("--reason", required=True)
+    recovered = commands.add_parser("recover-worker", help="replace an abandoned dispatched Worker handoff")
+    recovered.add_argument("fd_id")
+    recovered.add_argument("--expected-event", required=True)
+    recovered.add_argument("--expected-session", required=True)
+    recovered.add_argument("--reason", required=True)
     tester_refresh = commands.add_parser("refresh-tester", help="replace a stale unclaimed Tester handoff")
     tester_refresh.add_argument("fd_id")
     tester_refresh.add_argument("--reason", required=True)
@@ -1318,10 +1832,18 @@ def main() -> int:
             print((feature_dir(base) / "FEATURE_INDEX.md").read_text(encoding="utf-8"))
         elif args.command == "show":
             path = resolve_fd(base, args.fd_id)
-            print(path.read_text(encoding="utf-8"))
-            item = latest_event(base, fd_id(args.fd_id))
+            name = fd_id(args.fd_id)
+            content = path.read_text(encoding="utf-8")
+            print(content)
+            item = latest_event(base, name)
             if item:
                 print("\nLast handoff:", json.dumps(item[1], ensure_ascii=False))
+            show_status_summary(base, name, content, item)
+        elif args.command in {"show-report", "show-review"}:
+            name = fd_id(args.fd_id)
+            resolve_fd(base, name)
+            show_evidence(base, name, "report" if args.command == "show-report" else "review",
+                          args.last)
         elif args.command == "emit":
             emit(base, fd_id(args.fd_id), args.event_type, args.producer,
                  args.artifact, args.source_event)
@@ -1333,6 +1855,9 @@ def main() -> int:
             request_review(base, fd_id(args.fd_id), args.reason)
         elif args.command == "refresh-worker":
             refresh_worker(base, fd_id(args.fd_id), args.reason)
+        elif args.command == "recover-worker":
+            recover_worker(base, fd_id(args.fd_id), args.expected_event,
+                           args.expected_session, args.reason)
         elif args.command == "refresh-tester":
             refresh_tester(base, fd_id(args.fd_id), args.reason, args.artifact)
         elif args.command == "reopen":

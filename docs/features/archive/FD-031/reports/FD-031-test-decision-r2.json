@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-031",
+  "source_event": "FD-031-000010-test-report-ready",
+  "human_report": "FD-031-test-decision-r2.md",
+  "data": {
+    "disposition": "accepted",
+    "tester_report": "docs/features/reports/FD-031-test-report-r2.md",
+    "fd_revision": 10,
+    "fd_digest": "0c88d075b3b0bc4260c3e82ed1524b37b6947b78d767f2a00e5b06e585a45ddd",
+    "requirements_coverage": "85.7%",
+    "branch_coverage": "not measured",
+    "rationale": "The revision-bound independent command ran once and all 12 behavior cases passed. Scenario coverage is 18 of 21, above the 70% gate; the two prior failed behaviors passed on the current revision.",
+    "exceptions": "Branch coverage was not measured because no instrumentation command was authorized. S13 unavailable FD CLI, S20 archived FD rejection, and S21 write-failure rollback remain uncovered; none is treated as passed.",
+    "residual_risk": "The recovery rollback under a filesystem write failure lacks runtime evidence. Reviewer must inspect the static rollback path and return any actual defect to Worker.",
+    "pm_identity": "fd031-host-pm-20261008",
+    "decision_time": "2026-10-08T02:51:13+00:00"
+  }
+}

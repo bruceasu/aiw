@@ -75,6 +75,11 @@ Use `aiw fd list`, `show`, and `resume` for status and recovery. A pending event
 can be handled by the named role in the current host after `aiw fd claim <id>
 <event-id> --session <host-session-id>`. A dispatched event with unknown outcome
 must be reconciled against its original session or log.
+If PM confirms a dispatched Worker session has stopped and chooses a new
+Worker, use `aiw fd recover-worker <id> --expected-event <event-id>
+--expected-session <old-session> --reason "..."`. Claim the resulting pending
+event under the new Worker session. Never use it while the original session's
+outcome remains unknown.
 
 The `--session` value is an opaque ownership reference for this host session;
 it need not be a platform-provided ID. Prefer a stable ID supplied by the host.
@@ -247,16 +252,27 @@ in the user-facing Gate and final report.
    Then emit `test-report-ready --producer
    tester --artifact <report> --source-event <claimed-test-event>`.
 3b. **PM Test Report Decision.** Read the Tester report and actual evidence.
-   Write a versioned Chinese Markdown decision with a same-basename JSON using
-   `docs/features/TEST_DECISION_TEMPLATE.md` and
-   `docs/features/TEST_DECISION_DATA_TEMPLATE.json` for Dual evidence.
-   Cite the Tester report, FD revision/digest, both coverage results, rationale,
-   exceptions, residual risk, PM identity, and decision time. A failed
-   executed behavior test cannot be accepted. Below 70% or unavailable
-   coverage needs an explicit exception and risk. If acceptance is materially
-   uncertain, stop for human input. Emit `test-accepted` to Reviewer or
-   `test-rejected` to Worker with `--producer pm`, the decision artifact, and
-   `--source-event <test-report-ready-event>`.
+   Give the same report, current event/revision/digest, and
+   `docs/features/TEST_RISK_ASSESSMENT_TEMPLATE.md` to independent assessor A.
+   When behavior tests failed, obtain A, B, and C from the start. Add B and C
+   if PM judges an evidence gap material or disagrees with A's vote. Assign A
+   acceptance/user impact, B technical evidence/repair, and C delivery/operations
+   as distinct focuses; each still assesses the full risk. Give each a separate
+   FD-prefixed report path and session, and do not share drafts or votes.
+   Assessors write Chinese Markdown plus same-basename JSON with an evidence-based
+   `accept-with-risk` or `repair` vote, severity, impact scope, estimated repair
+   time, delivery impact, rationale, residual risk, and uncertainty. Replace an
+   unavailable or invalid assessor without inventing a vote. Write a versioned
+   Chinese PM decision and same-basename JSON using the decision template.
+   Record `adaptive-v1`, `single` or `escalated`, the evidence-gap judgment,
+   escalation reason, all reports and votes, dissent, Tester report, FD
+   revision/digest, coverage, failed-test count, exceptions, residual risk, PM
+   identity, and time. A single vote determines the single-assessor result;
+   escalated decisions need at least two `accept-with-risk` votes to emit
+   `test-accepted` to Reviewer. Otherwise emit `test-rejected` to Worker.
+   Failed tests and coverage gaps remain factual evidence and never become
+   passing test results through a risk vote. Emit with `--producer pm`, the
+   decision artifact, and `--source-event <test-report-ready-event>`.
 4. **Independent review when Pending Verification.** Count Reviewer outcome events for this FD's active
    implementation cycle, including earlier auto invocations; the limit is
    three, not three new attempts on every resume. Spawn one separate Reviewer
@@ -268,8 +284,11 @@ in the user-facing Gate and final report.
    `--source-event` pointing to that claim. The host must not write the
    review report, emit a Reviewer event, or substitute a same-session review.
    For an independent-policy FD, Reviewer inspects the Tester report, PM
-   decision, and raw evidence. It respects PM's recorded coverage exception
-   while still reporting factual implementation or evidence defects.
+   decision, every cited risk assessment, and raw evidence. Its session must
+   differ from Worker, Tester, and the assessors. It respects PM's recorded
+   recorded risk acceptance while still reporting undisclosed implementation
+   or evidence defects. Do not reject solely for an explicitly accepted known
+   failing scenario or coverage gap.
    If subagents are unavailable, stop and leave the handoff pending.
 5. **Repair, merge, and close.** Inspect the subagent's report and latest receipt;
    subagent prose alone is not a pass. On `changes-requested`, first count

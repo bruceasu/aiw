@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-032",
+  "source_event": "FD-032-000008-test-report-ready",
+  "human_report": "FD-032-test-risk-assessment-r2-b.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-032-test-report-r2.md",
+    "fd_revision": 8,
+    "fd_digest": "391023572748f88998701e3db00a4b37caa5ff8eba09032290d657d2f7915b17",
+    "assessor_session": "fd032-assessor-r2-b-20261008-9d4e61",
+    "vote": "accept-with-risk",
+    "severity": "Low to moderate evidence risk: no confirmed production defect; unverified historical compatibility could affect legacy FD reads or handoffs.",
+    "impact_scope": "Core majority routing, invalid-assessment rejection, and Reviewer identity checks have focused black-box evidence. Business branch coverage, archived-report compatibility, documentation consistency, and full-repository regression remain outside this command.",
+    "estimated_repair_time": "No confirmed defect to repair. Time to fix any newly found compatibility or documentation defect is unknown until it is identified; additional coverage or regression runs require separate authorization.",
+    "delivery_impact": "Proceed to independent Reviewer now. Any new defect discovered there may delay delivery; duration is unknown until scoped.",
+    "rationale": "The authorized round-two command exited 0 and recorded passing assertions for all 13 identified observable scenarios, including the risk-bearing majority and rejection paths. The first round lacked execution evidence because of fixture failures; its failure record remains intact. The remaining gaps warrant explicit review rather than another Worker repair without a confirmed defect.",
+    "residual_risk": "Business branch coverage was not measured; historical archived reports were not exercised by the focused command; documentation and stable-spec consistency need static review; full-repository tests were not run.",
+    "uncertainty": "Three unittest methods exercise 13 reported scenarios but do not establish branch coverage or repository-wide compatibility. This assessor did not rerun the command.",
+    "assessment_time": "2026-10-08T12:30:34+09:00"
+  }
+}

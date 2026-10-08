@@ -1,0 +1,32 @@
+id = "REQ00008-fd-force-recovery"
+title = "FD 工作流强制恢复与事件控制"
+parent_id = ""
+status = "DECIDED"
+created = "2026-10-09"
+updated = "2026-10-09"
+revision = 3
+
+[approval]
+status = "PENDING"
+by = ""
+at = ""
+reason = ""
+source_digest = ""
+
+[promotion]
+status = "NOT_STARTED"
+task_id = ""
+
+[conversation]
+session_id = ""
+
+[terminal]
+by = ""
+at = ""
+reason = ""
+
+[artifact]
+requirement-plan = "docs/requirements/REQ00008-fd-force-recovery/requirement-plan.md"
+
+[digest]
+requirement-plan = "3b52c77d37d936cd279311608df46986aa8d8a8069351f25cb918e5513700441"

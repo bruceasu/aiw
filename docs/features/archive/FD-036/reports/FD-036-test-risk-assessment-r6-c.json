@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000033-test-report-ready",
+  "human_report": "FD-036-test-risk-assessment-r6-c.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-036-test-report-r6-diagnostic.md",
+    "fd_revision": 33,
+    "fd_digest": "54862b4294872e269be7ea94f4b8dd4d3467b9e2e4b50a85d69776f306dd05e0",
+    "assessor_session": "fd036-assessor-c-20261008-r6-delivery",
+    "assessment_focus": "delivery-operations",
+    "vote": "accept-with-risk",
+    "severity": "medium: S04 passed in the focused diagnostic but the earlier full-suite ERROR remains unexplained",
+    "impact_scope": "S04 default-config-missing startup/model behavior and confidence in the full-suite evidence",
+    "estimated_repair_time": "unknown: the focused diagnostic found no failure to repair and r5 lacks enough diagnostics to estimate work",
+    "delivery_impact": "Proceed to independent Reviewer with the r5 ERROR and r6 single-case scope explicitly retained; this assessment does not authorize another test run",
+    "rationale": "Tester r5 recorded 20 of 21 behavior tests passing and one S04 ERROR without traceback, final unittest summary, or exit code. The user-approved r6 rerun of that exact S04 case on implementation revision 32 printed ok, Ran 1 test, OK, and exit code 0. This reduces current delivery concern because the failure was not reproduced, but does not identify the r5 cause, erase that result, or establish a full-suite pass on revision 32/33. The available evidence supports proceeding to independent review with the uncertainty explicit.",
+    "residual_risk": "The historical r5 S04 ERROR remains unexplained; r6 covered only one case and the full suite was not rerun at revision 32/33. S08/S09/S14/S15 remain incompletely covered, branch coverage is unmeasured, and real API behavior, cross-platform profile paths, and translation quality are unverified.",
+    "uncertainty": "The cause of r5 S04 ERROR is unknown; r6 demonstrates non-reproduction only. Full-suite behavior on the later revision and behavior outside loopback mocks remain unverified.",
+    "assessment_time": "2026-10-08T10:00:00+00:00"
+  }
+}

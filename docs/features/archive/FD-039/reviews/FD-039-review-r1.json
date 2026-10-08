@@ -1,0 +1,59 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-039",
+  "source_event": "FD-039-000004-implementation-ready",
+  "human_report": "FD-039-review-r1.md",
+  "data": {
+    "reviewer_session": "fd039-reviewer-20261008-a41d",
+    "reviewed_base": "676e52d",
+    "reviewed_commits": [
+      "20518be",
+      "b6e1f4e",
+      "883582f",
+      "78cba67"
+    ],
+    "outcome": "changes-requested",
+    "findings": [
+      {
+        "id": "F-1",
+        "severity": "low",
+        "blocking": true,
+        "file": "docs/features/FD-039_SEPARATE_FD_TEST_SKILL_FROM_FD_WORKFLOW.md",
+        "line": 58,
+        "summary": "Verification 中 fd-test 名称含 U+000C form-feed 控制字符。",
+        "required_correction": "Replace the control character with the literal `$fd-test` token."
+      }
+    ],
+    "acceptance_results": {
+      "default_worker_to_reviewer": "supported by template, role instructions, and CLI route",
+      "optional_fd_test_isolation": "supported by standalone Skill and review/PM boundaries",
+      "legacy_tester_cli_compatibility": "supported by retained CLI events, state routing, and refresh-tester",
+      "reviewer_does_not_assess_optional_test_reports": "supported by fd-review and Reviewer role instructions"
+    },
+    "commands_run": [
+      "aiw fd --help",
+      "aiw fd show FD-039",
+      "aiw fd claim FD-039 FD-039-000004-implementation-ready --session fd039-reviewer-20261008-a41d",
+      "git status --short; git log -5 --oneline",
+      "git diff --stat 676e52d; git diff --name-status 676e52d",
+      "git diff 676e52d -- scoped review files",
+      "rg -n -i -C 4 'Test policy|implementation-ready|test-report-ready|refresh-tester|Pending Test|test-accepted|test-rejected' scoped review files",
+      "PowerShell static scan for control characters in FD-039"
+    ],
+    "skipped_checks": [
+      "tests",
+      "coverage",
+      "final build",
+      "lint",
+      "formatting",
+      "runtime CLI route simulation"
+    ],
+    "worker_compile_only": "Worker report records success; Reviewer did not rerun it.",
+    "residual_risks": [
+      "fd-test case generation and execution effects were not run in this review.",
+      "CLI routing was inspected statically rather than exercised at runtime."
+    ],
+    "tester_report_reviewed": false
+  }
+}

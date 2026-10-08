@@ -1,0 +1,83 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-035",
+  "source_event": "FD-035-000004-implementation-ready",
+  "human_report": "FD-035-test-report-r1.md",
+  "data": {
+    "implementation_event": "FD-035-000004-implementation-ready",
+    "tested_fd_revision": 4,
+    "tested_fd_digest": "031564c0783d1959717aeec8cf1e3e37b085013c3e9a032a75ea11b7f31ddc97",
+    "tester_session": "fd035-tester-20261008-8f4ac2",
+    "applicable_scenarios": 25,
+    "covered_scenarios": 19,
+    "executed_behavior_tests": 8,
+    "passed_behavior_tests": 8,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 0,
+    "requirements_coverage": "76%",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": "需求场景 19/25。首轮 Ran 7 tests in 18.149s; FAILED (failures=1)，失败发生在复用临时仓库的测试夹具准备阶段。修正测试隔离后，获批的唯一重跑 Ran 8 tests in 19.725s; OK。未运行分支覆盖率工具。",
+    "coverage_unavailable_reason": "两次精确授权仅涵盖聚焦 unittest 命令，没有授权插桩或分支覆盖率测量。",
+    "test_files": ["tests/test_fd032_risk_decision_blackbox.py"],
+    "authorization_records": [
+      "docs/features/reports/FD-035-test-authorization-r1.md",
+      "docs/features/reports/FD-035-test-authorization-r2.md"
+    ],
+    "commands": [
+      "python -B -m unittest tests.test_fd032_risk_decision_blackbox -v",
+      "python -B -m unittest tests.test_fd032_risk_decision_blackbox -v"
+    ],
+    "attempts": [
+      {
+        "working_directory": "C:\\Users\\svictor\\workspace\\tools\\ai-tools\\aiw\\.wt\\FD-035",
+        "attempt": 1,
+        "authorization": "docs/features/reports/FD-035-test-authorization-r1.md",
+        "exit_code": 1,
+        "result": "Ran 7 tests in 18.149s; FAILED (failures=1). Six methods passed; pm-disagreement subcase failed during temporary FD setup: fd: design-ready requires a preceding planner handoff."
+      },
+      {
+        "working_directory": "C:\\Users\\svictor\\workspace\\tools\\ai-tools\\aiw\\.wt\\FD-035",
+        "attempt": 2,
+        "authorization": "docs/features/reports/FD-035-test-authorization-r2.md",
+        "exit_code": 0,
+        "result": "Ran 8 tests in 19.725s; OK. All eight black-box methods passed after test fixture isolation correction."
+      }
+    ],
+    "recommendation": "pass",
+    "not_applicable_reason": "",
+    "residual_risk": "六个独立可观察场景尚无行为证据：新策略字段错误、评估修订不符、风险字段缺失、重大缺口误用单份、缺少互补侧重点、低覆盖率单份路径。业务代码分支覆盖率未测量。",
+    "scenarios": [
+      {"id":"S01","behavior":"无失败且 PM 判断缺口可控时，一份接纳票交 Reviewer","status":"passed","test_cases":["test_clean_single_vote_routes_and_keeps_reviewer_independent"]},
+      {"id":"S02","behavior":"单份修复票不能被 PM 改成接纳处置","status":"passed","test_cases":["test_clean_single_repair_vote_cannot_be_accepted"]},
+      {"id":"S03","behavior":"单份修复票使 FD 返回 Worker","status":"passed","test_cases":["test_clean_single_repair_vote_cannot_be_accepted"]},
+      {"id":"S04","behavior":"失败行为测试时拒绝单份决策","status":"passed","test_cases":["test_failed_behavior_requires_three_distinct_focuses"]},
+      {"id":"S05","behavior":"升级三份要求互补侧重点，重复侧重点被拒绝","status":"passed","test_cases":["test_failed_behavior_requires_three_distinct_focuses"]},
+      {"id":"S06","behavior":"PM 记录重大证据缺口后三份评估可交 Reviewer","status":"passed","test_cases":["test_material_gap_uses_three_votes"]},
+      {"id":"S07","behavior":"PM 与首份票分歧后三份评估可交 Reviewer","status":"passed","test_cases":["test_pm_disagreement_uses_three_votes"]},
+      {"id":"S08","behavior":"失败和低覆盖率事实保留，三份中两票接纳可交 Reviewer","status":"passed","test_cases":["test_failed_behavior_requires_three_distinct_focuses","test_two_accept_votes_route_failed_low_coverage_report_to_reviewer"]},
+      {"id":"S09","behavior":"三份中仅一票接纳时接纳处置被拒绝","status":"passed","test_cases":["test_one_accept_vote_returns_to_worker_and_mismatched_pm_vote_fails"]},
+      {"id":"S10","behavior":"三份中仅一票接纳时修复处置返回 Worker","status":"passed","test_cases":["test_one_accept_vote_returns_to_worker_and_mismatched_pm_vote_fails"]},
+      {"id":"S11","behavior":"缺失评估文件不能发出 PM 事件","status":"passed","test_cases":["test_missing_duplicate_stale_forged_and_conflicting_assessments_fail"]},
+      {"id":"S12","behavior":"重复评估路径不能发出 PM 事件","status":"passed","test_cases":["test_missing_duplicate_stale_forged_and_conflicting_assessments_fail"]},
+      {"id":"S13","behavior":"评估摘要过期不能发出 PM 事件","status":"passed","test_cases":["test_missing_duplicate_stale_forged_and_conflicting_assessments_fail"]},
+      {"id":"S14","behavior":"伪造评估来源事件不能发出 PM 事件","status":"passed","test_cases":["test_missing_duplicate_stale_forged_and_conflicting_assessments_fail"]},
+      {"id":"S15","behavior":"评估者 session 重复不能发出 PM 事件","status":"passed","test_cases":["test_missing_duplicate_stale_forged_and_conflicting_assessments_fail"]},
+      {"id":"S16","behavior":"评估者与 Worker、Tester 或 PM session 冲突不能发出 PM 事件","status":"passed","test_cases":["test_missing_duplicate_stale_forged_and_conflicting_assessments_fail"]},
+      {"id":"S17","behavior":"Reviewer claim 与 Worker、Tester 和所有评估者 session 隔离","status":"passed","test_cases":["test_clean_single_vote_routes_and_keeps_reviewer_independent","test_two_accept_votes_route_failed_low_coverage_report_to_reviewer"]},
+      {"id":"S18","behavior":"接纳风险不改写 Tester 报告和失败事实","status":"passed","test_cases":["test_two_accept_votes_route_failed_low_coverage_report_to_reviewer"]},
+      {"id":"S19","behavior":"不带新策略字段的旧三份式决策仍可交 Reviewer","status":"passed","test_cases":["test_two_accept_votes_route_failed_low_coverage_report_to_reviewer"]},
+      {"id":"S20","behavior":"新策略值、模式或升级原因无效时拒绝 PM 决策","status":"uncovered","test_cases":[],"reason":"未构造错误字段组合。"},
+      {"id":"S21","behavior":"评估修订号不符时拒绝 PM 决策","status":"uncovered","test_cases":[],"reason":"只测试过期摘要，未独立改修订号。"},
+      {"id":"S22","behavior":"评估缺少完整风险字段时拒绝 PM 决策","status":"uncovered","test_cases":[],"reason":"只测试完整风险字段。"},
+      {"id":"S23","behavior":"重大证据缺口下单份决策被拒绝","status":"uncovered","test_cases":[],"reason":"只测试重大缺口的合法三份路径。"},
+      {"id":"S24","behavior":"新三份模式缺少评估侧重点时被拒绝","status":"uncovered","test_cases":[],"reason":"只测试重复侧重点和正确三份。"},
+      {"id":"S25","behavior":"无失败、低覆盖率且缺口可控时单份不因覆盖率自动升级","status":"uncovered","test_cases":[],"reason":"单份夹具为 100% 场景覆盖。"}
+    ],
+    "static_exclusions": [
+      "评估者之间不共享草稿是流程独立性要求，本轮黑盒 CLI 用例没有证明实际会话间信息隔离。",
+      "旧归档文件不改写、文档与模板一致性属于静态核对，本轮未将其记为运行通过。",
+      "Reviewer 对未披露缺陷的审查权不是本轮 CLI 行为断言。"
+    ]
+  }
+}

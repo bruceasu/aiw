@@ -98,7 +98,7 @@ def _invocation(info: CLIInfo, prompt: str, model: str = "", last_message: str =
     return [*info.command, *args]
 
 
-def run_cli(provider: str, prompt: str, model: str = "", root: Path | None = None, timeout: float = 60.0) -> tuple[str, CLIInfo]:
+def run_cli_text(provider: str, prompt: str, model: str = "", root: Path | None = None, timeout: float = 60.0) -> tuple[str, CLIInfo]:
     info = detect_cli(provider)
     workspace = root or Path.cwd()
     before = _git_status(workspace)
@@ -142,7 +142,12 @@ def run_cli(provider: str, prompt: str, model: str = "", root: Path | None = Non
         final_text = final_text or _codex_final_output(result.stdout)
     else:
         final_text = result.stdout
-    return extract_json(final_text), info
+    return final_text.strip(), info
+
+
+def run_cli(provider: str, prompt: str, model: str = "", root: Path | None = None, timeout: float = 60.0) -> tuple[str, CLIInfo]:
+    text, info = run_cli_text(provider, prompt, model, root, timeout)
+    return extract_json(text), info
 
 
 def _git_status(root: Path) -> str:

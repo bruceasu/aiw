@@ -1,0 +1,22 @@
+﻿{
+    "schema":  "aiw.fd.evidence.v1",
+    "kind":  "test-risk-assessment",
+    "fd_id":  "FD-033",
+    "source_event":  "FD-033-000006-test-report-ready",
+    "human_report":  "FD-033-test-risk-assessment-r1-c.md",
+    "data":  {
+                 "tester_report":  "docs/features/reports/FD-033-test-report-r1.md",
+                 "fd_revision":  6,
+                 "fd_digest":  "41b1a80e61fdf457666a34d4d8e416b1ac42633c3852d1e314921908b0a47d6a",
+                 "assessor_session":  "fd033-assessor-c-20261008-8a73e0",
+                 "vote":  "repair",
+                 "severity":  "high: 0 of 14 applicable acceptance scenarios have runtime evidence; the absence of evidence does not prove a defect, but leaves all user-visible command behavior unverified",
+                 "impact_scope":  "aiw git aic, air, and aib users, plus users of the existing aiw cz workflow; potential impact spans generated commit messages, staged-diff review, branch summaries, provider fallback, repository side effects, and compatibility",
+                 "estimated_repair_time":  "unknown: no scenario was executed, so the report cannot establish whether implementation repairs will be needed or estimate their duration",
+                 "delivery_impact":  "do not accept the FD as behaviorally verified until focused authorized evidence is available; delivery timing is unknown because no runtime scenarios were run",
+                 "rationale":  "Tester report FD-033-test-report-r1.md and its JSON record 14 applicable scenarios, 0 covered, 0 executed behavior tests, 14 unrun scenarios, no commands, no test files, and no authorization records. All scenarios are uncovered and the report recommends blocked. This provides no behavioral evidence for acceptance; the vote requests repair of the verification gap, not a claim that implementation defects were observed.",
+                 "residual_risk":  "If accepted without further evidence, all 14 acceptance scenarios remain unverified, including Git mutation and failure handling, staged-diff boundaries, branch-base behavior, provider integration and fallback, output boundaries, and aiw cz compatibility.",
+                 "uncertainty":  "No runtime behavior was observed. It is unknown whether any scenario fails, whether repairs will be necessary, and how long focused validation or repairs would take. The reported cause of missing evidence is lack of test authorization.",
+                 "assessment_time":  "2026-10-08T03:48:32+00:00"
+             }
+}

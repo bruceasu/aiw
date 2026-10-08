@@ -28,7 +28,7 @@
 
 ## 已知能力边界
 
-- 当前 supervise 实际调度 Coder turn，并在其报告完成后执行编译；完整 Analysis → Coder → Tester → Verifier 流水线尚未接通。
+- FD Workflow 默认在 Coder 完成编译与静态检查后直接交由 Verifier；独立 `fd-test` Skill 可按需生成黑盒测试报告，但不参与验收。
 - 当前 Verifier 只提供请求/结果契约和 report-only 持久化辅助能力，没有监督执行中的 Agent 派发或需求缺项返工。
 - 编译通过、勾选 tasks.md、Task DONE 与需求质量验收是不同事实；本基线不把它们等同。
 - 通知 outbox、测试编写器等基础能力存在，不据此推断所有阶段已自动调用它们。

@@ -20,66 +20,83 @@ aiw fd reopen FD-004 --reason "继续未完成的验证"
 
 The creation event routes to Planner. Planner writes options, decision,
 acceptance, and numbered Work Items before `design-ready`. Worker implements
-all ready items and records a report; then it emits `implementation-ready`.
-New FDs carry `**Test policy:** Independent`. For them, this event routes to
-an independent Tester. New FDs also carry `**Evidence policy:** Dual`:
-future reports use Chinese Markdown for people and same-basename JSON for
-CLI/AI. Put one `<!-- aiw-data: FD-XXX-report.json -->`
-comment in Markdown, use Markdown for `--artifact`, and write JSON with schema
-`aiw.fd.evidence.v1`, FD ID, kind, source event, Markdown filename, and `data`.
-Use the JSON templates under `docs/features/`. Reviewer reports use kind
-`reviewer-report` and live under `docs/features/reviews/`. The CLI checks the
-JSON before handoff, and close archives both files. Older Markdown-only
-evidence is preserved. Relative filename references remain valid after archive.
-Tester claims in a different session, writes a
-black-box report using `docs/features/TEST_REPORT_TEMPLATE.md`, and emits
-`test-report-ready --producer tester --artifact <report> --source-event
-<implementation-ready-event>`. PM writes a versioned decision using
-`docs/features/TEST_DECISION_TEMPLATE.md` and emits `test-accepted` to
-Reviewer or `test-rejected` to Worker, citing the exact Tester event. The
-decision records both coverage measures, exceptions, residual risk, PM
-identity, and time; failed executed behavior tests cannot be accepted.
-Existing FDs without the marker continue directly to independent Review.
-An independent Reviewer emits `changes-requested` with findings or
+all ready items, performs the repository-authorized compile-only check and
+static review, and records a report before emitting `implementation-ready`.
+New FDs route directly to an independent Reviewer. New FDs use
+**Evidence policy: Dual**: reports use Chinese Markdown for people and a
+same-basename JSON sidecar for CLI/AI. Put one
+`<!-- aiw-data: FD-XXX-report.json -->` comment in Markdown, use Markdown for
+`--artifact`, and write JSON with schema `aiw.fd.evidence.v1`, FD ID, kind,
+source event, Markdown filename, and `data`. Use the JSON templates under
+`docs/templates/`. Reviewer reports use kind `reviewer-report` and live under
+`docs/features/reviews/`. The CLI checks the JSON before handoff, and close
+archives both files. Older Markdown-only evidence is preserved. Relative
+filename references remain valid after archive. An independent Reviewer emits
+`changes-requested` with findings or
 `verification-passed` with a review report. A role must claim or receive its
 handoff before completing it, then pass `--source-event <event-id>`.
 `aiw fd show` displays the last ID.
 
-For legacy Markdown-only evidence, the Tester report uses labelled fields.
-For Dual evidence, the CLI reads the JSON sidecar and checks event/revision/
-digest, session, scenario inventory, count, and coverage fields before accepting
-`test-report-ready`. The PM decision uses
-`docs/features/TEST_DECISION_TEMPLATE.md`, cites the exact Tester report,
-and records an explicit exception for coverage below 70% or unavailable.
-Tester must split broad FD acceptance items into distinct observable
-scenarios before computing requirements coverage; a partially tested item
-does not make all its behaviors covered. A human-approved command uses an
-affirmative `approved:<source>:<id>` reference in its Planner record.
-Tester preparation may happen earlier in a separate assigned test path, but
-the canonical Tester handoff starts after Worker completion. Preparing cases
-does not authorize running tests, measuring coverage, or calling services.
-Tester-authored repository test code belongs under the root `tests/` directory.
-Before execution, Tester proposes each exact command, scope, duration, and
-side effects. Planner inspects the invoked test code and writes a decision
-using `docs/features/TEST_AUTHORIZATION_TEMPLATE.md`. A focused, offline,
-inspectable command confined to assigned or temporary paths can receive a
-recorded `planner-low-risk` approval without human review. Dangerous or
-unclear effects require explicit human approval and a reference in the record.
-Executed tests or measured branch coverage require a matching record for each
-command; the CLI checks the event, FD revision/digest, Tester session, and
-exact command. In Dual evidence, JSON `data.authorization_records` and
-`data.commands` are matching arrays. New FD revisions
-need new authorization.
+#### Read-only status and evidence inspection
+
+```text
+aiw fd show FD-038
+aiw fd show-report FD-038
+aiw fd show-report FD-038 --last
+aiw fd show-review FD-038
+aiw fd show-review FD-038 --last
+```
+
+`show` keeps the FD Markdown and existing last-handoff receipt, then adds the
+FD status, verified worktree/branch/parent branch, active handoff (when the
+latest receipt is pending, launching, or dispatched), and latest event. Event
+summaries include their creation time and JSON. Missing workspace metadata,
+unverifiable metadata, no active handoff, and no event are reported explicitly.
+
+`show-report` and `show-review` inspect Markdown evidence named
+`FD-XXX-*.md` in the current checkout, `HEAD`, the verified FD worktree and
+its recorded local/parent branches, and the FD archive. The branch and
+worktree metadata must match registered Git refs/worktrees; invalid sources
+are skipped with a warning. Branch-only files are read from Git trees without
+checking out a branch. Results are sorted newest first, with UTC timestamps,
+Markdown source paths, and matching JSON sidecar paths when present. Worktree
+timestamps use file modification time; branch-only timestamps use the last
+commit that touched the file. Identical Markdown content is listed once per
+evidence kind with all source and sidecar paths retained.
+
+In a terminal with both stdin and stdout attached to a terminal, the commands
+show a numbered list and accept a selection. Blank input or `q` cancels.
+Outside an interactive terminal, they print the list and a usage hint without
+waiting for stdin. `--last` prints the newest Markdown body directly and does
+not read stdin. No matches produce a clear empty result. These three commands
+are read-only.
+
+Invoke `$fd-test` when you want black-box scenarios, test execution, or a
+factual test report. It is a standalone Skill: it does not emit FD events or
+change status, and its report is not an acceptance gate. Reviewer and other
+review agents do not inspect or assess that optional report. The Skill follows
+the repository's test authorization rules; asking for case design alone does
+not authorize execution. New repository test code belongs under the root
+`tests/` directory.
+
+#### Legacy Tester CLI compatibility
+
+FDs that already declare `**Test policy:** Independent` retain their existing
+Tester events, PM decision events, and `aiw fd refresh-tester` behavior. The
+CLI continues validating legacy report fields and authorization records for
+those receipts. This path is not used for new FDs; do not dispatch it as part
+of the default workflow. Historical report templates remain available under
+`docs/templates/TEST_*_TEMPLATE.md`.
 
 ## One-operation host workflow
 
 Ask the host agent to run `$fd-workflow auto` with a feature request or a
 single FD ID. This is a Skill operation, not an `aiw fd auto` CLI command. It
 creates or resumes one numbered FD, splits ordered Work Items, designs and
-implements them, delegates required tests to a separate Tester subagent and
-each review to a separate `fd-review` subagent,
-repairs concrete findings, and closes with `aiw fd close <id> Complete` after
-a current Reviewer pass. The host counts at most three Reviewer outcomes for
+implements them, performs compile-only and static checks, and delegates each
+review to a separate `fd-review` subagent. It repairs concrete findings and
+closes with `aiw fd close <id> Complete` after a current Reviewer pass. The
+host counts at most three Reviewer outcomes for
 the active implementation cycle across interrupted/resumed auto runs. A third
 failed review leaves the FD active with its findings. The resulting Worker
 handoff stays pending for a later human-directed recovery.
@@ -122,6 +139,12 @@ the current FD revision and digest. Claim the new event and cite it on
 `implementation-ready`. A current or in-flight Worker event cannot be
 replaced; use `request-review` only for the separate `Pending Verification`
 review-recovery case.
+If PM has confirmed that a dispatched Worker session has stopped, use
+`aiw fd recover-worker <fd-id> --expected-event <event-id>
+--expected-session <old-session> --reason "..."`. This records the reason,
+cancels the old receipt, and creates a new pending Worker event. The new
+Worker claims the event under its own session and cites it on
+`implementation-ready`. A mismatched event or session is rejected.
 If a process crashes while holding `.ai/fd/<id>/.mutation-lock`, inspect the
 original process and event receipt before removing the stale lock. Never
 remove it while the role may still be writing.

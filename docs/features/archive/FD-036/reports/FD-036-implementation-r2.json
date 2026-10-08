@@ -1,0 +1,26 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000008-work-requested",
+  "human_report": "FD-036-implementation-r2.md",
+  "data": {
+    "summary": "Reconciled the completed Worker implementation with the current FD revision using a supported recover-worker handoff. No implementation source changed in this session; prior implementation and compile evidence is in implementation-r1.",
+    "changed_paths": [
+      "docs/features/FD-036_AIW_SAY_CLI.md",
+      "docs/features/reports/FD-036-blocker-20261008T080700Z-emit-reconcile.md",
+      "docs/features/reports/FD-036-blocker-20261008T080700Z-emit-reconcile.json",
+      "docs/features/reports/FD-036-implementation-r2.md",
+      "docs/features/reports/FD-036-implementation-r2.json"
+    ],
+    "commands": [
+      "aiw fd claim FD-036 FD-036-000008-work-requested --session fd036-worker-20261008-d72c01",
+      "aiw fd resume FD-036"
+    ],
+    "results": [
+      "New Worker event claimed and bound to FD revision 8; prior revision mismatch is resolved.",
+      "No source changes or validation commands were run in this continuation; prior compile and diff-check evidence remains in implementation-r1."
+    ],
+    "residual_risk": "Independent Tester scenario reporting and authorized test execution, model availability, real API translation quality, and platform runtime behavior remain unverified."
+  }
+}

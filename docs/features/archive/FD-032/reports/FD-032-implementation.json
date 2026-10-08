@@ -1,0 +1,41 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-032",
+  "source_event": "FD-032-000003-design-ready",
+  "human_report": "FD-032-implementation.md",
+  "data": {
+    "session_ref": "fd032-host-20261008-31a7c2",
+    "summary": "Tester 报告保留事实，由三位独立评估者就严重性、范围与交付时间投票，PM 按多数结果交接。",
+    "changed_paths": [
+      "plugins/aiw-fd.py",
+      "openspec/specs/fd-workflow/spec.md",
+      "docs/features/TEST_RISK_ASSESSMENT_TEMPLATE.md",
+      "docs/features/TEST_RISK_ASSESSMENT_DATA_TEMPLATE.json",
+      "docs/features/TEST_DECISION_TEMPLATE.md",
+      "docs/features/TEST_DECISION_DATA_TEMPLATE.json",
+      "docs/features/TEST_REPORT_TEMPLATE.md",
+      "docs/usage/aiw-fd.md",
+      "skills/work-management.md",
+      "skills/fd-workflow/SKILL.md",
+      ".agents/skills/fd-workflow/SKILL.md",
+      "skills/fd-review/SKILL.md",
+      ".agents/skills/fd-review/SKILL.md",
+      "skills/fd-workflow/roles/pm.md",
+      "skills/fd-workflow/roles/tester.md",
+      "skills/fd-workflow/roles/reviewer.md",
+      "docs/features/FD-032_THREE_AGENT_RISK_DECISION_FOR_TESTER_REPORTS.md"
+    ],
+    "commands": [
+      "rg -n '70%|failed executed behavior tests cannot|coverage threshold|PM cannot accept failed|低于.*门槛' skills/fd-workflow .agents/skills/fd-workflow skills/fd-review .agents/skills/fd-review skills/work-management.md docs/usage/aiw-fd.md docs/features/TEST_DECISION_TEMPLATE.md openspec/specs/fd-workflow/spec.md plugins/aiw-fd.py",
+      "python -c \"from pathlib import Path; p=Path('plugins/aiw-fd.py'); compile(p.read_bytes(), str(p), 'exec')\""
+    ],
+    "results": [
+      "静态追踪三评估绑定、多数票和 Reviewer 独立身份约束。",
+      "相关规则只剩说明取消数字 Gate 的 coverage threshold 文字。",
+      "Python 插件无产物编译通过。",
+      "本轮未运行测试或覆盖率命令。"
+    ],
+    "residual_risk": "当前修订的多数决策与错误证据拒绝路径缺独立运行时证据；需 Tester 与 Reviewer 核查。"
+  }
+}

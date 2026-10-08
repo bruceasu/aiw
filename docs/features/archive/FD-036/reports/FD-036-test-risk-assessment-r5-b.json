@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000030-test-report-ready",
+  "human_report": "FD-036-test-risk-assessment-r5-b.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-036-test-report-r5.md",
+    "fd_revision": 30,
+    "fd_digest": "8fc52ef381ac87a4932b0784c36a338ac540785cb732fd479e3d719ec7e05510",
+    "assessor_session": "fd036-assessor-b-20261008-r5-technical-31c7",
+    "assessment_focus": "technical-repair",
+    "vote": "repair",
+    "severity": "Material acceptance evidence gap: one S04 behavior test is ERROR and its cause is unknown; this does not establish a product defect.",
+    "impact_scope": "Missing default aiw.toml path and required-model error behavior for aiw-say; users and implementation impact cannot be determined without diagnostics.",
+    "estimated_repair_time": "unknown: diagnose the test error before estimating implementation or fixture work.",
+    "delivery_impact": "unknown: acceptance should wait for diagnostic evidence; no duration can be estimated from the report.",
+    "rationale": "Tester r5 reports 20 of 21 behavior tests passed, one ERROR, no traceback, no unittest summary, and no usable exit code. Static inspection of the failing test and fixture cannot determine the runtime cause. Since S04 remains blocked, a clean acceptance decision is unsupported; the one-time r7 authorization must not be reused.",
+    "residual_risk": "If accepted now, a possible implementation regression or test harness/environment fault remains unresolved. S08/S09/S14/S15 and branch coverage also remain incomplete; live API, platform paths, and translation quality were not demonstrated.",
+    "uncertainty": "The ERROR root cause is unknown because raw diagnostics and final summary are unavailable. No assumption is made that implementation or test fixture is at fault.",
+    "assessment_time": "2026-10-08T09:32:22Z"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000017-review-requested",
+  "human_report": "FD-036-review-r1.md",
+  "data": {
+    "outcome": "changes-requested",
+    "reviewer_session": "fd036-reviewer-r1-20261008-0915",
+    "reviewed_fd_revision": 17,
+    "reviewed_fd_digest": "f0350f03e9220f96da7a4b2d4381110f13134d437f20b31e2cd8910189f99f2d",
+    "reviewed_diff_base": "develop...HEAD",
+    "base_commit": "5b04879e9cbfbdccca13bed13feeeeccb31e609c",
+    "reviewed_commit": "1e37356bec0401b8e8ff023a4e6857dd3f02a8fd",
+    "findings": [
+      {
+        "id": "FD036-R1-001",
+        "severity": "medium",
+        "path": "internal/say/config.go",
+        "line": 82,
+        "summary": "Valid TOML table headers with trailing comments are rejected.",
+        "evidence": "readConfig requires a header line to end with ']' at lines 82-86. Standard TOML such as '[say] # settings' is rejected as an invalid table header.",
+        "requirement": "FD Work Item 1.3 requires TOML parsing; Acceptance requires install configuration to set translation options.",
+        "requested_change": "Strip/parse TOML comments correctly on table headers and verify a valid commented header loads its settings."
+      }
+    ],
+    "static_review": {
+      "tester_evidence": "Tester report r2 and JSON align on revision 14/digest 914ae9b1043fa69226b2c7e00fed2ff4c2efe7b7e9ffad7f84c56ae8f83ad537 as tested snapshot and revision 15/digest 8a27b890461b8899f79a646f6814a4031afe6fb3407b2892169b579deb5d981e as subsequent report handoff. 19/19 behavior tests passed after the fixture repair; 10/15 scenarios are complete (66.7%), five are uncovered/incomplete, and branch coverage was not measured. The first fixture failure is accurately recorded and no uncovered behavior is represented as passed.",
+      "authorization": "Authorization r4 matches the exact test command, Tester session, implementation event and revision/digest, assigned worktree, and local mock scope. The temporary executable/cache side effects are disclosed; network downloads/checksums were disabled. The first failed run and one rerun after correcting the test fixture are recorded.",
+      "risk_decision": "All three r2 assessments and PM decision-r2 align on the 2:1 escalated accept-with-risk decision. The accepted S05/S08/S09/S14/S15, Linux/WSL path, and branch coverage gaps were not used as rejection reasons.",
+      "scope": "Reviewed implementation-r1/r2/r3, develop...HEAD diff, test evidence, authorization, risk assessments, PM decision, and relevant stable plugin spec. No implementation or FD files were changed."
+    },
+    "reviewer_commands": [
+      "aiw help --json",
+      "aiw fd --help",
+      "aiw fd show --help",
+      "aiw fd claim --help",
+      "aiw fd emit --help",
+      "aiw fd show FD-036 (succeeded with PYTHONIOENCODING=utf-8; initial cp932 output failed)",
+      "git status --short",
+      "git branch --show-current",
+      "git rev-parse HEAD",
+      "git rev-parse develop",
+      "git diff --stat develop...HEAD",
+      "git diff --name-status develop...HEAD",
+      "git log and git show --stat (targeted commits)",
+      "targeted rg --files and rg -n",
+      "targeted Get-Content and Get-ChildItem",
+      "aiw fd show FD-036 --json (unsupported option; failed)"
+    ],
+    "not_run": [
+      "Tests",
+      "Builds",
+      "Coverage measurement",
+      "Linters",
+      "Formatters",
+      "Network calls"
+    ],
+    "residual_risk": "Five PM-accepted scenarios remain incomplete, branch coverage is unmeasured, and Linux/WSL paths, manual profile copy, and real API behavior are unverified. Runtime validation of the newly identified valid-TOML compatibility issue was not run."
+  }
+}

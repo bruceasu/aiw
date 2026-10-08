@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000020-implementation-ready",
+  "human_report": "FD-036-test-authorization-r5.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-036-000020-implementation-ready",
+    "fd_revision": 20,
+    "fd_digest": "757930093438ac7c76b37db7e8eac6cbd7adc4e356de2863fa287c8b860b6a0f",
+    "tester_session": "fd036-tester-20261008-r3-independent",
+    "command": "$tag='aiw-say-fd036-r3-'+[guid]::NewGuid().ToString('N'); $testExe=Join-Path $env:TEMP ($tag+'.exe'); $env:GOCACHE=Join-Path $env:TEMP ($tag+'-cache'); $env:GOPROXY='off'; $env:GOSUMDB='off'; $env:PYTHONDONTWRITEBYTECODE='1'; go build -o $testExe ./cmd/aiw-say; if ($LASTEXITCODE -ne 0) { throw 'go build failed' }; $env:AIW_SAY_BIN=$testExe; python -B -m unittest -v tests.test_fd036_say_blackbox",
+    "working_directory": ".wt/FD-036",
+    "scope": "Compile cmd/aiw-say to a random TEMP executable and run only tests.test_fd036_say_blackbox, including the TOML table-header comment regression, against its local loopback mock.",
+    "expected_duration": "about 10 seconds",
+    "side_effects": "Unique random TEMP executable and isolated Go build cache remain; Python temporary directories self-clean and bytecode is disabled; GOPROXY and GOSUMDB disable network downloads/checks. No repository/user configuration writes, external API calls, credentials, or privilege changes.",
+    "risk_review": "Inspected the standard-library mock HTTP server, temporary config and subprocess isolation. The new table-header regression verifies settings apply. The command is offline, focused, and confined to one test module plus temporary files.",
+    "human_approval": "not required",
+    "planner_identity": "fd036-host-20261008-27cf10",
+    "decision_time": "2026-10-08T08:38:47Z"
+  }
+}

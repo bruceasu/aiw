@@ -1,0 +1,58 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000014-implementation-ready",
+  "human_report": "FD-036-test-report-r2.md",
+  "data": {
+    "implementation_event": "FD-036-000014-implementation-ready",
+    "tested_fd_revision": 14,
+    "tested_fd_digest": "914ae9b1043fa69226b2c7e00fed2ff4c2efe7b7e9ffad7f84c56ae8f83ad537",
+    "tester_session": "fd036-host-20261008-27cf10",
+    "applicable_scenarios": 15,
+    "covered_scenarios": 10,
+    "executed_behavior_tests": 19,
+    "passed_behavior_tests": 19,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 5,
+    "requirements_coverage": "66.7%",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": "Authorization r4 command attempt 1: Ran 19 tests in 2.280s; FAILED due to test fixture passing --model empty while retaining a valid base model; no product behavior failure was established. After correcting the fixture, the same exact authorized command: Ran 19 tests in 2.280s; OK. Covered scenarios 10/15=66.7%. Branch coverage was not instrumented.",
+    "coverage_unavailable_reason": "The authorized command runs unittest without branch instrumentation; the remaining five acceptance scenarios have no complete executable case in this run.",
+    "test_files": ["tests/test_fd036_say_blackbox.py"],
+    "authorization_records": ["docs/features/reports/FD-036-test-authorization-r4.md"],
+    "commands": [
+      "$tag='aiw-say-fd036-'+[guid]::NewGuid().ToString('N'); $testExe=Join-Path $env:TEMP ($tag+'.exe'); $env:GOCACHE=Join-Path $env:TEMP ($tag+'-cache'); $env:GOPROXY='off'; $env:GOSUMDB='off'; $env:PYTHONDONTWRITEBYTECODE='1'; go build -o $testExe ./cmd/aiw-say; if ($LASTEXITCODE -ne 0) { throw 'go build failed' }; $env:AIW_SAY_BIN=$testExe; python -B -m unittest -v tests.test_fd036_say_blackbox"
+    ],
+    "attempts": [
+      {"attempt": 1, "authorization": "docs/features/reports/FD-036-test-authorization-r4.md", "result": "Ran 19 tests in 2.280s; FAILED. One invalid-model fixture subtest had inherited the valid model from base configuration; the initial failure was in the test setup/assertion."},
+      {"attempt": 2, "authorization": "docs/features/reports/FD-036-test-authorization-r4.md", "result": "After correcting the fixture, ran 19 tests in 2.280s; OK."}
+    ],
+    "recommendation": "blocked",
+    "not_applicable_reason": "",
+    "residual_risk": "Five acceptance scenarios remain uncovered: malformed TOML, full default/installation/profile/CLI precedence, all enum variants, all unsupported options, and cross-platform/example-copy behavior. Linux/WSL profile paths and real API quality/model availability are also unverified.",
+    "scenarios": [
+      {"id":"S01","behavior":"Positional text invokes translation and is sent only in the user message; stdout contains only the translation.","status":"passed","test_cases":["test_argument_translation_keeps_source_in_user_message"]},
+      {"id":"S02","behavior":"Piped UTF-8 stdin is translated while preserving source content sent to the provider.","status":"passed","test_cases":["test_stdin_translation_preserves_utf8"]},
+      {"id":"S03","behavior":"Empty input or simultaneous positional text and stdin fails without request or partial stdout.","status":"passed","test_cases":["test_empty_input_fails_without_request_or_partial_stdout","test_argument_and_stdin_are_mutually_exclusive"]},
+      {"id":"S04","behavior":"Missing default config falls back to built-in settings and valid explicit config replaces base settings.","status":"passed","test_cases":["test_missing_default_config_uses_defaults_and_requires_explicit_model","test_valid_explicit_config_replaces_base_settings"]},
+      {"id":"S05","behavior":"Missing or invalid explicit config fails without partial output.","status":"uncovered","test_cases":["test_invalid_explicit_config_fails_without_partial_output"],"evidence":"Missing file and invalid semantic target were tested; malformed TOML syntax was not exercised, so this broad scenario remains incomplete."},
+      {"id":"S06","behavior":"Profile selection uses the user config path and missing or invalid profiles fail.","status":"passed","test_cases":["test_profile_overlays_base_and_cli_overlays_profile","test_missing_profile_and_unsafe_profile_name_fail_before_request"]},
+      {"id":"S07","behavior":"Profile names reject path separators and traversal input.","status":"passed","test_cases":["test_missing_profile_and_unsafe_profile_name_fail_before_request"]},
+      {"id":"S08","behavior":"Built-in defaults, installation config, profile, and explicit CLI overrides follow full precedence.","status":"uncovered","test_cases":["test_profile_overlays_base_and_cli_overlays_profile"],"evidence":"Profile/CLI overlay was exercised; installation-directory config and complete precedence matrix were not run."},
+      {"id":"S09","behavior":"Invalid source/target/mode/style/politeness/profanity enums, provider, timeout, and model fail.","status":"uncovered","test_cases":["test_invalid_provider_model_and_timeout_fail_before_request"],"evidence":"Provider, target, timeout, and empty configured model were tested; source/mode/style/politeness/profanity enum variants were not."},
+      {"id":"S10","behavior":"Unicode, newlines, quotes, commands, and prompt-injection text remain untrusted user content separate from system instructions.","status":"passed","test_cases":["test_argument_translation_keeps_source_in_user_message","test_stdin_translation_preserves_utf8"]},
+      {"id":"S11","behavior":"Missing credentials, authentication failure, rate limits, timeout, and invalid responses fail without source leakage or partial stdout.","status":"passed","test_cases":["test_missing_credentials_fails_without_leaking_source","test_auth_failure_has_no_partial_stdout","test_rate_limit_exhaustion_fails_without_partial_output","test_request_timeout_fails_without_partial_stdout","test_invalid_api_response_fails_without_partial_stdout_or_body_leak"]},
+      {"id":"S12","behavior":"Transient retry is bounded and failures emit no partial translation.","status":"passed","test_cases":["test_rate_limit_retries_are_bounded","test_rate_limit_exhaustion_fails_without_partial_output"]},
+      {"id":"S13","behavior":"Help/version and successful/failed stream and exit-code behavior match the CLI contract.","status":"passed","test_cases":["test_help_and_version_do_not_call_provider","test_argument_translation_keeps_source_in_user_message","test_auth_failure_has_no_partial_stdout"]},
+      {"id":"S14","behavior":"Unimplemented clipboard/file/output/dialog/pair options fail explicitly.","status":"uncovered","test_cases":["test_unimplemented_option_fails_before_request"],"evidence":"Only --clipboard was exercised; remaining unsupported flags were not individually tested."},
+      {"id":"S15","behavior":"CLI runs without GUI dependencies and profile examples can be copied without overwriting existing user files.","status":"uncovered","test_cases":["test_profile_examples_exist_for_copy_based_user_installation"],"evidence":"The process and sample-file existence were checked on Windows; Linux/WSL headless execution and actual copy/no-overwrite behavior were not exercised."}
+    ],
+    "static_exclusions": [
+      {"behavior":"Real API translation quality, model availability, and external service behavior.","reason":"No live service call was authorized; tests used only a local loopback mock."},
+      {"behavior":"Linux/WSL profile paths, packaging/install layout, and cross-platform execution.","reason":"The authorized run occurred on Windows only; platform-specific runtime setup was outside the single-module command."},
+      {"behavior":"Manual sample-copy/no-overwrite workflow.","reason":"No CLI installation/copy operation exists; documentation may be statically inspected, but this run only checked sample presence."},
+      {"behavior":"GUI, clipboard, file translation, dialogs, glossary, and second provider implementation.","reason":"These capabilities are explicitly outside FD-036 scope; only the specified unsupported-option diagnostic was sampled."}
+    ]
+  }
+}

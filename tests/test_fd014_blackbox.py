@@ -27,10 +27,11 @@ class FD014BlackBox(unittest.TestCase):
         self.root = Path(self.temp.name)
         (self.root / "plugins").mkdir()
         (self.root / "docs" / "features").mkdir(parents=True)
+        (self.root / "docs" / "templates").mkdir(parents=True)
         shutil.copyfile(SOURCE_ROOT / "plugins" / "aiw-fd.py", self.root / "plugins" / "aiw-fd.py")
         shutil.copyfile(
-            SOURCE_ROOT / "docs" / "features" / "TEMPLATE.md",
-            self.root / "docs" / "features" / "TEMPLATE.md",
+            SOURCE_ROOT / "docs" / "templates" / "TEMPLATE.md",
+            self.root / "docs" / "templates" / "TEMPLATE.md",
         )
         self.env = os.environ.copy()
         self.env.pop("AIW_FD_ROLE_RUNNER", None)

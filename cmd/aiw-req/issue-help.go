@@ -11,6 +11,7 @@ commands:
   children <parent-id>                  List direct child Issues.
   capture <id> <artifact> --file <path>
   approve <id> <APPROVED|DEFERRED|REJECTED> [--by <actor>] --reason <reason>
+  promote <id>                         Create an FD for an approved Issue.
   archive <id> --by <actor> --reason <reason>
   cancel <id> --by <actor> --reason <reason>
   list [--all|--archived|--cancelled]
@@ -27,6 +28,7 @@ func issueSubcommandUsage(command string) (string, bool) {
 		"children":    "usage: aiw issue children <parent-id>\n",
 		"capture":     "usage: aiw issue capture <id> <artifact> --file <path>\n",
 		"approve":     "usage: aiw issue approve <id> <APPROVED|DEFERRED|REJECTED> [--by <actor>] --reason <reason>\n",
+		"promote":     "usage: aiw issue promote <id>\n",
 		"archive":     "usage: aiw issue archive <id> --by <actor> --reason <reason>\n",
 		"cancel":      "usage: aiw issue cancel <id> --by <actor> --reason <reason>\n",
 		"list":        "usage: aiw issue list [--all|--archived|--cancelled]\n",

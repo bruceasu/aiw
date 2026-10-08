@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000015-test-report-ready",
+  "human_report": "FD-036-test-risk-assessment-r2-a.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-036-test-report-r2.md",
+    "fd_revision": 15,
+    "fd_digest": "8a27b890461b8899f79a646f6814a4031afe6fb3407b2892169b579deb5d981e",
+    "assessor_session": "fd036-assessor-a-20261008-9f42b7",
+    "assessment_focus": "acceptance-impact",
+    "vote": "accept-with-risk",
+    "severity": "Medium: no product behavior failure was established in the covered user paths, but one third of acceptance scenarios have no complete runtime evidence, including configuration precedence, enum validation, unsupported options, and cross-platform installation behavior.",
+    "impact_scope": "Users with malformed TOML, installation-directory configuration or layered precedence combinations, invalid enum values or unsupported flags, Linux/WSL environments, and users relying on profile sample copying may encounter behavior or guidance that this run did not verify.",
+    "estimated_repair_time": "Half a day to one day to add focused evidence for the uncovered scenarios and perform cross-platform/manual workflow checks, assuming implementation meets the FD; any defect repair time is unknown until a gap is found.",
+    "delivery_impact": "No confirmed failure blocks the covered Windows CLI paths. If delivery acceptance includes the uncovered platform and configuration scenarios, defer acceptance until their evidence is added or PM explicitly accepts the residual risk; otherwise delivery may proceed with the recorded caveats.",
+    "rationale": "The Tester report records 19/19 behavior tests passing after correcting a test fixture; the first failure was caused by inherited valid model configuration and did not establish a product defect. However, only 10 of 15 acceptance scenarios have complete runtime evidence. Static reading of tests/test_fd036_say_blackbox.py confirms missing coverage for malformed TOML, installation config/full precedence, all enum variants, all unsupported flags, and cross-platform plus actual copy/no-overwrite behavior. These gaps affect user-facing configuration and platform acceptance, so the vote is accept-with-risk rather than unconditional acceptance; absence of evidence is not treated as proof of failure.",
+    "residual_risk": "Configuration parser and precedence behavior, enum and unsupported-option diagnostics, Linux/WSL paths, and manual sample-copy/no-overwrite behavior remain unverified. Real API quality and model availability were outside the local mock run. These are unverified risks, not confirmed defects.",
+    "uncertainty": "Assessment is limited to static reading of the Tester report, its original test file, and the requested templates; no command or test was run. Implementation behavior on uncovered paths and whether additional evidence will reveal defects are unknown. Repair-time estimate assumes no code defects are found.",
+    "assessment_time": "2026-10-08T08:28:22+00:00"
+  }
+}

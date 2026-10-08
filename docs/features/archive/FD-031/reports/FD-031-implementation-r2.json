@@ -1,0 +1,26 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-031",
+  "source_event": null,
+  "human_report": "FD-031-implementation-r2.md",
+  "data": {
+    "session_ref": "fd031-worker-repair-20261008-4e367cb0",
+    "summary": "修复 Issue 标题反转义及 FD 创建失败的黑箱测试夹具；未接管旧 dispatched Worker 事件。",
+    "changed_paths": [
+      "internal/issue/store.go",
+      "tests/test_fd031_promote_blackbox.py",
+      "docs/features/FD-031_RESTORE_ISSUE_PROMOTE_AS_FD_WORKFLOW_ENTRY.md",
+      "docs/features/reports/FD-031-implementation-r2.md",
+      "docs/features/reports/FD-031-implementation-r2.json"
+    ],
+    "commands": ["go build -o NUL ./cmd/aiw-req", "git diff --check"],
+    "results": [
+      "静态追踪元数据写入/读取和 FD 模板失败路径。",
+      "Go compile-only 检查通过，未保留产物。",
+      "git diff --check 通过；仅有本地换行符转换提示。",
+      "本轮未运行黑箱测试；旧 Tester 结果 6/8 不代表当前版本。"
+    ],
+    "residual_risk": "旧 FD-031-000006-test-rejected 已绑定另一 Worker session；需要 PM 合法恢复交接，并由独立 Tester 对当前版本重新授权验证。"
+  }
+}

@@ -29,4 +29,6 @@ fd-init.md
 fd-workflow-codex-copilot.zip
 drafts/
 .tmp-go-cache/
-.cache 
+.cache
+/*.zip
+/patches/

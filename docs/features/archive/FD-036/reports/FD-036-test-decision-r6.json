@@ -1,0 +1,34 @@
+{
+    "schema":  "aiw.fd.evidence.v1",
+    "kind":  "pm-decision",
+    "fd_id":  "FD-036",
+    "source_event":  "FD-036-000033-test-report-ready",
+    "human_report":  "FD-036-test-decision-r6.md",
+    "data":  {
+                 "disposition":  "accepted",
+                 "tester_report":  "docs/features/reports/FD-036-test-report-r6-diagnostic.md",
+                 "fd_revision":  33,
+                 "fd_digest":  "54862b4294872e269be7ea94f4b8dd4d3467b9e2e4b50a85d69776f306dd05e0",
+                 "requirements_coverage":  "100.00%",
+                 "branch_coverage":  "not measured",
+                 "failed_behavior_tests":  0,
+                 "assessment_policy":  "adaptive-v1",
+                 "assessment_mode":  "escalated",
+                 "escalation_reason":  "material-evidence-gap",
+                 "escalation_detail":  "r6 is one approved diagnostic case, not a full-suite rerun; the prior r5 suite ERROR remains unexplained, and multiple acceptance scenarios remain uncovered.",
+                 "coverage_gap_disposition":  "material",
+                 "coverage_gap_reason":  "The current evidence covers only S04 diagnostic. It does not establish a full-suite result; S08/S09/S14/S15 and branch coverage remain uncovered or unmeasured.",
+                 "assessments":  [
+                                     "docs/features/reports/FD-036-test-risk-assessment-r6-a.md",
+                                     "docs/features/reports/FD-036-test-risk-assessment-r6-b.md",
+                                     "docs/features/reports/FD-036-test-risk-assessment-r6-c.md"
+                                 ],
+                 "accept_votes":  3,
+                 "repair_votes":  0,
+                 "rationale":  "Three independent assessors voted accept-with-risk. The r6 authorized S04 diagnostic passed (1/1, exit code 0), showing the prior r5 ERROR did not reproduce in that run. This does not explain the earlier ERROR or substitute for a full-suite rerun. Accept only to proceed to independent review, retaining all stated evidence limitations.",
+                 "exceptions":  "S04 historical r5 ERROR cause unresolved; no full suite rerun on current revision; S08/S09/S14/S15 not covered; branch coverage not measured; real API, cross-platform profile paths, and translation quality not validated.",
+                 "residual_risk":  "Potential intermittent or environment-related S04 issue remains unknown. The single-case diagnostic cannot establish full-FD behavior. Existing coverage, platform, API, and translation-quality risks remain.",
+                 "pm_identity":  "fd036-pm-20261008-r6-host",
+                 "decision_time":  "2026-10-08T09:52:44+00:00"
+             }
+}

@@ -1,0 +1,44 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-040",
+  "source_event": "FD-040-000004-implementation-ready",
+  "human_report": "FD-040-review-r1.md",
+  "data": {
+    "reviewer_session": "fd040-reviewer-20261008-c6a23d",
+    "reviewed_base": "47c5959",
+    "reviewed_head": "2c84c64",
+    "outcome": "verification-passed",
+    "findings": [],
+    "acceptance_results": {
+      "template_migration": "All 14 templates are 100% renames under docs/templates; no migrated template remains at docs/features top level.",
+      "fd_creation_template": "new_fd reads docs/templates/TEMPLATE.md and writes DEFAULT_TEMPLATE there when missing.",
+      "active_guidance_paths": "Active skills, usage docs, and portable layout guidance point to docs/templates; old references found only in prior FD records explicitly excluded by scope.",
+      "smoke_and_blackbox_fixtures": "Smoke and all three adjusted fixtures source TEMPLATE.md from docs/templates, including the missing-template scenario path."
+    },
+    "commands_run": [
+      "aiw fd show FD-040",
+      "aiw fd claim FD-040 FD-040-000004-implementation-ready --session fd040-reviewer-20261008-c6a23d",
+      "git log --oneline --decorate --max-count=6",
+      "git diff --find-renames --name-status 47c5959..HEAD",
+      "git diff --find-renames --unified=18 47c5959..HEAD -- scoped implementation, docs, and fixture files",
+      "rg template-path searches across active plugins, scripts, skills, usage docs, and fixtures",
+      "aiw fd --help",
+      "aiw fd emit --help"
+    ],
+    "skipped_checks": [
+      "tests",
+      "smoke",
+      "final build",
+      "lint",
+      "formatting",
+      "runtime CLI behavior",
+      "rerunning Worker compile-only check"
+    ],
+    "worker_compile_only": "Worker report records successful in-memory compilation of five Python files; Reviewer did not rerun it.",
+    "evidence_note": "Worker report describes a static path scan but does not list its exact command; independent Reviewer searches support the path acceptance results.",
+    "residual_risks": [
+      "Runtime template discovery and fallback behavior were not exercised."
+    ]
+  }
+}

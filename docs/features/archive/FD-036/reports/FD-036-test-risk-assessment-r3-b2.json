@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000021-test-report-ready",
+  "human_report": "FD-036-test-risk-assessment-r3-b2.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-036-test-report-r3.md",
+    "fd_revision": 21,
+    "fd_digest": "bf8ed80fa087ac34af85881240879d51aa9be42a8ba5617d6601690f7316b8b7",
+    "assessor_session": "fd036-assessor-r3-b2-20261008-085110",
+    "assessment_focus": "technical-repair",
+    "vote": "repair",
+    "severity": "中：无已知测试失败，但 S05、S08、S09 的核心配置行为证据不足，无法据现有测试确认其满足验收。",
+    "impact_scope": "显式基础配置、profile/CLI 优先级合并、非法配置语法及无效 provider/model/timeout/枚举值的调用路径。",
+    "estimated_repair_time": "约 2–4 小时补充针对性黑盒用例、场景映射并执行；不含授权等待。S15 跨平台复制行为另需相应环境，时间未知。",
+    "delivery_impact": "需新增 Tester 授权与执行、报告更新及 PM 决策周期；日历延迟取决于授权和排期，无法估算。",
+    "rationale": "事件 FD-036-000021-test-report-ready 的 r3 报告记载 19/19 行为测试通过、0 失败，但 16 个适用场景仅 11 个完整覆盖。S05 损坏 TOML、S08 四层优先级完整性、S09 全部枚举/非法值检查仍未覆盖或不完整。S16 对合法 TOML 表头行内注释的回归通过，只解决该特定情形，不能替代损坏语法测试。测试执行绑定 revision 20；revision 21 收据是报告交接，未显示对 revision 21 重新测试。",
+    "residual_risk": "真实 API/模型行为、翻译质量、Linux/WSL profile 路径、branch coverage 以及 S14/S15 的完整行为仍无执行证据；若未补齐 S05/S08/S09，配置拒绝和优先级契约在交付前仍未得到充分验证。",
+    "uncertainty": "未检查实现源代码或测试源码，无法判断当前实现是否正确，也不能判断现有测试是否间接覆盖部分未覆盖行为。测试证据不证明真实服务或跨平台行为。",
+    "assessment_time": "2026-10-08T08:51:10+00:00"
+  }
+}

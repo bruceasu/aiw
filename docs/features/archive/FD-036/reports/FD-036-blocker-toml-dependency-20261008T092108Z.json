@@ -1,0 +1,28 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000027-changes-requested",
+  "human_report": "FD-036-blocker-toml-dependency-20261008T092108Z.md",
+  "data": {
+    "stage": "Worker implementation repair",
+    "role": "PM",
+    "recorded_at": "2026-10-08T09:21:08Z",
+    "recorder_session": "fd036-pm-20261008-auto",
+    "observed_blocker": "Reviewer found that the custom TOML scalar parser rejects a valid array value on an unknown key and accepts a Go-only string escape that TOML forbids. The repository has no TOML parser dependency in go.mod/go.sum; Go standard library provides no TOML parser. Work stopped before source edits.",
+    "confirmed_cause": "No reusable TOML parser dependency exists in this repository; a conformant parser fix requires adding a dependency and changing go.mod/go.sum.",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      "Inspected go.mod, go.sum, and internal/say/config.go; confirmed there is no reusable TOML parser.",
+      "No code change, dependency download, test, or build was attempted."
+    ],
+    "status": "resolved",
+    "human_decision_required": true,
+    "human_decision_detail": "The user authorized adding and fetching a TOML parser dependency on 2026-10-08 at approximately 09:22 UTC.",
+    "actual_resolution": "User authorized adding a TOML parser dependency and fetching it; implementation can proceed with a conformant parser.",
+    "resolved_at": "2026-10-08T09:22:00Z",
+    "residual_risk_or_next_step": "Integrate the parser and focused regression cases, then request exact-revision Tester authorization and an independent Reviewer handoff.",
+    "reusable_improvement": "none",
+    "improvement_status": "none"
+  }
+}

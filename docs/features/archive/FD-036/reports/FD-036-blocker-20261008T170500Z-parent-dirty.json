@@ -1,0 +1,29 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000005-work-requested",
+  "human_report": "FD-036-blocker-20261008T170500Z-parent-dirty.md",
+  "data": {
+    "stage": "preflight",
+    "role": "pm",
+    "recorded_at": "2026-10-08T16:55:07+09:00",
+    "recorder_session": "fd036-pm-20261008-7e91bc",
+    "observed_blocker": "On resume, parent workspace on develop still has modified docs/aiw-say.md (167-line diff), modified docs/features/FEATURE_INDEX.md, untracked docs/features/FD-036_AIW_SAY_CLI.md and docs/features/FD-037_AIW_SAY.md, plus this blocker pair. Handling of docs/aiw-say.md and FD-037 is unconfirmed. Auto requires the ready FD plan committed and a clean parent before worktree creation and Worker claim.",
+    "confirmed_cause": "Parent workspace contains uncommitted changes; handling of docs/aiw-say.md and the untracked FD-037 plan is unconfirmed.",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      "Read FD-036, current branch/status, index diff, and FD receipt files; confirmed Open revision 5 and pending event FD-036-000005-work-requested.",
+      "aiw fd show FD-036 failed because the current terminal cp932 codec could not encode Chinese output; aiw fd resume FD-036 successfully exposed the pending Worker event.",
+      "On resume, rechecked git status/diff summary, blocker report, archive directory, and receipt; the parent changes remain and the same Worker event remains pending. No Git writes or claim were performed."
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "User confirmed the changes were committed.",
+    "actual_resolution": "User commit 3482973c contains the FD-036 plan and all previously pending parent changes. The develop workspace is clean and the Worker event remains pending.",
+    "resolved_at": "2026-10-08T16:55:07+09:00",
+    "residual_risk_or_next_step": "The parent-workspace gate is resolved. The .wt/FD-036 worktree was created, workspace metadata verified, and the Worker event claimed; continue implementation and downstream evidence stages.",
+    "reusable_improvement": "none",
+    "improvement_status": "not-applicable"
+  }
+}

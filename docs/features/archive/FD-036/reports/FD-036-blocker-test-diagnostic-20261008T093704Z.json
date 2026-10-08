@@ -1,0 +1,29 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000031-test-rejected",
+  "human_report": "FD-036-blocker-test-diagnostic-20261008T093704Z.md",
+  "data": {
+    "stage": "Tester r5 error diagnosis",
+    "role": "Worker",
+    "recorded_at": "2026-10-08T09:37:04Z",
+    "recorder_session": "fd036-worker-20261008-test-error-diagnostic-7f64",
+    "observed_blocker": "The authorized Tester r5 command visibly showed 20 passing tests and ERROR in test_missing_default_config_uses_defaults_and_requires_explicit_model, but no traceback, final unittest summary, or exit code was available. All three independent assessments voted repair and PM emitted test-rejected event31.",
+    "confirmed_cause": null,
+    "cause_status": "unknown",
+    "recovery_attempts": [
+      "Executed the authorized command once; no rerun was performed.",
+      "Statically traced the test fixture, executable copy, default config path, and missing-model error path; no static evidence identifies the runtime ERROR cause.",
+      "Tester prepared a single-test diagnostic command proposal; it has not been executed."
+    ],
+    "status": "resolved",
+    "human_decision_required": true,
+    "human_decision_detail": "The user explicitly approved one execution of the exact focused diagnostic command on 2026-10-08 at approximately 09:38 UTC.",
+    "actual_resolution": "User approved one S04 diagnostic rerun with complete output capture and explicit exit-code output.",
+    "resolved_at": "2026-10-08T09:38:00Z",
+    "residual_risk_or_next_step": "Create a current-revision Tester handoff and Planner authorization, execute the approved exact command once, then PM evaluates the resulting S04 evidence.",
+    "reusable_improvement": "none",
+    "improvement_status": "none"
+  }
+}

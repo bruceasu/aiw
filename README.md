@@ -795,6 +795,38 @@ skipped existing
 
 # Git Utilities
 
+## `aiw git merge-to`
+
+Merge branches in a temporary worktree while keeping your current branch,
+working files, and index unchanged, even when you have uncommitted changes.
+
+```bash
+# Merge the current branch into an existing local target.
+aiw git merge-to target_branch
+
+# Merge a selected source into an existing local target.
+aiw git merge-to target_branch source_branch
+
+# Create a target from the first source, then merge the others in order.
+aiw git merge-to --new new_branch source_branch1 source_branch2
+```
+
+The target must be a local branch. Existing targets checked out in any worktree
+are rejected, including the current branch. Sources may be local branches or
+already available remote-tracking branches such as `origin/feature/login`; the
+command does not fetch or push. All sources are checked before creating the
+worktree. Detached HEAD requires an explicit source. With `--new`, the target
+must not exist; a single source is enough to create it.
+
+Success removes the temporary worktree without force. A conflict, merge failure,
+or interruption retains the worktree and prints its absolute path and recovery
+commands. Resolve and stage conflicts there, then use `git -C <path> merge
+--continue`; if no merge started, retry the printed merge command after fixing
+its cause. Merge any listed remaining sources in order, then remove the clean
+worktree with `git worktree remove <path>`. To abort an unfinished merge, use
+`git -C <path> merge --abort`. Earlier successful merges and any newly created
+target remain on failure or abort. Cleanup failure returns a nonzero exit code.
+
 ## `aiw git cz` (Conventional Commit Wizard)
 
 ### Default Behavior

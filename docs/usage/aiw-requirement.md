@@ -13,16 +13,17 @@ aiw req chat [id]
 aiw req show <id>
 aiw req capture <id> <artifact> --file <path>
 aiw req approve <id> APPROVED --by <actor> --reason <reason>
-aiw req promote <id> --task <task-id>
+aiw req promote <id>
 aiw req link-parent <child-id> <parent-id>
 aiw req children <parent-id>
 aiw req archive <id> --reason <reason> [--by <actor>]
 aiw req cancel <id> --reason <reason> [--by <actor>]
 ```
 
-推广要求正式批准，创建或复用 AIW Task、来源 handoff 和 FD。FD 的设计
-就绪状态与工作项可映射后，推广状态成为 `FD_READY`。OpenSpec change 可选；
-旧 `SPEC_DRAFTED` 记录仍可读取。批准与推广各自需要原有授权，推广不开始实现。
+推广要求正式批准，并使用 Requirement 标题创建编号 FD、关联来源 Issue。
+命令等价于 `aiw fd new "<标题>" --issue <id>`，由 FD workflow 创建 Planner
+handoff。推广不会创建 Task、开始实现或修改 `[promotion]` 的 `status` 和
+`task_id`；旧 `SPEC_DRAFTED` 记录仍可读取。OpenSpec change 可选。
 
 正式讨论工件继续保存在 `docs/requirements/<id>/`。`parent_id` 为可选
 元数据字段；缺少它的旧记录按根 Issue 读取。子 Issue 必须在批准前建立

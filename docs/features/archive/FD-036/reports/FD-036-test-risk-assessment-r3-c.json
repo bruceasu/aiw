@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000021-test-report-ready",
+  "human_report": "FD-036-test-risk-assessment-r3-c.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-036-test-report-r3.md",
+    "fd_revision": 21,
+    "fd_digest": "bf8ed80fa087ac34af85881240879d51aa9be42a8ba5617d6601690f7316b8b7",
+    "assessor_session": "fd036-assessor-c-20261008-r3-ops-9d4f",
+    "assessment_focus": "delivery-operations",
+    "vote": "accept-with-risk",
+    "severity": "medium; 11 of 16 applicable scenarios have complete evidence, with five known gaps across malformed TOML, full precedence, enum/unsupported-option breadth, and platform/install behavior",
+    "impact_scope": "Potentially affects users with malformed or layered configuration, untested enum or unsupported-option cases, Linux/WSL paths, and sample-copy installation workflows; executed evidence is limited to Windows local loopback mock behavior",
+    "estimated_repair_time": "Approximately 0.5–1 working day for automatable configuration and option checks; Linux/WSL and installation-copy verification time is unknown pending environment and workflow availability",
+    "delivery_impact": "Does not block transition to independent Reviewer because the same gaps were explicitly accepted as exceptions in the prior PM decision and this report shows no behavior failures; if release scope requires Linux/WSL or real installation-path evidence, supplement before release, with timing dependent on environment availability",
+    "rationale": "The current event-bound Tester report records 19 of 19 behavior tests passed, zero failures, and the repaired TOML table-header comment behavior covered by S16. Five scenarios remain incomplete and branch coverage was not measured. These are transparent bounded evidence gaps, with no newly reported failure; they warrant continued visibility and possible release-stage verification but do not require blocking Reviewer handoff.",
+    "residual_risk": "Malformed TOML handling, complete default/install/profile/CLI precedence, every enum, all unsupported flags, cross-platform paths, actual copy/no-overwrite behavior, real API behavior, and model availability remain unverified; branch coverage is unavailable.",
+    "uncertainty": "Static review only; no commands run and coverage not independently recalculated. Installation workflow, Linux/WSL environment availability, and release scope are unspecified, so effort and release impact cannot be precise.",
+    "assessment_time": "2026-10-08T08:50:15+00:00"
+  }
+}

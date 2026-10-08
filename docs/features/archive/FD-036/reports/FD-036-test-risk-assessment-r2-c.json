@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000015-test-report-ready",
+  "human_report": "FD-036-test-risk-assessment-r2-c.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-036-test-report-r2.md",
+    "fd_revision": 15,
+    "fd_digest": "8a27b890461b8899f79a646f6814a4031afe6fb3407b2892169b579deb5d981e",
+    "assessor_session": "fd036-assessor-c-20261008-082844-utc",
+    "assessment_focus": "delivery-operations",
+    "vote": "accept-with-risk",
+    "severity": "medium; ten of fifteen scenarios have complete run evidence, while gaps affect configuration precedence and malformed config, validation breadth, unsupported flags, installation workflow, and cross-platform paths",
+    "impact_scope": "Potentially affects first-run/default or installation config users, Linux/WSL users, and users invoking enum variants or unsupported options not individually exercised; the covered Windows loopback-mock paths have 19 passing behavior tests",
+    "estimated_repair_time": "Approximately 0.5–1 working day to add/run focused checks for automatable gaps; cross-platform and manual installation validation is unknown pending environment and installation workflow availability",
+    "delivery_impact": "Does not block transition to Reviewer; if release scope requires Linux/WSL and full installation-path evidence, perform additional verification before release, likely adding at least half a day subject to environment availability",
+    "rationale": "Tester report records 19 passing behavior tests after correcting a test-fixture issue; the initial failure did not establish product behavior failure. Remaining five scenarios are transparently marked incomplete, and the report limits evidence to a Windows local mock run. The test code confirms sample validation checks presence rather than copy/no-overwrite behavior. These gaps are bounded delivery risks rather than evidence of a current blocking defect.",
+    "residual_risk": "Configuration precedence and malformed TOML behavior, all enum variants, unsupported flags, sample copy/no-overwrite, Linux/WSL profile paths, real API behavior, and model availability remain unverified; branch coverage was not measured.",
+    "uncertainty": "Static assessment only; no commands or tests were executed and coverage statistics were not independently recalculated. Event revision and digest are bound to the metadata supplied for the current event.",
+    "assessment_time": "2026-10-08T08:28:44+00:00"
+  }
+}

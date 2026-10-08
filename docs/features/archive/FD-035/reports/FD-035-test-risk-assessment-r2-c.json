@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-035",
+  "source_event": "FD-035-000012-test-report-ready",
+  "human_report": "FD-035-test-risk-assessment-r2-c.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-035-test-report-r3.md",
+    "fd_revision": 12,
+    "fd_digest": "4a3e2bf9093b9857d8c0c6ef5ef827df5c5643cb4fc7a3e6dfa5f5bee2265bdd",
+    "assessor_session": "fd035-assessor-c-20261008-6d2f9b",
+    "assessment_focus": "delivery-operations",
+    "vote": "accept-with-risk",
+    "severity": "中：25/25 验收场景通过，但 CLI 子进程仅有 38.3% 分支覆盖，剩余 338 个分支没有本轮执行证据。",
+    "impact_scope": "FD-035 的测试交接和其涉及的 CLI 行为证据；未覆盖分支上的潜在问题无法由本轮覆盖率结果排除。",
+    "estimated_repair_time": "unknown；FD 未设定最低分支覆盖率，当前不存在必须达到的额外覆盖目标；若后续要求扩大覆盖，需先确定目标及新增场景。",
+    "delivery_impact": "本轮场景补测与覆盖率测量均已完成，不阻止交付本次验证证据；剩余分支证据缺口需在后续风险评估或发布范围要求提高时另行安排。",
+    "rationale": "依据 FD-035-000012-test-report-ready 交接所绑定的 revision 12 与摘要，Tester 报告记录 25/25 场景通过，14 个行为测试方法在修复 S20 夹具后通过，且实际 CLI 子进程分支覆盖率为 210/548（38.3%）。首轮两个 S20 子场景失败在夹具 claim 阶段，未到行为断言，获批修复后的重跑通过。FD 要求测量并报告分支覆盖率但未设最低阈值；因此保留并披露未覆盖分支风险后建议带风险接纳。",
+    "residual_risk": "未覆盖的 338 个 CLI 分支没有本轮行为证据；其中若存在缺陷，本轮测试可能无法发现。接纳不表示这些分支正确，也不改变首轮执行失败的历史记录。",
+    "uncertainty": "尚未覆盖分支内是否存在缺陷未知；未来若要求更高覆盖率，目标百分比、所需场景与工时未知。",
+    "assessment_time": "2026-10-08T00:00:00+09:00"
+  }
+}

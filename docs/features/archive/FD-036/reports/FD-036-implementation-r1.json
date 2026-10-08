@@ -1,0 +1,44 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000005-work-requested",
+  "human_report": "FD-036-implementation-r1.md",
+  "data": {
+    "summary": "Implemented the aiw-say plugin, provider-neutral translation core, TOML base/profile settings, CLI validation and precedence, safe prompt boundary, bounded OpenAI adapter, deterministic Python black-box scenarios, configuration samples, and Phase 1 README. Work Item 1.8 was split into completed Worker code item 1.8.1 and Tester-owned scenario report item 1.8.2.",
+    "changed_paths": [
+      "cmd/aiw-say/main.go",
+      "cmd/aiw-say/options.go",
+      "cmd/aiw-say/run.go",
+      "internal/say/config.go",
+      "internal/say/input.go",
+      "internal/say/openai.go",
+      "internal/say/profile.go",
+      "internal/say/prompt.go",
+      "internal/say/say.go",
+      "program/aiw-say/README.md",
+      "program/aiw-say/aiw.toml.example",
+      "program/aiw-say/profiles/en-document.toml",
+      "program/aiw-say/profiles/en-simple.toml",
+      "program/aiw-say/profiles/ja-business.toml",
+      "program/aiw-say/profiles/ja-teams.toml",
+      "tests/test_fd036_say_blackbox.py",
+      "docs/features/FD-036_AIW_SAY_CLI.md"
+    ],
+    "commands": [
+      "aiw fd claim FD-036 FD-036-000005-work-requested --session fd036-worker-20261008-8f3c2a",
+      "Worker item commits: c40a6024, 50882019, e2f1e673, 276faa99, ed3309bb, cec998b4, 147584c3, a2627b62, 3602586d; follow-up type fix: ca2762cb",
+      "go build -o NUL ./cmd/aiw-say (first run failed on Request.Polite type mismatch)",
+      "go build -o NUL ./cmd/aiw-say (one retry after the relevant source fix; passed)"
+    ],
+    "results": [
+      "Worker handoff claimed by fd036-worker-20261008-8f3c2a.",
+      "Compile-only check passed after correcting Request.Polite to string.",
+      "Python black-box tests, Go tests, full/final builds, and live API calls were not run."
+    ],
+    "residual_risk": "Runtime behavior, real model availability and translation quality, platform installation, and API retry behavior remain unverified. TOML support is limited to scalar settings used by this feature. Independent Tester scenario reporting and authorized test execution remain pending.",
+    "sources": [
+      "https://developers.openai.com/api/reference/resources/chat"
+    ]
+  }
+}

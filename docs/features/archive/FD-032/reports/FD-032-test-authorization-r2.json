@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-032",
+  "source_event": "FD-032-000004-implementation-ready",
+  "human_report": "FD-032-test-authorization-r2.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-032-000004-implementation-ready",
+    "fd_revision": 4,
+    "fd_digest": "2d47d6eea5b222bae8e9b92fe303e5d6b7e844f7c2a6b19bc0ce0f5280cc0ae1",
+    "tester_session": "fd032-tester-20261008-4e2f91",
+    "command": "python -B -m unittest tests.test_fd032_risk_decision_blackbox -v",
+    "working_directory": "C:\\Users\\svictor\\workspace\\tools\\ai-tools\\aiw\\.wt\\FD-032",
+    "scope": "Three black-box methods in tests/test_fd032_risk_decision_blackbox.py.",
+    "expected_duration": "30 to 60 seconds",
+    "side_effects": "Temporary Git repositories and copied local files under the system temporary directory only; no real .ai writes.",
+    "risk_review": "First run failed in Dual evidence precondition. Inspected revised temporary authorization fixture; production code and FD digest unchanged. One corrected rerun, offline and low risk.",
+    "human_approval": "not required",
+    "planner_identity": "fd032-host-20261008-31a7c2",
+    "decision_time": "2026-10-08T03:23:47+00:00"
+  }
+}

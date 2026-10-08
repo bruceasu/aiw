@@ -1,0 +1,28 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000031-test-rejected",
+  "human_report": "FD-036-implementation-r7.md",
+  "data": {
+    "summary": "Recorded Tester r5's S04 ERROR as unresolved, statically traced the default-config/missing-model path without attributing the runtime error, and prepared a user-approved focused diagnostic handoff with full output and exit-code capture.",
+    "changed_paths": [
+      "docs/features/FD-036_AIW_SAY_CLI.md",
+      "docs/features/reports/FD-036-blocker-test-diagnostic-20261008T093704Z.md",
+      "docs/features/reports/FD-036-blocker-test-diagnostic-20261008T093704Z.json",
+      "docs/features/reports/FD-036-implementation-r7.md",
+      "docs/features/reports/FD-036-implementation-r7.json"
+    ],
+    "commands": [
+      "aiw fd claim FD-036 FD-036-000031-test-rejected --session fd036-worker-20261008-test-error-diagnostic-7f64",
+      "Targeted static reads/rg of cmd/aiw-say/run.go, internal/say/config.go, internal/say/openai.go, and tests/test_fd036_say_blackbox.py",
+      "No test, coverage, build, or network command was run in this Worker stage."
+    ],
+    "results": [
+      "Static path indicates missing default aiw.toml leaves built-in settings and missing model produces the expected adapter error, but this does not explain the reported test ERROR.",
+      "User approved one focused diagnostic command that records full output and explicit Python exit code; the prior failure was not rerun.",
+      "Diagnostic blocker feedback was updated as resolved with user approval; Tester execution is pending a new exact-revision handoff and Planner authorization."
+    ],
+    "residual_risk": "S04 runtime ERROR cause remains unknown until the newly authorized Tester diagnostic result. Previously accepted S08/S09/S14/S15, branch coverage, real API/model behavior, cross-platform profile paths, and translation quality remain unverified."
+  }
+}

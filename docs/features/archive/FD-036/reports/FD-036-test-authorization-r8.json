@@ -1,0 +1,24 @@
+{
+    "schema":  "aiw.fd.evidence.v1",
+    "kind":  "planner-authorization",
+    "fd_id":  "FD-036",
+    "source_event":  "FD-036-000032-implementation-ready",
+    "human_report":  "FD-036-test-authorization-r8.md",
+    "data":  {
+                 "decision":  "approved",
+                 "basis":  "human-approved",
+                 "implementation_event":  "FD-036-000032-implementation-ready",
+                 "fd_revision":  32,
+                 "fd_digest":  "2e7c2d42d2f522a19d9f6bfb5621947886142e31f28311d381f6f6edd7ae9b5d",
+                 "tester_session":  "fd036-tester-20261008-r6-s04-diagnostic",
+                 "command":  "$tag=\u0027aiw-say-fd036-r5-diagnose-\u0027+[guid]::NewGuid().ToString(\u0027N\u0027); $testExe=Join-Path $env:TEMP ($tag+\u0027.exe\u0027); $log=Join-Path $env:TEMP ($tag+\u0027.log\u0027); $env:GOCACHE=Join-Path $env:TEMP ($tag+\u0027-cache\u0027); $env:GOPROXY=\u0027off\u0027; $env:GOSUMDB=\u0027off\u0027; go build -o $testExe ./cmd/aiw-say; if ($LASTEXITCODE -ne 0) { throw \u0027go build failed\u0027 }; $env:AIW_SAY_BIN=$testExe; python -B -m unittest -v tests.test_fd036_say_blackbox.SayBlackBoxTests.test_missing_default_config_uses_defaults_and_requires_explicit_model 2\u003e\u00261 | Tee-Object -FilePath $log; $testExit=$LASTEXITCODE; Write-Output \"UNITTEST_EXIT_CODE=$testExit\"",
+                 "working_directory":  "C:\\Users\\svictor\\workspace\\tools\\ai-tools\\aiw\\.wt\\FD-036",
+                 "scope":  "Temporary compile of ./cmd/aiw-say and one unittest only: tests.test_fd036_say_blackbox.SayBlackBoxTests.test_missing_default_config_uses_defaults_and_requires_explicit_model, to capture complete S04 diagnostics.",
+                 "expected_duration":  "Approximately 5 seconds.",
+                 "side_effects":  "Writes one random executable, dedicated Go cache, and captured output log under %TEMP%; test uses TemporaryDirectory and a loopback-only mock. No real API, external network, repository production data, system configuration, or privilege changes.",
+                 "risk_review":  "Focused single-test diagnostic. GOPROXY and GOSUMDB are off. User explicitly approved one execution of this exact command after the prior run lacked traceback, final summary, and exit code. No retry is authorized.",
+                 "human_approval":  "approved:conversation:call_2a1939a5e5b1423785d68844296390af",
+                 "planner_identity":  "fd036-planner-20261008-r8-host",
+                 "decision_time":  "2026-10-08T09:40:59+00:00"
+             }
+}

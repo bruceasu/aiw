@@ -1,0 +1,39 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-038",
+  "source_event": "FD-038-000005-implementation-ready",
+  "human_report": "FD-038-test-waiver-r1.md",
+  "data": {
+    "stage": "test-waiver",
+    "disposition": "waived-for-review",
+    "fd_revision_at_decision": 5,
+    "fd_sha256_at_decision": "3baf0eafa1afb625b6e3f8a4e59dc76f265c7ae2dc7294e3026cf27169521baf",
+    "user_instruction": "Skip test and fixed the status.",
+    "user_authorized_one_time_manual_receipt_migration": true,
+    "source_event": "FD-038-000005-implementation-ready",
+    "tester_session_ref": "fd038-tester-20261009-7d32c91e",
+    "test_policy": "Waived",
+    "executed_command": "python -m unittest discover -s tests -p test_fd038_cli_blackbox.py -v",
+    "prior_run": {
+      "exit_code": 1,
+      "tests": 8,
+      "passed": 1,
+      "failed": 7,
+      "path_aiw_executable": "C:\\green\\aiw\\aiw.exe",
+      "worktree_implementation_validated": false,
+      "raw_stdout_stderr_retained": false,
+      "tester_report_created": false,
+      "test_report_ready_event_created": false
+    },
+    "additional_tests_authorized": false,
+    "test_accepted_event_authorized": false,
+    "review_route": "independent-reviewer",
+    "review_request_event": "FD-038-000006-review-requested",
+    "review_request_status": "pending",
+    "residual_risk": "FD-038 runtime behavior remains unverified by a valid test run.",
+    "decision_by": "pm",
+    "decision_session": "fd038-pm-20261008-7b2f6a",
+    "decided_at": "2026-10-08T15:24:13Z"
+  }
+}

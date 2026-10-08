@@ -1,0 +1,62 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-038",
+  "source_event": "FD-038-000006-review-requested",
+  "human_report": "FD-038-review-r1.md",
+  "data": {
+    "reviewer_session_ref": "fd038-reviewer-20261009-codex-review-01",
+    "reviewed_head": "9b77c54",
+    "diff_base": "develop",
+    "decision": "changes-requested",
+    "result_event": "FD-038-000007-changes-requested",
+    "findings": [
+      {
+        "id": "F-001",
+        "severity": "medium",
+        "path": "plugins/aiw-fd.py",
+        "lines": "307-320",
+        "title": "Resolved worktree path is not constrained to the repository",
+        "requirement": "Work Item 1.1 and FD acceptance require repository-internal path validation and diagnostics for invalid sources.",
+        "detail": "workspace_info compares resolved metadata and expected paths and checks Git registration, but does not require the resolved expected_worktree to remain beneath the primary repository. An external redirect can therefore be reported as a verified workspace when metadata and Git registration agree. The evidence scanner's later containment check does not correct fd show's status summary.",
+        "recommendation": "Require the resolved worktree path to remain beneath the resolved primary repository root before returning workspace metadata; report and skip paths that escape it."
+      },
+      {
+        "id": "F-002",
+        "severity": "low",
+        "path": "docs/features/FD-038_IMPROVE_FD_REPORT_REVIEW_AND_STATUS_INSPECTION.md",
+        "lines": "96",
+        "title": "FD Sources overstates stable spec changes",
+        "requirement": "FD records and reports should accurately describe the reviewed change set.",
+        "detail": "The FD says it updated the stable FD workflow spec, but openspec/specs/fd-workflow/spec.md is unchanged from develop and already contains the relevant requirement.",
+        "recommendation": "Remove the claim that this FD updated the stable spec, or document a required specification change if one is intended."
+      }
+    ],
+    "acceptance_results": {
+      "work_item_1_1": "partial; F-001 remains",
+      "work_item_1_2": "static implementation paths reviewed; runtime unverified",
+      "work_item_1_3": "static implementation paths reviewed; runtime unverified",
+      "work_item_1_4": "argparse, META, and dispatch paths statically reviewed; runtime unverified",
+      "work_item_1_5": "status summary statically reviewed; workspace path finding remains; runtime unverified",
+      "work_item_1_6": "usage documentation reviewed"
+    },
+    "commands_run": [
+      "python plugins/aiw-fd.py claim FD-038 FD-038-000006-review-requested --session fd038-reviewer-20261009-codex-review-01",
+      "python plugins/aiw-fd.py emit FD-038 changes-requested --producer reviewer --artifact docs/features/reviews/FD-038-review-r1.md --source-event FD-038-000006-review-requested (first attempt rejected duplicate JSON key; corrected sidecar and one retry succeeded)",
+      "git diff --name-status develop...HEAD",
+      "git diff --unified=15 develop...HEAD -- plugins/aiw-fd.py",
+      "git diff --unified=8 develop...HEAD -- docs/usage/aiw-fd.md",
+      "git diff --unified=3 develop...HEAD -- openspec/specs/fd-workflow/spec.md",
+      "git diff --check develop...HEAD",
+      "git diff --check (exit 0; LF/CRLF conversion notices on the FD and index)"
+    ],
+    "checks_skipped": [
+      "tests (explicitly waived by PM per user instruction)",
+      "Reviewer compile-only check",
+      "final-artifact build",
+      "formatter and linter"
+    ],
+    "worker_reported_compile_only": "Worker report states the compile-only command passed after a source fix; Reviewer did not rerun it.",
+    "residual_risk": "CLI runtime behavior remains unverified because testing was explicitly waived; static review does not establish terminal interaction, source inventory, sorting, or read-only behavior at runtime."
+  }
+}

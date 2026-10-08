@@ -1,0 +1,29 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000028-work-requested",
+  "human_report": "FD-036-implementation-r6.md",
+  "data": {
+    "summary": "Replaced the custom TOML subset parser with BurntSushi/toml v1.6.0, added field-type aware configuration application, and added black-box cases for valid array values on unknown keys and TOML-invalid Go string escapes.",
+    "changed_paths": [
+      "docs/features/FD-036_AIW_SAY_CLI.md",
+      "docs/features/reports/FD-036-implementation-r6.md",
+      "docs/features/reports/FD-036-implementation-r6.json",
+      "go.mod",
+      "go.sum",
+      "internal/say/config.go",
+      "tests/test_fd036_say_blackbox.py"
+    ],
+    "commands": [
+      "go get github.com/BurntSushi/toml@v1.6.0",
+      "PowerShell: $env:GOPROXY='off'; $env:GOSUMDB='off'; go build -o NUL ./cmd/aiw-say"
+    ],
+    "results": [
+      "The dependency was added successfully after user authorization.",
+      "The compile-only command passed without retaining a distributable artifact.",
+      "Black-box regression cases were authored but not executed by the Worker."
+    ],
+    "residual_risk": "New TOML boundary cases require an independently authorized Tester run. Previously accepted coverage gaps S08/S09/S14/S15, branch coverage, real API/model behavior, cross-platform profile paths, and translation quality remain unverified."
+  }
+}

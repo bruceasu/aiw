@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000010-test-report-ready",
+  "human_report": "FD-036-test-risk-assessment-r1-b.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-036-test-report-r1.md",
+    "fd_revision": 10,
+    "fd_digest": "0c9b1681a0e94821019689b2d737248ded33edc1816231155797f9c60de28af6",
+    "assessor_session": "fd036-assessor-b-20261008-6bd821",
+    "tester_session": "fd036-tester-20261008-4c91e7",
+    "assessment_focus": "technical-repair",
+    "vote": "repair",
+    "severity": "high: all 15 applicable scenarios are unrun, leaving an acceptance evidence gap; this is not evidence of a known implementation failure.",
+    "impact_scope": "Acceptance conclusions for all FD-036 CLI paths are unsupported by runtime evidence, including input, config/profile precedence, validation, API error handling, retries, output streams, help/version, and sample installation. No concrete runtime defect is established.",
+    "estimated_repair_time": "Approximately 0.5-1 day to obtain exact Planner authorization, execute the prepared black-box tests, and expand cases for uncovered acceptance scenarios if needed; additional implementation repair time is unknown until failures are observed.",
+    "delivery_impact": "Defer test acceptance until runtime evidence and the coverage gaps are addressed or explicitly accepted. No observed failures allow a code-defect repair estimate.",
+    "rationale": "The test-report-ready event records post-handoff FD revision 10/digest 0c9b1681a0e94821019689b2d737248ded33edc1816231155797f9c60de28af6. The Tester report records tested implementation revision 9/digest ac307da464bad4e9a6e9188c9374e5edd8f4547237092c5a2c3c18cb8ab6c151, as bound to the preceding implementation-ready event; the revision difference reflects the handoff state transition and is not treated as a defect. All 15 applicable scenarios are prepared but unrun, with zero executed/passed/failed, 0% requirements coverage, and branch coverage not measured. Static inspection found six test methods covering positional prompt boundary, stdin, 401, bounded retries ending in success, unsupported option, and stdin/argument conflict; many listed scenarios have no corresponding test method, and empty input is absent from the conflict test. Worker compile evidence does not establish runtime behavior.",
+    "residual_risk": "No runtime acceptance behavior is independently evidenced for the implementation under test. Local mock tests, if later authorized and passing, would still not establish real API quality/availability, package installation layout, or cross-platform behavior. No failed result or specific implementation defect is known.",
+    "uncertainty": "The revision 9 tested implementation and revision 10 post-handoff FD state are explained by the status transition. With no tests run, implementation behavior, test outcomes, and any implementation repair effort remain unknown. No other assessor reports or votes were reviewed.",
+    "assessment_time": "2026-10-08T08:12:03+00:00"
+  }
+}

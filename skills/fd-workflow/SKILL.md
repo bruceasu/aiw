@@ -19,7 +19,7 @@ about those terms, or a design-only request, does not start implementation.
 Use an explicit FD ID first, then a unique FD linked from the current Issue or
 conversation. Ask when several FDs match. For a new FD, use `aiw fd new
 "<title>" [--issue <id>]`; this allocates an unused `FD-XXX` number, creates
-the file from `docs/features/TEMPLATE.md`, updates the index, and records a
+the file from `docs/templates/TEMPLATE.md`, updates the index, and records a
 `design-requested` event. Do not create an AIW Task as a prerequisite or
 convert the FD into a Task workflow.
 
@@ -118,7 +118,7 @@ and updates the FD and receipt digest together. Never hand-edit a receipt.
 Apply this procedure to one numbered FD when the user invokes
 `$fd-workflow auto`, asks for the whole FD lifecycle, or requests implementation
 with parallelism/isolation/worktree/`wt`. The host agent is PM, Planner, and
-Worker; independent Tester and Reviewer stages use separate subagents. An
+Worker; the Reviewer stage uses a separate subagent. An
 isolation request uses
 the recorded FD branch and worktree. Under the shared work-management contract,
 this request authorizes local commits, squash delivery to the recorded parent
@@ -128,20 +128,21 @@ final builds, network access, permission escalation, push, deployment, or
 publishing. Follow narrower repository rules.
 
 Load the stage prompt in `roles/` only when performing that role: `pm.md`,
-`planner.md`, `worker.md`, `tester.md`, or `reviewer.md`. The shared lifecycle,
+`planner.md`, `worker.md`, or `reviewer.md`. The shared lifecycle,
 handoff, and authorization contract remains in `skills/work-management.md`;
 these short prompts define the current role's inputs, output, and boundaries.
-The host may combine PM, Planner, and Worker, but Tester and Reviewer evidence
-must come from sessions separate from Worker and from each other.
+The host may combine PM, Planner, and Worker. Reviewer evidence must come from
+a session separate from Worker. Optional tests run only through the standalone
+`fd-test` Skill and do not participate in this lifecycle.
 
 ### Blocker feedback for every stop
 
-Whenever Auto cannot continue at any preflight, design, Worker, Tester, PM,
-Reviewer, delivery, archive, or cleanup Gate, write one factual feedback pair
+Whenever Auto cannot continue at any preflight, design, Worker, PM, Reviewer,
+delivery, archive, or cleanup Gate, write one factual feedback pair
 under `docs/features/reports/FD-XXX-blocker-<unique-suffix>.md` and `.json`
 before reporting the stop. Use
-`docs/features/BLOCKER_FEEDBACK_TEMPLATE.md` and
-`BLOCKER_FEEDBACK_DATA_TEMPLATE.json`; the Markdown must be Chinese and
+`docs/templates/BLOCKER_FEEDBACK_TEMPLATE.md` and
+`docs/templates/BLOCKER_FEEDBACK_DATA_TEMPLATE.json`; the Markdown must be Chinese and
 contain one same-directory `aiw-data` reference. Use the FD ID, stage, role,
 exact source event when available, observed symptom, confirmed cause or
 unknown, actual recovery attempts and outcomes, unresolved status, human
@@ -181,9 +182,11 @@ in the user-facing Gate and final report.
    receipts, or treat an old direct review as a current Reviewer event. If a
    handoff is stale or ambiguous, stop and report the recovery command and
    state. Route an existing `Design` FD to Planner, `Open` or `In Progress` to
-   Worker, `Pending Test` to an independent Tester, `Pending Test Acceptance`
-   to PM, `Pending Verification` to an independent Reviewer, and an active
-   `Complete` FD with a current pass to close. Skip already completed stages;
+   Worker, `Pending Verification` to an independent Reviewer, and an active
+   `Complete` FD with a current pass to close. A legacy `Pending Test` or
+   `Pending Test Acceptance` state is not part of the default workflow; preserve
+   its receipt and continue only when the user explicitly requests its legacy
+   CLI path. Skip already completed stages;
    an archived Complete FD is already done. Before any implementation, capture
    the current branch, commit the ready FD plan on the parent branch, and make
    sure the parent workspace is clean. Do not mix unrelated changes into the FD
@@ -208,62 +211,30 @@ in the user-facing Gate and final report.
    minimal code/doc changes. Update checkboxes, TODO, Verification, and
    remaining `%%` notes with actual evidence and skipped checks. Apply the
    repo's validation budget. For a Dual evidence FD, write a Chinese Markdown
-   report and same-basename JSON using `docs/features/REPORT_DATA_TEMPLATE.json`;
+   report and same-basename JSON using `docs/templates/REPORT_DATA_TEMPLATE.json`;
    point `--artifact` to Markdown. In the FD worktree, inspect the diff and
    commit each completed, independently reviewable Work Item before starting
    the next. Stage only that item's files; use `aiw git wt commit <id>` only when
    every uncommitted change belongs to it, otherwise use path-scoped `git add`
-   and `git commit`. Commit final FD evidence before the Tester or Reviewer
+   and `git commit`. Commit final FD evidence before the Reviewer
    handoff. Do not rebase either branch as part of this workflow; delivery
    squashes the reviewed FD result onto the recorded parent branch.
    If authorization or design is missing, stop with the FD active. Emit `implementation-ready
    --producer worker --artifact <implementation-report> --source-event
    <claimed-worker-event>` only after all scoped items and required evidence
-   are resolved. New FDs have `**Test policy:** Independent`, so this event
-   routes to Tester; older FDs without the marker retain the direct Reviewer
-   route.
-3a. **Independent Tester for Pending Test.** Load `roles/tester.md` and spawn a separate Tester subagent
-   with the pending event, FD acceptance, public contract, report template at
-   `docs/features/TEST_REPORT_TEMPLATE.md`, and authorization limits. It must
-   use a different session from Worker and Reviewer, claim the exact Tester
-   event, derive black-box cases without reading implementation source, and
-   write only assigned root `tests/` paths/report. Before any test or coverage command,
-   Tester proposes the exact command, working directory, scope, expected
-   duration, and side effects. The host acts as Planner: inspect the invoked
-   test code and decide whether it is focused, offline, inspectable, and
-   confined to assigned or temporary paths. If so, write a versioned
-   authorization using `docs/features/TEST_AUTHORIZATION_TEMPLATE.md`, bound
-   to the implementation event, FD revision/digest, and Tester session. For
-   Dual evidence, add same-basename JSON from
-   `docs/features/TEST_AUTHORIZATION_DATA_TEMPLATE.json`, keep the Markdown
-   in Chinese, then
-   allow only that exact command. If it may affect unrelated data, secrets,
-   network/external services, dependencies, privileges, release artifacts, or
-   has unknown effects, request explicit human approval first and record its
-   affirmative reference using the authorization template's
-   `approved:<source>:<id>` form. `denied` and `pending` never authorize a
-   command. Do not infer approval from the auto request or Tester handoff.
-   An unapproved Tester may report unrun tests honestly and
-   must distinguish prepared from executed cases. The report inventories
-   each distinct observable acceptance scenario rather than treating a broad
-   numbered item as one case. It maps executed, partial, and uncovered
-   behavior separately, and reports both coverage measures, raw evidence or unavailable reasons,
-   exact commands, and residual risk. For Dual evidence, use a Chinese Markdown
-   report and `docs/features/TEST_REPORT_DATA_TEMPLATE.json`; put every
-   distinct scenario in JSON `data.scenarios` and keep counts consistent.
-   Then emit `test-report-ready --producer
-   tester --artifact <report> --source-event <claimed-test-event>`.
-3b. **PM Test Report Decision.** Read the Tester report and actual evidence.
-   Write a versioned Chinese Markdown decision with a same-basename JSON using
-   `docs/features/TEST_DECISION_TEMPLATE.md` and
-   `docs/features/TEST_DECISION_DATA_TEMPLATE.json` for Dual evidence.
-   Cite the Tester report, FD revision/digest, both coverage results, rationale,
-   exceptions, residual risk, PM identity, and decision time. A failed
-   executed behavior test cannot be accepted. Below 70% or unavailable
-   coverage needs an explicit exception and risk. If acceptance is materially
-   uncertain, stop for human input. Emit `test-accepted` to Reviewer or
-   `test-rejected` to Worker with `--producer pm`, the decision artifact, and
-   `--source-event <test-report-ready-event>`.
+   are resolved. Worker performs the repository-authorized compile-only check
+   and static review; do not run tests through this workflow. New FDs omit
+   `**Test policy: Independent**` and route directly to Reviewer. Existing FDs
+   with that marker retain their recorded CLI compatibility route, but Auto
+   does not dispatch a new Tester or assess its report. Use `$fd-test` only
+   when the user explicitly requests optional tests.
+3a. **Optional standalone tests.** The default workflow does not generate or
+   run tests. When the user explicitly requests `$fd-test`, follow that Skill
+   in a separate test session. It produces factual test evidence only; it does
+   not claim or emit FD events, change status, or route a report to PM,
+   assessors, or Reviewer. Preserve existing `Pending Test` and
+   `Pending Test Acceptance` records as legacy CLI states; Auto does not
+   resume or evaluate them.
 4. **Independent review when Pending Verification.** Load `roles/reviewer.md`. Count Reviewer outcome events for this FD's active
    implementation cycle, including earlier auto invocations; the limit is
    three, not three new attempts on every resume. Spawn one separate Reviewer
@@ -274,9 +245,9 @@ in the user-facing Gate and final report.
    review report, and emit `verification-passed` or `changes-requested` with
    `--source-event` pointing to that claim. The host must not write the
    review report, emit a Reviewer event, or substitute a same-session review.
-   For an independent-policy FD, Reviewer inspects the Tester report, PM
-   decision, and raw evidence. It respects PM's recorded coverage exception
-   while still reporting factual implementation or evidence defects.
+   Reviewer checks the FD acceptance against the actual diff, Worker report,
+   and relevant implementation evidence. Reviewer does not inspect or evaluate
+   optional `fd-test` reports. Its session must differ from Worker.
    If subagents are unavailable, stop and leave the handoff pending.
 5. **Repair, merge, and close.** Inspect the subagent's report and latest receipt;
    subagent prose alone is not a pass. On `changes-requested`, first count

@@ -44,6 +44,8 @@ func DispatchIssue(args []string) error {
 		return captureIssue(args[1:])
 	case "approve":
 		return approveIssue(args[1:])
+	case "promote":
+		return promoteIssue(args[1:])
 	case "archive":
 		return archiveIssue(args[1:])
 	case "cancel":

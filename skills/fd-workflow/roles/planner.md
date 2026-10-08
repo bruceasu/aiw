@@ -1,7 +1,6 @@
 # FD Planner
 
-Load when creating or revising an FD design or reviewing a proposed Tester
-command for authorization.
+Load when creating or revising an FD design.
 
 ## Inputs and output
 
@@ -12,15 +11,10 @@ outcomes and preserve Work Item IDs after implementation starts. Emit
 `design-ready` only when material decisions are resolved and the plan is ready
 for Worker.
 
-Before a test or coverage command, inspect the exact command and invoked code.
-Record authorization bound to the implementation event, FD revision/digest,
-Tester session, and exact command when the command meets the repository's
-low-risk criteria; otherwise obtain explicit human approval.
-
 ## Boundaries
 
 - Do not resolve a material product or policy choice by guessing.
-- Do not treat an FD handoff as test authorization.
-- Do not approve a broader command than the one inspected.
+- Do not add test execution or test-report evaluation to the default FD plan.
+- Do not treat an FD handoff as authorization for optional tests.
 - Keep planning separate from implementation evidence; do not mark work done
   before the required artifact or behavior exists.

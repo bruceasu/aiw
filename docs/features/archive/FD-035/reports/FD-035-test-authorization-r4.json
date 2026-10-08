@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-035",
+  "source_event": "FD-035-000011-implementation-ready",
+  "human_report": "FD-035-test-authorization-r4.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-035-000011-implementation-ready",
+    "fd_revision": 11,
+    "fd_digest": "359ffa2cb9c8e6e4307a4189549da31a66bb69d6f9aca12bcb736fd6492b7017",
+    "tester_session": "fd035-tester-20261008-a7d92e",
+    "command": "python -B -m unittest tests.test_fd032_risk_decision_blackbox -v",
+    "working_directory": "C:\\Users\\svictor\\workspace\\tools\\ai-tools\\aiw\\.wt\\FD-035",
+    "scope": "FD-035 public CLI black-box test module, including repaired S20 and existing cases.",
+    "expected_duration": "Under 1 minute.",
+    "side_effects": "Temporary repositories and files created by the inspected test fixture; automatic cleanup on normal completion.",
+    "risk_review": "Inspected repaired S20 fixture. Offline; no network, dependency changes, external services, privilege changes, or release artifacts. This is the single retry after the relevant test-code fix.",
+    "human_approval": "not required",
+    "planner_identity": "fd035-planner-20261008-9c2b41",
+    "decision_time": "2026-10-08T07:14:00+00:00"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000035-review-requested",
+  "human_report": "FD-036-review-r4.md",
+  "data": {
+    "outcome": "verification-passed",
+    "reviewer_session": "fd036-reviewer-r4-20261008",
+    "reviewed_fd_revision": 35,
+    "reviewed_fd_digest": "6abd1f6d233105ce0c1ddecc76a90b16cfca418a541c450a4916e79a7dd220ab",
+    "reviewed_diff_base": "develop...HEAD",
+    "reviewed_commit": "ae3dc4b5270834ec7d2e52fae3e735c11f32a100",
+    "findings": [],
+    "static_review": {
+      "implementation": "TOML is decoded as a complete document; recognized configuration fields are type/value checked before applying, unknown keys are ignored, invalid known values preserve lower-precedence values, and malformed TOML returns an error.",
+      "tester_r5": "21 behavior tests: 20 passed, one S04 ERROR with missing traceback, summary, and exit code; remains historical unresolved evidence.",
+      "authorization_r8": "User-approved single execution, exact command/session/revision-bound; GOPROXY and GOSUMDB disabled; no retry authorized.",
+      "tester_r6": "Exact S04 test ran once and passed; raw log shows ok, Ran 1 test in 0.511s, OK, UNITTEST_EXIT_CODE=0.",
+      "risk_decision": "Three distinct assessor sessions voted accept-with-risk; PM r6 accepted only to proceed to review and explicitly retained coverage gaps and r5 uncertainty.",
+      "stable_spec": "No conflict with openspec/specs/cli-and-plugins/spec.md plugin dispatch contract."
+    },
+    "commands_run": [
+      "Targeted Get-Content and rg inspections of FD, implementation, reports, authorization, assessments, PM decision, and stable spec",
+      "git show --stat --oneline 2e795808",
+      "git show 2e795808 -- internal/say/config.go internal/say/profile.go go.mod go.sum",
+      "Get-Content -Raw of r6 report, authorization, PM decision and assessor JSON",
+      "Read existing %TEMP% diagnostic log; no test rerun",
+      "git diff --name-status develop...HEAD",
+      "git status --short",
+      "git rev-parse HEAD",
+      "aiw fd emit --help",
+      "aiw fd show FD-036 (failed: Python cp932 could not encode Chinese; not retried)",
+      "git diff --check develop...HEAD (reported historical whitespace in unrelated evidence files)"
+    ],
+    "not_run": ["tests", "builds", "coverage", "linters", "formatters", "network calls"],
+    "residual_risk": "The r5 S04 ERROR remains unexplained; r6 is only one diagnostic case. S08/S09/S14/S15, branch coverage, real API behavior, cross-platform profile paths, and translation quality remain unverified as explicitly accepted by PM r6.",
+    "source_commit": "2e795808908f7ad1af0d5972edc7c45e6e8d6807"
+  }
+}

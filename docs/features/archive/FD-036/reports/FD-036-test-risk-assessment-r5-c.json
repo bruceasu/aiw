@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000030-test-report-ready",
+  "human_report": "FD-036-test-risk-assessment-r5-c.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-036-test-report-r5.md",
+    "fd_revision": 30,
+    "fd_digest": "8fc52ef381ac87a4932b0784c36a338ac540785cb732fd479e3d719ec7e05510",
+    "assessor_session": "fd036-assessor-c-20261008-r5-ops",
+    "assessment_focus": "delivery-operations",
+    "vote": "repair",
+    "severity": "high: S04 has an undiagnosed ERROR in default-configuration behavior, so test acceptance is blocked; no production defect is attributed",
+    "impact_scope": "AIW Say startup/model behavior when the default configuration file is absent; exact user-visible impact is unknown",
+    "estimated_repair_time": "unknown: no traceback, final test summary, or exit code is available to identify whether implementation, fixture, or environment work is needed",
+    "delivery_impact": "Do not accept this test report or hand off to Reviewer until S04 has diagnostic evidence; any rerun requires a separately authorized exact command",
+    "rationale": "Tester r5 visibly reports 20 passed and one ERROR, with no traceback, final summary, or usable exit code. S04 is relevant to default-config behavior changed in this implementation cycle. The cause cannot be attributed from available evidence, so risk acceptance would treat an unresolved error as acceptable without evidence. S08/S09/S14/S15 remain incomplete and branch coverage is not measured.",
+    "residual_risk": "Even after S04 is diagnosed, coverage gaps S08/S09/S14/S15, unmeasured branch coverage, real API behavior, cross-platform profile paths, and translation quality remain unverified by this report.",
+    "uncertainty": "The cause and user-visible effect of S04 ERROR are unknown; repair effort is unknown. No claim is made about implementation versus test fixture responsibility.",
+    "assessment_time": "2026-10-08T09:32:39Z"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-035",
+  "source_event": "FD-035-000005-test-report-ready",
+  "human_report": "FD-035-test-decision-r1.md",
+  "data": {
+    "disposition": "accepted",
+    "tester_report": "docs/features/reports/FD-035-test-report-r1.md",
+    "fd_revision": 5,
+    "fd_digest": "876e8ecd61c67ca9a0a5b9b31c4b8274dc7fe09b4d2f215729264b789ff70022",
+    "requirements_coverage": "76%",
+    "branch_coverage": "not measured",
+    "failed_behavior_tests": 0,
+    "assessment_policy": "adaptive-v1",
+    "assessment_mode": "escalated",
+    "escalation_reason": "material-evidence-gap",
+    "escalation_detail": "S20-S24 are key invalid-evidence and wrong-route rejection paths; S25 is the low-coverage bounded-gap single-assessor path. These six uncovered scenarios are directly tied to the new acceptance gate, so the PM judged their evidence gap material rather than using a numeric threshold.",
+    "coverage_gap_disposition": "material",
+    "coverage_gap_reason": "Six of 25 observable scenarios (S20-S25) lack behavior test evidence, including invalid policy, stale assessment revision, incomplete risk fields, material-gap misuse of single mode, missing complementary focus, and low-coverage bounded single mode.",
+    "assessments": [
+      "docs/features/reports/FD-035-test-risk-assessment-r1-a.md",
+      "docs/features/reports/FD-035-test-risk-assessment-r1-b.md",
+      "docs/features/reports/FD-035-test-risk-assessment-r1-c.md"
+    ],
+    "accept_votes": 3,
+    "repair_votes": 0,
+    "rationale": "The final authorized focused run passed eight black-box methods with zero product behavior assertion failures and 19/25 scenarios covered. Three independent assessors, assigned acceptance-impact, technical-repair, and delivery-operations, each voted accept-with-risk. The known evidence gaps remain explicit and go to independent Reviewer review.",
+    "exceptions": "Accept S20-S25 as untested and business-code branch coverage as not measured for this handoff; do not count either as passed, and do not waive implementation requirements.",
+    "residual_risk": "Invalid fields or policies may incorrectly pass or block a PM decision in six untested paths. Occurrence probability is unknown. Reviewer must inspect undisclosed implementation defects and evidence integrity.",
+    "pm_identity": "fd035-planner-20261008-01",
+    "decision_time": "2026-10-08T06:27:51+00:00"
+  }
+}
