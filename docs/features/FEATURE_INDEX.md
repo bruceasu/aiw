@@ -14,7 +14,6 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-039](FD-039_SEPARATE_FD_TEST_SKILL_FROM_FD_WORKFLOW.md) | Separate FD Test Skill from FD Workflow | Complete | Medium |
 | [FD-001](archive/FD-001/FD-001_EVENT_DRIVEN_FD_WORKFLOW.md) | 事件驱动的 FD 工作流 | Complete | High |
 | [FD-002](archive/FD-002/FD-002_ACTIONABLE_FD_HANDOFF_RECOVERY_HINTS.md) | Actionable FD handoff recovery hints | Complete | Medium |
 | [FD-003](archive/FD-003/FD-003_COMPACT_CZ_RELEASE.md) | 精简 aiw-cz 发布包 | Complete | Medium |
@@ -50,6 +49,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-034](archive/FD-034/FD-034_GIT.md) | Git 补丁生成、应用与恢复建议 | Complete | Medium |
 | [FD-035](archive/FD-035/FD-035_ADAPTIVE_RISK_ASSESSMENT_FOR_FD_TEST_REPORTS.md) | Adaptive risk assessment for FD test reports | Complete | Medium |
 | [FD-036](archive/FD-036/FD-036_AIW_SAY_CLI.md) | AIW Say 核心 CLI 翻译闭环 | Complete | Medium |
+| [FD-039](archive/FD-039/FD-039_SEPARATE_FD_TEST_SKILL_FROM_FD_WORKFLOW.md) | Separate FD Test Skill from FD Workflow | Complete | Medium |
 | [FD-040](archive/FD-040/FD-040_MOVE_FEATURE_TEMPLATES_TO_DOCS_TEMPLATES.md) | Move feature templates to docs/templates | Complete | Medium |
 
 ## Deferred / Closed

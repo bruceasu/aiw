@@ -77,3 +77,6 @@ explicitly cancelled item, with its reason on the same line.
 - `skills/fd-review/SKILL.md`、`skills/implement/SKILL.md`、`plugins/aiw-fd.py`：当前 Reviewer 输入、实施后路由与新 FD 默认模板。
 - `docs/features/TEST_REPORT_TEMPLATE.md`、`TEST_REPORT_DATA_TEMPLATE.json`：现有场景与覆盖证据格式。
 - `openspec/specs/fd-workflow/spec.md`：稳定的 FD handoff 与验收要求。
+
+**Completed:** 2026-10-08
+**Disposition reason:** Done
