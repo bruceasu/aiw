@@ -1,7 +1,7 @@
 # FD-038: Improve FD report, review, and status inspection
 
 **Status:** Planned  
-**Revision:** 1  
+**Revision:** 2  
 **Priority:** Medium
 **Test policy:** Independent
 **Evidence policy:** Dual
