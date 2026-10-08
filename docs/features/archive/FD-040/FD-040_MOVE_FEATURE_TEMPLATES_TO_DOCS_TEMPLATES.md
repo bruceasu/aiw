@@ -57,3 +57,5 @@ explicitly cancelled item, with its reason on the same line.
 - Issue: none
 
 相关规范：`openspec/specs/fd-workflow/spec.md`。依据：`plugins/aiw-fd.py` 的模板加载逻辑、`skills/fd-workflow/`、`skills/fd-test/`、`skills/work-management.md`、`docs/usage/aiw-fd.md` 与 `scripts/fd_smoke.py` 中现有模板路径。
+
+**Completed:** 2026-10-08
