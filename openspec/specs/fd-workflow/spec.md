@@ -148,7 +148,83 @@ newly written evidence into the same FD directory.
 - THEN its available implementation and review reports are archived with
   the FD, while reports for other FDs stay in the active directories
 - AND an existing archive destination prevents the close from overwriting
-  evidence.
+evidence.
+
+### Requirement: Read-only FD status and evidence inspection
+
+The FD CLI MUST provide read-only status and evidence inspection. `aiw fd show`
+MUST preserve its existing FD body output and show the current status, recorded
+worktree path and branch when available, current pending or in-flight handoff,
+and latest event. Missing optional metadata or event records MUST be stated
+explicitly. Handoff and event details MUST include their timestamps and
+formatted receipt JSON.
+
+`aiw fd show-report` and `aiw fd show-review` MUST list and display matching
+Markdown evidence from the current branch, the FD worktree and recorded parent
+branch when those sources can be verified, plus the FD native archive evidence
+directory. Only Markdown filenames prefixed by the requested FD ID are
+matching evidence. They MUST resolve branch and worktree sources through recorded
+metadata and Git worktree/ref inspection; they MUST NOT construct filesystem
+paths by concatenating branch names. Duplicate copies of identical evidence
+MUST be collapsed by evidence kind and content digest while retaining all
+visible source paths, even when identical copies have different relative paths.
+Lists MUST show source and modification time, sort newest first, and contain no
+more than 20 entries. For checked-out files, modification time is filesystem
+mtime; for branch-only files, it is the latest commit time that changed the
+path. Displayed timestamps MUST use UTC.
+A present same-basename JSON sidecar MUST be identified alongside its Markdown.
+
+With `--last`, the command MUST display the newest match without prompting.
+Without `--last`, interactive selection MAY read input only when both stdin and
+stdout are terminals. A blank or quit selection MUST exit safely. In a
+non-interactive environment the command MUST print the available list and an
+actionable usage hint without waiting for stdin. No matches MUST produce a
+clear empty result. These inspection commands MUST NOT modify the FD, index,
+workspace metadata, receipts, or evidence.
+
+#### Scenario: Inspect FD status and handoff records
+
+- **WHEN** a user runs `aiw fd show` for an FD with status, worktree metadata,
+  and event receipts
+- **THEN** the existing FD body remains visible and the summary shows status,
+  verified worktree and branch values, and the latest event JSON and time
+- **AND** a pending or in-flight handoff is shown separately, while absent
+  optional values are identified as not set or not recorded
+
+#### Scenario: Browse reports and reviews across visible sources
+
+- **WHEN** a user runs either evidence command for an FD with evidence in the
+  current branch, a verified FD worktree or parent branch, or its native archive
+- **THEN** the command lists up to 20 unique Markdown items newest first with
+  modification time and source path, and can display the selected body
+- **AND** identical copies are deduplicated and a same-basename JSON sidecar is
+  identified when present
+
+#### Scenario: Select the latest evidence without interaction
+
+- **WHEN** a user runs `aiw fd show-report FD-001 --last` or
+  `aiw fd show-review FD-001 --last`
+- **THEN** the newest matching Markdown is displayed without reading stdin
+
+#### Scenario: Avoid blocking when selection is not interactive
+
+- **WHEN** an evidence command has matches but stdin or stdout is not a terminal
+  and `--last` was not supplied
+- **THEN** it prints the bounded list and a usage hint, then exits without
+  waiting for input
+
+#### Scenario: Cancel or find no evidence safely
+
+- **WHEN** a user cancels an interactive evidence selection or no match exists
+- **THEN** the command exits safely with a cancellation or empty-result message
+  and leaves FD and evidence state unchanged
+
+#### Scenario: Inspection is read-only
+
+- **WHEN** a user runs any FD inspection command
+- **THEN** FD files, index, receipts, workspace metadata, and evidence remain
+  unchanged
+
 ### Requirement: Per-FD native archive layout
 
 Native archived FD designs MUST be stored at
