@@ -1,30 +1,31 @@
 {
-  "schema": "aiw.fd.evidence.v1",
-  "kind": "blocker-feedback",
-  "fd_id": "FD-038",
-  "source_event": "FD-038-000002-design-requested",
-  "human_report": "FD-038-blocker-20261008T143649Z-legacy-receipt.md",
-  "data": {
-    "stage": "preflight",
-    "role": "PM/Planner",
-    "recorded_at": "2026-10-08T14:36:49+00:00",
-    "recorder_session": "fd038-pm-20261008-7b2f6a",
-    "observed_blocker": "待处理 Planner 收据存在于 .ai/fd/FD-038/ 根目录，但当前 CLI 仅枚举 .ai/fd/FD-038/events/*.json；events/ 不存在。aiw fd resume FD-038 返回 FD has no event，无法按规定 claim。流程停在 Planner 领取之前；未改 FD，未创建 worktree。",
-    "confirmed_cause": "plugins/aiw-fd.py 的 event_paths 仅扫描 events/ 子目录；FD-038 唯一收据仍处于旧的根目录布局。其为何保留旧布局未知。",
-    "cause_status": "confirmed",
-    "recovery_attempts": [
-      "读取 .ai/fd/FD-038/000002-design-requested.json，确认其 event_id、target_role、dispatch_state、Revision 和摘要。",
-      "运行 aiw fd show FD-038 与 aiw fd resume FD-038；后者报告 FD has no event。",
-      "静态检查 plugins/aiw-fd.py 的 runtime_dir、event_paths、latest_event 和 claim 路径。",
-      "查看 aiw fd --help，并比较其它 FD 的收据布局；没有可见的 CLI 迁移命令。未尝试 claim 或修改收据。"
-    ],
-    "status": "unresolved",
-    "human_decision_required": true,
-    "human_decision_detail": "决定如何在保留现有收据及来源证据的前提下恢复：提供受支持的迁移/恢复操作，或明确允许 PM 发起新的 design-requested 事件并将旧收据保留为历史记录。",
-    "actual_resolution": null,
-    "resolved_at": null,
-    "residual_risk_or_next_step": "当前 CLI 无法读取或领取该待处理事件。恢复后重新核对最新事件、FD Revision 与摘要，再从 Planner 阶段继续。仅确认 FD-038 使用旧布局，不能推断其它历史 FD 状态。",
-    "reusable_improvement": "评估增加 CLI 管理的旧版收据迁移/恢复入口，并校验事件 ID、FD ID、Revision 和摘要；决策后更新相应稳定规范及 Auto preflight 说明。当前未修改规则。",
-    "improvement_status": "proposed"
-  }
+    "schema":  "aiw.fd.evidence.v1",
+    "kind":  "blocker-feedback",
+    "fd_id":  "FD-038",
+    "source_event":  "FD-038-000002-design-requested",
+    "human_report":  "FD-038-blocker-20261008T143649Z-legacy-receipt.md",
+    "data":  {
+                 "stage":  "preflight",
+                 "role":  "PM/Planner",
+                 "recorded_at":  "2026-10-08T14:36:49+00:00",
+                 "recorder_session":  "fd038-pm-20261008-7b2f6a",
+                 "observed_blocker":  "待处理 Planner 收据存在于 .ai/fd/FD-038/ 根目录，但当前 CLI 仅枚举 .ai/fd/FD-038/events/*.json；events/ 不存在。aiw fd resume FD-038 返回 FD has no event，无法按规定 claim。流程停在 Planner 领取之前；未改 FD，未创建 worktree。",
+                 "confirmed_cause":  "plugins/aiw-fd.py 的 event_paths 仅扫描 events/ 子目录；FD-038 唯一收据仍处于旧的根目录布局。其为何保留旧布局未知。",
+                 "cause_status":  "confirmed",
+                 "recovery_attempts":  [
+                                           "读取 .ai/fd/FD-038/000002-design-requested.json，确认其 event_id、target_role、dispatch_state、Revision 和摘要。",
+                                           "运行 aiw fd show FD-038 与 aiw fd resume FD-038；后者报告 FD has no event。",
+                                           "静态检查 plugins/aiw-fd.py 的 runtime_dir、event_paths、latest_event 和 claim 路径。",
+                                           "查看 aiw fd --help，并比较其它 FD 的收据布局；没有可见的 CLI 迁移命令。未尝试 claim 或修改收据。",
+                                           "用户选择由 PM 保留旧收据并新发交接；执行 aiw fd emit FD-038 design-requested --producer pm --artifact docs/features/FD-038_IMPROVE_FD_REPORT_REVIEW_AND_STATUS_INSPECTION.md，成功创建 FD-038-000003-design-requested；旧收据仍在原路径。"
+                                       ],
+                 "status":  "resolved",
+                 "human_decision_required":  false,
+                 "human_decision_detail":  "用户选择由 PM 新发 design-requested 交接，同时保留旧收据作为历史记录。",
+                 "actual_resolution":  "当前 CLI 创建待处理事件 FD-038-000003-design-requested（Revision 3，target role planner）；旧收据 FD-038-000002-design-requested 未移动、未改写。",
+                 "resolved_at":  "2026-10-08T14:38:54+00:00",
+                 "residual_risk_or_next_step":  "新交接可由当前 CLI 读取；下一步核对最新事件并由 Planner 领取。旧收据继续留在 CLI 不扫描的旧路径，作为历史记录保留。仅确认 FD-038 使用旧布局，不能推断其它历史 FD 状态。",
+                 "reusable_improvement":  "评估增加 CLI 管理的旧版收据迁移/恢复入口，并校验事件 ID、FD ID、Revision 和摘要；决策后更新相应稳定规范及 Auto preflight 说明。当前未修改规则。",
+                 "improvement_status":  "proposed"
+             }
 }
