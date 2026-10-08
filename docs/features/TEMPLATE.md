@@ -3,7 +3,6 @@
 **Status:** Planned  
 **Revision:** 1  
 **Priority:** Medium
-**Test policy:** Independent
 **Evidence policy:** Dual
 
 ## Problem
@@ -35,7 +34,8 @@ explicitly cancelled item, with its reason on the same line.
 
 ## Verification
 
-- Not run.
+- Compile-only check and static review by default. Optional tests use `$fd-test`
+  when requested and do not gate FD acceptance.
 
 ## Sources
 

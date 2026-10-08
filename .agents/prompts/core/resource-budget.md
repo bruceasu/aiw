@@ -18,11 +18,12 @@ For an ordinary implementation request:
 - post-edit command validation: at most `1` static/read-only command
 
 Implementation does not imply authorization for tests, final-artifact builds,
-or other runtime validation.
-An independent FD Tester may run one focused command after Planner records a
-revision-bound approval for that exact command. Planner may approve a low-risk
-offline command after inspecting its invoked code and side effects; dangerous
-or unclear commands require human approval first. A handoff is not approval.
+or other runtime validation. A standalone `$fd-test` invocation may execute a
+focused command only when the user explicitly requested execution or the exact
+command has the authorization required by repository instructions. A request
+to generate cases alone does not authorize execution. Legacy CLI Tester rounds
+may continue using their existing revision-bound Planner authorization; a
+handoff is not approval.
 
 ## Discovery Budget
 

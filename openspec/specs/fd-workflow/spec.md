@@ -61,182 +61,94 @@ handoff MUST cite the claimed event ID.
 
 ### Requirement: Evidence-based completion
 
-Worker MUST resolve all scoped Work Items before handing off implementation. An
-independent Reviewer MUST record a report for either `changes-requested` or
-`verification-passed`. Completion MUST NOT imply an unrun test passed.
-New FDs MUST declare `**Test policy:** Independent`. Existing FDs without the
-marker MAY use their current direct Worker-to-Reviewer path without rewriting
-history. For independent-policy FDs, `implementation-ready` MUST create a
-`Pending Test` Tester handoff rather than a Reviewer handoff. Tester MUST use a
-different session from Worker, derive black-box cases from requirements and
-public contracts, place repository test code under root `tests/`, and author a
-report that separates prepared, executed,
-failed, and unrun tests. The report MUST inventory applicable scenarios,
-covered and uncovered scenarios, requirements coverage, business-code branch
-coverage, raw coverage evidence or an unavailable reason, exact commands,
-test-file ownership, and residual risk. Each broad acceptance item with
-multiple observable behaviors MUST be split into distinct scenarios before
-computing the denominator. A case covering only part of an item MUST NOT
-mark its other behaviors covered. Static-only requirements need a stated
-exclusion reason, not a fabricated test result. Coverage and failed-test counts
-are decision evidence, not automatic acceptance thresholds. Tester execution
-requires a recorded Planner authorization for each
-exact command. Planner MUST inspect the invoked test code. Planner MAY approve
-a focused, offline, inspectable command confined to assigned or temporary
-paths without human review. Destructive or unrelated writes, secrets,
-network/external services, downloads, elevated privileges, release artifacts,
-or unclear effects MUST be escalated for explicit human approval. Planner
-records the command, scope, risk assessment, approval basis, decision time,
-implementation event, FD revision/digest, and Tester session before execution.
-For a human-approved command, the record MUST contain an affirmative,
-auditable approval reference; `denied`, `pending`, or an unanswered request
-MUST NOT satisfy the CLI gate.
-Tester MUST cite matching authorization records for executed tests or measured
-branch coverage. The CLI MUST reject such evidence without matching records.
-An earlier FD revision's approval cannot be reused.
-New FDs MUST also declare `**Evidence policy:** Dual`. For a Dual evidence FD,
-each new Worker, Tester, test-risk-assessment, PM, and Reviewer report and Planner authorization
-MUST have a Chinese Markdown file for people and a same-basename JSON sidecar
-for CLI/AI. Markdown MUST contain one `aiw-data` reference. JSON MUST use
-schema `aiw.fd.evidence.v1`, name the FD, evidence kind, exact source event,
-and Markdown filename, and place machine fields under `data`. Both sides MUST
-use same-directory filenames so their links remain valid after archive.
-The CLI MUST reject
-missing, invalid, or mismatched JSON before a role handoff. For a Tester
-report, JSON `scenarios` MUST enumerate each applicable behavior with a
-unique ID and status; its passed count MUST equal reported covered scenarios.
-Historical Markdown-only evidence and FDs without the marker retain their
-existing format and validation path.
+Worker MUST resolve all scoped Work Items before handing off implementation.
+An independent Reviewer MUST record a report for either changes-requested or
+verification-passed. Completion MUST NOT imply an unrun check passed.
 
-Tester `test-report-ready` MUST move the FD to `Pending Test Acceptance` and
-route to PM. PM MUST send the same current Tester report and raw evidence to
-an independent assessor. A report with failed behavior tests MUST receive
-three assessments. PM MUST add two assessments if PM disagrees with the first
-vote or judges an uncovered or unmeasured evidence gap material, recording the
-affected scenarios and impact. Coverage percentages are not automatic
-escalation thresholds. In a three-assessor review, A focuses on acceptance and
-user impact, B on technical evidence and repair, and C on delivery and
-operational risk. Each assessor MUST still evaluate the full risk, author a
-versioned Chinese Markdown and JSON report bound to the Tester event, FD
-revision/digest and report, and record a distinct session, focus, vote
-(`accept-with-risk` or `repair`), severity, impact scope, estimated repair
-time, delivery impact, rationale, residual risk, uncertainty, and assessment
-time. Assessors MUST NOT share draft votes; their sessions MUST differ from
-Worker, Tester, and PM. PM MUST replace an unavailable or invalid assessor
-instead of inventing a vote.
+New FDs MUST declare Evidence policy: Dual and MUST NOT declare
+Test policy: Independent. For a new/default FD, implementation-ready MUST
+route directly to Pending Verification and an independent Reviewer. Before
+handoff, Worker MUST perform the repository-authorized compile-only check and
+static review. The default workflow MUST NOT require test execution, coverage
+metrics, a Tester report, a PM test-report decision, or risk-assessor reports
+as acceptance evidence.
 
-Newly authored PM decisions SHOULD record the `adaptive-v1` assessment policy, `single` or
-`escalated` mode, escalation reason, PM's evidence-gap judgment, and rationale,
-in addition to the Tester report, FD revision/digest, both coverage results,
-failed-test count, votes, dissent, residual risk, identity, and decision time.
-Single mode MUST have one valid assessment, no failed behavior tests, a bounded
-gap judgment, and a disposition matching its vote. Escalated mode MUST have
-three valid assessments with distinct focuses; at least two
-`accept-with-risk` votes MUST produce acceptance, otherwise PM MUST return the
-FD to Worker. Failed tests and low, unavailable, or inapplicable coverage MUST
-remain visible as facts and risks; they do not turn into passing tests through
-risk acceptance. The CLI MUST reject missing, stale, duplicated,
-identity-conflicting, focus-conflicting, or mismatched assessments, and a PM
-disposition that disagrees with the applicable vote rule. Decisions omitting
-the policy retain the legacy requirement for exactly three independent votes,
-so in-flight legacy rounds and historical evidence remain compatible.
-`test-accepted` routes to an independent Reviewer; `test-rejected` returns to
-Worker. Reviewer MUST use a session separate from Worker, Tester, and assessors,
-respect PM's recorded risk acceptance,
-and still report undisclosed implementation or evidence defects. Reviewer MUST
-NOT reject solely because an explicitly assessed failing scenario or coverage
-gap received a valid majority risk-acceptance vote. A later Worker
-revision starts another Tester round rather than reusing an earlier decision.
-Archiving as Complete MUST require the current Reviewer's
-`verification-passed` event with the same FD revision and content digest,
-not only editable FD status text.
+Users MAY invoke the standalone fd-test Skill to derive black-box scenarios,
+write test code under root tests/, and execute specifically authorized test
+or coverage commands. It produces a factual report that MAY contain scenario
+counts and coverage measurements. The Skill MUST NOT emit FD workflow events,
+change FD status, add acceptance thresholds, or send its report to PM,
+assessors, or Reviewer for evaluation. Reviewer MUST NOT inspect or assess an
+optional fd-test report.
+
+For a Dual-evidence FD, each new Worker and Reviewer report MUST have a Chinese
+Markdown file and a same-basename JSON sidecar. Markdown MUST contain one
+aiw-data reference. JSON MUST use schema aiw.fd.evidence.v1, name the FD,
+evidence kind, exact source event, and Markdown filename, and place machine
+fields under data. Both sides MUST use same-directory filenames so their
+links remain valid after archive. The CLI MUST reject missing, invalid, or
+mismatched JSON before a role handoff. Historical Markdown-only evidence
+remains intact.
+
+Existing FDs that already declare Test policy: Independent MAY continue using
+their recorded legacy CLI Tester events and validation behavior, including
+refresh-tester. Those compatibility paths MUST NOT become the default for new
+FDs, and their test reports are not Reviewer inputs. Archiving as Complete
+MUST require the current Reviewer's verification-passed event with the same
+FD revision and content digest, not only editable FD status text.
+
 Closing an FD MUST store its design at
-`docs/features/archive/<FD-ID>/<FD-ID>_SLUG.md` and move its matching Markdown
-and JSON implementation and review evidence into that directory's `reports/` and
-`reviews/` subdirectories. It MUST reject a destination collision before
+docs/features/archive/<FD-ID>/<FD-ID>_SLUG.md and move its matching Markdown
+and JSON implementation and review evidence into that directory's reports/
+and reviews/ subdirectories. It MUST reject a destination collision before
 moving any file and MUST leave other FDs' files in place. Re-review of an
 archived FD MUST retain earlier archived evidence; a later close moves any
 newly written evidence into the same FD directory.
 
+#### Scenario: Default implementation handoff goes to review
+
+- WHEN Worker completes a new/default FD and emits implementation-ready
+  after compile-only and static checks
+- THEN the CLI routes directly to an independent Reviewer
+- AND the workflow requires no Tester report, coverage threshold, PM
+  test-report decision, or assessor report
+
+#### Scenario: Optional fd-test remains outside acceptance
+
+- WHEN a user invokes fd-test for an FD
+- THEN it records requested scenarios and any authorized test results in
+  an optional factual report
+- AND it does not change the FD status or create an acceptance handoff
+- AND Reviewer does not inspect or evaluate that report
+
+#### Scenario: Legacy Tester CLI remains compatible
+
+- WHEN an existing FD already carries Test policy: Independent
+- THEN its existing Tester events and refresh-tester command remain
+  available under the legacy CLI contract
+- AND newly created FDs do not receive that policy by default
+
 #### Scenario: Review fails
 
-- **WHEN** Reviewer emits `changes-requested` with a report
-- **THEN** the FD returns to In Progress and Worker receives the report.
+- WHEN Reviewer emits changes-requested with a report
+- THEN the FD returns to In Progress and Worker receives the report.
 
 #### Scenario: Dual evidence handoff and archive
 
-- **WHEN** a Dual evidence role emits a report with matching Chinese Markdown
+- WHEN a Dual evidence role emits a report with matching Chinese Markdown
   and structured JSON
-- **THEN** the CLI validates their references and event binding, records the
+- THEN the CLI validates their references and event binding, records the
   Markdown artifact, and a later close archives both files together
-- **AND** missing or mismatched JSON blocks the handoff without changing FD
+- AND missing or mismatched JSON blocks the handoff without changing FD
   state; historical Markdown-only reports remain intact
-
-#### Scenario: Independent test evidence precedes review
-
-- **WHEN** Worker completes an independent-policy FD and Tester claims its
-  handoff in a separate session
-- **THEN** Tester reports actual scenario/test/coverage evidence and PM
-  obtains one independent risk assessment, adding two for failed tests,
-  material evidence gaps, or disagreement with the first vote
-  before any Reviewer handoff
-- **AND** a failed or unrun behavior test remains labelled as such even if a
-  majority accepts the delivery risk
-
-#### Scenario: One assessor decides a bounded risk
-
-- **WHEN** the current Tester report has no failed behavior tests, PM records
-  the remaining evidence gap as bounded, and one valid assessor votes
-  `accept-with-risk` or `repair`
-- **THEN** PM follows that vote and records a single-assessor decision
-
-#### Scenario: Majority accepts an escalated risk
-
-- **WHEN** three valid independent assessments with complementary focuses of the same current Tester
-  report include at least two `accept-with-risk` votes
-- **THEN** PM records the risk and dissent and emits `test-accepted`, even if
-  the report contains failed tests or low or unavailable coverage
-
-#### Scenario: Escalated majority requests repair
-
-- **WHEN** at most one of three valid assessments votes `accept-with-risk`
-- **THEN** PM records the vote totals and emits `test-rejected` to Worker
-
-#### Scenario: Assessment evidence is invalid
-
-- **WHEN** an assessment is missing, stale, duplicated, or conflicts with a
-  Worker, Tester, PM, or other assessor session
-- **THEN** PM obtains an independent replacement; the CLI refuses a decision
-  until the required one or three valid assessments support the matching vote result
-
-#### Scenario: Planner authorizes a low-risk Tester command
-
-- **WHEN** Tester proposes an exact focused command and Planner confirms its
-  invoked code is offline, inspectable, and confined to assigned or temporary
-  paths
-- **THEN** Planner records a revision-bound low-risk approval without asking
-  the human, and Tester may execute only that command
-
-#### Scenario: Tester command has dangerous or unclear effects
-
-- **WHEN** Planner identifies external, destructive, privileged, secret-bearing,
-  release-producing, or unknown effects
-- **THEN** Planner requests human approval and Tester waits; an approved
-  command cites the human decision in its authorization record
-
-#### Scenario: Existing FD retains direct review
-
-- **WHEN** an FD predating the test policy has no Independent marker
-- **THEN** its current `implementation-ready` route remains Reviewer
 
 #### Scenario: Close archives its evidence
 
-- **WHEN** an FD is closed with the required lifecycle evidence
-- **THEN** its available implementation and review reports are archived with
-  the FD, while reports for other FDs stay in the active directories.
-- **AND** an existing archive destination prevents the close from overwriting
+- WHEN an FD is closed with the required lifecycle evidence
+- THEN its available implementation and review reports are archived with
+  the FD, while reports for other FDs stay in the active directories
+- AND an existing archive destination prevents the close from overwriting
   evidence.
-
 ### Requirement: Per-FD native archive layout
 
 Native archived FD designs MUST be stored at
@@ -298,9 +210,10 @@ commit on the recorded parent branch, with the delivered FD HEAD recorded as
 After archive, branch removal MUST require the current FD HEAD to match that
 trailer in the parent's delivery history.
 The operation MUST use the existing role receipt, exact claim, source-event,
-revision, and digest gates. Tester and Reviewer MUST each run in separate
-subagents for an independent-policy FD; the PM/Planner/Worker host MUST NOT
-emit their results. No more than three
+revision, and digest gates. The Reviewer MUST run in a separate subagent; the
+PM/Planner/Worker host MUST NOT emit the review result. The default lifecycle
+MUST NOT dispatch a Tester or test-report assessor. Legacy Tester CLI events
+remain available only for FDs that already use that compatibility path. No more than three
 Reviewer outcome events MAY occur in one active implementation cycle, even if
 the auto operation is resumed. After a third `changes-requested`, the FD MUST
 remain active with its findings. The operation MUST stop for missing human
@@ -457,7 +370,7 @@ when reporting implementation.
 - **WHEN** the event ID, session, role, state, or active FD does not match
 - **THEN** recovery is rejected without changing the FD or receipts
 
-### Requirement: Refresh a stale Tester handoff
+### Requirement: Refresh a stale Tester handoff (legacy compatibility)
 
 PM MAY run `aiw fd refresh-tester <fd-id> --reason <text> --artifact <report>`
 for an active independent `Pending Test` FD whose latest unclaimed pending

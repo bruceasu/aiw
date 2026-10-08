@@ -20,76 +20,49 @@ aiw fd reopen FD-004 --reason "继续未完成的验证"
 
 The creation event routes to Planner. Planner writes options, decision,
 acceptance, and numbered Work Items before `design-ready`. Worker implements
-all ready items and records a report; then it emits `implementation-ready`.
-New FDs carry `**Test policy:** Independent`. For them, this event routes to
-an independent Tester. New FDs also carry `**Evidence policy:** Dual`:
-future reports use Chinese Markdown for people and same-basename JSON for
-CLI/AI. Put one `<!-- aiw-data: FD-XXX-report.json -->`
-comment in Markdown, use Markdown for `--artifact`, and write JSON with schema
-`aiw.fd.evidence.v1`, FD ID, kind, source event, Markdown filename, and `data`.
-Use the JSON templates under `docs/features/`. Reviewer reports use kind
-`reviewer-report` and live under `docs/features/reviews/`. The CLI checks the
-JSON before handoff, and close archives both files. Older Markdown-only
-evidence is preserved. Relative filename references remain valid after archive.
-Tester claims in a different session, writes a
-black-box report using `docs/features/TEST_REPORT_TEMPLATE.md`, and emits
-`test-report-ready --producer tester --artifact <report> --source-event
-<implementation-ready-event>`. PM writes a versioned decision using
-`docs/features/TEST_DECISION_TEMPLATE.md` after giving the same report to
-independent risk assessor A. Failed behavior tests require three assessors;
-PM adds B and C if an evidence gap is material or PM disagrees with A. A
-focuses on acceptance/user impact, B on technical evidence/repair, and C on
-delivery/operations; each still assesses the full risk independently. Each
-records severity, impact scope, estimated repair time, delivery impact, and
-an `accept-with-risk` or `repair` vote in Chinese Markdown and JSON. With one
-assessor PM follows that vote; with three, at least two acceptance votes route
-to Reviewer. The decision preserves both coverage
-measures, failed tests, dissent, exceptions, residual risk, PM identity, and
-time. An accepted risk never changes a failed test into a pass.
-Existing FDs without the marker continue directly to independent Review.
-An independent Reviewer emits `changes-requested` with findings or
+all ready items, performs the repository-authorized compile-only check and
+static review, and records a report before emitting `implementation-ready`.
+New FDs route directly to an independent Reviewer. New FDs use
+**Evidence policy: Dual**: reports use Chinese Markdown for people and a
+same-basename JSON sidecar for CLI/AI. Put one
+`<!-- aiw-data: FD-XXX-report.json -->` comment in Markdown, use Markdown for
+`--artifact`, and write JSON with schema `aiw.fd.evidence.v1`, FD ID, kind,
+source event, Markdown filename, and `data`. Use the JSON templates under
+`docs/features/`. Reviewer reports use kind `reviewer-report` and live under
+`docs/features/reviews/`. The CLI checks the JSON before handoff, and close
+archives both files. Older Markdown-only evidence is preserved. Relative
+filename references remain valid after archive. An independent Reviewer emits
+`changes-requested` with findings or
 `verification-passed` with a review report. A role must claim or receive its
 handoff before completing it, then pass `--source-event <event-id>`.
 `aiw fd show` displays the last ID.
 
-For legacy Markdown-only evidence, the Tester report uses labelled fields.
-For Dual evidence, the CLI reads the JSON sidecar and checks event/revision/
-digest, session, scenario inventory, count, and coverage fields before accepting
-`test-report-ready`. The PM decision uses
-`docs/features/TEST_DECISION_TEMPLATE.md`, cites the exact Tester report and
-one or three independent assessments, and records the applicable vote result,
-escalation reason, PM evidence-gap judgment, and remaining risk.
-Coverage and failure counts are evidence, not automatic acceptance thresholds.
-Tester must split broad FD acceptance items into distinct observable
-scenarios before computing requirements coverage; a partially tested item
-does not make all its behaviors covered. A human-approved command uses an
-affirmative `approved:<source>:<id>` reference in its Planner record.
-Tester preparation may happen earlier in a separate assigned test path, but
-the canonical Tester handoff starts after Worker completion. Preparing cases
-does not authorize running tests, measuring coverage, or calling services.
-Tester-authored repository test code belongs under the root `tests/` directory.
-Before execution, Tester proposes each exact command, scope, duration, and
-side effects. Planner inspects the invoked test code and writes a decision
-using `docs/features/TEST_AUTHORIZATION_TEMPLATE.md`. A focused, offline,
-inspectable command confined to assigned or temporary paths can receive a
-recorded `planner-low-risk` approval without human review. Dangerous or
-unclear effects require explicit human approval and a reference in the record.
-Executed tests or measured branch coverage require a matching record for each
-command; the CLI checks the event, FD revision/digest, Tester session, and
-exact command. In Dual evidence, JSON `data.authorization_records` and
-`data.commands` are matching arrays. New FD revisions
-need new authorization.
+Invoke `$fd-test` when you want black-box scenarios, test execution, or a
+factual test report. It is a standalone Skill: it does not emit FD events or
+change status, and its report is not an acceptance gate. Reviewer and other
+review agents do not inspect or assess that optional report. The Skill follows
+the repository's test authorization rules; asking for case design alone does
+not authorize execution. New repository test code belongs under the root
+`tests/` directory.
+
+#### Legacy Tester CLI compatibility
+
+FDs that already declare `**Test policy:** Independent` retain their existing
+Tester events, PM decision events, and `aiw fd refresh-tester` behavior. The
+CLI continues validating legacy report fields and authorization records for
+those receipts. This path is not used for new FDs; do not dispatch it as part
+of the default workflow. Historical report templates remain available under
+`docs/features/TEST_*_TEMPLATE.md`.
 
 ## One-operation host workflow
 
 Ask the host agent to run `$fd-workflow auto` with a feature request or a
 single FD ID. This is a Skill operation, not an `aiw fd auto` CLI command. It
 creates or resumes one numbered FD, splits ordered Work Items, designs and
-implements them, delegates required tests to a separate Tester subagent,
-the PM risk decision to one or three independent assessor subagents, and each review
-to a separate `fd-review` subagent,
-repairs concrete findings, and closes with `aiw fd close <id> Complete` after
-a current Reviewer pass. The host counts at most three Reviewer outcomes for
+implements them, performs compile-only and static checks, and delegates each
+review to a separate `fd-review` subagent. It repairs concrete findings and
+closes with `aiw fd close <id> Complete` after a current Reviewer pass. The
+host counts at most three Reviewer outcomes for
 the active implementation cycle across interrupted/resumed auto runs. A third
 failed review leaves the FD active with its findings. The resulting Worker
 handoff stays pending for a later human-directed recovery.

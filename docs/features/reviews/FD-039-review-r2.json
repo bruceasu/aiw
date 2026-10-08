@@ -1,0 +1,48 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-039",
+  "source_event": "FD-039-000006-implementation-ready",
+  "human_report": "FD-039-review-r2.md",
+  "data": {
+    "reviewer_session": "fd039-reviewer-20261008-a41d",
+    "reviewed_base": "af4edf0",
+    "previous_review_report": "FD-039-review-r1.md",
+    "outcome": "verification-passed",
+    "findings": [],
+    "r1_finding_resolution": {
+      "file": "docs/features/FD-039_SEPARATE_FD_TEST_SKILL_FROM_FD_WORKFLOW.md",
+      "line": 58,
+      "result": "The Verification text contains the literal `$fd-test` and no control characters."
+    },
+    "acceptance_results": {
+      "default_worker_to_reviewer": "supported by the unchanged template and CLI route",
+      "optional_fd_test_isolation": "supported by the unchanged standalone Skill and role boundaries",
+      "legacy_tester_cli_compatibility": "supported by the unchanged event transitions and refresh-tester path",
+      "reviewer_does_not_assess_optional_test_reports": "supported by fd-review and Reviewer role instructions"
+    },
+    "commands_run": [
+      "aiw fd show FD-039",
+      "aiw fd claim FD-039 FD-039-000006-implementation-ready --session fd039-reviewer-20261008-a41d",
+      "git status --short; git log -5 --oneline",
+      "git diff af4edf0 --stat",
+      "git diff af4edf0 -- scoped workflow, CLI, and documentation files",
+      "rg -n -C 3 'Test policy|implementation-ready|refresh-tester|fd-test reports|do not inspect or evaluate' scoped review files",
+      "PowerShell static check of FD Verification for literal `$fd-test` and control characters"
+    ],
+    "skipped_checks": [
+      "tests",
+      "coverage",
+      "final build",
+      "lint",
+      "formatting",
+      "runtime CLI route simulation",
+      "rerunning compile-only after Markdown-only correction"
+    ],
+    "worker_compile_only": "R1 Worker report records success; no rerun was requested for the Markdown-only R2 change.",
+    "tester_report_reviewed": false,
+    "residual_risks": [
+      "fd-test and legacy Tester CLI runtime behavior were not exercised in this review."
+    ]
+  }
+}

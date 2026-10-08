@@ -42,12 +42,13 @@ installations remain usable outside the AIW repository.
   human decision needs, and reusable improvements. Review existing feedback
   on resume and before archive. FD-prefixed pairs follow the normal `reports/`
   archive move; they do not alter an active FD handoff or authorize recovery.
-- `aiw fd refresh-tester <id> --reason <text> --artifact <report>` replaces
+- Legacy compatibility only: `aiw fd refresh-tester <id> --reason <text> --artifact <report>` replaces
   only a stale unclaimed pending Tester handoff for an independent Pending Test
   FD. It retains Worker identity and implementation provenance, validates the
   current report, and creates a PM-produced `test-requested` event. Tester
   claims that event and cites its ID in reports and new test authorization;
   refreshing grants no permission to execute tests or reuse old approvals.
+  New/default FDs do not use this route.
 - `aiw fd reopen <id> --reason <text>` returns an archived `Closed` or
   `Deferred` FD to active `In Progress` with a fresh Worker handoff. It keeps
   prior close metadata and evidence. Archived `Complete` uses `request-review`.
@@ -62,11 +63,12 @@ installations remain usable outside the AIW repository.
   abandoned session and reason, cancels the old receipt, and creates a new
   pending Worker handoff. The new Worker claims that event under its own
   session. Normal resume and refresh rules remain unchanged.
-- In the normal workflow, when a pending FD task or handoff has expired after
+- In the normal workflow, when a pending Worker handoff has expired after
   a long pause, refresh it automatically when the workflow resumes; do not wait
-  for human intervention. Use the applicable `refresh-worker` or
-  `refresh-tester` operation, preserve its required reason and provenance, and
-  continue from the new handoff. Do not treat elapsed time alone as proof that
+  for human intervention. Use `refresh-worker`, preserve its required reason
+  and provenance, and continue from the new handoff. A stale legacy Tester
+  handoff is not refreshed automatically; preserve it unless the user requests
+  the legacy CLI path. Do not treat elapsed time alone as proof that
   a claimed or in-flight handoff expired; inspect its recorded session or log
   before deciding how to recover it.
 - OpenSpec owns stable capability specs in `openspec/specs/`. Create an
@@ -81,28 +83,20 @@ checks the current diff against the FD and records actionable findings or a
 pass. Each handoff names one role, one source event, and an existing artifact;
 the receiver checks that the artifact and FD revision still match before work.
 
-For `**Test policy:** Independent`, a Tester must use a session separate from
-Worker and Reviewer, derive black-box cases from acceptance without inspecting
-implementation source, and report both executed and uncovered scenarios. A
-Tester handoff does not authorize execution. Before any test or coverage
-command, Planner inspects its invoked code and records a revision-bound
-authorization for that exact command, or obtains the required human approval.
-A Tester writes repository test code under root `tests/` and cites the
-authorization in any report of execution or measured coverage. PM requests
-one independent assessment of the current Tester report, then adds two when
-behavior tests failed, PM judges an evidence gap material, or PM disagrees
-with the first vote. Each assessor records a distinct focus, severity, impact
-scope, estimated repair time, delivery impact, a risk-acceptance or repair vote,
-and residual risk in Chinese Markdown and JSON. One-assessor decisions follow
-that vote; three-assessor decisions follow the majority, with at least two
-risk-acceptance votes routing to Reviewer. Failed tests and coverage remain
-factual evidence, not automatic acceptance gates. PM records the evidence-gap
-judgment and escalation reason. Replace an unavailable assessor rather than
-inventing a vote. For older
-FDs without Independent policy, use the direct Reviewer route.
+New/default FDs omit `**Test policy: Independent**` and route
+`implementation-ready` directly to Reviewer. The Worker performs the
+repository-authorized compile-only check and static review; tests are not a
+default workflow stage. Users may invoke the standalone `$fd-test` Skill to
+derive black-box scenarios and, when explicitly authorized, write or execute
+tests under root `tests/`. Its factual report does not change FD state, add
+acceptance thresholds, or go to PM, assessors, or Reviewer for evaluation.
+Existing FDs carrying the Independent marker and their Tester events retain
+their legacy CLI contract; this does not make Tester a default stage for new
+work.
 
 The host may combine PM, Planner, and Worker duties, but must not author
-independent Tester, risk assessor, or Reviewer evidence from its own session.
+independent Reviewer evidence from its own session. Optional test reports are
+not workflow handoffs or Reviewer inputs.
 PM may explicitly
 override workflow gates; the record must identify skipped stages and missing
 evidence, which remain unperformed rather than being represented as passed.
@@ -133,8 +127,8 @@ normal gates. PM may directly change an FD's status, waive any test or
 verification stage, and accept without supporting test or review evidence.
 PM may make any decision needed to advance the FD regardless of whether a
 handoff is missing, stale, expired, or otherwise incomplete. PM may bypass or
-supersede that handoff and directly change the FD's status without Tester,
-Reviewer, or other role approval. Keep the FD record truthful: skipped stages,
+supersede that handoff and directly change the FD's status without Reviewer
+or other role approval. Keep the FD record truthful: skipped stages,
 missing or stale handoffs, and absent evidence remain identified as such, and
 must never be represented as performed or passed. Do not invent a handoff,
 receipt, report, or verification result to make an override appear to have
@@ -178,8 +172,8 @@ not already safely removed. Do not create a Task to satisfy a Task-only
 command. Keep each FD's writing role in one workspace at a time and do not mix
 unrelated files into its commits.
 Commit each completed, independently reviewable Work Item before starting the
-next, staging only its files. Commit final FD evidence before handoff to Tester
-or Reviewer. Do not rebase either branch as part of the FD workflow. Successful
+next, staging only its files. Commit final FD evidence before handoff to
+Reviewer. Do not rebase either branch as part of the FD workflow. Successful
 `local-merge` performs worktree and branch cleanup only after checking that
 parent history contains this FD's single-parent squash commit and its
 `FD-Source` trailer equals the current clean FD HEAD. The FD branch is not an

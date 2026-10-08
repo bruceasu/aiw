@@ -55,27 +55,22 @@ Use `aiw git wt local-merge FD-001` for squash delivery after review. Content
 conflicts are recovered in the FD worktree and require an explicit retry.
 Successful delivery validates the squash source and removes the FD worktree
 and branch while preserving `.ai/fd/` receipts. Never create a Task to satisfy
-a Task-only command. Archive only after delivery succeeds. Commit each completed Work Item separately before the handoff for
-testing or review. Do not rebase either branch.
+a Task-only command. Archive only after delivery succeeds. Commit each completed
+Work Item separately before the Reviewer handoff. Do not rebase either branch.
 
 ## Auto
 
 `$fd-workflow auto` is a host Skill operation, not an `aiw fd auto` CLI
-command. Follow `../SKILL.md`: one numbered FD, exact handoff claims,
-independent Tester and Reviewer sessions, and at most three Reviewer outcomes
-across resumes of the same implementation cycle. Load the matching prompt
-from `../roles/` for each stage. The host may combine PM, Planner, and Worker;
-it must not supply independent Tester or Reviewer evidence. With an isolation trigger,
-squash-deliver the reviewed FD result to its recorded parent before closing and archiving. Stop
-without merge or archive when a review, parent state, or merge gate fails.
-
-## Auto
-
-`$fd-workflow auto` is a host Skill operation, not an `aiw fd auto` CLI
-command. Follow `../SKILL.md`: one numbered FD, exact handoff claims,
-independent Reviewer subagents, and at most three Reviewer outcomes across
-resumes of the same implementation cycle. Stop without archive when those
-gates are not met.
+command. Follow `../SKILL.md`: one numbered FD, exact handoff claims, an
+independent Reviewer session, and at most three Reviewer outcomes across
+resumes of the same implementation cycle. New FDs go directly from Worker to
+Reviewer after compile-only and static checks. Optional tests use `$fd-test`
+only when requested and do not gate review. Existing Tester events remain a
+legacy CLI capability; Auto does not dispatch or evaluate them. The host may
+combine PM, Planner, and Worker, but it must not supply independent Reviewer
+evidence. With an isolation trigger, squash-deliver the reviewed FD result to
+its recorded parent before closing and archiving. Stop without merge or archive
+when a review, parent state, or merge gate fails.
 
 ## Close
 
