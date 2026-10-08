@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000024-test-report-ready",
+  "human_report": "FD-036-test-risk-assessment-r4-b.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-036-test-report-r4.md",
+    "fd_revision": 24,
+    "fd_digest": "c79fbda3eb41d1443a492f6d8b5e89011d36e34ab631993fe20f66aa32aca8d1",
+    "assessor_session": "fd036-assessor-r4-b-tech-20261008-0914",
+    "assessment_focus": "technical-repair",
+    "vote": "accept-with-risk",
+    "severity": "moderate: four acceptance scenarios remain incomplete and branch coverage is unmeasured; all 21 executed behavior tests passed, and the configuration error/default-fallback/unknown-key behaviors requested by the user have direct passing evidence.",
+    "impact_scope": "CLI configuration precedence and enum validation (S08/S09), unsupported option rejection breadth (S14), and profile example copy/no-overwrite plus Linux/WSL behavior (S15). No failure in these gaps was observed in the report.",
+    "estimated_repair_time": "Approximately half a day or less to add focused S08/S09/S14 coverage; S15 cross-platform confirmation is not estimable without access to the target environments.",
+    "delivery_impact": "Does not block independent code review; accepting means these behaviors remain without complete runtime evidence. Cross-platform claims should remain unverified until Linux/WSL evidence exists.",
+    "rationale": "Tester event FD-036-000024-test-report-ready binds revision 24 and digest c79fbda3eb41d1443a492f6d8b5e89011d36e34ab631993fe20f66aa32aca8d1. The report records 21/21 behavior tests passed, 0 failed, and 14/18 scenarios fully covered. S05 confirms malformed explicit TOML fails without partial stdout; S16 covers legal table-header comments; S17 verifies invalid config values fall back while invalid profile values preserve lower-precedence settings; S18 verifies unknown keys are ignored. The remaining gaps are explicit and do not negate those passing results. This supports risk acceptance for review while retaining the uncovered scenarios as exceptions, not passes.",
+    "residual_risk": "Uncovered portions of S08/S09 may contain configuration precedence or CLI validation defects; S14 tests only --clipboard and therefore does not prove all unsupported options fail correctly; S15 does not verify copy/no-overwrite or Linux/WSL behavior. Branch coverage, real provider behavior, and translation quality remain unmeasured/outside this mock run.",
+    "uncertainty": "This assessment relies on the Tester report and event receipt; no tests were rerun and production source was not independently inspected. Linux/WSL behavior and branch coverage are unknown.",
+    "assessment_time": "2026-10-08T09:14:00+09:00"
+  }
+}

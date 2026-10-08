@@ -1,0 +1,19 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-034",
+  "source_event": "FD-034-000005-design-ready",
+  "human_report": "FD-034-implementation-r2.md",
+  "data": {
+    "summary": "Added explicit A-to-B patch export for commit IDs and branches with fixed commit provenance in the companion guide.",
+    "changed_paths": [
+      "plugins/aiw-git/git-patch.py",
+      "docs/usage/aiw-git-patch.md",
+      "openspec/specs/cli-and-plugins/spec.md",
+      "docs/features/FD-034_GIT.md"
+    ],
+    "commands": ["python -m py_compile plugins/aiw-git/git-patch.py"],
+    "results": ["Python compile-only check passed", "Static ref resolution and argument flow reviewed", "Runtime patch scenarios not executed"],
+    "residual_risk": "No runtime evidence for A-to-B diff or cross-device apply behavior; pending Tester handoff must be refreshed for the changed FD revision."
+  }
+}

@@ -38,6 +38,8 @@ The dispatcher MUST save a receipt before starting a role. A pending receipt
 MAY be resumed. A launching or dispatched receipt MUST NOT start a second
 writer automatically. The operator MUST reconcile its original process or
 session before retrying an unknown result.
+After confirming a Worker session has stopped, PM MAY explicitly recover its
+latest dispatched handoff using the exact event ID and session reference.
 Receipt content digests MUST treat CRLF and LF line endings as equivalent;
 other FD content changes MUST still invalidate the handoff.
 
@@ -76,9 +78,9 @@ test-file ownership, and residual risk. Each broad acceptance item with
 multiple observable behaviors MUST be split into distinct scenarios before
 computing the denominator. A case covering only part of an item MUST NOT
 mark its other behaviors covered. Static-only requirements need a stated
-exclusion reason, not a fabricated test result. Coverage targets are 100%;
-70% on each applicable measure MAY support acceptance if executed behavior
-tests pass. Tester execution requires a recorded Planner authorization for each
+exclusion reason, not a fabricated test result. Coverage and failed-test counts
+are decision evidence, not automatic acceptance thresholds. Tester execution
+requires a recorded Planner authorization for each
 exact command. Planner MUST inspect the invoked test code. Planner MAY approve
 a focused, offline, inspectable command confined to assigned or temporary
 paths without human review. Destructive or unrelated writes, secrets,
@@ -93,7 +95,7 @@ Tester MUST cite matching authorization records for executed tests or measured
 branch coverage. The CLI MUST reject such evidence without matching records.
 An earlier FD revision's approval cannot be reused.
 New FDs MUST also declare `**Evidence policy:** Dual`. For a Dual evidence FD,
-each new Worker, Tester, PM, and Reviewer report and Planner authorization
+each new Worker, Tester, test-risk-assessment, PM, and Reviewer report and Planner authorization
 MUST have a Chinese Markdown file for people and a same-basename JSON sidecar
 for CLI/AI. Markdown MUST contain one `aiw-data` reference. JSON MUST use
 schema `aiw.fd.evidence.v1`, name the FD, evidence kind, exact source event,
@@ -107,14 +109,43 @@ Historical Markdown-only evidence and FDs without the marker retain their
 existing format and validation path.
 
 Tester `test-report-ready` MUST move the FD to `Pending Test Acceptance` and
-route to PM. PM MUST record a versioned decision bound to the Tester report
-and FD revision/digest, with accepted/rejected disposition, both coverage
-results, rationale, exception, residual risk, identity, and decision time.
-PM MUST NOT accept failed executed behavior tests. An accepted decision below
-70% or with unavailable coverage MUST name an exception and residual risk.
+route to PM. PM MUST send the same current Tester report and raw evidence to
+an independent assessor. A report with failed behavior tests MUST receive
+three assessments. PM MUST add two assessments if PM disagrees with the first
+vote or judges an uncovered or unmeasured evidence gap material, recording the
+affected scenarios and impact. Coverage percentages are not automatic
+escalation thresholds. In a three-assessor review, A focuses on acceptance and
+user impact, B on technical evidence and repair, and C on delivery and
+operational risk. Each assessor MUST still evaluate the full risk, author a
+versioned Chinese Markdown and JSON report bound to the Tester event, FD
+revision/digest and report, and record a distinct session, focus, vote
+(`accept-with-risk` or `repair`), severity, impact scope, estimated repair
+time, delivery impact, rationale, residual risk, uncertainty, and assessment
+time. Assessors MUST NOT share draft votes; their sessions MUST differ from
+Worker, Tester, and PM. PM MUST replace an unavailable or invalid assessor
+instead of inventing a vote.
+
+Newly authored PM decisions SHOULD record the `adaptive-v1` assessment policy, `single` or
+`escalated` mode, escalation reason, PM's evidence-gap judgment, and rationale,
+in addition to the Tester report, FD revision/digest, both coverage results,
+failed-test count, votes, dissent, residual risk, identity, and decision time.
+Single mode MUST have one valid assessment, no failed behavior tests, a bounded
+gap judgment, and a disposition matching its vote. Escalated mode MUST have
+three valid assessments with distinct focuses; at least two
+`accept-with-risk` votes MUST produce acceptance, otherwise PM MUST return the
+FD to Worker. Failed tests and low, unavailable, or inapplicable coverage MUST
+remain visible as facts and risks; they do not turn into passing tests through
+risk acceptance. The CLI MUST reject missing, stale, duplicated,
+identity-conflicting, focus-conflicting, or mismatched assessments, and a PM
+disposition that disagrees with the applicable vote rule. Decisions omitting
+the policy retain the legacy requirement for exactly three independent votes,
+so in-flight legacy rounds and historical evidence remain compatible.
 `test-accepted` routes to an independent Reviewer; `test-rejected` returns to
-Worker. Reviewer MUST use a third session, respect PM's recorded exception,
-and still report factual implementation or evidence defects. A later Worker
+Worker. Reviewer MUST use a session separate from Worker, Tester, and assessors,
+respect PM's recorded risk acceptance,
+and still report undisclosed implementation or evidence defects. Reviewer MUST
+NOT reject solely because an explicitly assessed failing scenario or coverage
+gap received a valid majority risk-acceptance vote. A later Worker
 revision starts another Tester round rather than reusing an earlier decision.
 Archiving as Complete MUST require the current Reviewer's
 `verification-passed` event with the same FD revision and content digest,
@@ -146,8 +177,37 @@ newly written evidence into the same FD directory.
 - **WHEN** Worker completes an independent-policy FD and Tester claims its
   handoff in a separate session
 - **THEN** Tester reports actual scenario/test/coverage evidence and PM
-  records an acceptance or rejection before any Reviewer handoff
-- **AND** a failed executed behavior test cannot be accepted as passing
+  obtains one independent risk assessment, adding two for failed tests,
+  material evidence gaps, or disagreement with the first vote
+  before any Reviewer handoff
+- **AND** a failed or unrun behavior test remains labelled as such even if a
+  majority accepts the delivery risk
+
+#### Scenario: One assessor decides a bounded risk
+
+- **WHEN** the current Tester report has no failed behavior tests, PM records
+  the remaining evidence gap as bounded, and one valid assessor votes
+  `accept-with-risk` or `repair`
+- **THEN** PM follows that vote and records a single-assessor decision
+
+#### Scenario: Majority accepts an escalated risk
+
+- **WHEN** three valid independent assessments with complementary focuses of the same current Tester
+  report include at least two `accept-with-risk` votes
+- **THEN** PM records the risk and dissent and emits `test-accepted`, even if
+  the report contains failed tests or low or unavailable coverage
+
+#### Scenario: Escalated majority requests repair
+
+- **WHEN** at most one of three valid assessments votes `accept-with-risk`
+- **THEN** PM records the vote totals and emits `test-rejected` to Worker
+
+#### Scenario: Assessment evidence is invalid
+
+- **WHEN** an assessment is missing, stale, duplicated, or conflicts with a
+  Worker, Tester, PM, or other assessor session
+- **THEN** PM obtains an independent replacement; the CLI refuses a decision
+  until the required one or three valid assessments support the matching vote result
 
 #### Scenario: Planner authorizes a low-risk Tester command
 
@@ -369,6 +429,33 @@ leave no claimable orphan and restore the prior FD and receipt state.
 
 - **WHEN** the latest Worker event is current, claimed, or in flight
 - **THEN** refreshing is rejected without changing the FD or receipts
+
+### Requirement: Recover an abandoned Worker handoff
+
+PM MAY run `aiw fd recover-worker <fd-id> --expected-event <event-id>
+--expected-session <session-ref> --reason <text>` after confirming the named
+Worker session has stopped. The FD MUST be active and Open or In Progress; the
+named event MUST be its latest dispatched Worker handoff with the exact stored
+session reference. The reason MUST be one line and at most 500 characters.
+The operation MUST preserve the FD status and Work Items, increment its
+revision, cancel the old receipt with the reason and successor link, and create
+a PM-produced pending `work-requested` event bound to the current FD digest.
+The new event MUST identify the superseded event and abandoned session. A
+failed mutation MUST restore the prior FD and receipt and leave no claimable
+orphan. The new Worker MUST claim the event under its own session and cite it
+when reporting implementation.
+
+#### Scenario: PM confirms an abandoned Worker session
+
+- **WHEN** PM supplies the latest dispatched Worker event, its stored session,
+  and a reason after confirming that session has stopped
+- **THEN** the old receipt is cancelled with provenance and a new pending
+  Worker handoff is available for a different session
+
+#### Scenario: Recovery targets another event or session
+
+- **WHEN** the event ID, session, role, state, or active FD does not match
+- **THEN** recovery is rejected without changing the FD or receipts
 
 ### Requirement: Refresh a stale Tester handoff
 

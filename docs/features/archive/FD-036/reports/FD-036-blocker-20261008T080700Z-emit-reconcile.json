@@ -1,0 +1,28 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000005-work-requested",
+  "human_report": "FD-036-blocker-20261008T080700Z-emit-reconcile.md",
+  "data": {
+    "stage": "worker-handoff",
+    "role": "pm",
+    "recorded_at": "2026-10-08T17:07:50+09:00",
+    "recorder_session": "fd036-pm-20261008-7e91bc",
+    "observed_blocker": "aiw fd emit for implementation-ready failed because not all Work Items were complete or cancelled and current FD revision 6 differed from claimed Worker event revision 5. The receipt is dispatched to fd036-worker-20261008-8f3c2a.",
+    "confirmed_cause": "Worker updated FD progress/revision after claiming the event, leaving the claimed receipt digest stale; the Tester scenario item was also still pending.",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      "Read aiw fd --help and aiw fd resume FD-036; resume reported the revision mismatch and the CLI exposes no direct digest refresh for a dispatched Worker claim.",
+      "Did not edit the receipt. Split Worker test-code work from Tester scenario reporting, then explicitly cancelled 1.8.2 as redundant with the required Pending Test stage while preserving that stage requirement."
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "PM confirms the implementation run and report are complete and chooses supported recover-worker recovery under a new Worker session.",
+    "actual_resolution": "PM ran aiw fd recover-worker FD-036 --expected-event FD-036-000005-work-requested --expected-session fd036-worker-20261008-8f3c2a with a reason documenting the committed implementation result and revision change. It created FD-036-000008-work-requested bound to FD revision 8; new Worker session fd036-worker-20261008-d72c01 claimed it. No receipt was edited by hand.",
+    "resolved_at": "2026-10-08T17:07:50+09:00",
+    "residual_risk_or_next_step": "The current Worker must re-submit implementation-ready using event 000008. Independent Tester scenario and coverage evidence remains required.",
+    "reusable_improvement": "Clarify in fd-workflow Skill how Worker FD progress/revision changes are reconciled with a claimed event before implementation-ready, preventing a post-implementation digest mismatch.",
+    "improvement_status": "proposed"
+  }
+}

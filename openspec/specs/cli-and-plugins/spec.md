@@ -27,6 +27,58 @@ operations. No standalone `aiw wt` command is provided.
 - **WHEN** a user invokes the removed `aiw wf` command
 - **THEN** AIW does not advertise it as a supported command
 
+### Requirement: Guided Git patch creation and application
+
+`aiw git patch create FILE.patch` MUST export tracked staged and unstaged changes as a binary-capable patch and a companion Markdown guide with a change summary. `--staged` and `--worktree` MUST restrict the source to that respective diff. It MUST NOT silently include untracked files or overwrite an existing patch or guide. Empty diffs MUST fail clearly.
+
+`--from A --to B` MUST accept two commit IDs or branch refs, resolve each to a fixed commit ID, and export the direct A-to-B tree diff. Both options MUST be supplied together and MUST NOT be mixed with `--staged` or `--worktree`. The companion guide MUST record both input refs and resolved IDs. Invalid refs MUST fail before writing output.
+
+`aiw git patch apply FILE.patch` MUST check applicability before applying to the working tree. A failed check MUST NOT run the apply step; the command MUST report the Git error and recovery advice, including an already-applied hint when a reverse check succeeds. The command MUST NOT automatically stage, commit, use three-way merge, or accept partial application.
+
+#### Scenario: Create a patch with guidance
+
+- **WHEN** a user exports current changes or selects staged or unstaged changes
+- **THEN** AIW writes the selected binary-capable diff and a companion usage and recovery guide without overwriting existing files
+
+#### Scenario: Apply a patch that does not match
+
+- **WHEN** a user applies a patch and Git's applicability check fails
+- **THEN** AIW leaves the repository untouched by the apply step, reports the error, and suggests how to inspect or recover
+
+#### Scenario: Export changes between two refs
+
+- **WHEN** a user runs `aiw git patch create transfer.patch --from A --to B` with commit IDs or branches
+- **THEN** AIW writes the direct A-to-B diff and records both fixed commit IDs in the guide, without including unrelated worktree changes
+
+### Requirement: AI-assisted Git commands
+
+`aiw git aic` MUST stage all changes, generate a concise Conventional Commit
+message using the configured CZ text provider, and pass that message to
+`git commit -F -` only after successful generation. Generation or Git failure
+MUST return a non-zero result; generation failure MUST NOT run `git commit`.
+`aiw git air` MUST review only the staged diff and MUST NOT modify repository
+state. `aiw git aib [--base REF]` MUST summarize only the commit history in
+`BASE..HEAD`, defaulting to `main`, and MUST NOT modify repository state. All
+three commands MUST use the CZ provider configuration and fallback behavior.
+
+#### Scenario: Generate a commit message
+
+- **WHEN** a user runs `aiw git aic` with changes present
+- **THEN** AIW stages all changes, asks a configured CZ provider for a
+  Conventional Commit message, and commits only after receiving non-empty text
+
+#### Scenario: Review staged changes
+
+- **WHEN** a user runs `aiw git air` with a staged diff
+- **THEN** AIW prints the review response and leaves the index, worktree, and
+  commit history unchanged
+
+#### Scenario: Summarize branch history
+
+- **WHEN** a user runs `aiw git aib` or supplies `--base REF`
+- **THEN** AIW summarizes one-line commits from `main..HEAD` or
+  `REF..HEAD`, without changing repository state
+
 ### Requirement: 鎻掍欢鍙戠幇涓庡瓙杩涚▼缁撴灉
 
 鎻掍欢鍙戠幇 MUST 鎼滅储鍙墽琛屾枃浠舵梺鍜屽綋鍓嶇洰褰曠殑 plugins锛堝惈涓€绾у瓙鐩綍锛夛紝浠ュ強 PATH 涓婂尮閰嶅悕绉扮殑鍊欓€夛紝骞舵寜鎵╁睍鍚嶄紭鍏堢骇閫夊彇銆傛墽琛?MUST 浣跨敤瀵瑰簲瑙ｉ噴鍣ㄦ垨鍙墽琛屾枃浠讹紝杩炴帴鏍囧噯杈撳叆杈撳嚭锛屽苟灏嗗惎鍔ㄩ敊璇垨闈為浂閫€鍑轰綔涓哄け璐ュ弽棣堛€?
@@ -90,6 +142,41 @@ git export MUST 璋冪敤 `git archive --format=zip` 瀵煎嚭鎸囧畾 Git ref�
 
 - **WHEN** 鎻愪緵鍙В鏋愮殑 Git ref
 - **THEN** 瀵煎嚭璇?ref锛屾棤闇€鎶婂伐浣滃尯鍒囨崲鍒拌鍒嗘敮銆?
+
+### Requirement: Git merge-to uses an isolated worktree
+
+The Git plugin MUST provide `merge-to <target_branch> [source_branch]` and
+`merge-to --new <new_branch> <source_branch1> [source_branch2 ...]`.
+The invoking checkout, working files, and index MUST remain unchanged.
+Sources MUST be validated before mutation; the command MUST NOT fetch or push.
+
+#### Scenario: Merge into an existing target
+
+- **WHEN** the target is an existing local branch not checked out in any worktree
+- **THEN** the plugin checks it out in a unique temporary worktree outside the invoking workspace and merges the explicit source, or the current branch when omitted.
+- **AND** detached HEAD without an explicit source is rejected before mutation.
+
+#### Scenario: Create a target from several sources
+
+- **WHEN** `--new` names a nonexistent local target and one or more valid source branches
+- **THEN** the target starts at the first source commit and the remaining sources merge sequentially.
+- **AND** sources may be local or already available remote-tracking branches.
+
+#### Scenario: Preserve an existing checkout
+
+- **WHEN** an existing target is checked out in any worktree, including the invoking workspace
+- **THEN** the command rejects the operation before mutation and reports that worktree path.
+
+#### Scenario: Success and recovery
+
+- **WHEN** all merges succeed
+- **THEN** the temporary worktree is removed without force.
+- **WHEN** a merge fails or is interrupted
+- **THEN** the command returns failure, retains the worktree, and reports its absolute path and recovery commands.
+- **AND** earlier successful merges and any newly created target remain; no automatic reset or abort occurs.
+- **WHEN** worktree cleanup fails
+- **THEN** the command returns failure and reports the remaining recovery path.
+
 
 ## 瀹炵幇渚濇嵁
 

@@ -69,6 +69,14 @@ it must not supply independent Tester or Reviewer evidence. With an isolation tr
 squash-deliver the reviewed FD result to its recorded parent before closing and archiving. Stop
 without merge or archive when a review, parent state, or merge gate fails.
 
+## Auto
+
+`$fd-workflow auto` is a host Skill operation, not an `aiw fd auto` CLI
+command. Follow `../SKILL.md`: one numbered FD, exact handoff claims,
+independent Reviewer subagents, and at most three Reviewer outcomes across
+resumes of the same implementation cycle. Stop without archive when those
+gates are not met.
+
 ## Close
 
 Use `aiw fd close FD-001 Complete` only after a passed review and, in isolated

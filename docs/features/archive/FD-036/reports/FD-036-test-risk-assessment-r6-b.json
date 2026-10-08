@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000033-test-report-ready",
+  "human_report": "FD-036-test-risk-assessment-r6-b.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-036-test-report-r6-diagnostic.md",
+    "fd_revision": 33,
+    "fd_digest": "54862b4294872e269be7ea94f4b8dd4d3467b9e2e4b50a85d69776f306dd05e0",
+    "assessor_session": "fd036-assessor-20261008-r6-b-engineering",
+    "assessment_focus": "technical-repair",
+    "vote": "accept-with-risk",
+    "severity": "medium: the prior full-suite S04 ERROR is unexplained, while the exact diagnostic case passed once with a captured summary and exit code",
+    "impact_scope": "S04 missing-default-config behavior; other config precedence and uncovered acceptance behaviors are outside the diagnostic evidence",
+    "estimated_repair_time": "not estimated: no reproducible code defect is established by the available evidence; estimate after a diagnostic reproduction if one occurs",
+    "delivery_impact": "May proceed to independent Reviewer with the anomalous r5 ERROR and uncovered cases retained as explicit risks; do not claim full-suite pass",
+    "rationale": "r5 recorded 20 passes and one ERROR but no traceback, final unittest summary, or exit code. The user-approved r6 diagnostic ran the same named S04 test once and captured ok, Ran 1 test in 0.511s, OK, and exit code 0. This is evidence that the behavior passed in the diagnostic run, not an explanation of the earlier ERROR or a replacement for the r5 suite. S08/S09/S14/S15 remain uncovered, branch coverage unmeasured, and real API, cross-platform profile behavior, and translation quality unverified.",
+    "residual_risk": "The r5 S04 ERROR remains unexplained and the full suite was not rerun. Coverage remains 13/18 for r5; S08/S09/S14/S15 and branch coverage are unverified. Real API behavior, cross-platform profile paths, and translation quality are unverified.",
+    "uncertainty": "The cause of the r5 ERROR cannot be attributed from available output. The r6 command is a single-case diagnostic against implementation revision 32; the current report-ready event is bound to FD revision 33.",
+    "assessment_time": "2026-10-08T10:05:00+00:00"
+  }
+}

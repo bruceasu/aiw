@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-032",
+  "source_event": "FD-032-000006-test-rejected",
+  "human_report": "FD-032-implementation-r2.md",
+  "data": {
+    "session_ref": "fd032-host-20261008-31a7c2",
+    "summary": "Reconciled the black-box fixture with Dual evidence and human PM handoff after unanimous repair vote; production behavior was unchanged.",
+    "changed_paths": [
+      "tests/test_fd032_risk_decision_blackbox.py",
+      "docs/features/reports/FD-032-implementation-r2.md"
+    ],
+    "commands": [
+      "Get-Content tests/test_fd032_risk_decision_blackbox.py",
+      "Get-Content docs/features/reports/FD-032-test-report-r1.json"
+    ],
+    "results": [
+      "Static inspection confirms the fixture emits a dual Tester report and does not claim a human PM handoff.",
+      "No runtime validation or final build was run in this repair cycle."
+    ],
+    "residual_risk": "Corrected black-box scenarios remain unexecuted; majority routing and Reviewer isolation still lack runtime evidence."
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-034",
+  "source_event": "FD-034-000014-test-requested",
+  "human_report": "FD-034-test-report-r1.md",
+  "data": {
+    "implementation_event": "FD-034-000014-test-requested",
+    "tested_fd_revision": 14,
+    "tested_fd_digest": "43863ae0df4bac7bf829db5b00443950638c8b64f2b810b793143cb456ad5ffc",
+    "tester_session": "fd034-tester-20261008-8b85b9d1",
+    "applicable_scenarios": 13,
+    "covered_scenarios": 12,
+    "executed_behavior_tests": 9,
+    "passed_behavior_tests": 9,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 0,
+    "requirements_coverage": "92.3%",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": "First run: Ran 9 tests in 8.997s; FAILED (failures=4), with 5 passing. After correcting test assertions, the single allowed rerun: Ran 9 tests in 9.116s; OK. Twelve of thirteen independently observable scenarios passed.",
+    "coverage_unavailable_reason": "The revision-bound authorization covered one unittest command and its permitted corrected rerun, not instrumentation or coverage measurement.",
+    "test_files": ["tests/test_fd034_git_patch_blackbox.py"],
+    "authorization_records": ["docs/features/reports/FD-034-test-authorization-r1.md"],
+    "commands": ["python -B -m unittest tests.test_fd034_git_patch_blackbox -v"],
+    "attempts": [
+      {
+        "working_directory": "C:\\Users\\svictor\\workspace\\tools\\ai-tools\\aiw\\.wt\\FD-034",
+        "attempt": 1,
+        "exit_code": 1,
+        "result": "Ran 9 tests in 8.997s; FAILED (failures=4). Four failures were incorrect fixture assertions about abbreviated Git index IDs and English already-applied advice."
+      },
+      {
+        "working_directory": "C:\\Users\\svictor\\workspace\\tools\\ai-tools\\aiw\\.wt\\FD-034",
+        "attempt": 2,
+        "exit_code": 0,
+        "result": "Ran 9 tests in 9.116s; OK after the relevant test assertion correction."
+      }
+    ],
+    "recommendation": "pass",
+    "not_applicable_reason": "",
+    "residual_risk": "The black-box suite did not induce failure after a successful precheck but before/during the actual apply step; business branch coverage was not measured.",
+    "scenarios": [
+      {"id": "S01", "behavior": "默认导出已跟踪暂存、未暂存及二进制变化并生成摘要说明，不含未跟踪文件", "status": "passed", "test_cases": ["test_default_exports_tracked_staged_unstaged_and_binary_with_guide"]},
+      {"id": "S02", "behavior": "--staged 只导出暂存区差异", "status": "passed", "test_cases": ["test_staged_and_worktree_select_independent_diffs"]},
+      {"id": "S03", "behavior": "--worktree 只导出未暂存区差异", "status": "passed", "test_cases": ["test_staged_and_worktree_select_independent_diffs"]},
+      {"id": "S04", "behavior": "分支 ref 导出直接树差异，忽略无关工作区编辑并记录 ref 与完整提交 ID", "status": "passed", "test_cases": ["test_two_refs_use_direct_tree_diff_and_record_fixed_ids"]},
+      {"id": "S05", "behavior": "提交 ID ref 导出同样的直接树差异", "status": "passed", "test_cases": ["test_two_refs_use_direct_tree_diff_and_record_fixed_ids"]},
+      {"id": "S06", "behavior": "无效 ref 与参数组合拒绝且不写输出", "status": "passed", "test_cases": ["test_invalid_ref_options_fail_without_output"]},
+      {"id": "S07", "behavior": "空差异、Git 失败或已有输出拒绝且不覆盖", "status": "passed", "test_cases": ["test_empty_diff_git_failure_and_existing_outputs_do_not_overwrite"]},
+      {"id": "S08", "behavior": "应用成功仅修改目标工作区", "status": "passed", "test_cases": ["test_apply_changes_only_worktree_and_recognizes_already_applied"]},
+      {"id": "S09", "behavior": "重复应用提示可能已应用且目标状态不变", "status": "passed", "test_cases": ["test_apply_changes_only_worktree_and_recognizes_already_applied"]},
+      {"id": "S10", "behavior": "预检失败显示错误与建议并保持目标状态", "status": "passed", "test_cases": ["test_failed_precheck_preserves_target_and_reports_recovery"]},
+      {"id": "S11", "behavior": "空或缺失的输入补丁被拒绝", "status": "passed", "test_cases": ["test_empty_and_missing_patch_are_rejected"]},
+      {"id": "S12", "behavior": "帮助入口展示创建、应用和范围参数", "status": "passed", "test_cases": ["test_help_exposes_patch_creation_and_application"]},
+      {"id": "S13", "behavior": "预检通过后实际应用失败时非零退出并提示可能的局部改动", "status": "uncovered", "test_cases": [], "reason": "未在两次 Git 调用之间构造可控竞态；没有执行该路径。"}
+    ],
+    "static_exclusions": [
+      "使用文档的真实用户易用性只作公开文本审阅，未作自动化行为断言。",
+      "未通过运行时拦截证明绝无 AI/网络调用，亦未遍历所有三方合并或部分应用路径。"
+    ]
+  }
+}

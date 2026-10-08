@@ -1,0 +1,5 @@
+[profile]
+target = "en"
+mode = "written"
+style = "document"
+polite = "formal"

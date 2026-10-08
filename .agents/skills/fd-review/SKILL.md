@@ -42,14 +42,17 @@ comment in Markdown and use the Markdown as `--artifact`.
 For an FD with `**Test policy:** Independent`, inspect the current Tester
 report, its scenario mapping and actual results, raw coverage evidence or
 unavailable reason, the Planner authorization record for every executed
-command, and PM's versioned Test Report Decision. Check the exact command,
+command, all cited independent risk assessments, and PM's versioned Test
+Report Decision. Check the exact command,
 FD revision/digest, Tester session, risk basis, and any human approval
 reference against actual execution. Confirm the scenario inventory splits
 broad acceptance items into distinct behaviors and does not count partial
 coverage of an item as coverage of its untested behaviors. The Reviewer
-session must differ from both Worker and Tester sessions. Respect a recorded
-PM exception to the 70% coverage threshold; it does not turn failed or unrun
-tests into passed evidence or waive an unmet behavior requirement.
+session must differ from Worker, Tester, and all assessor sessions. Respect
+the recorded single vote or three-assessor majority and PM risk acceptance; it does not turn
+failed or unrun tests into passed evidence. Do not reject solely for the same
+known failing scenario or coverage gap that the valid PM decision explicitly accepted.
+Report undisclosed defects, inaccurate evidence, or risks outside that vote.
 
 If a material issue remains, emit `changes-requested` with `--producer
 reviewer --artifact <report>` and `--source-event <id>` when the original

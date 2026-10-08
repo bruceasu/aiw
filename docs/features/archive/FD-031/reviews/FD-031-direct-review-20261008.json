@@ -1,0 +1,66 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-031",
+  "source_event": null,
+  "human_report": "FD-031-direct-review-20261008.md",
+  "data": {
+    "review_type": "user-requested-direct-independent-review",
+    "outcome": "changes-needed-no-handoff",
+    "reviewer_session": "fd031-reviewer-direct-20261008-c8e41b",
+    "reviewed_fd_revision": 6,
+    "reviewed_commit": "9fe06436042cbdf742c6b85d5269566a4b68eafe",
+    "diff_base": "de304afce52a5956f807024d5ac526fde70a07da",
+    "workflow_state": "In Progress; latest FD-031-000006-test-rejected is a claimed Worker handoff, not a Reviewer event",
+    "findings": [
+      {
+        "id": "FD031-DR-01",
+        "severity": "P1",
+        "file": "internal/issue/store.go",
+        "line": 407,
+        "summary": "Metadata decoder leaves internal quoted-character escapes in the title passed to fd new.",
+        "evidence": "Write uses %q at line 204, unquote only trims boundary characters at line 407, and cmd/aiw-req/issue-promote.go:31 passes meta.Title unchanged. Tester S06 failed title fidelity.",
+        "required_action": "Decode serialized title escapes compatibly and obtain fresh authorized evidence for title fidelity. Diagnose Unicode display separately."
+      },
+      {
+        "id": "FD031-DR-02",
+        "severity": "P2",
+        "file": "tests/test_fd031_promote_blackbox.py",
+        "line": 196,
+        "summary": "Removing TEMPLATE.md does not cause fd new to fail.",
+        "evidence": "plugins/aiw-fd.py:1073-1075 regenerates the default template; Tester S12 reported a zero exit code.",
+        "required_action": "Use a genuine isolated fd new failure and verify propagated exit code, diagnostics, and absence of side effects."
+      }
+    ],
+    "test_evidence": {
+      "tester_report": "docs/features/reports/FD-031-test-report-r1.md",
+      "authorization": "docs/features/reports/FD-031-test-authorization-r1.md",
+      "pm_decision": "docs/features/reports/FD-031-test-decision-r1.md",
+      "tested_fd_revision": 4,
+      "implementation_event": "FD-031-000004-implementation-ready",
+      "tested_fd_digest": "f2574ae2f23e1605895b823ffce3251351c18133e64be443bab21146f7e2adcc",
+      "tester_session": "fd031-tester-20261008-a3f7c9",
+      "applicable_scenarios": 13,
+      "covered_scenarios": 9,
+      "requirements_coverage": "69.2%",
+      "branch_coverage": "not measured",
+      "second_run": "Ran 8 tests in 17.878s; FAILED (failures=2)",
+      "pm_disposition": "rejected; no coverage exception"
+    },
+    "reviewer_commands": [
+      "git status --short",
+      "git branch --show-current",
+      "git log -1 --format='%H %s'",
+      "git rev-parse HEAD",
+      "git merge-base develop HEAD",
+      "git diff --stat develop...HEAD",
+      "git diff --numstat develop...HEAD",
+      "git diff develop...HEAD -- <selected implementation, test, documentation and spec paths>",
+      "git diff --check develop...HEAD",
+      "rg -n <targeted patterns> <selected paths>",
+      "Get-Content -Encoding utf8 <selected instructions, FD, specs, reports and source files>"
+    ],
+    "not_run": ["Tests", "Builds", "Formatters", "Linters", "Vet", "Coverage", "Network", "CLI behavior validation"],
+    "residual_risk": "Unicode display cause is not determined; Planner receipt, unavailable CLI, and real FD creation failure propagation lack runtime evidence. No formal Reviewer event exists for this direct review."
+  }
+}

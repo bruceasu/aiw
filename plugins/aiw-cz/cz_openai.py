@@ -43,16 +43,18 @@ def _text(response: object) -> str:
     raise OpenAIUnavailable("OpenAI response contains no text")
 
 
-def generate(prompt: str, config: ProviderConfig, timeout: float = 60.0) -> str:
+def _generate(prompt: str, config: ProviderConfig, timeout: float, structured: bool) -> str:
     api_key = config.api_key or os.environ.get("OPENAI_API_KEY", "")
     if not api_key:
         raise OpenAIUnavailable("OpenAI API key is not configured")
     if not config.model:
         raise OpenAIUnavailable("OpenAI model is not configured")
     base_url = (config.base_url or os.environ.get("CZ_OPENAI_BASE_URL") or "https://api.openai.com/v1").rstrip("/")
-    payload = {"model": config.model, "input": prompt, "text": {"format": {
-        "type": "json_schema", "name": "commit_candidates", "strict": True, "schema": SCHEMA,
-    }}}
+    payload = {"model": config.model, "input": prompt}
+    if structured:
+        payload["text"] = {"format": {
+            "type": "json_schema", "name": "commit_candidates", "strict": True, "schema": SCHEMA,
+        }}
     request = Request(
         f"{base_url}/responses", data=json.dumps(payload).encode("utf-8"),
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, method="POST",
@@ -65,3 +67,11 @@ def generate(prompt: str, config: ProviderConfig, timeout: float = 60.0) -> str:
     except (URLError, TimeoutError, json.JSONDecodeError) as exc:
         raise OpenAIUnavailable(f"OpenAI request failed: {exc}") from exc
     return _text(body)
+
+
+def generate(prompt: str, config: ProviderConfig, timeout: float = 60.0) -> str:
+    return _generate(prompt, config, timeout, structured=True)
+
+
+def generate_text(prompt: str, config: ProviderConfig, timeout: float = 60.0) -> str:
+    return _generate(prompt, config, timeout, structured=False)

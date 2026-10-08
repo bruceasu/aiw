@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-031",
+  "source_event": "FD-031-000014-test-report-ready",
+  "human_report": "FD-031-test-decision-r3.md",
+  "data": {
+    "disposition": "accepted",
+    "tester_report": "docs/features/reports/FD-031-test-report-r3.md",
+    "fd_revision": 14,
+    "fd_digest": "b69e39a02b5ef5e46b8536478e1091402ca20c3765486504752a40b8b1fe8b10",
+    "requirements_coverage": "90.5%",
+    "branch_coverage": "not measured",
+    "rationale": "The independent revision-bound command ran once and all 13 behavior cases passed. Scenario coverage is 19 of 21, above the 70% gate; S21 reproduces and verifies repair of the Reviewer r1 rollback defect.",
+    "exceptions": "Branch coverage was not measured because no instrumentation command was authorized. S13 unavailable FD CLI and S20 archived FD rejection remain uncovered; neither is treated as passed. S21 covers the injected index decode failure, not all filesystem faults.",
+    "residual_risk": "Uncovered CLI-unavailable and archived-FD paths, unmeasured branch coverage and filesystem fault varieties outside the S21 injection remain for Reviewer to assess statically.",
+    "pm_identity": "fd031-host-pm-20261008",
+    "decision_time": "2026-10-08T02:59:58+00:00"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-035",
+  "source_event": "FD-035-000012-test-report-ready",
+  "human_report": "FD-035-test-risk-assessment-r2-a.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-035-test-report-r3.md",
+    "fd_revision": 12,
+    "fd_digest": "4a3e2bf9093b9857d8c0c6ef5ef827df5c5643cb4fc7a3e6dfa5f5bee2265bdd",
+    "assessor_session": "fd035-assessor-a-20261008-070653-8c4e",
+    "assessment_focus": "acceptance-impact",
+    "vote": "accept-with-risk",
+    "severity": "Medium: all 25 scenarios have passed evidence and required branch coverage is measured, while 338 of 548 CLI branches remain unhit.",
+    "impact_scope": "FD-035 PM risk-decision CLI and the Tester-to-PM acceptance handoff; measured branch scope is plugins/aiw-fd.py subprocess only.",
+    "estimated_repair_time": "No repair is indicated by the passing acceptance scenarios. Time to add evidence for the 338 unhit branches is unknown and is not an explicit FD threshold.",
+    "delivery_impact": "No delivery delay is indicated for the stated acceptance criteria; retain 38.3% branch coverage and unhit branches as disclosed residual risk.",
+    "rationale": "Tester r3 binds revision 12 and the exact digest, reports 25/25 scenarios covered including S20-S25, 14/14 behavior test methods passed, and measures plugins/aiw-fd.py branch coverage at 210/548 (38.3%). FD acceptance requires actual CLI subprocess branch counts and percentage to be reported, but sets no minimum percentage. The first unittest attempt had two S20 fixture-claim setup failures before behavior assertions; after the fixture correction the authorized retry passed, and the separately authorized coverage run also passed.",
+    "residual_risk": "338/548 measured CLI branches were not hit. Black-box success does not establish behavior for those branches, all repository-wide behavior, historical-report compatibility beyond tested cases, or absence of undisclosed implementation defects; independent Reviewer scrutiny remains necessary.",
+    "uncertainty": "The correctness of unhit branches and full-suite compatibility is not established by this focused run. No coverage threshold is defined in the FD, so whether a future threshold should be adopted is outside this assessment.",
+    "assessment_time": "2026-10-08T07:06:53+00:00"
+  }
+}

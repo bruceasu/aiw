@@ -1,0 +1,34 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000021-test-report-ready",
+  "human_report": "FD-036-test-decision-r3.md",
+  "data": {
+    "disposition": "rejected",
+    "tester_report": "docs/features/reports/FD-036-test-report-r3.md",
+    "fd_revision": 21,
+    "fd_digest": "bf8ed80fa087ac34af85881240879d51aa9be42a8ba5617d6601690f7316b8b7",
+    "requirements_coverage": "68.75%",
+    "branch_coverage": "not measured",
+    "failed_behavior_tests": 0,
+    "assessment_policy": "adaptive-v1",
+    "assessment_mode": "escalated",
+    "escalation_reason": "material-evidence-gap",
+    "escalation_detail": "S05, S08, and S09 configuration behavior evidence is incomplete; user clarified that malformed TOML syntax exits with an error, invalid setting values fall back through lower-priority valid values to defaults, and unknown keys are ignored. This changes the acceptance contract and requires a new implementation/test cycle.",
+    "coverage_gap_disposition": "material",
+    "coverage_gap_reason": "Three valid independent assessments produced two repair votes and one accept-with-risk vote. S08, S14, and S15 remain incomplete; no coverage gaps are waived.",
+    "assessments": [
+      "docs/features/reports/FD-036-test-risk-assessment-r3-a2.md",
+      "docs/features/reports/FD-036-test-risk-assessment-r3-b2.md",
+      "docs/features/reports/FD-036-test-risk-assessment-r3-c.md"
+    ],
+    "accept_votes": 1,
+    "repair_votes": 2,
+    "rationale": "Under adaptive-v1/escalated, fewer than two accept-with-risk votes requires test-rejected. Tester r3 reports 19/19 behavior tests passed and zero failures, but only 11/16 applicable scenarios fully covered. The user clarified that invalid configuration item values should use defaults after this report was produced; the FD and implementation must be reconciled, then a new independent Tester report must verify the revised contract.",
+    "exceptions": "none; uncovered scenarios are not accepted as passing evidence",
+    "residual_risk": "S08 precedence breadth, S14 unsupported options, S15 cross-platform and copy/no-overwrite behavior remain incomplete. Existing r3 execution does not verify the newly clarified invalid-item fallback or unknown-key behavior.",
+    "pm_identity": "fd036-host-20261008-27cf10",
+    "decision_time": "2026-10-08T08:53:35+00:00"
+  }
+}

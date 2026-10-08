@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-035",
+  "source_event": "FD-035-000004-implementation-ready",
+  "human_report": "FD-035-test-authorization-r2.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-035-000004-implementation-ready",
+    "fd_revision": 4,
+    "fd_digest": "031564c0783d1959717aeec8cf1e3e37b085013c3e9a032a75ea11b7f31ddc97",
+    "tester_session": "fd035-tester-20261008-8f4ac2",
+    "command": "python -B -m unittest tests.test_fd032_risk_decision_blackbox -v",
+    "working_directory": "C:\\Users\\svictor\\workspace\\tools\\ai-tools\\aiw\\.wt\\FD-035",
+    "scope": "Eight black-box methods in tests/test_fd032_risk_decision_blackbox.py after splitting the material-gap and PM-disagreement scenarios into separate fixtures. Test file SHA-256: 65e4cab7308bf2e48f54489d1e44894761e695d95e948965590ff02785d8272f.",
+    "expected_duration": "10-50 seconds.",
+    "side_effects": "Creates and cleans temporary Git repositories and FD fixture files under the system temporary directory; an interrupted run may leave a temporary directory. No expected workspace writes.",
+    "risk_review": "Reviewed the small test-only diff and the FD-014 fixture. The earlier failure came from reusing one TemporaryDirectory across two scenarios; splitting unittest methods gives each its own setUp. CLI and template are copied to those directories, with bytecode writes disabled. No network, download, privilege change, external service, or release artifact is expected.",
+    "human_approval": "not required",
+    "planner_identity": "fd035-planner-20261008-01",
+    "decision_time": "2026-10-08T06:23:25+00:00"
+  }
+}

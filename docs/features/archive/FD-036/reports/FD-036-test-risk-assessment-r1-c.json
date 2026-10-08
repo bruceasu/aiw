@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000010-test-report-ready",
+  "human_report": "FD-036-test-risk-assessment-r1-c.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-036-test-report-r1.md",
+    "fd_revision": 10,
+    "fd_digest": "0c9b1681a0e94821019689b2d737248ded33edc1816231155797f9c60de28af6",
+    "assessor_session": "fd036-assessor-c-20261008-b5e3d1",
+    "assessment_focus": "delivery-operations",
+    "vote": "repair",
+    "severity": "high: no acceptance scenario has runtime evidence, and the inspected black-box suite has only six methods for fifteen listed scenarios.",
+    "impact_scope": "FD-036 aiw say users and delivery paths covering input, config/profile, validation, provider failures, and output; no observed runtime failure is asserted.",
+    "estimated_repair_time": "Approximately 2-4 hours to expand/reconcile evidence coverage, followed by an authorized offline run expected under 2 minutes; Planner authorization wait is unknown.",
+    "delivery_impact": "Hold test acceptance and subsequent delivery/archive decision until authorized runtime evidence exists and representative acceptance paths without distinct test methods are tested or explicitly dispositioned.",
+    "rationale": "Receipt FD-036-000010-test-report-ready binds the Tester handoff state at Revision 10 and digest 0c9b1681a0e94821019689b2d737248ded33edc1816231155797f9c60de28af6. The Tester report identifies Revision 9 and digest ac307da464bad4e9a6e9188c9374e5edd8f4547237092c5a2c3c18cb8ab6c151 as the tested implementation snapshot and source event FD-036-000009-implementation-ready; these describe the implementation and subsequent report-handoff state respectively. The Tester records 15/15 scenarios unrun, 0% requirements coverage, branch coverage not measured, zero executed behavior tests, and no authorization. Static inspection of the black-box file found six test methods, leaving several listed config, profile, validation, timeout/invalid-response, help/version, and platform/sample behaviors without distinct methods. A passing execution of the proposed suite alone would not establish all 15 scenarios.",
+    "residual_risk": "All 15 scenarios remain unrun and no runtime behavior is established. Real API quality/model availability and cross-platform installation remain unverified. No live API validation is required for the focused delivery repair.",
+    "uncertainty": "Assessment treats Revision 9/digest as the tested implementation and Revision 10/digest as the subsequent test-handoff state, per the workflow clarification. Repair-time estimate is approximate; authorization wait is unknown. This assessment used the specified worktree evidence and did not run any command.",
+    "assessment_time": "2026-10-08T08:12:42+00:00"
+  }
+}

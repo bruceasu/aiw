@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-032",
+  "source_event": "FD-032-000008-test-report-ready",
+  "human_report": "FD-032-test-risk-assessment-r2-a.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-032-test-report-r2.md",
+    "fd_revision": 8,
+    "fd_digest": "391023572748f88998701e3db00a4b37caa5ff8eba09032290d657d2f7915b17",
+    "assessor_session": "fd032-assessor-r2-a-20261008-6f2d91",
+    "vote": "accept-with-risk",
+    "severity": "低到中：本轮 13/13 可观察行为场景通过且无已确认实现故障；分支覆盖率及旧归档兼容性仍无运行证据。",
+    "impact_scope": "潜在影响集中在 FD 证据校验、异常输入与历史归档报告兼容性；关键 PM 多数路由及 Reviewer 身份隔离已有本轮黑箱证据。",
+    "estimated_repair_time": "当前无已确认故障需要修复；补充聚焦覆盖或历史样例检查预计数小时，发现缺陷后的修复时间未知。",
+    "delivery_impact": "依据现有证据接纳无需等待额外测试；若把补充检查设为交付条件，交付预计延迟数小时，发现缺陷后延迟未知。",
+    "rationale": "Tester 在授权的单次聚焦命令中取得 3/3 方法通过、13/13 场景通过、失败及未执行行为测试均为 0；逐项覆盖多数与少数票路由、无效评估拦截、身份隔离和原始失败事实保留。第一轮夹具失败仍如实记录。场景覆盖率是证据之一而非独立放行阈值；未发现要求先修复的故障。",
+    "residual_risk": "未测量业务代码分支覆盖率，未运行完整仓库测试；历史归档报告兼容性及文档与稳定规格一致性仍待独立静态审查。",
+    "uncertainty": "未测试分支和历史样例是否存在缺陷未知；如发现缺陷，其修复范围与耗时无法从当前报告推定。",
+    "assessment_time": "2026-10-08T03:30:28+00:00"
+  }
+}

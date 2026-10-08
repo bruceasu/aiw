@@ -1,0 +1,30 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000022-test-rejected",
+  "human_report": "FD-036-implementation-r5.md",
+  "data": {
+    "summary": "Completed Work Item 1.12: invalid recognized configuration values preserve the lower-precedence value or built-in default, unknown keys are ignored, malformed TOML still errors, and CLI validation remains strict.",
+    "changed_paths": [
+      "docs/features/FD-036_AIW_SAY_CLI.md",
+      "docs/features/FEATURE_INDEX.md",
+      "internal/say/config.go",
+      "internal/say/profile.go",
+      "program/aiw-say/README.md",
+      "tests/test_fd036_say_blackbox.py"
+    ],
+    "commands": [
+      "python plugins/aiw-fd.py claim FD-036 FD-036-000022-test-rejected --session fd036-worker-20261008-config-defaults-7f03",
+      "go build -o NUL ./cmd/aiw-say",
+      "git diff -- internal/say/config.go internal/say/profile.go tests/test_fd036_say_blackbox.py program/aiw-say/README.md docs/features/FD-036_AIW_SAY_CLI.md"
+    ],
+    "results": [
+      "The compile-only command succeeded and retained no distributable artifact.",
+      "Invalid values for known config settings are skipped without replacing the current lower-precedence value; unknown keys are skipped.",
+      "Malformed TOML parse errors and invalid CLI options remain errors.",
+      "Black-box regression cases were authored but not executed in the Worker stage."
+    ],
+    "residual_risk": "The new behavior awaits an independently authorized Tester run. The in-repository parser supports the application's TOML table/scalar subset and has not been validated against the full TOML specification. Other previously disclosed coverage and platform gaps remain."
+  }
+}

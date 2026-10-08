@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000029-implementation-ready",
+  "human_report": "FD-036-test-authorization-r7.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-036-000029-implementation-ready",
+    "fd_revision": 29,
+    "fd_digest": "64a3b0ec060f0d1d492f6ac3e8acf7d4c3ad20184449064c0b6962596051f522",
+    "tester_session": "fd036-tester-20261008-r5-toml",
+    "command": "$tag='aiw-say-fd036-r5-'+[guid]::NewGuid().ToString('N'); $testExe=Join-Path $env:TEMP ($tag+'.exe'); $env:GOCACHE=Join-Path $env:TEMP ($tag+'-cache'); $env:GOPROXY='off'; $env:GOSUMDB='off'; $env:PYTHONDONTWRITEBYTECODE='1'; go build -o $testExe ./cmd/aiw-say; if ($LASTEXITCODE -ne 0) { throw 'go build failed' }; $env:AIW_SAY_BIN=$testExe; python -B -m unittest -v tests.test_fd036_say_blackbox",
+    "working_directory": "C:\\Users\\svictor\\workspace\\tools\\ai-tools\\aiw\\.wt\\FD-036",
+    "scope": "Temporary compile of ./cmd/aiw-say followed by the focused root black-box module tests.test_fd036_say_blackbox. Covers TOML syntax rejection for Go-only escape, unknown array key ignoring, invalid value and type fallback, and existing CLI/config behavior.",
+    "expected_duration": "Approximately 5 seconds.",
+    "side_effects": "Creates one random executable and a dedicated Go build cache under %TEMP%; tests create and clean Python TemporaryDirectory paths and bind an HTTP mock to 127.0.0.1. No repository output, dependency downloads, real API, external network, or system configuration writes.",
+    "risk_review": "Focused, offline, inspectable, and confined to one test module plus unique temporary paths. GOPROXY and GOSUMDB are off; Python bytecode writes are disabled. One execution only.",
+    "human_approval": "not required",
+    "planner_identity": "fd036-planner-20261008-r7-host",
+    "decision_time": "2026-10-08T09:28:29+00:00"
+  }
+}

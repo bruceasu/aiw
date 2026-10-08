@@ -12,6 +12,8 @@ After authorization, run only that command. Report each distinct scenario as
 executed, partial, or uncovered; include raw evidence, exact commands, both
 coverage measures, and residual risks. Emit `test-report-ready` from this
 session with the report and claimed event.
+Your report records test facts and may recommend attention; PM and one or
+three independent risk assessors decide whether to accept delivery risk.
 
 ## Boundaries
 

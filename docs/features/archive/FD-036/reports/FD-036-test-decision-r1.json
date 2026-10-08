@@ -1,0 +1,34 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000010-test-report-ready",
+  "human_report": "FD-036-test-decision-r1.md",
+  "data": {
+    "disposition": "rejected",
+    "tester_report": "docs/features/reports/FD-036-test-report-r1.md",
+    "fd_revision": 10,
+    "fd_digest": "0c9b1681a0e94821019689b2d737248ded33edc1816231155797f9c60de28af6",
+    "requirements_coverage": "0%",
+    "branch_coverage": "not measured",
+    "failed_behavior_tests": 0,
+    "assessment_policy": "adaptive-v1",
+    "assessment_mode": "escalated",
+    "escalation_reason": "material-evidence-gap",
+    "escalation_detail": "All 15 applicable acceptance scenarios are unrun; requirements coverage is 0%, so runtime acceptance cannot be assessed.",
+    "coverage_gap_disposition": "material",
+    "coverage_gap_reason": "All 15 applicable scenarios are unrun and the inspected six-method black-box suite lacks distinct cases for multiple listed acceptance behaviors; no runtime evidence exists.",
+    "assessments": [
+      "docs/features/reports/FD-036-test-risk-assessment-r1-a.md",
+      "docs/features/reports/FD-036-test-risk-assessment-r1-b.md",
+      "docs/features/reports/FD-036-test-risk-assessment-r1-c.md"
+    ],
+    "accept_votes": 0,
+    "repair_votes": 3,
+    "rationale": "Reject test acceptance and return to Worker. All three independent assessors vote repair due to a material evidence gap, not an observed runtime defect. The implementation-ready report identifies tested implementation revision 9/digest ac307da464bad4e9a6e9188c9374e5edd8f4547237092c5a2c3c18cb8ab6c151; revision 10/digest 0c9b1681a0e94821019689b2d737248ded33edc1816231155797f9c60de28af6 is the subsequent test-report handoff state.",
+    "exceptions": "No tests were authorized or run. No live API behavior was tested.",
+    "residual_risk": "All runtime acceptance behavior remains unevidenced; real API quality/model availability and cross-platform installation remain unverified.",
+    "pm_identity": "Codex workflow host",
+    "decision_time": "2026-10-08T08:16:06Z"
+  }
+}

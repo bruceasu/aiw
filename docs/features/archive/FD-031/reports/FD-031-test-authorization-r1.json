@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-031",
+  "source_event": "FD-031-000004-implementation-ready",
+  "human_report": "FD-031-test-authorization-r1.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-031-000004-implementation-ready",
+    "fd_revision": 4,
+    "fd_digest": "f2574ae2f23e1605895b823ffce3251351c18133e64be443bab21146f7e2adcc",
+    "tester_session": "fd031-tester-20261008-a3f7c9",
+    "command": "python -B -m unittest tests.test_fd031_promote_blackbox -v",
+    "working_directory": "C:\\Users\\svictor\\workspace\\tools\\ai-tools\\aiw\\.wt\\FD-031",
+    "scope": "8 black-box CLI cases in tests/test_fd031_promote_blackbox.py",
+    "expected_duration": "2-6 minutes",
+    "side_effects": "Reads worktree and existing Go module cache; writes and removes only %TEMP%\\fd031-promote-* containing offline CLI binaries, isolated Go caches, fixture Git projects and FD receipts.",
+    "risk_review": "Inspected test file, its subprocess calls and temporary-path setup; Go downloads are disabled and no unrelated writes, external services or privilege changes are indicated.",
+    "human_approval": "not required",
+    "planner_identity": "fd031-host-planner-20261008",
+    "decision_time": "2026-10-08T02:17:37+00:00"
+  }
+}

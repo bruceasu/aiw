@@ -1,0 +1,28 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-032",
+  "source_event": "FD-032-000008-test-report-ready",
+  "human_report": "FD-032-test-decision-r2.md",
+  "data": {
+    "disposition": "accepted",
+    "tester_report": "docs/features/reports/FD-032-test-report-r2.md",
+    "fd_revision": 8,
+    "fd_digest": "391023572748f88998701e3db00a4b37caa5ff8eba09032290d657d2f7915b17",
+    "requirements_coverage": "100%",
+    "branch_coverage": "not measured",
+    "failed_behavior_tests": 0,
+    "assessments": [
+      "docs/features/reports/FD-032-test-risk-assessment-r2-a.md",
+      "docs/features/reports/FD-032-test-risk-assessment-r2-b.md",
+      "docs/features/reports/FD-032-test-risk-assessment-r2-c.md"
+    ],
+    "accept_votes": 3,
+    "repair_votes": 0,
+    "rationale": "Three independent assessors support acceptance with disclosed risk after focused runtime evidence of majority routing, invalid assessment rejection, and Reviewer identity separation; acceptance is not automatic from the coverage percentage.",
+    "exceptions": "Branch coverage, full repository regression, and historical archived-report compatibility were not run; first-round fixture failures remain in the record.",
+    "residual_risk": "Unmeasured branches and unrun historical compatibility may hide defects. Independent Reviewer will statically inspect these paths and evidence consistency.",
+    "pm_identity": "fd032-host-20261008-31a7c2",
+    "decision_time": "2026-10-08T03:31:17+00:00"
+  }
+}

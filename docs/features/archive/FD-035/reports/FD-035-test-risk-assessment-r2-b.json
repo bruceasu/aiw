@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-035",
+  "source_event": "FD-035-000012-test-report-ready",
+  "human_report": "FD-035-test-risk-assessment-r2-b.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-035-test-report-r3.md",
+    "fd_revision": 12,
+    "fd_digest": "4a3e2bf9093b9857d8c0c6ef5ef827df5c5643cb4fc7a3e6dfa5f5bee2265bdd",
+    "assessor_session": "fd035-assessor-b-20261008-6f0e2c",
+    "assessment_focus": "technical-repair",
+    "vote": "accept-with-risk",
+    "severity": "中：本轮测试未触达的 CLI 分支可能包含尚未发现的行为缺陷。",
+    "impact_scope": "FD CLI 中本测试集未覆盖的 338 个分支及依赖这些路径的 PM 风险决策调用者；具体代码路径和用户影响未定位。",
+    "estimated_repair_time": "未知：需要先按代码路径识别未覆盖分支并确定补测范围；本轮没有分支级缺口清单或覆盖率目标。",
+    "delivery_impact": "本轮可按既定验收继续至 Reviewer；若后续要求提升覆盖率或发现未覆盖路径缺陷，需补充测试并重新评估，工作量和时间未知。",
+    "rationale": "Tester 报告显示 S20–S25 的黑盒断言通过；获批修复夹具后的 14 个测试方法及覆盖率运行均通过。coverage.py 针对实际 CLI 子进程 plugins/aiw-fd.py 测得 210/548 分支（38.3%）。FD 要求报告分支数、命中数和百分比，但未设最低比例；因此新增验收证据已满足，保留未覆盖分支风险并投 accept-with-risk。",
+    "residual_risk": "338/548（61.7%）CLI 分支未由本轮运行覆盖，其正确性未得到运行证据；此次聚焦结果不代表整个 CLI 已充分验证。",
+    "uncertainty": "Tester 报告未逐一映射未覆盖分支对应的代码路径，故无法量化这些分支的具体用户影响、缺陷概率或补测工时。",
+    "assessment_time": "2026-10-08T07:06:51+00:00"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-032",
+  "source_event": "FD-032-000005-test-report-ready",
+  "human_report": "FD-032-test-risk-assessment-r1-a.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-032-test-report-r1.md",
+    "fd_revision": 5,
+    "fd_digest": "524c07bbbb3bc91a2546e98e519245bedaba9c7c4e9a31a5a8f37624b471beda",
+    "assessor_session": "fd032-assessor-a-20261008-7c41e2",
+    "vote": "repair",
+    "severity": "高：核心多数决策和身份边界没有运行证据；尚无已确认的生产实现故障。",
+    "impact_scope": "test-report-ready 后三份评估校验、PM 多数路由和 Reviewer session 隔离；13 个目标行为本轮均未完成。",
+    "estimated_repair_time": "夹具已静态修正；若重跑不暴露新问题，聚焦重测和报告更新预计数小时。实际耗时未知，取决于重跑结果。",
+    "delivery_impact": "先完成聚焦重测预计延迟数小时；若出现实现缺陷，进一步延迟未知。",
+    "rationale": "两次授权运行各在夹具前置步骤失败，0/13 目标行为完成；第二次夹具错误修正后未执行。不能据此认定实现故障，也不能据此确认核心交接安全。",
+    "residual_risk": "若现在接纳，错误多数票、无效评估被接纳、Reviewer 与评估者身份复用等风险均缺少本轮运行证据。",
+    "uncertainty": "修订后夹具能否覆盖全部目标行为、生产实现是否有相关缺陷及实际分支覆盖率均未知。",
+    "assessment_time": "2026-10-08T03:26:02+00:00"
+  }
+}

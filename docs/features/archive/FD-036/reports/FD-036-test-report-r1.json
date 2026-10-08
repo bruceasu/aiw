@@ -1,0 +1,61 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000009-implementation-ready",
+  "human_report": "FD-036-test-report-r1.md",
+  "data": {
+    "implementation_event": "FD-036-000009-implementation-ready",
+    "tested_fd_revision": 9,
+    "tested_fd_digest": "ac307da464bad4e9a6e9188c9374e5edd8f4547237092c5a2c3c18cb8ab6c151",
+    "tester_session": "fd036-tester-20261008-4c91e7",
+    "applicable_scenarios": 15,
+    "covered_scenarios": 0,
+    "executed_behavior_tests": 0,
+    "passed_behavior_tests": 0,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 15,
+    "requirements_coverage": "0%",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": "unavailable: no test command executed",
+    "coverage_unavailable_reason": "Planner has not issued revision-bound authorization for the proposed test command.",
+    "test_files": ["tests/test_fd036_say_blackbox.py"],
+    "authorization_records": [],
+    "commands": [
+      {
+        "command": "$tmpExe = Join-Path $env:TEMP ('aiw-say-fd036-' + [guid]::NewGuid().ToString('N') + '.exe'); try { go build -o $tmpExe ./cmd/aiw-say; if ($LASTEXITCODE -ne 0) { throw 'go build failed' }; $env:AIW_SAY_BIN = $tmpExe; python -m unittest tests.test_fd036_say_blackbox -v; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } } finally { Remove-Item -LiteralPath $tmpExe -Force -ErrorAction SilentlyContinue; Remove-Item Env:AIW_SAY_BIN -ErrorAction SilentlyContinue }",
+        "working_directory": "C:\\Users\\svictor\\workspace\\tools\\ai-tools\\aiw\\.wt\\FD-036",
+        "status": "proposed_unrun",
+        "expected_duration": "under 2 minutes",
+        "expected_side_effects": "Unique random %TEMP% exe removed in finally, AIW_SAY_BIN environment variable cleanup, test temporary directory/process, 127.0.0.1 loopback mock server, and Go temporary compilation cache; no external API request, dependency download, or privilege escalation.",
+        "authorization": "none"
+      }
+    ],
+    "recommendation": "blocked",
+    "not_applicable_reason": "All 15 listed FD-036 scenarios apply; none are excluded from the scenario inventory.",
+    "residual_risk": "All runtime acceptance behavior remains without independent test evidence; real API quality and model availability are unverified.",
+    "scenarios": [
+      {"id":"S01","behavior":"Plugin invocation with positional text produces translation-only stdout.","status":"uncovered","execution_status":"prepared_unrun","test_cases":["planned black-box scenario S01"],"evidence":"Not run; awaiting Planner authorization."},
+      {"id":"S02","behavior":"Piped stdin produces a translation.","status":"uncovered","execution_status":"prepared_unrun","test_cases":["planned black-box scenario S02"],"evidence":"Not run; awaiting Planner authorization."},
+      {"id":"S03","behavior":"Conflicting stdin/positional input or empty input exits nonzero with stderr diagnostic and empty stdout.","status":"uncovered","execution_status":"prepared_unrun","test_cases":["planned black-box scenario S03"],"evidence":"Not run; awaiting Planner authorization."},
+      {"id":"S04","behavior":"Missing default config uses built-in defaults and valid --config replaces base config.","status":"uncovered","execution_status":"prepared_unrun","test_cases":["planned black-box scenario S04"],"evidence":"Not run; awaiting Planner authorization."},
+      {"id":"S05","behavior":"Missing or invalid explicit config fails without partial stdout.","status":"uncovered","execution_status":"prepared_unrun","test_cases":["planned black-box scenario S05"],"evidence":"Not run; awaiting Planner authorization."},
+      {"id":"S06","behavior":"Profile is selected from user config path and missing/invalid profile fails.","status":"uncovered","execution_status":"prepared_unrun","test_cases":["planned black-box scenario S06"],"evidence":"Not run; awaiting Planner authorization."},
+      {"id":"S07","behavior":"Profile name rejects path separators and traversal input.","status":"uncovered","execution_status":"prepared_unrun","test_cases":["planned black-box scenario S07"],"evidence":"Not run; awaiting Planner authorization."},
+      {"id":"S08","behavior":"Defaults, installation config, profile, and explicit CLI values follow the specified precedence.","status":"uncovered","execution_status":"prepared_unrun","test_cases":["planned black-box scenario S08"],"evidence":"Not run; awaiting Planner authorization."},
+      {"id":"S09","behavior":"Invalid language/mode enums, unknown provider, or invalid timeout/model values fail.","status":"uncovered","execution_status":"prepared_unrun","test_cases":["planned black-box scenario S09"],"evidence":"Not run; awaiting Planner authorization."},
+      {"id":"S10","behavior":"Unicode, newlines, quotes, commands, and prompt-injection text are passed as source data with required preservation.","status":"uncovered","execution_status":"prepared_unrun","test_cases":["planned black-box scenario S10"],"evidence":"Not run; awaiting Planner authorization."},
+      {"id":"S11","behavior":"Missing credentials, auth failure, rate limit, timeout, and invalid response fail without sensitive-data leakage.","status":"uncovered","execution_status":"prepared_unrun","test_cases":["planned black-box scenario S11"],"evidence":"Not run; awaiting Planner authorization."},
+      {"id":"S12","behavior":"Transient retry is bounded and failures emit no partial translation.","status":"uncovered","execution_status":"prepared_unrun","test_cases":["planned black-box scenario S12"],"evidence":"Not run; awaiting Planner authorization."},
+      {"id":"S13","behavior":"Help/version and success/failure stdout, stderr, and exit codes match the CLI contract.","status":"uncovered","execution_status":"prepared_unrun","test_cases":["planned black-box scenario S13"],"evidence":"Not run; awaiting Planner authorization."},
+      {"id":"S14","behavior":"Unimplemented clipboard/file/dialog options fail explicitly.","status":"uncovered","execution_status":"prepared_unrun","test_cases":["planned black-box scenario S14"],"evidence":"Not run; awaiting Planner authorization."},
+      {"id":"S15","behavior":"CLI works headlessly and profile examples can be copied without overwriting existing user files.","status":"uncovered","execution_status":"prepared_unrun","test_cases":["planned black-box scenario S15"],"evidence":"Not run; awaiting Planner authorization."}
+    ],
+    "static_exclusions": [
+      {"behavior":"Real API translation quality, model availability, and external service behavior.","reason":"No real API request was authorized; this may involve network access or cost."},
+      {"behavior":"Privacy logging, prompt trust boundary, and diagnostic redaction.","reason":"Not established by an unexecuted test; requires static review or authorized mock assertions."},
+      {"behavior":"Packaging/install layout, sample/parser consistency, and other operating systems.","reason":"No package build or cross-platform runtime validation was performed."},
+      {"behavior":"GUI, clipboard, file translation, dialogs, glossary, and second provider.","reason":"Explicitly outside FD-036 scope."}
+    ]
+  }
+}

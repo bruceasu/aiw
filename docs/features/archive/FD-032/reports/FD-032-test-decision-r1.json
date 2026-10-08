@@ -1,0 +1,28 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-032",
+  "source_event": "FD-032-000005-test-report-ready",
+  "human_report": "FD-032-test-decision-r1.md",
+  "data": {
+    "disposition": "rejected",
+    "tester_report": "docs/features/reports/FD-032-test-report-r1.md",
+    "fd_revision": 5,
+    "fd_digest": "524c07bbbb3bc91a2546e98e519245bedaba9c7c4e9a31a5a8f37624b471beda",
+    "requirements_coverage": "0%",
+    "branch_coverage": "not measured",
+    "failed_behavior_tests": 0,
+    "assessments": [
+      "docs/features/reports/FD-032-test-risk-assessment-r1-a.md",
+      "docs/features/reports/FD-032-test-risk-assessment-r1-b.md",
+      "docs/features/reports/FD-032-test-risk-assessment-r1-c.md"
+    ],
+    "accept_votes": 0,
+    "repair_votes": 3,
+    "rationale": "Three independent assessors voted repair because all thirteen target behaviors remain unexecuted after fixture failures. This is an evidence gap, not a coverage threshold or confirmed production defect.",
+    "exceptions": "none",
+    "residual_risk": "Majority routing, invalid assessment rejection, and Reviewer identity isolation have no runtime evidence; corrected fixture remains unexecuted.",
+    "pm_identity": "fd032-host-20261008-31a7c2",
+    "decision_time": "2026-10-08T03:27:04+00:00"
+  }
+}

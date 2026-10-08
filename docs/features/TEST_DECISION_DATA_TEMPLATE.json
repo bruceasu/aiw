@@ -11,6 +11,18 @@
     "fd_digest": "replace-with-test-report-ready-receipt-digest",
     "requirements_coverage": "not measured",
     "branch_coverage": "not measured",
+    "failed_behavior_tests": 0,
+    "assessment_policy": "adaptive-v1",
+    "assessment_mode": "single",
+    "escalation_reason": "none",
+    "escalation_detail": "not applicable",
+    "coverage_gap_disposition": "bounded",
+    "coverage_gap_reason": "replace-with-PM-assessment-of-uncovered-or-unmeasured-evidence",
+    "assessments": [
+      "docs/features/reports/FD-XXX-test-risk-assessment-rN-a.md"
+    ],
+    "accept_votes": 0,
+    "repair_votes": 1,
     "rationale": "replace-with-PM-decision",
     "exceptions": "none",
     "residual_risk": "replace-with-remaining-risk",

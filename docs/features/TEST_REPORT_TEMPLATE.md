@@ -20,3 +20,5 @@
 列出每次实际命令、授权记录、原始输出或证据路径、环境限制及剩余风险。
 中文 Markdown 供人阅读；同名 JSON 按 `TEST_REPORT_DATA_TEMPLATE.json` 编写，
 供 CLI 和 AI 消费。两份文件必须引用同一 FD、事件和版本。
+JSON 中的 `recommendation` 只概括测试事实，不决定是否接纳交付风险；
+PM 在三份独立风险评估后按多数意见决定。

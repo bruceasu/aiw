@@ -1,0 +1,32 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-031",
+  "source_event": "FD-031-000015-test-accepted",
+  "human_report": "FD-031-review-r2.md",
+  "data": {
+    "session_ref": "fd031-reviewer-r1-20261008-69bc92e1",
+    "outcome": "verification-passed",
+    "reviewed_commit": "d345eb501d3f3d98583cf4e5460781e667f4115c",
+    "repair_commit": "97c5de6f84957cafc7a8eb9ac8baf290d7f3a9bb",
+    "diff_base": "de304afce52a5956f807024d5ac526fde70a07da",
+    "findings": [],
+    "resolved_findings": ["FD-031-review-r1 P2: index decode exception bypassed recover-worker rollback"],
+    "reviewer_outcome_counts": {
+      "changes_requested": 1,
+      "verification_passed": 1,
+      "total": 2
+    },
+    "test_evidence": {
+      "tester_report": "docs/features/reports/FD-031-test-report-r3.md",
+      "pm_decision": "docs/features/reports/FD-031-test-decision-r3.md",
+      "passed_behavior_tests": 13,
+      "requirements_coverage": "90.5%",
+      "branch_coverage": "not measured",
+      "uncovered_scenarios": ["S13", "S20"]
+    },
+    "checks_run_by_reviewer": ["static diff and call-path review"],
+    "checks_not_run_by_reviewer": ["tests", "compile", "build", "coverage", "formatter", "linter", "vet", "network"],
+    "residual_risk": "S13 and S20 lack runtime coverage; S21 injects index decode failure but not every filesystem fault. Branch coverage was not measured."
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-035",
+  "source_event": "FD-035-000003-design-ready",
+  "human_report": "FD-035-implementation-r1.md",
+  "data": {
+    "summary": "Added adaptive one-or-three independent risk assessments for FD Tester reports, with evidence-bound escalation and complementary focuses.",
+    "changed_paths": [
+      "plugins/aiw-fd.py",
+      "tests/test_fd032_risk_decision_blackbox.py",
+      "openspec/specs/fd-workflow/spec.md",
+      "docs/features/TEST_RISK_ASSESSMENT_TEMPLATE.md",
+      "docs/features/TEST_RISK_ASSESSMENT_DATA_TEMPLATE.json",
+      "docs/features/TEST_DECISION_TEMPLATE.md",
+      "docs/features/TEST_DECISION_DATA_TEMPLATE.json",
+      "skills/work-management.md",
+      "skills/fd-workflow/SKILL.md",
+      ".agents/skills/fd-workflow/SKILL.md",
+      "skills/fd-workflow/roles/pm.md",
+      "skills/fd-workflow/roles/tester.md",
+      "skills/fd-workflow/roles/reviewer.md",
+      "skills/fd-review/SKILL.md",
+      ".agents/skills/fd-review/SKILL.md",
+      "docs/usage/aiw-fd.md",
+      "docs/features/FD-035_ADAPTIVE_RISK_ASSESSMENT_FOR_FD_TEST_REPORTS.md"
+    ],
+    "commands": [
+      "git diff --check develop...HEAD",
+      "python -B -c \"from pathlib import Path; files = ('plugins/aiw-fd.py', 'tests/test_fd032_risk_decision_blackbox.py'); [compile(Path(p).read_bytes(), p, 'exec') for p in files]; print('compile-only OK')\""
+    ],
+    "results": [
+      "Static diff check passed and Tester-to-PM-to-Reviewer fields and sessions were traced.",
+      "Python compile-only check passed without retained artifacts.",
+      "Runtime tests, coverage, final build, formatting, lint and network commands were not run."
+    ],
+    "residual_risk": "PM's qualitative evidence-gap judgment cannot be proven by CLI field validation; independent Tester runtime results and Reviewer inspection remain pending. Legacy three-assessor decisions remain accepted for in-flight compatibility."
+  }
+}

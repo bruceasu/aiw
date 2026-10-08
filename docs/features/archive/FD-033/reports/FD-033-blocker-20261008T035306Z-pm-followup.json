@@ -1,0 +1,35 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-033",
+  "source_event": "FD-033-000007-review-requested",
+  "human_report": "FD-033-blocker-20261008T035306Z-pm-followup.md",
+  "data": {
+    "stage": "independent Reviewer handoff claim after PM test-gate override",
+    "role": "pm",
+    "recorded_at": "2026-10-08T03:53:06+00:00",
+    "recorder_session": "fd033-pm-20261008-c2b60d",
+    "observed_blocker": "Reviewer claim for FD-033-000007-review-requested was rejected with 'independent Reviewer requires current PM test acceptance'. PM's explicit waiver did not create the standard test-accepted receipt.",
+    "confirmed_cause": "The current aiw-fd.py Reviewer claim validator requires a current PM test-accepted event. The CLI has no waiver-to-review handoff that preserves the fact that tests were not accepted or run.",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      {
+        "command": "aiw fd emit FD-033 test-accepted --producer pm --artifact docs/features/reports/FD-033-test-decision-r1.md --source-event FD-033-000006-test-report-ready",
+        "result": "Rejected: PM decision Disposition differs from Tester evidence; no test-accepted event was created."
+      },
+      {
+        "command": "aiw fd request-review FD-033 --reason \"PM explicitly waived the test gate after three repair votes; all 14 scenarios remain unrun and require independent review with residual risk recorded.\"",
+        "result": "Created FD-033-000007-review-requested, but Reviewer claim was still rejected by the current PM test acceptance gate."
+      }
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "The user explicitly authorized skipping independent review and accepting the absence of review evidence in the current conversation.",
+    "actual_resolution": "PM accepted the user's explicit waiver, delivered commit fc03b100 and directly archived the FD without fabricating test-accepted, Reviewer claim, or verification-passed events.",
+    "resolved_at": "2026-10-08T04:37:14+00:00",
+    "residual_risk_or_next_step": "No independent implementation review exists and all 14 behavior scenarios remain uncovered; preserve both risks in the FD and waiver evidence during delivery and archive.",
+    "reusable_improvement": "Design a first-class PM waiver handoff that allows Reviewer claim while preserving the untested status and recording the explicit override.",
+    "improvement_status": "proposed",
+    "linked_feedback": "docs/features/archive/FD-033/reports/FD-033-blocker-20261008T035222Z-reviewer.md"
+  }
+}

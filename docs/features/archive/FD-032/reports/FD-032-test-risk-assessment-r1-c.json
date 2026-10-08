@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-032",
+  "source_event": "FD-032-000005-test-report-ready",
+  "human_report": "FD-032-test-risk-assessment-r1-c.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-032-test-report-r1.md",
+    "fd_revision": 5,
+    "fd_digest": "524c07bbbb3bc91a2546e98e519245bedaba9c7c4e9a31a5a8f37624b471beda",
+    "assessor_session": "fd032-assessor-c-20261008-a6b924",
+    "vote": "repair",
+    "severity": "中高：没有证据确认生产缺陷，但 13 个核心行为场景均未进入执行阶段；风险来自交接路由和身份校验未获运行时验证，而非覆盖率数值本身。",
+    "impact_scope": "新规则下 Tester 报告到 PM 多数决策及 Reviewer claim 的 FD 流程；三票路由、无效评估拒绝、Reviewer session 隔离均未执行。历史归档兼容与文档一致性仍待静态审查。",
+    "estimated_repair_time": "若已静态修正的夹具足够，复核并完成一次聚焦运行估计 1–2 小时；新增授权或再次排错所需时间未知。",
+    "delivery_impact": "建议先补齐聚焦证据，预计延后数小时；若再次失败或执行授权需重新处理，交付时间未知。",
+    "rationale": "Tester 两次命令均在临时夹具前置步骤失败，0/13 目标场景执行，生产实现未被判定失败。对改变 FD 决策路由的 CLI 契约，低成本补齐核心行为证据的价值高于立即带风险接纳。",
+    "residual_risk": "若现在接纳，多数票路由、无效或身份冲突评估拒绝、Reviewer session 隔离可能存在未发现的运行时缺陷；独立静态审查不能证明这些路径。",
+    "uncertainty": "修正后的夹具尚未运行；真实实现行为、再次运行结果及是否需要新授权均未知。",
+    "assessment_time": "2026-10-08T03:26:24+00:00"
+  }
+}

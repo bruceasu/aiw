@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000010-test-report-ready",
+  "human_report": "FD-036-test-risk-assessment-r1-a.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-036-test-report-r1.md",
+    "fd_revision": 10,
+    "fd_digest": "0c9b1681a0e94821019689b2d737248ded33edc1816231155797f9c60de28af6",
+    "assessor_session": "fd036-assessor-a-20261008-081204-7b31c9",
+    "tester_session": "fd036-tester-20261008-4c91e7",
+    "assessment_focus": "acceptance-impact",
+    "vote": "repair",
+    "severity": "high: every runtime acceptance scenario remains unverified, so the core translation workflow and user-facing error/privacy behavior have no execution evidence; no actual defect is established",
+    "impact_scope": "All users and the main acceptance paths for input/output, configuration and profiles, validation, translation requests, error handling, CLI options, and headless operation",
+    "estimated_repair_time": "unknown: test execution is not authorized and failures, if any, are not yet known; Tester estimates the proposed command itself at under 2 minutes, excluding diagnosis and fixes",
+    "delivery_impact": "Positive test acceptance is not supported by current evidence. Schedule delay is unknown and depends on command authorization and results.",
+    "rationale": "Tester reports 15 applicable scenarios, 0 executed, 0 passed, 0 failed, 15 unrun, 0% requirements coverage, and branch coverage not measured. No behavior tests ran because revision-bound command authorization was unavailable. The report records Revision 9 and digest ac307da464bad4e9a6e9188c9374e5edd8f4547237092c5a2c3c18cb8ab6c151 for implementation-ready event FD-036-000009; test-report-ready event FD-036-000010 and digest 0c9b1681a0e94821019689b2d737248ded33edc1816231155797f9c60de28af6 identify the post-handoff state. This revision sequence is consistent and is not an evidence defect. Worker reports describe implementation and compile evidence, not runtime acceptance evidence. Vote repair because all behavior scenarios remain unrun; do not characterize them as passed or failed.",
+    "residual_risk": "Until authorized tests are executed against the current revision, user-visible behavior may conform or may contain defects; the evidence cannot distinguish these outcomes. Mock-based behavior tests would not establish real API translation quality or model availability, which are out of scope here.",
+    "uncertainty": "The Revision 9 implementation evidence and Revision 10 post-handoff receipt have distinct roles and are consistent. No runtime results exist, and any repair effort after test execution cannot be estimated before results are known. Real API quality and availability are excluded from this assessment.",
+    "assessment_time": "2026-10-08T08:12:04Z"
+  }
+}

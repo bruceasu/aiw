@@ -20,7 +20,7 @@ META = {
     "name": "aiw-fd",
     "short": "manage numbered Feature Designs and role handoffs",
     "description": "Create, inspect, and advance FD-first work.",
-    "commands": ["new", "list", "show", "emit", "claim", "resume", "request-review", "refresh-worker", "refresh-tester", "reopen", "close"],
+    "commands": ["new", "list", "show", "emit", "claim", "resume", "request-review", "refresh-worker", "recover-worker", "refresh-tester", "reopen", "close"],
     "readOnly": False,
     "mutatesFiles": True,
     "requiresConfirmation": False,
@@ -194,9 +194,13 @@ def dual_evidence(content: str) -> bool:
 
 
 def atomic_text(path: Path, content: str) -> None:
+    atomic_bytes(path, content.encode("utf-8"))
+
+
+def atomic_bytes(path: Path, content: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + f".tmp-{os.getpid()}-{uuid.uuid4().hex}")
-    with temporary.open("x", encoding="utf-8", newline="\n") as stream:
+    with temporary.open("xb") as stream:
         stream.write(content)
         stream.flush()
         os.fsync(stream.fileno())
@@ -484,15 +488,53 @@ def validate_test_report(base: Path, artifact_ref: str, previous: dict) -> dict:
             "failed_behavior_tests": counts["Failed behavior tests"]}
 
 
+def validate_test_risk_assessment(base: Path, raw_ref: str, previous: dict,
+                                  excluded_sessions: set[str],
+                                  expected_focus: str = "") -> tuple[str, str]:
+    ref = safe_artifact(base, raw_ref)
+    path = Path(ref)
+    if (path.parent.as_posix() != "docs/features/reports"
+            or not path.name.startswith(previous["fd_id"] + "-")):
+        raise FDError("risk assessment must be an FD-prefixed report")
+    structured_evidence(base, ref, "test-risk-assessment",
+                        previous["fd_id"], previous["event_id"])
+    fields = labelled_fields(base, ref)
+    for name, expected in (("Tester report", previous["artifact_ref"]),
+                           ("FD revision", str(previous["fd_revision"])),
+                           ("FD digest", previous["fd_sha256"])):
+        if required_field(fields, name) != expected:
+            raise FDError(f"risk assessment {name} differs from Tester evidence")
+    session = required_field(fields, "Assessor session")
+    if (not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}", session)
+            or session in excluded_sessions):
+        raise FDError("risk assessors need distinct sessions from PM, Worker, and Tester")
+    vote = required_field(fields, "Vote")
+    if vote not in {"accept-with-risk", "repair"}:
+        raise FDError("risk assessment vote must be accept-with-risk or repair")
+    if expected_focus and required_field(fields, "Assessment focus") != expected_focus:
+        raise FDError(f"risk assessment focus must be {expected_focus}")
+    for name in ("Severity", "Impact scope", "Estimated repair time",
+                 "Delivery impact", "Rationale", "Residual risk", "Uncertainty"):
+        required_field(fields, name)
+    try:
+        assessed_at = datetime.fromisoformat(required_field(fields, "Assessment time"))
+    except ValueError as exc:
+        raise FDError("risk assessment time must be ISO 8601") from exc
+    if assessed_at.tzinfo is None:
+        raise FDError("risk assessment time needs a timezone")
+    return session, vote
+
+
 def validate_test_decision(base: Path, artifact_ref: str, previous: dict,
-                           disposition: str) -> None:
+                           disposition: str) -> list[str]:
     fields = labelled_fields(base, artifact_ref)
     for name, expected in (("Disposition", disposition),
                            ("Tester report", previous["artifact_ref"]),
                            ("FD revision", str(previous["fd_revision"])),
                            ("FD digest", previous["fd_sha256"]),
                            ("Requirements coverage", previous["test_summary"]["requirements_coverage"]),
-                           ("Branch coverage", previous["test_summary"]["branch_coverage"])):
+                           ("Branch coverage", previous["test_summary"]["branch_coverage"]),
+                           ("Failed behavior tests", str(previous["test_summary"]["failed_behavior_tests"]))):
         if required_field(fields, name) != expected:
             raise FDError(f"PM decision {name} differs from Tester evidence")
     for name in ("Rationale", "Exceptions", "Residual risk", "PM identity", "Decision time"):
@@ -503,16 +545,66 @@ def validate_test_decision(base: Path, artifact_ref: str, previous: dict,
         raise FDError("PM decision time must be ISO 8601") from exc
     if decision_time.tzinfo is None:
         raise FDError("PM decision time needs a timezone")
-    summary = previous["test_summary"]
-    if disposition == "accepted":
-        if summary["failed_behavior_tests"]:
-            raise FDError("PM cannot accept failed executed behavior tests")
-        low_or_missing = any(coverage_value(summary[key]) is None
-                             or coverage_value(summary[key]) < 70
-                             for key in ("requirements_coverage", "branch_coverage"))
-        if low_or_missing and required_field(fields, "Exceptions").casefold() in {
-                "none", "n/a", "not applicable"}:
-            raise FDError("accepting a coverage gap requires an exception")
+    try:
+        assessments = json.loads(required_field(fields, "Assessments"))
+    except json.JSONDecodeError as exc:
+        raise FDError("PM assessments must be a JSON array") from exc
+    policy = fields.get("Assessment policy", "").strip()
+    failed_tests = previous["test_summary"]["failed_behavior_tests"]
+    if policy == "":
+        # Existing in-flight three-assessor decisions keep their original format.
+        mode = "legacy-three"
+        expected_count = 3
+    elif policy == "adaptive-v1":
+        mode = required_field(fields, "Assessment mode")
+        if mode not in {"single", "escalated"}:
+            raise FDError("PM assessment mode must be single or escalated")
+        reason = required_field(fields, "Escalation reason")
+        required_field(fields, "Escalation detail")
+        gap = required_field(fields, "Coverage gap disposition")
+        required_field(fields, "Coverage gap reason")
+        if gap not in {"bounded", "material"}:
+            raise FDError("PM coverage gap disposition must be bounded or material")
+        if mode == "single":
+            if failed_tests or gap != "bounded" or reason != "none":
+                raise FDError("single assessment requires no failed tests, a bounded gap, and no escalation")
+            expected_count = 1
+        else:
+            if reason not in {"failed-tests", "material-evidence-gap", "pm-disagreement"}:
+                raise FDError("escalated assessment needs a supported reason")
+            if reason == "failed-tests" and not failed_tests:
+                raise FDError("failed-tests escalation requires a failed behavior test")
+            if reason == "material-evidence-gap" and gap != "material":
+                raise FDError("material-evidence-gap escalation requires a material gap")
+            expected_count = 3
+    else:
+        raise FDError("unsupported PM assessment policy")
+    if (not isinstance(assessments, list) or len(assessments) != expected_count
+            or not all(isinstance(ref, str) and ref.strip() for ref in assessments)
+            or len({ref.casefold() for ref in assessments}) != expected_count):
+        raise FDError(f"PM decision requires {expected_count} distinct risk assessment reports")
+    excluded = {previous["worker_session_ref"], previous["tester_session_ref"],
+                required_field(fields, "PM identity")}
+    sessions = []
+    votes = []
+    focuses = ("acceptance-impact", "technical-repair", "delivery-operations")
+    for index, ref in enumerate(assessments):
+        focus = focuses[index] if policy == "adaptive-v1" else ""
+        session, vote = validate_test_risk_assessment(base, ref, previous, excluded, focus)
+        excluded.add(session)
+        sessions.append(session)
+        votes.append(vote)
+    accept_votes = votes.count("accept-with-risk")
+    repair_votes = votes.count("repair")
+    for name, expected in (("Accept votes", accept_votes), ("Repair votes", repair_votes)):
+        raw = required_field(fields, name)
+        if not raw.isdecimal() or int(raw) != expected:
+            raise FDError(f"PM decision {name} differs from risk assessments")
+    required_accepts = 1 if mode == "single" else 2
+    result = "accepted" if accept_votes >= required_accepts else "rejected"
+    if disposition != result:
+        raise FDError("PM disposition differs from the assessor vote result")
+    return sessions
 
 
 def update_index(base: Path) -> None:
@@ -759,6 +851,77 @@ def refresh_worker(base: Path, name: str, reason: str) -> None:
     dispatch(base, target, event)
 
 
+def recover_worker(base: Path, name: str, expected_event: str,
+                   expected_session: str, reason: str) -> None:
+    if not reason.strip() or len(reason) > 500 or any(char in reason for char in "\r\n"):
+        raise FDError("recover-worker requires a one-line --reason of at most 500 characters")
+    with fd_lock(base, name):
+        fd_path = resolve_fd(base, name)
+        if fd_path.parent != feature_dir(base):
+            raise FDError("recover-worker requires an active FD")
+        original = fd_path.read_text(encoding="utf-8")
+        if status(original) not in {"Open", "In Progress"}:
+            raise FDError("recover-worker requires an Open or In Progress FD")
+        item = latest_event(base, name)
+        if not item:
+            raise FDError("recover-worker requires a dispatched Worker handoff")
+        old_path, old_event = item
+        fd_ref = fd_path.relative_to(base).as_posix()
+        if (old_event.get("fd_id") != name or old_event.get("fd_path") != fd_ref
+                or old_event.get("event_id") != expected_event
+                or old_event.get("target_role") != "worker"
+                or old_event.get("dispatch_state") != "dispatched"
+                or old_event.get("session_ref") != expected_session):
+            raise FDError("latest dispatched Worker event and session must match expectations")
+        current_revision = revision(original)
+        if current_revision < old_event["fd_revision"]:
+            raise FDError("FD revision is behind the Worker handoff; reconcile manually")
+        if (current_revision == old_event["fd_revision"]
+                and fd_digest(original) != old_event["fd_sha256"]):
+            raise FDError("FD changed without a revision; reconcile manually")
+        new_revision = current_revision + 1
+        updated = REVISION_RE.sub(f"**Revision:** {new_revision}", original, count=1)
+        event_id = f"{name}-{new_revision:06d}-work-requested"
+        target = runtime_dir(base, name) / "events" / f"{new_revision:06d}-work-requested.json"
+        if target.exists() or target.is_symlink():
+            raise FDError(f"event already exists: {event_id}")
+        index_path = feature_dir(base) / "FEATURE_INDEX.md"
+        original_index = index_path.read_bytes() if index_path.exists() else None
+        now = datetime.now(timezone.utc).isoformat()
+        event = {"event_id": event_id, "fd_id": name,
+                 "event_type": "work-requested", "fd_revision": new_revision,
+                 "producer": "pm", "fd_sha256": fd_digest(updated),
+                 "artifact_ref": fd_ref, "fd_path": fd_ref,
+                 "target_role": "worker", "dispatch_state": "pending",
+                 "reason": reason.strip(), "supersedes": old_event["event_id"],
+                 "abandoned_session_ref": expected_session, "created_at": now}
+        cancelled = {**old_event, "dispatch_state": "cancelled",
+                     "superseded_by": event_id, "recovery_reason": reason.strip(),
+                     "recovered_at": now}
+        try:
+            atomic_json(target, {**event, "dispatch_state": "preparing"})
+            atomic_text(fd_path, updated)
+            atomic_json(old_path, cancelled)
+            update_index(base)
+            atomic_json(target, event)
+        except Exception as exc:
+            rollback_errors = []
+            for label, restore in (("new event", lambda: target.unlink(missing_ok=True)),
+                                   ("FD", lambda: atomic_text(fd_path, original)),
+                                   ("old receipt", lambda: atomic_json(old_path, old_event)),
+                                   ("index", lambda: atomic_bytes(index_path, original_index)
+                                    if original_index is not None else index_path.unlink(missing_ok=True))):
+                try:
+                    restore()
+                except Exception as rollback_error:
+                    rollback_errors.append(f"{label}: {type(rollback_error).__name__}: {rollback_error}")
+            if rollback_errors:
+                raise FDError("recover-worker rollback incomplete: "
+                              + "; ".join(rollback_errors)) from exc
+            raise
+    dispatch(base, target, event)
+
+
 def refresh_tester(base: Path, name: str, reason: str, artifact: str) -> None:
     if not reason.strip() or len(reason) > 500 or any(char in reason for char in "\r\n"):
         raise FDError("refresh-tester requires a one-line --reason of at most 500 characters")
@@ -992,13 +1155,15 @@ def prepare_event(base: Path, name: str, kind: str, producer: str, artifact: str
         if not previous or (revision(content) != previous[1]["fd_revision"]
                             or fd_digest(content) != previous[1]["fd_sha256"]):
             raise FDError("FD changed since test handoff; reconcile before continuing")
+    assessor_sessions = []
     if kind == "test-report-ready":
         if previous[1]["event_type"] not in {"implementation-ready", "test-requested"}:
             raise FDError("test report requires an implementation-ready or test-requested handoff")
         test_summary = validate_test_report(base, artifact_ref, previous[1])
     elif kind in {"test-accepted", "test-rejected"}:
-        validate_test_decision(base, artifact_ref, previous[1],
-                               "accepted" if kind == "test-accepted" else "rejected")
+        assessor_sessions = validate_test_decision(
+            base, artifact_ref, previous[1],
+            "accepted" if kind == "test-accepted" else "rejected")
     new_revision = revision(content) + 1
     if target_role == "resume":
         target_role = {"Design": "planner", "Open": "worker", "In Progress": "worker",
@@ -1030,6 +1195,7 @@ def prepare_event(base: Path, name: str, kind: str, producer: str, artifact: str
     elif kind in {"test-accepted", "test-rejected"}:
         event["worker_session_ref"] = previous[1]["worker_session_ref"]
         event["tester_session_ref"] = previous[1]["tester_session_ref"]
+        event["assessor_session_refs"] = assessor_sessions
         event["test_summary"] = previous[1]["test_summary"]
     # A receipt is written first. A failed FD write leaves a diagnosable pending
     # event; resume refuses to dispatch it until the FD revision matches.
@@ -1121,14 +1287,16 @@ def claim(base: Path, name: str, event_id: str, session_ref: str) -> None:
             raise FDError("Tester must use a separate session from Worker")
         if event["target_role"] == "reviewer":
             refs = {event.get("worker_session_ref"), event.get("tester_session_ref")}
+            refs.update(event.get("assessor_session_refs", []))
             if independent_testing(fd_path.read_text(encoding="utf-8")):
                 accepted = current_test_acceptance(base, name)
                 if not accepted:
                     raise FDError("independent Reviewer requires current PM test acceptance")
                 refs.update({accepted.get("worker_session_ref"),
                              accepted.get("tester_session_ref")})
+                refs.update(accepted.get("assessor_session_refs", []))
             if session_ref in refs:
-                raise FDError("Reviewer must use a separate session from Worker and Tester")
+                raise FDError("Reviewer must use a separate session from Worker, Tester, and assessors")
         if event["dispatch_state"] == "dispatched" and event.get("session_ref") == session_ref:
             print(f"already claimed {event_id} by {session_ref}")
             return
@@ -1295,6 +1463,11 @@ def main() -> int:
     refreshed = commands.add_parser("refresh-worker", help="replace a stale pending Worker handoff")
     refreshed.add_argument("fd_id")
     refreshed.add_argument("--reason", required=True)
+    recovered = commands.add_parser("recover-worker", help="replace an abandoned dispatched Worker handoff")
+    recovered.add_argument("fd_id")
+    recovered.add_argument("--expected-event", required=True)
+    recovered.add_argument("--expected-session", required=True)
+    recovered.add_argument("--reason", required=True)
     tester_refresh = commands.add_parser("refresh-tester", help="replace a stale unclaimed Tester handoff")
     tester_refresh.add_argument("fd_id")
     tester_refresh.add_argument("--reason", required=True)
@@ -1333,6 +1506,9 @@ def main() -> int:
             request_review(base, fd_id(args.fd_id), args.reason)
         elif args.command == "refresh-worker":
             refresh_worker(base, fd_id(args.fd_id), args.reason)
+        elif args.command == "recover-worker":
+            recover_worker(base, fd_id(args.fd_id), args.expected_event,
+                           args.expected_session, args.reason)
         elif args.command == "refresh-tester":
             refresh_tester(base, fd_id(args.fd_id), args.reason, args.artifact)
         elif args.command == "reopen":

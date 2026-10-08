@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000024-test-report-ready",
+  "human_report": "FD-036-test-risk-assessment-r4-c.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-036-test-report-r4.md",
+    "fd_revision": 24,
+    "fd_digest": "c79fbda3eb41d1443a492f6d8b5e89011d36e34ab631993fe20f66aa32aca8d1",
+    "assessor_session": "fd036-assessor-c-20261008-r4-ops-5c82",
+    "assessment_focus": "delivery-operations",
+    "vote": "accept-with-risk",
+    "severity": "medium; 14 of 18 applicable scenarios have complete evidence, with four defined coverage gaps",
+    "impact_scope": "Potentially affects users relying on the complete default/install/profile/CLI precedence chain, untested enum and unsupported-option cases, Linux/WSL paths, and real sample-copy workflows; execution evidence is Windows local loopback mock only",
+    "estimated_repair_time": "Approximately 0.5–1 working day for focused precedence, enum, and unsupported-option checks; cross-platform and real installation-copy verification depends on environment and install-path availability",
+    "delivery_impact": "The bounded gaps do not prevent transition to independent Reviewer; preserve them as explicit risks, and supplement before release if Linux/WSL or real installation-path evidence is required",
+    "rationale": "The event-bound report records 21 of 21 behavior tests passed with zero failures and 14 of 18 scenarios fully covered. S05 validates malformed TOML failure without partial output; S17/S18 validate invalid-value fallback and ignoring unknown keys, consistent with the stated configuration behavior. S08, S09, S14, and S15 remain incomplete and should not be represented as passed.",
+    "residual_risk": "Full default-to-install precedence, complete enum validation, all unsupported options, copy/no-overwrite behavior, cross-platform behavior, real API behavior, and branch coverage remain unverified",
+    "uncertainty": "Static review only; no commands run and coverage not independently recalculated. Release scope, target platform matrix, and real installation workflow are unspecified.",
+    "assessment_time": "2026-10-08T09:20:00+00:00"
+  }
+}

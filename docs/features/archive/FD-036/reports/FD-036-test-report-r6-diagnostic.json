@@ -1,0 +1,50 @@
+{
+    "schema":  "aiw.fd.evidence.v1",
+    "kind":  "tester-report",
+    "fd_id":  "FD-036",
+    "source_event":  "FD-036-000032-implementation-ready",
+    "human_report":  "FD-036-test-report-r6-diagnostic.md",
+    "data":  {
+                 "implementation_event":  "FD-036-000032-implementation-ready",
+                 "tested_fd_revision":  32,
+                 "tested_fd_digest":  "2e7c2d42d2f522a19d9f6bfb5621947886142e31f28311d381f6f6edd7ae9b5d",
+                 "tester_session":  "fd036-tester-20261008-r6-s04-diagnostic",
+                 "applicable_scenarios":  1,
+                 "covered_scenarios":  1,
+                 "executed_behavior_tests":  1,
+                 "passed_behavior_tests":  1,
+                 "failed_behavior_tests":  0,
+                 "unrun_behavior_tests":  0,
+                 "requirements_coverage":  "100.00%",
+                 "branch_coverage":  "not measured",
+                 "raw_coverage_evidence":  "The exact S04 diagnostic unittest printed ... ok, Ran 1 test in 0.511s, OK, and UNITTEST_EXIT_CODE=0. PowerShell also surfaced a NativeCommandError rendering for Python stderr progress text; the captured log contains the unittest success summary. 100.00% refers only to the one-case diagnostic scope, not full-FD requirements coverage. The earlier r5 full-suite ERROR was not reproduced, and its original cause remains unknown.",
+                 "coverage_unavailable_reason":  "This was authorized as a single-case diagnostic, not a full suite run or coverage measurement. The r5 suite remains the only full-suite evidence and recorded one ERROR.",
+                 "test_files":  [
+                                    "tests/test_fd036_say_blackbox.py"
+                                ],
+                 "authorization_records":  [
+                                               "docs/features/reports/FD-036-test-authorization-r8.md"
+                                           ],
+                 "authorization_basis":  "human-approved",
+                 "commands":  [
+                                  "$tag=\u0027aiw-say-fd036-r5-diagnose-\u0027+[guid]::NewGuid().ToString(\u0027N\u0027); $testExe=Join-Path $env:TEMP ($tag+\u0027.exe\u0027); $log=Join-Path $env:TEMP ($tag+\u0027.log\u0027); $env:GOCACHE=Join-Path $env:TEMP ($tag+\u0027-cache\u0027); $env:GOPROXY=\u0027off\u0027; $env:GOSUMDB=\u0027off\u0027; go build -o $testExe ./cmd/aiw-say; if ($LASTEXITCODE -ne 0) { throw \u0027go build failed\u0027 }; $env:AIW_SAY_BIN=$testExe; python -B -m unittest -v tests.test_fd036_say_blackbox.SayBlackBoxTests.test_missing_default_config_uses_defaults_and_requires_explicit_model 2\u003e\u00261 | Tee-Object -FilePath $log; $testExit=$LASTEXITCODE; Write-Output \"UNITTEST_EXIT_CODE=$testExit\""
+                              ],
+                 "recommendation":  "pass",
+                 "not_applicable_reason":  "This report covers only the approved one-case S04 diagnostic; other FD scenarios were outside the authorized command.",
+                 "residual_risk":  "The prior full-suite ERROR remains in the r5 record and its cause is unknown. This one-case pass does not replace a full-suite result. S08/S09/S14/S15 remain uncovered; branch coverage, real API behavior, and translation quality were not measured.",
+                 "scenarios":  [
+                                   {
+                                       "id":  "S04-diagnostic",
+                                       "behavior":  "Diagnose whether the S04 default-config case reproduces the r5 ERROR.",
+                                       "status":  "passed",
+                                       "test_cases":  [
+                                                          "test_missing_default_config_uses_defaults_and_requires_explicit_model"
+                                                      ]
+                                   }
+                               ],
+                 "static_exclusions":  [
+                                           "No implementation source was inspected for this black-box diagnostic.",
+                                           "No other tests, coverage tools, or API calls were run."
+                                       ]
+             }
+}

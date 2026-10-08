@@ -35,10 +35,17 @@ Tester claims in a different session, writes a
 black-box report using `docs/features/TEST_REPORT_TEMPLATE.md`, and emits
 `test-report-ready --producer tester --artifact <report> --source-event
 <implementation-ready-event>`. PM writes a versioned decision using
-`docs/features/TEST_DECISION_TEMPLATE.md` and emits `test-accepted` to
-Reviewer or `test-rejected` to Worker, citing the exact Tester event. The
-decision records both coverage measures, exceptions, residual risk, PM
-identity, and time; failed executed behavior tests cannot be accepted.
+`docs/features/TEST_DECISION_TEMPLATE.md` after giving the same report to
+independent risk assessor A. Failed behavior tests require three assessors;
+PM adds B and C if an evidence gap is material or PM disagrees with A. A
+focuses on acceptance/user impact, B on technical evidence/repair, and C on
+delivery/operations; each still assesses the full risk independently. Each
+records severity, impact scope, estimated repair time, delivery impact, and
+an `accept-with-risk` or `repair` vote in Chinese Markdown and JSON. With one
+assessor PM follows that vote; with three, at least two acceptance votes route
+to Reviewer. The decision preserves both coverage
+measures, failed tests, dissent, exceptions, residual risk, PM identity, and
+time. An accepted risk never changes a failed test into a pass.
 Existing FDs without the marker continue directly to independent Review.
 An independent Reviewer emits `changes-requested` with findings or
 `verification-passed` with a review report. A role must claim or receive its
@@ -49,8 +56,10 @@ For legacy Markdown-only evidence, the Tester report uses labelled fields.
 For Dual evidence, the CLI reads the JSON sidecar and checks event/revision/
 digest, session, scenario inventory, count, and coverage fields before accepting
 `test-report-ready`. The PM decision uses
-`docs/features/TEST_DECISION_TEMPLATE.md`, cites the exact Tester report,
-and records an explicit exception for coverage below 70% or unavailable.
+`docs/features/TEST_DECISION_TEMPLATE.md`, cites the exact Tester report and
+one or three independent assessments, and records the applicable vote result,
+escalation reason, PM evidence-gap judgment, and remaining risk.
+Coverage and failure counts are evidence, not automatic acceptance thresholds.
 Tester must split broad FD acceptance items into distinct observable
 scenarios before computing requirements coverage; a partially tested item
 does not make all its behaviors covered. A human-approved command uses an
@@ -76,8 +85,9 @@ need new authorization.
 Ask the host agent to run `$fd-workflow auto` with a feature request or a
 single FD ID. This is a Skill operation, not an `aiw fd auto` CLI command. It
 creates or resumes one numbered FD, splits ordered Work Items, designs and
-implements them, delegates required tests to a separate Tester subagent and
-each review to a separate `fd-review` subagent,
+implements them, delegates required tests to a separate Tester subagent,
+the PM risk decision to one or three independent assessor subagents, and each review
+to a separate `fd-review` subagent,
 repairs concrete findings, and closes with `aiw fd close <id> Complete` after
 a current Reviewer pass. The host counts at most three Reviewer outcomes for
 the active implementation cycle across interrupted/resumed auto runs. A third
@@ -122,6 +132,12 @@ the current FD revision and digest. Claim the new event and cite it on
 `implementation-ready`. A current or in-flight Worker event cannot be
 replaced; use `request-review` only for the separate `Pending Verification`
 review-recovery case.
+If PM has confirmed that a dispatched Worker session has stopped, use
+`aiw fd recover-worker <fd-id> --expected-event <event-id>
+--expected-session <old-session> --reason "..."`. This records the reason,
+cancels the old receipt, and creates a new pending Worker event. The new
+Worker claims the event under its own session and cites it on
+`implementation-ready`. A mismatched event or session is rejected.
 If a process crashes while holding `.ai/fd/<id>/.mutation-lock`, inspect the
 original process and event receipt before removing the stale lock. Never
 remove it while the role may still be writing.

@@ -1,0 +1,40 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-035",
+  "source_event": "FD-035-000013-test-accepted",
+  "human_report": "FD-035-review-r2.md",
+  "data": {
+    "outcome": "verification-passed",
+    "reviewer_session": "fd035-reviewer-20261008-r13-4c8f2d",
+    "reviewed_fd_revision": 13,
+    "reviewed_fd_digest": "7e70a56c0e1c6385a29464128f501d43ad96c470f16a32eb80014582def57759",
+    "reviewed_diff_base": "develop...HEAD plus current working-tree changes",
+    "findings": [],
+    "static_review": {
+      "acceptance": "S20-S25 have distinct black-box assertions and observable accept/reject outcomes; 25/25 scenarios and 14/14 test methods are recorded as passed after the authorized fixture repair.",
+      "authorization_chain": "Three exact Planner authorizations bind the commands to implementation event FD-035-000011-implementation-ready, FD revision 11, digest 359ffa2cb9c8e6e4307a4189549da31a66bb69d6f9aca12bcb736fd6492b7017, and Tester session fd035-tester-20261008-a7d92e. The first S20 fixture failure is preserved; the retry followed a relevant fixture change. Coverage installation has explicit user approval.",
+      "coverage": "Actual child CLI source plugins/aiw-fd.py: 210/548 branches (38.3%). The remaining 338 branches are disclosed as untested risk.",
+      "risk_decision": "Three independent assessments have distinct sessions and focuses and bind the Tester handoff; PM recorded an escalated 3:0 accept-with-risk decision and explicitly retained the coverage gap.",
+      "fd_consistency": "Corrected stale TODO and Verification statements to reflect the Tester evidence and linked this review report."
+    },
+    "reviewer_commands": [
+      "aiw fd show FD-035",
+      "aiw fd claim FD-035 FD-035-000013-test-accepted --session fd035-reviewer-20261008-r13-4c8f2d",
+      "aiw fd --help",
+      "aiw fd emit --help",
+      "Get-Content (targeted FD, reports, source, specs, skills)",
+      "git status --short",
+      "git diff (targeted implementation, test, and FD paths)"
+    ],
+    "not_run": [
+      "Tests",
+      "Coverage measurement",
+      "Builds",
+      "Linters",
+      "Formatters",
+      "Network calls"
+    ],
+    "residual_risk": "Only 210/548 CLI branches were hit; the remaining 338 branches and other CLI behavior have no runtime evidence in this focused run."
+  }
+}

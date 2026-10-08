@@ -1,0 +1,30 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000019-work-requested",
+  "human_report": "FD-036-implementation-r4.md",
+  "data": {
+    "summary": "Fixed the undisclosed TOML compatibility finding from Reviewer r1 and added a regression case for valid inline comments after [say] and [say.llm] headers. Completed Work Item 1.11 and recorded the prior review outcome in FD Verification.",
+    "changed_paths": [
+      "internal/say/config.go",
+      "tests/test_fd036_say_blackbox.py",
+      "docs/features/FD-036_AIW_SAY_CLI.md",
+      "docs/features/reviews/FD-036-review-r1.md",
+      "docs/features/reviews/FD-036-review-r1.json",
+      "docs/features/reports/FD-036-implementation-r4.md",
+      "docs/features/reports/FD-036-implementation-r4.json"
+    ],
+    "commands": [
+      "go build -o NUL ./cmd/aiw-say",
+      "aiw fd refresh-worker FD-036 --reason \"Record Reviewer r1 finding and compile-checked TOML header fix before the next Worker claim.\"",
+      "aiw fd claim FD-036 FD-036-000019-work-requested --session fd036-worker-20261008-host-r2fix-46ab31"
+    ],
+    "results": [
+      "The compile-only command completed successfully after the implementation change and retained no final executable artifact.",
+      "The parser now strips valid TOML line comments from table header lines before checking the supported section name.",
+      "The black-box regression writes comments after both supported table headers; it was not executed in this Worker stage."
+    ],
+    "residual_risk": "The new TOML regression has not yet been run. Independent Tester must validate it against this implementation-ready snapshot; previously accepted scenario and platform gaps remain explicitly recorded."
+  }
+}

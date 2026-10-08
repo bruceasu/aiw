@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-034",
+  "source_event": "FD-034-000014-test-requested",
+  "human_report": "FD-034-test-authorization-r1.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-034-000014-test-requested",
+    "fd_revision": 14,
+    "fd_digest": "43863ae0df4bac7bf829db5b00443950638c8b64f2b810b793143cb456ad5ffc",
+    "tester_session": "fd034-tester-20261008-8b85b9d1",
+    "command": "python -B -m unittest tests.test_fd034_git_patch_blackbox -v",
+    "working_directory": "C:\\Users\\svictor\\workspace\\tools\\ai-tools\\aiw\\.wt\\FD-034",
+    "scope": "9 black-box Git patch cases in tests/test_fd034_git_patch_blackbox.py",
+    "expected_duration": "20-60 seconds; each subprocess has a 20-second timeout",
+    "side_effects": "Read current worktree plugin; create and clean only system-temp fd034-git-patch-* Git repositories, patches, guides and fixture data.",
+    "risk_review": "Inspected test and plugin dispatch/create/apply subprocess paths; inherited Git settings are cleared, global/system config and hooks are disabled, temporary Git template is used, and no network, external service, privilege change or workspace write is indicated.",
+    "human_approval": "not required",
+    "planner_identity": "fd034-host-planner-20261008",
+    "decision_time": "2026-10-08T05:35:47+00:00"
+  }
+}

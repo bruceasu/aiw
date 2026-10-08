@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-034",
+  "source_event": "FD-034-000015-test-report-ready",
+  "human_report": "FD-034-test-risk-assessment-r1-c.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-034-test-report-r1.md",
+    "fd_revision": 15,
+    "fd_digest": "57c1a2da912f434b1f4a5706e209e0dec70c16a9c8e409e66b09bd2ffa901aec",
+    "assessor_session": "fd034-assessor-c-20261008-07ce5e62",
+    "vote": "accept-with-risk",
+    "severity": "中：预检与实际应用之间的目标变化可能导致实际应用失败及未知的局部工作区状态；发生窗口较窄。",
+    "impact_scope": "仅执行 aiw git patch apply 的目标工作区及补丁涉及文件；不影响远端、提交或创建补丁路径。",
+    "estimated_repair_time": "约 1–3 小时构造可控竞态并补测；若发现实现缺陷，修复时间 unknown，取决于故障形态。",
+    "delivery_impact": "接纳风险可立即进入独立审查；若补测则至少增加约 1–3 小时，具体交付日期 unknown。",
+    "rationale": "授权聚焦命令修正测试断言后的唯一重跑为 9/9 通过，13 个可观察场景中 12 个通过；S13 未覆盖的是两次 Git 调用之间的罕见竞态，现有预检失败及正常应用路径已有黑盒证据。首次四个失败由测试断言与实际 Git 输出不符造成，未发现对应产品失败。",
+    "residual_risk": "S13 的实际应用失败分支没有运行证据，可能留下局部工作区改动；业务分支覆盖率、全部合并路径和无 AI/网络调用未测量。",
+    "uncertainty": "没有持久化完整逐行终端日志；竞态发生率、实际应用失败后的状态与修复量未知。",
+    "assessment_time": "2026-10-08T06:04:19Z"
+  }
+}

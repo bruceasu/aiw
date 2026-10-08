@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-031",
+  "source_event": "FD-031-000005-test-report-ready",
+  "human_report": "FD-031-test-decision-r1.md",
+  "data": {
+    "disposition": "rejected",
+    "tester_report": "docs/features/reports/FD-031-test-report-r1.md",
+    "fd_revision": 5,
+    "fd_digest": "aa66d70b1844c2825e0c17ef52314883807736c0d37fc90a2a387fbed7deaa77",
+    "requirements_coverage": "69.2%",
+    "branch_coverage": "not measured",
+    "rationale": "Two of eight executed cases still failed after the single allowed rerun. Title fidelity is unresolved and the template deletion injection was invalid; Planner receipt and error propagation have uncovered paths.",
+    "exceptions": "none; 69.2% scenario coverage is below 70% and branch coverage was not measured",
+    "residual_risk": "Title fidelity, Planner receipt entity, unavailable CLI and real FD creation failure propagation remain unverified.",
+    "pm_identity": "fd031-host-pm-20261008",
+    "decision_time": "2026-10-08T02:21:54+00:00"
+  }
+}

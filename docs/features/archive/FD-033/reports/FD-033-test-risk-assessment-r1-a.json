@@ -1,0 +1,23 @@
+﻿{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-033",
+  "source_event": "FD-033-000006-test-report-ready",
+  "human_report": "FD-033-test-risk-assessment-r1-a.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-033-test-report-r1.md",
+    "fd_revision": 6,
+    "fd_digest": "41b1a80e61fdf457666a34d4d8e416b1ac42633c3852d1e314921908b0a47d6a",
+    "assessor_session": "fd033-assessor-a-20261008-9b51c2",
+    "vote": "repair",
+    "severity": "High evidence gap: all 14 applicable acceptance scenarios are uncovered; no product failure is established.",
+    "impact_scope": "All FD-033 acceptance paths: aic, air, aib, CZ provider/configuration integration and output boundaries, and existing aiw cz compatibility.",
+    "estimated_repair_time": "unknown; no authorized command, validation environment, or execution plan is available to estimate focused runtime evidence work.",
+    "delivery_impact": "Test acceptance should wait for revision-bound authorized evidence; schedule impact is unknown pending authorization and execution estimate.",
+    "rationale": "Tester report and JSON list 14 applicable scenarios, 0 covered, 0 executed behavior tests, 0 failures, and no commands or authorization records. All scenarios remain uncovered; this establishes an evidence gap, not product pass or failure. The Tester sidecar binds tested implementation content to the implementation-ready event at revision 5 and digest 2fe68584999b2a080117408fb376117caf817382ac685b5a594656b510bf5900. This assessment is bound to the test-report-ready receipt at revision 6 and digest 41b1a80e61fdf457666a34d4d8e416b1ac42633c3852d1e314921908b0a47d6a; these values refer to different handoff events.",
+    "residual_risk": "Without runtime evidence, normal and failure behavior, Git repository immutability, provider integration, output boundaries, and aiw cz compatibility remain unverified; defect likelihood and impact cannot be quantified.",
+    "uncertainty": "The relationship between the receipt's revision 6 digest and the Tester report's tested revision 5 digest is unresolved. Runtime behavior and time needed to obtain authorized evidence are unknown.",
+    "assessment_time": "2026-10-08T03:48:49+00:00"
+  }
+}
+

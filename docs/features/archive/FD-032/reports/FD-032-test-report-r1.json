@@ -1,0 +1,54 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-032",
+  "source_event": "FD-032-000004-implementation-ready",
+  "human_report": "FD-032-test-report-r1.md",
+  "data": {
+    "implementation_event": "FD-032-000004-implementation-ready",
+    "tested_fd_revision": 4,
+    "tested_fd_digest": "2d47d6eea5b222bae8e9b92fe303e5d6b7e844f7c2a6b19bc0ce0f5280cc0ae1",
+    "tester_session": "fd032-tester-20261008-4e2f91",
+    "applicable_scenarios": 13,
+    "covered_scenarios": 0,
+    "executed_behavior_tests": 0,
+    "passed_behavior_tests": 0,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 13,
+    "requirements_coverage": "0%",
+    "branch_coverage": "not measured",
+    "raw_coverage_evidence": "not measured",
+    "coverage_unavailable_reason": "The two authorized test runs failed in fixture setup before the behavior cases; no coverage command was authorized or run.",
+    "test_files": ["tests/test_fd032_risk_decision_blackbox.py"],
+    "authorization_records": [
+      "docs/features/reports/FD-032-test-authorization-r1.md",
+      "docs/features/reports/FD-032-test-authorization-r2.md"
+    ],
+    "commands": [
+      "python -B -m unittest tests.test_fd032_risk_decision_blackbox -v",
+      "python -B -m unittest tests.test_fd032_risk_decision_blackbox -v"
+    ],
+    "recommendation": "blocked",
+    "not_applicable_reason": "none",
+    "residual_risk": "The majority decision, invalid assessment rejection, and Reviewer identity boundaries have no runtime evidence. Both invocations failed in test-fixture setup, not in the implementation under test.",
+    "scenarios": [
+      {"id": "S01", "behavior": "Two accept votes route a failed, 0%-coverage Tester report to Reviewer", "status": "blocked"},
+      {"id": "S02", "behavior": "PM acceptance preserves Tester Markdown and JSON facts", "status": "blocked"},
+      {"id": "S03", "behavior": "Reviewer identity is distinct from Worker, Tester, and all three assessors", "status": "blocked"},
+      {"id": "S04", "behavior": "One accept vote returns the FD to Worker", "status": "blocked"},
+      {"id": "S05", "behavior": "A PM outcome contrary to the vote majority is rejected", "status": "blocked"},
+      {"id": "S06", "behavior": "Missing assessment is rejected", "status": "blocked"},
+      {"id": "S07", "behavior": "Duplicate assessment path is rejected", "status": "blocked"},
+      {"id": "S08", "behavior": "Stale assessment FD digest is rejected", "status": "blocked"},
+      {"id": "S09", "behavior": "Duplicate assessor session is rejected", "status": "blocked"},
+      {"id": "S10", "behavior": "Assessor sharing the Worker session is rejected", "status": "blocked"},
+      {"id": "S11", "behavior": "Assessor sharing the Tester session is rejected", "status": "blocked"},
+      {"id": "S12", "behavior": "Assessor sharing the PM session is rejected", "status": "blocked"},
+      {"id": "S13", "behavior": "Forged assessment source event is rejected", "status": "blocked"}
+    ],
+    "static_exclusions": [
+      "Historical archived FD report compatibility was not exercised by this focused command.",
+      "Documentation and stable specification consistency require static review."
+    ]
+  }
+}

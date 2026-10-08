@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000021-test-report-ready",
+  "human_report": "FD-036-test-risk-assessment-r3-a2.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-036-test-report-r3.md",
+    "fd_revision": 21,
+    "fd_digest": "bf8ed80fa087ac34af85881240879d51aa9be42a8ba5617d6601690f7316b8b7",
+    "assessor_session": "fd036-r3-assessor-a2-20261008-acceptance",
+    "assessment_focus": "acceptance-impact",
+    "vote": "repair",
+    "severity": "high: 用户明确要求错误配置项回退默认值，但 FD 当前 S05 描述为无效显式配置失败，行为契约冲突",
+    "impact_scope": "aiw say 的显式配置、profile/CLI 优先级及配置字段错误处理，涉及使用这些配置方式的用户",
+    "estimated_repair_time": "unknown: 需先确定逐字段回退、优先级及提示行为，再估算定向验证工作量",
+    "delivery_impact": "需要澄清并更新 FD 验收边界，再对配置错误处理做有针对性的验证；不要求完整重测 TOML 规范",
+    "rationale": "Tester r3 报告 19/19 行为测试通过、11/16 场景覆盖；S05 无效显式配置未覆盖，S08 完整优先级与 S09 全枚举也未覆盖。用户的新要求与 FD 当前对 S05 的失败行为描述冲突，故现有证据不能证明符合用户期望。",
+    "residual_risk": "如果不澄清并验证逐字段默认值回退，错误项可能被忽略或意外覆盖默认配置；S14 与 S15 仍有各自未验证风险。",
+    "uncertainty": "尚不清楚无效字段是否逐字段回退、解析错误是否整份配置回退、以及是否提示用户；branch coverage 未测。",
+    "assessment_time": "2026-10-08T09:00:00+09:00"
+  }
+}

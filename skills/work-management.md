@@ -56,6 +56,12 @@ installations remain usable outside the AIW repository.
   handoff for an active `Open` or `In Progress` FD. It cancels the old receipt,
   records supersession, and creates a digest-bound `work-requested` event.
   Claimed or in-flight handoffs cannot be replaced.
+- `aiw fd recover-worker <id> --expected-event <event-id> --expected-session
+  <session-ref> --reason <text>` is an explicit PM recovery for a latest
+  dispatched Worker session that PM has confirmed stopped. It records the
+  abandoned session and reason, cancels the old receipt, and creates a new
+  pending Worker handoff. The new Worker claims that event under its own
+  session. Normal resume and refresh rules remain unchanged.
 - In the normal workflow, when a pending FD task or handoff has expired after
   a long pause, refresh it automatically when the workflow resumes; do not wait
   for human intervention. Use the applicable `refresh-worker` or
@@ -82,13 +88,22 @@ Tester handoff does not authorize execution. Before any test or coverage
 command, Planner inspects its invoked code and records a revision-bound
 authorization for that exact command, or obtains the required human approval.
 A Tester writes repository test code under root `tests/` and cites the
-authorization in any report of execution or measured coverage. PM separately
-accepts or rejects the report with both coverage measures, exceptions, and
-residual risk before Reviewer checks implementation and evidence. For older
+authorization in any report of execution or measured coverage. PM requests
+one independent assessment of the current Tester report, then adds two when
+behavior tests failed, PM judges an evidence gap material, or PM disagrees
+with the first vote. Each assessor records a distinct focus, severity, impact
+scope, estimated repair time, delivery impact, a risk-acceptance or repair vote,
+and residual risk in Chinese Markdown and JSON. One-assessor decisions follow
+that vote; three-assessor decisions follow the majority, with at least two
+risk-acceptance votes routing to Reviewer. Failed tests and coverage remain
+factual evidence, not automatic acceptance gates. PM records the evidence-gap
+judgment and escalation reason. Replace an unavailable assessor rather than
+inventing a vote. For older
 FDs without Independent policy, use the direct Reviewer route.
 
-The host may combine PM, Planner, and Worker duties, but must not claim
-independent Tester or Reviewer evidence from its own session. PM may explicitly
+The host may combine PM, Planner, and Worker duties, but must not author
+independent Tester, risk assessor, or Reviewer evidence from its own session.
+PM may explicitly
 override workflow gates; the record must identify skipped stages and missing
 evidence, which remain unperformed rather than being represented as passed.
 A failed review returns concrete, actionable findings to Worker. Material

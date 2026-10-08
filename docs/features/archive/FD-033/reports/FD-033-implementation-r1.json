@@ -1,0 +1,32 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-033",
+  "source_event": "FD-033-000004-design-ready",
+  "human_report": "FD-033-implementation-r1.md",
+  "data": {
+    "summary": "Added shared CZ text generation and three AI-assisted Git commands; updated CLI specification and user documentation.",
+    "changed_paths": [
+      "plugins/aiw-cz/cz_llm.py",
+      "plugins/aiw-cz/cz_providers.py",
+      "plugins/aiw-cz/cz_openai.py",
+      "plugins/aiw-git/aiw-git-ai.py",
+      "plugins/aiw-git/git-aic.py",
+      "plugins/aiw-git/git-air.py",
+      "plugins/aiw-git/git-aib.py",
+      "docs/usage/aiw-git-ai.md",
+      "openspec/specs/cli-and-plugins/spec.md",
+      "docs/features/FD-033_AI_ASSISTED_GIT_COMMIT_REVIEW_AND_BRANCH_SUMMARY.md"
+    ],
+    "commands": [
+      "python -m py_compile plugins/aiw-cz/cz_llm.py plugins/aiw-cz/cz_providers.py plugins/aiw-cz/cz_openai.py plugins/aiw-git/aiw-git-ai.py plugins/aiw-git/git-aic.py plugins/aiw-git/git-air.py plugins/aiw-git/git-aib.py",
+      "python -m py_compile plugins/aiw-git/git-aib.py"
+    ],
+    "results": [
+      "Both compile-only commands completed successfully.",
+      "Static source diff inspection completed.",
+      "Tests and AI/Git runtime scenarios were not run."
+    ],
+    "residual_risk": "AI provider and Git runtime behavior remain unverified. Provider loading assumes aiw-cz and aiw-git plugin directories are siblings."
+  }
+}

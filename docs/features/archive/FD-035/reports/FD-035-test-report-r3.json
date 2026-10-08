@@ -1,0 +1,89 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "tester-report",
+  "fd_id": "FD-035",
+  "source_event": "FD-035-000011-implementation-ready",
+  "human_report": "FD-035-test-report-r3.md",
+  "data": {
+    "implementation_event": "FD-035-000011-implementation-ready",
+    "tested_fd_revision": 11,
+    "tested_fd_digest": "359ffa2cb9c8e6e4307a4189549da31a66bb69d6f9aca12bcb736fd6492b7017",
+    "tester_session": "fd035-tester-20261008-a7d92e",
+    "applicable_scenarios": 25,
+    "covered_scenarios": 25,
+    "executed_behavior_tests": 14,
+    "passed_behavior_tests": 14,
+    "failed_behavior_tests": 0,
+    "unrun_behavior_tests": 0,
+    "requirements_coverage": "100%",
+    "branch_coverage": "38.3%",
+    "raw_coverage_evidence": "$env:FD035_COVERAGE_PACKAGE_DIR='C:\\Users\\svictor\\AppData\\Local\\Temp\\aiw-fd035-coverage-py'; python -B -m tests.fd035_coverage; Ran 14 tests in 49.445s; OK; Branch coverage: plugins\\aiw-fd.py: 210/548 branches (38.3%). Scope is the actual CLI child process source plugins/aiw-fd.py.",
+    "coverage_unavailable_reason": "",
+    "test_files": ["tests/test_fd032_risk_decision_blackbox.py"],
+    "authorization_records": [
+      "docs/features/reports/FD-035-test-authorization-r3.md",
+      "docs/features/reports/FD-035-test-authorization-r4.md",
+      "docs/features/reports/FD-035-test-authorization-r5.md"
+    ],
+    "commands": [
+      "python -B -m unittest tests.test_fd032_risk_decision_blackbox -v",
+      "python -B -m unittest tests.test_fd032_risk_decision_blackbox -v",
+      "$env:FD035_COVERAGE_PACKAGE_DIR='C:\\Users\\svictor\\AppData\\Local\\Temp\\aiw-fd035-coverage-py'; python -B -m tests.fd035_coverage"
+    ],
+    "attempts": [
+      {
+        "attempt": 1,
+        "authorization": "docs/features/reports/FD-035-test-authorization-r3.md",
+        "exit_code": 1,
+        "result": "Ran 14 tests in 31.808s; FAILED (failures=2). S20 mode and reason subtests failed in temporary fixture claim setup before behavior assertions."
+      },
+      {
+        "attempt": 2,
+        "authorization": "docs/features/reports/FD-035-test-authorization-r4.md",
+        "exit_code": 0,
+        "result": "Ran 14 tests in 32.016s; OK. All fourteen test methods passed."
+      },
+      {
+        "attempt": 3,
+        "authorization": "docs/features/reports/FD-035-test-authorization-r5.md",
+        "exit_code": 0,
+        "result": "Ran 14 tests in 49.445s; OK. CLI child process branch coverage for plugins/aiw-fd.py: 210/548 (38.3%)."
+      }
+    ],
+    "recommendation": "pass",
+    "not_applicable_reason": "",
+    "residual_risk": "CLI branch coverage is 38.3%; the remaining 338 branches have no coverage evidence from this run.",
+    "scenarios": [
+      {"id":"S01","behavior":"无失败且 PM 判断缺口可控时，一份接纳票交 Reviewer","status":"passed","test_cases":["test_clean_single_vote_routes_and_keeps_reviewer_independent"]},
+      {"id":"S02","behavior":"单份修复票不能被 PM 改成接纳处置","status":"passed","test_cases":["test_clean_single_repair_vote_cannot_be_accepted"]},
+      {"id":"S03","behavior":"单份修复票使 FD 返回 Worker","status":"passed","test_cases":["test_clean_single_repair_vote_cannot_be_accepted"]},
+      {"id":"S04","behavior":"失败行为测试时拒绝单份决策","status":"passed","test_cases":["test_failed_behavior_requires_three_distinct_focuses"]},
+      {"id":"S05","behavior":"升级三份要求互补侧重点，缺失侧重点被拒绝","status":"passed","test_cases":["test_escalated_decision_requires_all_assessment_focuses"]},
+      {"id":"S06","behavior":"PM 记录重大证据缺口后三份评估可交 Reviewer","status":"passed","test_cases":["test_material_gap_uses_three_votes"]},
+      {"id":"S07","behavior":"PM 与首份票分歧后三份评估可交 Reviewer","status":"passed","test_cases":["test_pm_disagreement_uses_three_votes"]},
+      {"id":"S08","behavior":"失败与低覆盖率事实保留，三份中两票接纳可交 Reviewer","status":"passed","test_cases":["test_failed_behavior_requires_three_distinct_focuses","test_two_accept_votes_route_failed_low_coverage_report_to_reviewer"]},
+      {"id":"S09","behavior":"三份中仅一票接纳时接纳处置被拒绝","status":"passed","test_cases":["test_one_accept_vote_returns_to_worker_and_mismatched_pm_vote_fails"]},
+      {"id":"S10","behavior":"三份中仅一票接纳时修复处置返回 Worker","status":"passed","test_cases":["test_one_accept_vote_returns_to_worker_and_mismatched_pm_vote_fails"]},
+      {"id":"S11","behavior":"缺失评估文件不能发出 PM 事件","status":"passed","test_cases":["test_missing_duplicate_stale_forged_and_conflicting_assessments_fail"]},
+      {"id":"S12","behavior":"重复评估路径不能发出 PM 事件","status":"passed","test_cases":["test_missing_duplicate_stale_forged_and_conflicting_assessments_fail"]},
+      {"id":"S13","behavior":"评估摘要过期不能发出 PM 事件","status":"passed","test_cases":["test_missing_duplicate_stale_forged_and_conflicting_assessments_fail"]},
+      {"id":"S14","behavior":"伪造评估来源事件不能发出 PM 事件","status":"passed","test_cases":["test_missing_duplicate_stale_forged_and_conflicting_assessments_fail"]},
+      {"id":"S15","behavior":"评估者 session 重复不能发出 PM 事件","status":"passed","test_cases":["test_missing_duplicate_stale_forged_and_conflicting_assessments_fail"]},
+      {"id":"S16","behavior":"评估者与 Worker、Tester 或 PM session 冲突不能发出 PM 事件","status":"passed","test_cases":["test_missing_duplicate_stale_forged_and_conflicting_assessments_fail"]},
+      {"id":"S17","behavior":"Reviewer claim 与 Worker、Tester 和评估者 session 隔离","status":"passed","test_cases":["test_clean_single_vote_routes_and_keeps_reviewer_independent","test_two_accept_votes_route_failed_low_coverage_report_to_reviewer"]},
+      {"id":"S18","behavior":"接纳风险不改写 Tester 报告和失败事实","status":"passed","test_cases":["test_two_accept_votes_route_failed_low_coverage_report_to_reviewer"]},
+      {"id":"S19","behavior":"不带新策略字段的旧三份式决策仍可读取并交 Reviewer","status":"passed","test_cases":["test_two_accept_votes_route_failed_low_coverage_report_to_reviewer"]},
+      {"id":"S20","behavior":"新策略值、模式或升级原因无效时拒绝 PM 决策","status":"passed","test_cases":["test_invalid_adaptive_policy_mode_or_reason_is_rejected"]},
+      {"id":"S21","behavior":"评估修订号不符时拒绝 PM 决策","status":"passed","test_cases":["test_assessment_revision_mismatch_is_rejected"]},
+      {"id":"S22","behavior":"评估缺少完整风险字段时拒绝 PM 决策","status":"passed","test_cases":["test_assessment_missing_required_risk_field_is_rejected"]},
+      {"id":"S23","behavior":"重大证据缺口下单份决策被拒绝","status":"passed","test_cases":["test_material_gap_cannot_use_single_assessment"]},
+      {"id":"S24","behavior":"新三份模式缺少评估侧重点时被拒绝","status":"passed","test_cases":["test_escalated_decision_requires_all_assessment_focuses"]},
+      {"id":"S25","behavior":"无失败、低场景覆盖率且缺口可控时，单份路径不因覆盖率自动升级","status":"passed","test_cases":["test_low_scenario_coverage_does_not_force_escalation"]}
+    ],
+    "static_exclusions": [
+      "评估者间不共享草稿是流程独立性要求，本轮黑盒用例没有证明实际会话的信息隔离。",
+      "旧归档文件保持原样、文档与模板一致性属于静态要求，本轮未将其记为运行通过。",
+      "Reviewer 对未披露缺陷的审查权不是本轮 CLI 行为断言。"
+    ]
+  }
+}

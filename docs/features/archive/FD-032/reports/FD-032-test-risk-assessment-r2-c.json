@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-032",
+  "source_event": "FD-032-000008-test-report-ready",
+  "human_report": "FD-032-test-risk-assessment-r2-c.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-032-test-report-r2.md",
+    "fd_revision": 8,
+    "fd_digest": "391023572748f88998701e3db00a4b37caa5ff8eba09032290d657d2f7915b17",
+    "assessor_session": "fd032-assessor-r2-c-20261008-7e4c91",
+    "vote": "accept-with-risk",
+    "severity": "No reproduced production defect; remaining evidence gap is low to medium severity, potentially higher if an untested CLI lifecycle or compatibility defect exists.",
+    "impact_scope": "Untested business-code branches, full repository regression, and legacy archived FD report reading; the focused command covered all 13 new observable acceptance scenarios.",
+    "estimated_repair_time": "No confirmed implementation defect to estimate. Additional branch and historical compatibility testing would take at least several hours including design and authorization; repair time after a finding is unknown.",
+    "delivery_impact": "Returning solely for further evidence would delay delivery by at least a short work period; independent Reviewer static review can examine compatibility and spec consistency now.",
+    "rationale": "The revision-bound second-round command passed all 3 methods and 13 observable scenarios, including majority routing and invalid evidence/identity rejection. First-round fixture failures remain recorded and were addressed before retest. Remaining gaps do not currently demonstrate a defect severe enough to require another Worker round.",
+    "residual_risk": "Branch coverage and repository-wide regression were not measured; legacy archived-report compatibility lacks runtime evidence. Focused scenario success does not prove all historical states or inputs safe.",
+    "uncertainty": "Unknown whether untested branches or legacy archived paths contain a defect; if found, severity and repair time would need reassessment.",
+    "assessment_time": "2026-10-08T12:30:34+09:00"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-035",
+  "source_event": "FD-035-000010-changes-requested",
+  "human_report": "FD-035-implementation-r2.md",
+  "data": {
+    "summary": "Added black-box cases for S20–S25 and an isolated subprocess branch-coverage runner.",
+    "changed_paths": [
+      "docs/features/FD-035_ADAPTIVE_RISK_ASSESSMENT_FOR_FD_TEST_REPORTS.md",
+      "tests/test_fd032_risk_decision_blackbox.py",
+      "tests/fd035_coverage.py",
+      "docs/features/reports/FD-035-implementation-r2.md",
+      "docs/features/reports/FD-035-implementation-r2.json"
+    ],
+    "commands": [
+      "python -B -c \"from pathlib import Path; files = ('tests/test_fd032_risk_decision_blackbox.py', 'tests/fd035_coverage.py'); [compile(Path(p).read_bytes(), p, 'exec') for p in files]; print('compile-only OK')\""
+    ],
+    "results": [
+      "compile-only OK",
+      "Static inspection confirms the CLI fixture writes to temporary repositories and the coverage runner writes only to an OS temporary directory.",
+      "Tests and branch coverage were not run; coverage.py is unavailable in the current Python environment."
+    ],
+    "residual_risk": "No runtime evidence yet. User authorization is required before installing coverage.py; the exact test and coverage commands require revision-bound Planner authorization."
+  }
+}

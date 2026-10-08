@@ -41,25 +41,25 @@ approve MUST 接受 APPROVED、DEFERRED 或 REJECTED，并要求决定人及原�
 
 ### Requirement: 推广与可恢复关联
 
-promote MUST 要求有效的 APPROVED 决定，并把一个 Issue 关联到一个 Task。已有关联只允许继续同一 Task 的推广。新 Task MUST 有 FD 和来源 handoff，不要求 OpenSpec change。FD 有编号工作项且 Design Readiness 为 FD_APPLIED 或 FD_NOT_REQUIRED 时，方可映射到 Workflow Core 并记录 FD_READY；BLOCKED 的 FD 保持可恢复的 TASK_CREATED。旧 SPEC_DRAFTED 记录 MUST 保持可读，不自动迁移或覆盖。AIW MUST NOT 伪造批准范围、工程决策或稳定 spec。
+`issue promote <id>` 和兼容别名 `req promote <id>` MUST 要求 Issue 与批准记录均为 APPROVED，并通过 `fd new` 使用 Issue 标题创建编号 FD、关联来源 Issue、请求 Planner handoff。已关联的 Issue MUST NOT 重复创建 FD。推广 MUST NOT 创建 Task、旧 handoff 或 OpenSpec change，也 MUST NOT 修改既有 `[promotion]` 元数据；旧 `SPEC_DRAFTED` 记录 MUST 保持可读，不自动迁移或覆盖。AIW MUST NOT 伪造批准范围、工程决策或稳定 spec。
 
-系统 MUST 报告路由建议结果或其不可用诊断；无模型时可使用确定性配置或明确未配置状态，MUST NOT 因可选模型建议不可用而使已经通过交接验证的工件永远无法完成推广。后续执行的路由前置条件不因推广完成而被豁免。批准和推广仍各自要求原有正式授权，已授权范围内的工件补齐不要求重复批准。
+批准与推广仍各自要求原有显式授权。promote 只创建 FD 并记录 Planner handoff，不开始实现或验收；后续 FD 角色按 FD workflow 执行。
 
-#### Scenario: Issue 到 FD/Task 的推广
+#### Scenario: 已批准 Issue 执行 promote
 
 - **WHEN** 已批准 Issue 执行 promote
-- **THEN** 系统复用或创建目标 Task，写入 handoff，建立 FD，并等待其工作项可映射后记录 FD_READY。
-- **AND** OpenSpec CLI 是否可用不影响原生推广。
+- **THEN** 系统以该 Issue 的标题和 ID 调用 `aiw fd new`，创建唯一编号 FD 并产生 Planner handoff。
+- **AND** Requirement 的 `[promotion]` 状态和 `task_id` 保持原值。
 
-#### Scenario: FD 尚未完成
+#### Scenario: Issue 未批准或不存在
 
-- **WHEN** Task 和 FD 已创建，但 FD 仍无可执行工作项
-- **THEN** 系统保留 TASK_CREATED、Task 和 handoff；同一请求可在 FD 完成后继续。
+- **WHEN** Issue 缺失或其正式批准状态不是 APPROVED
+- **THEN** promote 返回错误，不创建 FD 或 handoff。
 
-#### Scenario: 恢复中断的推广
+#### Scenario: Issue 已关联 FD
 
-- **WHEN** 需求已关联 Task 且生成、写入或同步中断
-- **THEN** 继续同一请求的可恢复步骤，拒绝不同 Task 关联，不重复创建 Task 或清单映射。
+- **WHEN** 已有 FD 关联同一 Issue，再次执行 promote
+- **THEN** promote 报告重复关联，不创建第二个 FD。
 
 ### Requirement: 来源内容完整性
 
@@ -322,7 +322,7 @@ Session 证据 MUST 保留实际装载的方法、来源版本和缺失清单，
 - [上下文](../../../internal/issue/context.go)、[路径与预算](../../../internal/issue/context_sources.go)、[方法选择](../../../internal/issue/context_methods.go)。
 - [覆盖校验](../../../internal/issue/coverage.go)、[问题排序](../../../internal/issue/questions.go)、[对话编排](../../../internal/issue/conversation.go)。
 - [恢复](../../../internal/issue/conversation_history.go)、[就绪检查](../../../internal/issue/readiness.go)。
-- [聊天接入与捕获检查点](../../../cmd/aiw-req/requirement_discovery.go)、[批准检查点](../../../cmd/aiw-req/requirement_readiness.go)。
+- [聊天接入与捕获检查点](../../../cmd/aiw-req/requirement_discovery.go)、[批准检查点](../../../cmd/aiw-req/requirement_readiness.go)、[promote 命令](../../../cmd/aiw-req/issue-promote.go)。
 
 %% 引用有效、JSON 合法和问题排序正确，不证明模型找全了业务缺口；专业质量仍需人工评审。
 

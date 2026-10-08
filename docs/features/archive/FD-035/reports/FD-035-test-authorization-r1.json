@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-035",
+  "source_event": "FD-035-000004-implementation-ready",
+  "human_report": "FD-035-test-authorization-r1.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-035-000004-implementation-ready",
+    "fd_revision": 4,
+    "fd_digest": "031564c0783d1959717aeec8cf1e3e37b085013c3e9a032a75ea11b7f31ddc97",
+    "tester_session": "fd035-tester-20261008-8f4ac2",
+    "command": "python -B -m unittest tests.test_fd032_risk_decision_blackbox -v",
+    "working_directory": "C:\\Users\\svictor\\workspace\\tools\\ai-tools\\aiw\\.wt\\FD-035",
+    "scope": "Seven black-box test methods in tests/test_fd032_risk_decision_blackbox.py and their subcases; adaptive single/escalated decisions, complementary focus, vote threshold, Reviewer identity isolation, and legacy compatibility.",
+    "expected_duration": "10-45 seconds.",
+    "side_effects": "Creates, mutates, and cleans temporary Git repositories and FD fixture files under the system temporary directory. No expected workspace writes; an interrupted run may leave a temporary directory.",
+    "risk_review": "Inspected the invoked test module and its FD-014 fixture. The fixture copies the CLI and FD template to a TemporaryDirectory, runs local git init and CLI subprocesses there, and disables Python bytecode writes. No network, download, privilege change, external service, or release artifact is expected.",
+    "human_approval": "not required",
+    "planner_identity": "fd035-planner-20261008-01",
+    "decision_time": "2026-10-08T06:22:09+00:00"
+  }
+}

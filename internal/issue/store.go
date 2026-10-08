@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -404,6 +405,14 @@ func atomicWrite(path string, data []byte) error {
 	return os.Rename(tmpPath, path)
 }
 
-func unquote(value string) string { return strings.Trim(strings.TrimSpace(value), `"`) }
+func unquote(value string) string {
+	value = strings.TrimSpace(value)
+	if len(value) >= 2 && value[0] == '"' && value[len(value)-1] == '"' {
+		if decoded, err := strconv.Unquote(value); err == nil {
+			return decoded
+		}
+	}
+	return strings.Trim(value, `"`)
+}
 func digest(data []byte) string { sum := sha256.Sum256(data); return hex.EncodeToString(sum[:]) }
 func samePath(a, b string) bool { left, errA := filepath.Abs(a); right, errB := filepath.Abs(b); return errA == nil && errB == nil && strings.EqualFold(left, right) }

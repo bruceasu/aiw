@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000033-test-report-ready",
+  "human_report": "FD-036-test-risk-assessment-r6-a.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-036-test-report-r6-diagnostic.md",
+    "fd_revision": 33,
+    "fd_digest": "54862b4294872e269be7ea94f4b8dd4d3467b9e2e4b50a85d69776f306dd05e0",
+    "assessor_session": "fd036-assessor-a-20261008-r6-acceptance-41d2",
+    "assessment_focus": "acceptance-impact",
+    "vote": "accept-with-risk",
+    "severity": "medium: the S04 default-config case previously produced an unexplained ERROR, although the exact case passed in the authorized diagnostic rerun",
+    "impact_scope": "S04 missing-default-config and missing-model startup path; r6 covers only one S04 test and does not replace the full-suite evidence",
+    "estimated_repair_time": "unknown: no defect has been reproduced or isolated, so repair scope cannot be estimated",
+    "delivery_impact": "May proceed to independent Reviewer with the historical r5 ERROR and limited r6 diagnostic scope explicitly retained; this is not a full-suite pass",
+    "rationale": "Tester r5 recorded 20 passes and one ERROR in test_missing_default_config_uses_defaults_and_requires_explicit_model, without traceback, final unittest summary, or exit code. PM r5 rejected acceptance after three repair votes. The user-approved r6 diagnostic reran that exact test and recorded ok, Ran 1 test in 0.511s, OK, and UNITTEST_EXIT_CODE=0. This is evidence that the ERROR did not reproduce in this run, not an explanation of the earlier result. I accept with risk because the directly affected case now has a successful authorized diagnostic and the remaining limitations are explicit, while preserving the old error as unresolved historical evidence.",
+    "residual_risk": "The cause of the r5 ERROR remains unknown and could be intermittent; the one-case rerun is not a full-suite rerun. S08/S09/S14/S15 remain uncovered, branch coverage is not measured, and real API behavior, cross-platform profile paths, and translation quality remain unverified.",
+    "uncertainty": "Unknown whether the r5 ERROR was transient, environment-related, or due to an implementation/test issue. The exact case passed once in r6; no further run was authorized.",
+    "assessment_time": "2026-10-08T10:15:00+00:00"
+  }
+}

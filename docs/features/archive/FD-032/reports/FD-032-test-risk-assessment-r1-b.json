@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-032",
+  "source_event": "FD-032-000005-test-report-ready",
+  "human_report": "FD-032-test-risk-assessment-r1-b.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-032-test-report-r1.md",
+    "fd_revision": 5,
+    "fd_digest": "524c07bbbb3bc91a2546e98e519245bedaba9c7c4e9a31a5a8f37624b471beda",
+    "assessor_session": "fd032-assessor-b-20261008-c8d4ab",
+    "vote": "repair",
+    "severity": "高：未经验证的多数决策或身份校验缺陷可能错误接纳风险或阻断合法交接，损害 FD 审计可信度。",
+    "impact_scope": "独立 Tester 政策下新 FD 的 PM 接纳、退回与 Reviewer 交接；历史 FD 路径影响未见证据。",
+    "estimated_repair_time": "未知；夹具前置操作修正和一次聚焦重测预计一个短工作时段，若发现实现缺陷需重新估计。",
+    "delivery_impact": "至少延后一轮有效测试与风险决策；当前没有证据证明必须修改生产代码。",
+    "rationale": "两次授权测试均在黑箱夹具准备阶段失败，13 个核心行为场景全部未触达；修正后的夹具未执行。核心风险无法由现有运行证据界定，故建议修正夹具并重测，而非依据覆盖率数字自动判断。",
+    "residual_risk": "若直接接纳，多数投票、无效评估拒绝和 Reviewer 身份边界可能存在未发现缺陷；业务分支覆盖率也未测量。",
+    "uncertainty": "夹具修正后的用例尚未执行，重测可能暴露实现问题；实际修复时间未知。",
+    "assessment_time": "2026-10-08T03:26:14+00:00"
+  }
+}

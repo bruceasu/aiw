@@ -1,0 +1,34 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000015-test-report-ready",
+  "human_report": "FD-036-test-decision-r2.md",
+  "data": {
+    "disposition": "accepted",
+    "tester_report": "docs/features/reports/FD-036-test-report-r2.md",
+    "fd_revision": 15,
+    "fd_digest": "8a27b890461b8899f79a646f6814a4031afe6fb3407b2892169b579deb5d981e",
+    "requirements_coverage": "66.7%",
+    "branch_coverage": "not measured",
+    "failed_behavior_tests": 0,
+    "assessment_policy": "adaptive-v1",
+    "assessment_mode": "escalated",
+    "escalation_reason": "material-evidence-gap",
+    "escalation_detail": "Five of fifteen acceptance scenarios remain uncovered or incomplete and branch coverage was not measured; three complementary assessments were obtained.",
+    "coverage_gap_disposition": "material",
+    "coverage_gap_reason": "S05 malformed TOML, S08 full installation/profile/CLI precedence, S09 all enum variants, S14 every unsupported option, and S15 cross-platform/manual sample-copy behavior lack complete runtime evidence.",
+    "assessments": [
+      "docs/features/reports/FD-036-test-risk-assessment-r2-a.md",
+      "docs/features/reports/FD-036-test-risk-assessment-r2-b.md",
+      "docs/features/reports/FD-036-test-risk-assessment-r2-c.md"
+    ],
+    "accept_votes": 2,
+    "repair_votes": 1,
+    "rationale": "Accept the test report with explicit residual-risk exceptions and route to independent Reviewer. A and C vote accept-with-risk; B votes repair because five scenarios remain incomplete, especially config precedence, enum coverage, unsupported options, malformed TOML, and cross-platform/manual installation behavior. The escalated threshold requires at least two accept-with-risk votes and is met. The implementation event revision 14/digest 914ae9b1043fa69226b2c7e00fed2ff4c2efe7b7e9ffad7f84c56ae8f83ad537 is the tested snapshot; revision 15/digest 8a27b890461b8899f79a646f6814a4031afe6fb3407b2892169b579deb5d981e is the subsequent test-report handoff state.",
+    "exceptions": "Explicitly accept transition to Reviewer with S05/S08/S09/S14/S15 incomplete, Linux/WSL profile paths unrun, and branch coverage not measured. These are verification exceptions only; no uncovered behavior is represented as passed.",
+    "residual_risk": "Configuration syntax and full precedence, all enum variants, unsupported flags beyond --clipboard, cross-platform profile paths, sample-copy/no-overwrite behavior, branch coverage, real API quality, and model availability remain unverified. Reviewer must verify disclosure and check for other undisclosed evidence defects.",
+    "pm_identity": "fd036-host-20261008-27cf10",
+    "decision_time": "2026-10-08T08:31:00Z"
+  }
+}

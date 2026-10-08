@@ -1,0 +1,14 @@
+[say]
+source = "auto"
+target = "ja"
+mode = "realtime"
+style = "spoken"
+polite = "polite"
+profanity = "mask"
+simplify = false
+preserve_technical_terms = true
+
+[say.llm]
+provider = "openai"
+model = "" # Set a model verified for your API account.
+timeout = "30s"

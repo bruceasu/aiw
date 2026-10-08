@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-034",
+  "source_event": "FD-034-000015-test-report-ready",
+  "human_report": "FD-034-test-risk-assessment-r1-a.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-034-test-report-r1.md",
+    "fd_revision": 15,
+    "fd_digest": "57c1a2da912f434b1f4a5706e209e0dec70c16a9c8e409e66b09bd2ffa901aec",
+    "assessor_session": "fd034-assessor-a-20261008-c2be9a9b",
+    "vote": "accept-with-risk",
+    "severity": "medium: S13 has no behavior evidence; target files could change between precheck and apply, with possible partial workspace changes.",
+    "impact_scope": "aiw git patch apply after a successful precheck when the target worktree changes before or during actual apply; common create, precheck failure, success, and repeat-apply paths passed focused tests.",
+    "estimated_repair_time": "Approximately 2-4 hours to build a controlled isolated fixture and test S13; implementation repair time is unknown until a defect is found.",
+    "delivery_impact": "Risk acceptance allows independent review and delivery without delaying the current test gate; requiring S13 runtime evidence adds the estimated testing time. No delivery date is asserted.",
+    "rationale": "The authorized focused rerun passed 9/9 cases after correcting fixture assertions; 12/13 distinct observable scenarios passed, 92.3% requirements coverage, zero current failed tests. S13 is a narrow race with an explicit nonzero/error-guidance design and remains uncovered, not passed.",
+    "residual_risk": "S13 actual apply failure and possible partial changes are unverified; branch coverage was not measured; external concurrent edits and exhaustive AI/network or --3way/--reject interception were not tested.",
+    "uncertainty": "No runtime S13 evidence; occurrence rate and exact output under concurrent target changes are unknown.",
+    "assessment_time": "2026-10-08T06:04:05Z"
+  }
+}

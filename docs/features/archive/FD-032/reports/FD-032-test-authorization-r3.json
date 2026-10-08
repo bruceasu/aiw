@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "planner-authorization",
+  "fd_id": "FD-032",
+  "source_event": "FD-032-000007-implementation-ready",
+  "human_report": "FD-032-test-authorization-r3.md",
+  "data": {
+    "decision": "approved",
+    "basis": "planner-low-risk",
+    "implementation_event": "FD-032-000007-implementation-ready",
+    "fd_revision": 7,
+    "fd_digest": "19a8f20ad884426394739af1ea2327c2ae192bc024dadb447af6a4803d5a21a7",
+    "tester_session": "fd032-tester-r2-20261008-c7b942",
+    "command": "python -B -m unittest tests.test_fd032_risk_decision_blackbox -v",
+    "working_directory": "C:\\Users\\svictor\\workspace\\tools\\ai-tools\\aiw\\.wt\\FD-032",
+    "scope": "Three black-box unittest methods covering thirteen behavior scenarios in the target module.",
+    "expected_duration": "Under 30 seconds",
+    "side_effects": "Create and clean temporary Git repositories and FD evidence; read local plugin and templates; no real .ai writes.",
+    "risk_review": "Inspected the test module and called FD-014 fixture after relevant fixture corrections; focused, offline, inspectable, temporary writes only.",
+    "human_approval": "not required",
+    "planner_identity": "fd032-host-20261008-31a7c2",
+    "decision_time": "2026-10-08T03:28:41+00:00"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000024-test-report-ready",
+  "human_report": "FD-036-test-risk-assessment-r4-a.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-036-test-report-r4.md",
+    "fd_revision": 24,
+    "fd_digest": "c79fbda3eb41d1443a492f6d8b5e89011d36e34ab631993fe20f66aa32aca8d1",
+    "assessor_session": "fd036-assessor-a-20261008-r4-independent",
+    "assessment_focus": "acceptance-user-impact",
+    "vote": "accept-with-risk",
+    "severity": "medium; 14 of 18 applicable scenarios have complete evidence, with four explicit coverage gaps",
+    "impact_scope": "Potentially affects users relying on full layered-configuration combinations, less common enum and unsupported-option cases, Linux/WSL paths, and copy-based installation. The current report records Windows local loopback mock evidence.",
+    "estimated_repair_time": "Approximately 0.5-1 working day for S08, S09, and S14 automated scenarios; S15 timing depends on cross-platform environment availability and is unknown.",
+    "delivery_impact": "May proceed to independent Reviewer with gaps recorded. Supplement S15 before release if Linux/WSL or copy-based installation is in the release scope.",
+    "rationale": "The event-bound Tester report records 21 of 21 behavior tests passed and zero failures. It newly covers malformed TOML error behavior, invalid-value fallback, unknown-key ignoring, and the TOML table-header comment regression. These address the user's clarified configuration expectations. Four other acceptance scenarios remain incomplete and should stay visible as risk.",
+    "residual_risk": "Full configuration precedence combinations, every enum and unsupported option, Linux/WSL paths, copy/no-overwrite behavior, branch coverage, real API behavior, and translation quality remain unverified.",
+    "uncertainty": "No commands were run and coverage was not independently recalculated. The release platform scope and availability of cross-platform installation environments are unspecified.",
+    "assessment_time": "2026-10-08T09:13:16Z",
+    "assessment_time_source": "Report file CreationTimeUtc metadata"
+  }
+}

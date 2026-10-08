@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "test-risk-assessment",
+  "fd_id": "FD-035",
+  "source_event": "FD-035-000005-test-report-ready",
+  "human_report": "FD-035-test-risk-assessment-r1-a.md",
+  "data": {
+    "tester_report": "docs/features/reports/FD-035-test-report-r1.md",
+    "fd_revision": 5,
+    "fd_digest": "876e8ecd61c67ca9a0a5b9b31c4b8274dc7fe09b4d2f215729264b789ff70022",
+    "assessor_session": "fd035-assessor-a-20261008",
+    "assessment_focus": "acceptance-impact",
+    "vote": "accept-with-risk",
+    "severity": "中等：错误接纳或错误升级会改变 FD 的审查路径，影响质量与等待时间；目前没有已证实的产品行为失败。",
+    "impact_scope": "使用 aiw fd 对 Tester 报告作 PM 风险决策的 FD；重点是 S23、S24、S25 对单份或三份路由的影响，不直接触发发布。",
+    "estimated_repair_time": "补齐六个聚焦黑盒场景预计半日至一日；若发现实现缺陷，修复时间尚不能确定。",
+    "delivery_impact": "当前可带明示风险交独立 Reviewer；若 Reviewer 发现未披露实现缺陷，应退回 Worker，增加至少一个修复与复核周期。",
+    "rationale": "最终一轮 8 个黑盒方法通过，19/25 独立场景有行为证据；S20–S25 未覆盖。静态查看校验路径，单份须零失败、bounded 缺口及 none 原因，升级三份和互补侧重点有明确检查。未见已证实产品失败，故投接纳风险票，但不能宣称缺口通过。",
+    "residual_risk": "S20–S25 缺少行为断言，分支覆盖率未测量；关键拒绝路径仍可能有隐藏缺陷。Reviewer 须检查 PM 的重大缺口处置和未披露实现缺陷。",
+    "uncertainty": "六个未覆盖场景在真实 CLI 流程的运行结果未知；分支覆盖率未知；若存在真实缺陷，修复工作量未知。",
+    "assessment_time": "2026-10-08T06:26:30.816101+00:00"
+  }
+}

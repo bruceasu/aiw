@@ -1,0 +1,34 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000024-test-report-ready",
+  "human_report": "FD-036-test-decision-r4.md",
+  "data": {
+    "disposition": "accepted",
+    "tester_report": "docs/features/reports/FD-036-test-report-r4.md",
+    "fd_revision": 24,
+    "fd_digest": "c79fbda3eb41d1443a492f6d8b5e89011d36e34ab631993fe20f66aa32aca8d1",
+    "requirements_coverage": "77.78%",
+    "branch_coverage": "not measured",
+    "failed_behavior_tests": 0,
+    "assessment_policy": "adaptive-v1",
+    "assessment_mode": "escalated",
+    "escalation_reason": "material-evidence-gap",
+    "escalation_detail": "Four of eighteen applicable scenarios are incomplete and branch coverage is unavailable; three complementary independent risk assessments were obtained.",
+    "coverage_gap_disposition": "material",
+    "coverage_gap_reason": "S08 full default/install/profile/CLI precedence, S09 all enum variants, S14 all unsupported options, and S15 cross-platform/copy-no-overwrite behavior remain incomplete.",
+    "assessments": [
+      "docs/features/reports/FD-036-test-risk-assessment-r4-a.md",
+      "docs/features/reports/FD-036-test-risk-assessment-r4-b.md",
+      "docs/features/reports/FD-036-test-risk-assessment-r4-c.md"
+    ],
+    "accept_votes": 3,
+    "repair_votes": 0,
+    "rationale": "Tester r4 executed the Planner r6 authorized command once: 21/21 behavior tests passed with zero failures, and 14/18 scenarios are fully covered. All three independent assessors voted accept-with-risk. The escalated threshold is met; the four coverage gaps are explicitly retained as verification exceptions and are not represented as passing evidence.",
+    "exceptions": "Accept transition to Reviewer with S08/S09/S14/S15 incomplete and branch coverage not measured. Real API/model behavior and translation quality are outside the local mock evidence.",
+    "residual_risk": "Full four-layer precedence, every enum, all unsupported options, sample copy/no-overwrite, cross-platform profile paths, branch coverage, real API/model behavior, and translation quality remain unverified.",
+    "pm_identity": "fd036-host-20261008-27cf10",
+    "decision_time": "2026-10-08T09:14:13+00:00"
+  }
+}

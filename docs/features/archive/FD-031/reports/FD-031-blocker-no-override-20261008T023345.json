@@ -1,0 +1,30 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-031",
+  "source_event": "FD-031-000006-test-rejected",
+  "human_report": "FD-031-blocker-no-override-20261008T023345.md",
+  "data": {
+    "stage": "Worker recovery / PM",
+    "role": "pm",
+    "recorded_at": "2026-10-08T02:33:45+00:00",
+    "recorder_session": "fd031-auto-20261008-023345",
+    "observed_blocker": "The user confirmed the Tester stopped and the original workflow was interrupted, and directed Auto to resume. The latest event FD-031-000006-test-rejected remains dispatched and claimed by fd031-worker-repair-20261008-01, with no event log or later Worker result. refresh_worker accepts only pending Worker handoffs; resume directs dispatched sessions to be inspected and the CLI has no PM override takeover command.",
+    "confirmed_cause": "The FD CLI has no supported operation to safely supersede a dispatched Worker handoff after the session has stopped.",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      "Read plugins/aiw-fd.py event definitions, refresh_worker, resume, and CLI command registration.",
+      "Confirmed the existing Worker event receipt remains dispatched and no matching event log exists.",
+      "Confirmed the FD worktree has no uncommitted changes.",
+      "Did not alter the receipt, claim the event as another session, or run a failing recovery command."
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "The user authorized adding the restricted recover-worker CLI and chose a new Worker session.",
+    "actual_resolution": "Commit f14f0c61 added audited recover-worker. PM ran it with the exact old event and session; FD-031-000006-test-rejected is cancelled with provenance and FD-031-000008-work-requested is pending for the new Worker.",
+    "resolved_at": "2026-10-08T02:45:46+00:00",
+    "residual_risk_or_next_step": "The new Worker must claim FD-031-000008-work-requested and submit current implementation evidence before the independent Tester stage.",
+    "reusable_improvement": "An audited PM recover-worker operation is implemented in FD-031; independent validation and review remain in progress.",
+    "improvement_status": "implemented"
+  }
+}

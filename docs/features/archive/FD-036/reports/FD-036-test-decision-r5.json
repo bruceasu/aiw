@@ -1,0 +1,34 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "pm-decision",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000030-test-report-ready",
+  "human_report": "FD-036-test-decision-r5.md",
+  "data": {
+    "disposition": "rejected",
+    "tester_report": "docs/features/reports/FD-036-test-report-r5.md",
+    "fd_revision": 30,
+    "fd_digest": "8fc52ef381ac87a4932b0784c36a338ac540785cb732fd479e3d719ec7e05510",
+    "requirements_coverage": "72.22%",
+    "branch_coverage": "not measured",
+    "failed_behavior_tests": 1,
+    "assessment_policy": "adaptive-v1",
+    "assessment_mode": "escalated",
+    "escalation_reason": "failed-tests",
+    "escalation_detail": "Tester r5 recorded one ERROR in S04 but the traceback, final unittest summary, and exit code were unavailable; three complementary independent assessments were required.",
+    "coverage_gap_disposition": "material",
+    "coverage_gap_reason": "S04 is blocked by an ERROR with unavailable diagnostics. S08/S09/S14/S15 remain incomplete, and branch coverage was not measured.",
+    "assessments": [
+      "docs/features/reports/FD-036-test-risk-assessment-r5-a.md",
+      "docs/features/reports/FD-036-test-risk-assessment-r5-b.md",
+      "docs/features/reports/FD-036-test-risk-assessment-r5-c.md"
+    ],
+    "accept_votes": 0,
+    "repair_votes": 3,
+    "rationale": "The authorized run visibly recorded 20 passing tests and one ERROR in test_missing_default_config_uses_defaults_and_requires_explicit_model. Missing traceback/final summary/exit code prevent attribution; S04 cannot be treated as passed. All three independent assessors voted repair, so the escalated acceptance threshold is not met.",
+    "exceptions": "Previously accepted S08/S09/S14/S15 coverage gaps and unmeasured branch coverage remain explicit; they do not waive the new S04 ERROR.",
+    "residual_risk": "S04 result is unknown; S08/S09/S14/S15 remain incomplete; branch coverage, real API/model behavior, cross-platform profile paths, and translation quality remain unverified.",
+    "pm_identity": "fd036-host-20261008-r5-pm",
+    "decision_time": "2026-10-08T09:34:00+00:00"
+  }
+}

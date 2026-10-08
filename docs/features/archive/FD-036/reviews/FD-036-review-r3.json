@@ -1,0 +1,55 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-036",
+  "source_event": "FD-036-000026-review-requested",
+  "human_report": "FD-036-review-r3.md",
+  "data": {
+    "outcome": "changes-requested",
+    "reviewer_session": "fd036-reviewer-20261008-r1-independent",
+    "reviewed_fd_revision": 26,
+    "reviewed_fd_digest": "7e4977b143e589f74c2e18fd7547e4a5ed3aadab866283f782c77477bdc34232",
+    "reviewed_diff_base": "develop...HEAD",
+    "base_commit": "5b04879e9cbfbdccca13bed13feeeeccb31e609c",
+    "reviewed_commit": "e14172a30f889747c48c21c1f0b9bf94ceec1616",
+    "findings": [
+      {
+        "id": "FD036-R3-001",
+        "severity": "medium",
+        "path": "internal/say/config.go",
+        "line": 118,
+        "summary": "The custom scalar parser rejects valid TOML values for unknown keys and accepts Go-only string escapes as TOML.",
+        "evidence": "readConfig parses each value with parseTOMLScalar before applyConfigValue can ignore an unknown key. Thus a valid array assigned to an unknown key in [say] errors. parseTOMLScalar uses strconv.Unquote, which accepts Go escapes such as \\a that TOML basic strings forbid, so malformed TOML can be accepted.",
+        "requirement": "FD-036 Acceptance and Work Item 1.12 require unknown keys to be ignored and damaged TOML syntax to fail; the user confirmed both behaviors.",
+        "requested_change": "Use a TOML-conformant parser, then ignore unknown keys and validate recognized values per field so invalid values retain the lower-precedence setting. Add focused cases for a valid non-scalar unknown key and a Go-only escape in a recognized string, verifying ignore and syntax error respectively."
+      }
+    ],
+    "static_review": {
+      "tester_evidence": "Tester r4 report and JSON agree on implementation event23, tested FD revision23/digest ec7adbbb1e50c75d8e95834321a3f5d71f0765299d3934ddcee80694851f1c27, Tester session, and 21 passed/0 failed. Four of eighteen scenarios are incomplete (77.78%); branch coverage was not measured. Config fallback, profile fallback, unknown string key, malformed config, and invalid CLI cases have corresponding passing test cases.",
+      "authorization": "Planner r6 authorization agrees with Tester r4 on exact command, worktree, implementation revision/digest and Tester session; it declares offline execution with loopback mock and temporary files only.",
+      "risk_decision": "PM r4 and all three independent assessments agree on 3 accept-with-risk votes. S08/S09/S14/S15, branch coverage, real API/model behavior, cross-platform behavior and translation quality remain explicit accepted risks; they were not used as rejection grounds.",
+      "scope": "Reviewed current FD revision26 and digest, event26, implementation diff, Worker r5 report, Tester r4 report, authorization r6, PM decision r4, three assessor reports and relevant acceptance/work items. The TOML grammar mismatch is outside the accepted test gaps."
+    },
+    "reviewer_commands": [
+      "aiw fd --help",
+      "aiw fd claim --help",
+      "aiw fd emit --help",
+      "aiw fd show FD-036",
+      "aiw fd claim FD-036 FD-036-000026-review-requested --session fd036-reviewer-20261008-r1-independent",
+      "git status --short --branch",
+      "git diff --stat develop...HEAD",
+      "git diff --name-status develop...HEAD",
+      "git log --oneline --decorate -12",
+      "targeted Get-Content and rg inspections"
+    ],
+    "not_run": [
+      "Tests",
+      "Builds",
+      "Coverage measurement",
+      "Linters",
+      "Formatters",
+      "Network calls"
+    ],
+    "residual_risk": "PM r4 accepted gaps S08/S09/S14/S15 remain; branch coverage, cross-platform profile paths, real API/model behavior and translation quality are unverified. No runtime test was run for the newly identified TOML grammar mismatch."
+  }
+}
