@@ -1,0 +1,28 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-038",
+  "source_event": "FD-038-000002-design-requested",
+  "human_report": "FD-038-blocker-20261008T193000-stale-planner.md",
+  "data": {
+    "stage": "Preflight",
+    "role": "Planner",
+    "recorded_at": "2026-10-08T19:30:00+09:00",
+    "recorder_session": "fd038-planner-20261008-a19c6e",
+    "observed_blocker": "Claim of the exact pending design-requested event failed with FD changed since the handoff; the receipt records revision 2 and a digest that do not match the current FD body, which declares revision 1. Claim did not modify the event.",
+    "confirmed_cause": null,
+    "cause_status": "unknown",
+    "recovery_attempts": [
+      "Read the FD, receipt, workflow contract, and CLI help.",
+      "Attempted one exact claim: aiw fd claim FD-038 FD-038-000002-design-requested --session fd038-planner-20261008-a19c6e; CLI rejected stale content and retained the pending receipt."
+    ],
+    "status": "unresolved",
+    "human_decision_required": true,
+    "human_decision_detail": "PM must choose a supported recovery path for the stale Planner handoff; refresh-worker is not applicable.",
+    "actual_resolution": null,
+    "resolved_at": null,
+    "residual_risk_or_next_step": "Keep FD and receipt unchanged until a supported recovery preserves event provenance and current digest. Parent workspace also has unrelated uncommitted changes that must be handled before worktree creation.",
+    "reusable_improvement": "Define a controlled recovery operation for stale design-requested Planner receipts, with digest binding, supersession provenance, and role ownership checks.",
+    "improvement_status": "proposed"
+  }
+}
