@@ -1,7 +1,7 @@
 # FD-040: Move feature templates to docs/templates
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -27,9 +27,9 @@
 
 ## Work items
 
-- [ ] 1.1 将全部模板文件迁移至 `docs/templates/`，并更新 `aiw fd new` 的模板读取/生成位置。Size: S; Difficulty: Low; Dependencies: none. Completion: 原模板文件在新目录完整可用；创建逻辑只把默认模板写入新目录并从新位置读取。
-- [ ] 1.2 更新技能、使用文档与可移植布局说明中的模板路径。Size: S; Difficulty: Low; Dependencies: 1.1. Completion: 所有当前指导入口将模板定位到 `docs/templates/`，FD 与 evidence 路径仍指向 `docs/features/`。
-- [ ] 1.3 更新 smoke fixture 的模板源路径。Size: S; Difficulty: Low; Dependencies: 1.1. Completion: fixture 在临时仓库中复制新位置模板；本任务不运行 smoke 或测试。
+- [x] 1.1 将全部模板文件迁移至 `docs/templates/`，并更新 `aiw fd new` 的模板读取/生成位置。Size: S; Difficulty: Low; Dependencies: none. Completion: 原模板文件在新目录完整可用；创建逻辑只把默认模板写入新目录并从新位置读取。
+- [x] 1.2 更新技能、使用文档与可移植布局说明中的模板路径。Size: S; Difficulty: Low; Dependencies: 1.1. Completion: 所有当前指导入口将模板定位到 `docs/templates/`，FD 与 evidence 路径仍指向 `docs/features/`。
+- [x] 1.3 更新 smoke 与黑盒测试 fixture 的模板源路径。Size: S; Difficulty: Low; Dependencies: 1.1. Completion: fixture 在临时仓库中从 `docs/templates/` 复制模板，缺失模板场景也检查新路径；本任务不运行 smoke 或测试。
 
 Keep item numbers stable after implementation starts. Use `- [-]` only for an
 explicitly cancelled item, with its reason on the same line.
@@ -38,18 +38,19 @@ explicitly cancelled item, with its reason on the same line.
 
 - `docs/features/` 顶层不再包含模板文档，所有原模板均在 `docs/templates/`。
 - `aiw fd new` 从 `docs/templates/TEMPLATE.md` 读取；模板缺失时将内置默认模板写入 `docs/templates/TEMPLATE.md`，不在 `docs/features/` 创建模板。
-- 活跃技能、程序说明、用户文档及 smoke fixture 无失效的规范模板读取路径；历史证据保持不变。
+- 活跃技能、程序说明、用户文档及 smoke/黑盒测试 fixture 无失效的规范模板读取路径；历史证据保持不变。
 
 ## Verification
 
-- 静态检查：核对迁移清单、模板读取/生成调用点及所有活跃引用；检查最终 diff 和文档路径一致性。
-- 按仓库要求执行 Python 内存 compile-only 检查；不运行测试、smoke、最终构建、lint 或格式化。
-
+- Python 内存 compile-only：PowerShell here-string piped to `python -`，对 `plugins/aiw-fd.py`、`scripts/fd_smoke.py` 和 3 个已调整的黑盒测试文件调用内置 `compile()`；5 个文件均通过，未生成 `.pyc`。
+- 静态路径扫描确认活动代码、技能、用法文档、smoke 和黑盒 fixture 引用 `docs/templates/`；FD/evidence 路径继续位于 `docs/features/`。历史报告未改写。
+- 未运行测试、smoke、最终构建、lint 或格式化；运行时 CLI 行为尚未验证。
+- Reviewer 复核：`docs/features/reviews/FD-040-review-r1.md`，结果 `verification-passed`。独立静态检查支持全部验收项；未执行测试、smoke 或运行时 CLI 验证。
 ## TODO
 
-- [ ] 1.1 迁移模板并调整 `aiw fd new` 模板路径。
-- [ ] 1.2 更新技能和使用文档中的模板路径。
-- [ ] 1.3 更新 smoke fixture 模板路径。
+- [x] 1.1 迁移模板并调整 `aiw fd new` 模板路径。
+- [x] 1.2 更新技能和使用文档中的模板路径。
+- [x] 1.3 更新 smoke 与黑盒测试 fixture 模板路径。
 
 ## Sources
 

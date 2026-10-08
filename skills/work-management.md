@@ -37,7 +37,7 @@ installations remain usable outside the AIW repository.
   Prior evidence stays archived if a completed FD is reopened for review.
 - An automatic FD workflow Gate has a separate FD-prefixed blocker feedback
   Markdown report and same-basename JSON sidecar under `docs/features/reports/`.
-  Use `docs/features/BLOCKER_FEEDBACK_TEMPLATE.md` and its JSON template.
+  Use `docs/templates/BLOCKER_FEEDBACK_TEMPLATE.md` and its JSON template.
   Record observed facts, unknowns, attempts, unresolved or resolved state,
   human decision needs, and reusable improvements. Review existing feedback
   on resume and before archive. FD-prefixed pairs follow the normal `reports/`

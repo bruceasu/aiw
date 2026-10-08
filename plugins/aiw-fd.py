@@ -1236,8 +1236,9 @@ def new_fd(base: Path, name: str, issue: str) -> None:
         target = feature_dir(base) / f"{ident}_{slug(name)}.md"
         if target.exists():
             raise FDError(f"FD already exists: {target}")
-        template = feature_dir(base) / "TEMPLATE.md"
+        template = base / "docs" / "templates" / "TEMPLATE.md"
         if not template.is_file():
+            template.parent.mkdir(parents=True, exist_ok=True)
             atomic_text(template, DEFAULT_TEMPLATE)
         source = f"- Issue: {issue}" if issue else "- Issue: none"
         content = (template.read_text(encoding="utf-8")

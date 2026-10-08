@@ -1,6 +1,6 @@
 # Numbered FD operations
 
-The portable layout is `docs/features/TEMPLATE.md`,
+The portable layout is `docs/templates/TEMPLATE.md`,
 `docs/features/FEATURE_INDEX.md`, `docs/features/FD-XXX_SLUG.md`, and
 `docs/features/archive/<FD-ID>/<FD-ID>_SLUG.md`. The FD file owns status and
 numbered Work Items. Active reports and reviews live under

@@ -21,8 +21,8 @@ state the limitation before claiming independent evidence.
 
 Write assigned repository test code under the root `tests/` directory. Write
 a factual report under `docs/features/reports/` using
-`docs/features/FD_TEST_REPORT_TEMPLATE.md` and
-`docs/features/FD_TEST_REPORT_DATA_TEMPLATE.json`. Keep the same FD, revision,
+`docs/templates/FD_TEST_REPORT_TEMPLATE.md` and
+`docs/templates/FD_TEST_REPORT_DATA_TEMPLATE.json`. Keep the same FD, revision,
 scenario IDs, commands, and results in both files.
 
 ## Process

@@ -83,7 +83,8 @@ class PromoteBlackBox(unittest.TestCase):
         self.root.mkdir()
         (self.root / "docs" / "features").mkdir(parents=True)
         (self.root / "docs" / "requirements").mkdir(parents=True)
-        shutil.copy2(SOURCE / "docs" / "features" / "TEMPLATE.md", self.root / "docs" / "features" / "TEMPLATE.md")
+        (self.root / "docs" / "templates").mkdir(parents=True)
+        shutil.copy2(SOURCE / "docs" / "templates" / "TEMPLATE.md", self.root / "docs" / "templates" / "TEMPLATE.md")
         self.env = os.environ.copy()
         self.env.pop("AIW_FD_ROLE_RUNNER", None)
         self.env.update({
@@ -193,7 +194,7 @@ class PromoteBlackBox(unittest.TestCase):
     def test_fd_creation_failure_is_reported(self):
         record = self.issue()
         before = record.read_bytes()
-        template = self.root / "docs" / "features" / "TEMPLATE.md"
+        template = self.root / "docs" / "templates" / "TEMPLATE.md"
         template.unlink()
         template.mkdir()
         result = self.cli()

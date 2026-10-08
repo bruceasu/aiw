@@ -28,7 +28,7 @@ same-basename JSON sidecar for CLI/AI. Put one
 `<!-- aiw-data: FD-XXX-report.json -->` comment in Markdown, use Markdown for
 `--artifact`, and write JSON with schema `aiw.fd.evidence.v1`, FD ID, kind,
 source event, Markdown filename, and `data`. Use the JSON templates under
-`docs/features/`. Reviewer reports use kind `reviewer-report` and live under
+`docs/templates/`. Reviewer reports use kind `reviewer-report` and live under
 `docs/features/reviews/`. The CLI checks the JSON before handoff, and close
 archives both files. Older Markdown-only evidence is preserved. Relative
 filename references remain valid after archive. An independent Reviewer emits
@@ -52,7 +52,7 @@ Tester events, PM decision events, and `aiw fd refresh-tester` behavior. The
 CLI continues validating legacy report fields and authorization records for
 those receipts. This path is not used for new FDs; do not dispatch it as part
 of the default workflow. Historical report templates remain available under
-`docs/features/TEST_*_TEMPLATE.md`.
+`docs/templates/TEST_*_TEMPLATE.md`.
 
 ## One-operation host workflow
 

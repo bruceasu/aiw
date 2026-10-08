@@ -19,7 +19,7 @@ about those terms, or a design-only request, does not start implementation.
 Use an explicit FD ID first, then a unique FD linked from the current Issue or
 conversation. Ask when several FDs match. For a new FD, use `aiw fd new
 "<title>" [--issue <id>]`; this allocates an unused `FD-XXX` number, creates
-the file from `docs/features/TEMPLATE.md`, updates the index, and records a
+the file from `docs/templates/TEMPLATE.md`, updates the index, and records a
 `design-requested` event. Do not create an AIW Task as a prerequisite or
 convert the FD into a Task workflow.
 
@@ -141,8 +141,8 @@ Whenever Auto cannot continue at any preflight, design, Worker, PM, Reviewer,
 delivery, archive, or cleanup Gate, write one factual feedback pair
 under `docs/features/reports/FD-XXX-blocker-<unique-suffix>.md` and `.json`
 before reporting the stop. Use
-`docs/features/BLOCKER_FEEDBACK_TEMPLATE.md` and
-`BLOCKER_FEEDBACK_DATA_TEMPLATE.json`; the Markdown must be Chinese and
+`docs/templates/BLOCKER_FEEDBACK_TEMPLATE.md` and
+`docs/templates/BLOCKER_FEEDBACK_DATA_TEMPLATE.json`; the Markdown must be Chinese and
 contain one same-directory `aiw-data` reference. Use the FD ID, stage, role,
 exact source event when available, observed symptom, confirmed cause or
 unknown, actual recovery attempts and outcomes, unresolved status, human
@@ -211,7 +211,7 @@ in the user-facing Gate and final report.
    minimal code/doc changes. Update checkboxes, TODO, Verification, and
    remaining `%%` notes with actual evidence and skipped checks. Apply the
    repo's validation budget. For a Dual evidence FD, write a Chinese Markdown
-   report and same-basename JSON using `docs/features/REPORT_DATA_TEMPLATE.json`;
+   report and same-basename JSON using `docs/templates/REPORT_DATA_TEMPLATE.json`;
    point `--artifact` to Markdown. In the FD worktree, inspect the diff and
    commit each completed, independently reviewable Work Item before starting
    the next. Stage only that item's files; use `aiw git wt commit <id>` only when

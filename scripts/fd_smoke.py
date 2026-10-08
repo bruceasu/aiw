@@ -40,7 +40,9 @@ def main() -> None:
         command(root, "git", "config", "user.email", "fd-smoke@example.invalid")
         features = root / "docs" / "features"
         features.mkdir(parents=True)
-        shutil.copy2(SOURCE / "docs" / "features" / "TEMPLATE.md", features / "TEMPLATE.md")
+        templates = root / "docs" / "templates"
+        templates.mkdir(parents=True)
+        shutil.copy2(SOURCE / "docs" / "templates" / "TEMPLATE.md", templates / "TEMPLATE.md")
 
         fd(root, "new", "Smoke flow")
         design = features / "FD-001_SMOKE_FLOW.md"
