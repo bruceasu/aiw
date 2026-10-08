@@ -1,9 +1,9 @@
 # FD-038: Improve FD report, review, and status inspection
 
-**Status:** Open
-**Revision:** 4
+**Status:** Complete
+**Revision:** 9
 **Priority:** Medium
-**Test policy:** Independent
+**Test policy:** Waived
 **Evidence policy:** Dual
 
 ## Problem
@@ -34,18 +34,18 @@ Evidence 来源包括当前 checkout 的工作树与 HEAD、经 Git worktree lis
 - 保持 `aiw fd show <FD-ID>` 现有 FD 正文展示兼容，并补充结构化状态信息。
 - 覆盖活动和已归档 FD 的报告/review 查找；跨父分支与 worktree 的读取应为只读操作。
 - 不新增依赖，不创建 OpenSpec change。
-- FD-038 已声明 `Test policy: Independent`；保留其既有 legacy Tester/PM decision 路由，不把该策略设为新 FD 默认值。
+- PM 根据用户明确指示豁免本 FD 的 Tester 阶段。旧 Tester 收据与决策见 [FD-038-test-waiver-r1.md](reports/FD-038-test-waiver-r1.md)；当前状态进入独立 Reviewer 复核。
 
 ## Work items
 
 拆分映射：旧 1.1 拆为新 1.1–1.4；旧 1.2 对应新 1.5；旧 1.3 对应新 1.6。以下 ID 在 implementation-ready 后保持稳定。
 
-- [ ] 1.1 实现经验证的 evidence 来源解析器。 Size: M; Difficulty: Medium; Dependencies: none. Completion: 解析当前 checkout/HEAD、workspace.json 中记录的 worktree、branch、parent_branch 及 FD archive；验证 branch/worktree 对应关系和 repo 内路径；branch-only 内容通过 Git tree 读取，不 checkout；外部 symlink、无效来源给出可见诊断并跳过，不按 branch 名拼接文件系统路径。
-- [ ] 1.2 实现共享 evidence inventory、时间和去重。 Size: M; Difficulty: Medium; Dependencies: 1.1. Completion: 仅汇集当前 FD ID 前缀下的 reports/reviews Markdown 与同名 JSON 路径；工作树使用文件 mtime、branch-only 文件使用最近改动提交时间，统一显示 UTC；按 evidence kind 与内容摘要合并相同副本并保留全部来源；内容不同的版本分别列出。
-- [ ] 1.3 实现只读 evidence 列表与选择器。 Size: M; Difficulty: Medium; Dependencies: 1.2. Completion: 最新优先且最多 20 项；`--last` 不读 stdin；只有 stdin/stdout 都是终端才读取编号选择；空输入或 `q` 安全取消；非交互输出列表及用法提示后退出；无匹配给出清楚空结果。
-- [ ] 1.4 增加 `show-report` 和 `show-review` 命令。 Size: S; Difficulty: Low; Dependencies: 1.3. Completion: argparse 路由、插件 META 命令清单和帮助一致；两命令共享 inventory/selector，列表含时间、来源及可用 sidecar 路径，选择后只输出对应 Markdown 正文。
-- [ ] 1.5 扩展 `fd show` 状态摘要。 Size: S; Difficulty: Low; Dependencies: none. Completion: 保留旧 FD 正文及 receipt 输出，增加 status、经验证的 worktree/branch、当前 handoff 和 latest event；无当前 handoff、无 event、元数据未设置/不可验证均有明确表示。
-- [ ] 1.6 更新 CLI 用法文档与验收场景索引。 Size: S; Difficulty: Low; Dependencies: 1.1–1.5. Completion: 用法说明三个命令、来源验证、时间排序、交互/非交互与只读行为；Verification 列出供 Independent Tester 独立推导的每个可观察场景。
+- [x] 1.1 实现经验证的 evidence 来源解析器。 Size: M; Difficulty: Medium; Dependencies: none. Completion: 解析当前 checkout/HEAD、workspace.json 中记录的 worktree、branch、parent_branch 及 FD archive；验证 branch/worktree 对应关系和 repo 内路径；branch-only 内容通过 Git tree 读取，不 checkout；外部 symlink、无效来源给出可见诊断并跳过，不按 branch 名拼接文件系统路径。
+- [x] 1.2 实现共享 evidence inventory、时间和去重。 Size: M; Difficulty: Medium; Dependencies: 1.1. Completion: 仅汇集当前 FD ID 前缀下的 reports/reviews Markdown 与同名 JSON 路径；工作树使用文件 mtime、branch-only 文件使用最近改动提交时间，统一显示 UTC；按 evidence kind 与内容摘要合并相同副本并保留全部来源；内容不同的版本分别列出。
+- [x] 1.3 实现只读 evidence 列表与选择器。 Size: M; Difficulty: Medium; Dependencies: 1.2. Completion: 最新优先且最多 20 项；`--last` 不读 stdin；只有 stdin/stdout 都是终端才读取编号选择；空输入或 `q` 安全取消；非交互输出列表及用法提示后退出；无匹配给出清楚空结果。
+- [x] 1.4 增加 `show-report` 和 `show-review` 命令。 Size: S; Difficulty: Low; Dependencies: 1.3. Completion: argparse 路由、插件 META 命令清单和帮助一致；两命令共享 inventory/selector，列表含时间、来源及可用 sidecar 路径，选择后只输出对应 Markdown 正文。
+- [x] 1.5 扩展 `fd show` 状态摘要。 Size: S; Difficulty: Low; Dependencies: none. Completion: 保留旧 FD 正文及 receipt 输出，增加 status、经验证的 worktree/branch、当前 handoff 和 latest event；无当前 handoff、无 event、元数据未设置/不可验证均有明确表示。
+- [x] 1.6 更新 CLI 用法文档与验收场景索引。 Size: S; Difficulty: Low; Dependencies: 1.1–1.5. Completion: 用法说明三个命令、来源验证、时间排序、交互/非交互与只读行为；Verification 列出各可观察场景，供独立复核和后续经授权的验证参考。
 
 ## Acceptance
 
@@ -62,15 +62,31 @@ Evidence 来源包括当前 checkout 的工作树与 HEAD、经 Git worktree lis
 
 - 静态检查 Python argparse/META/dispatch 路由，stdout/stderr 与错误路径，workspace.json 和 Git ref/worktree 验证，branch-only 只读读取，证据排序/去重及用法帮助一致性。
 - Worker 在实现后运行一个仓库允许的 Python compile-only 命令；不运行最终构建、测试、formatter、linter 或依赖下载。
-- 独立 Tester 为每个场景单独报告覆盖状态：show 有效状态与元数据；缺失元数据/event；当前 handoff 与 latest event；两个命令各自的 `--last`；超过 20 项的排序、时间和来源；当前分支、FD worktree、parent branch 与 archive 发现；相同内容副本去重及不同内容版本保留；选择显示 Markdown 与 sidecar 路径；取消；非交互不阻塞；空结果；查询只读。
-- Tester 在运行任何测试前提交精确命令、工作目录、范围、预计时长和副作用。Planner 检查被调用代码后，只有在命令聚焦、离线、可检查且写入限于指定/临时路径时，才为精确 revision 与会话记录授权；否则等待用户批准。测试交接本身不构成执行授权。
-- 当前未运行实现验证或测试。
+- Reviewer 独立核对各验收场景对应的实现路径和静态证据，并标明哪些行为因本次豁免而没有运行时证据：show 有效状态与元数据；缺失元数据/event；当前 handoff 与 latest event；两个命令各自的 `--last`；超过 20 项的排序、时间和来源；当前分支、FD worktree、parent branch 与 archive 发现；相同内容副本去重及不同内容版本保留；选择显示 Markdown 与 sidecar 路径；取消；非交互不阻塞；空结果；查询只读。
+- 本 FD 的 Tester 阶段已按 [PM 豁免决策](reports/FD-038-test-waiver-r1.md)跳过。此前一次旧流程命令结果为 8 个用例中 7 个失败、1 个通过，且 PATH 使用了不含 worktree 新命令的旧 `aiw.exe`；该结果没有验证目标实现，也不是测试通过。本次不会重跑测试或生成 `test-accepted` 事件。
+- `python -c "from pathlib import Path; compile(Path('plugins/aiw-fd.py').read_text(encoding='utf-8'), 'plugins/aiw-fd.py', 'exec')"` compile-only 已通过（首次因 `workspace_info` 缩进错误失败，修正后同命令重跑通过）；未运行测试。
+
+- Worker 静态审阅已覆盖 Work Items 1.1–1.3 的来源校验、Git tree 只读枚举、去重、UTC 排序、最多 20 项、TTY 判断、取消及 `--last` 不读 stdin；尚未运行测试。
+- Worker 静态审阅已核对 `show-report`/`show-review` 的 argparse、插件命令清单及 dispatch 均接入共享 selector；尚未运行测试。
+- Worker 静态审阅已核对 `fd show` 保留原正文/receipt，并追加 status、已验证 workspace、当前 handoff 与最新 event；无 event、无活动 handoff、未设置/无效 workspace 均有显式状态。尚未运行测试。
+- Worker 根据 [首轮 Reviewer 报告](reviews/FD-038-review-r1.md)修复了解析后 worktree 路径未限定在仓库根目录的问题，并更正 Sources 中关于稳定 spec 的描述。修复报告：[FD-038-implementation-r2.md](reports/FD-038-implementation-r2.md)。修复后 Python compile-only 已通过；测试按 PM 豁免未运行。
+
+- 第二轮 Reviewer 已静态确认首轮 F-001 与 F-002 修复，并通过 Verification；详见 [第二轮独立审查报告](reviews/FD-038-review-r2.md)。本次测试豁免不代表未运行的行为已通过。
+- F-001 的解析后仓库根包含性检查和 F-002 的 Sources 更正均已复核。CLI 路径拒绝分支、跨来源查询、终端交互和只读性仍无运行时证据。
+
+## PM 决策
+
+- 用户明确要求跳过测试并修正状态；本 FD 的 Tester 阶段豁免，策略设为 `Waived`。不创建 `test-accepted`，不把此前的失败运行描述为通过。
+- PM 已授权一次性手工结束旧的已派发 Tester 收据，保留其事件与 session 历史，再请求独立 Reviewer。完整依据与剩余风险见 [FD-038-test-waiver-r1.md](reports/FD-038-test-waiver-r1.md)。
 
 ## TODO
 
-- [ ] 实现并静态审查经验证的 Git/worktree 来源解析、evidence inventory 和只读选择器。
-- [ ] 增加 `show-report`、`show-review`，扩展 `show` 概览并更新用法文档。
-- [ ] 按仓库授权策略完成 compile-only 检查、独立 Tester 报告与 PM 测试报告决策。
+- [x] 1.1 来源解析器：验证 workspace.json 与已注册 worktree、branch refs 和 repo 内路径；拒绝外部链接。Reviewer 第二轮已静态确认 F-001 修复；Worker compile-only 报告通过，未运行测试。
+- [x] 1.2 inventory：按 FD ID 枚举 reports/reviews 和 archive，合并规范化内容相同的副本，保留来源与 sidecar 路径。静态审阅已完成；最终 Python compile-only 已通过，未运行测试。
+- [x] 1.3 只读列表和交互/非交互选择器。
+- [x] 1.4 show-report/show-review 命令和帮助。
+- [x] 1.5 fd show 状态摘要。
+- [x] 1.6 用法文档与场景索引已完成；两项 Reviewer findings 已修复并通过第二轮复核。PM 已豁免 Tester；运行时行为仍未验证。
 
 ## Sources
 
@@ -78,5 +94,5 @@ Evidence 来源包括当前 checkout 的工作树与 HEAD、经 Git worktree lis
 - `plugins/aiw-fd.py`：当前 show/receipt 读取与 argparse 路由；evidence handoff 验证。
 - `plugins/aiw-git/git-wt.py` 与 `tests/test_fd027_wt_blackbox.py`：workspace.json 字段、worktree/ref 验证契约（仅静态参考）。
 - `docs/usage/aiw-fd.md`、`skills/work-management.md`、`docs/templates/`：CLI 使用说明、evidence 活动/归档路径、Dual evidence 格式。
-- `openspec/specs/fd-workflow/spec.md` 与 `openspec/specs/command-help-consistency/spec.md`：FD 查询/归档和公开命令帮助要求；本 FD 更新了稳定 FD workflow 规范。
+- `openspec/specs/fd-workflow/spec.md` 与 `openspec/specs/command-help-consistency/spec.md`：FD 查询/归档和公开命令帮助要求；本次实现遵循这些既有稳定规范，未修改稳定 spec。
 - `.ai/fd/<FD-ID>/workspace.json`：现有 worktree、branch、parent_branch 元数据契约。

@@ -1,0 +1,52 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-038",
+  "source_event": "FD-038-000008-implementation-ready",
+  "human_report": "FD-038-review-r2.md",
+  "data": {
+    "reviewer_session_ref": "fd038-reviewer-20261009-codex-review-r2",
+    "worker_session_ref": "fd038-worker-20261009-codex-repair-01",
+    "reviewed_head": "644b1cc",
+    "diff_base": "7b10005",
+    "decision": "verification-passed",
+    "findings": [],
+    "resolved_findings": [
+      {
+        "id": "F-001",
+        "status": "resolved",
+        "path": "plugins/aiw-fd.py",
+        "lines": "312-321",
+        "evidence": "workspace_info checks expected_worktree.is_relative_to(primary.resolve()) before accepting the path and matching its Git worktree registration; escaping paths raise FDError and are returned as unavailable metadata with a warning."
+      },
+      {
+        "id": "F-002",
+        "status": "resolved",
+        "path": "docs/features/FD-038_IMPROVE_FD_REPORT_REVIEW_AND_STATUS_INSPECTION.md",
+        "evidence": "Sources now state the implementation follows existing stable specs and did not modify them."
+      }
+    ],
+    "acceptance_results": {
+      "work_item_1_1": "static pass; resolved worktree containment is checked before workspace acceptance",
+      "work_item_1_2": "unchanged from first review; static evidence remains applicable; runtime unverified",
+      "work_item_1_3": "unchanged from first review; static evidence remains applicable; runtime unverified",
+      "work_item_1_4": "unchanged from first review; static evidence remains applicable; runtime unverified",
+      "work_item_1_5": "static pass; invalid workspace metadata is shown as unavailable with warnings",
+      "work_item_1_6": "Sources now match the actual stable-spec diff"
+    },
+    "commands_run": [
+      "python plugins/aiw-fd.py claim FD-038 FD-038-000008-implementation-ready --session fd038-reviewer-20261009-codex-review-r2",
+      "git diff --unified=20 7b10005..HEAD -- plugins/aiw-fd.py",
+      "git diff --unified=8 7b10005..HEAD -- docs/features/FD-038_IMPROVE_FD_REPORT_REVIEW_AND_STATUS_INSPECTION.md",
+      "git diff -- docs/features/FD-038_IMPROVE_FD_REPORT_REVIEW_AND_STATUS_INSPECTION.md docs/features/FEATURE_INDEX.md"
+    ],
+    "checks_skipped": [
+      "tests (PM waiver per explicit user instruction)",
+      "Reviewer compile-only command",
+      "final-artifact build",
+      "formatter and linter"
+    ],
+    "worker_reported_compile_only": "Worker report states the compile-only command passed after the fix; Reviewer did not rerun it.",
+    "residual_risk": "CLI path rejection, cross-source query, sorting/deduplication, terminal selection, non-interactive behavior and read-only behavior remain unverified at runtime under the explicit test waiver."
+  }
+}

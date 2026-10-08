@@ -7,7 +7,6 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
 | [FD-037](FD-037_AIW_SAY.md) | AIW Say 跨平台剪贴板与图形入口 | Open | Medium |
-| [FD-038](FD-038_IMPROVE_FD_REPORT_REVIEW_AND_STATUS_INSPECTION.md) | Improve FD report, review, and status inspection | Open | Medium |
 | [FD-041](FD-041_COLORIZE_AIW_FD_LIST_TERMINAL_OUTPUT.md) | 为 aiw fd list 提供终端表格与颜色 | Open | Medium |
 | [FD-011](archive/FD-011/FD-011_GIT_MERGE_TO.md) | Merge branches in an isolated worktree | Completed | Medium |
 
@@ -15,6 +14,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
+| [FD-038](FD-038_IMPROVE_FD_REPORT_REVIEW_AND_STATUS_INSPECTION.md) | Improve FD report, review, and status inspection | Complete | Medium |
 | [FD-001](archive/FD-001/FD-001_EVENT_DRIVEN_FD_WORKFLOW.md) | 事件驱动的 FD 工作流 | Complete | High |
 | [FD-002](archive/FD-002/FD-002_ACTIONABLE_FD_HANDOFF_RECOVERY_HINTS.md) | Actionable FD handoff recovery hints | Complete | Medium |
 | [FD-003](archive/FD-003/FD-003_COMPACT_CZ_RELEASE.md) | 精简 aiw-cz 发布包 | Complete | Medium |

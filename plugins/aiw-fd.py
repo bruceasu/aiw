@@ -20,7 +20,7 @@ META = {
     "name": "aiw-fd",
     "short": "manage numbered Feature Designs and role handoffs",
     "description": "Create, inspect, and advance FD-first work.",
-    "commands": ["new", "list", "show", "emit", "claim", "resume", "request-review", "refresh-worker", "recover-worker", "refresh-tester", "reopen", "close"],
+    "commands": ["new", "list", "show", "show-report", "show-review", "emit", "claim", "resume", "request-review", "refresh-worker", "recover-worker", "refresh-tester", "reopen", "close"],
     "readOnly": False,
     "mutatesFiles": True,
     "requiresConfirmation": False,
@@ -248,6 +248,341 @@ def latest_event(base: Path, name: str) -> tuple[Path, dict] | None:
         return None
     path = paths[-1]
     return path, json.loads(path.read_text(encoding="utf-8"))
+
+
+def git_result(base: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["git", "-C", str(base), *args], text=True,
+                          encoding="utf-8", errors="replace",
+                          capture_output=True, check=False)
+
+
+def registered_worktrees(base: Path) -> list[dict[str, str]]:
+    result = git_result(base, "worktree", "list", "--porcelain")
+    if result.returncode:
+        raise FDError(result.stderr.strip() or "could not list Git worktrees")
+    entries: list[dict[str, str]] = []
+    current: dict[str, str] = {}
+    for line in result.stdout.splitlines() + [""]:
+        if not line:
+            if current:
+                entries.append(current)
+                current = {}
+        elif line.startswith("worktree "):
+            current["path"] = line.removeprefix("worktree ")
+        elif line.startswith("branch "):
+            current["branch"] = line.removeprefix("branch ").removeprefix("refs/heads/")
+        elif line == "detached":
+            current["branch"] = ""
+    return entries
+
+
+def valid_local_branch(base: Path, branch: str) -> bool:
+    if not branch.strip() or git_result(base, "check-ref-format", "--branch", branch).returncode:
+        return False
+    return git_result(base, "show-ref", "--verify", "--quiet",
+                      f"refs/heads/{branch}").returncode == 0
+
+
+def workspace_info(base: Path, name: str) -> tuple[dict | None, list[str]]:
+    warnings: list[str] = []
+    try:
+        runtime = runtime_dir(base, name)
+        primary = runtime.parents[2]
+        metadata_path = runtime / "workspace.json"
+        if not metadata_path.exists() and not metadata_path.is_symlink():
+            return None, warnings
+        if (metadata_path.is_symlink() or (primary / ".ai").is_symlink()
+                or (primary / ".ai" / "fd").is_symlink()
+                or metadata_path.parent.is_symlink()
+                or not metadata_path.is_file()
+                or not metadata_path.resolve().is_relative_to(primary)):
+            raise FDError("workspace metadata path is missing or unsafe")
+        data = json.loads(metadata_path.read_text(encoding="utf-8"))
+        required = ("fd_id", "parent_branch", "branch", "worktree")
+        if not isinstance(data, dict) or any(
+                not isinstance(data.get(key), str) or not data[key].strip()
+                for key in required):
+            raise FDError("workspace metadata is incomplete")
+        expected_branch = f"feature/{name}"
+        worktree_path = primary / ".wt" / name
+        expected_worktree = worktree_path.resolve()
+        actual_worktree = Path(data["worktree"])
+        if not actual_worktree.is_absolute():
+            actual_worktree = primary / actual_worktree
+        if (
+            data["fd_id"].upper() != name
+            or data["branch"] != expected_branch
+            or not expected_worktree.is_relative_to(primary.resolve())
+            or actual_worktree.resolve() != expected_worktree
+            or (primary / ".wt").is_symlink()
+            or worktree_path.is_symlink()
+            or not expected_worktree.is_dir()
+        ):
+            raise FDError("workspace metadata does not match the expected FD worktree")
+        matching = [entry for entry in registered_worktrees(base)
+                    if Path(entry.get("path", "")).resolve() == expected_worktree]
+        if len(matching) != 1 or matching[0].get("branch") != expected_branch:
+            raise FDError("Git does not register the recorded FD worktree and branch")
+        if not valid_local_branch(base, data["branch"]):
+            raise FDError("recorded FD branch is not a valid local ref")
+        if not valid_local_branch(base, data["parent_branch"]):
+            raise FDError("recorded parent branch is not a valid local ref")
+        data["worktree"] = str(expected_worktree)
+        return data, warnings
+    except (FDError, OSError, RuntimeError, json.JSONDecodeError) as exc:
+        warnings.append(f"cannot use FD workspace metadata: {exc}")
+        return None, warnings
+
+
+def evidence_source_locations(base: Path, name: str) -> tuple[list[dict[str, str]], list[str]]:
+    branch_result = git_result(base, "symbolic-ref", "--quiet", "--short", "HEAD")
+    current_branch = branch_result.stdout.strip() if branch_result.returncode == 0 else ""
+    current_label = current_branch or "detached HEAD"
+    sources = [
+        {"kind": "worktree", "path": str(base.resolve()),
+         "label": f"worktree {current_label}"},
+        {"kind": "git", "ref": "HEAD", "label": f"HEAD ({current_label})"},
+    ]
+    data, warnings = workspace_info(base, name)
+    if data:
+        worktree = Path(data["worktree"])
+        if worktree.resolve() != base.resolve():
+            sources.append({"kind": "worktree", "path": str(worktree),
+                            "label": f"worktree {data['branch']}"})
+        known_refs = {current_branch} if current_branch else set()
+        for branch in (data["branch"], data["parent_branch"]):
+            if branch not in known_refs:
+                sources.append({"kind": "git", "ref": branch, "label": f"branch {branch}"})
+                known_refs.add(branch)
+    return sources, warnings
+
+
+def evidence_directories(name: str, kind: str) -> tuple[str, str]:
+    folder = {"report": "reports", "review": "reviews"}.get(kind)
+    if not folder:
+        raise FDError(f"unsupported evidence kind: {kind}")
+    return (f"docs/features/{folder}",
+            f"docs/features/archive/{name}/{folder}")
+
+
+def is_fd_markdown(path: str, name: str) -> bool:
+    filename = path.rsplit("/", 1)[-1]
+    return filename.startswith(name + "-") and filename.lower().endswith(".md")
+
+
+def add_evidence_record(inventory: dict, kind: str, relative: str, content: bytes,
+                        modified_at: float, source_label: str, sidecar: str,
+                        warnings: list[str]) -> None:
+    normalized = content.replace(b"\r\n", b"\n")
+    digest = hashlib.sha256(normalized).hexdigest()
+    key = (kind, digest)
+    item = inventory.get(key)
+    if item is None:
+        try:
+            rendered = normalized.decode("utf-8")
+        except UnicodeDecodeError:
+            warnings.append(f"skip non-UTF-8 evidence file: {relative} on {source_label}")
+            return
+        item = {"kind": kind, "digest": digest, "content": rendered,
+                "modified_at": modified_at, "sources": set(), "sidecars": set()}
+        inventory[key] = item
+    item["modified_at"] = max(item["modified_at"], modified_at)
+    item["sources"].add(f"{source_label}:{relative}")
+    if sidecar:
+        item["sidecars"].add(f"{source_label}:{sidecar}")
+
+
+def scan_worktree_evidence(base: Path, repo_root: Path, name: str, kind: str,
+                           source: dict[str, str], inventory: dict,
+                           warnings: list[str]) -> None:
+    source_root = Path(source["path"])
+    source_label = source["label"]
+    if source_root.is_symlink():
+        warnings.append(f"skip linked evidence worktree: {source_root}")
+        return
+    try:
+        source_root = source_root.resolve(strict=True)
+        if not source_root.is_relative_to(repo_root) or not source_root.is_dir():
+            warnings.append(f"skip unsafe evidence worktree: {source_root}")
+            return
+    except (OSError, RuntimeError) as exc:
+        warnings.append(f"cannot inspect evidence worktree {source_label}: {exc}")
+        return
+    for directory in evidence_directories(name, kind):
+        folder = source_root / Path(directory)
+        if not folder.exists() and not folder.is_symlink():
+            continue
+        if folder.is_symlink() or not folder.is_dir():
+            warnings.append(f"skip unsafe evidence directory: {directory} in {source_label}")
+            continue
+        try:
+            if not folder.resolve(strict=True).is_relative_to(repo_root):
+                warnings.append(f"skip evidence directory outside repository: {directory}")
+                continue
+            candidates = sorted(folder.iterdir())
+        except (OSError, RuntimeError) as exc:
+            warnings.append(f"cannot list evidence directory {directory}: {exc}")
+            continue
+        for candidate in candidates:
+            if not is_fd_markdown(candidate.name, name):
+                continue
+            relative = candidate.relative_to(source_root).as_posix()
+            try:
+                resolved = candidate.resolve(strict=True)
+                if (candidate.is_symlink() or not resolved.is_relative_to(repo_root)
+                        or not resolved.is_file()):
+                    warnings.append(f"skip unsafe evidence file: {relative}")
+                    continue
+                content = resolved.read_bytes()
+                modified_at = resolved.stat().st_mtime
+            except (OSError, RuntimeError) as exc:
+                warnings.append(f"cannot read evidence file {relative}: {exc}")
+                continue
+            sidecar_path = candidate.with_suffix(".json")
+            sidecar = ""
+            if not sidecar_path.is_symlink() and sidecar_path.is_file():
+                try:
+                    sidecar_resolved = sidecar_path.resolve(strict=True)
+                    if sidecar_resolved.is_relative_to(repo_root) and sidecar_resolved.is_file():
+                        sidecar = sidecar_path.relative_to(source_root).as_posix()
+                except (OSError, RuntimeError):
+                    pass
+            add_evidence_record(inventory, kind, relative, content, modified_at,
+                                source_label, sidecar, warnings)
+
+
+def git_tree_evidence(base: Path, name: str, kind: str, ref: str,
+                      source_label: str, inventory: dict,
+                      warnings: list[str]) -> None:
+    directories = evidence_directories(name, kind)
+    result = git_result(base, "ls-tree", "-r", "-z", ref, "--", *directories)
+    if result.returncode:
+        warnings.append(f"cannot list evidence on {source_label}: {result.stderr.strip()}")
+        return
+    records = {}
+    for raw in result.stdout.split("\0"):
+        if not raw or "\t" not in raw:
+            continue
+        metadata, relative = raw.split("\t", 1)
+        parts = metadata.split()
+        if len(parts) != 3 or parts[1] != "blob" or parts[0] == "120000":
+            continue
+        records[relative] = parts[0]
+    paths = set(records)
+    for relative, mode in records.items():
+        if mode not in {"100644", "100755"} or not is_fd_markdown(relative, name):
+            continue
+        blob = subprocess.run(["git", "-C", str(base), "show", f"{ref}:{relative}"],
+                              capture_output=True, check=False)
+        if blob.returncode:
+            warnings.append(f"cannot read evidence {relative} from {source_label}")
+            continue
+        timestamp = git_result(base, "log", "-1", "--format=%ct", ref, "--", relative)
+        try:
+            modified_at = float(timestamp.stdout.strip())
+        except ValueError:
+            warnings.append(f"cannot determine evidence time for {relative} on {source_label}")
+            continue
+        sidecar = relative[:-3] + ".json"
+        if sidecar not in paths or records.get(sidecar) == "120000":
+            sidecar = ""
+        add_evidence_record(inventory, kind, relative, blob.stdout, modified_at,
+                            source_label, sidecar, warnings)
+
+
+def evidence_inventory(base: Path, name: str, kind: str) -> tuple[list[dict], list[str]]:
+    repo_root = runtime_dir(base, name).parents[2]
+    sources, warnings = evidence_source_locations(base, name)
+    inventory: dict[tuple[str, str], dict] = {}
+    for source in sources:
+        if source["kind"] == "worktree":
+            scan_worktree_evidence(base, repo_root, name, kind, source, inventory, warnings)
+        else:
+            git_tree_evidence(base, name, kind, source["ref"], source["label"],
+                              inventory, warnings)
+    items = sorted(inventory.values(),
+                   key=lambda item: (-item["modified_at"], sorted(item["sources"])))
+    return items, warnings
+
+
+def evidence_time(timestamp: float) -> str:
+    return datetime.fromtimestamp(timestamp, timezone.utc).isoformat(timespec="seconds").replace(
+        "+00:00", "Z")
+
+
+def print_evidence_list(items: list[dict]) -> None:
+    for index, item in enumerate(items, start=1):
+        print(f"{index}. {evidence_time(item['modified_at'])}")
+        for source in sorted(item["sources"]):
+            print(f"   Markdown: {source}")
+        sidecars = sorted(item["sidecars"])
+        if sidecars:
+            for sidecar in sidecars:
+                print(f"   JSON: {sidecar}")
+        else:
+            print("   JSON: 无")
+
+
+def show_evidence(base: Path, name: str, kind: str, last: bool) -> None:
+    items, warnings = evidence_inventory(base, name, kind)
+    items = items[:20]
+    for warning in warnings:
+        print(f"fd: warning: {warning}", file=sys.stderr)
+    if not items:
+        print(f"{name} 没有可用的 {kind} 证据。")
+        return
+    if last:
+        print(items[0]["content"].rstrip())
+        return
+
+    print_evidence_list(items)
+    if not (sys.stdin.isatty() and sys.stdout.isatty()):
+        print(f"请在交互式终端运行 aiw fd show-{kind} {name} 后选择编号，或使用 --last。")
+        return
+
+    while True:
+        try:
+            choice = input("选择编号（回车或 q 取消）：").strip()
+        except EOFError:
+            return
+        if not choice or choice.lower() == "q":
+            return
+        if choice.isdecimal() and 1 <= int(choice) <= len(items):
+            print(items[int(choice) - 1]["content"].rstrip())
+            return
+        print(f"请输入 1 到 {len(items)} 之间的编号，或输入 q 取消。")
+
+
+def show_status_summary(base: Path, name: str, content: str,
+                        latest: tuple[Path, dict] | None) -> None:
+    print("\nStatus summary:")
+    print("Status:", status(content))
+    workspace, warnings = workspace_info(base, name)
+    if workspace:
+        print("Verified worktree:", workspace["worktree"])
+        print("Verified branch:", workspace["branch"])
+        print("Verified parent branch:", workspace["parent_branch"])
+    elif warnings:
+        print("Verified workspace: unavailable")
+        for warning in warnings:
+            print(f"Workspace warning: {warning}")
+    else:
+        print("Verified workspace: not configured")
+        print("Verified branch: not configured")
+
+    if not latest:
+        print("Current handoff: none")
+        print("Latest event: none")
+        return
+
+    event = latest[1]
+    if event.get("dispatch_state") in {"pending", "launching", "dispatched"}:
+        print(f"Current handoff ({event.get('created_at', '未记录')}):")
+        print(json.dumps(event, ensure_ascii=False, indent=2))
+    else:
+        print("Current handoff: none")
+    print(f"Latest event ({event.get('created_at', '未记录')}):")
+    print(json.dumps(event, ensure_ascii=False, indent=2))
 
 
 def current_test_acceptance(base: Path, name: str) -> dict | None:
@@ -1446,6 +1781,11 @@ def main() -> int:
     commands.add_parser("list", help="show the FD index")
     shown = commands.add_parser("show", help="show an FD and its last handoff")
     shown.add_argument("fd_id")
+    for command, kind in (("show-report", "report"), ("show-review", "review")):
+        evidence = commands.add_parser(command, help=f"list or display FD {kind} evidence")
+        evidence.add_argument("fd_id")
+        evidence.add_argument("--last", action="store_true",
+                              help="display the most recent verified evidence without prompting")
     emitted = commands.add_parser("emit", help="record a stage result and route the next role")
     emitted.add_argument("fd_id")
     emitted.add_argument("event_type", choices=sorted(ALLOWED))
@@ -1492,10 +1832,18 @@ def main() -> int:
             print((feature_dir(base) / "FEATURE_INDEX.md").read_text(encoding="utf-8"))
         elif args.command == "show":
             path = resolve_fd(base, args.fd_id)
-            print(path.read_text(encoding="utf-8"))
-            item = latest_event(base, fd_id(args.fd_id))
+            name = fd_id(args.fd_id)
+            content = path.read_text(encoding="utf-8")
+            print(content)
+            item = latest_event(base, name)
             if item:
                 print("\nLast handoff:", json.dumps(item[1], ensure_ascii=False))
+            show_status_summary(base, name, content, item)
+        elif args.command in {"show-report", "show-review"}:
+            name = fd_id(args.fd_id)
+            resolve_fd(base, name)
+            show_evidence(base, name, "report" if args.command == "show-report" else "review",
+                          args.last)
         elif args.command == "emit":
             emit(base, fd_id(args.fd_id), args.event_type, args.producer,
                  args.artifact, args.source_event)

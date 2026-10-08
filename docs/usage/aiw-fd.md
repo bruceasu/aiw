@@ -37,6 +37,40 @@ filename references remain valid after archive. An independent Reviewer emits
 handoff before completing it, then pass `--source-event <event-id>`.
 `aiw fd show` displays the last ID.
 
+#### Read-only status and evidence inspection
+
+```text
+aiw fd show FD-038
+aiw fd show-report FD-038
+aiw fd show-report FD-038 --last
+aiw fd show-review FD-038
+aiw fd show-review FD-038 --last
+```
+
+`show` keeps the FD Markdown and existing last-handoff receipt, then adds the
+FD status, verified worktree/branch/parent branch, active handoff (when the
+latest receipt is pending, launching, or dispatched), and latest event. Event
+summaries include their creation time and JSON. Missing workspace metadata,
+unverifiable metadata, no active handoff, and no event are reported explicitly.
+
+`show-report` and `show-review` inspect Markdown evidence named
+`FD-XXX-*.md` in the current checkout, `HEAD`, the verified FD worktree and
+its recorded local/parent branches, and the FD archive. The branch and
+worktree metadata must match registered Git refs/worktrees; invalid sources
+are skipped with a warning. Branch-only files are read from Git trees without
+checking out a branch. Results are sorted newest first, with UTC timestamps,
+Markdown source paths, and matching JSON sidecar paths when present. Worktree
+timestamps use file modification time; branch-only timestamps use the last
+commit that touched the file. Identical Markdown content is listed once per
+evidence kind with all source and sidecar paths retained.
+
+In a terminal with both stdin and stdout attached to a terminal, the commands
+show a numbered list and accept a selection. Blank input or `q` cancels.
+Outside an interactive terminal, they print the list and a usage hint without
+waiting for stdin. `--last` prints the newest Markdown body directly and does
+not read stdin. No matches produce a clear empty result. These three commands
+are read-only.
+
 Invoke `$fd-test` when you want black-box scenarios, test execution, or a
 factual test report. It is a standalone Skill: it does not emit FD events or
 change status, and its report is not an acceptance gate. Reviewer and other
