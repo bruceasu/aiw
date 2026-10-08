@@ -9,6 +9,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-011](FD-011_GIT_MERGE_TO.md) | Merge branches in an isolated worktree | In Progress | Medium |
 | [FD-037](FD-037_AIW_SAY.md) | AIW Say 跨平台剪贴板与图形入口 | Open | Medium |
 | [FD-038](FD-038_IMPROVE_FD_REPORT_REVIEW_AND_STATUS_INSPECTION.md) | Improve FD report, review, and status inspection | Planned | Medium |
+| [FD-040](FD-040_MOVE_FEATURE_TEMPLATES_TO_DOCS_TEMPLATES.md) | Move feature templates to docs/templates | Open | Medium |
 
 ## Completed
 
