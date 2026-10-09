@@ -1,0 +1,39 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-047",
+  "source_event": "FD-047-000004-implementation-ready",
+  "human_report": "FD-047-review.md",
+  "data": {
+    "stage": "verification",
+    "role": "reviewer",
+    "session_ref": "fd047-reviewer-20261009-d14e7b",
+    "result": "verification-passed",
+    "reviewed_range": "c5bdfe2..95c0513",
+    "reviewed_commits": [
+      "6caedc4",
+      "06fc7c5",
+      "c7edf0f",
+      "95c0513"
+    ],
+    "findings": [],
+    "acceptance_results": {
+      "active_precedence_and_unique_archive_fallback": "supported by static branch inspection",
+      "ambiguity_errors": "supported by static branch inspection",
+      "repository_boundary_and_symlink_checks": "preserved on selected path",
+      "set_status_audit_and_receipt_behavior": "preserved by shared resolver call path and existing audit transaction",
+      "archive_history_and_collision_behavior": "no archive mutation in diff; close still rejects occupied destination",
+      "documentation_and_stable_spec": "usage updated; stable spec has no conflicting ID-resolution rule"
+    },
+    "commands_run": [
+      "python plugins/aiw-fd.py claim FD-047 FD-047-000004-implementation-ready --session fd047-reviewer-20261009-d14e7b",
+      "python -B -c \"from pathlib import Path; compile(Path('plugins/aiw-fd.py').read_text(encoding='utf-8'), 'plugins/aiw-fd.py', 'exec')\"",
+      "git diff c5bdfe2..HEAD -- plugins/aiw-fd.py docs/usage/aiw-fd.md docs/features/reports/FD-047-implementation.md docs/features/reports/FD-047-implementation.json",
+      "git show --stat --oneline 6caedc4 06fc7c5 c7edf0f 95c0513",
+      "rg searches for resolver call sites and set_status implementation"
+    ],
+    "tests_run": [],
+    "runtime_validation_run": false,
+    "residual_risk": "Archive close collision behavior was not runtime-validated and is outside this FD."
+  }
+}

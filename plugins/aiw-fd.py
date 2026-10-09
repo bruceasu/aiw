@@ -157,12 +157,25 @@ def all_files(base: Path) -> list[Path]:
 
 def resolve_fd(base: Path, raw_id: str) -> Path:
     name = fd_id(raw_id)
-    matches = [path for path in all_files(base) if path.name.upper().startswith(name + "_")]
-    if len(matches) != 1:
-        raise FDError(f"expected one FD file for {name}, found {len(matches)}")
-    if not matches[0].resolve().is_relative_to(base) or matches[0].is_symlink():
+    active = [path for path in active_files(base)
+              if path.name.upper().startswith(name + "_")]
+    archived = [path for path in archived_files(base)
+                if path.name.upper().startswith(name + "_")]
+    if len(active) > 1:
+        candidates = ", ".join(path.relative_to(base).as_posix() for path in active)
+        raise FDError(f"multiple active FD files for {name}: {candidates}")
+    if active:
+        selected = active[0]
+    elif len(archived) == 1:
+        selected = archived[0]
+    elif archived:
+        candidates = ", ".join(path.relative_to(base).as_posix() for path in archived)
+        raise FDError(f"multiple archived FD files for {name}: {candidates}")
+    else:
+        raise FDError(f"expected one FD file for {name}, found 0")
+    if not selected.resolve().is_relative_to(base) or selected.is_symlink():
         raise FDError("FD path must be a regular file inside the repository")
-    return matches[0]
+    return selected
 
 
 def status(content: str) -> str:

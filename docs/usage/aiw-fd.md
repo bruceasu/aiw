@@ -24,6 +24,14 @@ records are supported, including unique REQ number abbreviations. Existing FD
 source lines are preserved; a new FD records the canonical full ID. Use matching
 versions of the FD plugin and Issue CLI so the structured interface is available.
 
+After reopening an archived FD, ID-based commands prefer its unique active
+file when archived history has the same ID. If there is no active file, a
+unique archived file remains addressable by ID. Multiple active files or
+multiple archived-only matches remain errors. `aiw fd list` continues to show
+active and archived records separately; read a historical archived copy from
+the path shown there. This selection rule does not change archive destination
+collision checks when closing a reopened FD.
+
 ### FD list output
 
 `aiw fd list` builds a plain-text table from active and archived FD documents,

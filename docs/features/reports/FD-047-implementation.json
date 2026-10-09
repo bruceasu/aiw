@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-047",
+  "source_event": "FD-047-000003-design-ready",
+  "human_report": "FD-047-implementation.md",
+  "data": {
+    "stage": "implementation",
+    "role": "worker",
+    "status": "implementation-ready",
+    "implemented_work_items": ["1.1", "1.2"],
+    "changes": [
+      "Prefer the unique active FD record, fall back to a unique archived record, and report ambiguity with candidate paths.",
+      "Preserve repository containment and symlink checks on the selected path.",
+      "Document reopened-FD resolution and archive-close collision behavior."
+    ],
+    "compile_only_command": "python -B -c \"from pathlib import Path; compile(Path('plugins/aiw-fd.py').read_text(encoding='utf-8'), 'plugins/aiw-fd.py', 'exec')\"",
+    "compile_only_result": "passed",
+    "tests_run": [],
+    "runtime_validation_run": false,
+    "review_status": "pending"
+  }
+}
