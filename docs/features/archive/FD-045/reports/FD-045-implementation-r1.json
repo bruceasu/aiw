@@ -1,0 +1,89 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "fd_id": "FD-045",
+  "kind": "worker-report",
+  "source_event": "FD-045-000009-design-ready",
+  "human_report": "FD-045-implementation-r1.md",
+  "data": {
+    "summary": "将 Agent Gateway 后端切换到有界 Codex App Server JSON-RPC 进程池，保留有限 Responses 兼容子集，并加入配置/MCP fail-closed preflight、严格 function schema 校验、usage/reservation 和进程清理。",
+    "work_items": {
+      "1.1": {
+        "status": "complete",
+        "commit": "891156b"
+      },
+      "1.2": {
+        "status": "complete",
+        "commit": "891156b"
+      },
+      "1.3": {
+        "status": "complete",
+        "commit": "2473fb6"
+      },
+      "1.4": {
+        "status": "complete",
+        "commit": "ba8ea4a"
+      },
+      "1.5": {
+        "status": "complete",
+        "commit": "e7e5e09",
+        "follow_up_commit": "b1619e2"
+      },
+      "1.6": {
+        "status": "complete",
+        "commit": "204e4fd"
+      },
+      "1.7": {
+        "status": "complete",
+        "commit": "204e4fd"
+      },
+      "1.8": {
+        "status": "complete",
+        "commit": "204e4fd"
+      },
+      "1.9": {
+        "status": "complete",
+        "commit": "678086b"
+      },
+      "1.10": {
+        "status": "complete",
+        "commit": "48b12c8"
+      },
+      "1.11": {
+        "status": "complete",
+        "commit": "204e4fd"
+      },
+      "1.12": {
+        "status": "complete",
+        "commit": "b1619e2"
+      },
+      "1.13": {
+        "status": "complete",
+        "commit": "83fd948"
+      },
+      "1.14": {
+        "status": "complete",
+        "commit": "same commit as this report"
+      }
+    },
+    "commands": [
+      "python -B scripts/compile.py (program/agent-gateway; passed)",
+      "python -B scripts/compile.py (rerun after source correction; passed)"
+    ],
+    "not_run": [
+      "Go tests",
+      "Codex/App Server runtime validation",
+      "SDK request",
+      "final artifact build",
+      "formatter/linter"
+    ],
+    "authorization_boundary": "CODEX_HOME reuse confirmed by user; runtime SDK/App Server execution was not authorized.",
+    "review_status": "pending independent Reviewer",
+    "residual_risks": [
+      "Compile-only validation does not confirm installed App Server protocol behavior or feature override effectiveness.",
+      "Ephemeral threads do not by themselves prove process memory or rollout data are cleared.",
+      "A deployment version mismatch fails closed but may make the Gateway unavailable until versions align."
+    ],
+    "fd_revision": 9,
+    "stage": "implementation-ready"
+  }
+}

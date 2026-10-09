@@ -46,6 +46,7 @@ func run() error {
         <-ctx.Done()
         shutdown,done:=context.WithTimeout(context.Background(),10*time.Second);defer done()
         err:=server.Shutdown(shutdown)
+		if cleanupErr:=gateway.appPool.close();cleanupErr!=nil&&err==nil { err=cleanupErr }
         if err==nil {
             select { case <-cleanupDone:case <-shutdown.Done():err=shutdown.Err() }
         }
@@ -59,7 +60,7 @@ func run() error {
     log.Printf("gateway listening mode=%s address=%s",c.Mode,c.Listen)
     err=server.ListenAndServe()
     if !errors.Is(err,http.ErrServerClosed) { cancel();<-stopped;return errors.New("gateway listen failed") }
-    if err=<-stopped;err!=nil { closeStore=false;_ = server.Close();return errors.New("gateway shutdown deadline exceeded; state lock preserved for operator reconciliation") }
+	if err=<-stopped;err!=nil { closeStore=false;_ = server.Close();return errors.New("gateway shutdown or backend cleanup failed; state lock preserved for operator reconciliation") }
     return nil
 }
 

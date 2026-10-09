@@ -7,7 +7,6 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
 | [FD-037](FD-037_AIW_SAY.md) | AIW Say 跨平台剪贴板与图形入口 | Open | Medium |
-| [FD-045](FD-045_AGENT_GATEWAY_CODEX_APP_SERVER.md) | Agent Gateway 改用 Codex App Server 并兼容 Agents SDK | Design | Medium |
 
 ## Completed
 
@@ -56,6 +55,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-042](archive/FD-042/FD-042_FD.md) | FD 工作流强制恢复与事件控制 | Complete | Medium |
 | [FD-043](archive/FD-043/FD-043_INDEPENDENT_ISSUE_IDS_AND_STORAGE_WITH_EXISTING_.md) | Independent Issue IDs and storage with existing REQ references | Complete | Medium |
 | [FD-044](archive/FD-044/FD-044_SAY_PLUGIN_PACKAGING.md) | 补齐 AIW Say 插件构建与安装 | Complete | Medium |
+| [FD-045](archive/FD-045/FD-045_AGENT_GATEWAY_CODEX_APP_SERVER.md) | Agent Gateway 改用 Codex App Server 并兼容 Agents SDK | Complete | Medium |
 | [FD-046](archive/FD-046/FD-046_FORCE_ARCHIVE_FDS_AS_COMPLETE.md) | Force archive FDs as Complete | Complete | Medium |
 | [FD-047](archive/FD-047/FD-047_RESOLVE_ACTIVE_AND_ARCHIVED_FD_ID_COLLISIONS.md) | Resolve active and archived FD ID collisions | Complete | Medium |
 
@@ -63,5 +63,4 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-022](FD-022_AGENT_GATEWAY_OPENAI_AGENTS_SDK.md) | Agent Gateway OpenAI Agents SDK compatibility | Deferred | Medium |
 | [FD-022](archive/FD-022/FD-022_AGENT_GATEWAY_OPENAI_AGENTS_SDK.md) | Agent Gateway OpenAI Agents SDK compatibility | Deferred | Medium |

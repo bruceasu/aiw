@@ -19,6 +19,7 @@ func intString(value int) string { return strconv.Itoa(value) }
 type Gateway struct {
     config Config
     store *Store
+    appPool *appPool
     ctx context.Context
     mu sync.Mutex
     active int
@@ -28,7 +29,7 @@ type Gateway struct {
 }
 
 func newGateway(ctx context.Context,c Config,s *Store) *Gateway {
-    return &Gateway{config:c,store:s,ctx:ctx,principalActive:map[string]int{},rpm:map[string][]time.Time{}}
+    return &Gateway{config:c,store:s,ctx:ctx,appPool:newAppPool(c),principalActive:map[string]int{},rpm:map[string][]time.Time{}}
 }
 
 func writeJSON(w http.ResponseWriter,status int,data any) {
@@ -143,12 +144,13 @@ func (g *Gateway) responses(w http.ResponseWriter,httpRequest *http.Request,p Pr
         if err!=nil { if observed,ok:=w.(*observedWriter);ok { observed.deliveryFailed=true } }
     }
     if request.Stream { emit=func(text string)error { err:=stream.text(text);deliveryError(err);return err } }
-    result:=execute(ctx,g.config,g.store,p,request,id,created,emit)
+    result:=executeApp(ctx,g.config,g.store,g.appPool,p,request,id,created,emit)
     if observed,ok:=w.(*observedWriter);ok {
         observed.record.State=result.State;observed.record.ErrorCode=result.Code;observed.record.ExecutionStarted=result.Started
         if !result.Started { observed.record.State="rejected" }
     }
     if request.Stream&&stream.started {
+		if err:=stream.finishText();err!=nil { deliveryError(err) }
         status:="completed";event:="response.completed"
         if result.State!="succeeded" { status="failed";event="response.failed" }
         deliveryError(stream.send(event,map[string]any{"response":responseObject(id,created,request,status,result.Texts,result.ToolCall,result.Usage,result.Code)}))
@@ -170,6 +172,10 @@ type eventStream struct {
     sequence int
     started bool
     texts []string
+	textActive bool
+	textFinished bool
+	textBuffer strings.Builder
+	textItemID string
 }
 
 func (s *eventStream) send(kind string,data map[string]any) error {
@@ -191,15 +197,23 @@ func (s *eventStream) begin() error {
 
 func (s *eventStream) text(text string) error {
     if err:=s.begin();err!=nil { return err }
-    index:=len(s.texts);itemID:=s.id+"_msg_"+intString(index)
-    s.texts=append(s.texts,text)
-    events:=[]struct{kind string;data map[string]any}{
-        {"response.output_item.added",map[string]any{"output_index":index,"item":map[string]any{"id":itemID,"type":"message","role":"assistant","status":"in_progress","content":[]any{}}}},
-        {"response.content_part.added",map[string]any{"item_id":itemID,"output_index":index,"content_index":0,"part":textPart("")}},
-        {"response.output_text.delta",map[string]any{"item_id":itemID,"output_index":index,"content_index":0,"delta":text,"logprobs":[]any{}}},
-        {"response.output_text.done",map[string]any{"item_id":itemID,"output_index":index,"content_index":0,"text":text,"logprobs":[]any{}}},
-        {"response.content_part.done",map[string]any{"item_id":itemID,"output_index":index,"content_index":0,"part":textPart(text)}},
-        {"response.output_item.done",map[string]any{"output_index":index,"item":message(itemID,text,"completed")}},
-    }
-    for _,event:=range events { if err:=s.send(event.kind,event.data);err!=nil { return err } };return nil
+	if s.textFinished { return errors.New("stream text already finalized") }
+	if !s.textActive {
+		s.textActive=true;s.textItemID=s.id+"_msg_0"
+		if err:=s.send("response.output_item.added",map[string]any{"output_index":0,"item":map[string]any{"id":s.textItemID,"type":"message","role":"assistant","status":"in_progress","content":[]any{}}});err!=nil{return err}
+		if err:=s.send("response.content_part.added",map[string]any{"item_id":s.textItemID,"output_index":0,"content_index":0,"part":textPart("")});err!=nil{return err}
+	}
+	s.textBuffer.WriteString(text)
+	return s.send("response.output_text.delta",map[string]any{"item_id":s.textItemID,"output_index":0,"content_index":0,"delta":text,"logprobs":[]any{}})
+}
+
+func (s *eventStream) finishText() error {
+	if !s.textActive||s.textFinished { return nil }
+	text:=s.textBuffer.String();s.textFinished=true;s.texts=[]string{text}
+	for _,event:=range []struct{kind string;data map[string]any}{
+		{"response.output_text.done",map[string]any{"item_id":s.textItemID,"output_index":0,"content_index":0,"text":text,"logprobs":[]any{}}},
+		{"response.content_part.done",map[string]any{"item_id":s.textItemID,"output_index":0,"content_index":0,"part":textPart(text)}},
+		{"response.output_item.done",map[string]any{"output_index":0,"item":message(s.textItemID,text,"completed")}},
+	} { if err:=s.send(event.kind,event.data);err!=nil{return err} }
+	return nil
 }

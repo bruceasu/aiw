@@ -1,5 +1,13 @@
 # Agent Gateway 独立程序
 
+## Codex 后端
+
+Gateway 使用 Codex App Server 的 stdio JSON-RPC，并按 `global_concurrency` 建立有界进程池。每个请求在一个空临时工作目录中启动新的 ephemeral thread；健康进程可复用。每个 turn 使用配置中的模型映射、只读且禁网的 sandbox，以及 `approvalPolicy=never`。
+
+子进程继承允许列表中的 `CODEX_HOME` 和现有登录状态，不复制凭据，也不修改用户 Codex 配置。启动 turn 前会读取有效配置和 MCP server 状态；只要 MCP 状态启用或无法确认，就拒绝该请求。Gateway 显式关闭本地工具、apps、plugins、hooks、web、浏览器/电脑使用、图像生成和多 agent 功能。协议异常或执行状态不明的进程会被丢弃，Gateway 不会自动重试。
+
+此版本支持无工具文本 SSE、`json_object` 和非流式顺序 function call。严格 function 参数只接受 FD-045 列明的 JSON Schema 子集；调用方仍负责执行 function 并在后续请求重放调用和结果。App Server 的实际 SDK/进程运行验证须单独授权；本地编译本身不验证安装版本、登录状态或运行时协议兼容性。
+
 `agent-gateway` 与 `aiw.exe` 同级安装，直接调用：
 
 - Windows：`agent-gateway.exe`

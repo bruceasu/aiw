@@ -94,6 +94,7 @@ func decodeRequest(data []byte) (Request,error) {
         names:=map[string]bool{}
         for _,tool:=range r.Tools {
             if tool.Type!="function"||!validToolName(tool.Name)||names[tool.Name]||!validJSONObject(tool.Parameters) { return r,errors.New("unsupported function tool") }
+            if tool.Strict!=nil&&*tool.Strict&&validateFunctionSchema(tool.Parameters)!=nil { return r,errors.New("unsupported strict function schema") }
             names[tool.Name]=true
         }
         if r.Text!=nil { return r,errors.New("text format with function tools is unsupported") }

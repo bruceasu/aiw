@@ -57,6 +57,29 @@ POST /v1/responses MUST 支持 model、文本 input（字符串/user/assistant �
 
 development MUST 限 loopback 监听与 peer；shared MUST 显式配置认证/限额/监听。应用不操作 Docker、挂载或登录供给；Proxy/Codex 可共容器，部署/宿主隔离由用户负责。独立 cwd 不提供请求间访问隔离，Linux 恶意脱组及共容器跨读为残余风险。
 
+### Requirement: Bounded Codex App Server backend
+
+Codex execution MUST use the versioned App Server stdio JSON-RPC protocol and a process pool bounded by `global_concurrency`. A pool process MUST serve at most one HTTP request at a time; each request MUST start a new ephemeral thread with a separate temporary cwd and MUST NOT accept caller-supplied thread IDs. Healthy App Server processes MAY be reused after a terminal turn. A process with an unknown protocol or execution state MUST be discarded and MUST NOT be retried automatically.
+
+The gateway MUST bound JSONL line length, total stdout, stderr, and notification buffering. It MUST negotiate experimental API support during `initialize`, send `initialized`, and verify effective configuration and MCP server status before every turn. Any enabled or unknown MCP server state MUST reject the turn. The child MUST reuse the configured `CODEX_HOME` authentication and MUST NOT copy credentials or edit user configuration. Local shell, unified exec, image viewing, sleep, apps, plugins, hooks, web search, browser/computer use, image generation, and multi-agent features MUST be explicitly disabled through process configuration; an unexpected server request MUST receive an error and invalidate the process.
+
+Each turn MUST explicitly use the configured logical model, a request-specific cwd, `approvalPolicy=never`, and a read-only sandbox with network access disabled. The gateway MUST mark quota usage started only after a successful `turn/start` response; an ambiguous start MUST retain its conservative reservation and MUST NOT be retried. Usage MUST come from the current turn only and remain unknown when absent or invalid.
+
+#### Scenario: Refuse an enabled or unknown MCP configuration
+
+- WHEN effective configuration or `mcpServerStatus/list` reports an enabled MCP server, an unknown server state, or an unreadable safety configuration
+- THEN the gateway MUST refuse the turn, discard that process slot, and MUST NOT start a model turn
+
+#### Scenario: Discard a process after an ambiguous turn start
+
+- WHEN `turn/start` may have been submitted but its successful response cannot be confirmed
+- THEN the gateway MUST keep the reservation conservative, discard the process, return an error, and MUST NOT retry the request
+
+#### Scenario: Reuse a healthy process with a fresh thread
+
+- WHEN a turn reaches a known terminal state
+- THEN the pool MAY reuse the process for another request, but MUST start a fresh ephemeral thread and cwd
+
 ### Requirement: Local graceful shutdown control
 
 Gateway MUST 保留 Ctrl+C/SIGTERM 关停，并提供 `stop --config <file>` 和 `POST /internal/shutdown` 本地控制入口。该入口 MUST 要求 loopback peer 和现有 enabled 主体 Bearer Key，拒绝非 POST、非空 body 和 query；不得触发模型执行或新增远程管理权限。所有 enabled 主体 Key 可用于本机控制。审计存储不可写时仍可执行经过认证的本地关停并记录脱敏错误，不以此放开其他 AI 请求的存储门禁。

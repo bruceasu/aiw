@@ -1,0 +1,29 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-045",
+  "source_event": "FD-045-000003-design-requested",
+  "human_report": "FD-045-blocker-20261010T000817+0900-auth-boundary.md",
+  "data": {
+    "stage": "design decision",
+    "role": "Planner",
+    "recorded_at": "2026-10-10T00:08:17+09:00",
+    "recorder_session": "fd045-planner-20261010-000600-5d24",
+    "observed_blocker": "App Server migration needs a decision on Codex authentication material, CODEX_HOME configuration, and MCP/plugin disabling. Current Gateway childEnv passes CODEX_HOME and HOME/USERPROFILE; reviewed Codex feature flags show multiple local capabilities default enabled, while the old Runner overrides only some flags. FD now records a %% NEEDS_INPUT and has not emitted design-ready.",
+    "confirmed_cause": "The current FD and code do not specify whether App Server reuses the user's Codex home, or establish how either isolation option preserves authentication while disabling external tools. The choice affects credential duplication, inherited configuration, MCP/plugin permissions, and cleanup responsibilities.",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      "Read Agent Gateway childEnv, Runner, README, and official Codex rust-v0.160.1 thread, turn, RPC, and feature flag sources.",
+      "Confirmed ephemeral thread and turn outputSchema fields, and that dynamicTools is experimental; elected not to use dynamicTools.",
+      "Did not modify authentication, copy credentials, or execute App Server."
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "User chose to reuse the existing CODEX_HOME and login state without copying authentication material.",
+    "actual_resolution": "The FD records reuse of current CODEX_HOME and login state, no credential copy, explicit disabling of Codex native tools/apps/plugins/hooks/web/subagents, and startup config/MCP status preflight. Any enabled or unknown MCP server causes the process slot to be rejected before turn/start; user config is not modified.",
+    "resolved_at": "2026-10-10T00:11:40+09:00",
+    "residual_risk_or_next_step": "This security preflight is not implemented or runtime-verified. Implementation must fail closed before turn/start; if static review cannot confirm the effective-config wire shape, stop and record a new Gate. Runtime SDK/App Server validation remains separately unauthorized.",
+    "reusable_improvement": "none; this is an FD-specific App Server authentication isolation decision and does not yet show a generic workflow defect.",
+    "improvement_status": "none"
+  }
+}
