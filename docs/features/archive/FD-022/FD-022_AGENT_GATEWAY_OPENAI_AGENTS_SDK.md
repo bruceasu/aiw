@@ -1,7 +1,7 @@
 # FD-022: Agent Gateway OpenAI Agents SDK compatibility
 
 **Status:** Deferred
-**Revision:** 7
+**Revision:** 9
 **Priority:** Medium  
 **Test policy:** External  
 **Evidence policy:** Dual
@@ -219,3 +219,6 @@ explicitly cancelled item, with its reason on the same line.
 
 **Closed:** 2026-10-04
 **Disposition reason:** 用户决定放弃；尚有 SDK 契约、strict:true 语义及运行证据未解决。
+
+**Reopened:** 2026-10-08
+**Reopen reason:** 用户授权恢复 FD-022 并建立一次简短交接；流式与结构化输出契约、strict:true 语义及运行证据仍待解决
