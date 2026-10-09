@@ -65,3 +65,6 @@ Work items are independently reviewable; preserve their IDs after implementation
 - `docs/usage/aiw-fd.md`: status override and archive behavior.
 - `openspec/specs/fd-workflow/spec.md`.
 - FD-022 active/archived duplicate and the captured `set-status` error in this conversation.
+
+**Completed:** 2026-10-09
+**Disposition reason:** Implementation and independent review passed; squash-delivered to develop.
