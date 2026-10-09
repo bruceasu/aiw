@@ -71,3 +71,5 @@ No changes to Reviewer event semantics, `set-status`, `force-emit`, Agent cancel
 - [Stable FD workflow specification](../../openspec/specs/fd-workflow/spec.md)
 - [CLI usage](../usage/aiw-fd.md)
 - `plugins/aiw-fd.py`: `force_transaction`, `close_locked`, and `evidence_moves`.
+
+**Completed:** 2026-10-09

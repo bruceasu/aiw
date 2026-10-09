@@ -25,9 +25,9 @@
     "status": "resolved",
     "human_decision_required": false,
     "human_decision_detail": "No additional decision is needed; the parent workspace was clean on resume.",
-    "actual_resolution": "On resume, develop was clean at commit f4873fc, which contains the FD-046 plan and prior review evidence. No pre-existing file was deleted or moved. The pending Worker receipt and FD both record revision 6; the CLI will validate the digest when the handoff is claimed.",
-    "resolved_at": "2026-10-09T22:39:57+09:00",
-    "residual_risk_or_next_step": "Create .wt/FD-046, verify workspace metadata, then claim FD-046-000006-work-requested and let the CLI validate the digest. Reviewer finding R1 remains unresolved.",
+    "actual_resolution": "On resume develop was clean. The .wt/FD-046 worktree was created and its metadata verified; Worker claimed FD-046-000006-work-requested and fixed R1. An independent Reviewer emitted FD-046-000008-verification-passed. The reviewed result was squash-delivered to develop as 66bc87e, and the worktree and feature branch were cleaned up by the workflow command.",
+    "resolved_at": "2026-10-09T22:47:17+09:00",
+    "residual_risk_or_next_step": "Normal close Complete is now eligible and will archive this blocker pair with the other FD-046 evidence. Runtime fault injection was not run; rollback behavior has static evidence only.",
     "reusable_improvement": "Keep the clean-parent preflight before worker claim and worktree creation; report and preserve uncommitted changes rather than staging or committing them automatically. No skill or template change is currently indicated.",
     "improvement_status": "assessed-no-change"
   }
