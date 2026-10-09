@@ -1,7 +1,7 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """aiw git untrack wrapper
 
-Remove file from HEAD while keeping working tree copy.
+Unset the upstream branch for a local branch.
 """
 import sys
 import os
@@ -14,30 +14,30 @@ core = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(core)
 
 META = {
-	'name': 'aiw git untrack',
-	'short': 'Remove file from HEAD while keeping working tree copy.',
-	'long': 'Removes a path from the index but leaves the file in the working tree (safe remove from history/commit).',
-	'usage': 'aiw git untrack <path>',
-	'args': [
-		{'flag': '<path>', 'description': 'The path to un-track.'}
-	],
-	'examples': ['aiw git untrack path/to/file']
+    'name': 'aiw git untrack',
+    'short': 'Unset the upstream branch for a local branch.',
+    'long': 'Removes the configured upstream from the specified local branch, or the current branch by default.',
+    'usage': 'aiw git untrack [branch]',
+    'args': [
+        {'flag': '[branch]', 'description': 'The local branch whose upstream to unset (default: current branch).'}
+    ],
+    'examples': [
+        'aiw git untrack',
+        'aiw git untrack feature/login',
+    ],
 }
 
 
 def main(argv):
-	help_flags = {'-h', '--help', '-help', '-?'}
-	if any(f in argv for f in help_flags):
-		core.print_help_meta(META)
-		return 0
-	if not argv:
-		print('usage: aiw git untrack <path>', file=sys.stderr)
-		return 2
-	return core.run_cmd(['git', 'rm', '--cached'] + argv)
+    help_flags = {'-h', '--help', '-help', '-?'}
+    if any(flag in argv for flag in help_flags):
+        core.print_help_meta(META)
+        return 0
+    if len(argv) > 1:
+        print(f'usage: {META["usage"]}', file=sys.stderr)
+        return 2
+    return core.run_cmd(['git', 'branch', '--unset-upstream'] + argv)
 
 
 if __name__ == '__main__':
-	rc = main(sys.argv[1:])
-	sys.exit(rc)
-
-
+    sys.exit(main(sys.argv[1:]))

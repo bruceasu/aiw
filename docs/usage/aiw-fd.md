@@ -6,7 +6,7 @@ the source of truth; `FEATURE_INDEX.md` is a lookup index. An approved Issue
 can be linked with `--issue`; a Task is optional.
 
 ```text
-aiw fd new "Improve report export" --issue REQ-123
+aiw fd new "Improve report export" --issue ISSUE-001
 aiw fd list
 aiw fd show FD-002
 aiw fd claim FD-002 FD-002-000002-design-requested --session <host-session-id>
@@ -17,6 +17,32 @@ aiw fd emit FD-002 verification-passed --producer reviewer --artifact docs/featu
 aiw fd request-review FD-001 --reason "文档在验收后更新"
 aiw fd reopen FD-004 --reason "继续未完成的验证"
 ```
+
+`--issue` uses `aiw issue show <id> --json` to resolve the canonical source ID,
+validate captured artifacts, and check approval. Both ISSUE and existing REQ
+records are supported, including unique REQ number abbreviations. Existing FD
+source lines are preserved; a new FD records the canonical full ID. Use matching
+versions of the FD plugin and Issue CLI so the structured interface is available.
+
+### FD list output
+
+`aiw fd list` builds a plain-text table from active and archived FD documents,
+grouped by status. Each row shows the FD ID, status, priority, and title.
+Status and priority use ANSI colors only when stdout is a TTY, `NO_COLOR` is
+unset, `TERM` is not `dumb`, and at least one recognized capability signal is present:
+
+- `TERM` starts with `alacritty`, `ansi`, `cygwin`, `eterm`, `foot`, `iterm`,
+  `kitty`, `konsole`, `linux`, `msys`, `putty`, `rxvt`, `screen`, `st-`,
+  `tmux`, `wezterm`, or `xterm`.
+- `TERM_PROGRAM` is `alacritty`, `apple_terminal`, `hyper`, `iterm.app`,
+  `kitty`, `tabby`, `vscode`, or `wezterm`.
+- `WT_SESSION` or `ANSICON` is nonempty, or `ConEmuANSI` is `on`.
+
+These signal comparisons are case-insensitive. Redirected output, disabled
+colors, and terminals without a recognized signal receive plain text with all
+fields preserved. Invisible format and control characters are removed from displayed
+fields; characters unavailable in the stdout encoding are escaped so listing
+does not fail.
 
 The creation event routes to Planner. Planner writes options, decision,
 acceptance, and numbered Work Items before `design-ready`. Worker implements
@@ -107,8 +133,11 @@ not reset the three-round limit.
 Auto uses the normal claim/source-event receipts. It stops if a role is
 already in flight, another Session owns a handoff, a material choice needs
 the human, or no separate Reviewer subagent is available. The request does
-not authorize tests, builds, network access, permission escalation, commits,
-merge, push, or deployment. Those steps still follow repository rules.
+not authorize tests, final builds, network access, permission escalation, push,
+or deployment. Under the shared work-management contract, a whole-lifecycle
+or isolation request authorizes focused local commits, squash delivery to the
+recorded parent after a passed review, verified worktree cleanup, and archive
+after delivery. Follow narrower repository rules.
 
 The event receipt includes FD ID, revision, type, producer, target role, and
 artifact path. `AIW_FD_ROLE_RUNNER` may name an executable that receives
@@ -222,3 +251,64 @@ record. Give the new FD its own Work Item IDs and record what remains to be
 verified. Never synthesize FD events or Reviewer approval from historical Core
 records. Archive or delete the old Task only through a separate explicit
 decision after reconciling its outstanding work.
+
+## 人工强制恢复（FD-042）
+
+### 选择恢复命令
+
+先用 `aiw fd show <fd-id>` 查看当前状态、最新事件与会话，再根据实际情况选择命令。
+
+| 情况 | 命令 | 前提或结果 |
+| --- | --- | --- |
+| 活动 Open / In Progress FD 的 pending Worker 交接已过期 | `refresh-worker` | 替换旧交接，新 Worker 领取新事件 |
+| 已确认 dispatched Worker 会话停止 | `recover-worker` | 必须匹配旧事件和会话，创建 pending Worker 交接 |
+| Pending Verification 的未领取交接已过期 | `request-review` | 创建当前 FD 内容对应的 Reviewer 交接 |
+| 继续归档的 Closed / Deferred FD | `reopen` | 返回活动 In Progress，保留旧证据并创建 Worker 交接 |
+| 重新评审归档的 Complete FD | `request-review` | 需要正常 Reviewer 通过证据，返回 Pending Verification |
+| 人工取消最新 dispatched 收据 | `cancel-event` | 只取消收据，不停止原 Agent，不创建后继交接 |
+| 人工覆盖活动 FD 状态 | `set-status` | 增加 revision，不归档文件，不生成审查证据 |
+| 强制归档为 Complete | `close <id> Complete --force --reason "..."` | 允许任一活动状态；设为 Complete 并归档，记录跳过的 Reviewer 门槛 |
+| 人工跳过流程门槛创建交接 | `force-emit` | 新事件始终 pending，后续显式 claim / resume |
+
+强制命令的审计记录不能替代独立 Reviewer 结果。取消或替换收据之前，操作者需要
+处理原会话可能继续写入的问题；这些命令不提供进程停止功能。
+
+以下人工强制命令仅操作活动 FD。`cancel-event`、`set-status` 和
+`force-emit` 要求 `--reason`（非空单行，最多 500 字）与 `--operator`
+（非空单行，最多 200 字）；`close --force` 要求非空单行 `--reason`，并从本地
+用户信息记录操作者。`--operator` 是声明身份，不是身份认证；审计同时记录本地用户。
+不带 `--force` 的普通 `close` 校验保持不变。
+
+```text
+aiw fd cancel-event FD-001 --expected-event FD-001-000004-implementation-ready --reason "Operator recovery" --operator maintainer
+aiw fd set-status FD-001 "In Progress" --reason "Resume implementation" --operator maintainer
+aiw fd force-emit FD-001 design-ready --producer planner --artifact docs/features/FD-001_EXAMPLE.md --reason "Restart Worker handoff" --operator maintainer
+aiw fd close FD-044 Complete --force --reason "Operator accepts completion without Reviewer evidence"
+```
+
+- `cancel-event` 只取消精确指定的最新 dispatched 收据，保留会话、pid 和历史字段，
+  不修改 FD 状态或 revision。取消收据不会停止 Agent；原会话仍可能继续写入。
+- `set-status` 可设为 Planned、Design、Open、In Progress、Pending Test、
+  Pending Test Acceptance、Pending Verification、Complete、Deferred 或 Closed。
+  它跳过状态转换和终态证据校验，增加 revision，更新索引，保留 Work Items、
+  收据和文件位置。原收据可能失效；应显式 force-emit 或按正常恢复路径继续。
+- `force-emit` 支持 emit 帮助中的全部已定义事件，跳过当前阶段、Work Items、
+  NEEDS_INPUT、证据和前序 claim 校验；仍要求仓库内存在的 artifact 和有效角色配对。
+  design-requested 的 producer 为 pm，decision-recorded 为 human，其余结果事件
+  沿用正常 producer；needs-decision 可用 pm/planner/worker/tester/reviewer/human。
+  新事件沿用定义的目标角色和结果状态；decision-recorded 按当前状态恢复角色，
+  终态目标为 pm；Independent FD 的 implementation-ready 仍指向 tester。
+  它增加 revision，将旧未结束收据取消并保留后继关联，新收据标记 `forced: true`，
+  始终停在 pending，配置了 runner 也不会自动启动。确认原会话已处理后可显式 claim/resume。
+
+`set-status Complete` 或强制 verification-passed 不代表审查通过，不会满足普通
+`close Complete` 或 archived `request-review` 对真实 Reviewer 验收的要求。
+`close Complete --force` 是显式例外：它会同时把活动 FD 设为 Complete 并归档，
+记录跳过状态与 Reviewer 检查的审计，但不会创建 Reviewer 通过证据。强制归档仍拒绝
+有 launching/dispatched 收据、目标冲突或不安全路径的 FD。归档 FD 使用现有
+reopen/request-review；其他强制命令不会自动搬移历史文件。
+
+每次成功操作在共享 `.ai/fd/<FD-ID>/operations/<uuid>.json` 留下审计，包含操作者、
+本地用户、原因、UTC 时间、原状态/事件、结果和跳过的检查；取消/强制事件保存审计引用。
+审计与 FD/收据/索引写入受现有 FD 锁保护，失败时恢复原内容；回滚不完整会明确报错。
+该锁不能阻止原 Agent 直接写文件，操作者仍负责处理并发写入风险。

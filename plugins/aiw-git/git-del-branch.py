@@ -80,7 +80,7 @@ def main(argv):
 
     if not core.git_confirm(prompt, rest):
         print("aborted", file=os.sys.stderr)
-        return
+        return 1
 
     # Delete local branch.
     if not remote_only:

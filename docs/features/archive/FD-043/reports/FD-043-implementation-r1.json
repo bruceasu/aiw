@@ -1,0 +1,16 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-043",
+  "source_event": "FD-043-000003-design-ready",
+  "human_report": "FD-043-implementation-r1.md",
+  "data": {
+    "summary": "独立 ISSUE 编号和存储，统一新旧记录定位并保持现有 REQ/FD 引用",
+    "worker_session": "fd043-worker-20261009-a31b8e",
+    "implementation_revision": "b4726c51",
+    "changed_paths": ["internal/issue/", "cmd/aiw-req/", "plugins/aiw-fd.py", "docs/usage/", "openspec/specs/requirement/spec.md", "skills/issue-management/SKILL.md", ".agents/skills/issue-management/SKILL.md"],
+    "commands": ["aiw git wt add FD-043", "aiw fd claim FD-043 FD-043-000003-design-ready --session fd043-worker-20261009-a31b8e", "path-scoped git add and git commit for each Work Item", "git diff office-dev...HEAD (targeted code paths and --stat)", "GOPROXY=off GOSUMDB=off python -B -c \"from pathlib import Path; import runpy; compile(Path('plugins/aiw-fd.py').read_text(encoding='utf-8'), 'plugins/aiw-fd.py', 'exec'); runpy.run_path('scripts/compile.py', run_name='__main__')\""],
+    "results": ["工作项 1.1-1.6 已提交", "compile-only exit 0，无最终可分发产物", "历史父工作区阻塞已解决", "测试和运行时验收未执行"],
+    "residual_risk": "仅 compile-only 与静态证据；新 FD 来源接口需要匹配版本 CLI。未构建或安装最终 CLI，未验证运行时编号、歧义、归档和 subprocess 场景。"
+  }
+}

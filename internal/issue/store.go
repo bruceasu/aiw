@@ -81,14 +81,12 @@ func ValidID(id string) bool {
 	return true
 }
 
-func Dir(id string) string { return filepath.Join(Root, id) }
-func archiveDir(id string) string { return filepath.Join(Root, archiveRoot, id) }
-func cancelledDir(id string) string { return filepath.Join(Root, cancelledRoot, id) }
+func Dir(id string) string { return filepath.Join(recordRoot(id), id) }
+func archiveDir(id string) string { return filepath.Join(recordRoot(id), archiveRoot, id) }
+func cancelledDir(id string) string { return filepath.Join(recordRoot(id), cancelledRoot, id) }
 
 func dirFor(id string) string {
-	for _, dir := range []string{Dir(id), archiveDir(id), cancelledDir(id)} {
-		if _, err := os.Stat(filepath.Join(dir, "requirement.toml")); err == nil { return dir }
-	}
+	if location, err := locateRecord(id); err == nil { return location.dir }
 	return Dir(id)
 }
 
@@ -100,6 +98,7 @@ func createExact(id, title string) (Meta, error) {
 	if !ValidID(id) {
 		return Meta{}, errors.New("invalid requirement id")
 	}
+	if _, err := locateRecord(id); err == nil { return Meta{}, fmt.Errorf("Issue already exists: %s", id) } else if !errors.Is(err, os.ErrNotExist) { return Meta{}, err }
 	for _, dir := range []string{Dir(id), archiveDir(id), cancelledDir(id)} {
 		if _, err := os.Stat(dir); err == nil {
 			return Meta{}, fmt.Errorf("requirement already exists: %s", dir)
@@ -108,9 +107,10 @@ func createExact(id, title string) (Meta, error) {
 		}
 	}
 	dir := Dir(id)
-	if err := os.MkdirAll(Root, 0o755); err != nil {
+	if err := os.MkdirAll(recordRoot(id), 0o755); err != nil {
 		return Meta{}, err
 	}
+	if err := checkRecordPath(recordRoot(id)); err != nil { return Meta{}, err }
 	if err := os.Mkdir(dir, 0o755); err != nil {
 		return Meta{}, err
 	}
@@ -126,19 +126,20 @@ func Read(id string) (Meta, error) {
 	if !ValidID(id) {
 		return Meta{}, errors.New("invalid requirement id")
 	}
-	dir := dirFor(id)
-	path := filepath.Join(dir, "requirement.toml")
+	location, err := locateRecord(id)
+	if err != nil { return Meta{}, err }
+	dir, path := location.dir, location.metadata
 	f, err := os.Open(path)
 	if err != nil {
 		return Meta{}, err
 	}
 	defer f.Close()
-	meta, err := readMeta(id, f)
+	meta, err := readMeta(location.id, f)
 	if err != nil { return Meta{}, err }
 	// Stored paths are historical hints. The registered kind resolves the
 	// current location after a directory move without rewriting the source file.
 	for kind, artifact := range meta.Artifacts {
-		if filename, ok := artifactFiles[kind]; ok {
+		if filename := artifactFilename(dir, kind); filename != "" {
 			artifact.Path = filepath.ToSlash(filepath.Join(dir, filename))
 			meta.Artifacts[kind] = artifact
 		}
@@ -213,7 +214,16 @@ func Write(meta Meta) error {
 		content += "\n[digest]\n"
 		for _, kind := range keys { content += fmt.Sprintf("%s = %q\n", kind, meta.Artifacts[kind].Digest) }
 	}
-	return atomicWrite(filepath.Join(dirFor(meta.ID), "requirement.toml"), []byte(content))
+	location, err := locateRecord(meta.ID)
+	if err != nil {
+		// Only createExact's new empty directory has no metadata yet.
+		if !errors.Is(err, os.ErrNotExist) { return err }
+		dir := Dir(meta.ID)
+		if err := checkRecordPath(dir); err != nil { return err }
+		location = recordLocation{meta.ID, dir, filepath.Join(dir, metadataName(recordRoot(meta.ID)))}
+	}
+	if location.id != meta.ID { return errors.New("write requires a canonical Issue id") }
+	return atomicWrite(location.metadata, []byte(content))
 }
 
 // LinkParent records split lineage on a child before its approval is fixed.
@@ -224,6 +234,10 @@ func LinkParent(childID, parentID string) (Meta, error) {
 	}
 	child, err := Read(childID)
 	if err != nil { return Meta{}, err }
+	parent, err := Read(parentID)
+	if err != nil { return Meta{}, err }
+	childID, parentID = child.ID, parent.ID
+	if childID == parentID { return Meta{}, errors.New("child and parent must be distinct Issue records") }
 	if child.ParentID == parentID { return child, nil }
 	if child.ParentID != "" { return Meta{}, fmt.Errorf("Issue %s already has parent %s", childID, child.ParentID) }
 	if child.Approval.Status != "PENDING" || child.Status == "ARCHIVED" || child.Status == "CANCELLED" {
@@ -231,10 +245,10 @@ func LinkParent(childID, parentID string) (Meta, error) {
 	}
 	seen := map[string]bool{childID: true}
 	for current := parentID; current != ""; {
-		if seen[current] { return Meta{}, errors.New("Issue parent link would create a cycle") }
-		seen[current] = true
 		parent, err := Read(current)
 		if err != nil { return Meta{}, err }
+		if seen[parent.ID] { return Meta{}, errors.New("Issue parent link would create a cycle") }
+		seen[parent.ID] = true
 		current = parent.ParentID
 	}
 	child.ParentID, child.Updated, child.Revision = parentID, time.Now().Format("2006-01-02"), child.Revision+1
@@ -256,14 +270,17 @@ func BindConversation(id, sessionID string) (Meta, error) {
 }
 
 func Capture(id, kind, source string) (Meta, Artifact, error) {
-	filename, ok := artifactFiles[kind]
+	kind = canonicalArtifactKind(kind)
+	_, ok := artifactFiles[kind]
 	if !ok { return Meta{}, Artifact{}, fmt.Errorf("unsupported artifact type: %s", kind) }
 	meta, err := Read(id)
 	if err != nil { return Meta{}, Artifact{}, err }
 	if meta.Status == "ARCHIVED" || meta.Status == "CANCELLED" { return Meta{}, Artifact{}, fmt.Errorf("requirement is %s", meta.Status) }
 	b, err := os.ReadFile(source)
 	if err != nil { return Meta{}, Artifact{}, err }
-	target := filepath.Join(dirFor(id), filename)
+	location, err := locateRecord(meta.ID)
+	if err != nil { return Meta{}, Artifact{}, err }
+	target := filepath.Join(location.dir, artifactFilename(location.dir, kind))
 	if samePath(source, target) { return Meta{}, Artifact{}, errors.New("capture source must not be the destination artifact") }
 	if err := atomicWrite(target, b); err != nil { return Meta{}, Artifact{}, err }
 	if meta.Status == "DRAFT" { meta.Status = "DISCOVERED" }
@@ -291,7 +308,9 @@ func Approve(id, decision, by, reason string) (Meta, error) {
 	meta.Revision++
 	if err := Write(meta); err != nil { return Meta{}, err }
 	entry := fmt.Sprintf("\n## %s\n- Decision: %s\n- By: %s\n- Reason: %s\n", meta.Approval.At, decision, by, reason)
-	f, err := os.OpenFile(filepath.Join(dirFor(id), "decision-log.md"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	location, err := locateRecord(meta.ID)
+	if err != nil { return Meta{}, err }
+	f, err := os.OpenFile(filepath.Join(location.dir, "decision-log.md"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil { return Meta{}, err }
 	defer f.Close()
 	if _, err := f.WriteString(entry); err != nil { return Meta{}, err }
@@ -336,15 +355,18 @@ func CompletePromotion(id, taskID string) (Meta, error) {
 	return meta, nil
 }
 
-func Archive(id, by, reason string) (Meta, error) { return moveTerminal(id, "ARCHIVED", archiveDir(id), by, reason) }
-func Cancel(id, by, reason string) (Meta, error) { return moveTerminal(id, "CANCELLED", cancelledDir(id), by, reason) }
+func Archive(id, by, reason string) (Meta, error) { return moveTerminal(id, "ARCHIVED", by, reason) }
+func Cancel(id, by, reason string) (Meta, error) { return moveTerminal(id, "CANCELLED", by, reason) }
 
-func moveTerminal(id, status, target, by, reason string) (Meta, error) {
+func moveTerminal(id, status, by, reason string) (Meta, error) {
 	meta, err := Read(id); if err != nil { return Meta{}, err }
 	if by == "" || reason == "" { return Meta{}, errors.New("terminal transition requires actor and reason") }
 	if meta.Status == "ARCHIVED" || meta.Status == "CANCELLED" { return meta, fmt.Errorf("requirement is already %s", meta.Status) }
 	if status == "ARCHIVED" && meta.Status != "DECIDED" && meta.Status != "APPROVED" && meta.Status != "PROMOTED" { return Meta{}, fmt.Errorf("requirement must be DECIDED, APPROVED, or PROMOTED before archive: %s", meta.Status) }
-	source := dirFor(id)
+	location, err := locateRecord(meta.ID); if err != nil { return Meta{}, err }
+	source := location.dir
+	suffix := archiveRoot; if status == "CANCELLED" { suffix = cancelledRoot }
+	target := filepath.Join(filepath.Dir(source), suffix, meta.ID)
 	if _, err := os.Stat(target); err == nil { return Meta{}, fmt.Errorf("requirement destination already exists: %s", target) } else if !errors.Is(err, os.ErrNotExist) { return Meta{}, err }
 	now := time.Now().Format(time.RFC3339)
 	meta.Status, meta.Terminal.By, meta.Terminal.At, meta.Terminal.Reason = status, by, now, reason
@@ -367,22 +389,31 @@ const (
 )
 
 func List(filter ListFilter) ([]Meta, error) {
-	roots := []string{Root}; if filter == ListArchived { roots = []string{filepath.Join(Root, archiveRoot)} }; if filter == ListCancelled { roots = []string{filepath.Join(Root, cancelledRoot)} }; if filter == ListAll { roots = []string{Root, filepath.Join(Root, archiveRoot), filepath.Join(Root, cancelledRoot)} }
+	locations, err := recordLocations(filter)
+	if err != nil { return nil, err }
 	var result []Meta
-	for _, root := range roots { entries, err := os.ReadDir(root); if errors.Is(err, os.ErrNotExist) { continue }; if err != nil { return nil, err }; for _, entry := range entries { if !entry.IsDir() || entry.Name() == archiveRoot || entry.Name() == cancelledRoot || !ValidID(entry.Name()) { continue }; meta, err := Read(entry.Name()); if err != nil { return nil, err }; result = append(result, meta) } }
+	for _, location := range locations {
+		meta, err := Read(location.id)
+		if err != nil { return nil, err }
+		result = append(result, meta)
+	}
 	sort.Slice(result, func(i, j int) bool { return result[i].ID < result[j].ID }); return result, nil
 }
 
 func ArtifactSnapshot(id string) ([]Artifact, error) {
 	meta, err := Read(id); if err != nil { return nil, err }
+	location, err := locateRecord(meta.ID); if err != nil { return nil, err }
 	keys := make([]string, 0, len(artifactFiles))
 	for key := range artifactFiles { keys = append(keys, key) }
 	sort.Strings(keys)
 	var result []Artifact
 	for _, key := range keys {
-		path := filepath.Join(dirFor(id), artifactFiles[key])
+		path := filepath.Join(location.dir, artifactFilename(location.dir, key))
+		if err := checkRecordPath(path); err != nil {
+			if _, recorded := meta.Artifacts[key]; !recorded && errors.Is(err, os.ErrNotExist) { continue }
+			return nil, err
+		}
 		b, err := os.ReadFile(path)
-		if errors.Is(err, os.ErrNotExist) { continue }
 		if err != nil { return nil, err }
 		artifact := Artifact{Kind: key, Path: filepath.ToSlash(path), Digest: digest(b)}
 		if recorded, ok := meta.Artifacts[key]; ok && recorded.Digest != artifact.Digest { return nil, fmt.Errorf("artifact digest changed since capture: %s", key) }
@@ -394,6 +425,7 @@ func ArtifactSnapshot(id string) ([]Artifact, error) {
 func atomicWrite(path string, data []byte) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil { return err }
 	temporaryRoot := filepath.Join(runtimeRoot(), "temporary")
+	if strings.HasPrefix(filepath.ToSlash(path), IssueRoot+"/") { temporaryRoot = filepath.Join(filepath.Dir(runtimeRoot()), "issues", "temporary") }
 	if err := os.MkdirAll(temporaryRoot, 0o700); err != nil { return err }
 	tmp, err := os.CreateTemp(temporaryRoot, ".requirement-*.tmp")
 	if err != nil { return err }

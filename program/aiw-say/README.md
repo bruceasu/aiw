@@ -4,15 +4,29 @@ AIW Say is a text-only translation plugin. The command accepts one text argument
 
 ## Build and install
 
-From the repository root, build the plugin with:
+On Windows, build both Windows and Linux amd64 plugin binaries and samples
+from the repository root with:
 
 ```powershell
-go build -o aiw-say.exe ./cmd/aiw-say
+build.bat say
 ```
 
-On Linux or WSL, use `-o aiw-say`. Put the executable in a directory searched by AIW's plugin discovery, such as a directory on `PATH`, and invoke it through `aiw say`.
+This produces `plugins/aiw-say/aiw-say.exe`, `plugins/aiw-say/aiw-say`,
+`aiw.toml.example`, and `profiles/` samples. `build.bat say` only builds;
+`build.bat plugins` builds and installs all plugins, including Say, under
+`C:\green\aiw\plugins\`. `build.bat all` includes that installation step.
+Say installation preserves an existing `aiw.toml` and does not install user profiles.
 
-Copy `aiw.toml.example` to `aiw.toml` beside the installed plugin or AIW executable. Set `model` to a model verified for your API account. The program never guesses a model name. You may instead provide `--config PATH`.
+For a manual Linux/WSL build, use `go build -o aiw-say ./cmd/aiw-say`.
+Put the executable in a directory searched by AIW's plugin discovery, such as
+a directory on `PATH`, and invoke it through `aiw say`.
+
+Copy `aiw.toml.example` to `aiw.toml` beside the installed Say executable
+(normally `C:\green\aiw\plugins\aiw-say\aiw.toml` on Windows), only if the
+destination does not already exist. A configuration beside the main `aiw`
+executable is not automatically read by Say. Set `model` to a model verified
+for your API account. The program never guesses a model name. You may instead
+provide `--config PATH`.
 
 Set `OPENAI_API_KEY` in the environment before using the plugin. Credentials are not accepted in TOML. Requests use the OpenAI Chat Completions API; the source text is sent to the configured API and is not written to application logs. `OPENAI_BASE_URL` can select an HTTPS-compatible endpoint; plain HTTP is accepted only for loopback addresses.
 

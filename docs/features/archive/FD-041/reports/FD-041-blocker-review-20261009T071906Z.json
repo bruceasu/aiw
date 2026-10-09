@@ -1,0 +1,31 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-041",
+  "source_event": "FD-041-000016-changes-requested",
+  "human_report": "FD-041-blocker-review-20261009T071906Z.md",
+  "data": {
+    "stage": "reviewer_gate",
+    "role": "pm",
+    "recorded_at": "2026-10-09T07:19:06+00:00",
+    "recorder_session": "fd041-pm-20261009-gate3-6b1a80",
+    "observed_blocker": "Three Reviewer outcomes in this implementation cycle are changes-requested. R3 found that docs/usage/aiw-fd.md overstates ANSI color availability for TTYs. The resulting Worker handoff FD-041-000016-changes-requested is pending.",
+    "confirmed_cause": "The Auto workflow's maximum of three Reviewer outcomes has been reached without a passing outcome. The remaining finding is a mismatch between CLI documentation and the implemented terminal capability allowlist.",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      "After R1, fixed ANSI column-width compensation and added terminal capability checks.",
+      "After R2, removed generic TERM suffix matching so unknown terminal names fail closed.",
+      "R3 statically confirmed the implementation findings were fixed and identified one remaining documentation mismatch.",
+      "Left FD-041-000016-changes-requested pending and did not claim a fourth Worker handoff because the three-outcome limit was reached.",
+      "Rechecked aiw git wt status FD-041; the office-dev parent workspace is currently clean."
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "Decide how to handle the remaining documentation finding and whether to authorize a new recovery cycle or an explicitly recorded PM Gate override. Auto must not reset the review count or claim the pending Worker handoff automatically.",
+    "actual_resolution": "The user explicitly requested tightening the documentation and continuing. PM records one exception to the three-failed-review stop gate: repair the R3 documentation finding and perform one additional independent review. Prior outcomes and the count are preserved. No Reviewer stage is waived. CLI and FD wording now matches the implemented capability checks.",
+    "resolved_at": "2026-10-09T07:41:19.472037+00:00",
+    "residual_risk_or_next_step": "Await the additional independent review before delivery and archive; terminal behavior remains unverified at runtime.",
+    "reusable_improvement": "Keep terminal capability documentation aligned with the implementation's allowlist and fail-closed behavior.",
+    "improvement_status": "applied-in-fd"
+  }
+}

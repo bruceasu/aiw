@@ -1,17 +1,17 @@
 id = "REQ00007-aiw-exec"
 title = "aiw-exec 远程程序包执行插件"
 parent_id = ""
-status = "DECIDED"
+status = "APPROVED"
 created = "2026-10-09"
 updated = "2026-10-09"
-revision = 2
+revision = 4
 
 [approval]
-status = "PENDING"
-by = ""
-at = ""
-reason = ""
-source_digest = ""
+status = "APPROVED"
+by = "GWJP\\svictor"
+at = "2026-10-09T16:15:02+09:00"
+reason = "User explicitly approved REQ00007 on 2026-10-09."
+source_digest = "b3de03d2df1f6d822fcdb7a174972b0724406167eb11b4ca35bfe84c245e9c6e"
 
 [promotion]
 status = "NOT_STARTED"
@@ -29,4 +29,4 @@ reason = ""
 requirement-plan = "docs/requirements/REQ00007-aiw-exec/requirement-plan.md"
 
 [digest]
-requirement-plan = "4153b684444d037f8668be3a039f5f22581141c10b6197c81fc80a34de5732c3"
+requirement-plan = "4d7084c59d48c1c577bb2758af5e6f2f3ce9d6c1185a195426c08ff41d966bdc"

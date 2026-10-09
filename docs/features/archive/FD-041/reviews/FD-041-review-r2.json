@@ -1,0 +1,59 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-041",
+  "source_event": "FD-041-000012-implementation-ready",
+  "human_report": "FD-041-review-r2.md",
+  "data": {
+    "reviewer_session": "fd041-reviewer-r2-20261009-6e42cd",
+    "reviewed_base": "4a445b27de935b39d45cfb1bd4276258abf33d36",
+    "reviewed_head": "fd70cc64f2e736c62fd86de694f370b0893fb281",
+    "outcome": "changes-requested",
+    "findings": [
+      {
+        "id": "FD041-R2-01",
+        "severity": "medium",
+        "path": "plugins/aiw-fd.py",
+        "line": 228,
+        "acceptance": "NO_COLOR, TERM=dumb, non-TTY and unsupported-color terminals emit no ANSI control codes",
+        "summary": "Unknown TERM names containing 256color or ending in -color still enable ANSI.",
+        "detail": "With stdout as a TTY, NO_COLOR absent, and TERM not equal to dumb, the broad substring/suffix checks return true for arbitrary names such as mystery-256color or mystery-color. These are static examples from the condition, not runtime observations; the name alone does not establish ANSI support.",
+        "requested_change": "Make detection fail closed for unrecognized terminal capability values; enable ANSI only for recognized terminals or explicit capability signals."
+      }
+    ],
+    "acceptance_results": {
+      "terminal_table": "Met by static inspection; ANSI padding accounts for the full opening and reset sequence for the mapped palette. Runtime visual alignment was not checked.",
+      "active_and_archived_sources": "Met by static inspection: fd_list_rows uses all_files, which combines active_files and archived_files, and extracts fields from FD documents.",
+      "redundant_color": "Met by static inspection: ANSI wrapping is applied only to status and priority values; disabled color returns original text.",
+      "color_fallbacks": "Partially met: NO_COLOR, TERM=dumb, and non-TTY disable color; arbitrary unknown TERM names matching broad suffix heuristics can enable ANSI.",
+      "safe_title_rendering": "Met by static inspection: Cc/Cf characters are filtered and unrepresentable characters use backslashreplace.",
+      "read_only_and_dependencies": "Met by static inspection: list rendering reads FD files and prints output; unicodedata is in the standard library."
+    },
+    "commands_run": [
+      "aiw fd resume FD-041",
+      "aiw fd claim FD-041 FD-041-000012-implementation-ready --session fd041-reviewer-r2-20261009-6e42cd",
+      "git status --short --branch",
+      "git merge-base office-dev HEAD",
+      "git rev-parse HEAD",
+      "git log --format=\"%h %s\" office-dev..HEAD",
+      "git diff --stat office-dev...HEAD",
+      "git diff --unified=35 office-dev...HEAD -- plugins/aiw-fd.py docs/usage/aiw-fd.md docs/features/FEATURE_INDEX.md",
+      "rg searches for terminal/list requirements, relevant renderer functions, and active/archive file enumeration",
+      "Read FD-041, R1 review, Worker R2 report and JSON, CLI docs, stable spec excerpts, and implementation diff"
+    ],
+    "skipped_checks": [
+      "tests",
+      "smoke",
+      "lint",
+      "formatting",
+      "full build",
+      "runtime CLI and terminal behavior",
+      "reviewer compile-only check"
+    ],
+    "worker_compile_only": "Worker report records a successful Python in-memory compile-only check; Reviewer did not rerun it.",
+    "residual_risks": [
+      "Unknown TERM names can still enable ANSI until the detection heuristic is narrowed.",
+      "Runtime color behavior, visual alignment, Unicode display widths, and Windows encoding behavior were not exercised."
+    ]
+  }
+}

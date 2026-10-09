@@ -23,6 +23,7 @@ func promoteIssue(args []string) error {
 	if (meta.Status != "APPROVED" && meta.Status != "PROMOTED") || meta.Approval.Status != "APPROVED" {
 		return fmt.Errorf("issue is not approved: %s", meta.ID)
 	}
+	if _, err := issue.ArtifactSnapshot(meta.ID); err != nil { return err }
 
 	cli, err := aiwCLI()
 	if err != nil {

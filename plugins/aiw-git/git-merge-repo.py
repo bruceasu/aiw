@@ -24,26 +24,27 @@ spec.loader.exec_module(core)
 
 META = {
     'name': 'aiw git merge-repo',
-    'short': 'Merge one repository into another under a subdirectory.',
+    'short': 'Import a repository under a directory on a review branch.',
     'long': (
-        'Rewrites the source repository history with a new leading directory, '
-        'merges it into the target repository on a temporary branch, then '
-        'leaves that review branch for manual approval. The selected target '
-        'branch is never changed automatically; conflicts are rejected and '
-        'the temporary source clone is removed.'
+        'Imports the source repository history under a directory in the target '
+        'repository. The command rewrites paths in a temporary source clone itself; '
+        'do not run aiw git subdir-to-root first. It creates a review branch in the '
+        'target and leaves the selected target branch unchanged for manual review. '
+        'The target repository must be clean. Conflicts stop the operation and '
+        'temporary resources are cleaned up.'
     ),
-    'usage': 'aiw git merge-repo <repo1> <repo2> [repo1-to-subdir]',
+    'usage': 'aiw git merge-repo <source-repo> <target-repo> [source-prefix]',
     'args': [
-        {'flag': '<repo1>', 'description': 'Source repository path or URL.'},
-        {'flag': '<repo2>', 'description': 'Target repository path.'},
+        {'flag': '<source-repo>', 'description': 'Source repository path or URL.'},
+        {'flag': '<target-repo>', 'description': 'Existing, clean target repository path.'},
         {
-            'flag': '[repo1-to-subdir]',
-            'description': 'Directory prefix for source files; prompted when omitted.',
+            'flag': '[source-prefix]',
+            'description': 'Directory under which source files will be placed; prompted when omitted.',
         },
     ],
     'examples': [
-        'aiw git merge-repo ../service-a ../monorepo service-a',
-        'aiw git merge-repo ../service-a ../monorepo',
+        'aiw git merge-repo ../service-a ../monorepo services/service-a',
+        'aiw git merge-repo https://example.com/service-a.git ../monorepo',
     ],
 }
 

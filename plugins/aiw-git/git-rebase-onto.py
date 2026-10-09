@@ -20,19 +20,27 @@ spec.loader.exec_module(core)
 
 META = {
     'name': 'aiw git rebase-onto',
-    'short': 'Move a branch onto a new base.',
+    'short': 'Replay a branch’s commits onto a different base.',
     'long': (
-        'Rebases a branch onto a different base using '
-        'git rebase --onto.'
+        'Takes commits reachable from [branch] after <old-base> and replays them '
+        'on top of <new-base>. If [branch] is omitted, the current branch is used. '
+        'This rewrites commit IDs. The command asks for confirmation by default; '
+        '--force only skips that prompt and does not force-push.'
     ),
     'usage': (
         'aiw git rebase-onto '
         '<new-base> <old-base> [branch] [--force]'
     ),
-    'args': [],
+    'args': [
+        {'flag': '<new-base>', 'description': 'The commit or branch to place the rebased commits on.'},
+        {'flag': '<old-base>', 'description': 'The old upstream/base; commits after it are replayed.'},
+        {'flag': '[branch]', 'description': 'The branch to rebase (default: current branch).'},
+        {'flag': '--force', 'description': 'Skip the confirmation prompt; does not force-push.'},
+    ],
     'examples': [
-        'aiw git rebase-onto develop master feature',
+        'aiw git rebase-onto main feature/base feature/work',
         'aiw git rebase-onto main old-main',
+        'aiw git rebase-onto main old-main feature/work --force',
     ],
 }
 

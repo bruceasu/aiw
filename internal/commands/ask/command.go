@@ -17,7 +17,7 @@ import (
 )
 
 type options struct {
-	chat, resume                   bool
+	chat, resume, jsonOutput       bool
 	systemPrompt, systemPromptFile string
 	allowPaths                     []string
 	prompt                         string
@@ -40,13 +40,18 @@ type Answer struct {
 func Dispatch(args []string) error {
 	for _, a := range args {
 		if a == "-h" || a == "--help" {
-			fmt.Println("Usage: aiw ask [--chat|--resume] [--system-prompt TEXT] [--system-prompt-file FILE] [--allow-path PATH] \"PROMPT\"")
+			fmt.Println("Usage: aiw ask [--json] [--system-prompt TEXT] [--system-prompt-file FILE] [--allow-path PATH] \"PROMPT\"")
+			fmt.Println("       aiw ask [--chat|--resume] [--system-prompt TEXT] [--system-prompt-file FILE] [--allow-path PATH]")
+			fmt.Println("--json prints the validated Answer object on stdout; history is still saved. It cannot be combined with --chat or --resume.")
 			return nil
 		}
 	}
 	opts, err := parse(args)
 	if err != nil {
 		return err
+	}
+	if opts.jsonOutput && (opts.chat || opts.resume) {
+		return errors.New("--json cannot be combined with --chat or --resume")
 	}
 	if opts.chat {
 		return chat(opts)
@@ -68,6 +73,8 @@ func parse(args []string) (options, error) {
 			o.chat = true
 		case "--resume":
 			o.resume = true
+		case "--json":
+			o.jsonOutput = true
 		case "--system-prompt", "--system-prompt-file":
 			if i+1 >= len(args) {
 				return o, fmt.Errorf("missing value for %s", args[i])
@@ -229,10 +236,14 @@ func turnWithPolicy(o options, prompt, session string, policy *readPolicy, inter
 		return persist(prompt, "error", message, "", session), errors.New(message)
 	}
 	b, _ := json.MarshalIndent(a, "", "  ")
-	fmt.Println(a.Summary)
-	if len(a.Steps) > 0 {
-		for i, s := range a.Steps {
-			fmt.Printf("%d. %v\n", i+1, s["title"])
+	if o.jsonOutput {
+		fmt.Println(string(b))
+	} else {
+		fmt.Println(a.Summary)
+		if len(a.Steps) > 0 {
+			for i, s := range a.Steps {
+				fmt.Printf("%d. %v\n", i+1, s["title"])
+			}
 		}
 	}
 	return persist(prompt, a.Status, "", string(b), session), nil

@@ -6,11 +6,14 @@ from __future__ import annotations
 import argparse
 from contextlib import contextmanager
 import hashlib
+import getpass
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import unicodedata
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,7 +23,7 @@ META = {
     "name": "aiw-fd",
     "short": "manage numbered Feature Designs and role handoffs",
     "description": "Create, inspect, and advance FD-first work.",
-    "commands": ["new", "list", "show", "show-report", "show-review", "emit", "claim", "resume", "request-review", "refresh-worker", "recover-worker", "refresh-tester", "reopen", "close"],
+    "commands": ["new", "list", "show", "show-report", "show-review", "emit", "claim", "resume", "request-review", "refresh-worker", "recover-worker", "refresh-tester", "reopen", "close", "cancel-event", "set-status", "force-emit"],
     "readOnly": False,
     "mutatesFiles": True,
     "requiresConfirmation": False,
@@ -57,6 +60,9 @@ ROLE_PRODUCERS = {
     "changes-requested": "reviewer",
     "verification-passed": "reviewer",
 }
+DEFINED_STATUSES = {"Planned", "Design", "Open", "In Progress", "Pending Test",
+                    "Pending Test Acceptance", "Pending Verification", "Complete",
+                    "Deferred", "Closed"}
 DEFAULT_TEMPLATE = """# {{FD_ID}}: {{TITLE}}
 
 **Status:** Planned
@@ -181,6 +187,97 @@ def fd_digest(content: bytes | str) -> str:
 def title(content: str) -> str:
     heading = content.splitlines()[0].lstrip("# ").strip()
     return re.sub(r"^FD-\d+\s*[:：]\s*", "", heading, flags=re.IGNORECASE)
+
+
+def terminal_text(value: str) -> str:
+    visible = "".join(char for char in value
+                      if unicodedata.category(char) not in {"Cc", "Cf"})
+    encoding = getattr(sys.stdout, "encoding", None)
+    if not encoding:
+        return visible
+    return visible.encode(encoding, errors="backslashreplace").decode(encoding)
+
+
+def fd_list_rows(base: Path) -> dict[str, list[tuple[str, str, str, str]]]:
+    groups: dict[str, list[tuple[str, str, str, str]]] = {}
+    for path in all_files(base):
+        content = path.read_text(encoding="utf-8")
+        fd = path.name.split("_", 1)[0]
+        state = status(content)
+        priority_match = PRIORITY_RE.search(content)
+        priority = priority_match.group(1).strip() if priority_match else "—"
+        row = tuple(terminal_text(value) for value in
+                    (fd, state, priority, title(content)))
+        groups.setdefault(state, []).append(row)
+    return groups
+
+
+def supports_ansi_color() -> bool:
+    is_tty = getattr(sys.stdout, "isatty", None)
+    if (not is_tty or not is_tty() or "NO_COLOR" in os.environ
+            or os.environ.get("TERM", "").strip().casefold() == "dumb"):
+        return False
+    term = os.environ.get("TERM", "").strip().casefold()
+    term_program = os.environ.get("TERM_PROGRAM", "").casefold()
+    color_term_prefixes = (
+        "alacritty", "ansi", "cygwin", "eterm", "foot", "iterm", "kitty",
+        "konsole", "linux", "msys", "putty", "rxvt", "screen", "st-",
+        "tmux", "wezterm", "xterm",
+    )
+    color_programs = {
+        "alacritty", "apple_terminal", "hyper", "iterm.app", "kitty",
+        "tabby", "vscode", "wezterm",
+    }
+    windows_ansi = bool(os.environ.get("WT_SESSION") or os.environ.get("ANSICON")
+                        or os.environ.get("ConEmuANSI", "").casefold() == "on")
+    return bool(term.startswith(color_term_prefixes) or term_program in color_programs
+                or windows_ansi)
+
+
+def ansi_color(value: str, code: str, enabled: bool) -> str:
+    if not enabled:
+        return value
+    return f"\x1b[{code}m{value}\x1b[0m"
+
+
+def render_fd_list(base: Path, color: bool = False) -> str:
+    groups = fd_list_rows(base)
+    if not groups:
+        return "No feature designs found."
+    status_order = ("Planned", "Design", "Open", "In Progress", "Pending Test",
+                    "Pending Test Acceptance", "Pending Verification", "Complete",
+                    "Deferred", "Closed")
+    order = {value: index for index, value in enumerate(status_order)}
+    status_colors = {"Planned": "36", "Design": "36", "Open": "32",
+                     "In Progress": "33", "Pending Test": "35",
+                     "Pending Test Acceptance": "35", "Pending Verification": "33",
+                     "Complete": "32", "Deferred": "31", "Closed": "90"}
+    priority_colors = {"High": "31", "Medium": "33", "Low": "36"}
+    lines: list[str] = []
+    for state in sorted(groups, key=lambda value: (order.get(value, len(order)), value.casefold())):
+        rows = groups[state]
+        state_color = status_colors.get(state, "")
+        widths = (
+            max(len("FD"), *(len(row[0]) for row in rows)),
+            max(len("STATUS"), *(len(row[1]) for row in rows)),
+            max(len("PRIORITY"), *(len(row[2]) for row in rows)),
+        )
+        lines.extend((f"{ansi_color(terminal_text(state), state_color, color)} ({len(rows)})",
+                      f"{'FD':<{widths[0]}}  {'STATUS':<{widths[1]}}  "
+                      f"{'PRIORITY':<{widths[2]}}  TITLE"))
+        for fd, row_state, priority, row_title in rows:
+            priority_color = priority_colors.get(priority, "")
+            colored_state = ansi_color(row_state, state_color, color)
+            colored_priority = ansi_color(priority, priority_color, color)
+            state_width = widths[1] + (
+                len(f"\x1b[{state_color}m\x1b[0m") if color and state_color else 0)
+            priority_width = widths[2] + (
+                len(f"\x1b[{priority_color}m\x1b[0m")
+                if color and priority_color else 0)
+            lines.append(f"{fd:<{widths[0]}}  {colored_state:<{state_width}}  "
+                         f"{colored_priority:<{priority_width}}  {row_title}")
+        lines.append("")
+    return "\n".join(lines).rstrip()
 
 
 def independent_testing(content: str) -> bool:
@@ -1091,6 +1188,7 @@ def request_review(base: Path, name: str, reason: str) -> None:
             latest = latest_event(base, name)
             if (not latest or latest[1].get("event_type") != "verification-passed"
                     or latest[1].get("producer") != "reviewer"
+                    or latest[1].get("forced")
                     or latest[1].get("dispatch_state") != "acknowledged"):
                 raise FDError("request-review requires an acknowledged Reviewer verification-passed event")
 
@@ -1255,6 +1353,196 @@ def recover_worker(base: Path, name: str, expected_event: str,
                               + "; ".join(rollback_errors)) from exc
             raise
     dispatch(base, target, event)
+
+
+def force_identity(reason: str, operator: str) -> None:
+    for label, value, limit in (("reason", reason, 500), ("operator", operator, 200)):
+        if (not value.strip() or len(value) > limit
+                or any(ord(char) < 32 or ord(char) == 127 for char in value)):
+            raise FDError(f"--{label} requires non-empty single-line text of at most {limit} characters")
+
+
+def force_context(base: Path, name: str, action: str, reason: str,
+                  operator: str) -> tuple[Path, str, tuple[Path, dict] | None, Path, dict]:
+    force_identity(reason, operator)
+    fd_path = resolve_fd(base, name)
+    if is_archived_fd(base, fd_path):
+        raise FDError("force operations require an active FD; use reopen or request-review for archives")
+    content = fd_path.read_text(encoding="utf-8")
+    revision(content)
+    if status(content) not in DEFINED_STATUSES:
+        raise FDError("force operations require a defined current FD status")
+    previous = latest_event(base, name)
+    now = datetime.now(timezone.utc).isoformat()
+    audit_path = runtime_dir(base, name) / "operations" / f"{uuid.uuid4().hex}.json"
+    audit = {"schema": "aiw.fd.operation.v1", "fd_id": name, "action": action,
+             "forced": True, "operator": operator.strip(), "local_user": getpass.getuser(),
+             "reason": reason.strip(), "created_at": now,
+             "fd_path": fd_path.relative_to(base).as_posix(),
+             "previous_status": status(content), "previous_revision": revision(content),
+             "previous_event": previous[1] if previous else None}
+    return fd_path, content, previous, audit_path, audit
+
+
+def force_transaction(base: Path, changes: dict[Path, bytes],
+                      refresh_index: bool = False) -> None:
+    """Commit one locked recovery operation; restore every attempted write on failure."""
+    index_path = feature_dir(base) / "FEATURE_INDEX.md"
+    paths = list(changes)
+    if refresh_index:
+        paths.append(index_path)
+    originals = {}
+    for path in paths:
+        if path.is_symlink() or (path.exists() and not path.is_file()):
+            raise FDError(f"unsafe recovery destination: {path}")
+        originals[path] = path.read_bytes() if path.exists() else None
+    attempted = []
+    try:
+        for path, value in changes.items():
+            attempted.append(path)
+            atomic_bytes(path, value)
+        if refresh_index:
+            attempted.append(index_path)
+            update_index(base)
+    except Exception as exc:
+        errors = []
+        for path in reversed(attempted):
+            try:
+                if originals[path] is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    atomic_bytes(path, originals[path])
+            except Exception as rollback_error:
+                errors.append(f"{path}: {type(rollback_error).__name__}: {rollback_error}")
+        if errors:
+            raise FDError("force operation rollback incomplete: " + "; ".join(errors)) from exc
+        raise
+
+
+def json_bytes(value: dict) -> bytes:
+    return (json.dumps(value, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+
+
+def cancel_event(base: Path, name: str, expected_event: str, reason: str,
+                 operator: str) -> None:
+    with fd_lock(base, name):
+        _, _, previous, audit_path, audit = force_context(
+            base, name, "cancel-event", reason, operator)
+        if (not previous or previous[1].get("event_id") != expected_event
+                or previous[1].get("fd_id") != name
+                or previous[1].get("dispatch_state") != "dispatched"):
+            raise FDError("cancel-event requires the exact latest dispatched event ID")
+        old_path, old_event = previous
+        audit_ref = audit_path.relative_to(runtime_dir(base, name)).as_posix()
+        cancelled = {**old_event, "dispatch_state": "cancelled",
+                     "cancelled_at": audit["created_at"], "cancellation_reason": reason.strip(),
+                     "cancelled_by": operator.strip(), "cancellation_operation": audit_ref}
+        audit.update({"result_status": audit["previous_status"],
+                      "result_event": cancelled, "skipped_checks": ["agent-session-stopped"],
+                      "agent_stopped": False})
+        force_transaction(base, {audit_path: json_bytes(audit), old_path: json_bytes(cancelled)})
+    print(f"cancelled {expected_event}; receipt only, Agent has NOT been stopped; audit: {audit_path}")
+
+
+def set_status(base: Path, name: str, outcome: str, reason: str, operator: str) -> None:
+    if outcome not in DEFINED_STATUSES:
+        raise FDError(f"undefined FD status: {outcome}")
+    with fd_lock(base, name):
+        fd_path, content, _, audit_path, audit = force_context(
+            base, name, "set-status", reason, operator)
+        updated = STATUS_RE.sub(f"**Status:** {outcome}", content, count=1)
+        new_revision = revision(content) + 1
+        updated = REVISION_RE.sub(f"**Revision:** {new_revision}", updated, count=1)
+        audit.update({"result_status": outcome, "result_revision": new_revision,
+                      "result_fd_sha256": fd_digest(updated),
+                      "skipped_checks": ["status-transition", "terminal-evidence"],
+                      "review_verified": False})
+        force_transaction(base, {audit_path: json_bytes(audit), fd_path: updated.encode("utf-8")},
+                          refresh_index=True)
+    print(f"forced status {audit['previous_status']} -> {outcome}; transition/evidence checks skipped; "
+          f"no review evidence created, receipts unchanged and may be stale; audit: {audit_path}")
+
+
+def force_emit(base: Path, name: str, kind: str, producer: str, artifact: str,
+               reason: str, operator: str) -> None:
+    if kind not in ALLOWED:
+        raise FDError(f"undefined event: {kind}")
+    expected = {**ROLE_PRODUCERS, "design-requested": "pm",
+                "decision-recorded": "human"}.get(kind)
+    roles = {"pm", "planner", "worker", "tester", "reviewer", "human"}
+    if producer not in roles or (expected and producer != expected):
+        raise FDError(f"{kind} requires {expected or 'a defined producer role'}")
+    with fd_lock(base, name):
+        fd_path, content, previous, audit_path, audit = force_context(
+            base, name, "force-emit", reason, operator)
+        artifact_ref = safe_artifact(base, artifact)
+        _, new_status, target_role = ALLOWED[kind]
+        if kind == "implementation-ready" and independent_testing(content):
+            new_status, target_role = "Pending Test", "tester"
+        if target_role == "resume":
+            target_role = {"Planned": "planner", "Design": "planner", "Open": "worker",
+                           "In Progress": "worker", "Pending Test": "tester",
+                           "Pending Test Acceptance": "pm", "Pending Verification": "reviewer",
+                           "Complete": "pm", "Deferred": "pm", "Closed": "pm"}[status(content)]
+        # FD revisions can lag behind older receipts after manual recovery.
+        recorded_revisions = [json.loads(path.read_text(encoding="utf-8"))["fd_revision"]
+                              for path in event_paths(base, name)]
+        new_revision = max([revision(content), *recorded_revisions]) + 1
+        event_id = f"{name}-{new_revision:06d}-{kind}"
+        target = runtime_dir(base, name) / "events" / f"{new_revision:06d}-{kind}.json"
+        if target.exists() or target.is_symlink():
+            raise FDError(f"event already exists: {event_id}")
+        updated = REVISION_RE.sub(f"**Revision:** {new_revision}", content, count=1)
+        if new_status:
+            updated = STATUS_RE.sub(f"**Status:** {new_status}", updated, count=1)
+        audit_ref = audit_path.relative_to(runtime_dir(base, name)).as_posix()
+        event = {"event_id": event_id, "fd_id": name, "event_type": kind,
+                 "fd_revision": new_revision, "producer": producer,
+                 "fd_sha256": fd_digest(updated), "artifact_ref": artifact_ref,
+                 "fd_path": fd_path.relative_to(base).as_posix(), "target_role": target_role,
+                 "dispatch_state": "pending", "created_at": audit["created_at"],
+                 "forced": True, "reason": reason.strip(), "operator": operator.strip(),
+                 "force_operation": audit_ref}
+        if previous:
+            event["supersedes"] = previous[1]["event_id"]
+            event["previous_session_ref"] = previous[1].get("session_ref")
+        audit.update({"result_status": status(updated), "result_revision": new_revision,
+                      "result_event": event, "review_verified": False,
+                      "skipped_checks": ["status-transition", "work-items", "needs-input",
+                                         "evidence", "previous-handoff", "claim", "session-independence"],
+                      "agent_stopped": False})
+        # The audit and FD/index are committed before making the event claimable.
+        changes = {audit_path: json_bytes(audit), fd_path: updated.encode("utf-8")}
+        if previous and previous[1].get("dispatch_state") in {"pending", "launching", "dispatched", "preparing"}:
+            old_path, old_event = previous
+            cancelled = {**old_event, "dispatch_state": "cancelled", "superseded_by": event_id,
+                         "cancelled_at": audit["created_at"], "cancellation_reason": reason.strip(),
+                         "cancelled_by": operator.strip(), "cancellation_operation": audit_ref}
+            changes[old_path] = json_bytes(cancelled)
+        # A preparing receipt is never eligible for claim/dispatch.
+        changes[target] = json_bytes({**event, "dispatch_state": "preparing"})
+        index_path = feature_dir(base) / "FEATURE_INDEX.md"
+        originals = {path: path.read_bytes() if path.exists() else None
+                     for path in [*changes, index_path]}
+        force_transaction(base, changes, refresh_index=True)
+        try:
+            atomic_json(target, event)
+        except Exception as exc:
+            errors = []
+            # Remove/restore the receipt first so failed recovery cannot be claimed.
+            for path in [target, *reversed([path for path in originals if path != target])]:
+                try:
+                    if originals[path] is None:
+                        path.unlink(missing_ok=True)
+                    else:
+                        atomic_bytes(path, originals[path])
+                except Exception as rollback_error:
+                    errors.append(f"{path}: {type(rollback_error).__name__}: {rollback_error}")
+            if errors:
+                raise FDError("force-emit rollback incomplete: " + "; ".join(errors)) from exc
+            raise
+    print(f"forced {event_id} pending {target_role}; workflow checks skipped, not verification evidence; "
+          f"original Agent has NOT been stopped; no runner started; audit: {audit_path}")
 
 
 def refresh_tester(base: Path, name: str, reason: str, artifact: str) -> None:
@@ -1545,21 +1833,41 @@ def prepare_event(base: Path, name: str, kind: str, producer: str, artifact: str
     return target, event
 
 
+def approved_issue_id(base: Path, requested: str) -> str:
+    """Use the Issue CLI's canonical resolver and captured-source checks."""
+    executable = "aiw.exe" if os.name == "nt" else "aiw"
+    configured = os.environ.get("AIW_ROOT", "")
+    candidate = Path(configured) / executable if configured else None
+    cli = str(candidate) if candidate and candidate.is_file() else shutil.which("aiw")
+    if not cli:
+        raise FDError("cannot find AIW CLI to resolve the source Issue")
+    result = subprocess.run([cli, "issue", "show", requested, "--json"],
+                            cwd=base, capture_output=True, text=True, encoding="utf-8")
+    if result.returncode:
+        raise FDError(f"cannot resolve Issue {requested}: {result.stderr.strip()}")
+    try:
+        if len(result.stdout) > 4096:
+            raise ValueError("Issue response exceeds 4096 characters")
+        record = json.loads(result.stdout)
+        if not isinstance(record, dict):
+            raise ValueError("expected an Issue object")
+        canonical = record.get("id")
+        if not isinstance(canonical, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}", canonical):
+            raise ValueError("invalid canonical Issue ID")
+    except (ValueError, TypeError) as error:
+        raise FDError(f"invalid Issue CLI response: {error}") from error
+    if record.get("status") not in {"APPROVED", "PROMOTED"} or record.get("approval_status") != "APPROVED":
+        raise FDError(f"Issue is not approved: {canonical}")
+    return canonical
+
+
 def new_fd(base: Path, name: str, issue: str) -> None:
     if not name.strip() or any(char in name for char in "\r\n") or len(name) > 120:
         raise FDError("title must be one non-empty line of at most 120 characters")
     if issue and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}", issue):
         raise FDError("issue ID contains unsupported characters")
     if issue:
-        record = base / "docs" / "requirements" / issue / "requirement.toml"
-        if (not record.is_file() or record.is_symlink()
-                or not record.resolve().is_relative_to(base)):
-            raise FDError(f"Issue record not found: {issue}")
-        source = record.read_text(encoding="utf-8")
-        top = source.split("[approval]", 1)[0]
-        approval = source.split("[approval]", 1)[1].split("\n[", 1)[0] if "[approval]" in source else ""
-        if not re.search(r'(?m)^status = "(?:APPROVED|PROMOTED)"$', top) or not re.search(r'(?m)^status = "APPROVED"$', approval):
-            raise FDError(f"Issue is not approved: {issue}")
+        issue = approved_issue_id(base, issue)
     with fd_lock(base, "_allocation"):
         if issue:
             for linked in all_files(base):
@@ -1649,9 +1957,9 @@ def claim(base: Path, name: str, event_id: str, session_ref: str) -> None:
     print(f"claimed {event_id} by {session_ref}")
 
 
-def close(base: Path, name: str, outcome: str, reason: str) -> None:
+def close(base: Path, name: str, outcome: str, reason: str, force: bool = False) -> None:
     with fd_lock(base, name):
-        close_locked(base, name, outcome, reason)
+        close_locked(base, name, outcome, reason, force)
 
 
 def evidence_moves(base: Path, name: str) -> list[tuple[Path, Path]]:
@@ -1679,22 +1987,38 @@ def evidence_moves(base: Path, name: str) -> list[tuple[Path, Path]]:
     return moves
 
 
-def close_locked(base: Path, name: str, outcome: str, reason: str) -> None:
-    fd_path = resolve_fd(base, name)
-    if is_archived_fd(base, fd_path):
-        raise FDError("FD is already archived")
-    content = fd_path.read_text(encoding="utf-8")
+def close_locked(base: Path, name: str, outcome: str, reason: str,
+                 force: bool = False) -> None:
+    if force and outcome != "Complete":
+        raise FDError("--force is only supported for Complete archive")
+    force_audit_path = None
+    force_audit = None
+    if force:
+        operator = getpass.getuser()
+        fd_path, content, latest, force_audit_path, force_audit = force_context(
+            base, name, "close", reason, operator)
+        audit_dir = force_audit_path.parent
+        if (force_audit_path.exists() or force_audit_path.is_symlink()
+                or audit_dir.is_symlink()
+                or (audit_dir.exists() and not audit_dir.is_dir())):
+            raise FDError(f"unsafe force-close audit destination: {force_audit_path}")
+    else:
+        fd_path = resolve_fd(base, name)
+        if is_archived_fd(base, fd_path):
+            raise FDError("FD is already archived")
+        content = fd_path.read_text(encoding="utf-8")
+        latest = latest_event(base, name)
     original_content = content
     current = status(content)
-    if outcome == "Complete" and current != "Complete":
+    if outcome == "Complete" and not force and current != "Complete":
         raise FDError("Complete requires a verification-passed event")
-    if outcome != "Complete" and current in {"Closed", "Deferred"}:
+    if not force and outcome != "Complete" and current in {"Closed", "Deferred"}:
         raise FDError("FD is already closed or deferred")
-    if outcome != "Complete" and (not reason.strip() or any(char in reason for char in "\r\n")):
+    if not force and outcome != "Complete" and (not reason.strip() or any(char in reason for char in "\r\n")):
         raise FDError("Deferred and Closed require a one-line --reason")
-    latest = latest_event(base, name)
-    if outcome == "Complete" and (not latest or latest[1]["event_type"] != "verification-passed"
+    if outcome == "Complete" and not force and (not latest or latest[1]["event_type"] != "verification-passed"
                                   or latest[1]["producer"] != "reviewer"
+                                  or latest[1].get("forced")
                                   or latest[1]["fd_revision"] != revision(content)
                                   or latest[1]["fd_sha256"] != fd_digest(content)):
         raise FDError("Complete requires the current Reviewer's verification-passed event")
@@ -1710,13 +2034,24 @@ def close_locked(base: Path, name: str, outcome: str, reason: str) -> None:
             raise FDError(f"archive destination parent is unsafe: {parent}")
         parent = parent.parent
     moves = evidence_moves(base, name)
-    if outcome != "Complete":
+    if outcome != "Complete" or force:
         content = STATUS_RE.sub(f"**Status:** {outcome}", content, count=1)
         content = REVISION_RE.sub(f"**Revision:** {revision(content) + 1}", content, count=1)
     date_label = "Completed" if outcome == "Complete" else "Closed"
     content = content.rstrip() + f"\n\n**{date_label}:** {datetime.now(timezone.utc).date()}\n"
     if reason.strip():
         content += f"**Disposition reason:** {reason.strip()}\n"
+    if force:
+        force_audit.update({
+            "result_status": "Complete",
+            "result_revision": revision(content),
+            "result_fd_sha256": fd_digest(content),
+            "archive_path": (feature_dir(base) / "archive" / name / fd_path.name)
+                .relative_to(base).as_posix(),
+            "skipped_checks": ["status-must-be-complete", "current-reviewer-verification"],
+            "review_verified": False,
+            "receipt_changed": False,
+        })
     moved = []
     event_path = latest[0] if latest else None
     original_event = dict(latest[1]) if latest else None
@@ -1730,13 +2065,20 @@ def close_locked(base: Path, name: str, outcome: str, reason: str) -> None:
         atomic_text(fd_path, content)
         archive.parent.mkdir(parents=True, exist_ok=True)
         fd_path.replace(archive)
-        if latest and latest[1]["dispatch_state"] == "pending":
+        if not force and latest and latest[1]["dispatch_state"] == "pending":
             event = dict(latest[1])
             event["dispatch_state"] = "cancelled" if outcome != "Complete" else "acknowledged"
             atomic_json(event_path, event)
         update_index(base)
+        if force:
+            atomic_json(force_audit_path, force_audit)
     except (OSError, FDError) as exc:
         rollback_errors = []
+        if force and force_audit_path.exists():
+            try:
+                force_audit_path.unlink()
+            except OSError as rollback_error:
+                rollback_errors.append(str(rollback_error))
         if archive.exists():
             try:
                 archive.replace(fd_path)
@@ -1754,7 +2096,7 @@ def close_locked(base: Path, name: str, outcome: str, reason: str) -> None:
                     target.replace(source)
                 except (OSError, FDError) as rollback_error:
                     rollback_errors.append(str(rollback_error))
-        if event_path and original_event:
+        if not force and event_path and original_event:
             try:
                 atomic_json(event_path, original_event)
             except OSError as rollback_error:
@@ -1770,6 +2112,9 @@ def close_locked(base: Path, name: str, outcome: str, reason: str) -> None:
             raise FDError("close rollback incomplete: " + "; ".join(rollback_errors)) from exc
         raise
     print(f"archived {name}: {archive}")
+    if force:
+        print("forced Complete archive; Reviewer verification was skipped and not recorded; "
+              f"audit: {force_audit_path}")
 
 
 def main() -> int:
@@ -1778,7 +2123,7 @@ def main() -> int:
     created = commands.add_parser("new", help="create a numbered FD and request Planner")
     created.add_argument("title")
     created.add_argument("--issue", default="")
-    commands.add_parser("list", help="show the FD index")
+    commands.add_parser("list", help="show the terminal FD table")
     shown = commands.add_parser("show", help="show an FD and its last handoff")
     shown.add_argument("fd_id")
     for command, kind in (("show-report", "report"), ("show-review", "review")):
@@ -1809,6 +2154,23 @@ def main() -> int:
     recovered.add_argument("--expected-event", required=True)
     recovered.add_argument("--expected-session", required=True)
     recovered.add_argument("--reason", required=True)
+    cancelled = commands.add_parser("cancel-event", help="cancel the latest dispatched receipt without stopping its Agent")
+    cancelled.add_argument("fd_id")
+    cancelled.add_argument("--expected-event", required=True)
+    cancelled.add_argument("--reason", required=True)
+    cancelled.add_argument("--operator", required=True, help="declared operator identity, not authentication")
+    overridden = commands.add_parser("set-status", help="force an active FD status without transition or terminal evidence checks")
+    overridden.add_argument("fd_id")
+    overridden.add_argument("status", choices=sorted(DEFINED_STATUSES))
+    overridden.add_argument("--reason", required=True)
+    overridden.add_argument("--operator", required=True, help="declared operator identity, not authentication")
+    forced = commands.add_parser("force-emit", help="emit a defined event while skipping workflow gates; leave pending without starting a runner")
+    forced.add_argument("fd_id")
+    forced.add_argument("event_type", choices=sorted(ALLOWED))
+    forced.add_argument("--producer", required=True)
+    forced.add_argument("--artifact", required=True)
+    forced.add_argument("--reason", required=True)
+    forced.add_argument("--operator", required=True, help="declared operator identity, not authentication")
     tester_refresh = commands.add_parser("refresh-tester", help="replace a stale unclaimed Tester handoff")
     tester_refresh.add_argument("fd_id")
     tester_refresh.add_argument("--reason", required=True)
@@ -1819,17 +2181,19 @@ def main() -> int:
     reopened.add_argument("--reason", required=True)
     reopened.add_argument("--correct-reason", action="store_true",
                           help="correct the reason on an unclaimed reopen handoff")
-    closed = commands.add_parser("close", help="archive a completed, deferred, or closed FD")
+    closed = commands.add_parser("close", help="archive an FD; --force can set Complete without Reviewer verification")
     closed.add_argument("fd_id")
     closed.add_argument("outcome", choices=["Complete", "Deferred", "Closed"])
     closed.add_argument("--reason", default="")
+    closed.add_argument("-f", "--force", action="store_true",
+                        help="force Complete archive, set status Complete, and record skipped checks")
     args = parser.parse_args()
     try:
         base = root()
         if args.command == "new":
             new_fd(base, args.title, args.issue)
         elif args.command == "list":
-            print((feature_dir(base) / "FEATURE_INDEX.md").read_text(encoding="utf-8"))
+            print(render_fd_list(base, color=supports_ansi_color()))
         elif args.command == "show":
             path = resolve_fd(base, args.fd_id)
             name = fd_id(args.fd_id)
@@ -1858,6 +2222,13 @@ def main() -> int:
         elif args.command == "recover-worker":
             recover_worker(base, fd_id(args.fd_id), args.expected_event,
                            args.expected_session, args.reason)
+        elif args.command == "cancel-event":
+            cancel_event(base, fd_id(args.fd_id), args.expected_event, args.reason, args.operator)
+        elif args.command == "set-status":
+            set_status(base, fd_id(args.fd_id), args.status, args.reason, args.operator)
+        elif args.command == "force-emit":
+            force_emit(base, fd_id(args.fd_id), args.event_type, args.producer,
+                       args.artifact, args.reason, args.operator)
         elif args.command == "refresh-tester":
             refresh_tester(base, fd_id(args.fd_id), args.reason, args.artifact)
         elif args.command == "reopen":
@@ -1866,7 +2237,7 @@ def main() -> int:
             else:
                 reopen(base, fd_id(args.fd_id), args.reason)
         elif args.command == "close":
-            close(base, fd_id(args.fd_id), args.outcome, args.reason)
+            close(base, fd_id(args.fd_id), args.outcome, args.reason, args.force)
     except (FDError, OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"fd: {exc}", file=sys.stderr)
         return 1

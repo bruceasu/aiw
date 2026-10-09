@@ -11,7 +11,7 @@ META = {
     "long": "Single entrypoint for aiw git subcommands with concise overview help and detailed per-command help.",
     "usage": "aiw git <subcommand> [args...]",
     "examples": [
-        "aiw git show status",
+        "aiw git st",
         "aiw git add-remote origin https://example/repo.git",
     ],
 }

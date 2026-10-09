@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 )
 
@@ -125,7 +126,8 @@ func (facts ConfirmedFacts) Current(snapshot ConversationContext) []CoverageRefe
 // CaptureFactReferences validates the exact draft bytes before a checkpoint.
 // The returned path is the future canonical artifact path, not the draft path.
 func CaptureFactReferences(id, kind, source string, quotes []string) ([]CoverageReference, string, error) {
-	filename, ok := artifactFiles[kind]
+	kind = canonicalArtifactKind(kind)
+	_, ok := artifactFiles[kind]
 	if !ok || !ValidID(id) || id == "." || id == ".." {
 		return nil, "", errors.New("invalid capture target")
 	}
@@ -134,6 +136,10 @@ func CaptureFactReferences(id, kind, source string, quotes []string) ([]Coverage
 		return nil, "", err
 	}
 	defer reader.root.Close()
+	meta, dir, err := reader.readRequirement(id)
+	if err != nil { return nil, "", err }
+	if meta.Status == "ARCHIVED" || meta.Status == "CANCELLED" { return nil, "", fmt.Errorf("Issue is %s", meta.Status) }
+	filename := artifactFilename(dir, kind)
 	content, err := reader.readDraft(source)
 	if err != nil {
 		return nil, "", err
@@ -148,7 +154,7 @@ func CaptureFactReferences(id, kind, source string, quotes []string) ([]Coverage
 			return nil, "", errors.New("confirmation fragment is missing or duplicated")
 		}
 		seen[quote] = true
-		refs = append(refs, CoverageReference{Source: Root + "/" + id + "/" + filename, Digest: digest(content), Quote: quote})
+		refs = append(refs, CoverageReference{Source: filepath.ToSlash(filepath.Join(dir, filename)), Digest: digest(content), Quote: quote})
 	}
 	return refs, digest(content), nil
 }

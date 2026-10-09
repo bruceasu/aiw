@@ -23,7 +23,7 @@ Follow the JSON contract and loaded methods. Never ask users for skills, paths, 
 
 Choose options using evidence and preferences; ask only about close choices, missing critical facts, or changes to scope, risk, or authorization. Record reasons; split Issues with lineage. 
 
-Before creating, capturing, deciding, or promoting, show target, summary, and write scope. Run "aiw issue chat prepare"; require "confirm" or "确认" before writing. Use lowercase slugs; never guess REQ IDs.
+Before creating, capturing, deciding, or promoting, show target, summary, and write scope. Run "aiw issue chat prepare"; require "confirm" or "确认" before writing. Use lowercase slugs; never guess Issue IDs. New records use ISSUE IDs under docs/issues. Keep existing REQ references and records in place.
 
 Promotion creates a numbered FD from the approved Issue and leaves legacy promotion metadata unchanged. Do not create an OpenSpec change unless the human explicitly requests it. Promotion is not implementation or release approval.`
 }
@@ -86,6 +86,11 @@ func dispatchIssueChat(args []string) error {
 	}
 	if !issue.ValidID(action.RequirementID) {
 		return errors.New("invalid requirement or task id")
+	}
+	if action.Kind != "new" {
+		meta, err := issue.Read(action.RequirementID)
+		if err != nil { return err }
+		action.RequirementID = meta.ID
 	}
 	b, err := json.MarshalIndent(action, "", "  ")
 	if err != nil {
@@ -180,7 +185,7 @@ func prepareResumeIssueLoop(args []string) (issueChatPlan, error) {
 	if _, err := store.Update(sessionID, func(status *session.Status) error { status.Session.CurrentPhase = phase; return nil }); err != nil {
 		return issueChatPlan{}, err
 	}
-	return issueChatPlan{RequirementID: id, SessionID: sessionID, Phase: phase, Provider: provider, Model: model}, nil
+	return issueChatPlan{RequirementID: meta.ID, SessionID: sessionID, Phase: phase, Provider: provider, Model: model}, nil
 }
 
 func issueConversationPhase(meta issue.Meta) (string, error) {

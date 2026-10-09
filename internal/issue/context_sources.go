@@ -69,7 +69,7 @@ func contextLocalPathWithDraft(path string, allowDraft bool) (string, error) {
 		return "", errContextPath
 	}
 	parts := strings.Split(portable, "/")
-	if allowDraft && len(parts) >= 4 && parts[0] == ".ai" && parts[1] == "requirements" && parts[2] == "drafts" {
+	if allowDraft && len(parts) >= 4 && parts[0] == ".ai" && (parts[1] == "requirements" || parts[1] == "issues") && parts[2] == "drafts" {
 		parts = parts[1:]
 	}
 	for _, part := range parts {
@@ -151,21 +151,15 @@ func (reader *contextReader) readWithDraftPolicy(path string, allowDraft bool) (
 	return content, nil
 }
 
-// readRequirement checks metadata inside the same root and budget as sources;
-// the old unrestricted Read/dirFor path is not used for model context.
+// Identity resolution is shared with CLI storage; actual context bytes still
+// pass through the bounded, rooted reader's link and traversal checks.
 func (reader *contextReader) readRequirement(id string) (Meta, string, error) {
-	for _, dir := range []string{Dir(id), archiveDir(id), cancelledDir(id)} {
-		content, err := reader.read(filepath.Join(dir, "requirement.toml"))
-		if errors.Is(err, os.ErrNotExist) {
-			continue
-		}
-		if err != nil {
-			return Meta{}, "", err
-		}
-		meta, err := readMeta(id, bytes.NewReader(content))
-		return meta, dir, err
-	}
-	return Meta{}, "", fmt.Errorf("requirement %s: %w", id, os.ErrNotExist)
+	location, err := locateRecord(id)
+	if err != nil { return Meta{}, "", err }
+	content, err := reader.read(location.metadata)
+	if err != nil { return Meta{}, "", err }
+	meta, err := readMeta(location.id, bytes.NewReader(content))
+	return meta, location.dir, err
 }
 
 // finishContext preserves the required-source result. Optional omissions remain

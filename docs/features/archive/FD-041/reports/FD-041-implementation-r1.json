@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-041",
+  "source_event": "FD-041-000004-design-ready",
+  "human_report": "FD-041-implementation-r1.md",
+  "data": {
+    "summary": "Completed all three FD-041 Work Items: render grouped plain-text FD tables from active and archived documents, safely display titles across stdout encodings, conditionally color status and priority, and update CLI usage documentation.",
+    "changed_paths": [
+      "plugins/aiw-fd.py",
+      "docs/usage/aiw-fd.md",
+      "docs/features/FD-041_COLORIZE_AIW_FD_LIST_TERMINAL_OUTPUT.md"
+    ],
+    "commands": [
+      "python -c \"from pathlib import Path; p=Path('plugins/aiw-fd.py'); compile(p.read_text(encoding='utf-8'), str(p), 'exec')\"",
+      "git diff --cached --check"
+    ],
+    "results": [
+      "Python compile-only check passed.",
+      "Staged diff whitespace checks passed before each Work Item commit.",
+      "Tests, smoke checks, lint, and full builds were not run under the repository validation budget."
+    ],
+    "residual_risk": "Terminal color and fallback behavior has not been exercised at runtime across TTY, redirected, TERM=dumb, NO_COLOR, and legacy Windows encodings."
+  }
+}

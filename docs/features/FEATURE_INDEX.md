@@ -6,8 +6,11 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
+| [FD-011](FD-011_GIT_MERGE_TO.md) | Merge branches in an isolated worktree | In Progress | Medium |
 | [FD-037](FD-037_AIW_SAY.md) | AIW Say 跨平台剪贴板与图形入口 | Open | Medium |
-| [FD-041](FD-041_COLORIZE_AIW_FD_LIST_TERMINAL_OUTPUT.md) | 为 aiw fd list 提供终端表格与颜色 | Open | Medium |
+| [FD-038](FD-038_IMPROVE_FD_REPORT_REVIEW_AND_STATUS_INSPECTION.md) | Improve FD report, review, and status inspection | Planned | Medium |
+| [FD-045](FD-045_AGENT_GATEWAY_CODEX_APP_SERVER.md) | Agent Gateway 迁移到 Codex App Server 后端 | Design | Medium |
+| [FD-046](FD-046_FORCE_ARCHIVE_FDS_AS_COMPLETE.md) | Force archive FDs as Complete | Pending Verification | Medium |
 | [FD-011](archive/FD-011/FD-011_GIT_MERGE_TO.md) | Merge branches in an isolated worktree | Completed | Medium |
 
 ## Completed
@@ -20,10 +23,15 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-004](archive/FD-004/FD-004_RE_REVIEW_COMPLETED_FDS_AFTER_DOCUMENT_CHANGES.md) | ﻿# FD-004: Re-review completed FDs after document changes | Complete | Medium |
 | [FD-005](archive/FD-005/FD-005_AIW_CZ_TYPESCRIPT_PYTHON.md) | 将 aiw-cz 从 TypeScript 迁移到 Python | Complete | Medium |
 | [FD-006](archive/FD-006/FD-006_TYPESCRIPT_AGENT_PROXY.md) | 本机 TypeScript Agent Proxy | Complete | Medium |
+| [FD-006](archive/FD-006_TYPESCRIPT_AGENT_PROXY.md) | 本机 TypeScript Agent Proxy | Complete | Medium |
 | [FD-007](archive/FD-007/FD-007_BOUNDED_AUTOMATIC_FD_WORKFLOW.md) | Bounded automatic FD workflow | Complete | Medium |
+| [FD-007](archive/FD-007_BOUNDED_AUTOMATIC_FD_WORKFLOW.md) | Bounded automatic FD workflow | Complete | Medium |
 | [FD-008](archive/FD-008/FD-008_AI_AGENT_PROXY_CLIENT.md) | ai agent-proxy-client | Complete | Medium |
+| [FD-008](archive/FD-008_AI_AGENT_PROXY_CLIENT.md) | ai agent-proxy-client | Complete | Medium |
 | [FD-009](archive/FD-009/FD-009_REMOTE_AGENT_PROXY_URL.md) | Remote Agent Proxy URL | Complete | Medium |
+| [FD-009](archive/FD-009_REMOTE_AGENT_PROXY_URL.md) | Remote Agent Proxy URL | Complete | Medium |
 | [FD-010](archive/FD-010/FD-010_AIW_INIT.md) | AIW Project Initialization | Complete | Medium |
+| [FD-010](archive/FD-010_AIW_INIT.md) | AIW Project Initialization | Complete | Medium |
 | [FD-011](archive/FD-011/FD-011_ARCHIVE_FD_EVIDENCE_WITH_DESIGN.md) | ﻿# FD-011: Archive FD evidence with design | Complete | Medium |
 | [FD-012](archive/FD-012/FD-012_CONSOLIDATE_AGENT_GUIDANCE_UNDER_AGENTS.md) | Consolidate agent guidance under .agents | Complete | Medium |
 | [FD-013](archive/FD-013/FD-013_REOPEN_ARCHIVED_CLOSED_AND_DEFERRED_FDS.md) | ﻿# FD-013: Reopen archived Closed and Deferred FDs | Complete | Medium |
@@ -52,6 +60,10 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-038](archive/FD-038/FD-038_IMPROVE_FD_REPORT_REVIEW_AND_STATUS_INSPECTION.md) | Improve FD report, review, and status inspection | Complete | Medium |
 | [FD-039](archive/FD-039/FD-039_SEPARATE_FD_TEST_SKILL_FROM_FD_WORKFLOW.md) | Separate FD Test Skill from FD Workflow | Complete | Medium |
 | [FD-040](archive/FD-040/FD-040_MOVE_FEATURE_TEMPLATES_TO_DOCS_TEMPLATES.md) | Move feature templates to docs/templates | Complete | Medium |
+| [FD-041](archive/FD-041/FD-041_COLORIZE_AIW_FD_LIST_TERMINAL_OUTPUT.md) | 为 aiw fd list 提供终端表格与颜色 | Complete | Medium |
+| [FD-042](archive/FD-042/FD-042_FD.md) | FD 工作流强制恢复与事件控制 | Complete | Medium |
+| [FD-043](archive/FD-043/FD-043_INDEPENDENT_ISSUE_IDS_AND_STORAGE_WITH_EXISTING_.md) | Independent Issue IDs and storage with existing REQ references | Complete | Medium |
+| [FD-044](archive/FD-044/FD-044_SAY_PLUGIN_PACKAGING.md) | 补齐 AIW Say 插件构建与安装 | Complete | Medium |
 
 ## Deferred / Closed
 

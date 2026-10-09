@@ -1,0 +1,43 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-041",
+  "source_event": "FD-041-000017-implementation-ready",
+  "human_report": "FD-041-review-r4.md",
+  "data": {
+    "reviewer_session": "fd041-reviewer-r4-20261009-8d27af",
+    "reviewed_base": "4a445b27de935b39d45cfb1bd4276258abf33d36",
+    "reviewed_head": "c0261ba463761dcc4c5a8897313f0e6b9f704e96",
+    "claimed_fd_revision": 17,
+    "claimed_fd_sha256": "97a327b5b696095120022924548e3a0597c183b6f5319072efd2506674448daa",
+    "outcome": "verification-passed",
+    "findings": [],
+    "resolved_findings": ["FD041-R3-01"],
+    "acceptance_results": {
+      "terminal_table": "Met statically: plain space-separated columns and state groups; ANSI width compensation equals emitted escape length.",
+      "active_and_archived_sources": "Met statically: all_files covers both scopes; row fields come from FD documents.",
+      "redundant_color": "Met statically: status and priority retain full text with or without ANSI.",
+      "color_fallbacks": "Met statically: non-TTY, NO_COLOR, dumb TERM disable ANSI; recognized terminal signal required otherwise.",
+      "safe_title_rendering": "Met statically: Cc/Cf removal and stdout encoding backslashreplace handle invisible and unrepresentable characters.",
+      "read_only_and_dependencies": "Met statically: list path only reads FD files; new import is standard-library unicodedata.",
+      "documentation": "Met statically: exact capability signals and unknown-terminal plain fallback match the implementation."
+    },
+    "gate_exception": "Human explicitly requested documentation correction and continuation. PM recorded one extra independent review; prior three changes-requested outcomes and count are preserved.",
+    "commands_run": [
+      "Get-Content and rg targeted instruction, source, FD, evidence and spec reads",
+      "git status --short",
+      "git diff 4a445b27de935b39d45cfb1bd4276258abf33d36 HEAD --stat",
+      "git diff --unified=12 4a445b27de935b39d45cfb1bd4276258abf33d36 HEAD -- plugins/aiw-fd.py",
+      "git diff 371f2bfe2d571b1476fdb91f4c2450d0dcfd29ba HEAD -- docs/usage/aiw-fd.md",
+      "git rev-parse HEAD",
+      "Get-FileHash -Algorithm SHA256 docs/features/FD-041_COLORIZE_AIW_FD_LIST_TERMINAL_OUTPUT.md",
+      "aiw fd --help; aiw fd claim --help; aiw fd emit --help",
+      "aiw fd claim FD-041 FD-041-000017-implementation-ready --session fd041-reviewer-r4-20261009-8d27af"
+    ],
+    "outcome_command": "aiw fd emit FD-041 verification-passed --producer reviewer --artifact docs/features/reviews/FD-041-review-r4.md --source-event FD-041-000017-implementation-ready",
+    "skipped_checks": ["tests", "smoke", "lint", "formatting", "full build", "Reviewer compile-only", "runtime terminal matrix"],
+    "worker_compile_only": "Worker R4 report records successful in-memory Python compilation; not rerun by Reviewer.",
+    "residual_risks": ["Actual ANSI rendering and console encoding behavior were not exercised; capability signals were evaluated statically."],
+    "delivery_status": "Pending PM delivery and archive."
+  }
+}

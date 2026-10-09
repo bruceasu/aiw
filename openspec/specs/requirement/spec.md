@@ -3,7 +3,7 @@
 ## Requirements
 ### Requirement: 需求工件与版本
 
-系统 MUST 将活动需求保存在 `docs/requirements/<id>/`，使用 `requirement.toml` 记录状态、revision、批准、推广、对话关联和工件摘要。新需求 MUST 以 DRAFT、revision=1、批准 PENDING 和推广 NOT_STARTED 创建。
+系统 MUST 将新 ISSUE 记录保存在 `docs/issues/<id>/`，使用 `issue.toml` 记录状态、revision、批准、推广、对话关联和工件摘要。旧 REQ 记录继续保存在 `docs/requirements/<id>/requirement.toml`；MUST NOT 自动迁移或改写历史 FD 引用。新需求 MUST 以 DRAFT、revision=1、批准 PENDING 和推广 NOT_STARTED 创建。
 
 #### Scenario: 创建重复需求
 
@@ -14,7 +14,7 @@
 
 - **WHEN** capture 接受支持的工件类型和可读源文件
 - **THEN** 系统写入对应工件、记录路径和内容摘要并递增 revision。
-- **AND** 普通首次捕获将 DRAFT 推进为 DISCOVERED；捕获 requirement-plan 可将 DRAFT / DISCOVERED 推进为 DECIDED。
+- **AND** 普通首次捕获将 DRAFT 推进为 DISCOVERED；捕获 issue-plan 或 requirement-plan 可将 DRAFT / DISCOVERED 推进为 DECIDED。新 ISSUE 的 Plan 文件为 issue-plan.md，旧 REQ 保留 requirement-plan.md，内部工件键保留 requirement-plan。
 
 ### Requirement: Issue 拆分关系
 
@@ -77,7 +77,7 @@ archive / cancel MUST 要求操作人与原因，并将需求移动至对应终�
 #### Scenario: 需求归档
 
 - **WHEN** 对允许归档的需求执行 archive
-- **THEN** 系统记录终止信息和决定日志，将目录移动到 `docs/requirements/archive/<id>/`。
+- **THEN** 系统记录终止信息和决定日志，将目录移动到原记录根目录的 `archive/<id>/`；新 ISSUE 使用 docs/issues，旧 REQ 使用 docs/requirements。
 
 #### Scenario: 查询活动与终止需求
 
@@ -86,7 +86,7 @@ archive / cancel MUST 要求操作人与原因，并将需求移动至对应终�
 
 ### Requirement: 自动生成稳定编号
 
-默认 `new <slug> [title]` MUST 创建 `REQ00001-slug` 格式的完整 ID，数字至少五位且递增；slug MUST 为小写英文或数字片段，以单连字符连接。生成后的 ID 不随标题变化。
+默认 `new <slug> [title]` MUST 创建 `ISSUE-001` 格式的完整 ID，数字至少三位且递增；slug MUST 为小写英文或数字片段，以单连字符连接，但不作为 ID 后缀。省略 title 时使用 slug 作为标题。生成后的 ID 不随标题变化。ISSUE 编号与旧 REQ 序列独立，活动、归档、取消和已预留编号均不得复用。
 
 #### Scenario: 顺序创建
 
@@ -95,7 +95,7 @@ archive / cancel MUST 要求操作人与原因，并将需求移动至对应终�
 
 #### Scenario: 超过五位
 
-- **WHEN** 编号达到 100000
+- **WHEN** 编号达到 1000
 - **THEN** 数字宽度自然扩展，不回绕。
 
 ### Requirement: 精确 ID 兼容
@@ -133,12 +133,26 @@ archive / cancel MUST 要求操作人与原因，并将需求移动至对应终�
 
 ### Requirement: 正式工件与运行文件分离
 
-系统 MUST 仅使用 docs/requirements 及其 archive、cancelled 目录读写正式工件与扫描需求编号，MUST NOT 回退旧根目录 requirements 或提供迁移命令。编号、锁、恢复备份与临时文件 MUST 位于 .ai/requirements，持久计数 MUST NOT 作为临时缓存清理。Session 历史存储位置不变；来源路径变化 MUST 使历史候选重新复核，不改写历史证据。
+系统 MUST 使用 docs/issues 和 docs/requirements 及各自的 archive、cancelled 目录读写对应记录，MUST NOT 回退旧根目录 requirements 或提供自动迁移。新 ISSUE 编号、锁、恢复备份和临时文件位于 .ai/issues，旧 REQ 使用 .ai/requirements；持久计数 MUST NOT 作为临时缓存清理。Session 历史存储位置不变；来源路径变化 MUST 使历史候选重新复核，不改写历史证据。按需单条迁移留给后续工作，本变更不提供迁移命令。
 
 #### Scenario: 新路径生命周期
 
 - **WHEN** 创建、读取、捕获、归档或取消需求
-- **THEN** 正式工件始终位于 docs/requirements 范围内，运行文件不写入正式文档目录。
+- **THEN** 正式工件位于对应 docs/issues 或 docs/requirements 范围内，运行文件不写入正式文档目录。
+
+### Requirement: 统一身份定位
+
+所有 Issue 生命周期命令及 FD 来源读取 MUST 使用同一定位规则：完整 ID 优先且大小写不敏感，REQ 数字前缀只在唯一匹配时解析。无匹配或多匹配 MUST 报错，不能任意选择记录或改写目标。父子关系和新 FD 来源 MUST 保存规范完整 ID，旧 FD 引用不重写。终止记录仍可读，但不能因此重新审批、修改或推广。
+
+#### Scenario: 简写来源交接
+
+- **WHEN** 唯一已批准 REQ 以 req00008 作为 FD 来源输入
+- **THEN** FD 来源使用 REQ00008 的完整记录 ID，审批和重复关联检查使用同一身份。
+
+#### Scenario: 结构化来源信息
+
+- **WHEN** 调用 issue show <id> --json
+- **THEN** 返回规范 id、status、approval_status 并校验已捕获工件摘要；FD 创建使用该接口而不是自行拼接 Requirement 目录。
 
 #### Scenario: 不回退旧路径
 

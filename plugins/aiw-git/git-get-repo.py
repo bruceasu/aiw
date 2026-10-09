@@ -20,10 +20,12 @@ spec.loader.exec_module(core)
 
 META = {
     'name': 'aiw git get-repo',
-    'short': 'Shallow or full git clone.',
+    'short': 'Clone a repository, shallow by default or with full history on request.',
     'long': (
-        'Clones a repository with optional branch selection, '
-        'target directory, and shallow depth control.'
+        'Clones a repository. By default, only the latest commit is fetched '
+        '(shallow depth 1), which limits access to older history. Use --depth '
+        'to fetch more history or --full to fetch complete history. When -b is '
+        'specified, only that branch is cloned. --full takes precedence over --depth.'
     ),
     'usage': (
         'aiw git get-repo <url> '
@@ -33,14 +35,14 @@ META = {
         {'flag': '<url>', 'description': 'The URL of the repository to clone.'},
         {'flag': '-b <branch>', 'description': 'The branch to clone.'},
         {'flag': '-d <dir>', 'description': 'The directory into which to clone the repository.'},
-        {'flag': '--depth <n>', 'description': 'The depth of the shallow clone.'},
-        {'flag': '--full', 'description': 'Perform a full clone.'}
+        {'flag': '--depth <n>', 'description': 'Number of recent commits to fetch (default: 1).'},
+        {'flag': '--full', 'description': 'Fetch complete history; overrides --depth.'}
     ],
     'examples': [
         'aiw git get-repo https://github.com/user/repo.git',
-        'aiw git get-repo repo.git -b main -d myrepo',
-        'aiw git get-repo repo.git --depth 5',
-        'aiw git get-repo repo.git --full',
+        'aiw git get-repo https://github.com/user/repo.git -b main -d myrepo',
+        'aiw git get-repo https://github.com/user/repo.git --depth 20',
+        'aiw git get-repo https://github.com/user/repo.git -d myrepo --full',
     ],
 }
 

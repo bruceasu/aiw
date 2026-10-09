@@ -16,10 +16,19 @@ spec.loader.exec_module(core)
 META = {
     'name': 'aiw git amend-author',
     'short': 'Change the author on the last commit (or rewrite history).',
-    'long': 'Convenience helper to amend the last commit author with --author "Name <email>". For wide rewrites use proper history-rewrite tools.',
-    'usage': 'aiw git amend-author "Name <email>" [--all --filter-name <old> ...] [--force]',
-    'args': [],
-    'examples': ['aiw git amend-author "Alice <alice@example.com>"']
+    'long': 'Amend the last commit author or rewrite matching history. Prompts for confirmation unless --force/-f is supplied.',
+    'usage': 'aiw git amend-author <name> <email> [--all --filter-name <old> ...] [--force|-f]',
+    'args': [
+        {'flag': '<name> <email>', 'description': 'The new author name and email.'},
+        {'flag': '--all', 'description': 'Rewrite matching commits across history; requires --filter-name.'},
+        {'flag': '--filter-name <old>', 'description': 'Match an old author or committer name; may be repeated with --all.'},
+        {'flag': '--force, -f', 'description': 'Skip confirmation.'},
+    ],
+    'examples': [
+        'aiw git amend-author Alice alice@example.com',
+        'aiw git amend-author Alice alice@example.com --force',
+        'aiw git amend-author Alice alice@example.com --all --filter-name OldName -f',
+    ]
 }
 
 
@@ -51,6 +60,7 @@ def main(argv):
     name = argv[0]
     email = argv[1]
     rest = argv[2:]
+    confirm_args = ["--force"] if any(flag in rest for flag in ("--force", "-f")) else []
 
     # ------------------------------------------------------------------
     # Amend only the last commit.
@@ -60,10 +70,10 @@ def main(argv):
         if not core.git_confirm(
             f'This will amend the last commit author to "{name} <{email}>". '
             f"Add --force to skip this prompt.",
-            rest,
+            confirm_args,
         ):
             print("aborted", file=os.sys.stderr)
-            return
+            return 1
 
         author = f"{name} <{email}>"
 
@@ -103,7 +113,7 @@ def main(argv):
         "Collaborators must re-clone or reset."
     )
 
-    if not core.git_confirm(warning, rest):
+    if not core.git_confirm(warning, confirm_args):
         print("aborted", file=os.sys.stderr)
         return 1
 

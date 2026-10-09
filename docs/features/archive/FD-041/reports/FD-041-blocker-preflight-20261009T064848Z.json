@@ -1,0 +1,31 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-041",
+  "source_event": null,
+  "human_report": "FD-041-blocker-preflight-20261009T064848Z.md",
+  "data": {
+    "stage": "preflight",
+    "role": "pm",
+    "recorded_at": "2026-10-09T06:48:48+00:00",
+    "recorder_session": "fd041-pm-20261009-9f2c3b",
+    "observed_blocker": "FD-041 is Open at revision 2, but .ai/fd has no FD-041 directory or event receipt. aiw fd resume reports that the FD has no event. aiw fd show fails because cp932 cannot encode the Chinese title.",
+    "confirmed_cause": "The current shared runtime state lacks FD-041 handoff receipts. Why they are missing is unknown.",
+    "cause_status": "unknown",
+    "recovery_attempts": [
+      "Inspected .ai/fd and confirmed FD-041 is absent.",
+      "Ran aiw fd resume FD-041; it reported no event.",
+      "Inspected aiw fd emit --help; its event types do not provide a valid Worker request route for the current Open status.",
+      "Ran aiw fd show FD-041; it failed while encoding the Chinese title with cp932.",
+      "Re-entered the supported Planner flow: emitted and claimed FD-041-000003-design-requested, then emitted FD-041-000004-design-ready."
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "The user requested reconstruction. PM chose to re-enter the supported design-requested and Planner design-ready flow so AIW creates a new Worker handoff. The old receipt is not represented as restored.",
+    "actual_resolution": "The user requested reconstruction. PM used the supported design-requested and Planner design-ready lifecycle to create a new pending Worker receipt FD-041-000004-design-ready. The missing historical receipt was not recreated or represented as recovered.",
+    "resolved_at": "2026-10-09T06:56:34+00:00",
+    "residual_risk_or_next_step": "The old receipt's loss remains unexplained. Worker must claim FD-041-000004-design-ready and implement in the FD worktree.",
+    "reusable_improvement": "Ensure FD runtime receipts remain available when numbered FD files are delivered across branches, and track the cp932 output failure in aiw fd show separately.",
+    "improvement_status": "proposed"
+  }
+}

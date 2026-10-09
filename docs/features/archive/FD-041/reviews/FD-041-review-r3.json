@@ -1,0 +1,62 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-041",
+  "source_event": "FD-041-000015-implementation-ready",
+  "human_report": "FD-041-review-r3.md",
+  "data": {
+    "reviewer_session": "fd041-reviewer-r3-20261009-b7d24c",
+    "reviewed_base": "4a445b27de935b39d45cfb1bd4276258abf33d36",
+    "reviewed_head": "371f2bfe2d571b1476fdb91f4c2450d0dcfd29ba",
+    "outcome": "changes-requested",
+    "findings": [
+      {
+        "id": "FD041-R3-01",
+        "severity": "low",
+        "path": "docs/usage/aiw-fd.md",
+        "line": 25,
+        "acceptance": "CLI usage documentation describes the table, color meaning, and plain-text fallback accurately",
+        "summary": "TTY color documentation omits the recognized-capability allowlist and overstates when ANSI is enabled.",
+        "detail": "The documentation says TTY output uses ANSI unless TERM=dumb or NO_COLOR is set. The implementation additionally requires a recognized TERM prefix, TERM_PROGRAM value, or Windows ANSI signal. Unknown TERM values without those signals receive plain text.",
+        "requested_change": "Document that color is enabled only when a recognized terminal capability signal is present, and that unknown terminals fall back to plain text."
+      }
+    ],
+    "acceptance_results": {
+      "terminal_table": "Met by static inspection: renderer emits FD, status, priority, and title columns without Markdown table syntax.",
+      "active_and_archived_sources": "Met by static inspection: fd_list_rows uses all_files and extracts row values from FD documents.",
+      "redundant_color": "Met by static inspection: color wraps only status and priority; disabled color returns the original values.",
+      "color_fallbacks": "Implementation met statically: non-TTY, NO_COLOR, and TERM=dumb disable ANSI; unknown TERM values need an allowlisted TERM prefix, recognized TERM_PROGRAM, or Windows ANSI signal. User-facing docs have the finding above.",
+      "safe_title_rendering": "Met by static inspection: Cc/Cf characters are removed and unrepresentable stdout characters use backslashreplace.",
+      "read_only_and_dependencies": "Met by static inspection: listing reads FD files and uses standard-library unicodedata; no list-path writes were found.",
+      "documentation": "Partially met: table fields and plain-text fallback are described, but the TTY color condition is broader than implementation behavior."
+    },
+    "commands_run": [
+      "aiw fd resume FD-041",
+      "python -c <read-only comparison of FD SHA-256 with event 15 receipt>",
+      "aiw fd claim FD-041 FD-041-000015-implementation-ready --session fd041-reviewer-r3-20261009-b7d24c",
+      "git status --short --branch",
+      "git log --format='%h %s' 4a445b27de935b39d45cfb1bd4276258abf33d36..HEAD",
+      "git diff --stat 4a445b27de935b39d45cfb1bd4276258abf33d36...HEAD",
+      "git diff --name-status 4a445b27de935b39d45cfb1bd4276258abf33d36...HEAD",
+      "git diff --unified=24 4a445b27de935b39d45cfb1bd4276258abf33d36...HEAD -- plugins/aiw-fd.py docs/usage/aiw-fd.md",
+      "git rev-parse HEAD",
+      "git merge-base office-dev HEAD",
+      "rg searches for FD acceptance, relevant renderer functions, and usage documentation",
+      "Read FD-041, R1/R2 reports, Worker r3 report and sidecar, fd-workflow spec excerpts, CLI docs, receipt, and implementation source"
+    ],
+    "skipped_checks": [
+      "tests",
+      "smoke checks",
+      "lint",
+      "formatting",
+      "full build",
+      "Reviewer compile-only check",
+      "runtime CLI and terminal matrix"
+    ],
+    "worker_compile_only": "Worker r3 report records a successful Python in-memory compile-only check; Reviewer did not rerun it.",
+    "residual_risks": [
+      "CLI usage text does not yet describe the capability allowlist accurately.",
+      "TERM prefix and TERM_PROGRAM/Windows capability signals were assessed statically; runtime terminal behavior and ANSI rendering were not exercised."
+    ]
+  }
+}

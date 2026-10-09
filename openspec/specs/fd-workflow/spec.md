@@ -94,8 +94,9 @@ Existing FDs that already declare Test policy: Independent MAY continue using
 their recorded legacy CLI Tester events and validation behavior, including
 refresh-tester. Those compatibility paths MUST NOT become the default for new
 FDs, and their test reports are not Reviewer inputs. Archiving as Complete
-MUST require the current Reviewer's verification-passed event with the same
-FD revision and content digest, not only editable FD status text.
+without an explicit force override MUST require the current Reviewer's
+verification-passed event with the same FD revision and content digest, not
+only editable FD status text.
 
 Closing an FD MUST store its design at
 docs/features/archive/<FD-ID>/<FD-ID>_SLUG.md and move its matching Markdown
@@ -571,3 +572,73 @@ recovery action without rolling back the delivered commit.
 - **AND** it preserves `.ai/fd/<FD-ID>` receipts and other runtime records
 - **AND** an unsafe `.ai` junction or partial cleanup failure is reported while
   preserving all resources that have not yet been safely removed
+
+### Requirement: Explicit operator force recovery
+
+An operator MAY cancel the exact latest dispatched receipt with `cancel-event`,
+set an active FD to any defined status with `set-status`, or emit any event in
+ALLOWED with `force-emit`, bypassing normal workflow preconditions. These
+operations MUST require a non-empty single-line reason (at most 500 characters)
+and declared operator identity (at most 200 characters), and MUST reject archived
+FDs, undefined statuses/events, invalid producer/target-role pairings, and unsafe
+or missing artifacts. Declared identity MUST NOT be presented as authentication.
+
+Cancellation MUST preserve session/pid/history and state that it does not stop
+the Agent. Status override MUST increment revision and update the index without
+fabricating review evidence, changing Work Items, moving files, or changing
+receipts. Force emit MUST preserve defined event routing, including legacy
+Independent implementation routing, advance beyond existing receipt revisions,
+mark its new receipt forced, cancel unfinished prior receipts with successor
+provenance, and leave the new receipt pending without launching a role runner.
+For decision-recorded, Planned/Design route to planner, Open/In Progress to
+worker, Pending Test to tester, Pending Test Acceptance and terminal states to
+pm, and Pending Verification to reviewer.
+
+Each operation MUST persist an audit under shared `.ai/fd/<FD-ID>/operations/`
+with operator, local user, reason, time, old state/event, result, and skipped
+checks. Mutations MUST hold the existing FD lock and restore changed FD, index,
+receipts, and audit on write failure, removing any new claimable orphan; an
+incomplete rollback MUST be reported. This does not stop uncoordinated writes
+from the original Agent. Normal workflow validation MUST remain enabled.
+A forced verification-passed receipt MUST NOT satisfy normal Complete archive
+or archived request-review evidence requirements.
+
+An operator MAY invoke `close <id> Complete --force` (`-f`) with a non-empty,
+single-line `--reason` of at most 500 characters to archive an active FD from
+any defined status. Forced close MUST set status to Complete, increment the FD
+revision, update the index, and move the plan and matching evidence through the
+existing rollback-capable archive transaction. Its audit MUST record the prior
+status/event, resulting revision, skipped status and Reviewer checks, and
+`review_verified: false`; it MUST NOT create or alter a Reviewer verification
+receipt. Forced close MUST reject other outcomes, archived FDs, unsafe or
+colliding destinations, and a latest launching/dispatched receipt. Normal
+Complete, Deferred, and Closed behavior remains unchanged without `--force`.
+
+#### Scenario: Cancel only the receipt
+
+- WHEN the operator supplies the exact latest dispatched event and a reason
+- THEN its receipt becomes cancelled and its session history remains visible
+- AND output states that the Agent has not been stopped
+- AND a mismatching event or non-dispatched receipt is rejected without writes
+
+#### Scenario: Override terminal state truthfully
+
+- WHEN an operator forces Complete without normal review evidence
+- THEN status/revision/index and audit change, without review evidence or archive
+- AND normal Complete close still rejects absent or forced review evidence
+
+#### Scenario: Force archive an FD as Complete without review evidence
+
+- WHEN an operator closes an active FD of any defined status as Complete with
+  `--force` and a valid reason
+- THEN the archive transaction sets Complete, increments revision, moves only
+  matching evidence, updates the index, and records the skipped status and
+  Reviewer checks in an operation audit
+- AND the archive contains no fabricated Reviewer verification result
+- AND an unknown launching/dispatched role result still prevents the archive
+
+#### Scenario: Emit outside the normal stage
+
+- WHEN an operator force-emits a defined event from another defined FD status
+- THEN workflow preconditions are skipped but artifact and role structure remain valid
+- AND the new forced receipt is pending with an audit and no runner is launched

@@ -111,7 +111,7 @@ func LoadConversationContextWithOptions(id, userInput string, candidate *Convers
 		// Resolve by the registered kind, not a metadata-supplied arbitrary path.
 		// This also works after archive/cancel moves the Requirement directory.
 		source := ConversationSource{
-			Kind: kind, Path: filepath.ToSlash(filepath.Join(dir, artifactFiles[kind])),
+			Kind: kind, Path: filepath.ToSlash(filepath.Join(dir, artifactFilename(dir, kind))),
 			Purpose: "Captured requirement text, including its facts, assumptions and open questions",
 			RecordedDigest: artifact.Digest,
 		}

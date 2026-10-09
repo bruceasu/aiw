@@ -1,0 +1,16 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-042",
+  "source_event": "FD-042-000003-design-ready",
+  "human_report": "FD-042-implementation-r1.md",
+  "data": {
+    "worker_session_ref": "fd042-host-20261009-a73c92",
+    "summary": "完成显式取消收据、状态覆盖和强制 emit，保留结构与审计并隔离正常审查验收。",
+    "changed_paths": ["plugins/aiw-fd.py", "docs/usage/aiw-fd.md", "openspec/specs/fd-workflow/spec.md", "docs/features/FD-042_FD.md"],
+    "commands": ["git diff office-dev -- plugins/aiw-fd.py", "git diff HEAD -- docs/usage/aiw-fd.md openspec/specs/fd-workflow/spec.md docs/features/FD-042_FD.md", "$env:GOPROXY='off'; $env:GOSUMDB='off'; $env:GOTOOLCHAIN='local'; python -c \"from pathlib import Path; import runpy; compile(Path('plugins/aiw-fd.py').read_text(encoding='utf-8'), 'plugins/aiw-fd.py', 'exec'); runpy.run_path('scripts/compile.py', run_name='__main__')\""],
+    "results": [{"kind": "static-review", "result": "核对参数、审计、回滚、路由、强制结果防伪与文档"}, {"kind": "compile-only", "exit_code": 0}],
+    "not_run": ["tests", "runtime-validation", "fault-injection", "formatter", "lint", "vet", "final-build", "network", "publish"],
+    "residual_risk": "未运行文件系统故障注入或状态/事件组合测试；原 Agent 仍可能直接写入；operator 为声明身份。"
+  }
+}

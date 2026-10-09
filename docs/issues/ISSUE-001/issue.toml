@@ -1,0 +1,32 @@
+id = "ISSUE-001"
+title = "Force archive an FD as Complete"
+parent_id = ""
+status = "APPROVED"
+created = "2026-10-09"
+updated = "2026-10-09"
+revision = 3
+
+[approval]
+status = "APPROVED"
+by = "GWJP\\svictor"
+at = "2026-10-09T18:44:58+09:00"
+reason = "User explicitly requested primary-workspace implementation on 2026-10-09 and confirmed force archive sets Complete."
+source_digest = "c7c5453818021b6ff4600e907a0d809678a53946e36719db56ab912b7f6e02ae"
+
+[promotion]
+status = "NOT_STARTED"
+task_id = ""
+
+[conversation]
+session_id = ""
+
+[terminal]
+by = ""
+at = ""
+reason = ""
+
+[artifact]
+requirement-plan = "docs/issues/ISSUE-001/issue-plan.md"
+
+[digest]
+requirement-plan = "0164098f7634559fe3c6b0549f853a172de503c7990287e4e036108a61f89703"

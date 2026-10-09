@@ -1,8 +1,5 @@
 ﻿#!/usr/bin/env python3
-"""aiw git ca wrapper
-
-Amend last commit including all changes.
-"""
+"""Add a push-destination remote for a repository mirror."""
 import sys
 import os
 import importlib.util
@@ -15,15 +12,22 @@ spec.loader.exec_module(core)
 
 META = {
     'name': 'aiw git add-mirror',
-    'short': 'Add a new mirror for the current repository.',
-    'long': 'Adds a new mirror to the current repository.',
+    'short': 'Add a remote used as a push destination for a repository mirror.',
+    'long': (
+        'Adds a regular Git remote (default name: mirror). With --push, pushes one '
+        'branch to it and sets that branch upstream. This does not enable Git mirror mode.'
+    ),
     'usage': 'aiw git add-mirror <url> [mirror] [--push [branch]]',
     'args': [
-        {'flag': '<url>', 'description': 'The URL of the repository to add as a mirror.'},
-        {'flag': '[mirror]', 'description': 'The name of the mirror (default: mirror).'},
-        {'flag': '--push [branch]', 'description': 'Push to the mirror after adding it.'}
+        {'flag': '<url>', 'description': 'The URL of the mirror repository.'},
+        {'flag': '[mirror]', 'description': 'The remote name (default: mirror).'},
+        {'flag': '--push [branch]', 'description': 'Push one branch after adding; defaults to the current branch and sets upstream. Specify the remote name before this option when naming the branch.'}
     ],
-    'examples': ['aiw git add-mirror https://github.com/user/repo.git origin']
+    'examples': [
+        'aiw git add-mirror https://github.com/user/repo.git',
+        'aiw git add-mirror https://github.com/user/repo.git backup --push',
+        'aiw git add-mirror https://github.com/user/repo.git backup --push main',
+    ]
 }
 
 

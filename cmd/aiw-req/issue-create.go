@@ -22,7 +22,7 @@ func dispatchIssueNew(args []string) error {
 				meta.ID, err)
 		}
 	}
-	fmt.Println("created requirement:", meta.ID)
+	fmt.Println("created issue:", meta.ID)
 	return nil
 }
 func createIssueAction(action issuePendingAction) (issue.Meta, error) {

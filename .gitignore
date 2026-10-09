@@ -19,6 +19,10 @@ plugins/aiw-wf/aiw-wf.exe
 plugins/aiw-wf/aiw-wf
 plugins/aiw-req/aiw-req.exe
 plugins/aiw-req/aiw-req
+plugins/aiw-say/aiw-say
+plugins/aiw-say/aiw.toml
+plugins/aiw-say/aiw.toml.example
+plugins/aiw-say/profiles/
 plugins\aiw-agent-gateway\agent-gateway.exe
 plugins\aiw-agent-gateway\agent-gateway
 .ai/

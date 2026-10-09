@@ -1,0 +1,35 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-046",
+  "source_event": "FD-046-000003-design-ready",
+  "human_report": "FD-046-implementation-r1.md",
+  "data": {
+    "worker_session_ref": "codex-main-20261009-fd046",
+    "summary": "增加有审计的强制 Complete 归档，保留正常归档校验和未知执行结果保护。",
+    "changed_paths": [
+      "plugins/aiw-fd.py",
+      "openspec/specs/fd-workflow/spec.md",
+      "docs/usage/aiw-fd.md",
+      "docs/features/FEATURE_INDEX.md",
+      "docs/features/FD-046_FORCE_ARCHIVE_FDS_AS_COMPLETE.md",
+      "docs/features/archive/FD-044/FD-044_SAY_PLUGIN_PACKAGING.md",
+      "docs/features/archive/FD-044/reports/FD-044-implementation-r1.md",
+      "docs/features/archive/FD-044/reports/FD-044-implementation-r1.json",
+      "docs/features/reports/FD-046-implementation-r1.md",
+      "docs/features/reports/FD-046-implementation-r1.json"
+    ],
+    "commands": [
+      "python -c \"from pathlib import Path; compile(Path('plugins/aiw-fd.py').read_text(encoding='utf-8'), 'plugins/aiw-fd.py', 'exec'); print('Python syntax compile passed; no bytecode written.')\"",
+      "python plugins/aiw-fd.py close FD-044 Complete --force --reason \"User confirms Say plugin is complete and runtime validated; forced archive requested.\"",
+      "aiw fd close FD-044 Complete --force --reason \"User confirms Say plugin is complete and runtime validated; forced archive requested.\""
+    ],
+    "results": [
+      {"kind": "compile-only", "exit_code": 0},
+      {"kind": "user-requested-archive", "fd_id": "FD-044", "result": "archived", "review_verified": false},
+      {"kind": "static-review", "result": "复核强制和正常分支、审计字段、收据不变、索引及归档回滚、文档契约"}
+    ],
+    "not_run": ["tests", "fault-injection", "formatter", "lint", "final-build", "network"],
+    "residual_risk": "PATH 中 aiw 解析到的外部 aiw-fd.py 副本未更新；使用仓库副本 python plugins/aiw-fd.py 可执行新参数。Reviewer 证据仍明确缺失，未知执行结果仍阻止归档。"
+  }
+}

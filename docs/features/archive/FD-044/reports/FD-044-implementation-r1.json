@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "fd_id": "FD-044",
+  "kind": "worker-report",
+  "source_event": null,
+  "markdown": "FD-044-implementation-r1.md",
+  "data": {
+    "work_items": ["1.1", "1.2", "1.3"],
+    "summary": "补齐 Say 发行目录、双平台构建、安装及文档；实际配置不覆盖。",
+    "source_event_note": "用户授权直接在主工作区实施，无 FD 角色事件或 Git 写操作。",
+    "compile": {
+      "command": "go build -o NUL ./cmd/aiw-say",
+      "exit_code": 0,
+      "environment": {"GOPROXY": "off", "GOSUMDB": "off", "GOTOOLCHAIN": "local"},
+      "retained_binary": false
+    },
+    "static_review": ["批处理路由和失败退出", "安装排除 aiw.toml", "插件发现与默认配置目录"],
+    "not_run": ["tests", "build.bat", "installation", "Linux cross-compilation", "translation", "independent review"],
+    "risks": ["批处理执行尚未验证", "发行物尚未构建安装"],
+    "status": "implementation-finished-review-not-performed"
+  }
+}

@@ -47,6 +47,7 @@ endlocal & cd /d "%CWD%" & exit /b %RESULT%
 if /i "%~1"=="windows" goto :build_windows
 if /i "%~1"=="linux" goto :build_linux
 if /i "%~1"=="req" goto :build_req
+if /i "%~1"=="say" goto :build_say
 if /i "%~1"=="gateway" goto :build_gateway
 if /i "%~1"=="cz" goto :build_cz
 if /i "%~1"=="plugins" goto :build_plugins
@@ -56,12 +57,12 @@ if /i "%~1"=="bin" (
     call :build_windows || exit /b 1
     call :build_linux || exit /b 1
     call :build_gateway || exit /b 1
-    call :install_gateway || exit /b 1
     exit /b 0
 )
 if /i "%~1"=="all" (
     call :build_windows || exit /b 1
     call :build_linux || exit /b 1
+    call :build_gateway || exit /b 1
     call :build_plugins || exit /b 1
     call :build_docs || exit /b 1
     call :build_skills || exit /b 1
@@ -126,6 +127,45 @@ set "GOARCH="
 echo Req plugin binaries built in plugins\aiw-req.
 exit /b 0
 
+ :build_say
+setlocal
+if not exist "plugins\aiw-say" (
+    mkdir "plugins\aiw-say"
+    if errorlevel 1 (
+        endlocal
+        exit /b 1
+    )
+)
+set "GOFLAGS="
+set "GOOS=windows"
+set "GOARCH=amd64"
+go build -trimpath -ldflags="-s -w -X aiw/internal/version.Version=%AIW_VERSION%" -o "plugins\aiw-say\aiw-say.exe" ./cmd/aiw-say
+if errorlevel 1 (
+    echo Error: Windows say build failed.
+    endlocal
+    exit /b 1
+)
+set "GOOS=linux"
+go build -trimpath -ldflags="-s -w -X aiw/internal/version.Version=%AIW_VERSION%" -o "plugins\aiw-say\aiw-say" ./cmd/aiw-say
+if errorlevel 1 (
+    echo Error: Linux say build failed.
+    endlocal
+    exit /b 1
+)
+copy /Y "program\aiw-say\aiw.toml.example" "plugins\aiw-say\aiw.toml.example" >nul
+if errorlevel 1 (
+    endlocal
+    exit /b 1
+)
+xcopy /E /I /Y "program\aiw-say\profiles" "plugins\aiw-say\profiles" >nul
+if errorlevel 1 (
+    endlocal
+    exit /b 1
+)
+endlocal
+echo Say plugin binaries and samples built in plugins\aiw-say.
+exit /b 0
+
  :build_cz
 if exist "plugins\aiw-cz\release" rmdir /s /q "plugins\aiw-cz\release"
 mkdir "plugins\aiw-cz\release"
@@ -137,13 +177,12 @@ echo Python cz plugin release prepared in plugins\aiw-cz\release.
 exit /b 0
 
 :build_gateway
-if not exist "plugins\aiw-gw" md "plugins\aiw-gw" || exit /b 1
 pushd "program\agent-gateway" || exit /b 1
 set "GOFLAGS="
 
 set "GOOS=windows"
 set "GOARCH=amd64"
-go build -trimpath -ldflags="-s -w" -o "%~dp0plugins\aiw-gw\agent-gateway.exe" .
+go build -trimpath -ldflags="-s -w" -o "%~dp0bin\agent-gateway.exe" .
 if errorlevel 1 (
     set "GOOS="
     set "GOARCH="
@@ -154,7 +193,7 @@ if errorlevel 1 (
 
 set "GOOS=linux"
 set "GOARCH=amd64"
-go build -trimpath -ldflags="-s -w" -o "%~dp0plugins\aiw-gw\agent-gateway" .
+go build -trimpath -ldflags="-s -w" -o "%~dp0bin\agent-gateway" .
 if errorlevel 1 (
     set "GOOS="
     set "GOARCH="
@@ -166,25 +205,25 @@ if errorlevel 1 (
 set "GOOS="
 set "GOARCH="
 popd
-echo agent gateway plugin binaries built in plugins\aiw-gw .
+echo Agent Gateway standalone binaries built in bin.
 call :install_gateway || exit /b 1
 exit /b 0
 
 :install_gateway
-if not exist "%INSTALL_DIR%\plugins\aiw-gw" mkdir "%INSTALL_DIR%\plugins\aiw-gw" || exit /b 1
-copy /Y "program\agent-gateway\gateway-example.json" "%INSTALL_DIR%\plugins\aiw-gw\gateway-new.json" >nul || exit /b 1
-copy /Y "plugins\aiw-gw\agent-gateway.exe" "%INSTALL_DIR%\plugins\aiw-gw\agent-gateway.exe" >nul || exit /b 1
-copy /Y "plugins\aiw-gw\agent-gateway" "%INSTALL_DIR%\plugins\aiw-gw\agent-gateway" >nul || exit /b 1
-copy /Y "plugins\aiw-gw\aiw-gw.py" "%INSTALL_DIR%\plugins\aiw-gw\aiw-gw.py" >nul || exit /b 1
-echo Gateway installed; existing gateway.json preserved.
+copy /Y "program\agent-gateway\gateway-example.json" "%INSTALL_DIR%\gateway-new.json" >nul || exit /b 1
+copy /Y "bin\agent-gateway.exe" "%INSTALL_DIR%\agent-gateway.exe" >nul || exit /b 1
+copy /Y "bin\agent-gateway" "%INSTALL_DIR%\agent-gateway" >nul || exit /b 1
+echo Gateway installed in %INSTALL_DIR%; existing gateway.json preserved.
 exit /b 0
 
  :build_plugins
 call :build_req || exit /b 1
-call :build_gateway || exit /b 1
+call :build_say || exit /b 1
 call :build_cz || exit /b 1
 if not exist "%INSTALL_DIR%\plugins" mkdir "%INSTALL_DIR%\plugins" || exit /b 1
-robocopy plugins "%INSTALL_DIR%\plugins" /S /Z /MT:32 /R:1 /W:1 /FFT /XD "%CD%\plugins\aiw-cz" /NFL /NDL /NP
+robocopy plugins "%INSTALL_DIR%\plugins" /S /Z /MT:32 /R:1 /W:1 /FFT /XD "%CD%\plugins\aiw-cz" "%CD%\plugins\aiw-say" "%CD%\plugins\aiw-gw" /NFL /NDL /NP
+if errorlevel 8 exit /b 1
+robocopy plugins\aiw-say "%INSTALL_DIR%\plugins\aiw-say" /E /Z /R:1 /W:1 /FFT /XF aiw.toml /NFL /NDL /NP
 if errorlevel 8 exit /b 1
 if not exist "%INSTALL_DIR%\plugins\aiw-cz" mkdir "%INSTALL_DIR%\plugins\aiw-cz"
 mkdir "%INSTALL_DIR%\plugins\aiw-cz"
@@ -207,7 +246,7 @@ call cp-mul.bat "%~1" "%~2" || exit /b 1
 exit /b 0
 
  :help
-echo Usage: build.bat [windows] [linux] [req] [gateway] [cz] [plugins] [docs] [skills]
+echo Usage: build.bat [windows] [linux] [bin] [req] [say] [gateway] [cz] [plugins] [docs] [skills] [all]
 echo.
 echo Actions can be combined and run in the specified order.
 echo With no arguments, only the Windows build is performed.
@@ -216,11 +255,13 @@ echo   windows  Build and install the Windows executable.
 echo   linux    Build and install the Linux executable.
 echo   bin      Build and install AIW and Gateway binaries; preserve Gateway config.
 echo   req      Build Windows and Linux req plugin binaries.
-echo   gateway  Build Windows and Linux agent gateway binaries.
+echo   say      Build Windows and Linux say binaries and configuration samples.
+echo   gateway  Build and install standalone Windows and Linux Gateway binaries beside AIW.
 echo   cz       Prepare the Python cz release.
-echo   plugins  Build plugin binaries and install the curated cz release.
+echo   plugins  Build and install plugins, including Say; preserve Say aiw.toml.
 echo   docs     Copy usage documentation to the install directory.
 echo   skills   Build workflow binaries and install skills individually.
+echo   all      Build and install AIW, standalone Gateway, plugins, docs, and skills.
 echo.
 echo Help: -h, --help, help, /h, /?
 exit /b 0

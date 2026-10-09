@@ -15,8 +15,14 @@ spec.loader.exec_module(core)
 
 META = {
 	'name': 'aiw git rebase-origin',
-	'short': 'Interactive rebase against upstream.',
-	'long': 'Runs an interactive rebase against the upstream branch (@{u}).',
+	'short': 'Interactively edit commits on the current branch since its upstream.',
+	'long': (
+		'Fetches the configured upstream remote, then runs git rebase -i @{u}. Git '
+		'opens a todo list for commits on the current '
+		'branch that are not in its configured upstream, where you can reorder, '
+		'reword, squash, or drop commits. This rewrites commit IDs and requires an '
+		'upstream to be configured. It does not push the result.'
+	),
 	'usage': 'aiw git rebase-origin',
 	'args': [],
 	'examples': ['aiw git rebase-origin']
@@ -28,6 +34,7 @@ def main(argv):
 	if any(f in argv for f in help_flags):
 		core.print_help_meta(META)
 		return 0
+	core.run_cmd(['git', 'fetch'])
 	return core.run_cmd(['git', 'rebase', '-i', '@{u}'])
 
 

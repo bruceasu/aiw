@@ -36,7 +36,11 @@ func createWithSequence(id, title string, automatic bool) (Meta, error) {
 		return Meta{}, errors.New("invalid or reserved requirement id")
 	}
 	root := repo.Root()
-	sequence := filepath.Join(runtimeRoot(), "sequence")
+	storage := Root
+	if automatic || numberedIssue.MatchString(id) { storage = IssueRoot }
+	runtime := runtimeRoot()
+	if storage == IssueRoot { runtime = filepath.Join(root, ".ai", "issues") }
+	sequence := filepath.Join(runtime, "sequence")
 	if err := os.MkdirAll(filepath.Dir(sequence), 0o755); err != nil { return Meta{}, err }
 	lock, err := os.OpenFile(sequence+".lock", os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 	if err != nil { return Meta{}, fmt.Errorf("acquire Requirement creation lock (do not remove an active lock): %w", err) }
@@ -45,13 +49,15 @@ func createWithSequence(id, title string, automatic bool) (Meta, error) {
 	var number uint64
 	numbered := automatic
 	if !automatic {
-		number, numbered, err = requirementNumber(id)
+		if storage == IssueRoot { number, numbered, err = issueNumber(id) } else { number, numbered, err = requirementNumber(id) }
 		if err != nil { return Meta{}, err }
 	}
 	if numbered {
-		number, err = reserveRequirementNumber(sequence, root, number)
+		if storage == IssueRoot {
+			number, err = reserveRecordNumber(sequence, root, number, IssueRoot, issueNumber)
+		} else { number, err = reserveRequirementNumber(sequence, root, number) }
 		if err != nil { return Meta{}, err }
-		if automatic { id = fmt.Sprintf("REQ%05d-%s", number, id) }
+		if automatic { id = fmt.Sprintf("ISSUE-%03d", number) }
 	}
 	return createExact(id, title)
 }
@@ -61,6 +67,14 @@ func requirementNumber(id string) (uint64, bool, error) {
 	if match == nil { return 0, false, nil }
 	number, err := strconv.ParseUint(match[1], 10, 64)
 	if err != nil || number == 0 { return 0, true, fmt.Errorf("invalid Requirement number in %q", id) }
+	return number, true, nil
+}
+
+func issueNumber(id string) (uint64, bool, error) {
+	match := numberedIssue.FindStringSubmatch(id)
+	if match == nil { return 0, false, nil }
+	number, err := strconv.ParseUint(match[1], 10, 64)
+	if err != nil || number == 0 { return 0, true, fmt.Errorf("invalid Issue number in %q", id) }
 	return number, true, nil
 }
 
@@ -88,12 +102,16 @@ func readRequirementSequence(path string) (uint64, error) {
 }
 
 func reserveRequirementNumber(sequence, root string, requested uint64) (uint64, error) {
+	return reserveRecordNumber(sequence, root, requested, Root, requirementNumber)
+}
+
+func reserveRecordNumber(sequence, root string, requested uint64, storage string, parseNumber func(string) (uint64, bool, error)) (uint64, error) {
 	highest, sequenceErr := readRequirementSequence(sequence)
 	recovering := errors.Is(sequenceErr, os.ErrNotExist) || errors.Is(sequenceErr, errSequenceCorrupt)
 	if sequenceErr != nil && !recovering { return 0, sequenceErr }
 	var directoryHighest uint64
 	seen := make(map[string]bool)
-	for _, base := range []string{filepath.Join(root, Root), Root} {
+	for _, base := range []string{filepath.Join(root, storage), storage} {
 		for _, suffix := range []string{"", archiveRoot, cancelledRoot} {
 			path, err := filepath.Abs(filepath.Join(base, suffix))
 			if err != nil { return 0, err }
@@ -103,7 +121,7 @@ func reserveRequirementNumber(sequence, root string, requested uint64) (uint64, 
 			if err != nil { return 0, err }
 			for _, entry := range entries {
 				if !entry.IsDir() { continue }
-				number, _, err := requirementNumber(entry.Name())
+				number, _, err := parseNumber(entry.Name())
 				if err != nil { return 0, err }
 				if number > highest { highest = number }
 				if number > directoryHighest { directoryHighest = number }

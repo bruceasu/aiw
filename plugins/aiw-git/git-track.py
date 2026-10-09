@@ -45,7 +45,11 @@ META = {
 def main(argv):
     help_flags = {'-h', '--help', '-help', '-?'}
 
-    if not argv or any(f in argv for f in help_flags):
+    if not argv:
+        print(f'usage: {META["usage"]}', file=sys.stderr)
+        return 2
+
+    if any(f in argv for f in help_flags):
         core.print_help_meta(META)
         return 0
 
@@ -69,7 +73,7 @@ def main(argv):
         return 0
 
     # Default: local branch exists, set upstream or push
-    if not core.branch_exists(branch):
+    if not core.ref_exists(f'refs/heads/{branch}'):
         print(f'Error: Local branch "{branch}" does not exist. Use --track to create it.', file=sys.stderr)
         return 1
 
