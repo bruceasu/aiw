@@ -1,6 +1,6 @@
 # FD-011: Merge branches in an isolated worktree
 
-**Status:** Completed  
+**Status:** Complete  
 **Revision:** 1  
 **Priority:** Medium
 

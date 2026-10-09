@@ -1,10 +1,10 @@
 id = "REQ00008-fd-force-recovery"
 title = "FD 工作流强制恢复与事件控制"
 parent_id = ""
-status = "APPROVED"
+status = "ARCHIVED"
 created = "2026-10-09"
 updated = "2026-10-09"
-revision = 5
+revision = 6
 
 [approval]
 status = "APPROVED"
@@ -21,9 +21,9 @@ task_id = ""
 session_id = ""
 
 [terminal]
-by = ""
-at = ""
-reason = ""
+by = "LAPTOP-P8VM6T16\\suk"
+at = "2026-10-09T22:53:16+09:00"
+reason = "done"
 
 [artifact]
 requirement-plan = "docs/requirements/REQ00008-fd-force-recovery/requirement-plan.md"

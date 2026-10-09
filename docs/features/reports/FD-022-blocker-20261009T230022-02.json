@@ -1,0 +1,30 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-022",
+  "source_event": "FD-022-000008-reopen-requested",
+  "human_report": "FD-022-blocker-20261009T230022-02.md",
+  "data": {
+    "stage": "worker-preflight-resume",
+    "role": "pm",
+    "recorded_at": "2026-10-09T23:00:22+09:00",
+    "recorder_session": "fd022-auto-pm-20261009-230022-b7d1",
+    "observed_blocker": "On resume, FD-022 remains In Progress at revision 8 with the same pending reopen-requested Worker handoff and three unresolved NEEDS_INPUT gates. The previous blocker report remains unresolved. No Worker claim, worktree, or implementation change was made.",
+    "confirmed_cause": "The contract and runtime evidence gates remain unresolved. Repeating the auto request did not specify strict:true semantics or separately authorize network access or an exact runtime validation command.",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      "Re-read the active FD and reopen receipt; revision, digest-bound event, and pending state were unchanged.",
+      "Reviewed the previous FD-022 blocker pair; it remains unresolved.",
+      "Ran aiw fd list; both active and archived FD-022 records remain visible.",
+      "Checked Git status; the workspace was clean before recording this follow-up."
+    ],
+    "status": "unresolved",
+    "human_decision_required": true,
+    "human_decision_detail": "Specify strict:true handling and decide separately whether to authorize obtaining external SDK contract evidence or a proposed exact runtime validation command. The repeated auto trigger alone does not specify these decisions.",
+    "actual_resolution": null,
+    "resolved_at": null,
+    "residual_risk_or_next_step": "Wait for the material decisions, then resolve FD gates before claiming Worker work. The CLI show/resume ambiguity for matching active and archived IDs remains.",
+    "reusable_improvement": "Evaluate active-record precedence in aiw fd show/resume for reopened FDs and add focused reopen recovery coverage; no CLI or rule change was made.",
+    "improvement_status": "proposed"
+  }
+}

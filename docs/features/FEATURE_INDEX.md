@@ -9,7 +9,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-022](FD-022_AGENT_GATEWAY_OPENAI_AGENTS_SDK.md) | Agent Gateway OpenAI Agents SDK compatibility | In Progress | Medium |
 | [FD-037](FD-037_AIW_SAY.md) | AIW Say 跨平台剪贴板与图形入口 | Open | Medium |
 | [FD-045](FD-045_AGENT_GATEWAY_CODEX_APP_SERVER.md) | Agent Gateway 迁移到 Codex App Server 后端 | Design | Medium |
-| [FD-011](archive/FD-011/FD-011_GIT_MERGE_TO.md) | Merge branches in an isolated worktree | Completed | Medium |
+
 
 ## Completed
 
@@ -26,6 +26,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-009](archive/FD-009/FD-009_REMOTE_AGENT_PROXY_URL.md) | Remote Agent Proxy URL | Complete | Medium |
 | [FD-010](archive/FD-010/FD-010_AIW_INIT.md) | AIW Project Initialization | Complete | Medium |
 | [FD-011](archive/FD-011/FD-011_ARCHIVE_FD_EVIDENCE_WITH_DESIGN.md) | # FD-011: Archive FD evidence with design | Complete | Medium |
+| [FD-011](archive/FD-011/FD-011_GIT_MERGE_TO.md) | Merge branches in an isolated worktree | Complete | Medium |
 | [FD-012](archive/FD-012/FD-012_CONSOLIDATE_AGENT_GUIDANCE_UNDER_AGENTS.md) | Consolidate agent guidance under .agents | Complete | Medium |
 | [FD-013](archive/FD-013/FD-013_REOPEN_ARCHIVED_CLOSED_AND_DEFERRED_FDS.md) | # FD-013: Reopen archived Closed and Deferred FDs | Complete | Medium |
 | [FD-014](archive/FD-014/FD-014_INDEPENDENT_TESTING_AND_PM_ACCEPTANCE_IN_FD_WORK.md) | Independent testing and PM acceptance in FD workflow | Complete | High |
@@ -60,7 +61,3 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-046](archive/FD-046/FD-046_FORCE_ARCHIVE_FDS_AS_COMPLETE.md) | Force archive FDs as Complete | Complete | Medium |
 
 ## Deferred / Closed
-
-| FD | Title | Status | Priority |
-| --- | --- | --- | --- |
-| [FD-022](archive/FD-022/FD-022_AGENT_GATEWAY_OPENAI_AGENTS_SDK.md) | Agent Gateway OpenAI Agents SDK compatibility | Deferred | Medium |
