@@ -635,6 +635,9 @@ Complete, Deferred, and Closed behavior remains unchanged without `--force`.
   matching evidence, updates the index, and records the skipped status and
   Reviewer checks in an operation audit
 - AND the archive contains no fabricated Reviewer verification result
+- AND a latest pending non-`verification-passed` receipt is cancelled in the
+  same transaction and restored if the archive rolls back
+- AND any `verification-passed` receipt remains unchanged
 - AND an unknown launching/dispatched role result still prevents the archive
 
 #### Scenario: Emit outside the normal stage

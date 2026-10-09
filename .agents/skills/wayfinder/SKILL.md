@@ -7,9 +7,9 @@ disable-model-invocation: true
 Read `skills/work-management.md` and follow `skills/reviewed-skill-contract.md`.
 Its output is a planning map, not implementation. Its AIW Task, worktree, test, and sub-agent
 rules override any broader wording below. In particular, start at most two
-research sub-agents, do not let them run tests, and use a user-approved
-independent AIW Task plus `aiw wt` instead of a throwaway branch when isolation
-is required.
+research sub-agents, do not let them run tests, and use a user-approved AIW
+Task with its supported isolated-workspace workflow when Task isolation is
+required. Numbered FD worktrees use `aiw git wt`.
 
 A loose idea has arrived — too big for one agent session, and wrapped in fog: the way from here to the **destination** isn't visible yet. Wayfinding is about finding that way, not charging at the destination. This skill charts the way as a **shared map** on the repo's issue tracker, then works its **decision tickets** — questions whose resolution is a decision, not slices of a build to execute — one at a time until the route is clear.
 

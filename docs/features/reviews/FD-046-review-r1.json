@@ -1,0 +1,36 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-046",
+  "source_event": "FD-046-000004-implementation-ready",
+  "human_report": "FD-046-review-r1.md",
+  "data": {
+    "reviewer_session_ref": "codex-reviewer-20261009-fd046-r1",
+    "reviewed_diff": "1fefd74..ed8a40b",
+    "outcome": "changes-requested",
+    "findings": [
+      {
+        "id": "R1",
+        "severity": "medium",
+        "path": "plugins/aiw-fd.py",
+        "line": 2070,
+        "summary": "Forced Complete archive leaves a latest pending receipt pending after changing the FD revision and digest.",
+        "requirement": "FD-046 Solution requires the pending receipt to participate in the rollback-capable archive transaction and forbids altering a verification-passed receipt.",
+        "requested_change": "Handle a non-running pending receipt in the archive transaction and rollback, without creating or changing Reviewer verification evidence; alternatively revise the FD decision with evidence that preserving the stale pending receipt meets the workflow contract."
+      }
+    ],
+    "commands": [
+      "git status --short --branch",
+      "rg --files docs/features .ai/fd/FD-046 .wt/FD-046",
+      "git log -8 --oneline --decorate",
+      "git show --stat --oneline HEAD",
+      "git diff HEAD^ HEAD --unified=8 -- <FD-046 related paths>",
+      "python plugins/aiw-fd.py claim --help",
+      "python plugins/aiw-fd.py claim FD-046 FD-046-000004-implementation-ready --session codex-reviewer-20261009-fd046-r1",
+      "rg -n <close and audit symbols/spec sections>",
+      "Get-Content <FD, reports, specs, issue plans, and relevant plugin excerpts>"
+    ],
+    "skipped_checks": ["tests", "compile-only recheck", "final build", "lint", "fault injection"],
+    "residual_risk": "Transaction rollback has static evidence only; no fault injection was run."
+  }
+}

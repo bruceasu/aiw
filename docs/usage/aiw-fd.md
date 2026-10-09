@@ -306,7 +306,8 @@ aiw fd close FD-044 Complete --force --reason "Operator accepts completion witho
 `close Complete --force` 是显式例外：它会同时把活动 FD 设为 Complete 并归档，
 记录跳过状态与 Reviewer 检查的审计，但不会创建 Reviewer 通过证据。强制归档仍拒绝
 有 launching/dispatched 收据、目标冲突或不安全路径的 FD。归档 FD 使用现有
-reopen/request-review；其他强制命令不会自动搬移历史文件。
+reopen/request-review。强制归档会在同一事务中取消最新的非 `verification-passed`
+pending 收据；已有 `verification-passed` 收据保持不变。其他强制命令不会自动搬移历史文件。
 
 每次成功操作在共享 `.ai/fd/<FD-ID>/operations/<uuid>.json` 留下审计，包含操作者、
 本地用户、原因、UTC 时间、原状态/事件、结果和跳过的检查；取消/强制事件保存审计引用。

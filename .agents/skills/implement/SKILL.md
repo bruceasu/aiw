@@ -47,10 +47,14 @@ Never write a passing result for an unrun command.
 When all scoped Work Items are resolved, emit `implementation-ready` with
 `--producer worker` and a project-relative implementation report as the
 artifact. Include the source event ID when completing a dispatched handoff.
-The event routes to an independent Tester for an FD with `**Test policy:**
-Independent`; older FDs without the marker route directly to Reviewer. Worker
-must not write the Tester report or PM decision. If a new decision is needed, emit
-`needs-decision` with a written question instead, then stop.
+For the default path, `implementation-ready` routes directly to Reviewer after
+the Worker completes the repository-authorized compile-only check and static
+review. Optional testing is a separate `$fd-test` invocation and does not
+create a workflow event or gate review. Existing FDs with the legacy
+`Test policy: Independent` marker retain their recorded CLI routing, but the
+default implementation flow does not dispatch a Tester or assess a test
+report. If a new decision is needed, emit `needs-decision` with a written
+question instead, then stop.
 
 An independent Reviewer uses `fd-review` to check the FD, diff or commit, and actual evidence.
 It emits `changes-requested` with findings or `verification-passed` with its

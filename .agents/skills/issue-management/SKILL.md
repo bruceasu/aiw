@@ -123,11 +123,12 @@ it prevents a valid decision, report `BLOCKED` or `INCOMPLETE` and the precise
 `%% NEEDS_INPUT` question. Approval and promotion are separate human decisions.
 
 After an Issue is approved, the new default handoff is a numbered FD. Use
-`aiw fd new "<title>" --issue <id>` to link the approved source, then use
-`fd-workflow` to write decisions and ordered Work Items. The existing
-`aiw issue promote --task` command remains a legacy Task handoff and must be
-chosen explicitly. Do not create an OpenSpec change unless the user explicitly
-asks for one; stable spec updates do not imply a change directory.
+`aiw issue promote <id>` to create it from the Issue title, or use
+`aiw fd new "<title>" --issue <id>` directly. Both link the approved source
+and request Planner through the FD workflow. Promotion does not create a Task
+or update the legacy `[promotion]` metadata. Do not create an OpenSpec change
+unless the user explicitly asks for one; stable spec updates do not imply a
+change directory.
 Discovery alone does not authorize implementation or establish Design
 Readiness.
 

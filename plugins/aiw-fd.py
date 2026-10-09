@@ -2042,6 +2042,10 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
     if reason.strip():
         content += f"**Disposition reason:** {reason.strip()}\n"
     if force:
+        pending_receipt = bool(
+            latest
+            and latest[1].get("dispatch_state") == "pending"
+            and latest[1].get("event_type") != "verification-passed")
         force_audit.update({
             "result_status": "Complete",
             "result_revision": revision(content),
@@ -2050,13 +2054,18 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
                 .relative_to(base).as_posix(),
             "skipped_checks": ["status-must-be-complete", "current-reviewer-verification"],
             "review_verified": False,
-            "receipt_changed": False,
+            "receipt_changed": pending_receipt,
+            "receipt_disposition": ("cancelled" if pending_receipt else
+                                    "preserved-reviewer-verification" if latest and
+                                    latest[1].get("event_type") == "verification-passed" else
+                                    "no-pending-receipt"),
         })
     moved = []
     event_path = latest[0] if latest else None
     original_event = dict(latest[1]) if latest else None
     index_path = feature_dir(base) / "FEATURE_INDEX.md"
     original_index = index_path.read_text(encoding="utf-8") if index_path.exists() else None
+    receipt_attempted = False
     try:
         for source, target in moves:
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -2065,9 +2074,23 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
         atomic_text(fd_path, content)
         archive.parent.mkdir(parents=True, exist_ok=True)
         fd_path.replace(archive)
-        if not force and latest and latest[1]["dispatch_state"] == "pending":
+        update_receipt = bool(
+            latest
+            and latest[1]["dispatch_state"] == "pending"
+            and (not force or latest[1].get("event_type") != "verification-passed"))
+        if update_receipt:
             event = dict(latest[1])
-            event["dispatch_state"] = "cancelled" if outcome != "Complete" else "acknowledged"
+            if force:
+                event.update({
+                    "dispatch_state": "cancelled",
+                    "cancelled_at": force_audit["created_at"],
+                    "cancellation_reason": reason.strip(),
+                    "cancelled_by": force_audit["local_user"],
+                })
+                force_audit["result_event"] = event
+            else:
+                event["dispatch_state"] = "cancelled" if outcome != "Complete" else "acknowledged"
+            receipt_attempted = True
             atomic_json(event_path, event)
         update_index(base)
         if force:
@@ -2096,7 +2119,7 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
                     target.replace(source)
                 except (OSError, FDError) as rollback_error:
                     rollback_errors.append(str(rollback_error))
-        if not force and event_path and original_event:
+        if receipt_attempted and event_path and original_event:
             try:
                 atomic_json(event_path, original_event)
             except OSError as rollback_error:

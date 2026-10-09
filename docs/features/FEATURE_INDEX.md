@@ -6,32 +6,26 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-011](FD-011_GIT_MERGE_TO.md) | Merge branches in an isolated worktree | In Progress | Medium |
+| [FD-022](FD-022_AGENT_GATEWAY_OPENAI_AGENTS_SDK.md) | Agent Gateway OpenAI Agents SDK compatibility | In Progress | Medium |
 | [FD-037](FD-037_AIW_SAY.md) | AIW Say 跨平台剪贴板与图形入口 | Open | Medium |
-| [FD-038](FD-038_IMPROVE_FD_REPORT_REVIEW_AND_STATUS_INSPECTION.md) | Improve FD report, review, and status inspection | Planned | Medium |
 | [FD-045](FD-045_AGENT_GATEWAY_CODEX_APP_SERVER.md) | Agent Gateway 迁移到 Codex App Server 后端 | Design | Medium |
-| [FD-046](FD-046_FORCE_ARCHIVE_FDS_AS_COMPLETE.md) | Force archive FDs as Complete | Pending Verification | Medium |
 | [FD-011](archive/FD-011/FD-011_GIT_MERGE_TO.md) | Merge branches in an isolated worktree | Completed | Medium |
 
 ## Completed
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
+| [FD-046](FD-046_FORCE_ARCHIVE_FDS_AS_COMPLETE.md) | Force archive FDs as Complete | Complete | Medium |
 | [FD-001](archive/FD-001/FD-001_EVENT_DRIVEN_FD_WORKFLOW.md) | 事件驱动的 FD 工作流 | Complete | High |
 | [FD-002](archive/FD-002/FD-002_ACTIONABLE_FD_HANDOFF_RECOVERY_HINTS.md) | Actionable FD handoff recovery hints | Complete | Medium |
 | [FD-003](archive/FD-003/FD-003_COMPACT_CZ_RELEASE.md) | 精简 aiw-cz 发布包 | Complete | Medium |
 | [FD-004](archive/FD-004/FD-004_RE_REVIEW_COMPLETED_FDS_AFTER_DOCUMENT_CHANGES.md) | ﻿# FD-004: Re-review completed FDs after document changes | Complete | Medium |
 | [FD-005](archive/FD-005/FD-005_AIW_CZ_TYPESCRIPT_PYTHON.md) | 将 aiw-cz 从 TypeScript 迁移到 Python | Complete | Medium |
 | [FD-006](archive/FD-006/FD-006_TYPESCRIPT_AGENT_PROXY.md) | 本机 TypeScript Agent Proxy | Complete | Medium |
-| [FD-006](archive/FD-006_TYPESCRIPT_AGENT_PROXY.md) | 本机 TypeScript Agent Proxy | Complete | Medium |
 | [FD-007](archive/FD-007/FD-007_BOUNDED_AUTOMATIC_FD_WORKFLOW.md) | Bounded automatic FD workflow | Complete | Medium |
-| [FD-007](archive/FD-007_BOUNDED_AUTOMATIC_FD_WORKFLOW.md) | Bounded automatic FD workflow | Complete | Medium |
 | [FD-008](archive/FD-008/FD-008_AI_AGENT_PROXY_CLIENT.md) | ai agent-proxy-client | Complete | Medium |
-| [FD-008](archive/FD-008_AI_AGENT_PROXY_CLIENT.md) | ai agent-proxy-client | Complete | Medium |
 | [FD-009](archive/FD-009/FD-009_REMOTE_AGENT_PROXY_URL.md) | Remote Agent Proxy URL | Complete | Medium |
-| [FD-009](archive/FD-009_REMOTE_AGENT_PROXY_URL.md) | Remote Agent Proxy URL | Complete | Medium |
 | [FD-010](archive/FD-010/FD-010_AIW_INIT.md) | AIW Project Initialization | Complete | Medium |
-| [FD-010](archive/FD-010_AIW_INIT.md) | AIW Project Initialization | Complete | Medium |
 | [FD-011](archive/FD-011/FD-011_ARCHIVE_FD_EVIDENCE_WITH_DESIGN.md) | ﻿# FD-011: Archive FD evidence with design | Complete | Medium |
 | [FD-012](archive/FD-012/FD-012_CONSOLIDATE_AGENT_GUIDANCE_UNDER_AGENTS.md) | Consolidate agent guidance under .agents | Complete | Medium |
 | [FD-013](archive/FD-013/FD-013_REOPEN_ARCHIVED_CLOSED_AND_DEFERRED_FDS.md) | ﻿# FD-013: Reopen archived Closed and Deferred FDs | Complete | Medium |
