@@ -1,0 +1,30 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "fd_id": "FD-049",
+  "kind": "worker-report",
+  "source_event": "FD-049-000006-changes-requested",
+  "human_report": "FD-049-implementation-r2.md",
+  "data": {
+    "fd_revision": 6,
+    "worker_session": "fd049-worker-20261010-9a721c",
+    "work_items": {"1.1": "complete", "1.2": "complete", "1.3": "complete"},
+    "fix_commit": "d076f03",
+    "resolved_findings": ["R1: exact top-level and message JSON field allowlists reject case variants and alias overwrite combinations"],
+    "prior_review": "FD-049-review-r1.md",
+    "prior_worker_report": "FD-049-implementation-r1.md",
+    "compile": {
+      "command": "python -B scripts/compile.py",
+      "cwd": "program/agent-gateway",
+      "exit_code": 0,
+      "total_runs": 2,
+      "targets": ["windows/amd64", "linux/amd64"],
+      "retained_artifact": false,
+      "network": "disabled by GOPROXY/GOSUMDB=off and GOTOOLCHAIN=local"
+    },
+    "static_commands": ["git diff --check a3e5b23", "git diff a3e5b23 -- program/agent-gateway/chat.go", "git diff --stat a3e5b23"],
+    "static_evidence": ["exact raw JSON field names", "message array correspondence", "duplicate/null/UTF-8/input bounds", "unchanged Responses decoder", "shared inference path"],
+    "not_run": ["tests", "HTTP requests", "Say", "App Server", "SDK", "final builds", "formatters", "linters", "vet", "dependency downloads"],
+    "risks": ["runtime API compatibility unverified", "limited non-streaming text subset", "old binaries may reject records with new route"],
+    "review_status": "pending second independent Reviewer"
+  }
+}

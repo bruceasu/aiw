@@ -32,7 +32,7 @@ type HTTPRequestRecord struct {
 }
 
 func observedRoute(path string) string {
-    switch path { case "/v1/responses","/v1/models","/v1/usage":return path }
+    switch path { case "/v1/responses","/v1/chat/completions","/v1/models","/v1/usage":return path }
     return "other"
 }
 

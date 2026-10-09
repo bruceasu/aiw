@@ -1,5 +1,21 @@
 # Agent Gateway 独立程序
 
+## Chat Completions 文本接口
+
+`POST /v1/chat/completions` 可供现有 `aiw say` 接入 Codex 后端。仅支持 `model`、`messages`、省略或 false 的 `stream`，以及省略或 1 的 `n`。消息内容必须为非空白字符串；开头的 system/developer 转为指令，user/assistant 保持对话顺序，至少需要一条 user 消息。工具、图片/音频、content 数组、流式及其他生成参数在执行前拒绝。
+
+成功返回单个 `choices[0].message.content` 和 `finish_reason:stop`。已知 usage 使用 prompt_tokens/completion_tokens/total_tokens，未知为 null。该接口与 Responses 共用认证、模型授权、额度、超时、取消和 App Server 执行，不需要额外配置。
+
+默认本地监听配置下，Say 接入示例（请替换网关 Key 和允许的逻辑模型）：
+
+```powershell
+$env:OPENAI_BASE_URL = "http://127.0.0.1:43127/v1"
+$env:OPENAI_API_KEY = "你的网关Key"
+aiw say --model "允许的逻辑模型" "请确认明天会议时间"
+```
+
+现有配置和记录可由新版继续加载。新接口产生的 HTTP 审计记录包含 `/v1/chat/completions` route；旧二进制可能不识别该值，不能保证直接降级读取新记录。请保留状态数据，降级处理需另行安排，不应删除记录绕过校验。
+
 ## Codex 后端
 
 Gateway 使用 Codex App Server 的 stdio JSON-RPC，并按 `global_concurrency` 建立有界进程池。每个请求在一个空临时工作目录中启动新的 ephemeral thread；健康进程可复用。每个 turn 使用配置中的模型映射、只读且禁网的 sandbox，以及 `approvalPolicy=never`。

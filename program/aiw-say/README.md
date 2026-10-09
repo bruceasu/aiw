@@ -30,6 +30,12 @@ provide `--config PATH`.
 
 Set `OPENAI_API_KEY` in the environment before using the plugin. Credentials are not accepted in TOML. Requests use the OpenAI Chat Completions API; the source text is sent to the configured API and is not written to application logs. `OPENAI_BASE_URL` can select an HTTPS-compatible endpoint; plain HTTP is accepted only for loopback addresses.
 
+Agent Gateway's Codex backend supports Say's non-streaming text requests through
+`/v1/chat/completions`. Set `OPENAI_BASE_URL` to the Gateway URL including `/v1`,
+`OPENAI_API_KEY` to a Gateway key, and `model` or `--model` to an allowed logical
+model in the Gateway configuration. For the default local listener, the base URL
+is `http://127.0.0.1:43127/v1`. Remote endpoints must use HTTPS.
+
 ## Profiles
 
 Copy any desired sample from `profiles/` to the user's profile directory. Copy only when the destination does not already exist; AIW Say does not create or overwrite user profile files.

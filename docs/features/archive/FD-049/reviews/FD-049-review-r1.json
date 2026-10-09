@@ -1,0 +1,26 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "fd_id": "FD-049",
+  "kind": "reviewer-report",
+  "source_event": "FD-049-000005-implementation-ready",
+  "human_report": "FD-049-review-r1.md",
+  "data": {
+    "reviewer_session": "fd049-reviewer-20261010-a613",
+    "base_commit": "f653509",
+    "reviewed_commit": "e72fc27",
+    "result": "changes-requested",
+    "findings": [{
+      "id": "R1",
+      "severity": "medium",
+      "blocking": true,
+      "file": "program/agent-gateway/chat.go",
+      "line": 27,
+      "summary": "Chat struct 解码接受字段大小写变体，并允许不同大小写的逻辑重复字段覆盖值。",
+      "correction": "对顶层和每个消息对象的原始 JSON key 使用精确白名单，拒绝大小写变体，保持 Responses 契约不变。"
+    }],
+    "static_evidence": ["全部十个差异文件", "Say 请求和响应读取", "Chat null/角色/大小边界", "共享 inference 与单次 Reserve", "usage null 映射", "Responses SSE 未改变", "route loader 与降级文档", "Worker 编译脚本及报告"],
+    "commands_run": ["Get-Content 定向读取", "rg 定向搜索", "git diff --stat f653509..e72fc27", "git diff f653509..e72fc27 -- selected files", "git status --short", "aiw fd status FD-049 (无效子命令)", "aiw fd show FD-049", "aiw fd emit --help", "aiw fd claim FD-049 FD-049-000005-implementation-ready --session fd049-reviewer-20261010-a613"],
+    "not_run": ["tests", "compile", "HTTP", "Say", "App Server", "SDK", "formatters", "linters", "vet", "final builds", "network"],
+    "risks": ["实际 HTTP/Say/App Server 兼容性未运行验证"]
+  }
+}

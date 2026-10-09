@@ -1,0 +1,34 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "fd_id": "FD-049",
+  "kind": "worker-report",
+  "source_event": "FD-049-000004-work-requested",
+  "human_report": "FD-049-implementation-r1.md",
+  "data": {
+    "fd_revision": 4,
+    "worker_session": "fd049-worker-20261010-9a721c",
+    "parent_branch": "develop",
+    "branch": "feature/FD-049",
+    "worktree": ".wt/FD-049",
+    "plan_commit": "f653509",
+    "summary": "新增非流式文本 Chat Completions，复用 Codex Responses 授权和执行链，供现有 Say 接入。",
+    "work_items": {
+      "1.1": {"status": "complete", "commit": "731cc38"},
+      "1.2": {"status": "complete", "commit": "e9e0590"},
+      "1.3": {"status": "complete", "evidence": ["openspec/specs/agent-proxy/spec.md", "program/agent-gateway/README.md", "program/aiw-say/README.md", "FD-049-implementation-r1.md"]}
+    },
+    "compile": {
+      "command": "python -B scripts/compile.py",
+      "cwd": "program/agent-gateway",
+      "exit_code": 0,
+      "targets": ["windows/amd64", "linux/amd64"],
+      "retained_artifact": false,
+      "network": "disabled by GOPROXY/GOSUMDB=off and GOTOOLCHAIN=local"
+    },
+    "static_commands": ["git diff --check f653509", "git diff --stat f653509", "git diff f653509 -- program/agent-gateway/chat.go program/agent-gateway/server.go program/agent-gateway/observation.go"],
+    "static_evidence": ["Say request/response decoder", "strict chat fields/messages and input limits", "shared inference authorization/quota/cancellation", "completion/usage mapping", "unchanged Responses SSE branch", "route loader compatibility"],
+    "not_run": ["tests", "HTTP requests", "Say", "App Server", "SDK", "final builds", "formatters", "linters", "vet", "dependency downloads"],
+    "risks": ["runtime API compatibility unverified", "limited non-streaming text subset", "old binaries may reject records with new route"],
+    "review_status": "pending independent Reviewer"
+  }
+}

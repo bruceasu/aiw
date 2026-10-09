@@ -7,6 +7,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
 | [FD-037](FD-037_AIW_SAY.md) | AIW Say 跨平台剪贴板与图形入口 | Open | Medium |
+| [FD-048](FD-048_AGENT_GATEWAY_OPENAI_API_CODEX.md) | Agent Gateway 统一 OpenAI API 出口与 Codex 兼容适配 | Design | Medium |
 
 ## Completed
 
@@ -58,6 +59,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-045](archive/FD-045/FD-045_AGENT_GATEWAY_CODEX_APP_SERVER.md) | Agent Gateway 改用 Codex App Server 并兼容 Agents SDK | Complete | Medium |
 | [FD-046](archive/FD-046/FD-046_FORCE_ARCHIVE_FDS_AS_COMPLETE.md) | Force archive FDs as Complete | Complete | Medium |
 | [FD-047](archive/FD-047/FD-047_RESOLVE_ACTIVE_AND_ARCHIVED_FD_ID_COLLISIONS.md) | Resolve active and archived FD ID collisions | Complete | Medium |
+| [FD-049](archive/FD-049/FD-049_AGENT_GATEWAY_CHAT_COMPLETIONS.md) | Agent Gateway 优先支持 Chat Completions 文本接口 | Complete | Medium |
 
 ## Deferred / Closed
 

@@ -57,6 +57,28 @@ POST /v1/responses MUST 支持 model、文本 input（字符串/user/assistant �
 
 development MUST 限 loopback 监听与 peer；shared MUST 显式配置认证/限额/监听。应用不操作 Docker、挂载或登录供给；Proxy/Codex 可共容器，部署/宿主隔离由用户负责。独立 cwd 不提供请求间访问隔离，Linux 恶意脱组及共容器跨读为残余风险。
 
+### Requirement: Codex Chat Completions text subset
+
+POST `/v1/chat/completions` MUST 复用 Responses 的 Gateway Key/主体认证、模型授权、RPM/并发/日额度、App Server 执行、超时/取消及清理逻辑；每个请求 MUST 仅执行和扣额一次。
+
+请求 MUST 只接受 `model`、`messages`、`stream`、`n`。`messages` MUST 为非空数组，消息仅包含 `role` 和非空白字符串 `content`；支持开头的 system/developer 指令以及有序 user/assistant 文本对话，MUST 至少包含一条 user 消息，MUST 拒绝对话开始后的 system/developer。`stream` 仅允许省略或 false，`n` 仅允许省略或 1。未知/重复字段、null、尾随 JSON、非法 UTF-8、超过 1 MiB 主体、映射后超过 64 KiB UTF-8 的指令/对话及其他角色/内容类型 MUST 在启动后端前拒绝。函数工具、流式、content 数组和生成参数控制不属于此子集。
+
+成功 MUST 返回 `object:chat.completion`、`chatcmpl_` ID、created、逻辑 model 和一个 index=0、assistant 字符串 content、finish_reason=stop 的 choice；文本来自成功执行结果。失败 MUST 返回现有脱敏错误 envelope/HTTP 状态，不伪称 stop。已知 usage MUST 映射为 prompt_tokens/completion_tokens/total_tokens，未知 usage MUST 保持 null。
+
+HTTP 请求观测 MUST 识别 `/v1/chat/completions`，沿用现有元数据结构。新版本 MUST 能加载旧记录；旧版本可能不识别新增 route 值，直接降级的限制 MUST 写入文档。本能力不要求新增代理统计/计费组件。
+
+Chat 请求的顶层和消息对象字段名 MUST 精确匹配上述白名单，包括大小写；MUST 拒绝 `MODEL`、`ROLE` 等别名以及别名与标准键同时出现的覆盖组合，不得仅依赖 Go struct 解码的大小写匹配。
+
+#### Scenario: Accept the existing Say client
+
+- WHEN Say 发送允许的 model、system/user 字符串消息和 stream:false
+- THEN Gateway 使用既有 Codex 执行链，并在成功时返回一个完整文本 choice 和 stop
+
+#### Scenario: Reject unsupported chat controls before execution
+
+- WHEN 请求包含 stream:true、n 大于 1、tools、图片/音频内容或其他不支持字段
+- THEN Gateway MUST 返回 400，且 MUST NOT 启动模型执行
+
 ### Requirement: Bounded Codex App Server backend
 
 Codex execution MUST use the versioned App Server stdio JSON-RPC protocol and a process pool bounded by `global_concurrency`. A pool process MUST serve at most one HTTP request at a time; each request MUST start a new ephemeral thread with a separate temporary cwd and MUST NOT accept caller-supplied thread IDs. Healthy App Server processes MAY be reused after a terminal turn. A process with an unknown protocol or execution state MUST be discarded and MUST NOT be retried automatically.

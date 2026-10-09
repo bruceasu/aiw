@@ -98,6 +98,7 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter,r *http.Request) {
         writeJSON(w,200,map[string]any{"object":"list","data":models})
     case "/v1/usage":g.usage(w,r,*p)
     case "/v1/responses":g.responses(w,r,*p,id)
+    case "/v1/chat/completions":g.chatCompletions(w,r,*p,id)
     default:fail(w,404,"not_found")
     }
 }
@@ -118,13 +119,21 @@ func (g *Gateway) usage(w http.ResponseWriter,r *http.Request,p Principal) {
 }
 
 func (g *Gateway) responses(w http.ResponseWriter,httpRequest *http.Request,p Principal,id string) {
+    g.inference(w,httpRequest,p,id,decodeRequest,false)
+}
+
+func (g *Gateway) chatCompletions(w http.ResponseWriter,httpRequest *http.Request,p Principal,id string) {
+    g.inference(w,httpRequest,p,id,decodeChatRequest,true)
+}
+
+func (g *Gateway) inference(w http.ResponseWriter,httpRequest *http.Request,p Principal,id string,decode func([]byte)(Request,error),chat bool) {
     if httpRequest.Method!="POST" { fail(w,405,"method_not_allowed");return }
     if httpRequest.URL.RawQuery!="" { fail(w,400,"unsupported_query");return }
     media:=strings.TrimSpace(strings.Split(httpRequest.Header.Get("Content-Type"),";")[0])
     if media!="application/json" { fail(w,400,"invalid_content_type");return }
     data,err:=io.ReadAll(http.MaxBytesReader(w,httpRequest.Body,maxBody))
     if err!=nil { var sizeError *http.MaxBytesError;if errors.As(err,&sizeError) { fail(w,413,"payload_too_large") }else{fail(w,400,"invalid_body")};return }
-    request,err:=decodeRequest(data)
+    request,err:=decode(data)
     if err!=nil { fail(w,400,"invalid_request");return }
     if observed,ok:=w.(*observedWriter);ok {
         if _,configured:=g.config.Models[request.Model];configured { observed.record.Model=request.Model }
@@ -161,6 +170,7 @@ func (g *Gateway) responses(w http.ResponseWriter,httpRequest *http.Request,p Pr
         if err=stream.begin();err!=nil { deliveryError(err);return }
         deliveryError(stream.send("response.completed",map[string]any{"response":responseObject(id,created,request,"completed",result.Texts,result.ToolCall,result.Usage,"")}));return
     }
+    if chat { writeJSON(w,200,chatCompletionObject(id,created,request,result.Texts,result.Usage));return }
     writeJSON(w,200,responseObject(id,created,request,"completed",result.Texts,result.ToolCall,result.Usage,""))
 }
 
