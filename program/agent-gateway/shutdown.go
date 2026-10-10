@@ -60,14 +60,17 @@ func stopGateway(path string) error {
     if c.Listen==""&&c.Mode!="shared" { c.Listen="127.0.0.1:43127" }
     address,err:=shutdownAddress(c.Listen)
     if err!=nil { return err }
-    if !filepath.IsAbs(c.StateDir) { return errors.New("gateway state_dir must be absolute") }
+	if c.BackendMode=="" { c.BackendMode="codex" }
+	if c.BackendMode!="codex"&&c.BackendMode!="openai_proxy" { return errors.New("invalid backend_mode") }
+	if c.BackendMode=="codex"&&!filepath.IsAbs(c.StateDir) { return errors.New("gateway state_dir must be absolute") }
     key:=""
     for _,p:=range c.Principals {
         if p.Enabled { for _,candidate:=range p.Keys { if validKey(candidate) { key=candidate;break } } }
         if key!="" { break }
     }
     if key=="" { return errors.New("no enabled gateway credential configured") }
-    lockPath:=filepath.Join(c.StateDir,"gateway.lock")
+	lockPath:=""
+	if c.BackendMode=="codex" { lockPath=filepath.Join(c.StateDir,"gateway.lock") }
     transport:=&http.Transport{DialContext:(&net.Dialer{Timeout:3*time.Second}).DialContext}
     defer transport.CloseIdleConnections()
     client:=&http.Client{Transport:transport,Timeout:5*time.Second,CheckRedirect:func(*http.Request,[]*http.Request) error { return errors.New("redirect rejected") }}
@@ -76,8 +79,9 @@ func stopGateway(path string) error {
     request.Header.Set("Authorization","Bearer "+key)
     response,err:=client.Do(request)
     if err!=nil {
-        released,lockErr:=lockReleased(lockPath)
-        if lockErr==nil&&released&&connectionRefused(err) {
+		released,lockErr:=true,error(nil)
+		if lockPath!="" { released,lockErr=lockReleased(lockPath) }
+		if lockErr==nil&&released&&connectionRefused(err) {
             fmt.Println("Gateway is already stopped.");return nil
         }
         return errors.New("gateway stop request failed; no process was force-killed and no lock was removed")
@@ -93,12 +97,12 @@ func stopGateway(path string) error {
     }
     deadline:=time.Now().Add(15*time.Second)
     for time.Now().Before(deadline) {
-        released,err:=lockReleased(lockPath)
-        if err!=nil { return err }
+		released:=true
+		if lockPath!="" { var inspectErr error;released,inspectErr=lockReleased(lockPath);if inspectErr!=nil { return inspectErr } }
         connection,dialErr:=net.DialTimeout("tcp",address,200*time.Millisecond)
         if dialErr==nil { connection.Close() }
         if released&&connectionRefused(dialErr) {
-            fmt.Println("Gateway stopped gracefully; state lock released.");return nil
+			fmt.Println("Gateway stopped gracefully.");return nil
         }
         time.Sleep(100*time.Millisecond)
     }

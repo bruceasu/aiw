@@ -8,6 +8,43 @@
 
 ## Requirements
 
+### Requirement: Mutually exclusive Codex and OpenAI proxy backends
+
+The gateway MUST select one backend per process using `backend_mode`. An omitted field MUST select `codex` for existing configuration compatibility. `openai_proxy` MUST NOT require a Codex executable, model mapping, workspace directory, or durable usage store. Deployment `mode` MUST continue to control development/shared listening and peer policy independently.
+
+In `openai_proxy` mode, the gateway MUST authenticate the inbound gateway Bearer key and enforce the existing per-principal RPM and global/principal concurrency limits. It MUST route every `/v1` HTTP method and path, including `/v1/models` and `/v1/usage`, to one configured HTTP(S) `proxy_base_url`; `/internal/*` MUST remain local. It MUST NOT apply Codex model authorization, daily quotas, or usage parsing. It MUST NOT fall back to another backend after an error.
+
+The target URL MUST be fixed by server configuration and MUST reject userinfo, query, and fragment components. The local `/v1` prefix MUST be replaced with the configured base path while preserving the remaining path, query, method, headers not designated as credentials/identity, and streamed request/response bodies. The gateway MUST return upstream status and response body, including 3xx, without following redirects or retrying. SSE MUST be flushed as received; WebSocket upgrades MUST be proxied bidirectionally.
+
+The gateway MUST resolve the upstream credential from `proxy_api_key_env`, with an optional per-principal `upstream_api_key_env` override. Enabled principals MUST have a non-empty credential at startup. Outbound requests MUST replace `Authorization` with the resolved upstream Bearer credential and remove inbound `api-key`, `x-api-key`, caller organization/project identity, and forwarding headers. The inbound key and upstream credential MUST NOT be logged, persisted, or returned to the caller. A shared upstream credential MUST be documented as sharing that credential's upstream permissions among those principals.
+
+Proxy requests MUST retain gateway RPM and concurrency limits. Client disconnect and service shutdown MUST cancel HTTP/SSE requests, close upgraded WebSocket connections, and finish within the configured shutdown bound. Proxy mode MUST NOT require or write the Codex usage store; optional metadata audit failure MUST NOT block forwarding.
+
+#### Scenario: Keep old configuration on Codex
+
+- WHEN `backend_mode` is omitted from an existing valid Codex configuration
+- THEN the gateway MUST continue to select `codex` and preserve the existing deployment `mode` semantics
+
+#### Scenario: Forward an unknown API path to the fixed base URL
+
+- WHEN an authenticated principal sends an arbitrary `/v1/...` HTTP request with a query string
+- THEN the gateway MUST stream it to the configured upstream path under `proxy_base_url`, without applying Codex request decoding or changing the target host
+
+#### Scenario: Replace caller credentials and identity
+
+- WHEN an authenticated principal sends inbound gateway credentials and caller organization/project headers
+- THEN the upstream MUST receive the configured upstream Bearer credential and MUST NOT receive the inbound credential or those caller identity headers
+
+#### Scenario: Return an upstream redirect without following it
+
+- WHEN the configured upstream responds with a 3xx status
+- THEN the gateway MUST return that response to the caller without making a request to the redirect target
+
+#### Scenario: Stop proxy traffic without a Codex store
+
+- WHEN proxy-mode service shutdown begins with active HTTP, SSE, or WebSocket requests
+- THEN the gateway MUST cancel or close them and finish within its bounded shutdown interval without opening a Codex state store
+
 ### Requirement: Authenticated OpenAI text subset
 
 网关 MUST 对 Responses/Models/Usage 验证 Bearer 网关 Key，并关联稳定主体。运营者维护 principals[].keys 明文 Key 配置，请求通过常量时间直接比较认证；Key 为高熵值，至少 43、最多 1024 字节，不含空格、CR、LF、TAB。配置加载和请求认证 MUST 不计算 Key 摘要，MUST 不接受 key_hashes 字段；Key 是不透明字符串，原摘要值作为 keys 中的 Key 时按原字符串直接匹配。MUST 拒绝重复 Key，不披露凭据。配置重启生效；轮换不清历史额度。Models MUST 只返回当前主体允许的逻辑模型。

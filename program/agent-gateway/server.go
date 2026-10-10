@@ -2,11 +2,13 @@ package main
 
 import (
     "context"
+    "bufio"
     "encoding/json"
     "errors"
     "io"
     "net"
     "net/http"
+    "net/http/httputil"
     "sort"
     "strconv"
     "strings"
@@ -20,16 +22,88 @@ type Gateway struct {
     config Config
     store *Store
     appPool *appPool
+	proxy http.Handler
     ctx context.Context
     mu sync.Mutex
     active int
     principalActive map[string]int
     rpm map[string][]time.Time
     shutdown context.CancelFunc
+    proxyConns map[net.Conn]struct{}
 }
 
+type proxyRequestIdentity struct {
+	principal Principal
+	requestID string
+}
+
+type proxyIdentityContextKey struct{}
+
 func newGateway(ctx context.Context,c Config,s *Store) *Gateway {
-    return &Gateway{config:c,store:s,ctx:ctx,appPool:newAppPool(c),principalActive:map[string]int{},rpm:map[string][]time.Time{}}
+	var pool *appPool
+	if c.BackendMode=="codex" { pool=newAppPool(c) }
+	g:=&Gateway{config:c,store:s,ctx:ctx,appPool:pool,principalActive:map[string]int{},rpm:map[string][]time.Time{},proxyConns:map[net.Conn]struct{}{}}
+	if c.BackendMode=="openai_proxy" { g.proxy=g.newProxyHandler() }
+	return g
+}
+
+func (g *Gateway) newProxyHandler() http.Handler {
+	target:=*g.config.proxyURL
+	return &httputil.ReverseProxy{Rewrite:func(request *httputil.ProxyRequest) {
+		identity,_:=request.In.Context().Value(proxyIdentityContextKey{}).(proxyRequestIdentity)
+		request.SetURL(&target)
+		suffix:=strings.TrimPrefix(request.In.URL.Path,"/v1")
+		request.Out.URL.Path=strings.TrimSuffix(target.Path,"/")+suffix
+		if request.In.URL.RawPath!="" {
+			escapedSuffix:=strings.TrimPrefix(request.In.URL.EscapedPath(),"/v1")
+			request.Out.URL.RawPath=strings.TrimSuffix(target.EscapedPath(),"/")+escapedSuffix
+		}
+		request.Out.Host=target.Host
+		request.Out.Header.Del("Authorization")
+		request.Out.Header.Del("Api-Key")
+		request.Out.Header.Del("X-Api-Key")
+		request.Out.Header.Del("Openai-Organization")
+		request.Out.Header.Del("Openai-Project")
+		request.Out.Header.Del("X-Openai-Client-User")
+		request.Out.Header.Set("Authorization","Bearer "+identity.principal.upstreamAPIKey)
+		request.Out.Header.Set("X-Request-Id",identity.requestID)
+	},ErrorHandler:func(w http.ResponseWriter,r *http.Request,err error) {
+		if r.Context().Err()!=nil { return }
+		fail(w,http.StatusBadGateway,"upstream_unavailable")
+	}}
+}
+
+type proxyTrackedWriter struct {
+	http.ResponseWriter
+	onHijack func(net.Conn)
+	onClose func(net.Conn)
+}
+
+func (w *proxyTrackedWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
+
+func (w *proxyTrackedWriter) Hijack() (net.Conn,*bufio.ReadWriter,error) {
+	hijacker,ok:=w.ResponseWriter.(http.Hijacker)
+	if !ok { return nil,nil,errors.New("hijacking is unsupported") }
+	conn,rw,err:=hijacker.Hijack()
+	if err!=nil { return nil,nil,err }
+	tracked:=&trackedProxyConn{Conn:conn,onClose:w.onClose}
+	w.onHijack(tracked)
+	return tracked,rw,nil
+}
+
+type trackedProxyConn struct { net.Conn;onClose func(net.Conn);once sync.Once }
+
+func (c *trackedProxyConn) Close() error {
+	err:=c.Conn.Close()
+	c.once.Do(func(){ if c.onClose!=nil { c.onClose(c) } })
+	return err
+}
+
+func (g *Gateway) trackProxyConnection(conn net.Conn) { g.mu.Lock();g.proxyConns[conn]=struct{}{};g.mu.Unlock() }
+func (g *Gateway) untrackProxyConnection(conn net.Conn) { g.mu.Lock();delete(g.proxyConns,conn);g.mu.Unlock() }
+func (g *Gateway) closeProxyConnections() {
+	g.mu.Lock();connections:=make([]net.Conn,0,len(g.proxyConns));for conn:=range g.proxyConns { connections=append(connections,conn) };g.mu.Unlock()
+	for _,conn:=range connections { _=conn.Close() }
 }
 
 func writeJSON(w http.ResponseWriter,status int,data any) {
@@ -82,14 +156,27 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter,r *http.Request) {
         g.finishHTTPRequest(observed,r,started,panicValue)
         if panicValue!=nil { panic(panicValue) }
     }()
-    if err:=g.store.PutHTTPRequest(observed.record);err!=nil {
+	if g.store!=nil { if err:=g.store.PutHTTPRequest(observed.record);err!=nil {
         if r.URL.Path!="/internal/shutdown" { fail(w,503,"storage_error");return }
         logShutdownAuditFailure()
-    }
+	} }
     if rejection!="" { fail(w,401,rejection);return }
     select { case <-g.ctx.Done():fail(w,503,"shutting_down");return;default: }
+	if r.URL.Path=="/internal/shutdown" { g.requestShutdown(w,r);return }
+	if g.config.BackendMode=="openai_proxy" {
+		if r.URL.Path!="/v1"&&!strings.HasPrefix(r.URL.Path,"/v1/") { fail(w,404,"not_found");return }
+		if code:=g.acquire(*p);code!="" { status:=429;if code=="capacity_error" { status=503 };fail(w,status,code);return }
+		defer g.release(*p)
+		if g.proxy==nil { fail(w,502,"upstream_unavailable");return }
+		requestCtx,cancel:=context.WithCancel(r.Context())
+		stop:=context.AfterFunc(g.ctx,cancel)
+		defer func(){stop();cancel()}()
+		ctx:=context.WithValue(requestCtx,proxyIdentityContextKey{},proxyRequestIdentity{principal:*p,requestID:id})
+		trackedWriter:=&proxyTrackedWriter{ResponseWriter:w,onHijack:g.trackProxyConnection,onClose:g.untrackProxyConnection}
+		g.proxy.ServeHTTP(trackedWriter,r.WithContext(ctx))
+		return
+	}
     switch r.URL.Path {
-    case "/internal/shutdown":g.requestShutdown(w,r)
     case "/v1/models":
         if r.Method!="GET" { fail(w,405,"method_not_allowed");return }
         if r.URL.RawQuery!="" { fail(w,400,"unsupported_query");return }

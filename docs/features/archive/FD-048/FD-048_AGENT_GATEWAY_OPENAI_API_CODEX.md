@@ -1,7 +1,7 @@
 # FD-048: Agent Gateway 统一 OpenAI API 出口与 Codex 兼容适配
 
-**Status:** Open
-**Revision:** 5
+**Status:** Complete
+**Revision:** 7
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -50,18 +50,18 @@
 
 ## Work items
 
-- [ ] 1.1 实现独立 backend mode 和兼容旧配置的条件校验。验收：旧配置缺省为 Codex；部署 `mode` 语义不变；proxy 模式不要求 Codex 路径/模型；模式专属冲突配置拒绝。大小：小；难度：中；依赖：无。
-- [ ] 1.2 实现固定上游 URL 与环境变量凭据解析。验收：只允许 HTTP(S) base URL；拒绝 userinfo/query/fragment；principal 可指定凭据变量或继承实例默认；启用主体凭据缺失时启动失败；凭据值不落盘。大小：小；难度：中；依赖：1.1。
-- [ ] 1.3 实现按 backend mode 分流与本地/上游路由边界。验收：Codex 既有路由原样工作；proxy 的 `/v1/*`（含 models/usage）交上游；`/internal/*` 保留本地；失败不自动切换后端。大小：小；难度：中；依赖：1.1–1.2。
-- [ ] 1.4 实现透明 HTTP 反向代理及固定路径拼接。验收：保留 method、查询、body、状态码、响应头和未知 API；客户端不能控制目标 host；上游 3xx 原样返回且不跟随；无重试。大小：中；难度：中；依赖：1.2–1.3。
-- [ ] 1.5 实现凭据与身份 header 替换。验收：认证 gateway key 后关联 principal；出站替换 Authorization/api-key；移除调用方组织/项目身份与逐跳 header；上游 key 不回传、不写日志；共享凭据权限限制有文档说明。大小：小；难度：中；依赖：1.2–1.4。
-- [ ] 1.6 实现请求/响应 body 流式与 multipart/二进制传输。验收：不缓存完整 body；背压和客户端取消传递至上游；不记录文件或消息正文。大小：小；难度：中；依赖：1.4–1.5。
-- [ ] 1.7 实现 SSE 原样转发。验收：事件字节/顺序不重建，响应及时 flush；客户端断开取消上游；不解析 usage。大小：小；难度：中；依赖：1.4、1.6。
-- [ ] 1.8 实现 WebSocket upgrade 与双向转发。验收：走固定上游；不泄露 caller key/身份；双向传输有背压，连接错误不重试。大小：中；难度：中；依赖：1.3、1.5。
-- [ ] 1.9 实现代理并发与运行关闭收敛。验收：沿用全局/principal 并发及 RPM 上限；关闭时取消 HTTP/SSE、关闭活动 WebSocket 并在有限预算内返回；Codex App Server 生命周期保持原样。大小：中；难度：中；依赖：1.6–1.8。
-- [ ] 1.10 解耦代理模式与 Codex 存储/额度。验收：代理可在无 Codex 程序、工作目录、额度数据或统计存储时启动/转发；不扣 Codex 日额度、不解析 usage；可选审计写入失败不阻断响应。大小：小；难度：中；依赖：1.1、1.3、1.9。
-- [ ] 1.11 复用 FD-049 的 Codex Chat Completions 行为。验收：FD-049 实现与审查证据仍适用于 Codex mode；proxy mode 则透明代理相同路径；不重复实现。大小：小；难度：低；依赖：FD-049、1.3。
-- [ ] 1.12 更新稳定 spec、配置样例、Gateway/Say 说明与 Dual 实施报告。验收：模式、路径、凭据/权限、支持范围、统计预留和未验证限制一致。大小：小；难度：低；依赖：1.1–1.11。
+- [x] 1.1 实现独立 backend mode 和兼容旧配置的条件校验。验收：旧配置缺省为 Codex；部署 `mode` 语义不变；proxy 模式不要求 Codex 路径/模型；模式专属冲突配置拒绝。大小：小；难度：中；依赖：无。
+- [x] 1.2 实现固定上游 URL 与环境变量凭据解析。验收：只允许 HTTP(S) base URL；拒绝 userinfo/query/fragment；principal 可指定凭据变量或继承实例默认；启用主体凭据缺失时启动失败；凭据值不落盘。大小：小；难度：中；依赖：1.1。
+- [x] 1.3 实现按 backend mode 分流与本地/上游路由边界。验收：Codex 既有路由原样工作；proxy 的 `/v1/*`（含 models/usage）交上游；`/internal/*` 保留本地；失败不自动切换后端。大小：小；难度：中；依赖：1.1–1.2。
+- [x] 1.4 实现透明 HTTP 反向代理及固定路径拼接。验收：保留 method、查询、body、状态码、响应头和未知 API；客户端不能控制目标 host；上游 3xx 原样返回且不跟随；无重试。大小：中；难度：中；依赖：1.2–1.3。
+- [x] 1.5 实现凭据与身份 header 替换。验收：认证 gateway key 后关联 principal；出站替换 Authorization/api-key；移除调用方组织/项目身份与逐跳 header；上游 key 不回传、不写日志；共享凭据权限限制有文档说明。大小：小；难度：中；依赖：1.2–1.4。
+- [x] 1.6 实现请求/响应 body 流式与 multipart/二进制传输。验收：不缓存完整 body；背压和客户端取消传递至上游；不记录文件或消息正文。大小：小；难度：中；依赖：1.4–1.5。
+- [x] 1.7 实现 SSE 原样转发。验收：事件字节/顺序不重建，响应及时 flush；客户端断开取消上游；不解析 usage。大小：小；难度：中；依赖：1.4、1.6。
+- [x] 1.8 实现 WebSocket upgrade 与双向转发。验收：走固定上游；不泄露 caller key/身份；双向传输有背压，连接错误不重试。大小：中；难度：中；依赖：1.3、1.5。
+- [x] 1.9 实现代理并发与运行关闭收敛。验收：沿用全局/principal 并发及 RPM 上限；关闭时取消 HTTP/SSE、关闭活动 WebSocket 并在有限预算内返回；Codex App Server 生命周期保持原样。大小：中；难度：中；依赖：1.6–1.8。
+- [x] 1.10 解耦代理模式与 Codex 存储/额度。验收：代理可在无 Codex 程序、工作目录、额度数据或统计存储时启动/转发；不扣 Codex 日额度、不解析 usage；可选审计写入失败不阻断响应。大小：小；难度：中；依赖：1.1、1.3、1.9。
+- [x] 1.11 复用 FD-049 的 Codex Chat Completions 行为。验收：FD-049 实现与审查证据仍适用于 Codex mode；proxy mode 则透明代理相同路径；不重复实现。大小：小；难度：低；依赖：FD-049、1.3。
+- [x] 1.12 更新稳定 spec、配置样例、Gateway/Say 说明与 Dual 实施报告。验收：模式、路径、凭据/权限、支持范围、统计预留和未验证限制一致。大小：小；难度：低；依赖：1.1–1.11。
 
 ## Acceptance
 
@@ -76,8 +76,9 @@
 
 - 设计依据：`program/agent-gateway/config.go` 将部署 mode 与 Codex 模型/文件/额度配置耦合；`server.go` 统一认证、RPM/并发及管理路由；`main.go` 的 HTTP shutdown 不处理升级 WebSocket；`observation.go` 只持久化请求元数据；当前独立 Go 模块无 SDK/第三方依赖。
 - 兼容证据：旧配置新增字段缺省为 `codex`；FD-049 已完成并通过独立静态审查，Codex chat 接口不得重复实现。
-- Worker 按本仓库规则只运行 `program/agent-gateway/scripts/compile.py` compile-only，另做静态调用链审查；不运行测试、完整构建、真实上游/Realtime 请求或下载依赖。
-- compile-only 与静态审查不证明所有上游 API、SSE、WebSocket 和部署代理环境的运行兼容性；本期不声称运行时全 API 已验证。
+- Worker 执行 `python -B scripts/compile.py`（工作目录 `program/agent-gateway`），编译检查通过；静态检查 `git diff --check` 通过。未运行测试、完整构建、真实上游/Realtime 请求或下载依赖。实现证据见 `docs/features/reports/FD-048-implementation-20261010T103000+0900.md` 及同名 JSON。
+- 静态调用链检查确认：认证后按 backend mode 分流；ReverseProxy 固定目标并替换凭据；HTTP/SSE 请求使用标准流式传输，WebSocket Hijack 连接纳入关闭清单；代理启动不打开 Store/App Server。编译与静态检查不证明所有上游 API、SSE、WebSocket 和部署代理环境的运行兼容性；本期不声称运行时全 API 已验证。
+- 独立 Reviewer 对实现提交 `1f9aa98`、`9ef62e3`、`72a63d2` 及 Say 文档提交 `4f77697` 静态审查通过；报告见 `docs/features/reports/FD-048-review-r1.md` 及同名 JSON。Reviewer 未运行测试、编译或运行时请求；完整 API、SSE、Realtime WebSocket 和 shutdown 行为仍未运行时验证。
 
 ## TODO
 
@@ -85,8 +86,8 @@
 - [x] 记录统计/计费仅预留的用户决定；移除持久化/费用/预算决策 Gate，取消原 1.11–1.12。
 - [x] 固定 SDK 定位（透明代理不新增 SDK）、模式兼容、认证/凭据和传输/shutdown 契约；按半天内小项拆分。
 - [x] 记录用户 2026-10-10 对取消旧 Planner 交接并重派的指示；旧 Agent 未被停止，风险见 blocker 记录。
-- [ ] 实现并按 Work Items 提交，更新 TODO/Verification 与 Dual 证据。
-- [ ] 独立 Reviewer 通过后按 Auto 流程交付并归档。
+- [x] 实现并按 Work Items 提交，更新 TODO/Verification 与 Dual 证据。
+- [x] 独立 Reviewer 通过后按 Auto 流程交付并归档。
 
 ## Sources
 
@@ -99,3 +100,5 @@
 - `openspec/specs/agent-proxy/spec.md`
 - `docs/features/archive/FD-045/FD-045_AGENT_GATEWAY_CODEX_APP_SERVER.md`
 - `docs/features/archive/FD-049/FD-049_AGENT_GATEWAY_CHAT_COMPLETIONS.md`：已交付的 Codex Chat Completions 子集与审查证据
+
+**Completed:** 2026-10-10

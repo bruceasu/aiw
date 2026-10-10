@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
     "encoding/json"
     "errors"
     "log"
     "net/http"
+	"net"
     "os"
     "path/filepath"
     "sort"
@@ -174,6 +176,12 @@ type observedWriter struct {
 
 func (w *observedWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
 
+func (w *observedWriter) Hijack() (net.Conn,*bufio.ReadWriter,error) {
+	hijacker,ok:=w.ResponseWriter.(http.Hijacker)
+	if !ok { return nil,nil,errors.New("hijacking is unsupported") }
+	return hijacker.Hijack()
+}
+
 func (w *observedWriter) WriteHeader(status int) {
     if w.status==0&&status>=200 { w.status=status }
     w.ResponseWriter.WriteHeader(status)
@@ -215,8 +223,8 @@ func (g *Gateway) finishHTTPRequest(w *observedWriter,r *http.Request,started ti
         w.record.State="failed";w.record.ErrorCode="delivery_error"
         if r.Context().Err()!=nil { w.record.State="cancelled";w.record.ErrorCode="cancelled" }
     }
-    if err:=g.store.PutHTTPRequest(w.record);err!=nil {
+	if g.store!=nil { if err:=g.store.PutHTTPRequest(w.record);err!=nil {
         log.Printf("request_audit_failed request_id=%s principal=%q",w.record.ID,w.record.Principal)
-    }
+	} }
     logHTTPRequest("request_finished",w.record)
 }

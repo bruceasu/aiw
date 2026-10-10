@@ -1,0 +1,42 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-048",
+  "fd_revision": 5,
+  "human_report": "FD-048-implementation-20261010T103000+0900.md",
+  "source_event": "FD-048-000005-design-ready",
+  "status": "implementation_complete_review_pending",
+  "worker_session": "fd048-worker-20261010-1016-9a1e3c",
+  "report": "docs/features/reports/FD-048-implementation-20261010T103000+0900.md",
+  "data": {
+    "status": "implementation complete, reviewer pending",
+    "worker_session": "fd048-worker-20261010-1016-9a1e3c",
+    "compile_check": "passed",
+    "runtime_checks": "not run",
+    "review_status": "pending"
+  },
+  "implementation": {
+    "backend_modes": ["codex", "openai_proxy"],
+    "proxy_target": "fixed_configured_http_or_https_base_url",
+    "credential_source": "environment_variable_reference",
+    "proxy_protocols": ["http", "sse", "websocket"],
+    "codex_store_required_in_proxy_mode": false,
+    "proxy_usage_accounting": "not_implemented"
+  },
+  "checks": [
+    {
+      "command": "python -B scripts/compile.py",
+      "working_directory": "program/agent-gateway",
+      "result": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "not_run": ["tests", "runtime_validation", "real_upstream_requests", "full_build", "dependency_download", "formatters"],
+  "residual_risks": [
+    "Runtime compatibility with all upstream APIs, SSE, and Realtime WebSocket is unverified.",
+    "The cancelled Planner receipt did not stop the original Planner session."
+  ]
+}

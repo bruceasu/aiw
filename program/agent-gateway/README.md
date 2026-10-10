@@ -70,3 +70,11 @@ Windows npm 安装须使用 `node.exe` + `codex_script`，不能指定 `codex.cm
 于 `state_dir/requests`，与执行额度元数据分开。`GET /v1/usage` 的 `http_groups`
 提供当前主体的请求及拒绝统计，原 `groups` 继续提供实际执行与 token 用量。
 旧配置可以通过 `--config` 显式指定；移动配置时应保留或正确调整这些绝对路径。
+
+## 后端模式
+
+`backend_mode` 缺省为 `codex`，旧配置继续使用 Codex 后端。设置为 `openai_proxy` 时，进程只使用固定的 `proxy_base_url` 和环境变量中的上游 Key；该模式不需要 Codex 程序、工作目录或状态存储。两种模式使用相同的网关认证、主体 RPM 与并发限制。
+
+代理模式将本地 `/v1` 下的 HTTP 请求和 Realtime WebSocket 透传至固定上游，`/internal/*` 保留为本地控制接口。网关用服务端上游 Key 替换入站 Authorization/api-key，并移除调用方组织、项目身份头。上游 3xx 原样返回，不自动跟随或重试。统计和计费尚未实现；代理模式不解析 usage，也不持久化请求记录。
+
+可从 `gateway-proxy-example.json` 创建独立代理配置。为所有启用主体设置 `upstream_api_key_env`，或使用全局 `proxy_api_key_env`；环境变量必须在启动进程时已设置。不要把上游 Key 写入配置文件或日志。共享上游 Key 的主体共用该 Key 的权限。

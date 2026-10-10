@@ -36,6 +36,11 @@ Agent Gateway's Codex backend supports Say's non-streaming text requests through
 model in the Gateway configuration. For the default local listener, the base URL
 is `http://127.0.0.1:43127/v1`. Remote endpoints must use HTTPS.
 
+The Gateway's `openai_proxy` backend also accepts this request through the same
+`/v1` URL and Gateway key. It forwards the model and request to the configured
+upstream; model and API access are controlled by the upstream credential rather
+than a local Codex model mapping.
+
 ## Profiles
 
 Copy any desired sample from `profiles/` to the user's profile directory. Copy only when the destination does not already exist; AIW Say does not create or overwrite user profile files.
