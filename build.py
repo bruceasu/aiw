@@ -157,7 +157,7 @@ def build_http_openai_proxy() -> bool:
         print("Error: http-openai-proxy TypeScript compilation failed.", file=sys.stderr)
         return False
 
-    for name in ("http-openai-proxy.js", "aiw-agent-proxy.js", "package.json", "package-lock.json", "README.md", "tsconfig.json"):
+    for name in ("http-openai-proxy.js", "package.json", "package-lock.json", "README.md", "tsconfig.json"):
         shutil.copy2(program / name, stage / name)
     copy_tree(program / "src", stage / "src")
     shutil.copytree(node_modules, stage / "node_modules")
