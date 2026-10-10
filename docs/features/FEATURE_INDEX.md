@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-056](FD-056_FEATURE.md) | 声明式插件清单与启动方式 | Open | Medium |
 
 ## Completed
 
