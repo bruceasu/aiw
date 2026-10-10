@@ -1,0 +1,39 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-058",
+  "source_event": "FD-058-000010-implementation-ready",
+  "human_report": "FD-058-review-r2.md",
+  "data": {
+    "reviewer_session": "reviewer-fd058-r2b-20261011",
+    "reviewed_head": "ccfbc97",
+    "reviewed_diff": "71514a9..ccfbc97",
+    "result": "verification-passed",
+    "findings": [],
+    "acceptance_checks": {
+      "search_root_manifest_support_removed_from_discovery_and_listing": "pass-static",
+      "search_root_manifest_support_removed_from_stable_spec": "pass-static",
+      "root_plugin_manifest_absent_and_legacy_flat_discovery_restored": "pass-static",
+      "seven_child_manifests_retained_with_expected_metadata_fields": "pass-static"
+    },
+    "commands_run": [
+      "aiw fd claim FD-058 FD-058-000010-implementation-ready --session reviewer-fd058-r2b-20261011",
+      "aiw fd show FD-058",
+      "git -C .wt/FD-058 show --stat --oneline ccfbc97",
+      "git -C .wt/FD-058 diff --unified=4 756cc24..ccfbc97 -- src/internal/plugin/discover.go src/internal/plugin/manifest.go openspec/specs/cli-and-plugins/spec.md",
+      "rg -n -i \"search.root|search root|root manifest|plugin.toml\" .wt/FD-058/src/internal/plugin/discover.go .wt/FD-058/src/internal/plugin/manifest.go .wt/FD-058/openspec/specs/cli-and-plugins/spec.md",
+      "PowerShell static check of src/plugins/plugin.toml and child plugin.toml metadata fields"
+    ],
+    "checks_skipped": [
+      "tests",
+      "compile",
+      "runtime validation",
+      "TOML parser invocation",
+      "builds",
+      "formatters",
+      "linters",
+      "verification scripts"
+    ],
+    "residual_risk": "Manifest parsing and plugin invocation remain unverified at runtime. Compile-only command previously failed due to system memory/page-file limits and was not repeated."
+  }
+}

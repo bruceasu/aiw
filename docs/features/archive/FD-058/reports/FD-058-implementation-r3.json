@@ -1,0 +1,35 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-058",
+  "source_event": "FD-058-000009-changes-requested",
+  "human_report": "FD-058-implementation-r3.md",
+  "data": {
+    "summary": "Removed search-root manifest discovery from implementation and stable spec per Reviewer r1; retained seven subdirectory manifests and legacy root flat-file discovery.",
+    "changed_paths": [
+      "src/internal/plugin/discover.go",
+      "src/internal/plugin/manifest.go",
+      "openspec/specs/cli-and-plugins/spec.md",
+      "src/plugins/plugin.toml",
+      "src/plugins/aiw-ai/plugin.toml",
+      "src/plugins/aiw-cz/plugin.toml",
+      "src/plugins/aiw-git/plugin.toml",
+      "src/plugins/aiw-github/plugin.toml",
+      "src/plugins/aiw-req/plugin.toml",
+      "src/plugins/aiw-say/plugin.toml",
+      "src/plugins/aiw-skills/plugin.toml",
+      "docs/features/FD-058_ADD_PLUGIN_TOML_METADATA_FOR_BUILT_IN_PLUGINS.md",
+      "docs/features/reports/FD-058-implementation-r3.md",
+      "docs/features/reports/FD-058-implementation-r3.json"
+    ],
+    "commands": [
+      "$env:GOPROXY='off'; $env:GOTOOLCHAIN='local'; python scripts/compile.py"
+    ],
+    "results": [
+      "Static inspection confirmed the search-root discovery and spec additions were removed, the seven subdirectory manifests remain, and src/plugins/plugin.toml is absent.",
+      "The compile-only command was run before scope adjustment and exited 1 because Go compiler child processes could not allocate system memory/page file; it was not rerun.",
+      "Tests, runtime TOML parsing, plugin invocation, final builds, formatting, lint, and verification scripts were not run."
+    ],
+    "residual_risk": "Compilation remains unconfirmed due to system memory/page-file exhaustion; manifest parsing and plugin invocation were not runtime-validated."
+  }
+}

@@ -1,0 +1,11 @@
+schema = 1
+
+[[plugins]]
+name = "ai"
+description = "通过 AIW Agent Gateway 发起 AI 对话请求。"
+help = """
+用法：`aiw ai [选项] [提示词...]`
+
+用途：通过 Agent Gateway 的 Responses 接口发送一次请求。使用前需启动网关并配置网关 Key。
+详情：运行 `aiw ai --help` 查看模型、超时、系统指令和输入选项。
+"""

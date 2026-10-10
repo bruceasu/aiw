@@ -1,0 +1,11 @@
+schema = 1
+
+[[plugins]]
+name = "github"
+description = "使用 GITHUB_TOKEN 管理 GitHub 仓库、Issue 和 Pull Request。"
+help = """
+用法：`aiw github <子命令> [参数...]`
+
+用途：创建、查看、更新和关闭 Issue，管理 Pull Request，并查看仓库信息。
+设置 `GITHUB_TOKEN` 后运行 `aiw github --help` 查看支持的子命令。
+"""
