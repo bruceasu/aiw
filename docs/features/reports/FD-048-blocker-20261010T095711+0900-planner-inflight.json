@@ -13,14 +13,17 @@
     "confirmed_cause": null,
     "cause_status": "unknown",
     "recovery_attempts": [
-      "Read aiw fd show FD-048, the event receipt, and the .ai/fd/FD-048 file listing; confirmed the claimed handoff and absence of report/log evidence. Did not cancel or redispatch the handoff."
+      "Read aiw fd show FD-048, the event receipt, and the .ai/fd/FD-048 file listing; confirmed the claimed handoff and absence of report/log evidence.",
+      "At the user's explicit direction, cancelled receipt FD-048-000002-design-requested. The command confirmed that the original Agent was not stopped.",
+      "Normal aiw fd emit FD-048 design-requested was rejected because design-requested is not valid from Design.",
+      "Used PM force-emit with the user's stated recovery direction to create FD-048-000003-design-requested; claimed it as fd048-planner-20261010-1005-7d29b1."
     ],
-    "status": "unresolved",
-    "human_decision_required": true,
-    "human_decision_detail": "Confirm whether the original Planner session has stopped; if it cannot be resumed, explicitly direct PM to cancel the old handoff and dispatch a new Planner handoff.",
-    "actual_resolution": null,
-    "resolved_at": null,
-    "residual_risk_or_next_step": "Preserve the current receipt and FD state pending session-status confirmation or PM recovery direction; do not treat missing Planner results as completion.",
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "The user explicitly directed PM to cancel the old handoff and redispatch Planner.",
+    "actual_resolution": "At 2026-10-10T10:01:16+09:00, PM cancelled FD-048-000002-design-requested and force-emitted FD-048-000003-design-requested; the new Planner session fd048-planner-20261010-1005-7d29b1 claimed it. The force-emit skipped normal workflow gates and is not verification evidence.",
+    "resolved_at": "2026-10-10T10:01:16+09:00",
+    "residual_risk_or_next_step": "Cancelling a receipt does not stop the original Planner Agent; it may still be running and writing the FD. Watch for FD digest changes or conflicts; do not treat any old-session work as the new handoff result.",
     "reusable_improvement": "none",
     "improvement_status": "not_needed"
   }

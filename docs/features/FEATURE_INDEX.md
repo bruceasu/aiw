@@ -7,7 +7,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
 | [FD-037](FD-037_AIW_SAY.md) | AIW Say 跨平台剪贴板与图形入口 | Open | Medium |
-| [FD-048](FD-048_AGENT_GATEWAY_OPENAI_API_CODEX.md) | Agent Gateway 统一 OpenAI API 出口与 Codex 兼容适配 | Design | Medium |
+| [FD-048](FD-048_AGENT_GATEWAY_OPENAI_API_CODEX.md) | Agent Gateway 统一 OpenAI API 出口与 Codex 兼容适配 | Open | Medium |
 
 ## Completed
 

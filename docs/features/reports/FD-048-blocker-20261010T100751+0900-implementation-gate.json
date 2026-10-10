@@ -1,0 +1,29 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-048",
+  "source_event": "FD-048-000005-design-ready",
+  "human_report": "FD-048-blocker-20261010T100751+0900-implementation-gate.md",
+  "data": {
+    "stage": "worker-preimplementation-gate",
+    "role": "pm",
+    "recorded_at": "2026-10-10T10:07:51+09:00",
+    "recorder_session": "fd048-pm-20261010-1007-4bc1",
+    "observed_blocker": "FD-048 ready plan and isolated worktree are prepared. Implementation changes upstream credential injection and Gateway auth/config, concurrency limits, storage dependencies, and WebSocket shutdown. Root AGENTS.md requires pausing before auth, persistence, concurrency, or public configuration contract changes.",
+    "confirmed_cause": "Repository instructions require explicit human confirmation before these high-risk changes.",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      "Completed the FD-048 design and acceptance split, committed the plan, and created/verified feature/FD-048 and .wt/FD-048 with parent develop.",
+      "Paused before claiming Worker or modifying runtime code as required by the repository high-risk change rule.",
+      "The user replied 'confirm' to authorize the specified FD-048 implementation scope."
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "The user explicitly authorized the listed authentication/upstream credential, configuration, concurrency/RPM, Codex storage decoupling, and WebSocket shutdown changes. Tests, network requests, and dependency downloads are excluded.",
+    "actual_resolution": "At 2026-10-10T10:15:29+09:00, the user confirmed authorization for the FD-048 implementation scope in .wt/FD-048.",
+    "resolved_at": "2026-10-10T10:15:29+09:00",
+    "residual_risk_or_next_step": "Claim FD-048-000005-design-ready and implement the FD. Runtime compatibility for all APIs, SSE, and WebSocket remains unverified and unauthorized.",
+    "reusable_improvement": "none",
+    "improvement_status": "not_needed"
+  }
+}
