@@ -9,19 +9,19 @@
     "role": "PM",
     "recorded_at": "2026-10-10T01:05:57+00:00",
     "recorder_session": "fd037-pm-20261010-a1730d",
-    "observed_blocker": "父分支 develop 的 git status --porcelain 显示 docs/features/FD-048_AGENT_GATEWAY_OPENAI_API_CODEX.md 有未提交修改；工作区因此不干净，Worker handoff 未认领且 worktree 未创建。",
-    "confirmed_cause": "父工作区存在一项与 FD-037 无关的 FD-048 文档修改。归属及是否已准备提交未知。",
-    "cause_status": "partially_confirmed",
+    "observed_blocker": "原记录时父分支 develop 上的 docs/features/FD-048_AGENT_GATEWAY_OPENAI_API_CODEX.md 有未提交修改，导致父工作区不干净。",
+    "confirmed_cause": "父工作区当时存在一项与 FD-037 无关的 FD-048 文档修改。",
+    "cause_status": "confirmed",
     "recovery_attempts": [
-      "只读复查确认之前报告的 137 个删除已不在状态中，并找到 FD-036 归档目录。",
-      "确认当前已修改的 FD-048 文件及本流程产生的未跟踪 blocker 反馈文件；未触碰 FD-048。"
+      "原记录只读检查确认父工作区有 FD-048 修改；未触碰该文件。",
+      "2026-10-10T01:16:04+00:00 用户表示工作区已干净；复查 git status --porcelain 返回 0 项。"
     ],
-    "status": "unresolved",
-    "human_decision_required": true,
-    "human_decision_detail": "请处理 FD-048 的未提交修改（提交、还原或暂存到其他位置），让父工作区干净。",
-    "actual_resolution": null,
-    "resolved_at": null,
-    "residual_risk_or_next_step": "本次 Auto 仅提交明确列出的 FD-037 blocker 反馈文件；父工作区仍会因 FD-048 修改而不干净。Worker handoff 保持 pending。用户处理 FD-048 后重新检查收据和父分支再继续。",
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "用户确认已清理工作区；本次只读状态检查证实工作区干净。",
+    "actual_resolution": "父工作区未提交修改已由用户处理；没有修改 FD-048 文件。",
+    "resolved_at": "2026-10-10T01:16:04+00:00",
+    "residual_risk_or_next_step": "无；继续当前 pending Worker handoff。",
     "reusable_improvement": "none",
     "improvement_status": "none"
   }
