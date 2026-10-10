@@ -11,7 +11,8 @@ from the repository root with:
 python build.py say
 ```
 
-This produces `aiw-say.exe`, `aiw-say`, `aiw.toml.example`, and `profiles/`
+This produces `aiw-say.exe`, `aiw-say`, `aiw.toml.example`, `profiles/`, and
+the Windows hotkey scripts `aiw-say-hotkeys.ahk` and `aiw-say-hotkeys.ps1`
 under `dist/plugins/aiw-say/`. `python build.py say` only builds;
 `python build.py plugins` builds and installs all plugins, including Say, under
 `C:\green\aiw\plugins\`. `python build.py all` includes that installation step.
@@ -97,7 +98,8 @@ The dialog result window can be closed after the translation has been copied; th
 
 ## AutoHotkey v2 shortcuts
 
-Place `aiw-say-hotkeys.ahk` and `aiw-say-hotkeys.ps1` beside `aiw-say.exe`, then run the AHK script with AutoHotkey v2:
+The build installs `aiw-say-hotkeys.ahk` and `aiw-say-hotkeys.ps1` beside
+`aiw-say.exe` in `plugins/aiw-say/`. Run the AHK script with AutoHotkey v2:
 
 | Shortcut | Action |
 | --- | --- |

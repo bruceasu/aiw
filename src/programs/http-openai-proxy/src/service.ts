@@ -227,7 +227,7 @@ function auditUsage(usage: Usage | undefined): Pick<AuditRecord, "input_tokens" 
 
 async function writeAudit(record: AuditRecord): Promise<void> {
   try { await appendAudit(record); }
-  catch { process.stderr.write("aiw-agent-proxy: audit_write_failed\n"); }
+  catch { process.stderr.write("http-openai-proxy: audit_write_failed\n"); }
 }
 
 async function readJson(request: IncomingMessage): Promise<unknown> {

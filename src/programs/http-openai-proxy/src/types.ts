@@ -1,4 +1,4 @@
-export type Provider = "codex" | "copilot" | "openai";
+export type Provider = "openai";
 export type OutputFormat = "json" | "markdown";
 export type Effort = "minimal" | "low" | "medium" | "high" | "xhigh";
 
@@ -49,5 +49,5 @@ export type AuditRecord = {
   error_code?: string;
 };
 
-export const PROVIDERS: readonly Provider[] = ["codex", "copilot", "openai"];
+export const PROVIDERS: readonly Provider[] = ["openai"];
 export const EFFORTS: readonly Effort[] = ["minimal", "low", "medium", "high", "xhigh"];

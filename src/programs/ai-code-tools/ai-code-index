@@ -367,6 +367,12 @@ def find_generator(repo_dir: Path) -> list[str] | None:
     global_cmd = which("generate-ai-index")
     if global_cmd:
         return [global_cmd]
+    bundled_generator = Path(__file__).resolve().with_name("generate-ai-index")
+    if bundled_generator.is_file():
+        return [sys.executable, str(bundled_generator)]
+    plugin_generator = Path(__file__).resolve().with_name("aiw-ai-gen-index.py")
+    if plugin_generator.is_file():
+        return [sys.executable, str(plugin_generator)]
     local_py = repo_dir / "scripts" / "generate-ai-index.py"
     if local_py.exists():
         return [sys.executable, str(local_py)]
@@ -376,7 +382,7 @@ def find_generator(repo_dir: Path) -> list[str] | None:
 def run_generator_for_repo(repo_dir: Path) -> None:
     cmd = find_generator(repo_dir)
     if not cmd:
-        print("warning: generate-ai-index not found in PATH and repo-local scripts/generate-ai-index.py not found", file=sys.stderr)
+        print("warning: generate-ai-index not found in PATH, beside the bundled command or plugin, or in repo-local scripts/", file=sys.stderr)
         return
     subprocess.run(cmd + ["--root", str(repo_dir)], check=False)
 
@@ -681,8 +687,9 @@ def build_parser() -> argparse.ArgumentParser:
             "\n"
             "数据保存在 ~/.ai-code-index/。检索基于本地索引和关键词评分，\n"
             "不是语义向量搜索；源码变更后请重新 update。\n"
-            "直接运行 Python 插件脚本时，先单独运行 aiw-ai-gen-index.py，\n"
-            "再运行 aiw-ai-code-index.py update（不带 --run-generator）。"
+            "AIW 插件命令示例:\n"
+            "  aiw ai-gen-index --root .\n"
+            "  aiw ai-code-index update --run-generator"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

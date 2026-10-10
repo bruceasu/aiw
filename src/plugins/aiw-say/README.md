@@ -22,3 +22,11 @@ profile 样例需要按需手动复制到用户配置目录。
 interop 并能找到 `powershell.exe` 或 `pwsh.exe`。只有运行相应功能时才需要
 这些工具。`--dialog zenity` 需要安装 Zenity 和可用的图形会话；AHK v2
 快捷键脚本与 PowerShell UTF-8 辅助脚本见 `src/programs/aiw-say/`。
+
+## Windows hotkey scripts
+
+`python build.py say` stages `aiw-say-hotkeys.ahk` and
+`aiw-say-hotkeys.ps1` beside `aiw-say.exe`. `python build.py plugins` and
+`python build.py all` install them under `C:\green\aiw\plugins\aiw-say\`.
+Run the AHK script with AutoHotkey v2. See `src/programs/aiw-say/README.md`
+for shortcut behavior and requirements.
