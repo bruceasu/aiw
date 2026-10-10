@@ -18,7 +18,13 @@ var lookPathFn = exec.LookPath
 // ExecPlugin starts the plugin executable/script at path with provided args and env overrides.
 // Returns the exit code (or -1 if execution failed before process start) and error.
 func ExecPlugin(path string, args []string, env map[string]string) (int, error) {
-	cmd, err := buildPluginCommand(path, args)
+	return ExecPluginWithStartup(path, StartupAuto, args, env)
+}
+
+// ExecPluginWithStartup starts a plugin using its declared launch mode, or the
+// existing extension and shebang inference when startup is auto.
+func ExecPluginWithStartup(path string, startup StartupMode, args []string, env map[string]string) (int, error) {
+	cmd, err := buildPluginCommand(path, startup, args)
 	if err != nil {
 		return -1, err
 	}
@@ -50,7 +56,13 @@ func ExecPlugin(path string, args []string, env map[string]string) (int, error) 
 // as the CLI fallback while exchanging a bounded JSON-style request/response.
 // It is used by adapters that must persist the request before dispatching it.
 func ExecPluginWithInput(path string, args []string, env map[string]string, input []byte) ([]byte, int, error) {
-	cmd, err := buildPluginCommand(path, args)
+	return ExecPluginWithStartupAndInput(path, StartupAuto, args, env, input)
+}
+
+// ExecPluginWithStartupAndInput invokes a plugin using an explicit launch mode
+// while exchanging a bounded JSON-style request/response.
+func ExecPluginWithStartupAndInput(path string, startup StartupMode, args []string, env map[string]string, input []byte) ([]byte, int, error) {
+	cmd, err := buildPluginCommand(path, startup, args)
 	if err != nil {
 		return nil, -1, err
 	}
@@ -98,7 +110,28 @@ func mergeEnvironment(base []string, overrides map[string]string) []string {
 	return result
 }
 
-func buildPluginCommand(path string, args []string) (*exec.Cmd, error) {
+func buildPluginCommand(path string, startup StartupMode, args []string) (*exec.Cmd, error) {
+	switch startup {
+	case "", StartupAuto:
+	case StartupExec:
+		return exec.Command(path, args...), nil
+	case StartupPython:
+		return buildCommand(path, args, ".py", "")
+	case StartupNode:
+		return buildNodeCommand(path, args, false)
+	case StartupTypeScript:
+		return buildNodeCommand(path, args, true)
+	case StartupBash:
+		return buildCommand(path, args, ".sh", "")
+	case StartupPowerShell:
+		if runtime.GOOS == "windows" {
+			return exec.Command("powershell", append([]string{"-File", path}, args...)...), nil
+		}
+		return exec.Command("pwsh", append([]string{"-File", path}, args...)...), nil
+	default:
+		return nil, fmt.Errorf("unsupported plugin startup mode %q", startup)
+	}
+
 	ext := strings.ToLower(filepath.Ext(path))
 	shebang := getShebangInterpreter(path)
 

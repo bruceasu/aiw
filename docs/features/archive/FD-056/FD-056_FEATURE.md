@@ -1,7 +1,7 @@
 # FD-056: 声明式插件清单与启动方式
 
-**Status:** Open
-**Revision:** 4
+**Status:** Complete
+**Revision:** 8
 **Priority:** Medium  
 **Evidence policy:** Dual
 
@@ -48,7 +48,7 @@ Print a summary of project metrics.
 # startup 缺省时，沿用当前按入口扩展名和 shebang 推断的方式。
 ```
 
-字段约定：`schema` 必须为 `1`；`plugins` 为一个或多个数组表；每项必须有 `name` 和 `description`，`help`、`entrypoint`、`startup` 可选。命令名使用小写字母、数字和连字符，清单内不可重复。`entrypoint` 是相对清单目录的路径，拒绝绝对路径及越出该目录的路径。启动模式支持 `auto`、`exec`、`python`、`node`、`typescript`、`bash`、`powershell`；未指定等同于 `auto`。
+字段约定：`schema` 必须为 `1`；`plugins` 为一个或多个数组表；每项必须有 `name` 和 `description`，`help`、`entrypoint`、`startup` 可选。`description` 和 `help` 均可使用 TOML 多行字符串。命令名使用小写字母、数字和连字符，清单内不可重复。`entrypoint` 是相对清单目录的路径，拒绝绝对路径及越出该目录的路径。启动模式支持 `auto`、`exec`、`python`、`node`、`typescript`、`bash`、`powershell`；未指定等同于 `auto`。
 
 发现器按现有搜索目录优先级逐个检查插件包目录。无清单时保持现有文件名和扩展名候选规则。有清单时以清单为该目录的命令目录；只有匹配的清单项可在该目录解析为插件。显式入口使用声明的启动模式；入口缺省时按命令名执行旧文件名查找；启动方式缺省时使用旧扩展名及 shebang 推断。PATH 搜索保持原样。清单解析、字段校验、重复名称或显式入口错误应返回包含清单路径的可读错误，不静默退回旧扫描。
 
@@ -66,9 +66,9 @@ Print a summary of project metrics.
 
 ## Work items
 
-- [ ] 1.1 增加清单模型、TOML 解析与校验，并让目录发现按清单匹配多个命令；无清单及缺省入口保留旧候选逻辑。规模：中；难度：中；依赖：无；完成证据：发现结果包含入口和启动模式，错误清楚且传统路径保留。
-- [ ] 1.2 将启动模式贯穿命令分发与执行；支持清单声明的启动器，保留既有按扩展名/shebang 执行的 `auto` 路径和旧调用兼容。规模：中；难度：中；依赖：1.1；完成证据：静态追踪各调用路径，确认参数、环境和标准流合同未变。
-- [ ] 1.3 将清单元数据接入插件列表、`aiw help <name>` 和帮助文本检索，并更新稳定规格及用户文档/示例。规模：中；难度：中；依赖：1.1；完成证据：帮助调用路径引用统一发现元数据，格式与兼容行为有文档说明。
+- [x] 1.1 增加清单模型、TOML 解析与校验，并让目录发现按清单匹配多个命令；无清单及缺省入口保留旧候选逻辑。规模：中；难度：中；依赖：无；完成证据：`manifest.go` 校验 schema、名称、未知字段、入口路径和启动方式；`discover.go` 为清单及旧入口构造发现结果。
+- [x] 1.2 将启动模式贯穿命令分发与执行；支持清单声明的启动器，保留既有按扩展名/shebang 执行的 `auto` 路径和旧调用兼容。规模：中；难度：中；依赖：1.1；完成证据：`main.go` 传递发现结果；`exec.go` 的旧接口映射到 `auto`，新接口按声明模式构造命令，标准流和环境处理沿用原逻辑。
+- [x] 1.3 将清单元数据接入插件列表、`aiw help <name>` 和帮助文本检索，并更新稳定规格及用户文档/示例。规模：中；难度：中；依赖：1.1；完成证据：帮助模块使用统一插件目录，README 与 `cli-and-plugins` 稳定规格记录清单字段和回退行为。
 
 ## Acceptance
 
@@ -81,13 +81,22 @@ Print a summary of project metrics.
 
 ## TODO
 
-- 实现完成后按工作项记录进度，更新 TODO 与 Verification；等待独立 Reviewer 前保持 FD 状态真实。
+- [x] Reviewer 指出的自然语言帮助搜索忽略插件清单错误已修复：`searchDocs` 返回错误，并由 `searchAndAnswer` 传回带上下文的诊断。
+- [x] 第二轮独立 Reviewer 审查通过，详见 `docs/features/reviews/FD-056-review-r2.md`。
+
+- Reviewer 已完成独立审查并请求修改，详见 `docs/features/reviews/FD-056-review-r1.md`。未运行测试；compile-only 脚本已执行，但工具包装没有保留最终退出码，因此不记录为编译通过。
 
 ## Verification
 
-- 实现后静态检查最终 diff，并追踪发现结果、帮助元数据及启动方式到实际执行调用链。
+- 修复首轮 P2 后执行一次 compile-only 命令；未运行测试。
+- Compile-only 命令返回退出码 0：`$env:GOPROXY='off'; $env:GOTOOLCHAIN='local'; python scripts/compile.py`。
+- 静态检查 `manifest.go`、`discover.go`、`exec.go`、`main.go` 和帮助调用链；检查最终 diff 与稳定规格/README 的行为描述一致。
 - 默认不运行测试、最终构建、格式化、lint 或验证脚本。
-- 编译专用检查：在 `src/` 执行 `go build -o NUL ./cmd/aiw`，不保留发行产物；若仓库编译脚本确认是同等 compile-only 路径，可优先使用该脚本。
+- 第二轮独立审查通过：`docs/features/reviews/FD-056-review-r2.md`。首轮 P2 错误传播已确认修复；未运行测试或编译。`git diff --check` 提示 Worker 报告的 Markdown 行尾硬换行空格，记录为非阻塞格式观察。
+- 执行 `$env:GOPROXY='off'; $env:GOTOOLCHAIN='local'; python scripts/compile.py`。脚本无输出；工具包装结束后未保留最终退出码，故不宣称编译通过。脚本只编译 `aiw` 和 `aiw-req`，输出到系统空设备，缓存位于 `.ai/compile-cache/go`。
+- 未运行测试、最终构建、格式化、lint 或验证脚本。
+- 实现报告：`docs/features/reports/FD-056-implementation-r1.md` 与同名 JSON。
+- Reviewer 结果：`changes-requested`；报告：`docs/features/reviews/FD-056-review-r1.md`（来源事件 `FD-056-000005-implementation-ready`）。待修复帮助文本搜索吞掉插件枚举错误的问题。
 
 ## Sources
 
@@ -96,3 +105,5 @@ Print a summary of project metrics.
 - `src/go.mod`：已有 `github.com/BurntSushi/toml` 依赖。
 - `openspec/specs/cli-and-plugins/spec.md`
 - `docs/features/archive/FD-018/FD-018_AGENT_GATEWAY_PLUGIN_ENTRY.md`、`docs/features/archive/FD-044/FD-044_SAY_PLUGIN_PACKAGING.md`
+
+**Completed:** 2026-10-10

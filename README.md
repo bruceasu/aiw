@@ -1129,10 +1129,21 @@ For full `aiw cxs` usage, see `docs/usage/aiw-cxs.md`.
 Task lifecycle, Requirement Management, Workflow, Worktree, Session, prompt,
 completion, and `ask` commands are exposed through their documented `aiw`
 entry points. Other commands are executable plugins discovered beside the
-`aiw` binary; their availability depends on the installed plugin set. Plugin
-help is owned by each plugin, so use `aiw <plugin> --help` for its current
-arguments and options. If a plugin is missing, `aiw` reports that it could not
-discover the corresponding executable.
+`aiw` binary; their availability depends on the installed plugin set. Use
+`aiw <plugin> --help` for its current arguments and options. A package manifest
+can also provide command descriptions and help text. If a plugin is missing,
+`aiw` reports that it could not discover the corresponding executable.
+
+### Plugin manifests
+
+A plugin package directory may contain `plugin.toml` to declare one or more
+commands. Each `[[plugins]]` entry defines `name` and `description`; both
+`description` and optional `help` support TOML multiline strings. `entrypoint`
+is relative to the package directory, and `startup` may be `auto`, `exec`, `python`, `node`,
+`typescript`, `bash`, or `powershell`. Omit `entrypoint` to use the existing
+`aiw-<name>` filename lookup. Omit `startup` to use the existing extension and
+shebang detection. Directories without a manifest keep the existing discovery
+behavior.
 
 
 
