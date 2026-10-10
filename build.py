@@ -12,7 +12,7 @@ SRC = ROOT / "src"
 BIN = ROOT / "bin"
 DIST = ROOT / "dist"
 INSTALL_DIR = Path(os.environ.get("AIW_INSTALL_DIR", r"C:\green\aiw"))
-ACTIONS = ("windows", "linux", "bin", "req", "say", "gateway", "cz", "plugins", "docs", "skills", "all")
+ACTIONS = ("windows", "linux", "bin", "req", "say", "gateway", "http-openai-proxy", "cz", "plugins", "docs", "skills", "all")
 
 
 def go_environment(**overrides: str) -> Dict[str, str]:
@@ -91,7 +91,19 @@ def build_say() -> bool:
     say_stage = DIST / "plugins" / "aiw-say"
     shutil.copy2(say_source / "aiw.toml.example", say_stage / "aiw.toml.example")
     shutil.copytree(say_source / "profiles", say_stage / "profiles", dirs_exist_ok=True)
-    print(f"Say plugin binaries and samples staged in {say_stage}; use 'python build.py plugins' or 'all' to install them.")
+    for name in ("aiw-say-hotkeys.ahk", "aiw-say-hotkeys.ps1"):
+        shutil.copy2(say_source / name, say_stage / name)
+    print(f"Say plugin binaries, samples, and Windows hotkey scripts staged in {say_stage}; use 'python build.py plugins' or 'all' to install them.")
+    return True
+
+
+def build_ai_code_tools_plugin() -> bool:
+    source = SRC / "programs" / "ai-code-tools"
+    stage = DIST / "plugins"
+    stage.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source / "ai-code-index", stage / "aiw-ai-code-index.py")
+    shutil.copy2(source / "generate-ai-index", stage / "aiw-ai-gen-index.py")
+    print(f"AI Code Tools plugin entry points staged in {stage}.")
     return True
 
 
@@ -112,6 +124,47 @@ def build_gateway() -> bool:
     for name in ("agent-gateway.exe", "agent-gateway"):
         shutil.copy2(BIN / name, INSTALL_DIR / name)
     print(f"Gateway installed in {INSTALL_DIR}; existing gateway.json preserved.")
+    return True
+
+
+def build_http_openai_proxy() -> bool:
+    program = SRC / "programs" / "http-openai-proxy"
+    node = shutil.which("node")
+    if node is None:
+        print("Error: Node.js is required to build http-openai-proxy.", file=sys.stderr)
+        return False
+
+    node_modules = program / "node_modules"
+    compiler = node_modules / "typescript" / "bin" / "tsc"
+    if not compiler.is_file():
+        print(
+            "Error: local TypeScript dependencies are missing. Install the package dependencies in "
+            f"{program} before building; build.py will not download packages.",
+            file=sys.stderr,
+        )
+        return False
+
+    stage = DIST / "programs" / "http-openai-proxy"
+    if stage.exists():
+        shutil.rmtree(stage)
+    output = stage / "dist"
+    output.mkdir(parents=True)
+    if not run(
+        [node, str(compiler), "--project", str(program / "tsconfig.json"), "--outDir", str(output)],
+        cwd=program,
+        environment=os.environ.copy(),
+    ):
+        print("Error: http-openai-proxy TypeScript compilation failed.", file=sys.stderr)
+        return False
+
+    for name in ("http-openai-proxy.js", "aiw-agent-proxy.js", "package.json", "package-lock.json", "README.md", "tsconfig.json"):
+        shutil.copy2(program / name, stage / name)
+    copy_tree(program / "src", stage / "src")
+    shutil.copytree(node_modules, stage / "node_modules")
+
+    destination = INSTALL_DIR / "http-openai-proxy"
+    copy_tree(stage, destination)
+    print(f"HTTP OpenAI Proxy installed in {destination}.")
     return True
 
 
@@ -140,23 +193,25 @@ def copy_tree(source: Path, destination: Path, *, ignore: Optional[Set[str]] = N
 
 
 def install_plugins() -> bool:
-    if not build_req() or not build_say() or not build_cz():
+    if not build_req() or not build_say() or not build_ai_code_tools_plugin() or not build_cz():
         return False
     install_plugins_dir = INSTALL_DIR / "plugins"
     install_plugins_dir.mkdir(parents=True, exist_ok=True)
     copy_tree(
         SRC / "plugins",
         install_plugins_dir,
-        ignore={"aiw-cz", "aiw-say", "aiw-gw"},
+        ignore={"aiw-cz", "aiw-say", "aiw-gw", "_ai_code_tools.py", "aiw-ai-code-index.py", "aiw-ai-gen-index.py"},
     )
     copy_tree(DIST / "plugins" / "aiw-req", install_plugins_dir / "aiw-req")
     copy_tree(DIST / "plugins" / "aiw-say", install_plugins_dir / "aiw-say", ignore={"aiw.toml"})
+    shutil.copy2(DIST / "plugins" / "aiw-ai-code-index.py", install_plugins_dir / "aiw-ai-code-index.py")
+    shutil.copy2(DIST / "plugins" / "aiw-ai-gen-index.py", install_plugins_dir / "aiw-ai-gen-index.py")
     copy_tree(
         DIST / "plugins" / "aiw-cz" / "release",
         install_plugins_dir / "aiw-cz",
         ignore={"cz.toml", ".cz.toml"},
     )
-    print(f"Plugins installed in {install_plugins_dir}: repository plugins, req, say, and cz.")
+    print(f"Plugins installed in {install_plugins_dir}: repository plugins, req, Say, AI Code Tools, and cz.")
     return True
 
 
@@ -184,12 +239,13 @@ def run_action(action: str) -> bool:
         "req": build_req,
         "say": build_say,
         "gateway": build_gateway,
+        "http-openai-proxy": build_http_openai_proxy,
         "cz": build_cz,
         "plugins": install_plugins,
         "docs": install_docs,
         "skills": install_skills,
-        "bin": lambda: build_main("windows") and build_main("linux") and build_gateway(),
-        "all": lambda: build_main("windows") and build_main("linux") and build_gateway() and install_plugins() and install_docs() and install_skills(),
+        "bin": lambda: build_main("windows") and build_main("linux") and build_gateway() and build_http_openai_proxy(),
+        "all": lambda: build_main("windows") and build_main("linux") and build_gateway() and build_http_openai_proxy() and install_plugins() and install_docs() and install_skills(),
     }
     operation = actions.get(action.lower())
     if operation is None:
@@ -209,15 +265,16 @@ def show_help() -> None:
     print("With no arguments, only the Windows build is performed.\n")
     print("  windows  Build and install the Windows executable.")
     print("  linux    Build and install the Linux executable.")
-    print("  bin      Build and install AIW and Gateway binaries; preserve Gateway config.")
+    print("  bin      Build and install AIW, Gateway, and HTTP OpenAI Proxy; preserve Gateway config.")
     print("  req      Build Windows and Linux req plugin binaries.")
     print("  say      Build Windows and Linux say binaries and configuration samples.")
     print("  gateway  Build and install standalone Windows and Linux Gateway binaries beside AIW.")
+    print("  http-openai-proxy  Compile and install the Node.js HTTP OpenAI Proxy package.")
     print("  cz       Prepare the Python cz release.")
-    print("  plugins  Build and install plugins, including Say; preserve Say aiw.toml.")
+    print("  plugins  Build and install plugins, including Say and AI Code Tools; preserve Say aiw.toml.")
     print("  docs     Copy usage documentation to the install directory.")
     print("  skills   Install skills individually.")
-    print("  all      Build and install AIW, standalone Gateway, plugins, docs, and skills.")
+    print("  all      Build and install AIW, Gateway, HTTP OpenAI Proxy, plugins, docs, and skills.")
     print("\nHelp: -h, --help, help, /h, /?")
 
 

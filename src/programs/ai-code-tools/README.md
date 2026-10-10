@@ -1,76 +1,44 @@
 # AI Code Tools
 
-两个互补的本地工具：`generate-ai-index` 为单个仓库生成索引；
-`ai-code-index` 汇总多个仓库的索引并提供关键词检索。
+`generate-ai-index` 为仓库生成静态代码索引；`ai-code-index` 汇总并搜索多个仓库的索引。工具实现的唯一权威来源是本目录中的两个脚本。它们不需要第三方 Python 依赖。
 
-## 快速开始
+## 在 AIW 中使用
 
-### 在 AIW 仓库中直接运行
-
-无需安装，使用 Python 运行脚本：
+从仓库根目录运行：
 
 ```powershell
-python src/plugins/aiw-ai-gen-index.py --root .
-python src/plugins/aiw-ai-code-index.py repo add .
-python src/plugins/aiw-ai-code-index.py update
-python src/plugins/aiw-ai-code-index.py context "订单创建接口" --current-repo
+aiw ai-gen-index --root .
+aiw ai-code-index repo add .
+aiw ai-code-index update
+aiw ai-code-index context "订单创建接口" --current-repo
 ```
 
-直接运行仓库脚本时，先用 `aiw-ai-gen-index.py` 生成 `.ai/` 文件，再用
-`aiw-ai-code-index.py update` 导入全局检索库。之后源码有变化时，重复这
-两步。若已安装全局 `generate-ai-index` 命令，则可用
-`ai-code-index update --run-generator` 一步刷新所有登记仓库。只想刷新单个
-仓库时，直接运行生成器后再扫描：
+索引生成后，源码变化时再次运行 `aiw ai-gen-index --root .` 和 `aiw ai-code-index update`。也可以执行 `aiw ai-code-index update --run-generator`，先运行与工具一起部署的生成器，再刷新已登记仓库。
 
-```powershell
-python src/plugins/aiw-ai-gen-index.py --root .
-python src/plugins/aiw-ai-code-index.py scan .
-```
+运行 `python build.py plugins` 或 `python build.py all` 会把本目录的两个脚本复制到 `dist/plugins/`，改名为 `aiw-ai-gen-index.py`、`aiw-ai-code-index.py` 后直接安装到 AIW 的 `plugins/` 根目录（默认 `C:\green\aiw\plugins\`）。源码树中的 `src/plugins/` 入口用于开发时转交给本目录实现；部署时会由权威脚本生成同名插件文件。不会安装独立的 `ai-code-tools` 程序目录，也不会创建全局命令。
 
-### 安装为全局命令
+## `generate-ai-index`
 
-在 Unix shell 中，从解压后的发布目录运行：
-
-```bash
-./install.sh
-```
-
-默认安装到 `~/.ai-tools`。将该目录加入 `PATH` 后，可以运行：
+扫描 Java、Go、Python、JavaScript 和 TypeScript 源文件，默认在仓库 `.ai/` 下生成：
 
 ```text
-generate-ai-index --help
-ai-code-index --help
-ai-code-index repo --help
+PROJECT_MAP.md
+API_INDEX.md
+symbols.jsonl
+apis.jsonl
+files.jsonl
+metadata.json
 ```
 
-也可以把安装目录作为 `install.sh` 的第一个参数。发布包不要求安装第三方
-Python 依赖。
-
-## 工具分别做什么
-
-### `generate-ai-index`
-
-静态扫描 Java、Go、Python、JavaScript 和 TypeScript 源文件，输出：
-
-```text
-<仓库>/.ai/PROJECT_MAP.md
-<仓库>/.ai/API_INDEX.md
-<仓库>/.ai/symbols.jsonl
-<仓库>/.ai/apis.jsonl
-<仓库>/.ai/files.jsonl
-<仓库>/.ai/metadata.json
-```
-
-默认扫描当前目录并写入 `.ai/`。也可以指定仓库和输出目录：
+可以指定仓库和相对输出目录：
 
 ```powershell
-python src/plugins/aiw-ai-gen-index.py --root D:/work/my-repo --out .ai
+aiw ai-gen-index --root D:/work/my-repo --out .ai
 ```
 
-`--out` 是相对于仓库根目录的路径。索引是生成文件，源码变化后需要重新
-生成。生成器不执行仓库代码，也不访问网络。
+生成器执行静态扫描，不执行仓库代码，也不访问网络。
 
-### `ai-code-index`
+## `ai-code-index`
 
 在用户目录维护已登记的仓库清单和 SQLite 检索库：
 
@@ -82,40 +50,14 @@ python src/plugins/aiw-ai-gen-index.py --root D:/work/my-repo --out .ai
 常用命令：
 
 ```powershell
-# 登记、查看和移除仓库
-python src/plugins/aiw-ai-code-index.py repo add D:/work/my-repo
-python src/plugins/aiw-ai-code-index.py repo list
-python src/plugins/aiw-ai-code-index.py repo remove D:/work/my-repo
-
-# 更新索引；带 --run-generator 时先重新生成各仓库的 .ai 文件
-python src/plugins/aiw-ai-code-index.py update --run-generator
-
-# 搜索候选记录，或生成带文件位置的 Agent 上下文
-python src/plugins/aiw-ai-code-index.py search "订单创建接口" --top 10 --current-repo
-python src/plugins/aiw-ai-code-index.py context "订单创建接口" --top 8 --current-repo
-
-# 查看收录数量
-python src/plugins/aiw-ai-code-index.py stats
+aiw ai-code-index repo add D:/work/my-repo
+aiw ai-code-index repo list
+aiw ai-code-index update --run-generator
+aiw ai-code-index search "订单创建接口" --top 10 --current-repo
+aiw ai-code-index context "订单创建接口" --top 8 --current-repo
+aiw ai-code-index stats
 ```
 
-`search` 便于浏览候选结果；`context` 输出候选文件及行号，便于提供给
-Agent 作为调查起点。`--current-repo` 会提高当前工作目录所属仓库的结果
-排名，`--top` 控制返回数量。
+`context` 输出候选文件及行号，便于作为 Agent 调查起点。`--current-repo` 会提高当前工作目录所属仓库的结果排名，`--top` 控制返回数量。检索基于符号、路径、API、关键词和少量中英文同义词评分，不是语义向量搜索；索引可能在源码变化后过期，应先刷新再核实结果。
 
-`repo remove` 会删除全局登记和该仓库的检索记录，不会删除仓库源码或其
-`.ai/` 生成文件。
-
-## 检索能力与限制
-
-检索使用符号、路径、API、关键词和少量中英文同义词进行本地评分。它是
-代码导航的候选查找器，不是语义向量搜索，也不保证找到所有相关代码。索引
-中的文件位置可能在源码更新后过期；先刷新索引，再打开源码核实结果。
-
-API 路由识别依赖有限的静态规则；如果 `API_INDEX.md` 为空，可能表示仓库
-没有受支持的路由，也可能是当前扫描规则无法识别项目使用的框架或写法。
-
-## 仓库内源文件
-
-发布命令分别对应仓库中的 `src/plugins/aiw-ai-gen-index.py` 和
-`src/plugins/aiw-ai-code-index.py`。本目录内的可执行脚本是这两个源文件的分发
-副本；更新工具时需要保持它们同步。
+`repo remove` 会删除全局登记和该仓库的检索记录，不会删除仓库源码或 `.ai/` 文件。API 路由识别依赖有限的静态规则，空的 API 索引不一定表示仓库没有路由。

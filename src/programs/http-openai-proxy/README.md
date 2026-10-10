@@ -19,6 +19,11 @@ npm run build
 node ./http-openai-proxy.js start --port 43127
 ```
 
+在仓库根目录运行 `python build.py http-openai-proxy` 可使用本地依赖编译并
+安装到 `C:\green\aiw\http-openai-proxy`（或 `AIW_INSTALL_DIR` 指定的位置）。
+`python build.py bin` 和 `python build.py all` 也包含此程序。构建脚本不会下载
+Node 依赖；首次构建前须在源码目录准备好 `node_modules`。
+
 `npm start` 使用相同的新入口。旧 `aiw-agent-proxy.js` 仍可作为兼容启动
 入口。默认只监听 `127.0.0.1`。可用 `HTTP_OPENAI_PROXY_HOST`、
 `HTTP_OPENAI_PROXY_PORT` 和 `HTTP_OPENAI_PROXY_STATE_DIR` 配置监听地址、端口
