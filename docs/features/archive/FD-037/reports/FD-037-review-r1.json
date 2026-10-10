@@ -1,0 +1,35 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-037",
+  "source_event": "FD-037-000006-review-requested",
+  "human_report": "FD-037-review-r1.md",
+  "data": {
+    "reviewer_session": "fd037-review-20261010-rv6a91",
+    "reviewed_base": "922a2a2",
+    "reviewed_head": "ee169e3",
+    "fd_revision": 6,
+    "outcome": "verification-passed",
+    "findings": [],
+    "results": [
+      {"acceptance": 1, "result": "pass-static", "evidence": ["cmd/aiw-say/run.go", "internal/say/clipboard_windows.go", "internal/say/clipboard_unix.go"]},
+      {"acceptance": 2, "result": "pass-static", "evidence": ["internal/say/dialog.go", "internal/say/dialog_platform_windows.go", "internal/say/dialog_platform_unix.go"]},
+      {"acceptance": 3, "result": "pass-static", "evidence": ["program/aiw-say/aiw-say-hotkeys.ahk", "program/aiw-say/aiw-say-hotkeys.ps1"]},
+      {"acceptance": 4, "result": "pass-static", "evidence": ["internal/say/clipboard_unix.go"]},
+      {"acceptance": 5, "result": "pass-static", "evidence": ["cmd/aiw-say/run.go", "program/aiw-say/README.md", "plugins/aiw-say/README.md"]}
+    ],
+    "commands": [
+      "aiw fd claim FD-037 FD-037-000006-review-requested --session fd037-review-20261010-rv6a91",
+      "aiw fd show FD-037",
+      "git merge-base develop HEAD",
+      "git diff --stat develop...HEAD",
+      "git diff --name-status develop...HEAD",
+      "git diff develop...HEAD -- cmd/aiw-say/options.go cmd/aiw-say/run.go internal/say/input.go internal/say/clipboard.go internal/say/clipboard_windows.go internal/say/clipboard_unix.go internal/say/dialog.go internal/say/dialog_platform_windows.go internal/say/dialog_platform_unix.go",
+      "git show develop:internal/say/input.go",
+      "aiw fd emit --help",
+      "targeted Get-Content and rg reads of FD, Worker report, templates, implementation, and report examples"
+    ],
+    "skipped_checks": ["tests (waived by user for this Auto cycle)", "compile", "final build", "formatter/linter", "Windows/Linux/WSL runtime", "Zenity", "AHK/PowerShell", "network"],
+    "residual_risk": "Static code review does not verify Windows/Linux/WSL clipboard Unicode round trips, platform compilation after the final source edits, Zenity session behavior, or AHK/PowerShell process encoding and clipboard races. The user waived the Tester stage, not these behavior requirements; no unrun behavior is reported as passed."
+  }
+}

@@ -15,3 +15,9 @@
 profile 样例需要按需手动复制到用户配置目录。
 
 详细选项和 profile 路径见仓库中的 `program/aiw-say/README.md`。
+
+剪贴板与 GUI 是可选功能：Windows 使用系统剪贴板；Wayland 使用
+`wl-paste`/`wl-copy`；X11 使用 `xclip` 或 `xsel`。WSL 需启用 Windows
+interop 并能找到 `powershell.exe` 或 `pwsh.exe`。只有运行相应功能时才需要
+这些工具。`--dialog zenity` 需要安装 Zenity 和可用的图形会话；AHK v2
+快捷键脚本与 PowerShell UTF-8 辅助脚本见 `program/aiw-say/`。

@@ -38,3 +38,14 @@ func ReadInput(args []string, stdin io.Reader) (string, error) {
 	}
 	return text, nil
 }
+
+// ValidateInputText rejects empty or non-UTF-8 input from external sources.
+func ValidateInputText(text string) (string, error) {
+	if !utf8.ValidString(text) {
+		return "", errors.New("input text is not valid UTF-8")
+	}
+	if strings.TrimSpace(text) == "" {
+		return "", errors.New("input text is empty")
+	}
+	return text, nil
+}

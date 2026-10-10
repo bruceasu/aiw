@@ -12,6 +12,8 @@ type cliOptions struct {
 	args []string
 	target, source, mode, style, polite, profanity string
 	provider, model, timeout, config, profile string
+	dialog string
+	clipboard, copy bool
 	simple, simpleSet, help, version bool
 }
 
@@ -34,6 +36,9 @@ func parseOptions(args []string, output io.Writer) (cliOptions, error) {
 	fs.StringVar(&o.model, "model", "", "configured model name")
 	fs.StringVar(&o.timeout, "timeout", "", "request timeout (for example 30s)")
 	fs.StringVar(&o.config, "config", "", "base TOML configuration path")
+	fs.BoolVar(&o.clipboard, "clipboard", false, "read input text from the system clipboard")
+	fs.BoolVar(&o.copy, "copy", false, "copy a successful translation to the clipboard")
+	fs.StringVar(&o.dialog, "dialog", "", "graphical input dialog (zenity)")
 	fs.BoolVar(&o.help, "help", false, "show help")
 	fs.BoolVar(&o.version, "version", false, "show version")
 	if err := fs.Parse(args); err != nil {
@@ -48,7 +53,7 @@ func parseOptions(args []string, output io.Writer) (cliOptions, error) {
 func usage(w io.Writer) {
 	fmt.Fprintln(w, `Usage: aiw say [options] [text]
 
-Translate one text argument or UTF-8 text from stdin. On success, stdout contains only the translation.
+Translate one text argument, UTF-8 text from stdin, clipboard text, or text entered in a dialog. On success, stdout contains only the translation unless a dialog is open.
 
 Options:
   -t, --target LANG       Target language (default ja)
@@ -63,10 +68,13 @@ Options:
       --model NAME        Explicit configured model
       --timeout DURATION  Request timeout (default 30s)
       --config PATH       Base TOML configuration
+      --clipboard         Read input text from the clipboard
+      --copy              Copy the successful translation to the clipboard
+      --dialog zenity      Read input from a Zenity dialog and show the result
       --help              Show this help
       --version           Show version
 
-Clipboard, file, output-file, dialog, and pair modes are not implemented.`)
+File, output-file, and pair modes are not implemented.`)
 }
 
 func optionsError(err error) error {

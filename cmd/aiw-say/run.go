@@ -17,7 +17,7 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 	for _, arg := range args {
 		name := strings.SplitN(arg, "=", 2)[0]
 		switch name {
-		case "--clipboard", "--copy", "--file", "--output", "-o", "--dialog", "--pair":
+		case "--file", "--output", "-o", "--pair":
 			return fmt.Errorf("option %s is not implemented", name)
 		}
 	}
@@ -34,8 +34,28 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 		_, err := fmt.Fprintln(stdout, "aiw-say "+version.Label())
 		return err
 	}
-	if len(opts.args) > 0 && stdinIsActive(stdin) {
-		return errors.New("provide text as an argument or stdin, not both")
+	if opts.dialog != "" && opts.dialog != "zenity" {
+		return fmt.Errorf("unsupported dialog %q; supported dialog: zenity", opts.dialog)
+	}
+	if len(opts.args) > 1 {
+		return errors.New("provide one text argument or one input source")
+	}
+	inputSources := 0
+	if len(opts.args) > 0 {
+		inputSources++
+	}
+	stdinActive := stdinIsActive(stdin)
+	if stdinActive {
+		inputSources++
+	}
+	if opts.clipboard {
+		inputSources++
+	}
+	if opts.dialog != "" {
+		inputSources++
+	}
+	if inputSources > 1 {
+		return errors.New("provide text through only one of argument, stdin, clipboard, or dialog")
 	}
 	exePath, err := os.Executable()
 	if err != nil {
@@ -54,7 +74,19 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
-	text, err := say.ReadInput(opts.args, stdin)
+	var text string
+	switch {
+	case opts.clipboard:
+		text, err = say.NewClipboard().Read(context.Background())
+	case opts.dialog != "":
+		text, err = say.DialogInput(context.Background(), opts.dialog)
+	default:
+		text, err = say.ReadInput(opts.args, stdin)
+	}
+	if err != nil {
+		return err
+	}
+	text, err = say.ValidateInputText(text)
 	if err != nil {
 		return err
 	}
@@ -63,11 +95,19 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 		Polite: cfg.Polite, Simple: cfg.Simple, Profanity: cfg.Profanity,
 		Text: text, Model: cfg.Model,
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), duration)
+	requestCtx, cancel := context.WithTimeout(context.Background(), duration)
 	defer cancel()
-	translation, err := say.NewOpenAIProvider().Translate(ctx, request)
+	translation, err := say.NewOpenAIProvider().Translate(requestCtx, request)
 	if err != nil {
 		return err
+	}
+	if opts.copy || opts.dialog != "" {
+		if err := say.NewClipboard().Write(requestCtx, translation); err != nil {
+			return err
+		}
+	}
+	if opts.dialog != "" {
+		return say.ShowDialogResult(context.Background(), opts.dialog, translation)
 	}
 	if _, err := fmt.Fprintln(stdout, translation); err != nil {
 		return fmt.Errorf("write translation: %w", err)

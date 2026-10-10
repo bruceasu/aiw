@@ -17,12 +17,12 @@
       "在 workspace.json 指向的 .wt/FD-037 中只读检查 FD、收据、aiw fd show、aiw fd resume 与 Git 状态；确认 FD revision 4、状态 Pending Test、收据 pending Tester 且 worktree clean。",
       "未认领或运行 Tester，未请求 Reviewer，也未编辑活动 FD 或收据。"
     ],
-    "status": "unresolved",
-    "human_decision_required": true,
-    "human_decision_detail": "请明确是否启动独立测试流程（例如显式调用 $fd-test）；本 Auto 不运行测试。",
-    "actual_resolution": "2026-10-10T01:26:46+00:00 更正 revision mismatch 观察：活动 Worker worktree 与事件 revision 一致。Pending Tester Gate 仍未解决。",
-    "resolved_at": "2026-10-10T01:26:46+00:00",
-    "residual_risk_or_next_step": "保留 pending Tester 收据和 feature/FD-037 worktree。若用户显式请求 fd-test，再按独立 Tester 流程处理并遵守精确命令授权；未运行测试不代表通过。",
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "用户于 2026-10-10 明确要求 $fd-workflow FD-037 auto 不要求 test；本轮跳过 Tester，未运行测试。",
+    "actual_resolution": "2026-10-10T01:45:14+00:00 用户明确豁免本轮 Tester 阶段；已更新 FD 的测试政策和 Verification，之后通过 FD 管理命令请求独立 Reviewer。未运行测试不代表通过。",
+    "resolved_at": "2026-10-10T01:45:14+00:00",
+    "residual_risk_or_next_step": "Windows/Linux/WSL 剪贴板 Unicode 往返、Zenity 输入/取消/结果窗口、AHK 与 PowerShell 编码及剪贴板竞争均未运行验证。Reviewer 不得将其视为通过。",
     "reusable_improvement": "FD Auto 在检查活动 handoff 的 revision/digest 时，明确从 workspace.json 指向的 FD worktree 核对，避免把父 checkout 的旧内容误判为活动分支不一致。",
     "improvement_status": "proposed"
   }

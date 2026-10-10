@@ -1,0 +1,39 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-037",
+  "source_event": "FD-037-000003-design-ready",
+  "human_report": "FD-037-implementation-r1.md",
+  "data": {
+    "summary": "Implemented FD-037 clipboard input/copy, platform adapters, Zenity dialogs, Windows AHK shortcuts, and platform documentation. Windows compile-only build passed after removal of duplicate clipboard stubs; platform runtime behavior remains unverified.",
+    "changed_paths": [
+      "cmd/aiw-say/options.go",
+      "cmd/aiw-say/run.go",
+      "internal/say/clipboard.go",
+      "internal/say/clipboard_windows.go",
+      "internal/say/clipboard_unix.go",
+      "internal/say/input.go",
+      "internal/say/dialog.go",
+      "internal/say/dialog_platform_windows.go",
+      "internal/say/dialog_platform_unix.go",
+      "program/aiw-say/aiw-say-hotkeys.ahk",
+      "program/aiw-say/aiw-say-hotkeys.ps1",
+      "program/aiw-say/README.md",
+      "plugins/aiw-say/README.md",
+      "docs/features/FD-037_AIW_SAY.md",
+      "docs/features/reports/FD-037-implementation-r1.md",
+      "docs/features/reports/FD-037-implementation-r1.json"
+    ],
+    "commands": [
+      "aiw fd claim FD-037 FD-037-000003-design-ready --session fd037-worker-20261010-21c74a",
+      "$env:GOPROXY='off'; $env:GOSUMDB='off'; go build -o NUL ./cmd/aiw-say (first attempt failed on duplicate clipboard method stubs; one retry after removing the stubs passed)",
+      "No tests, final-artifact builds, network calls, or platform programs were run."
+    ],
+    "results": [
+      "Static review traced source selection, failure/copy ordering, platform clipboard selection, child process argument and stream boundaries, dialog cancellation, and AHK clipboard-change protection.",
+      "The Windows target compiled before the final WSL PowerShell error-action and Zenity exit-code classification edits. Linux/WSL build-tagged files and all platform runtime behavior were not exercised.",
+      "FD Work Items 1.1–1.9 and Verification/TODO were updated; the FD-036 source reference now points to its archive path."
+    ],
+    "residual_risk": "Independent Tester runtime evidence is still needed for Windows/Linux/WSL Unicode clipboard round trips, Zenity input/result/cancel paths, and AHK/PowerShell process encoding and clipboard races. No real API request or final build was performed."
+  }
+}

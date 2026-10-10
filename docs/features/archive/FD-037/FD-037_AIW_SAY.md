@@ -1,9 +1,9 @@
 # FD-037: AIW Say 跨平台剪贴板与图形入口
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 7
 **Priority:** Medium
-**Test policy:** Independent
+**Test policy:** Waived for this Auto cycle by user decision
 **Evidence policy:** Dual
 
 ## Problem
@@ -39,15 +39,15 @@ Windows 选择系统剪贴板接口；Linux 按实际显示环境选择已安装
 
 ## Work items
 
-- [ ] 1.1 在 FD-036 入口增加剪贴板边界、输入源互斥及成功后回写流程。Size: M；difficulty: Medium；dependencies: FD-036；完成标准：普通 CLI 默认不触碰剪贴板，失败不回写。
-- [ ] 1.2 实现 Windows Unicode 剪贴板读写适配器。Size: M；difficulty: Medium；dependencies: 1.1；完成标准：中日文、引号、换行可读写，访问失败有明确错误。
-- [ ] 1.3 实现 Linux Wayland/X11 工具选择和读写适配器。Size: M；difficulty: Medium；dependencies: 1.1；完成标准：按当前显示会话选具备读写配对的工具，缺失时报错。
-- [ ] 1.4 实现 WSL2 Windows 剪贴板互操作适配器。Size: M；difficulty: Medium；dependencies: 1.1；完成标准：Windows 剪贴板双向读写且 Unicode 不损坏，前置工具缺失时给出恢复提示。
-- [ ] 1.5 实现 Zenity 子进程边界和输入取消语义。Size: S；difficulty: Medium；dependencies: 1.1；完成标准：输入取消或空输入不请求 LLM，无 Zenity 不影响普通 CLI。
-- [ ] 1.6 接入 Windows 原生 Zenity 的输入和结果窗口。Size: S；difficulty: Medium；dependencies: 1.5, 1.2；完成标准：受支持 Windows 图形会话可运行，未安装时明确报错。
-- [ ] 1.7 接入 Linux/WSL Zenity 图形会话的输入和结果窗口。Size: M；difficulty: Medium；dependencies: 1.5, 1.3, 1.4；完成标准：Linux 与 WSL 图形会话可运行，无图形会话时明确报错。
-- [ ] 1.8 编写 Windows AHK v2 快捷键脚本。Size: M；difficulty: Medium；dependencies: 1.1, 1.2；完成标准：四个热键正确调用 CLI、检查状态，失败和并发剪贴板变更均不覆盖原内容。
-- [ ] 1.9 更新平台使用说明和静态示例，列出 Zenity/剪贴板工具安装前置条件、AHK v2、WSL 图形与编码限制。Size: S；difficulty: Low；dependencies: 1.2–1.8；完成标准：文档命令与实现一致，不宣称未验证的平台行为。
+- [x] 1.1 在 FD-036 入口增加剪贴板边界、输入源互斥及成功后回写流程。Size: M；difficulty: Medium；dependencies: FD-036；完成标准：普通 CLI 默认不触碰剪贴板，失败不回写。
+- [x] 1.2 实现 Windows Unicode 剪贴板读写适配器。Size: M；difficulty: Medium；dependencies: 1.1；完成标准：中日文、引号、换行可读写，访问失败有明确错误。
+- [x] 1.3 实现 Linux Wayland/X11 工具选择和读写适配器。Size: M；difficulty: Medium；dependencies: 1.1；完成标准：按当前显示会话选具备读写配对的工具，缺失时报错。
+- [x] 1.4 实现 WSL2 Windows 剪贴板互操作适配器。Size: M；difficulty: Medium；dependencies: 1.1；完成标准：Windows 剪贴板双向读写且 Unicode 不损坏，前置工具缺失时给出恢复提示。
+- [x] 1.5 实现 Zenity 子进程边界和输入取消语义。Size: S；difficulty: Medium；dependencies: 1.1；完成标准：输入取消或空输入不请求 LLM，无 Zenity 不影响普通 CLI。
+- [x] 1.6 接入 Windows 原生 Zenity 的输入和结果窗口。Size: S；difficulty: Medium；dependencies: 1.5, 1.2；完成标准：受支持 Windows 图形会话可运行，未安装时明确报错。
+- [x] 1.7 接入 Linux/WSL Zenity 图形会话的输入和结果窗口。Size: M；difficulty: Medium；dependencies: 1.5, 1.3, 1.4；完成标准：Linux 与 WSL 图形会话可运行，无图形会话时明确报错。
+- [x] 1.8 编写 Windows AHK v2 快捷键脚本。Size: M；difficulty: Medium；dependencies: 1.1, 1.2；完成标准：四个热键正确调用 CLI、检查状态，失败和并发剪贴板变更均不覆盖原内容。
+- [x] 1.9 更新平台使用说明和静态示例，列出 Zenity/剪贴板工具安装前置条件、AHK v2、WSL 图形与编码限制。Size: S；difficulty: Low；dependencies: 1.2–1.8；完成标准：文档命令与实现一致，不宣称未验证的平台行为。
 
 ## Acceptance
 
@@ -59,19 +59,24 @@ Windows 选择系统剪贴板接口；Linux 按实际显示环境选择已安装
 
 ## Verification
 
-- 设计阶段：静态读取 `docs/aiw-say.md`、FD-036 和现有插件分派契约；未执行平台程序。
-- Worker：检查输入互斥、平台适配器选择、子进程参数与 stdin、取消/失败/回写顺序、输出通道及最终 diff；按仓库规则执行一个窄范围 compile-only 检查。AHK/Zenity 脚本只做静态检查，执行另需授权。
-- 独立 Tester：按每个平台列出正常、取消、缺失工具、Unicode、翻译失败与剪贴板竞争场景；任何可执行命令须先经过 Planner 对具体环境、命令和副作用的版本绑定授权。缺少目标平台或图形会话时记为未运行，不推断成功。
-- 独立 Reviewer：对照当前 FD、Worker 报告、Tester/PM 证据审查，不把未运行的跨平台场景视为通过。
+- 设计阶段：静态读取 `docs/aiw-say.md`、归档的 FD-036、`openspec/specs/cli-and-plugins/spec.md` 与现有 `internal/say` 入口；未执行平台程序。
+- Worker：静态检查 `cmd/aiw-say/` 的输入互斥、剪贴板写入时序、`internal/say/` 的平台适配与子进程参数，以及 AHK/PowerShell 脚本和文档。PowerShell 编译命令 `$env:GOPROXY='off'; $env:GOSUMDB='off'; go build -o NUL ./cmd/aiw-say` 首次因公共占位方法与 Windows 方法重复而失败；移除占位后同命令重跑通过。通过后又静态修正 WSL PowerShell 错误处理和 Zenity 退出码分类，未再次编译。
+- Worker 未运行测试、最终构建、格式化器或平台程序；编译结果早于上述两项静态修正，当前 Windows 编译未包含 `!windows` Linux/WSL 构建分支。
+- 用户决策（2026-10-10）：本轮 Auto 无需 Tester 阶段。Windows/Linux/WSL 剪贴板 Unicode 往返、Zenity 输入/取消/结果窗口、AHK 与 PowerShell 编码及剪贴板竞争均未运行；这是豁免，不是通过。以上功能行为仍属于 FD 验收要求，未验证的平台风险保留。
+- 独立 Reviewer（2026-10-10）：`verification-passed`，静态对照当前 FD、Worker 报告与 `922a2a2..ee169e3` 实现差异；未发现阻断验收的问题。详见 `docs/features/reports/FD-037-review-r1.md` 及 JSON sidecar。用户豁免本轮 Tester；未运行 Windows/Linux/WSL 剪贴板、Zenity、AHK/PowerShell 场景，这些运行行为仍是未验证风险，不计作通过。
 
 ## TODO
 
-- [ ] 在 FD-036 核心 CLI 可用后，按 Work items 实施适配器并记录实际平台证据。
-- [ ] 实施后更新 Verification、未运行场景、前置工具和残余风险。
+- [x] 按 Work items 实施适配器与 GUI/快捷键入口。
+- [x] 更新 Verification、未运行场景、前置工具和残余风险。
+
+%% Windows/Linux/WSL 剪贴板与 GUI 运行证据尚未取得；用户豁免本轮 Tester 阶段后仍保留该未验证风险，Reviewer 不得将其视为通过。
 
 ## Sources
 
 - Issue：无；本 FD 由用户指定的新平台集成要求创建。
 - `docs/aiw-say.md`：剪贴板、AHK、Zenity、输出、隐私和 V1 Phase 2 要求；Windows/WSL Zenity 范围按用户最新要求扩展。
-- `docs/features/FD-036_AIW_SAY_CLI.md`：核心 CLI、配置/profile、翻译提供方与失败输出契约；本 FD 的前置依赖。
+- `docs/features/archive/FD-036/FD-036_AIW_SAY_CLI.md`：核心 CLI、配置/profile、翻译提供方与失败输出契约；本 FD 的前置依赖。
 - `openspec/specs/cli-and-plugins/spec.md`：现有 `aiw-<name>` 插件分派契约。
+
+**Completed:** 2026-10-10
