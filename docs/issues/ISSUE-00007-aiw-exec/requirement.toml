@@ -8,7 +8,7 @@ revision = 4
 
 [approval]
 status = "APPROVED"
-by = "GWJP\\svictor"
+by = "Bruce Asu"
 at = "2026-10-09T16:15:02+09:00"
 reason = "User explicitly approved REQ00007 on 2026-10-09."
 source_digest = "b3de03d2df1f6d822fcdb7a174972b0724406167eb11b4ca35bfe84c245e9c6e"

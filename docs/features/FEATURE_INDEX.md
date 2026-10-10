@@ -64,6 +64,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-050](archive/FD-050/FD-050_SRC_PYTHON.md) | 将仓库源码统一迁入 `src/` 并用 Python 重写构建入口 | Complete | High |
 | [FD-051](archive/FD-051/FD-051_GIT_WT_SYNC_DELETE_CHERRY_PICK.md) | 扩展 `aiw git wt` 的分支操作 | Complete | Medium |
 | [FD-052](archive/FD-052/FD-052_IMPROVE_AI_GIT_BRANCH_SUMMARIES_WITH_BOUNDED_DIF.md) | 为 AI 分支摘要增加有上限的 diff 上下文 | Complete | Medium |
+| [FD-053](archive/FD-053/FD-053_AUTOMATIC_RECOVERY_FOR_MISSING_FD_HANDOFFS_AND_P.md) | Automatic recovery for missing FD handoffs and privileged state operations | Complete | Medium |
 
 ## Deferred / Closed
 

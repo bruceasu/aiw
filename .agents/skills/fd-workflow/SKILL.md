@@ -165,12 +165,72 @@ review process for any such change. An unresolved record stays unresolved
 until evidence supports a result. Include the record path and current status
 in the user-facing Gate and final report.
 
+### Automatic recovery: active `Open` FD with no event
+
+In Auto mode, an active `Open` FD with no event or receipt is a recoverable
+handoff gap. Do not stop to ask whether to create the Worker handoff. This
+specific path authorizes the audited recovery below; it does not authorize
+other workflow overrides.
+
+1. Confirm `aiw fd show` and `aiw fd resume` report no event, inspect the FD
+   and `.ai/fd/<id>/`, and confirm there is no pending, claimed, launching, or
+   dispatched event to recover. Do not apply this rule to another status or a
+   stale/in-flight handoff. If `AIW_FD_ROLE_RUNNER` is configured, stop before
+   creating or claiming anything; that runner owns dispatch.
+2. Record the blocker with `source_event: null` and explain that no event
+   exists. Commit the feedback pair. Preserve the parent branch, commit the
+   ready FD plan, and ensure the parent is clean before creating its worktree.
+   If the FD has no `**Revision:**`, add initial revision metadata and commit
+   that plan update first; do not invent or write a receipt by hand.
+3. Create the Worker handoff with the current CLI command:
+
+   ```text
+   aiw fd force-emit <id> decision-recorded --producer human --artifact <blocker-report> --reason "<factual reason>" --operator "<operator>"
+   ```
+
+   For an `Open` FD, `decision-recorded` routes to Worker through the current
+   resume mapping. Use the existing blocker Markdown as the artifact. The
+   operation records a forced audit and skipped checks; after it succeeds,
+   update and commit the blocker pair with the event ID and actual result.
+   Commit any FD revision/index changes made by the command before creating
+   the worktree. Claim only that exact pending event, then continue with the
+   recorded Worker branch and worktree.
+4. Treat skipped checks as unperformed. The Worker must inspect the plan and
+   resolve Work Items, unresolved input, evidence, and authorized validation
+   before emitting `implementation-ready`. Do not imply that `force-emit`
+   creates design, implementation, or verification evidence. If the command
+   fails, fix only the confirmed cause (for example, missing Revision) and
+   retry once; otherwise update the blocker pair and stop at the remaining
+   Gate.
+
+### Privileged state operations
+
+Use privileged commands only for their documented operation. The no-event
+recovery above is the only default Auto path that uses `force-emit`.
+
+- `set-status` changes an active FD's status without transition or terminal
+  evidence checks. It creates no handoff or evidence. Do not use it to route a
+  Worker or Reviewer, or to imply that work is complete. Other status overrides
+  require a recorded PM decision and a factual reason.
+- `cancel-event` cancels the latest dispatched receipt; it does not stop its
+  Agent. Never use it as an automatic stop command. Inspect and identify the
+  exact event and session, record the human/PM decision, and state that the
+  Agent may continue. Use `recover-worker` for a confirmed abandoned dispatched
+  Worker handoff.
+- Other `force-emit` event types and `close --force` are not authorized by the
+  no-event recovery rule. Use them only for an explicit, recorded human/PM
+  override with an existing artifact and factual reason. Preserve the forced
+  audit record and name the skipped checks; skipped checks never count as
+  passed.
+
 1. **Preflight and resolve.** Read the repository instructions and this FD's
    Issue, stable specs, and current receipt. If `AIW_FD_ROLE_RUNNER` is set,
    stop before creating or claiming a handoff: the configured runner owns
    dispatch. For a new feature request, use `aiw fd new`, then claim its exact
    pending `design-requested` event as this host Session. For an existing FD,
-   use its unique ID and inspect the latest receipt and recorded Session.
+   use its unique ID and inspect the latest receipt and recorded Session. An
+   active `Open` FD with no event follows the automatic recovery above; use
+   standard claim/refresh/recovery for every other receipt state.
    Before claiming any existing Worker handoff, count prior Reviewer outcomes
    in the active implementation cycle. If the latest result is
    `changes-requested`, read its report and assess actionable repair. At
