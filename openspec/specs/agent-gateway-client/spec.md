@@ -1,4 +1,4 @@
-# Agent Proxy CLI client specification
+# Agent Gateway CLI client specification
 
 ## Purpose
 

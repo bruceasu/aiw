@@ -5,7 +5,7 @@ import { startService } from "./service.js";
 export async function main(args: string[] = process.argv.slice(2)): Promise<void> {
   const [command, ...rest] = args;
   if (!command || command === "--help" || command === "help") {
-    process.stdout.write("Usage: aiw agent-proxy start [--port 43127]\n");
+    process.stdout.write("Usage: http-openai-proxy start [--port 43127]\n");
     return;
   }
   if (command !== "start") throw new Error("Expected command: start");
@@ -34,7 +34,7 @@ export async function main(args: string[] = process.argv.slice(2)): Promise<void
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((error: unknown) => {
     const message = error instanceof Error ? error.message : "startup failed";
-    process.stderr.write(`aiw-agent-proxy: ${message}\n`);
+    process.stderr.write(`http-openai-proxy: ${message}\n`);
     process.exitCode = 1;
   });
 }

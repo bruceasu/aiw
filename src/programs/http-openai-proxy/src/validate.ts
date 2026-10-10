@@ -9,7 +9,7 @@ export function validateRequest(value: unknown): RequestInput {
   const row = value as Record<string, unknown>;
   if (typeof row.client_id !== "string" || !ID.test(row.client_id)) throw new ProxyError("invalid_client_id", "client_id must be 1-128 safe characters");
   if (row.request_id !== undefined && (typeof row.request_id !== "string" || !ID.test(row.request_id))) throw new ProxyError("invalid_request_id", "request_id must be 1-128 safe characters");
-  if (typeof row.provider !== "string" || !PROVIDERS.includes(row.provider as Provider)) throw new ProxyError("invalid_provider", "provider must be codex, copilot, or openai");
+  if (row.provider !== undefined && (typeof row.provider !== "string" || !PROVIDERS.includes(row.provider as Provider))) throw new ProxyError("invalid_provider", "provider must be openai when specified");
   if (typeof row.model !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/.test(row.model)) throw new ProxyError("invalid_model", "model is required and must be 1-128 safe characters");
   if (row.effort !== undefined && (typeof row.effort !== "string" || !EFFORTS.includes(row.effort as Effort))) throw new ProxyError("invalid_effort", "effort must be minimal, low, medium, high, or xhigh");
   if (row.output_format !== "json" && row.output_format !== "markdown") throw new ProxyError("invalid_output_format", "output_format must be json or markdown");
@@ -19,7 +19,7 @@ export function validateRequest(value: unknown): RequestInput {
   return {
     client_id: row.client_id,
     ...(row.request_id === undefined ? {} : { request_id: row.request_id as string }),
-    provider: row.provider as Provider,
+    provider: "openai",
     model: row.model,
     ...(row.effort === undefined ? {} : { effort: row.effort as Effort }),
     output_format: row.output_format as OutputFormat,

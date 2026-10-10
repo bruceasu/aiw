@@ -1,5 +1,5 @@
 {
-  "name": "aiw-agent-proxy",
+  "name": "http-openai-proxy",
   "private": true,
   "type": "module",
   "engines": {
@@ -7,7 +7,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node aiw-agent-proxy.js start"
+    "start": "node http-openai-proxy.js start"
   },
   "dependencies": {
     "openai": "^6.49.0",
