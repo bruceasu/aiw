@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 
 const root = resolve(import.meta.dirname, '..');
-const service = resolve(root, 'program/aiw-agent');
+const service = resolve(root, 'src/programs/aiw-agent');
 const require = createRequire(resolve(service, 'package.json'));
 const ts = require('typescript');
 const cache = new Map();

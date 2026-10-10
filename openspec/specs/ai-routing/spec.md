@@ -79,6 +79,6 @@
 
 ## 实现依据
 
-- [全局与 Profile 配置](../../../internal/ai/config.go)、[provider 与优先级](../../../internal/ai/provider.go)。
-- [路由计划](../../../internal/workflow/routing_plan.go)。
-- [推荐与请求快照](../../../internal/workflow/cli/command.go)：resolveSupervisedAISelection、路由推荐及 request 准备分支。
+- [全局与 Profile 配置](../../../src/internal/ai/config.go)、[provider 与优先级](../../../src/internal/ai/provider.go)。
+- [路由计划](../../../src/internal/workflow/routing_plan.go)。
+- [推荐与请求快照](../../../src/internal/workflow/cli/command.go)：resolveSupervisedAISelection、路由推荐及 request 准备分支。

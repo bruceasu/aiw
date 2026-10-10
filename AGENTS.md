@@ -1,5 +1,6 @@
 # AGENTS.md
 Always respond in Chinese.
+Write document in Easy English if occure encoding problem with Chinese.
 
 ## FD Workflow
 
@@ -104,7 +105,7 @@ to the user's requested outcome.
 
 ## Working Rules
 
-- For engineering work, read `skills/work-management.md`. Use numbered FDs for
+- For engineering work, read `src/skills/work-management.md`. Use numbered FDs for
   new work. Use OpenSpec for stable
   capability specs and explicit change requests. Work in the primary workspace
   by default.
@@ -154,7 +155,7 @@ Keep the active instruction set and execution budget small.
 ## Load Order
 
 1. Apply this file.
-2. Prefer the nearest local `AGENTS.md` or `CODEX.md`.
+2. Prefer the nearest local `AGENTS.md`.
 3. Load `.agents/prompts/core/resource-budget.md`,
    `.agents/prompts/core/universal-principles.md`,
    `.agents/prompts/core/validation.md`, and `.agents/prompts/core/communication.md`.
@@ -213,9 +214,9 @@ concurrency, retries, timeouts, or shutdown behavior.
 ## Prompt Routing
 
 - Mixed-language repository: `.agents/prompts/repo-types/monorepo.md`
-- Python: `python/AGENTS.md` or `python/CODEX.md`
-- Java: `java/AGENTS.md` or `java/CODEX.md`
-- Go: `go/AGENTS.md` or `go/CODEX.md`
+- Python: `python/AGENTS.md`
+- Java: `java/AGENTS.md`
+- Go: `go/AGENTS.md`
 - Prompt changes: `.agents/prompts/domains/prompt-authoring.md`
 - Task mode: one matching file under `.agents/prompts/task-modes/`
 
@@ -233,23 +234,23 @@ This is the default local rule file for Go subtrees.
 Use it when the task is mostly Go or the current directory contains Go markers.
 
 ## Inspect First
-- `go.mod` and module layout
-- `cmd/` entrypoints, handlers, services, and `internal/` packages
+- `src/go.mod` and module layout
+- `src/cmd/` entrypoints, handlers, services, and `src/internal/` packages
 - config packages and tests near the touched code
 
 ## Detect The Go Domain
 - Service markers:
-  `cmd/server`, `internal/`, handler packages, config packages
+  `src/cmd/server`, `src/internal/`, handler packages, config packages
   - also load `.agents/prompts/domains/go-service.md`
 - CLI markers:
-  `cobra`, `urfave/cli`, command trees under `cmd/`, single-binary tools
+  `cobra`, `urfave/cli`, command trees under `src/cmd/`, single-binary tools
   - also load `.agents/prompts/domains/go-cli.md`
 
 Use one domain prompt by default.
 Load both only when the task truly spans both service and CLI code.
 
 ## Keep Stable
-- package boundaries and `internal/` ownership
+- package boundaries and `src/internal/` ownership
 - exported APIs
 - `context.Context` flow
 - concurrency, retry, and shutdown behavior
@@ -273,5 +274,5 @@ resource budget's explicit authorization.
 Ask before repository-wide commands. Rerun only after a relevant change.
 
 ## Escalation
-If a deeper subtree has its own `AGENTS.md` or `CODEX.md`, prefer that local file.
+If a deeper subtree has its own `AGENTS.md`, prefer that local file.
 <!-- aiw-prompts:go:agents end -->

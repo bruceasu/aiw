@@ -86,7 +86,7 @@ archive / cancel MUST 要求操作人与原因，并将需求移动至对应终�
 
 ### Requirement: 自动生成稳定编号
 
-默认 `new <slug> [title]` MUST 创建 `ISSUE-001` 格式的完整 ID，数字至少三位且递增；slug MUST 为小写英文或数字片段，以单连字符连接，但不作为 ID 后缀。省略 title 时使用 slug 作为标题。生成后的 ID 不随标题变化。ISSUE 编号与旧 REQ 序列独立，活动、归档、取消和已预留编号均不得复用。
+默认 `new <slug> [title]` MUST 创建 `ISSUE-00001` 格式的完整 ID，数字至少五位且递增；超过五位时自然扩展。slug MUST 为小写英文或数字片段，以单连字符连接，但不作为 ID 后缀。省略 title 时使用 slug 作为标题。生成后的 ID 不随标题变化。ISSUE 编号与旧 REQ 序列独立，活动、归档、取消和已预留编号均不得复用。既有三位及以上数字的 ISSUE ID 仍然有效。
 
 #### Scenario: 顺序创建
 
@@ -180,9 +180,9 @@ archive / cancel MUST 要求操作人与原因，并将需求移动至对应终�
 
 ## 实现依据
 
-- [存储、状态与摘要](../../../internal/issue/store.go)：Create、Capture、Approve、StartPromotion、CompletePromotion、ArtifactSnapshot、moveTerminal。
-- [编号分配](../../../internal/issue/numbering.go)、[创建参数](../../../cmd/aiw-req/requirement_creation.go)。
-- [命令与推广编排](../../../cmd/aiw-req/requirement.go)：DispatchRequirement、promoteRequirement、OpenSpec delegation。
+- [存储、状态与摘要](../../../src/internal/issue/store.go)：Create、Capture、Approve、StartPromotion、CompletePromotion、ArtifactSnapshot、moveTerminal。
+- [编号分配](../../../src/internal/issue/numbering.go)、[创建参数](../../../src/cmd/aiw-req/requirement_creation.go)。
+- [命令与推广编排](../../../src/cmd/aiw-req/requirement.go)：DispatchRequirement、promoteRequirement、OpenSpec delegation。
 
 
 ---
@@ -333,10 +333,10 @@ Session 证据 MUST 保留实际装载的方法、来源版本和缺失清单，
 
 本规格已按 improve-requirement-management 的增量要求合并，保留代码基线中的具体校验规则；运行证据及未验证项见对应归档清单。
 
-- [上下文](../../../internal/issue/context.go)、[路径与预算](../../../internal/issue/context_sources.go)、[方法选择](../../../internal/issue/context_methods.go)。
-- [覆盖校验](../../../internal/issue/coverage.go)、[问题排序](../../../internal/issue/questions.go)、[对话编排](../../../internal/issue/conversation.go)。
-- [恢复](../../../internal/issue/conversation_history.go)、[就绪检查](../../../internal/issue/readiness.go)。
-- [聊天接入与捕获检查点](../../../cmd/aiw-req/requirement_discovery.go)、[批准检查点](../../../cmd/aiw-req/requirement_readiness.go)、[promote 命令](../../../cmd/aiw-req/issue-promote.go)。
+- [上下文](../../../src/internal/issue/context.go)、[路径与预算](../../../src/internal/issue/context_sources.go)、[方法选择](../../../src/internal/issue/context_methods.go)。
+- [覆盖校验](../../../src/internal/issue/coverage.go)、[问题排序](../../../src/internal/issue/questions.go)、[对话编排](../../../src/internal/issue/conversation.go)。
+- [恢复](../../../src/internal/issue/conversation_history.go)、[就绪检查](../../../src/internal/issue/readiness.go)。
+- [聊天接入与捕获检查点](../../../src/cmd/aiw-req/requirement_discovery.go)、[批准检查点](../../../src/cmd/aiw-req/requirement_readiness.go)、[promote 命令](../../../src/cmd/aiw-req/issue-promote.go)。
 
 %% 引用有效、JSON 合法和问题排序正确，不证明模型找全了业务缺口；专业质量仍需人工评审。
 

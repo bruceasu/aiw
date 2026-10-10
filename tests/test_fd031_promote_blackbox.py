@@ -73,7 +73,7 @@ class PromoteBlackBox(unittest.TestCase):
         for package, target in (("./cmd/aiw", cls.aiw), ("./cmd/aiw-req", cls.aiw_req)):
             result = subprocess.run(
                 ["go", "build", "-mod=readonly", "-o", str(target), package],
-                cwd=SOURCE, env=env, capture_output=True, text=True, timeout=180,
+                cwd=SOURCE / "src", env=env, capture_output=True, text=True, timeout=180,
             )
             if result.returncode:
                 raise RuntimeError(f"Offline CLI build failed for {package}: {result.stdout}{result.stderr}")

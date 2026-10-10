@@ -6,7 +6,7 @@ FD owns design decisions, Work Items, acceptance, status, and Verification;
 OpenSpec owns stable capability specs under `openspec/specs/`. An OpenSpec
 change is optional and is created only when explicitly requested.
 
-New Issues use `ISSUE-001` IDs and `docs/issues/<id>/`; existing REQ records
+New Issues use IDs such as `ISSUE-00001` under `docs/issues/<id>/`; existing REQ records
 keep their IDs and `docs/requirements/` paths. New FDs live under
 `docs/features/FD-XXX_SLUG.md`. `FEATURE_INDEX.md` is a derived index;
 `.ai/fd/<fd-id>/` stores receipts, workspace metadata, and operator audits.

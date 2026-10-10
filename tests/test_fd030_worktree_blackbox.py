@@ -42,7 +42,7 @@ class FD030WorktreeBlackBox(unittest.TestCase):
         })
         built = subprocess.run(
             [GO_COMMAND, "build", "-mod=readonly", "-o", str(cls.aiw), "./cmd/aiw"],
-            cwd=REPO,
+            cwd=REPO / "src",
             env=cls.build_env,
             text=True,
             stdout=subprocess.PIPE,

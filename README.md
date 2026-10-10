@@ -10,7 +10,7 @@ records remain available for compatibility.
 * Inspect FD reports and reviews, list FDs by status, and recover workflow receipts with explicit operator audit records
 * Initialize AIW Task, FD, and optional OpenSpec directories and default instruction files
 * Create and deliver dedicated FD worktrees through `aiw git wt`
-* Generate or merge AI prompt files from `agent-templates/`
+* Generate or merge AI prompt files from `src/agent-templates/`
 * Translate Chinese, Japanese, and English text with the `aiw say` plugin
 * Create, view, and update tasks
 * Capture, approve, split, and promote durable Issues with independent ISSUE IDs; link approved Issues to numbered FDs
@@ -53,7 +53,8 @@ See [FD-first workflow](docs/usage/aiw-fd.md) for new development work.
 ## Build and Installation
 
 ```bash
-go build -o aiw ./cmd/aiw
+cd src
+go build -o ../aiw ./cmd/aiw
 ```
 
 Windows executable:
@@ -63,20 +64,20 @@ Windows executable:
 ```
 
 Requirement Management is also distributed as the `aiw-req` plugin.
-Build its Windows and Linux binaries into `plugins/aiw-req` with:
+Build its Windows and Linux binaries into `dist/plugins/aiw-req` with:
 
 ```bat
-build.bat req
+python build.py req
 ```
 
 The Conventional Commit wizard is a TypeScript plugin requiring Node.js 22.12.0
 or newer. Build its platform-specific release directory with:
 
 ```bat
-build.bat cz
+python build.py cz
 ```
 
-`build.bat plugins` installs the curated CZ release without its TypeScript
+`python build.py plugins` installs the curated CZ release without its TypeScript
 source or `node_modules`. See [CZ configuration](docs/usage/cz-configuration.md).
 
 ## Commands
@@ -173,15 +174,14 @@ private session storage, and provider limitations.
 
 ### Translate text with `aiw say`
 
-AIW Say is a text translation plugin. On Windows, `build.bat say` builds
-Windows/Linux amd64 binaries and samples under `plugins/aiw-say/`.
-`build.bat plugins` builds and installs Say with the other plugins;
-`build.bat all` also includes this step. Installation preserves an existing
-Say `aiw.toml` and user profiles. For manual installation, build
-`./cmd/aiw-say` as `aiw-say.exe` on Windows or `aiw-say` on Linux/WSL,
+AIW Say is a text translation plugin. On Windows, `python build.py say` builds
+Windows/Linux amd64 binaries and samples under `dist/plugins/aiw-say/`.
+`python build.py plugins` builds and installs Say with the other plugins;
+`python build.py all` also includes this step. Installation preserves an existing Say `aiw.toml`. For manual installation, build
+`src/cmd/aiw-say` from `src/` as `aiw-say.exe` on Windows or `aiw-say` on Linux/WSL,
 and place it in a directory searched by AIW plugin discovery, such as `PATH`.
 The configuration sample is
-[program/aiw-say/aiw.toml.example](program/aiw-say/aiw.toml.example).
+[src/programs/aiw-say/aiw.toml.example](src/programs/aiw-say/aiw.toml.example).
 Set `OPENAI_API_KEY` in the environment and select a model available to your
 API account with `[say.llm].model` or `--model` before translating.
 The default `aiw.toml` belongs beside the Say executable, normally in
@@ -202,7 +202,7 @@ the source text to the configured API.
 Use `--mode`, `--style`, `--polite`, `--simple`, and `--profanity` to adjust
 the result, or `--profile` to load a user profile. Phase 1 supports text input;
 clipboard, GUI, file, pair, and glossary modes are not implemented.
-See the [AIW Say guide](program/aiw-say/README.md) for installation,
+See the [AIW Say guide](src/programs/aiw-say/README.md) for installation,
 configuration precedence, profiles, and troubleshooting.
 
 ### List Tasks
@@ -529,9 +529,9 @@ ownership in `.aiw-skills.json`. Path-based installs use the same managed
 pipeline as canonical Skill installs. Run `aiw skills --help` for complete
 constraints and JSON automation options.
 
-Canonical Skill packages are maintained in the repository-root `skills/`
-directory. Release layouts keep `skills/`, `cmd/`, and `plugins/` together;
-reusable implementation packages live under `internal/`.
+Canonical Skill packages are maintained in the `src/skills/`
+directory. Release layouts keep `skills/` with the executable. Repository sources
+live under `src/`, with reusable implementation packages under `src/internal/`.
 `aiw-install-skill` is deprecated; use `aiw skills install` for both canonical
 names and local bundle sources.
 
@@ -542,8 +542,9 @@ When an unknown subcommand is invoked, `aiw` searches for an executable named `a
 Search order:
 
 1. `plugins/` directory next to the `aiw` executable
-2. `$HOME/.config/aiw/plugins`
-3. System `PATH`
+2. Workspace-local `plugins/` directory
+3. Git checkout source plugins in `src/plugins/`
+4. System `PATH`
 
 ## Naming Convention
 
@@ -674,7 +675,7 @@ keeps the inherited working directory and resolves project `aiw.toml` or
 
 ## Example
 
-Place `plugins/aiw-hello.sh` in the repository's `plugins/` directory:
+Place `src/plugins/aiw-hello.sh` in the repository's `src/plugins/` directory:
 
 ```bash
 aiw hello arg1 arg2
@@ -693,12 +694,14 @@ Plugins execute arbitrary external code and may pose security risks. Only instal
 * Creates directories such as `openspec/` and `.wt/`
 * Writes default template files only when missing
 * Creates or appends `.wt/` to `.gitignore`
-* Does not automatically merge templates from `agent-templates/`
+* Does not automatically merge templates from `src/agent-templates/`
 
 Options:
 
 * `--prompts`
-  Run prompt synchronization immediately after initialization.
+  Run prompt synchronization immediately after initialization, including reusable
+  prompts under `.agents/prompts/` and the PR description reference at
+  `.agents/pull_request.md`.
 
 * `--merge`
   Valid only with `--prompts`. Merge content into existing prompt files.
@@ -707,7 +710,7 @@ Options:
   Valid only with `--prompts`. Overwrite existing prompt files.
 
 * `--template <name>`
-  Valid only with `--prompts`. Explicitly specify the template directory (`go`, `java`, or `python`).
+  Valid only with `--prompts`. Explicitly specify the template directory (`go`, `java`, `python`, `typescript`, or `javascript`).
 
 ## 2. `aiw new <task-id>`
 
@@ -845,14 +848,14 @@ Work Item. It does not change Task state.
 
 Features:
 
-* `aiw prompts list` lists available templates under `agent-templates/`
+* `aiw prompts list` lists available templates under `src/agent-templates/`
 * Generates or merges repository-level AI prompt files
 
 Auto-detected templates:
 
 | Template | Detection                                        |
 | -------- | ------------------------------------------------ |
-| `go`     | `go.mod`                                         |
+| `go`     | `src/go.mod`                                    |
 | `java`   | `pom.xml`, `build.gradle`, `build.gradle.kts`    |
 | `python` | `pyproject.toml`, `requirements.txt`, `setup.py` |
 
@@ -861,7 +864,8 @@ Output files:
 ```text
 AGENTS.md
 .github/copilot-instructions.md
-CODEX.md
+.agents/pull_request.md
+.agents/prompts/**
 ```
 
 Behavior:

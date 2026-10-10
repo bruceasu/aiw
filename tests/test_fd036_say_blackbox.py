@@ -273,7 +273,7 @@ class SayBlackBoxTests(unittest.TestCase):
         self.assertEqual(_ServerState.requests, [])
 
     def test_profile_examples_exist_for_copy_based_user_installation(self):
-        samples = Path("program/aiw-say/profiles")
+        samples = Path("src/programs/aiw-say/profiles")
         expected = {"ja-business.toml", "ja-teams.toml", "en-simple.toml", "en-document.toml"}
         self.assertTrue(samples.is_dir())
         self.assertTrue(expected.issubset({path.name for path in samples.glob("*.toml")}))

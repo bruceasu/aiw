@@ -1,14 +1,14 @@
 # Go Service
 
 ## Inspect First
-- `cmd/` entrypoints
+- `src/cmd/` entrypoints
 - handlers
 - services
 - storage or client packages
 - config packages and call paths
 
 ## Keep Stable
-- package boundaries and `internal/` ownership
+- package boundaries and `src/internal/` ownership
 - exported APIs
 - `context.Context` flow
 - concurrency, retry, timeout, and shutdown behavior

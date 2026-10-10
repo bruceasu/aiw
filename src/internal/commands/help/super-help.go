@@ -1,0 +1,482 @@
+package help
+
+import (
+	"aiw/internal/ai"
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+
+	"aiw/internal/util"
+	plug "aiw/internal/plugin"
+	"aiw/internal/version"
+)
+
+var executablePathFn = os.Executable
+var execCommandFn = exec.Command
+
+type helpJSON struct {
+	Command  string      `json:"command"`
+	Builtins []helpEntry `json:"builtins"`
+	Plugins  []helpEntry `json:"plugins"`
+}
+
+type helpEntry struct {
+	Name        string `json:"name"`
+	Short       string `json:"short,omitempty"`
+	Description string `json:"description,omitempty"`
+	Source      string `json:"source,omitempty"`
+}
+
+// Dispatch implements a flexible help command:
+//   - no args: list builtins and plugins
+//   - help <name>: show help for built-in or plugin
+//   - help <free text>: search docs and plugin META/help, optionally ask an LLM
+func Dispatch(args []string) error {
+	if len(args) > 0 && args[0] == "--json" {
+		return listAllJSON()
+	}
+	if len(args) == 0 {
+		return listAll()
+	}
+
+	// join args as one query if more than one
+	if len(args) == 1 {
+		name := args[0]
+		// check plugin first
+		if ok, _ := pluginExists(name); ok {
+			return showPluginHelp(name)
+		}
+		// check builtin
+		if ok := builtinExists(name); ok {
+			return showBuiltinHelp(name)
+		}
+		// fallback: treat as free-text query
+		return searchAndAnswer(strings.Join(args, " "))
+	}
+
+	// multi-word query
+	return searchAndAnswer(strings.Join(args, " "))
+}
+
+func listAllJSON() error {
+	builtins, err := listBuiltins()
+	if err != nil {
+		return err
+	}
+	plugins, err := listPlugins()
+	if err != nil {
+		return err
+	}
+	doc := helpJSON{Command: "help"}
+	for _, name := range builtins {
+		doc.Builtins = append(doc.Builtins, helpEntry{Name: name, Short: builtinHelpShort(name), Description: builtinHelpShort(name), Source: "builtin"})
+	}
+	for _, name := range plugins {
+		doc.Plugins = append(doc.Plugins, helpEntry{Name: name, Short: getPluginShort(name), Description: getPluginShort(name), Source: "plugin"})
+	}
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	return enc.Encode(doc)
+}
+
+func listAll() error {
+	fmt.Print("aiw " + version.Label() + " - FD-first workflow and AI tooling\n\n" +
+		"Usage:\n" +
+		"  aiw <command> [args...]\n" +
+		"  aiw --help\n" +
+		"  aiw help <command>\n\n")
+
+	fmt.Print("Core workflow:\n" +
+		"  init [--no-setup] [--prompts] [--merge] [--force] [--template <name>]\n" +
+		"  fd new <title> [--issue <id>]  Create a numbered FD and request Planner.\n" +
+		"  fd list                      Show the FD index.\n" +
+		"  fd show <fd-id>               Show an FD and its last handoff.\n" +
+		"  fd emit <fd-id> <event> --producer <role> --artifact <path> [--source-event <id>]\n" +
+		"                               Record a stage result and route the next role.\n" +
+		"                               Test events: test-report-ready, test-accepted, test-rejected.\n" +
+		"  fd claim <fd-id> <event-id> --session <id>\n" +
+		"                               Bind a pending handoff to one host session.\n" +
+		"  fd resume <fd-id>             Resume a pending handoff safely.\n" +
+		"  fd request-review <fd-id> --reason <text>\n" +
+		"                               Request review for a pending or completed FD.\n" +
+		"  fd refresh-worker <fd-id> --reason <text>\n" +
+		"                               Replace a stale pending Worker handoff.\n" +
+		"  fd refresh-tester <fd-id> --reason <text> --artifact <report>\n" +
+		"                               Replace a stale unclaimed Tester handoff.\n" +
+		"  fd reopen <fd-id> --reason <text>\n" +
+		"                               Resume an archived Closed or Deferred FD.\n" +
+		"  fd reopen <fd-id> --reason <text> --correct-reason\n" +
+		"                               Correct an unclaimed reopen handoff reason.\n" +
+		"  fd close <fd-id> <Complete|Deferred|Closed> [--reason <text>]\n" +
+		"                               Archive an FD with the required evidence.\n" +
+		"  issue <...>                  Manage Issue intake, split lineage, and promotion.\n" +
+		"  req <...>                    Compatibility alias for Issue records.\n\n")
+
+	fmt.Print("Other tools:\n" +
+		"  ask <prompt>                 Ask the built-in LLM for AIW guidance.\n" +
+		"  completion <shell>           Generate shell completion scripts.\n" +
+		"  version                      Print the AIW version.\n\n")
+
+	fmt.Print("Examples:\n" +
+		"  aiw init --prompts --template go\n" +
+		"  aiw fd new \"Payment retry\"\n" +
+		"  aiw fd list\n" +
+		"  aiw fd show FD-001\n" +
+		"  aiw help fd\n\n")
+
+	pls, err := listPlugins()
+	if err != nil || len(pls) == 0 {
+		fmt.Println("Plugins: none discovered beside this aiw binary.")
+		fmt.Println("Place executable plugins next to aiw, then run: aiw <plugin> --help")
+		return nil
+	}
+
+	fmt.Println("Plugins:")
+	for _, p := range pls {
+		desc := getPluginShort(p)
+		if desc == "" {
+			fmt.Printf("  %s\n", p)
+			continue
+		}
+		fmt.Printf("  %s - %s\n", p, desc)
+	}
+
+	return nil
+}
+
+// getPluginShort attempts to read the plugin source and extract META['short'].
+// If not found, returns empty string.
+func getPluginShort(name string) string {
+	path := pluginScriptPath(name)
+	if path == "" {
+		return ""
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	return extractShortFromSource(string(b))
+}
+
+// extractShortFromSource looks for patterns like 'short': '...' or "short": "...".
+func extractShortFromSource(src string) string {
+	// look for "short"
+	idx := strings.Index(src, "short")
+	if idx == -1 {
+		return ""
+	}
+	// search from idx to next newline for colon
+	tail := src[idx:]
+	// find first colon
+	cidx := strings.Index(tail, ":")
+	if cidx == -1 {
+		return ""
+	}
+	// rest after colon
+	rest := tail[cidx+1:]
+	// find first quote (single or double)
+	rest = strings.TrimSpace(rest)
+	if len(rest) == 0 {
+		return ""
+	}
+	var quote byte
+	if rest[0] == '\'' || rest[0] == '"' {
+		quote = rest[0]
+	} else {
+		// not quoted; return until comma or newline
+		end := strings.IndexAny(rest, ",\n")
+		if end == -1 {
+			return strings.TrimSpace(rest)
+		}
+		return strings.TrimSpace(rest[:end])
+	}
+	// find closing quote
+	rest = rest[1:]
+	end := strings.IndexByte(rest, quote)
+	if end == -1 {
+		return strings.TrimSpace(rest)
+	}
+	return strings.TrimSpace(rest[:end])
+}
+
+func listBuiltins() ([]string, error) {
+	return staticBuiltinCommands(), nil
+}
+
+func staticBuiltinCommands() []string {
+	return []string{"init", "ask", "completion", "help", "version", "issue"}
+}
+
+func listPlugins() ([]string, error) {
+	pluginsDir, err := resolvePluginsDir()
+	if err != nil {
+		return nil, err
+	}
+	files, err := os.ReadDir(pluginsDir)
+	if err != nil {
+		return nil, err
+	}
+	out := []string{}
+	seen := map[string]bool{}
+	for _, f := range files {
+		if f.IsDir() {
+			subEntries, err := os.ReadDir(filepath.Join(pluginsDir, f.Name()))
+			if err != nil {
+				continue
+			}
+			for _, sub := range subEntries {
+				if sub.IsDir() {
+					continue
+				}
+				name, ok := pluginNameFromFile(sub.Name())
+				if ok && name != "wf" && !seen[name] {
+					out = append(out, name)
+					seen[name] = true
+				}
+			}
+			continue
+		}
+		if name, ok := pluginNameFromFile(f.Name()); ok && name != "wf" && !seen[name] {
+			out = append(out, name)
+			seen[name] = true
+		}
+	}
+	return out, nil
+}
+
+func pluginExists(name string) (bool, string) {
+	if p, err := plug.DiscoverPlugin(name); err == nil {
+		return true, p
+	}
+	return false, ""
+}
+
+func builtinExists(name string) bool {
+	for _, b := range staticBuiltinCommands() {
+		if b == name {
+			return true
+		}
+	}
+	return false
+}
+
+func showPluginHelp(name string) error {
+	path, err := plug.DiscoverPlugin(name)
+	if err != nil {
+		return errors.New("plugin not found")
+	}
+	code, err := plug.ExecPlugin(path, []string{"-h"}, plug.InvocationEnvironment(name, path, "help "+name))
+	if err != nil {
+		return fmt.Errorf("running plugin help: %w", err)
+	}
+	if code != 0 {
+		return fmt.Errorf("plugin help exited with code %d", code)
+	}
+	return nil
+}
+
+func showBuiltinHelp(name string) error {
+	if usage, ok := builtinUsageText(name); ok {
+		fmt.Print(usage)
+		return nil
+	}
+
+	// attempt to execute the current binary with <name> -h to get help output
+	exe, err := executablePathFn()
+	if err != nil {
+		return fmt.Errorf("cannot locate executable: %w", err)
+	}
+	cmd := execCommandFn(exe, name, "-h")
+	var outb, errb bytes.Buffer
+	cmd.Stdout = &outb
+	cmd.Stderr = &errb
+	if err := cmd.Run(); err != nil {
+		// if execution fails, fall back to simple message
+		if errb.Len() > 0 {
+			fmt.Fprintln(os.Stderr, errb.String())
+		}
+		fmt.Printf("Builtin command '%s' (no inline help available)\n", name)
+		fmt.Printf("Run: %s %s -h to view help (executable run failed: %v)\n", exe, name, err)
+		return nil
+	}
+	fmt.Print(outb.String())
+	if errb.Len() > 0 {
+		fmt.Fprintln(os.Stderr, errb.String())
+	}
+	return nil
+}
+
+func builtinHelpShort(name string) string {
+	switch name {
+	case "init":
+		return "initialize project instructions and prompt templates"
+	case "ask":
+		return "ask the built-in LLM for AIW guidance"
+	case "completion":
+		return "generate shell completion scripts"
+	case "help":
+		return "show command help or search documentation"
+	case "version":
+		return "print the AIW version"
+	case "issue":
+		return "manage Issue records through the req plugin"
+	default:
+		return ""
+	}
+}
+
+func builtinUsageText(name string) (string, bool) {
+	switch name {
+	case "init":
+		return "usage: aiw init [--no-setup] [--prompts] [--merge] [--force] [--template <name>]\n  --no-setup skips creating base AGENTS.md and Copilot instructions.\n  With --merge, --force refreshes .agents prompt files while instruction files are merged.\n", true
+	case "help":
+		return "usage: aiw help [--json|command|topic]\n", true
+	case "version":
+		return "usage: aiw version\n", true
+	case "issue":
+		return "usage: aiw issue <command> [args...]\nAlias for the req plugin; run aiw help req for subcommand help.\n", true
+	default:
+		return "", false
+	}
+}
+
+func searchAndAnswer(query string) error {
+	fmt.Fprintf(os.Stderr, "Searching docs for: %s\n", query)
+	matches := searchDocs(query)
+	if len(matches) == 0 {
+		fmt.Println("no matching docs found")
+		return nil
+	}
+
+	// Use the provider selected in the shared AIW configuration.
+	if cfg, err := ai.LoadConfig(); err == nil && cfg.Name != "" {
+		if provider, err := ai.NewProvider(cfg); err == nil {
+			prompt := buildHelpPrompt(query, matches)
+			if result, err := provider.Generate(context.Background(), ai.Request{Prompt: prompt, Model: cfg.Model}); err == nil && strings.TrimSpace(result.FinalOutput) != "" {
+				fmt.Println(result.FinalOutput)
+				return nil
+			}
+		}
+	}
+
+	// fallback: print search hits
+	for i, m := range matches {
+		fmt.Printf("--- result %d ---\n", i+1)
+		fmt.Println(m)
+	}
+	return nil
+}
+
+func searchDocs(query string) []string {
+	out := []string{}
+	// search docs/usage
+	docsGlob := filepath.Join("docs", "usage", "*.md")
+	files, _ := filepath.Glob(docsGlob)
+	for _, f := range files {
+		b, err := os.ReadFile(f)
+		if err != nil {
+			continue
+		}
+		s := strings.ToLower(string(b))
+		if strings.Contains(s, strings.ToLower(query)) {
+			// include file heading and excerpt
+			excerpt := excerptText(string(b), query, 800)
+			out = append(out, fmt.Sprintf("%s:\n%s", filepath.Base(f), excerpt))
+		}
+	}
+
+	// search plugin META (quick scan)
+	pls, _ := listPlugins()
+	for _, p := range pls {
+		path := pluginScriptPath(p)
+		if path == "" {
+			continue
+		}
+		b, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		s := strings.ToLower(string(b))
+		if strings.Contains(s, strings.ToLower(query)) {
+			snippet := excerptText(string(b), query, 300)
+			out = append(out, fmt.Sprintf("plugin %s:\n%s", p, snippet))
+		}
+	}
+	return out
+}
+
+func excerptText(doc, query string, max int) string {
+	low := strings.ToLower(doc)
+	idx := strings.Index(low, strings.ToLower(query))
+	if idx == -1 {
+		if len(doc) <= max {
+			return doc
+		}
+		return doc[:max]
+	}
+	start := idx - 120
+	if start < 0 {
+		start = 0
+	}
+	end := idx + 120
+	if end > len(doc) {
+		end = len(doc)
+	}
+	ex := doc[start:end]
+	if len(ex) > max {
+		ex = ex[:max]
+	}
+	return ex
+}
+
+func buildHelpPrompt(query string, docs []string) string {
+	return fmt.Sprintf("Answer the user's AIW help question using only the following documentation. If the documentation is insufficient, say so clearly.\n\nQuestion:\n%s\n\nDocumentation:\n%s", query, strings.Join(docs, "\n\n---\n\n"))
+}
+
+func pluginNameFromFile(filename string) (string, bool) {
+	if !strings.HasPrefix(filename, "aiw-") {
+		return "", false
+	}
+	ext := filepath.Ext(filename)
+	switch strings.ToLower(ext) {
+	case "", ".py", ".exe":
+		name := strings.TrimSuffix(strings.TrimPrefix(filename, "aiw-"), ext)
+		return name, name != ""
+	}
+	return "", false
+}
+
+func pluginScriptPath(name string) string {
+	pluginsDir, err := resolvePluginsDir()
+	if err != nil {
+		return ""
+	}
+	candidates := []string{
+		filepath.Join(pluginsDir, fmt.Sprintf("aiw-%s.py", name)),
+		filepath.Join(pluginsDir, fmt.Sprintf("aiw-%s", name), fmt.Sprintf("aiw-%s.py", name)),
+	}
+	for _, candidate := range candidates {
+		if util.Exists(candidate) {
+			return candidate
+		}
+	}
+	return ""
+}
+
+func resolvePluginsDir() (string, error) {
+	exePath, err := executablePathFn()
+	if err != nil {
+		return "", fmt.Errorf("resolve executable path: %w", err)
+	}
+	resolvedPath, err := filepath.EvalSymlinks(exePath)
+	if err == nil {
+		exePath = resolvedPath
+	}
+	return filepath.Join(filepath.Dir(exePath), "plugins"), nil
+}

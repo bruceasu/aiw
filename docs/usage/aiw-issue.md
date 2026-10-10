@@ -7,8 +7,8 @@ Issue 可以记录 Bug、功能或修改。新流程是 **Issue → 编号 FD �
 
 ## 当前命令与兼容性
 
-`aiw issue new <slug> [title]` 创建 `ISSUE-001` 格式的编号，数字至少三位，
-超过 999 自然扩展。slug 不作为 ID 后缀；省略 title 时用 slug 作为标题。
+`aiw issue new <slug> [title]` 创建 `ISSUE-00001` 格式的编号，数字至少五位，
+超过 99999 自然扩展。slug 不作为 ID 后缀；省略 title 时用 slug 作为标题。
 新记录保存在 `docs/issues/<id>/issue.toml`，Plan 为 `issue-plan.md`。
 `aiw req` 继续作为同一程序的入口别名，其默认新建行为同样使用 ISSUE 编号。
 旧 `REQ00001-slug` 记录保存在 `docs/requirements/<id>/`，既有 FD 引用和

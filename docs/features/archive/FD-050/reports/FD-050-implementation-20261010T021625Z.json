@@ -1,0 +1,38 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-050",
+  "source_event": "FD-050-000008-changes-requested",
+  "human_report": "FD-050-implementation-20261010T021625Z.md",
+  "data": {
+    "worker_session": "fd050-worker-20261010-correction1",
+    "outcome": "implementation-ready",
+    "changes": [
+      {
+        "path": "src/internal/plugin/discover.go",
+        "summary": "Search plugin directories in declared order and apply extension scoring only within the first directory containing a match; search PATH afterward."
+      },
+      {
+        "path": ".github/copilot-instructions.md",
+        "summary": "Update Go CLI command-tree guidance to src/cmd/."
+      }
+    ],
+    "verification": {
+      "compile_only": {
+        "command": "python scripts/compile.py",
+        "result": "passed",
+        "exit_code": 0
+      },
+      "static_review": "Reviewed the changed candidate precedence and active Go CLI path guidance."
+    },
+    "not_run": [
+      "tests",
+      "build actions",
+      "installation",
+      "formatters",
+      "linters",
+      "vet",
+      "full verification scripts"
+    ]
+  }
+}

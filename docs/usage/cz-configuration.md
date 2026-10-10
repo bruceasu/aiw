@@ -37,8 +37,8 @@ OpenAI HTTP 需要模型和 API key，可通过 `[cz.openai]`、`CZ_OPENAI_API_K
 或 `OPENAI_API_KEY` 配置。
 
 `cz` 需要目标机器预装 Python，默认只使用标准库。Windows 上运行
-`build.bat cz` 会在 `plugins/aiw-cz/release/` 准备 Python 入口、模块、
-`requirements.txt` 和语言文件；`build.bat plugins` 将这份内容安装到 AIW
+`python build.py cz` 会在 `dist/plugins/aiw-cz/release/` 准备 Python 入口、模块、
+`requirements.txt` 和语言文件；`python build.py plugins` 将这份内容安装到 AIW
 插件目录，并保留已有的 `cz.toml` / `.cz.toml`。
 `aiw cz` 运行 `aiw-cz.py`。CLI 缺失、失败或返回无效候选时，插件按上述顺序
 尝试下一种方式；所有方式失败后进入 TUI。安装和交互细节见

@@ -25,6 +25,7 @@ def main() -> int:
         return 127
 
     root = Path(__file__).resolve().parent.parent
+    module_root = root / "src"
     go_cache = worktree_go_cache(root)
     go_cache.mkdir(parents=True, exist_ok=True)
     # On Windows, NUL makes the linker perform the full compile without
@@ -37,7 +38,7 @@ def main() -> int:
     for target in targets:
         completed = subprocess.run(
             [go, "build", "-o", output, target],
-            cwd=root,
+            cwd=module_root,
             env=environment,
         )
         if completed.returncode != 0:

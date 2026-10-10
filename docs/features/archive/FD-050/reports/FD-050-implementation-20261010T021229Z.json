@@ -1,0 +1,32 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-050",
+  "source_event": "FD-050-000006-work-requested",
+  "human_report": "FD-050-implementation-20261010T021229Z.md",
+  "data": {
+    "summary": "将 Go 模块、独立程序、插件、技能和 Agent 模板迁入 src，并以 Python 构建入口替换批处理脚本。",
+    "changed_paths": [
+      "src/",
+      "build.py",
+      "scripts/compile.py",
+      "scripts/test.py",
+      "README.md",
+      "AGENTS.md",
+      ".gitignore",
+      "openspec/specs/",
+      "tests/",
+      "docs/features/FD-050_SRC_PYTHON.md"
+    ],
+    "commands": [
+      "python scripts/compile.py",
+      "git diff --check develop...HEAD"
+    ],
+    "results": [
+      "主 Go 模块 compile-only 检查通过。",
+      "静态差异检查通过，旧根级源码目录不存在。",
+      "未运行测试、构建动作或安装动作。"
+    ],
+    "residual_risk": "Windows 构建与安装行为由静态检查覆盖，未运行验证；技能 CLI 测试夹具未运行。"
+  }
+}
