@@ -1,0 +1,48 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-051",
+  "source_event": "FD-051-000004-implementation-ready",
+  "human_report": "FD-051-review-r1.md",
+  "data": {
+    "reviewer_session": "fd051-reviewer-20261010T1610-8b1f4c",
+    "reviewed_revision": "develop...4ae4de74 (parent baseline develop@41b29369)",
+    "outcome": "verification-passed",
+    "findings": [],
+    "acceptance_results": {
+      "delete_registered_worktree_and_branch": "supported by static review of safe path checks, Git worktree registration, absent-resource reporting, and non-forced worktree removal",
+      "sync_selected_local_branch": "supported by static review of local branch resolution, target validation, clean-state guard, and conflict recovery instructions",
+      "cherry_pick_resolved_commit": "supported by static review of commit resolution, target validation, clean-state guard, and conflict recovery instructions",
+      "reject_mismatched_paths_and_preserve_recovery_state": "supported by static review of workspace metadata/path/ref checks and Git operation-state handling",
+      "cli_metadata_help_and_stable_spec": "present in parent baseline; no corresponding source, metadata, help, or OpenSpec diff in feature/FD-051",
+      "worker_report": "artifact and JSON sidecar exist in the feature worktree and accurately state that no source diff was made and checks were limited"
+    },
+    "commands": [
+      "aiw fd claim FD-051 FD-051-000004-implementation-ready --session fd051-reviewer-20261010T1610-8b1f4c (successful from .wt/FD-051; initial parent-worktree attempt rejected on FD digest mismatch)",
+      "aiw fd show FD-051",
+      "aiw fd emit --help",
+      "git diff --name-status develop...feature/FD-051",
+      "targeted git diff, git show, rg, and static file reads"
+    ],
+    "skipped_checks": [
+      "tests",
+      "runtime commands",
+      "final builds",
+      "compile-only check (Worker-reported result not rerun by Reviewer)",
+      "formatters",
+      "linters",
+      "vet",
+      "network operations"
+    ],
+    "force_emit_skipped_checks_historical": [
+      "status-transition",
+      "work-items",
+      "needs-input",
+      "evidence",
+      "previous-handoff",
+      "claim",
+      "session-independence"
+    ],
+    "residual_risk": "Runtime Git behavior was not observed during review. The compile-only result remains Worker-reported evidence and was not rerun."
+  }
+}
