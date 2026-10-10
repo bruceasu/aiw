@@ -33,7 +33,7 @@ revisions, digests, confirmed facts, Session evidence, and loaded methods.
 Read an existing Issue Plan and linked sources before editing it. A new request
 has no ID until the CLI creates one; never invent an ID. Use `aiw issue` as the
 supported command surface, checking its help before an unfamiliar or mutating
-operation. New records use `ISSUE-001` IDs under `docs/issues/<id>/`.
+operation. New records use IDs such as `ISSUE-00001` under `docs/issues/<id>/`.
 Existing `REQ` records remain under `docs/requirements/<id>/`; preserve their
 paths, evidence, and existing FD references. Migrate individual records only
 when needed in separately authorized work. IDs are case-insensitive; a REQ
