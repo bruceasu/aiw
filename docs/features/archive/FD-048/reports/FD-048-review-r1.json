@@ -1,0 +1,53 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "fd_id": "FD-048",
+  "kind": "reviewer-report",
+  "source_event": "FD-048-000006-implementation-ready",
+  "human_report": "FD-048-review-r1.md",
+  "data": {
+    "reviewer_session": "fd048-reviewer-20261010-1032-c9b613",
+    "reviewed_head": "7a56a1a5eafbaccb58091f3455ad55f2b1ba9ec6",
+    "base_commit": "2f9646e",
+    "reviewed_commits": [
+      "1f9aa98",
+      "9ef62e3",
+      "72a63d2",
+      "4f77697"
+    ],
+    "result": "verification-passed",
+    "findings": [],
+    "acceptance_results": {
+      "1": "static-supported",
+      "2": "static-supported",
+      "3": "static-supported",
+      "4": "static-supported",
+      "5": "static-supported",
+      "6": "static-supported"
+    },
+    "worker_artifact": "docs/features/reports/FD-048-implementation-20261010T103000+0900.md",
+    "commands_run": [
+      "Targeted Get-Content and rg reads of FD-048, stable proxy spec, implementation report, config.go, server.go, main.go, shutdown.go, observation.go, and documentation",
+      "git diff 2f9646e..72a63d2 -- program/agent-gateway",
+      "git show 4f77697 -- program/aiw-say/README.md program/agent-gateway/README.md",
+      "git status --short --branch; git rev-parse HEAD; git log --oneline -6",
+      "aiw fd claim FD-048 FD-048-000006-implementation-ready --session fd048-reviewer-20261010-1032-c9b613",
+      "aiw fd emit --help",
+      "aiw fd show FD-048",
+      "aiw fd status FD-048 (unsupported subcommand; CLI returned invalid choice)"
+    ],
+    "not_run": [
+      "tests",
+      "compile",
+      "real upstream requests",
+      "runtime SSE or Realtime WebSocket validation",
+      "full builds",
+      "formatters",
+      "linters",
+      "vet",
+      "network requests"
+    ],
+    "risks": [
+      "Runtime compatibility with complete upstream APIs, SSE, Realtime WebSocket, and shutdown behavior remains unverified."
+    ]
+  }
+}

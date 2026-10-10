@@ -6,9 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-037](FD-037_AIW_SAY.md) | AIW Say 跨平台剪贴板与图形入口 | Open | Medium |
-| [FD-041](FD-041_COLORIZE_AIW_FD_LIST_TERMINAL_OUTPUT.md) | 为 aiw fd list 提供终端表格与颜色 | Open | Medium |
-| [FD-011](archive/FD-011/FD-011_GIT_MERGE_TO.md) | Merge branches in an isolated worktree | Completed | Medium |
+| - | - | - | - |
 
 ## Completed
 
@@ -25,6 +23,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-009](archive/FD-009/FD-009_REMOTE_AGENT_PROXY_URL.md) | Remote Agent Proxy URL | Complete | Medium |
 | [FD-010](archive/FD-010/FD-010_AIW_INIT.md) | AIW Project Initialization | Complete | Medium |
 | [FD-011](archive/FD-011/FD-011_ARCHIVE_FD_EVIDENCE_WITH_DESIGN.md) | ﻿# FD-011: Archive FD evidence with design | Complete | Medium |
+| [FD-011](archive/FD-011/FD-011_GIT_MERGE_TO.md) | Merge branches in an isolated worktree | Complete | Medium |
 | [FD-012](archive/FD-012/FD-012_CONSOLIDATE_AGENT_GUIDANCE_UNDER_AGENTS.md) | Consolidate agent guidance under .agents | Complete | Medium |
 | [FD-013](archive/FD-013/FD-013_REOPEN_ARCHIVED_CLOSED_AND_DEFERRED_FDS.md) | ﻿# FD-013: Reopen archived Closed and Deferred FDs | Complete | Medium |
 | [FD-014](archive/FD-014/FD-014_INDEPENDENT_TESTING_AND_PM_ACCEPTANCE_IN_FD_WORK.md) | Independent testing and PM acceptance in FD workflow | Complete | High |
@@ -49,9 +48,23 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-034](archive/FD-034/FD-034_GIT.md) | Git 补丁生成、应用与恢复建议 | Complete | Medium |
 | [FD-035](archive/FD-035/FD-035_ADAPTIVE_RISK_ASSESSMENT_FOR_FD_TEST_REPORTS.md) | Adaptive risk assessment for FD test reports | Complete | Medium |
 | [FD-036](archive/FD-036/FD-036_AIW_SAY_CLI.md) | AIW Say 核心 CLI 翻译闭环 | Complete | Medium |
+| [FD-037](archive/FD-037/FD-037_AIW_SAY.md) | AIW Say 跨平台剪贴板与图形入口 | Complete | Medium |
 | [FD-038](archive/FD-038/FD-038_IMPROVE_FD_REPORT_REVIEW_AND_STATUS_INSPECTION.md) | Improve FD report, review, and status inspection | Complete | Medium |
 | [FD-039](archive/FD-039/FD-039_SEPARATE_FD_TEST_SKILL_FROM_FD_WORKFLOW.md) | Separate FD Test Skill from FD Workflow | Complete | Medium |
 | [FD-040](archive/FD-040/FD-040_MOVE_FEATURE_TEMPLATES_TO_DOCS_TEMPLATES.md) | Move feature templates to docs/templates | Complete | Medium |
+| [FD-041](archive/FD-041/FD-041_COLORIZE_AIW_FD_LIST_TERMINAL_OUTPUT.md) | 为 aiw fd list 提供终端表格与颜色 | Complete | Medium |
+| [FD-042](archive/FD-042/FD-042_FD.md) | FD 工作流强制恢复与事件控制 | Complete | Medium |
+| [FD-043](archive/FD-043/FD-043_INDEPENDENT_ISSUE_IDS_AND_STORAGE_WITH_EXISTING_.md) | Independent Issue IDs and storage with existing REQ references | Complete | Medium |
+| [FD-044](archive/FD-044/FD-044_SAY_PLUGIN_PACKAGING.md) | 补齐 AIW Say 插件构建与安装 | Complete | Medium |
+| [FD-045](archive/FD-045/FD-045_AGENT_GATEWAY_CODEX_APP_SERVER.md) | Agent Gateway 改用 Codex App Server 并兼容 Agents SDK | Complete | Medium |
+| [FD-046](archive/FD-046/FD-046_FORCE_ARCHIVE_FDS_AS_COMPLETE.md) | Force archive FDs as Complete | Complete | Medium |
+| [FD-047](archive/FD-047/FD-047_RESOLVE_ACTIVE_AND_ARCHIVED_FD_ID_COLLISIONS.md) | Resolve active and archived FD ID collisions | Complete | Medium |
+| [FD-048](archive/FD-048/FD-048_AGENT_GATEWAY_OPENAI_API_CODEX.md) | Agent Gateway 统一 OpenAI API 出口与 Codex 兼容适配 | Complete | Medium |
+| [FD-049](archive/FD-049/FD-049_AGENT_GATEWAY_CHAT_COMPLETIONS.md) | Agent Gateway 优先支持 Chat Completions 文本接口 | Complete | Medium |
+| [FD-050](archive/FD-050/FD-050_SRC_PYTHON.md) | 将仓库源码统一迁入 `src/` 并用 Python 重写构建入口 | Complete | High |
+| [FD-051](archive/FD-051/FD-051_GIT_WT_SYNC_DELETE_CHERRY_PICK.md) | 扩展 `aiw git wt` 的分支操作 | Complete | Medium |
+| [FD-052](archive/FD-052/FD-052_IMPROVE_AI_GIT_BRANCH_SUMMARIES_WITH_BOUNDED_DIF.md) | 为 AI 分支摘要增加有上限的 diff 上下文 | Complete | Medium |
+| [FD-053](archive/FD-053/FD-053_AUTOMATIC_RECOVERY_FOR_MISSING_FD_HANDOFFS_AND_P.md) | Automatic recovery for missing FD handoffs and privileged state operations | Complete | Medium |
 
 ## Deferred / Closed
 

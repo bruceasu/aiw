@@ -1,0 +1,30 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-048",
+  "source_event": "FD-048-000002-design-requested",
+  "human_report": "FD-048-blocker-20261010T095711+0900-planner-inflight.md",
+  "data": {
+    "stage": "planner-design-handoff",
+    "role": "pm",
+    "recorded_at": "2026-10-10T09:57:11+09:00",
+    "recorder_session": "fd048-pm-20261010-095711-a91c",
+    "observed_blocker": "FD remains in Design. Latest design-requested event FD-048-000002-design-requested was claimed by session fd048-planner-20261010-c7d412 and is dispatched. The .ai/fd/FD-048 directory contains only the event receipt, with no Planner report or session log to establish its outcome or whether it stopped.",
+    "confirmed_cause": null,
+    "cause_status": "unknown",
+    "recovery_attempts": [
+      "Read aiw fd show FD-048, the event receipt, and the .ai/fd/FD-048 file listing; confirmed the claimed handoff and absence of report/log evidence.",
+      "At the user's explicit direction, cancelled receipt FD-048-000002-design-requested. The command confirmed that the original Agent was not stopped.",
+      "Normal aiw fd emit FD-048 design-requested was rejected because design-requested is not valid from Design.",
+      "Used PM force-emit with the user's stated recovery direction to create FD-048-000003-design-requested; claimed it as fd048-planner-20261010-1005-7d29b1."
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "The user explicitly directed PM to cancel the old handoff and redispatch Planner.",
+    "actual_resolution": "At 2026-10-10T10:01:16+09:00, PM cancelled FD-048-000002-design-requested and force-emitted FD-048-000003-design-requested; the new Planner session fd048-planner-20261010-1005-7d29b1 claimed it. The force-emit skipped normal workflow gates and is not verification evidence.",
+    "resolved_at": "2026-10-10T10:01:16+09:00",
+    "residual_risk_or_next_step": "Cancelling a receipt does not stop the original Planner Agent; it may still be running and writing the FD. Watch for FD digest changes or conflicts; do not treat any old-session work as the new handoff result.",
+    "reusable_improvement": "none",
+    "improvement_status": "not_needed"
+  }
+}

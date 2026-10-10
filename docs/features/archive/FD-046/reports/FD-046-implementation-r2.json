@@ -1,0 +1,31 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-046",
+  "source_event": "FD-046-000006-work-requested",
+  "human_report": "FD-046-implementation-r2.md",
+  "data": {
+    "worker_session_ref": "codex-worker-20261009-fd046-auto-r1",
+    "summary": "强制归档在事务内取消非 Reviewer 的 pending 收据，并在回滚时恢复收据；保留 verification-passed 收据不变。",
+    "changed_paths": [
+      "plugins/aiw-fd.py",
+      "docs/features/FD-046_FORCE_ARCHIVE_FDS_AS_COMPLETE.md",
+      "openspec/specs/fd-workflow/spec.md",
+      "docs/usage/aiw-fd.md",
+      "docs/features/reports/FD-046-implementation-r2.md",
+      "docs/features/reports/FD-046-implementation-r2.json"
+    ],
+    "commits": ["6e266ac", "a021fc2"],
+    "commands": [
+      "python plugins/aiw-fd.py claim FD-046 FD-046-000006-work-requested --session codex-worker-20261009-fd046-auto-r1",
+      "git diff -- plugins/aiw-fd.py openspec/specs/fd-workflow/spec.md docs/usage/aiw-fd.md docs/features/FD-046_FORCE_ARCHIVE_FDS_AS_COMPLETE.md",
+      "python -c \"from pathlib import Path; compile(Path('plugins/aiw-fd.py').read_text(encoding='utf-8'), 'plugins/aiw-fd.py', 'exec'); print('Python syntax compile passed; no bytecode written.')\""
+    ],
+    "results": [
+      {"kind": "compile-only", "exit_code": 0},
+      {"kind": "static-review", "result": "Receipt cancellation, audit recording, transactional rollback, normal close behavior, and doc/spec alignment reviewed."}
+    ],
+    "not_run": ["tests", "fault-injection", "final-build", "formatter", "lint", "network"],
+    "residual_risk": "Rollback behavior was not exercised with runtime fault injection; the verification-passed receipt preservation branch has static evidence only."
+  }
+}

@@ -15,12 +15,48 @@ managed through `aiw git wt` in the `aiw-git` plugin, which directly creates
 and records worktrees and provides status, commit, local-merge, and list
 operations. No standalone `aiw wt` command is provided.
 
+`aiw git wt delete <fd-id>` MUST remove only the conventional `.wt/<FD-ID>`
+worktree registered on `feature/<FD-ID>` and that local branch. Worktree removal
+MUST NOT force away uncommitted changes. If either resource is absent, the
+command MUST report it and continue with the other resource. Workspace metadata
+may be removed after cleanup succeeds; FD receipts MUST be retained.
+`aiw git wt sync <fd-id> [branch]` MUST merge the primary worktree's current
+local branch, or the named local branch, into the recorded FD worktree.
+`aiw git wt cherry-pick <fd-id> <commit-id>` MUST cherry-pick the resolved
+commit into the recorded FD worktree. Both commands MUST reject a dirty or
+already conflicted FD worktree before starting and preserve Git recovery state
+when an operation conflicts.
+
 #### Scenario: Call an FD worktree command
 
 - **WHEN** a user runs `aiw git wt add FD-001` or another supported `aiw git wt`
   operation
 - **THEN** the plugin resolves the FD workspace record and performs that
   operation without creating or requiring a Task
+
+#### Scenario: Delete an FD worktree and branch
+
+- **WHEN** a user runs `aiw git wt delete FD-001`
+- **THEN** the plugin removes the registered `.wt/FD-001` worktree and
+  `feature/FD-001` branch when present, reporting an absent resource and
+  continuing with the other one
+- **AND** it preserves the worktree and branch if Git refuses safe removal
+- **AND** it retains FD receipts
+
+#### Scenario: Sync from a local branch
+
+- **WHEN** a user runs `aiw git wt sync FD-001` or
+  `aiw git wt sync FD-001 release`
+- **THEN** the plugin merges the primary worktree's current branch or the named
+  local branch into the recorded FD worktree
+- **AND** it leaves merge conflicts available for resolution in that worktree
+
+#### Scenario: Cherry-pick a commit
+
+- **WHEN** a user runs `aiw git wt cherry-pick FD-001 <commit-id>`
+- **THEN** the plugin resolves a commit object and cherry-picks it into the
+  recorded FD worktree
+- **AND** it leaves any conflict state available for recovery there
 
 #### Scenario: Removed Task workflow command
 
@@ -57,9 +93,14 @@ message using the configured CZ text provider, and pass that message to
 `git commit -F -` only after successful generation. Generation or Git failure
 MUST return a non-zero result; generation failure MUST NOT run `git commit`.
 `aiw git air` MUST review only the staged diff and MUST NOT modify repository
-state. `aiw git aib [--base REF]` MUST summarize only the commit history in
-`BASE..HEAD`, defaulting to `main`, and MUST NOT modify repository state. All
-three commands MUST use the CZ provider configuration and fallback behavior.
+state. `aiw git aib [--base REF]` MUST summarize the commit history in
+`BASE..HEAD`, defaulting to `main`, and include changed file statuses and a
+short change summary from `merge-base(BASE, HEAD)..HEAD`. It MUST include at
+most 8,000 characters of changed-file entries and
+at most 12,000 characters of diff content; omitted content MUST be marked, and
+the prompt MUST tell the model not to infer omitted details. `aib` MUST NOT
+modify repository state. All three commands MUST use the CZ provider
+configuration and fallback behavior.
 
 #### Scenario: Generate a commit message
 
@@ -76,8 +117,9 @@ three commands MUST use the CZ provider configuration and fallback behavior.
 #### Scenario: Summarize branch history
 
 - **WHEN** a user runs `aiw git aib` or supplies `--base REF`
-- **THEN** AIW summarizes one-line commits from `main..HEAD` or
-  `REF..HEAD`, without changing repository state
+- **THEN** AIW summarizes one-line commits from `main..HEAD` or `REF..HEAD`,
+  includes bounded changed-file and diff context, marks omitted content, and
+  does not change repository state
 
 ### Requirement: 鎻掍欢鍙戠幇涓庡瓙杩涚▼缁撴灉
 
@@ -180,9 +222,9 @@ Sources MUST be validated before mutation; the command MUST NOT fetch or push.
 
 ## 瀹炵幇渚濇嵁
 
-- [涓诲叆鍙(../../../main.go)銆乕Task 鍒嗘淳](../../../internal/commands/task/command.go)銆?
-- [鎻掍欢鍙戠幇](../../../internal/plugin/discover.go)銆乕鎻掍欢鎵ц](../../../internal/plugin/exec.go)銆乕鍒濆鍖朷(../../../internal/commands/task/init.go)銆?
-- [ask 閰嶇疆](../../../internal/commands/ask/config.go)銆乕璺緞绛栫暐](../../../internal/commands/ask/path_policy.go)銆乕闂瓟鎵ц](../../../internal/commands/ask/command.go)銆?
-- [cz](../../../plugins/aiw-cz/aiw-cz.py)；[Git export](../../../plugins/aiw-git/git-export.py)。
+- [涓诲叆鍙(../../../src/cmd/aiw/main.go)銆乕Task 鍒嗘淳](../../../src/internal/commands/task/command.go)銆?
+- [鎻掍欢鍙戠幇](../../../src/internal/plugin/discover.go)銆乕鎻掍欢鎵ц](../../../src/internal/plugin/exec.go)銆乕鍒濆鍖朷(../../../src/internal/commands/task/init.go)銆?
+- [ask 閰嶇疆](../../../src/internal/commands/ask/config.go)銆乕璺緞绛栫暐](../../../src/internal/commands/ask/path_policy.go)銆乕闂瓟鎵ц](../../../src/internal/commands/ask/command.go)銆?
+- [cz](../../../src/plugins/aiw-cz/aiw-cz.py)；[Git export](../../../src/plugins/aiw-git/git-export.py)。
 
 %% ReadOnly 鏄紶缁?provider 鐨勬墽琛岄厤缃紱澶栭儴 CLI 鐨勫疄闄呮枃浠惰闂殧绂讳粛鍙栧喅浜庡叾瀹炵幇锛宎llow-path 涓嶈兘琚硾鍖栦负鎵€鏈夊悗绔殑涓ユ牸璇诲彇鐧藉悕鍗曘€?

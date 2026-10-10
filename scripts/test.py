@@ -20,6 +20,7 @@ def main() -> int:
         return 127
 
     root = Path(__file__).resolve().parent.parent
+    module_root = root / "src"
     test_root = root / ".ai" / "tmp" / "go-tests"
     go_cache = test_root / "cache"
     temporary = test_root / "tmp"
@@ -34,7 +35,7 @@ def main() -> int:
     environment["TMPDIR"] = str(temporary)
     environment["GOPROXY"] = "off"
     environment["GOSUMDB"] = "off"
-    return subprocess.run([go, "test", *sys.argv[1:]], cwd=root, env=environment).returncode
+    return subprocess.run([go, "test", *sys.argv[1:]], cwd=module_root, env=environment).returncode
 
 
 if __name__ == "__main__":

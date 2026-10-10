@@ -1,0 +1,41 @@
+{
+    "schema":  "aiw.fd.evidence.v1",
+    "kind":  "reviewer-report",
+    "fd_id":  "FD-043",
+    "source_event":  "FD-043-000004-implementation-ready",
+    "human_report":  "FD-043-review-r1.md",
+    "data":  {
+                 "reviewer_session":  "fd043-reviewer-20261009-c982e7",
+                 "reviewed_commit":  "da22fe2c904713b15f298bf8ef8df956081a5dfb",
+                 "diff_base":  "office-dev",
+                 "outcome":  "verification-passed",
+                 "findings":  [
+
+                              ],
+                 "results":  [
+                                 "身份定位、路径约束和歧义保护具有静态证据",
+                                 "独立编号、工件文件名、生命周期和上下文路径具有静态证据",
+                                 "FD 规范来源与文档规格一致"
+                             ],
+                 "commands":  [
+                                  "Get-Content / Get-ChildItem / rg / rg --files",
+                                  "git diff office-dev...HEAD --stat and targeted paths",
+                                  "git status --short",
+                                  "git rev-parse HEAD",
+                                  "aiw fd --help; aiw fd claim --help; aiw fd emit --help",
+                                  "aiw fd claim FD-043 FD-043-000004-implementation-ready --session fd043-reviewer-20261009-c982e7",
+                                  "aiw fd emit FD-043 verification-passed --producer reviewer --artifact docs/features/reviews/FD-043-review-r1.md --source-event FD-043-000004-implementation-ready"
+                              ],
+                 "skipped_checks":  [
+                                        "tests",
+                                        "compile-only rerun",
+                                        "final builds",
+                                        "formatter",
+                                        "lint",
+                                        "vet",
+                                        "network",
+                                        "optional fd-test reports"
+                                    ],
+                 "residual_risk":  "运行时生命周期、编号恢复、歧义和 subprocess 未执行；需要同版本 CLI。"
+             }
+}

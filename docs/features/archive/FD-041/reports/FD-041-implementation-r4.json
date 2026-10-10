@@ -1,0 +1,14 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-041",
+  "source_event": "FD-041-000016-changes-requested",
+  "human_report": "FD-041-implementation-r4.md",
+  "data": {
+    "summary": "Align CLI and FD documentation with existing ANSI capability signals and plain-text fallback. Record the human-directed single gate exception without resetting prior review outcomes.",
+    "changed_paths": ["docs/usage/aiw-fd.md", "docs/features/FD-041_COLORIZE_AIW_FD_LIST_TERMINAL_OUTPUT.md", "docs/features/reports/FD-041-implementation-r4.md", "docs/features/reports/FD-041-implementation-r4.json", "docs/features/reports/FD-041-blocker-review-20261009T071906Z.md", "docs/features/reports/FD-041-blocker-review-20261009T071906Z.json"],
+    "commands": ["aiw fd resume FD-041", "aiw fd claim FD-041 FD-041-000016-changes-requested --session fd041-worker-20261009-3c5b1a", "Python in-memory compile-only for plugins/aiw-fd.py", "git diff and evidence JSON parsing"],
+    "results": ["Documentation-only correction; implementation unchanged.", "Compile-only and static documentation/evidence checks passed.", "Human-directed PM exception allows one additional independent review; prior count and outcomes preserved.", "No tests, final builds, or runtime terminal checks run."],
+    "residual_risk": "Actual terminal ANSI behavior remains unverified at runtime; independent Reviewer outcome is required before delivery."
+  }
+}

@@ -16,5 +16,5 @@ state remain readable. Do not rewrite their history during migration. New FDs
 do not require `aiw wf` or Supervisor. OpenSpec owns stable specs; create a
 change only when explicitly requested.
 
-Read `skills/work-management.md` for the full contract and repository
+Read `src/skills/work-management.md` for the full contract and repository
 instructions for validation, Git, and authorization limits.

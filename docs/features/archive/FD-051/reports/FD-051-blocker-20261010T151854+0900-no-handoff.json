@@ -1,0 +1,54 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-051",
+  "source_event": null,
+  "human_report": "FD-051-blocker-20261010T151854+0900-no-handoff.md",
+  "data": {
+    "stage": "preflight",
+    "role": "PM",
+    "recorded_at": "2026-10-10T15:18:54+09:00",
+    "recorder_session": "/root",
+    "observed_blocker": "FD-051 is Open, but there is no .ai/fd/FD-051 receipt directory or claimable Worker event. aiw fd resume FD-051 reports that the FD has no event.",
+    "confirmed_cause": "The FD currently has no event or workspace metadata. The historical reason for the missing event is unknown.",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      {
+        "attempt": "Inspected aiw fd show, resume, and list; checked the exact receipt and worktree paths, current branch, and Git status.",
+        "result": "Confirmed no event or workspace metadata; the parent is clean on develop."
+      },
+      {
+        "attempt": "Inspected aiw fd emit command types and the refresh-worker preconditions.",
+        "result": "Ordinary emit has no work-requested event type, and refresh-worker requires an existing pending Worker handoff. Did not use force-emit to bypass the missing handoff."
+      },
+      {
+        "attempt": "User instructed: create the missing state. Inspected force-emit behavior and determined decision-recorded routes by the current Open status to Worker while recording skipped checks.",
+        "result": "Authorized recovery path selected."
+      },
+      {
+        "attempt": "2026-10-10T15:22:30+09:00: aiw fd force-emit FD-051 decision-recorded --producer human --artifact docs/features/reports/FD-051-blocker-20261010T151854+0900-no-handoff.md --reason <user-authorized-recovery> --operator Codex PM.",
+        "result": "Rejected: FD is missing **Revision:**; migrate the FD before emitting events. No event or status change was created."
+      },
+      {
+        "attempt": "Added and committed initial **Revision:** metadata, then retried the authorized force-emit once.",
+        "result": "Created pending Worker event FD-051-000002-decision-recorded. Audit operations/7e7a84b52a65411997764b13500095d6.json records skipped checks: status-transition, work-items, needs-input, evidence, previous-handoff, claim, and session-independence."
+      },
+      {
+        "attempt": "Worker claimed FD-051-000002-decision-recorded in session fd051-worker-20261010T1524-7c9d2a, normalized Work Items, inspected source and stable CLI specification, and ran the authorized compile-only check.",
+        "result": "The original missing-handoff blocker is resolved and Worker evidence is recorded in FD-051-implementation-r1.md. The skipped-check audit remains unchanged; independent review is still pending."
+      },
+      {
+        "attempt": "2026-10-10T15:38:13+09:00: confirmed independent Reviewer event FD-051-000005-verification-passed and successful aiw git wt local-merge FD-051 delivery.",
+        "result": "Independent review passed and the FD squash was delivered to develop. Only FD archive remains."
+      }
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "User instructed creation of the missing state.",
+    "actual_resolution": "At the user's direction, added and committed initial Revision metadata, created pending Worker event FD-051-000002-decision-recorded with force-emit, completed Worker evidence, passed independent review FD-051-000005-verification-passed, and delivered the squash to develop. The audit retains all skipped workflow checks.",
+    "resolved_at": "2026-10-10T15:22:57+09:00",
+    "residual_risk_or_next_step": "The forced event's seven skipped checks remain historical facts, not passes. Worker evidence, independent review, and squash delivery are complete; archive FD-051 next.",
+    "reusable_improvement": "Define a controlled recovery command for an existing Open FD with no events, preserving provenance and audit history.",
+    "improvement_status": "accepted-for-separate-FD"
+  }
+}

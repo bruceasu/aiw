@@ -1,0 +1,27 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-041",
+  "source_event": "FD-041-000009-changes-requested",
+  "human_report": "FD-041-implementation-r2.md",
+  "data": {
+    "summary": "Repaired both actionable findings from Reviewer R1: unknown or unsupported terminal capability now disables ANSI, and colorized column widths use the actual escape sequence length.",
+    "changed_paths": [
+      "plugins/aiw-fd.py",
+      "docs/features/FD-041_COLORIZE_AIW_FD_LIST_TERMINAL_OUTPUT.md",
+      "docs/features/FEATURE_INDEX.md",
+      "docs/features/reports/FD-041-implementation-r2.md",
+      "docs/features/reports/FD-041-implementation-r2.json"
+    ],
+    "commands": [
+      "python -c \"from pathlib import Path; p=Path('plugins/aiw-fd.py'); compile(p.read_text(encoding='utf-8'), str(p), 'exec')\"",
+      "git diff --cached --check"
+    ],
+    "results": [
+      "Compile-only check passed after the reviewer fixes.",
+      "Staged diff whitespace check passed before the fix commit.",
+      "Tests, smoke checks, lint, full build, and runtime terminal checks were not run under the repository validation budget."
+    ],
+    "residual_risk": "Terminal capability detection and visual alignment have only static review and compile-only evidence; the TTY/TERM/NO_COLOR and Windows terminal matrix has not been exercised at runtime."
+  }
+}

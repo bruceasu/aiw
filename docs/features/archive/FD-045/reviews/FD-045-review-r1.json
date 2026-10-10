@@ -1,0 +1,37 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-045",
+  "source_event": "FD-045-000010-implementation-ready",
+  "human_report": "FD-045-review-r1.md",
+  "data": {
+    "reviewer_session": "fd045-reviewer-20261010-a64b",
+    "reviewed_base": "891156b",
+    "reviewed_head": "da1e73a",
+    "fd_revision": 10,
+    "outcome": "verification-passed",
+    "findings": [],
+    "results": [
+      {"acceptance": 1, "result": "pass-static", "evidence": ["program/agent-gateway/protocol.go", "program/agent-gateway/app_runner.go"]},
+      {"acceptance": 2, "result": "pass-static", "evidence": ["program/agent-gateway/protocol.go", "program/agent-gateway/schema.go", "program/agent-gateway/app_runner.go"]},
+      {"acceptance": 3, "result": "pass-static", "evidence": ["program/agent-gateway/protocol.go", "program/agent-gateway/app_runner.go"]},
+      {"acceptance": 4, "result": "pass-static", "evidence": ["program/agent-gateway/server.go", "program/agent-gateway/app_runner.go"]},
+      {"acceptance": 5, "result": "pass-static", "evidence": ["program/agent-gateway/app_runner.go", "program/agent-gateway/apppool.go", "program/agent-gateway/appserver.go", "program/agent-gateway/main.go"]},
+      {"acceptance": 6, "result": "pass-static", "evidence": ["program/agent-gateway/appserver.go", "program/agent-gateway/app_runner.go", "program/agent-gateway/config.go"]},
+      {"acceptance": 7, "result": "pass-static", "evidence": ["program/agent-gateway/config.go", "docs/features/reports/FD-045-implementation-r1.md"]}
+    ],
+    "commands": [
+      "aiw fd show FD-045",
+      "aiw fd resume FD-045",
+      "aiw fd claim FD-045 FD-045-000010-implementation-ready --session fd045-reviewer-20261010-a64b",
+      "git diff --stat develop...HEAD",
+      "git diff --name-status develop...HEAD",
+      "git diff --check develop",
+      "aiw fd show-report FD-045 --last",
+      "aiw fd emit --help",
+      "aiw fd show-review --help"
+    ],
+    "skipped_checks": ["tests", "compile", "final build", "formatter/linter", "Codex SDK", "App Server runtime", "live account request"],
+    "residual_risk": "Worker-reported compile result was not independently rerun. Installed App Server behavior, feature override effectiveness, MCP status response, login state, and process/rollout data cleanup remain runtime-unverified."
+  }
+}

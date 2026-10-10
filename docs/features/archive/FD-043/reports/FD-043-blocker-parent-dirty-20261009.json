@@ -1,0 +1,27 @@
+{
+    "schema":  "aiw.fd.evidence.v1",
+    "kind":  "blocker-feedback",
+    "fd_id":  "FD-043",
+    "source_event":  "FD-043-000003-design-ready",
+    "human_report":  "FD-043-blocker-parent-dirty-20261009.md",
+    "data":  {
+                 "stage":  "preflight",
+                 "role":  "pm",
+                 "recorded_at":  "2026-10-09",
+                 "recorder_session":  "current-fd043-auto-host",
+                 "observed_blocker":  "office-dev has uncommitted FD-042 and shared index changes alongside the FD-043 plan",
+                 "confirmed_cause":  "Unrelated FD-042 changes prevent the required clean parent workspace",
+                 "cause_status":  "confirmed",
+                 "recovery_attempts":  [
+                                           "Read git status, current branch, FD-043 plan and pending Worker receipt; no unrelated Git writes or worktree creation attempted"
+                                       ],
+                 "status":  "resolved",
+                 "human_decision_required":  false,
+                 "human_decision_detail":  "Authorize a separate FD-042 plan/index commit, or handle remaining parent changes manually",
+                 "actual_resolution":  "On resume the office-dev parent workspace was clean; FD-043 worktree was created and its recorded coordinates verified",
+                 "resolved_at":  "2026-10-09T17:08:54.3686126+09:00",
+                 "residual_risk_or_next_step":  "Implement in the verified feature/FD-043 worktree",
+                 "reusable_improvement":  "Stage shared feature index rows by FD rather than including unrelated plan entries",
+                 "improvement_status":  "proposed"
+             }
+}

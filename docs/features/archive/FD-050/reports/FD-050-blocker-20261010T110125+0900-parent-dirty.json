@@ -1,0 +1,27 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-050",
+  "source_event": "FD-050-000004-design-ready",
+  "human_report": "FD-050-blocker-20261010T110125+0900-parent-dirty.md",
+  "data": {
+    "stage": "preflight-worktree",
+    "role": "pm",
+    "recorded_at": "2026-10-10T11:01:25+09:00",
+    "recorder_session": "fd050-planner-20261010-b72f31",
+    "observed_blocker": "父工作区索引中出现已暂存删除 .go-build.jsonc 和 internal/task/feature_design_test.go；两文件在工作区不存在。父工作区未干净，不能按仓库规则创建 FD worktree。",
+    "confirmed_cause": null,
+    "cause_status": "unknown",
+    "recovery_attempts": [
+      "复查 git status --short --branch、暂存区差异及两文件存在状态；没有恢复、撤销或提交这些变更。"
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "用户确认父工作区已清理并要求继续。",
+    "actual_resolution": "用户整理并提交父工作区 commit 2287e4b (docs(schema-10): Remove the plan draft)，其中包含先前观察到的 .go-build.jsonc 和 internal/task/feature_design_test.go 删除；没有恢复这些删除。",
+    "resolved_at": "2026-10-10T11:02:17+09:00",
+    "residual_risk_or_next_step": "FD 设计需反映 .go-build.jsonc 已删除，再刷新待处理 Worker handoff；确认父工作区干净后创建 FD worktree。",
+    "reusable_improvement": "遇到执行期间新出现的暂存变更时，按路径隔离提交并记录事实；不推断变更来源。无需修改规范或模板。",
+    "improvement_status": "none"
+  }
+}

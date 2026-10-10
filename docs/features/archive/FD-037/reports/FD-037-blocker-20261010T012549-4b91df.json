@@ -1,0 +1,29 @@
+﻿{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-037",
+  "source_event": "FD-037-000004-implementation-ready",
+  "human_report": "FD-037-blocker-20261010T012549-4b91df.md",
+  "data": {
+    "stage": "PM Gate after Worker handoff",
+    "role": "PM",
+    "recorded_at": "2026-10-10T01:25:49+00:00",
+    "recorder_session": "fd037-pm-20261010-4b91df",
+    "observed_blocker": "父 checkout 中的 FD revision=3，Worker handoff receipt revision=4；从父 workspace 调用 aiw fd resume 显示 revision mismatch。",
+    "confirmed_cause": "此前检查了父 checkout 的旧 FD，而不是 workspace.json 指向的 Worker worktree。正确的 Worker worktree 中 FD 为 Pending Test/revision 4，aiw fd resume 显示同一实现事件 pending Tester，revision 一致。当前真实 Gate 是 Test policy: Independent，Auto 不派发 Tester，且测试未获授权。",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      "在父工作区只读检查 aiw fd show、aiw fd resume 和 FD-037-000004-implementation-ready 收据，观察到父 FD 仍为 revision 3。",
+      "在 workspace.json 指向的 .wt/FD-037 中只读检查 FD、收据、aiw fd show、aiw fd resume 与 Git 状态；确认 FD revision 4、状态 Pending Test、收据 pending Tester 且 worktree clean。",
+      "未认领或运行 Tester，未请求 Reviewer，也未编辑活动 FD 或收据。"
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "用户于 2026-10-10 明确要求 $fd-workflow FD-037 auto 不要求 test；本轮跳过 Tester，未运行测试。",
+    "actual_resolution": "2026-10-10T01:45:14+00:00 用户明确豁免本轮 Tester 阶段；已更新 FD 的测试政策和 Verification，之后通过 FD 管理命令请求独立 Reviewer。未运行测试不代表通过。",
+    "resolved_at": "2026-10-10T01:45:14+00:00",
+    "residual_risk_or_next_step": "Windows/Linux/WSL 剪贴板 Unicode 往返、Zenity 输入/取消/结果窗口、AHK 与 PowerShell 编码及剪贴板竞争均未运行验证。Reviewer 不得将其视为通过。",
+    "reusable_improvement": "FD Auto 在检查活动 handoff 的 revision/digest 时，明确从 workspace.json 指向的 FD worktree 核对，避免把父 checkout 的旧内容误判为活动分支不一致。",
+    "improvement_status": "proposed"
+  }
+}

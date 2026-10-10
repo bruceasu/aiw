@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-042",
+  "source_event": "FD-042-000004-implementation-ready",
+  "human_report": "FD-042-review-r1.md",
+  "data": {
+    "reviewer_session_ref": "fd042-reviewer-20261009-c95a17",
+    "reviewed_base": "0df4d1bf",
+    "reviewed_commit": "5a1773cf007f6a0e80e72c96353d4c04232e0975",
+    "outcome": "verification-passed",
+    "findings": [],
+    "acceptance_results": [
+      {"id": 1, "result": "静态支持：精确最新 dispatched 取消、历史保留、Agent 未停止提示"},
+      {"id": 2, "result": "静态支持：定义状态覆盖、revision/索引/审计更新、不伪造证据"},
+      {"id": 3, "result": "静态支持：定义事件与合法角色/artifact、全状态路由、pending 不启动 runner"},
+      {"id": 4, "result": "静态支持：审计字段、原字节回滚、preparing 发布、回滚异常报告"},
+      {"id": 5, "result": "静态支持：forced 不能满足普通 Complete close 或 archived request-review"}
+    ],
+    "commands": ["Get-Content / rg 定向读取", "git diff --stat 0df4d1bf 5a1773cf", "git diff 0df4d1bf 5a1773cf -- plugins/aiw-fd.py docs/usage/aiw-fd.md openspec/specs/fd-workflow/spec.md", "git status --short", "git rev-parse HEAD", "aiw fd --help", "aiw fd claim --help", "aiw fd emit --help", "aiw fd claim FD-042 FD-042-000004-implementation-ready --session fd042-reviewer-20261009-c95a17", "限定审查证据与 FD/索引 git add/commit", "aiw fd emit FD-042 verification-passed --producer reviewer --artifact docs/features/reviews/FD-042-review-r1.md --source-event FD-042-000004-implementation-ready"],
+    "not_run": ["tests", "compile", "runtime-validation", "fault-injection", "lint", "formatter", "vet", "final-build", "network"],
+    "residual_risk": "未实测文件系统故障回滚及全部状态/事件组合；旧 Agent 直接写文件不受锁约束；operator 为声明身份。"
+  }
+}

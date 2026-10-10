@@ -1,0 +1,30 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-045",
+  "source_event": "FD-045-000002-design-requested",
+  "human_report": "FD-045-blocker-20261009T235300+0900-planner-owner.md",
+  "data": {
+    "stage": "design recovery",
+    "role": "PM",
+    "recorded_at": "2026-10-09T23:53:00+09:00",
+    "recorder_session": "fd045-pm-20261009-235300-a81c",
+    "observed_blocker": "FD remains Design with no pending handoff. Latest Planner handoff FD-045-000002-design-requested was claimed and later cancelled. The cancellation operation explicitly says it does not assert the prior Agent stopped. The local .ai/fd/FD-045 directory contains the event and cancellation operation but no Planner session log or stop evidence. Ordinary aiw fd emit ... design-requested was rejected as invalid from Design.",
+    "confirmed_cause": "The existing records do not establish that the previously claimed Planner session stopped; re-dispatch could cause concurrent FD writes.",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      "Read current FD status, event receipt, cancellation operation, AIW FD workflow, and PM/Planner role rules.",
+      "Inspected .ai/fd/FD-045; found no recorded Planner session log or stop evidence.",
+      "Tried ordinary aiw fd emit FD-045 design-requested; CLI rejected it because the FD is in Design.",
+      "Did not call force-emit, edit the FD, or create a worktree."
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "User confirmed that the prior Planner session fd045-planner-20261009-b793ea has stopped.",
+    "actual_resolution": "User confirmed the prior Planner session stopped. PM checked FD revision 2, the cancelled latest receipt, and the clean parent workspace. Since ordinary design-requested is invalid from Design, PM used the documented aiw fd force-emit recovery entry to create a new Planner handoff, recording the reason and leaving it pending without starting a configured runner. The current Planner must claim the exact new event and verify its digest.",
+    "resolved_at": "2026-10-10T00:05:17+09:00",
+    "residual_risk_or_next_step": "Claim the newly created Planner event and verify the FD artifact digest before editing. The earlier cancellation was not treated as stop proof; the re-dispatch relies on the user's explicit confirmation.",
+    "reusable_improvement": "none; current evidence concerns one specific claimed handoff and does not establish a general workflow defect.",
+    "improvement_status": "none"
+  }
+}

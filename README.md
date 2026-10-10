@@ -7,11 +7,13 @@ records remain available for compatibility.
 ## Feature Overview
 
 * Create numbered FDs and route PM, Planner, Worker, and Reviewer handoffs with `aiw fd`
+* Inspect FD reports and reviews, list FDs by status, and recover workflow receipts with explicit operator audit records
 * Initialize AIW Task, FD, and optional OpenSpec directories and default instruction files
 * Create and deliver dedicated FD worktrees through `aiw git wt`
-* Generate or merge AI prompt files from `agent-templates/`
+* Generate or merge AI prompt files from `src/agent-templates/`
+* Translate Chinese, Japanese, and English text with the `aiw say` plugin
 * Create, view, and update tasks
-* Capture, approve, split, and promote durable Issues before Task creation
+* Capture, approve, split, and promote durable Issues with independent ISSUE IDs; link approved Issues to numbered FDs
 * Create dedicated Git worktrees for tasks
 * Output task-specific context prompts
 * Create and maintain long-lived specification documents
@@ -51,7 +53,8 @@ See [FD-first workflow](docs/usage/aiw-fd.md) for new development work.
 ## Build and Installation
 
 ```bash
-go build -o aiw ./cmd/aiw
+cd src
+go build -o ../aiw ./cmd/aiw
 ```
 
 Windows executable:
@@ -61,20 +64,20 @@ Windows executable:
 ```
 
 Requirement Management is also distributed as the `aiw-req` plugin.
-Build its Windows and Linux binaries into `plugins/aiw-req` with:
+Build its Windows and Linux binaries into `dist/plugins/aiw-req` with:
 
 ```bat
-build.bat req
+python build.py req
 ```
 
 The Conventional Commit wizard is a TypeScript plugin requiring Node.js 22.12.0
 or newer. Build its platform-specific release directory with:
 
 ```bat
-build.bat cz
+python build.py cz
 ```
 
-`build.bat plugins` installs the curated CZ release without its TypeScript
+`python build.py plugins` installs the curated CZ release without its TypeScript
 source or `node_modules`. See [CZ configuration](docs/usage/cz-configuration.md).
 
 ## Commands
@@ -82,6 +85,7 @@ source or `node_modules`. See [CZ configuration](docs/usage/cz-configuration.md)
 ```text
 aiw --help
 aiw help [command|topic]
+aiw say [options] [text]
 
 aiw init [--no-setup] [--prompts] [--merge] [--force] [--template <name>]
 aiw new <task-id> [--allow-unrelated-dirty] [--backend auto|openspec|native]
@@ -98,10 +102,16 @@ aiw req list [--all|--archived|--cancelled]
 aiw req show <requirement-id>
 aiw req capture <requirement-id> <artifact> --file <path>
 aiw req approve <requirement-id> <APPROVED|DEFERRED|REJECTED> --by <actor> --reason <reason>
-aiw req promote <requirement-id> --task <task-id>
+aiw req promote <issue-or-requirement-id>
 aiw req archive <requirement-id> --reason <reason> [--by <actor>]
 aiw req cancel <requirement-id> --reason <reason> [--by <actor>]
-aiw issue <command> ... # preferred alias for aiw req
+aiw issue new <slug> [title]
+aiw issue chat [issue-id] [--provider NAME] [--model MODEL]
+aiw issue list [--all|--archived|--cancelled]
+aiw issue show <issue-id> [--json]
+aiw issue capture <issue-id> <artifact> --file <path>
+aiw issue approve <issue-id> <APPROVED|DEFERRED|REJECTED> --by <actor> --reason <reason>
+aiw issue promote <issue-id>
 aiw issue link-parent <child-id> <parent-id>
 aiw issue children <parent-id>
 
@@ -113,16 +123,46 @@ aiw git wt list
 
 aiw context <task-id>
 aiw spec <spec-id>
+```
+
 Numbered FDs use explicit lifecycle and worktree commands:
 
 ```text
+aiw fd new "Feature title" [--issue <issue-id>]
 aiw fd list
 aiw fd show FD-001
+aiw fd show-report FD-001 [--last]
+aiw fd show-review FD-001 [--last]
+aiw fd claim <fd-id> <event-id> --session <session-id>
+aiw fd emit <fd-id> <event> --producer <role> --artifact <path> [--source-event <event-id>]
+aiw fd resume <fd-id>
+aiw fd request-review <fd-id> --reason <text>
+aiw fd refresh-worker <fd-id> --reason <text>
+aiw fd recover-worker <fd-id> --expected-event <event-id> --expected-session <session-id> --reason <text>
+aiw fd reopen <fd-id> --reason <text> [--correct-reason]
+aiw fd close <fd-id> <Complete|Deferred|Closed> [--reason <text>]
+aiw fd cancel-event <fd-id> --expected-event <event-id> --reason <text> --operator <name>
+aiw fd set-status <fd-id> <status> --reason <text> --operator <name>
+aiw fd force-emit <fd-id> <event> --producer <role> --artifact <path> --reason <text> --operator <name>
 aiw git wt add FD-001
 aiw git wt status FD-001
 aiw git wt commit FD-001 "message"
 aiw git wt local-merge FD-001
 ```
+
+`fd list` groups active and archived FDs by status and shows priority and title.
+Supported interactive terminals use status and priority colors; redirected
+output stays plain text. `show-report` and `show-review` inspect active,
+worktree, branch, and archived Markdown evidence; `--last` prints the latest
+report without an interactive selection.
+
+The three operator commands require an active FD and an explicit reason and
+operator. They record audits under `.ai/fd/<fd-id>/operations/`; cancelling a
+receipt does not stop its Agent. `force-emit` leaves a pending event without
+starting a runner. Forced status or review events do not satisfy normal
+Complete archive evidence requirements. See the
+[FD workflow and recovery guide](docs/usage/aiw-fd.md) for normal recovery paths
+and operator command limits.
 
 Use `aiw --help` or `aiw help <command>` for command discovery. Plugins provide
 their own detailed help through `aiw <plugin> --help`.
@@ -131,6 +171,39 @@ See [AIW Ask](docs/usage/aiw-ask.md) for safe usage guidance, chat controls,
 private session storage, and provider limitations.
 
 ## Common Workflows
+
+### Translate text with `aiw say`
+
+AIW Say is a text translation plugin. On Windows, `python build.py say` builds
+Windows/Linux amd64 binaries and samples under `dist/plugins/aiw-say/`.
+`python build.py plugins` builds and installs Say with the other plugins;
+`python build.py all` also includes this step. Installation preserves an existing Say `aiw.toml`. For manual installation, build
+`src/cmd/aiw-say` from `src/` as `aiw-say.exe` on Windows or `aiw-say` on Linux/WSL,
+and place it in a directory searched by AIW plugin discovery, such as `PATH`.
+The configuration sample is
+[src/programs/aiw-say/aiw.toml.example](src/programs/aiw-say/aiw.toml.example).
+Set `OPENAI_API_KEY` in the environment and select a model available to your
+API account with `[say.llm].model` or `--model` before translating.
+The default `aiw.toml` belongs beside the Say executable, normally in
+`C:\green\aiw\plugins\aiw-say\`; use `--config` for another location.
+
+```powershell
+aiw say --model "your-model" --target ja "Please confirm tomorrow's meeting."
+aiw say --model "your-model" --source ja --target en "明日の会議を確認してください"
+```
+
+Replace `your-model` with your configured model name. Provide one text argument
+or UTF-8 stdin. The default source is `auto` and
+target is `ja`; supported languages are `zh`, `ja`, and `en`. Successful
+output contains only the completed translation. Diagnostics go to stderr;
+failures return a nonzero exit status with empty stdout. Translation sends
+the source text to the configured API.
+
+Use `--mode`, `--style`, `--polite`, `--simple`, and `--profanity` to adjust
+the result, or `--profile` to load a user profile. Phase 1 supports text input;
+clipboard, GUI, file, pair, and glossary modes are not implemented.
+See the [AIW Say guide](src/programs/aiw-say/README.md) for installation,
+configuration precedence, profiles, and troubleshooting.
 
 ### List Tasks
 
@@ -175,9 +248,10 @@ Scripts must check the exit code before treating stdout as a complete list.
 Listing does not create Attempts or leases, dispatch agents, move directories,
 or recreate missing specifications or Sessions.
 
-### Start a normal Task
+### Continue a legacy Task
 
-Use this flow when the work can be done in the current workspace:
+Use this flow for existing Task records in the current workspace. New work
+uses a numbered FD:
 
 ```powershell
 aiw init
@@ -228,7 +302,9 @@ branch. It preserves `.ai/fd/<FD-ID>` receipts and stops safely if a shared
 
 ### Advance a numbered FD
 
-Use explicit FD handoffs for planning, implementation, testing, and review.
+Use explicit FD handoffs for planning, implementation, and independent review.
+Optional tests use the standalone `$fd-test` Skill when requested and do not
+gate the default FD lifecycle.
 Create the isolated worktree with `aiw git wt add` after committing the ready FD
 plan and cleaning the parent workspace. After review, deliver with
 `aiw git wt local-merge`; it creates one parent commit without retaining individual
@@ -247,19 +323,29 @@ aiw git wt commit FD-027 "implement FD work"
 aiw git wt local-merge FD-027
 ```
 
-### Preserve an Issue before creating a Task
+### Preserve an Issue before creating an FD
 
 Use Issue Management when a bug, feature, or modification still needs scope,
 approval, metric definition, or engineering option review:
 
 ```powershell
-aiw issue chat daily-withdrawal-report
-aiw issue show daily-withdrawal-report
-aiw issue approve daily-withdrawal-report APPROVED --by alice --reason "scope approved"
-aiw issue promote daily-withdrawal-report --task daily-withdrawal-report
+aiw issue new daily-withdrawal-report "Daily withdrawal report"
+aiw issue chat ISSUE-001
+aiw issue show ISSUE-001
+aiw issue approve ISSUE-001 APPROVED --by alice --reason "scope approved"
+aiw issue promote ISSUE-001
 ```
 
-Promotion requires an explicit approval and creates or reuses the linked Task.
+Use the ID returned by `new` in subsequent commands. New Issues have
+independent `ISSUE-001` IDs and live under `docs/issues/<id>/` with
+`issue.toml` and `issue-plan.md`. Existing REQ records remain under
+`docs/requirements/` with their original IDs and evidence paths.
+`aiw req` remains an alias and also creates ISSUE IDs by default.
+`promote <id>` creates a numbered FD linked to the approved Issue and routes
+its initial handoff to Planner. You can also use
+`aiw fd new "Feature title" --issue <id>` directly.
+
+Promotion requires an explicit approval and rejects an existing FD association.
 It does not mean that the implementation is complete or approved for release.
 See [Issue Management](docs/usage/aiw-issue.md) for artifact
 capture, recovery, and revision rules.
@@ -443,9 +529,9 @@ ownership in `.aiw-skills.json`. Path-based installs use the same managed
 pipeline as canonical Skill installs. Run `aiw skills --help` for complete
 constraints and JSON automation options.
 
-Canonical Skill packages are maintained in the repository-root `skills/`
-directory. Release layouts keep `skills/`, `cmd/`, and `plugins/` together;
-reusable implementation packages live under `internal/`.
+Canonical Skill packages are maintained in the `src/skills/`
+directory. Release layouts keep `skills/` with the executable. Repository sources
+live under `src/`, with reusable implementation packages under `src/internal/`.
 `aiw-install-skill` is deprecated; use `aiw skills install` for both canonical
 names and local bundle sources.
 
@@ -456,8 +542,9 @@ When an unknown subcommand is invoked, `aiw` searches for an executable named `a
 Search order:
 
 1. `plugins/` directory next to the `aiw` executable
-2. `$HOME/.config/aiw/plugins`
-3. System `PATH`
+2. Workspace-local `plugins/` directory
+3. Git checkout source plugins in `src/plugins/`
+4. System `PATH`
 
 ## Naming Convention
 
@@ -588,7 +675,7 @@ keeps the inherited working directory and resolves project `aiw.toml` or
 
 ## Example
 
-Place `plugins/aiw-hello.sh` in the repository's `plugins/` directory:
+Place `src/plugins/aiw-hello.sh` in the repository's `src/plugins/` directory:
 
 ```bash
 aiw hello arg1 arg2
@@ -607,12 +694,14 @@ Plugins execute arbitrary external code and may pose security risks. Only instal
 * Creates directories such as `openspec/` and `.wt/`
 * Writes default template files only when missing
 * Creates or appends `.wt/` to `.gitignore`
-* Does not automatically merge templates from `agent-templates/`
+* Does not automatically merge templates from `src/agent-templates/`
 
 Options:
 
 * `--prompts`
-  Run prompt synchronization immediately after initialization.
+  Run prompt synchronization immediately after initialization, including reusable
+  prompts under `.agents/prompts/` and the PR description reference at
+  `.agents/pull_request.md`.
 
 * `--merge`
   Valid only with `--prompts`. Merge content into existing prompt files.
@@ -621,7 +710,7 @@ Options:
   Valid only with `--prompts`. Overwrite existing prompt files.
 
 * `--template <name>`
-  Valid only with `--prompts`. Explicitly specify the template directory (`go`, `java`, or `python`).
+  Valid only with `--prompts`. Explicitly specify the template directory (`go`, `java`, `python`, `typescript`, or `javascript`).
 
 ## 2. `aiw new <task-id>`
 
@@ -759,14 +848,14 @@ Work Item. It does not change Task state.
 
 Features:
 
-* `aiw prompts list` lists available templates under `agent-templates/`
+* `aiw prompts list` lists available templates under `src/agent-templates/`
 * Generates or merges repository-level AI prompt files
 
 Auto-detected templates:
 
 | Template | Detection                                        |
 | -------- | ------------------------------------------------ |
-| `go`     | `go.mod`                                         |
+| `go`     | `src/go.mod`                                    |
 | `java`   | `pom.xml`, `build.gradle`, `build.gradle.kts`    |
 | `python` | `pyproject.toml`, `requirements.txt`, `setup.py` |
 
@@ -775,7 +864,8 @@ Output files:
 ```text
 AGENTS.md
 .github/copilot-instructions.md
-CODEX.md
+.agents/pull_request.md
+.agents/prompts/**
 ```
 
 Behavior:

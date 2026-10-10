@@ -1,0 +1,30 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-022",
+  "source_event": "FD-022-000008-reopen-requested",
+  "human_report": "FD-022-blocker-20261009T225817-01.md",
+  "data": {
+    "stage": "worker-preflight",
+    "role": "pm",
+    "recorded_at": "2026-10-09T22:58:17+09:00",
+    "recorder_session": "fd022-auto-pm-20261009-225817-a41c",
+    "observed_blocker": "FD-022 is In Progress with a pending reopen-requested Worker handoff and three unresolved NEEDS_INPUT gates covering streaming/structured-output contracts, runtime evidence for Codex --output-schema and the Agents SDK tool turn, and strict:true argument semantics. aiw fd show/resume also reject the duplicate active and archived FD paths as ambiguous. No Worker claim or worktree was started.",
+    "confirmed_cause": "The FD records material contract and runtime-evidence questions as unresolved. The auto request does not authorize network access or runtime validation under the repository budget. The CLI ambiguity is confirmed by both show and resume errors.",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      "Ran aiw fd list; it showed the active In Progress FD and archived Deferred FD-022 separately.",
+      "Ran aiw fd show fd-022 and aiw fd resume fd-022; both returned expected one FD file, found 2.",
+      "Read the active FD, reopen event, applicable stable spec, repository resource rules, and role instructions directly.",
+      "Checked parent Git status and AIW_FD_ROLE_RUNNER; parent was clean and the runner variable was unset."
+    ],
+    "status": "unresolved",
+    "human_decision_required": true,
+    "human_decision_detail": "Decide whether to authorize obtaining/using v0.18.0 SDK contract evidence (which may require network), authorize a precisely scoped runtime validation command, and choose strict:true argument handling; alternatively accept a stated evidence limitation or narrow the affected acceptance claim.",
+    "actual_resolution": null,
+    "resolved_at": null,
+    "residual_risk_or_next_step": "Wait for the decisions, then resolve the FD gates before claiming Worker work. The CLI cannot currently disambiguate active and archived files with the same FD ID.",
+    "reusable_improvement": "Evaluate changing aiw fd show/resume to prefer the active FD when an archived historical record shares its ID, and add reopen-flow coverage; no CLI or rule change was made here.",
+    "improvement_status": "proposed"
+  }
+}

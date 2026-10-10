@@ -1,0 +1,42 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-053",
+  "source_event": "FD-053-000006-implementation-ready",
+  "human_report": "FD-053-review-r1.md",
+  "data": {
+    "reviewer_session": "fd053-reviewer-20261010T1640-2a91d7",
+    "reviewed_revision": "develop...7449ca36 (parent baseline develop@aa02a171)",
+    "outcome": "verification-passed",
+    "findings": [],
+    "acceptance_results": {
+      "automatic_open_no_event_recovery": "supported by static review of scoped Auto steps requiring blocker evidence, audited decision-recorded event creation, exact Worker claim, and worktree continuation",
+      "legacy_revision_recovery": "supported by static review requiring the initial Revision commit before force-emit and one corrected retry only after a confirmed cause",
+      "truthful_skipped_checks_and_normal_gates": "supported by skill instructions and force_emit implementation recording skipped checks and agent_stopped=false",
+      "other_receipt_states_preserved": "supported by scope guards and explicit standard claim/refresh/recovery routing for every other receipt state",
+      "privileged_command_boundaries": "supported by skill instructions and CLI static review of set-status, cancel-event, and force-emit behavior",
+      "worker_report": "Markdown and JSON sidecar are present, linked, and accurately state the checks that were not run"
+    },
+    "commands": [
+      "aiw fd claim FD-053 FD-053-000006-implementation-ready --session fd053-reviewer-20261010T1640-2a91d7 (parent workspace rejected on FD digest mismatch; successful from .wt/FD-053)",
+      "git diff --stat develop...HEAD",
+      "git diff --check develop...HEAD",
+      "git diff --name-status develop...HEAD",
+      "git rev-parse develop",
+      "git rev-parse HEAD",
+      "targeted git diff, rg, and static reads of the skill, FD, CLI contracts, and Worker evidence"
+    ],
+    "skipped_checks": [
+      "tests",
+      "runtime workflow",
+      "final builds",
+      "compile-only",
+      "formatters",
+      "linters",
+      "vet",
+      "network operations",
+      "skill validation scripts"
+    ],
+    "residual_risk": "The workflow depends on the current CLI decision-recorded routing and force-emit audit contract. These were statically reviewed; end-to-end recovery was not run."
+  }
+}

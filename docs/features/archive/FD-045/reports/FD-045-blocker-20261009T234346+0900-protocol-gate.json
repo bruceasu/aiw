@@ -1,0 +1,28 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-045",
+  "source_event": "FD-045-000002-design-requested",
+  "human_report": "FD-045-blocker-20261009T234346+0900-protocol-gate.md",
+  "data": {
+    "stage": "pre-implementation design gate",
+    "role": "PM",
+    "recorded_at": "2026-10-09T23:43:46+09:00",
+    "recorder_session": "fd045-pm-20261009-234346-c19a",
+    "observed_blocker": "FD status is Design; the latest Planner handoff FD-045-000002-design-requested is cancelled and there is no pending handoff. Work Items 1.1-1.2 and acceptance depend on version-specific App Server handshake, turn/start, output schema, item/event, usage, interrupt, error, and rollout-content-retention contracts that are not evidenced by local primary sources.",
+    "confirmed_cause": "Repository resource budget sets network calls to zero by default. The FD also requires explicit authorization before SDK/App Server runtime validation. The auto request does not grant either authorization.",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      "Inspected FD-045, the stable agent-proxy specification, current Gateway implementation paths, current receipt/operation record, and workflow rules; the FD itself makes the protocol and retention evidence a pre-implementation prerequisite.",
+      "Did not access the network or execute SDK/App Server, tests, or compile commands; did not create a handoff or worktree."
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "User confirmed read-only research of official sources. Runtime SDK/App Server validation remains unauthorized and requires a separate decision after the exact command, scope, expected duration, and risks are stated.",
+    "actual_resolution": "Reviewed version-pinned official OpenAI Codex rust-v0.160.1 and Agents SDK v0.18.0 sources. Confirmed initialize experimental capability negotiation; thread/start ephemeral and experimental dynamicTools; server-to-client item/tool/call RPC; turn/start inputs, tool outputs, output schema, turn usage, and interrupt fields. This closes the source-evidence gate for planning. The design must account for dynamicTools being experimental and preserve the pending RPC/thread slot while awaiting caller function output. Ephemeral threads avoid durable resumable session history, while isolated Codex home and temp cleanup remain required. No SDK/App Server runtime validation was run or authorized.",
+    "resolved_at": "2026-10-09T23:51:34+09:00",
+    "residual_risk_or_next_step": "Continue Planner work with the pinned protocol contract and explicit experimental API opt-in. Keep runtime validation unrun unless separately authorized; implementation may use static review and one compile-only check under repository rules.",
+    "reusable_improvement": "none",
+    "improvement_status": "none"
+  }
+}

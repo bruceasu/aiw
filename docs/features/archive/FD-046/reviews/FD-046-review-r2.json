@@ -1,0 +1,58 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-046",
+  "source_event": "FD-046-000007-implementation-ready",
+  "human_report": "FD-046-review-r2.md",
+  "data": {
+    "reviewer_session_ref": "codex-reviewer-20261009-fd046-r2",
+    "reviewed_diff": "3f2fe86..693a445",
+    "reviewed_commit": "693a4455daf2949ed7ae000d573e1a7cee41da96",
+    "outcome": "verification-passed",
+    "findings": [],
+    "acceptance_results": [
+      {
+        "area": "forced archive pending receipt",
+        "result": "pass",
+        "evidence": "close_locked cancels the latest pending non-verification-passed receipt inside the archive transaction and restores the original receipt when a later transaction step fails."
+      },
+      {
+        "area": "verification-passed receipt preservation",
+        "result": "pass",
+        "evidence": "The forced update condition excludes verification-passed; the audit records review_verified false and does not create reviewer evidence."
+      },
+      {
+        "area": "normal close compatibility",
+        "result": "pass",
+        "evidence": "Without --force, existing status, current reviewer receipt, producer, forced flag, revision, digest, and pending receipt checks remain in place."
+      },
+      {
+        "area": "FD, stable spec, CLI docs, and implementation report",
+        "result": "pass",
+        "evidence": "The acceptance and supporting docs state cancellation and rollback behavior and preservation of verification-passed receipts."
+      }
+    ],
+    "commands": [
+      "aiw fd --help",
+      "aiw fd show FD-046",
+      "python plugins/aiw-fd.py emit --help",
+      "python plugins/aiw-fd.py claim FD-046 FD-046-000007-implementation-ready --session codex-reviewer-20261009-fd046-r2",
+      "python plugins/aiw-fd.py emit FD-046 verification-passed --producer reviewer --artifact docs/features/reviews/FD-046-review-r2.md --source-event FD-046-000007-implementation-ready",
+      "git rev-parse 3f2fe86",
+      "git rev-parse 693a445",
+      "git diff --check 3f2fe86..693a445",
+      "git diff 3f2fe86..693a445 -- plugins/aiw-fd.py openspec/specs/fd-workflow/spec.md docs/usage/aiw-fd.md",
+      "git diff -- docs/features/FD-046_FORCE_ARCHIVE_FDS_AS_COMPLETE.md docs/features/FEATURE_INDEX.md",
+      "rg -n \"def fd_digest|def normalize|Reviewer.*outcome|changes-requested\" plugins/aiw-fd.py docs/features/FD-046_FORCE_ARCHIVE_FDS_AS_COMPLETE.md"
+    ],
+    "skipped_checks": [
+      "tests",
+      "fault injection",
+      "compile-only recheck",
+      "final build",
+      "lint",
+      "formatter"
+    ],
+    "residual_risk": "Runtime rollback behavior was not exercised with fault injection; the claimed rollback result is based on static inspection."
+  }
+}

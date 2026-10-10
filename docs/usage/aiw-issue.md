@@ -7,11 +7,15 @@ Issue 可以记录 Bug、功能或修改。新流程是 **Issue → 编号 FD �
 
 ## 当前命令与兼容性
 
-`aiw issue` 是现有 `aiw req` 程序的入口别名。当前版本继续使用 `REQ` 编号、
-`docs/requirements/<id>/` 和原 Session 证据路径。旧记录无需迁移。
+`aiw issue new <slug> [title]` 创建 `ISSUE-00001` 格式的编号，数字至少五位，
+超过 99999 自然扩展。slug 不作为 ID 后缀；省略 title 时用 slug 作为标题。
+新记录保存在 `docs/issues/<id>/issue.toml`，Plan 为 `issue-plan.md`。
+`aiw req` 继续作为同一程序的入口别名，其默认新建行为同样使用 ISSUE 编号。
+旧 `REQ00001-slug` 记录保存在 `docs/requirements/<id>/`，既有 FD 引用和
+Session 证据路径保留；需要时再单独迁移，不统一迁移。
 审批与推广仍各自需要明确的人类决定。
-临时草稿放在 `.ai/requirements/drafts/`；捕获后，正式产物存入
-`docs/requirements/<id>/`。草稿路径仅作为捕获来源，不作为通用上下文来源。
+临时草稿放在 `.ai/issues/drafts/`，旧 `.ai/requirements/drafts/` 仍可读取；
+捕获后正式产物写入目标记录所在目录。草稿路径仅作为捕获来源，不作为通用上下文来源。
 
 ```text
 aiw issue chat [id]
@@ -20,7 +24,7 @@ aiw issue capture <id> <artifact> --file <path>
 aiw issue approve <id> APPROVED --by <actor> --reason <reason>
 aiw issue promote <id>
 aiw fd new "<title>" --issue <id>
-aiw issue show <id>
+aiw issue show <id> [--json]
 aiw issue link-parent <child-id> <parent-id>
 aiw issue children <parent-id>
 ```
@@ -29,7 +33,15 @@ aiw issue children <parent-id>
 记录结构化来源关系；`children` 查询直接子项。在各 Issue Plan 中仍应说明
 拆分范围，不要把一个 Issue 的已批准内容静默转移到另一记录。
 
-%% NEEDS_INPUT: 独立的 ISSUE 编号和 `docs/issues/` 存储需要单独确定迁移策略；本阶段保留 REQ 数据格式以兼容旧记录。
+完整 ID 查找优先，大小写不敏感；例如 `issue-001` 可查找 `ISSUE-001`，
+`req00008` 在唯一匹配时可查找 `REQ00008-fd-force-recovery`。缺失或歧义
+返回错误，写操作不会选择任意匹配。列表覆盖新旧记录及对应终止目录。
+`capture` 接受 `issue-plan` 和既有 `requirement-plan` 名称，新 Issue 写入
+`issue-plan.md`，旧 REQ 写入原 `requirement-plan.md`；内部工件键保留
+`requirement-plan`，以延续既有摘要与对话协议。
+
+`show --json` 返回 `id`、`status`、`approval_status`，并校验已捕获工件的摘要。
+FD 创建使用该接口获取规范 ID 和批准状态；人工阅读继续使用普通 `show`。
 
 ## FD 交接与推广
 

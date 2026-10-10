@@ -1,0 +1,71 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-041",
+  "source_event": "FD-041-000008-implementation-ready",
+  "human_report": "FD-041-review-r1.md",
+  "data": {
+    "reviewer_session": "fd041-reviewer-20261009-ce272b",
+    "reviewed_base": "4a445b27de935b39d45cfb1bd4276258abf33d36",
+    "reviewed_head": "4e8bdacb1d9886b495189daed8c82f2800a144d6",
+    "outcome": "changes-requested",
+    "findings": [
+      {
+        "id": "FD041-R1-01",
+        "severity": "medium",
+        "path": "plugins/aiw-fd.py",
+        "line": 210,
+        "acceptance": "NO_COLOR, TERM=dumb, non-TTY and unsupported-color terminals emit no ANSI control codes",
+        "summary": "ANSI support detection treats any TTY except TERM=dumb or NO_COLOR as color-capable.",
+        "detail": "When TERM is empty or identifies a terminal without ANSI support, supports_ansi_color still returns true and render_fd_list wraps state and priority fields in escape sequences.",
+        "requested_change": "Detect terminal color capability reliably and use plain text when support is absent or unknown."
+      },
+      {
+        "id": "FD041-R1-02",
+        "severity": "low",
+        "path": "plugins/aiw-fd.py",
+        "line": 252,
+        "acceptance": "Terminal list displays readable aligned columns",
+        "summary": "ANSI sequence width is overcounted by two columns for the current two-digit color codes.",
+        "detail": "ansi_color adds an opening sequence of len(code)+3 characters and a four-character reset, so the actual overhead is len(code)+7. The width adjustment adds len(code)+9, shifting body columns relative to headers.",
+        "requested_change": "Calculate the actual ANSI sequence overhead or compute alignment from visible text."
+      }
+    ],
+    "acceptance_results": {
+      "terminal_table": "Partially met: plain-text table and fields exist, but colored rows are misaligned with headers.",
+      "active_and_archived_sources": "Met by static inspection of active_files, archived_files, all_files, status, priority, and title extraction.",
+      "redundant_color": "Met by static inspection: color is applied to status and priority values; field text remains when disabled.",
+      "color_fallbacks": "Partially met: NO_COLOR, TERM=dumb, and non-TTY are handled; unsupported or unknown TTY capability is not detected.",
+      "safe_title_rendering": "Met by static inspection: Cc/Cf formatting controls are filtered and unrepresentable characters use backslashreplace.",
+      "read_only_and_dependencies": "Met by static inspection: list rendering reads documents and adds only the standard-library unicodedata dependency."
+    },
+    "commands_run": [
+      "aiw fd claim FD-041 FD-041-000008-implementation-ready --session fd041-reviewer-20261009-ce272b",
+      "git status --short --branch",
+      "git log --format=\"%h %s\" office-dev..HEAD",
+      "git rev-parse HEAD",
+      "git merge-base office-dev HEAD",
+      "git diff --stat office-dev...HEAD",
+      "git diff --name-status office-dev...HEAD",
+      "git diff --unified=40 office-dev...HEAD -- plugins/aiw-fd.py docs/usage/aiw-fd.md",
+      "git diff --unified=8 office-dev...HEAD -- docs/features/FEATURE_INDEX.md",
+      "rg -n \"fd list|FEATURE_INDEX|terminal|ANSI|color\" openspec/specs/fd-workflow/spec.md",
+      "rg -n \"def terminal_text|def supports_ansi_color|def ansi_color|def render_fd_list|state_width|priority_width|fd_list_rows|def active_files|def archived_files|def all_files\" plugins/aiw-fd.py",
+      "python -X utf8 -c \"read FD-041 bytes and compare normalized SHA-256 with event fd_sha256\""
+    ],
+    "skipped_checks": [
+      "tests",
+      "smoke",
+      "lint",
+      "formatting",
+      "full build",
+      "runtime CLI and terminal behavior",
+      "rerunning Worker compile-only check"
+    ],
+    "worker_compile_only": "Worker implementation report records a successful Python in-memory compile-only check; Reviewer did not rerun it.",
+    "residual_risks": [
+      "Runtime output was not exercised across terminal capability variants, redirection, NO_COLOR, TERM=dumb, or Windows encodings.",
+      "Unsupported TTY capability detection and ANSI column alignment require Worker changes."
+    ]
+  }
+}

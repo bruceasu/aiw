@@ -1,0 +1,28 @@
+﻿{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-037",
+  "source_event": "FD-037-000003-design-ready",
+  "human_report": "FD-037-blocker-20261010T010310-9c42ae.md",
+  "data": {
+    "stage": "Preflight",
+    "role": "PM",
+    "recorded_at": "2026-10-10T01:03:10+00:00",
+    "recorder_session": "fd037-pm-20261010-9c42ae",
+    "observed_blocker": "原记录时 develop 有 137 个未提交路径变更，FD-036 引用文件在指定路径缺失。",
+    "confirmed_cause": "原工作区当时存在大量未提交改动；FD-036 未位于引用路径。",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      "原记录只读检查 FD、事件、报告/评审、Git 状态与 FD-036 引用路径，未执行写操作。",
+      "2026-10-10T01:05:57+00:00 复查：Git 状态已不再包含原 137 项删除；确认 FD-036 资料位于 docs/features/archive/FD-036/。"
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "原始阻塞已由当前仓库状态变化和找到归档依赖解决；新出现的未提交 FD-048 修改另见 follow-up blocker。",
+    "actual_resolution": "原始 .agents/skills 删除不再出现在 Git 状态；确认 FD-036 归档目录存在。没有改动用户文件。",
+    "resolved_at": "2026-10-10T01:05:57+00:00",
+    "residual_risk_or_next_step": "Worker handoff 仍 pending；当前父工作区 Gate 记录在 FD-037-blocker-20261010T010557-a1730d.md。",
+    "reusable_improvement": "none",
+    "improvement_status": "none"
+  }
+}

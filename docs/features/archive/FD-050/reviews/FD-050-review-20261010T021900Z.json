@@ -1,0 +1,35 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-050",
+  "source_event": "FD-050-000009-implementation-ready",
+  "human_report": "FD-050-review-20261010T021900Z.md",
+  "data": {
+    "reviewer_session": "fd050-reviewer-20261010-c9214d",
+    "reviewed_revision": "develop...be9df79",
+    "outcome": "verification-passed",
+    "findings": [],
+    "acceptance_results": {
+      "installed_plugin_priority": "supported by static control-flow review: directory candidates are resolved in declared order, with extension scoring limited to the first matching directory",
+      "copilot_go_cli_path": "updated to src/cmd/",
+      "compile_only": "worker report records python scripts/compile.py passed with exit code 0; not rerun by Reviewer",
+      "other_fd050_acceptance": "base implementation reviewed in prior round; current corrective diff introduces no new issue found"
+    },
+    "commands": [
+      "aiw fd show FD-050",
+      "aiw fd claim FD-050 FD-050-000009-implementation-ready --session fd050-reviewer-20261010-c9214d",
+      "git log --oneline --decorate -8",
+      "git diff --stat e33d0fb..be9df79",
+      "targeted git diff, static file reads, and line-number checks"
+    ],
+    "skipped_checks": [
+      "tests",
+      "build.py actions",
+      "full build",
+      "installation",
+      "compile-only check (worker report result was not repeated)",
+      "formatters, linters, vet, and verification scripts"
+    ],
+    "residual_risk": "Plugin discovery behavior and Windows build/install behavior were statically reviewed; runtime checks were not run."
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "fd_id": "FD-049",
+  "kind": "reviewer-report",
+  "source_event": "FD-049-000007-implementation-ready",
+  "human_report": "FD-049-review-r2.md",
+  "data": {
+    "reviewer_session": "fd049-reviewer-20261010-a613",
+    "reviewed_head": "be852f2",
+    "base_commit": "f653509",
+    "followup_base": "a3e5b23",
+    "result": "verification-passed",
+    "findings": [],
+    "resolved_findings": ["R1: Chat 顶层和消息对象原始键精确白名单拒绝大小写变体及覆盖组合"],
+    "acceptance_results": {"1": "static-supported", "2": "static-supported", "3": "static-supported", "4": "static-supported", "5": "static-supported", "6": "static-supported"},
+    "commands_run": ["aiw fd show FD-049", "aiw fd claim FD-049 FD-049-000007-implementation-ready --session fd049-reviewer-20261010-a613", "Get-Content 定向读取", "git diff --stat a3e5b23..be852f2", "git diff a3e5b23..be852f2 -- selected files", "git diff f653509..be852f2 -- program/agent-gateway/server.go program/agent-gateway/observation.go", "git diff --check"],
+    "not_run": ["tests", "compile", "HTTP", "Say", "App Server", "SDK", "final builds", "formatters", "linters", "vet", "network"],
+    "risks": ["实际 HTTP/Say/App Server 兼容性未运行验证", "首批限非流式文本子集", "旧二进制可能拒绝含新 route 的记录"]
+  }
+}

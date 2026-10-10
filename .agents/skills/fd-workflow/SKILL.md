@@ -19,7 +19,7 @@ about those terms, or a design-only request, does not start implementation.
 Use an explicit FD ID first, then a unique FD linked from the current Issue or
 conversation. Ask when several FDs match. For a new FD, use `aiw fd new
 "<title>" [--issue <id>]`; this allocates an unused `FD-XXX` number, creates
-the file from `docs/features/TEMPLATE.md`, updates the index, and records a
+the file from `docs/templates/TEMPLATE.md`, updates the index, and records a
 `design-requested` event. Do not create an AIW Task as a prerequisite or
 convert the FD into a Task workflow.
 
@@ -75,11 +75,6 @@ Use `aiw fd list`, `show`, and `resume` for status and recovery. A pending event
 can be handled by the named role in the current host after `aiw fd claim <id>
 <event-id> --session <host-session-id>`. A dispatched event with unknown outcome
 must be reconciled against its original session or log.
-If PM confirms a dispatched Worker session has stopped and chooses a new
-Worker, use `aiw fd recover-worker <id> --expected-event <event-id>
---expected-session <old-session> --reason "..."`. Claim the resulting pending
-event under the new Worker session. Never use it while the original session's
-outcome remains unknown.
 
 The `--session` value is an opaque ownership reference for this host session;
 it need not be a platform-provided ID. Prefer a stable ID supplied by the host.
@@ -123,23 +118,31 @@ and updates the FD and receipt digest together. Never hand-edit a receipt.
 Apply this procedure to one numbered FD when the user invokes
 `$fd-workflow auto`, asks for the whole FD lifecycle, or requests implementation
 with parallelism/isolation/worktree/`wt`. The host agent is PM, Planner, and
-Worker; independent Tester and Reviewer stages use separate subagents. An
+Worker; the Reviewer stage uses a separate subagent. An
 isolation request uses
 the recorded FD branch and worktree. Under the shared work-management contract,
 this request authorizes local commits, squash delivery to the recorded parent
-after a passed review, FD archive after successful delivery, and removal of that FD's
-worktree and branch after the archive commit. It does not authorize tests,
+after a passed review, automatic verified cleanup by `local-merge`, and FD
+archive after successful delivery. It does not authorize tests,
 final builds, network access, permission escalation, push, deployment, or
 publishing. Follow narrower repository rules.
 
+Load the stage prompt in `roles/` only when performing that role: `pm.md`,
+`planner.md`, `worker.md`, or `reviewer.md`. The shared lifecycle,
+handoff, and authorization contract remains in `skills/work-management.md`;
+these short prompts define the current role's inputs, output, and boundaries.
+The host may combine PM, Planner, and Worker. Reviewer evidence must come from
+a session separate from Worker. Optional tests run only through the standalone
+`fd-test` Skill and do not participate in this lifecycle.
+
 ### Blocker feedback for every stop
 
-Whenever Auto cannot continue at any preflight, design, Worker, Tester, PM,
-Reviewer, delivery, archive, or cleanup Gate, write one factual feedback pair
+Whenever Auto cannot continue at any preflight, design, Worker, PM, Reviewer,
+delivery, archive, or cleanup Gate, write one factual feedback pair
 under `docs/features/reports/FD-XXX-blocker-<unique-suffix>.md` and `.json`
 before reporting the stop. Use
-`docs/features/BLOCKER_FEEDBACK_TEMPLATE.md` and
-`BLOCKER_FEEDBACK_DATA_TEMPLATE.json`; the Markdown must be Chinese and
+`docs/templates/BLOCKER_FEEDBACK_TEMPLATE.md` and
+`docs/templates/BLOCKER_FEEDBACK_DATA_TEMPLATE.json`; the Markdown must be Chinese and
 contain one same-directory `aiw-data` reference. Use the FD ID, stage, role,
 exact source event when available, observed symptom, confirmed cause or
 unknown, actual recovery attempts and outcomes, unresolved status, human
@@ -162,12 +165,72 @@ review process for any such change. An unresolved record stays unresolved
 until evidence supports a result. Include the record path and current status
 in the user-facing Gate and final report.
 
+### Automatic recovery: active `Open` FD with no event
+
+In Auto mode, an active `Open` FD with no event or receipt is a recoverable
+handoff gap. Do not stop to ask whether to create the Worker handoff. This
+specific path authorizes the audited recovery below; it does not authorize
+other workflow overrides.
+
+1. Confirm `aiw fd show` and `aiw fd resume` report no event, inspect the FD
+   and `.ai/fd/<id>/`, and confirm there is no pending, claimed, launching, or
+   dispatched event to recover. Do not apply this rule to another status or a
+   stale/in-flight handoff. If `AIW_FD_ROLE_RUNNER` is configured, stop before
+   creating or claiming anything; that runner owns dispatch.
+2. Record the blocker with `source_event: null` and explain that no event
+   exists. Commit the feedback pair. Preserve the parent branch, commit the
+   ready FD plan, and ensure the parent is clean before creating its worktree.
+   If the FD has no `**Revision:**`, add initial revision metadata and commit
+   that plan update first; do not invent or write a receipt by hand.
+3. Create the Worker handoff with the current CLI command:
+
+   ```text
+   aiw fd force-emit <id> decision-recorded --producer human --artifact <blocker-report> --reason "<factual reason>" --operator "<operator>"
+   ```
+
+   For an `Open` FD, `decision-recorded` routes to Worker through the current
+   resume mapping. Use the existing blocker Markdown as the artifact. The
+   operation records a forced audit and skipped checks; after it succeeds,
+   update and commit the blocker pair with the event ID and actual result.
+   Commit any FD revision/index changes made by the command before creating
+   the worktree. Claim only that exact pending event, then continue with the
+   recorded Worker branch and worktree.
+4. Treat skipped checks as unperformed. The Worker must inspect the plan and
+   resolve Work Items, unresolved input, evidence, and authorized validation
+   before emitting `implementation-ready`. Do not imply that `force-emit`
+   creates design, implementation, or verification evidence. If the command
+   fails, fix only the confirmed cause (for example, missing Revision) and
+   retry once; otherwise update the blocker pair and stop at the remaining
+   Gate.
+
+### Privileged state operations
+
+Use privileged commands only for their documented operation. The no-event
+recovery above is the only default Auto path that uses `force-emit`.
+
+- `set-status` changes an active FD's status without transition or terminal
+  evidence checks. It creates no handoff or evidence. Do not use it to route a
+  Worker or Reviewer, or to imply that work is complete. Other status overrides
+  require a recorded PM decision and a factual reason.
+- `cancel-event` cancels the latest dispatched receipt; it does not stop its
+  Agent. Never use it as an automatic stop command. Inspect and identify the
+  exact event and session, record the human/PM decision, and state that the
+  Agent may continue. Use `recover-worker` for a confirmed abandoned dispatched
+  Worker handoff.
+- Other `force-emit` event types and `close --force` are not authorized by the
+  no-event recovery rule. Use them only for an explicit, recorded human/PM
+  override with an existing artifact and factual reason. Preserve the forced
+  audit record and name the skipped checks; skipped checks never count as
+  passed.
+
 1. **Preflight and resolve.** Read the repository instructions and this FD's
    Issue, stable specs, and current receipt. If `AIW_FD_ROLE_RUNNER` is set,
    stop before creating or claiming a handoff: the configured runner owns
    dispatch. For a new feature request, use `aiw fd new`, then claim its exact
    pending `design-requested` event as this host Session. For an existing FD,
-   use its unique ID and inspect the latest receipt and recorded Session.
+   use its unique ID and inspect the latest receipt and recorded Session. An
+   active `Open` FD with no event follows the automatic recovery above; use
+   standard claim/refresh/recovery for every other receipt state.
    Before claiming any existing Worker handoff, count prior Reviewer outcomes
    in the active implementation cycle. If the latest result is
    `changes-requested`, read its report and assess actionable repair. At
@@ -179,101 +242,60 @@ in the user-facing Gate and final report.
    receipts, or treat an old direct review as a current Reviewer event. If a
    handoff is stale or ambiguous, stop and report the recovery command and
    state. Route an existing `Design` FD to Planner, `Open` or `In Progress` to
-   Worker, `Pending Test` to an independent Tester, `Pending Test Acceptance`
-   to PM, `Pending Verification` to an independent Reviewer, and an active
-   `Complete` FD with a current pass to close. Skip already completed stages;
+   Worker, `Pending Verification` to an independent Reviewer, and an active
+   `Complete` FD with a current pass to close. A legacy `Pending Test` or
+   `Pending Test Acceptance` state is not part of the default workflow; preserve
+   its receipt and continue only when the user explicitly requests its legacy
+   CLI path. Skip already completed stages;
    an archived Complete FD is already done. Before any implementation, capture
    the current branch, commit the ready FD plan on the parent branch, and make
    sure the parent workspace is clean. Do not mix unrelated changes into the FD
    plan commit; if other parent changes are uncommitted, resolve and commit
    them separately first. Ensure `.wt/` and `.ai/` are ignored by Git;
    `wt add` rejects missing rules before changing Git state. Then create the branch/worktree with
-   `aiw wt add <id>` (`feature/<id>` and `.wt/<id>`). This is the
+   `aiw git wt add <id>` (`feature/<id>` and `.wt/<id>`). This is the
    default for every numbered FD, not only requests that mention isolation or
    parallel work. Immediately read
    `.ai/fd/<id>/workspace.json` and verify `fd_id`, `parent_branch`, `branch`,
    and `worktree` against the created worktree. This file records the exact
    parent for the later merge; stop if it is missing or inconsistent. Keep all
    Worker writes in that worktree.
-2. **Plan and split when in Design.** As Planner, resolve routine choices from evidence and
+2. **Plan and split when in Design.** Load `roles/planner.md`. As Planner, resolve routine choices from evidence and
    write Problem, options and decision, scope, ordered numbered Work Items,
    acceptance, TODO, Verification, and relevant spec updates. Split items by
    independently reviewable outcome and dependency order; keep IDs stable.
    Stop for a material `%% NEEDS_INPUT` decision. When ready, emit
    `design-ready --producer planner --artifact <fd-path> --source-event
    <claimed-design-event>`. Claim the resulting Worker handoff as this host.
-3. **Implement when assigned Worker.** Complete all ready Work Items in order, making
+3. **Implement when assigned Worker.** Load `roles/worker.md`. Complete all ready Work Items in order, making
    minimal code/doc changes. Update checkboxes, TODO, Verification, and
    remaining `%%` notes with actual evidence and skipped checks. Apply the
    repo's validation budget. For a Dual evidence FD, write a Chinese Markdown
-   report and same-basename JSON using `docs/features/REPORT_DATA_TEMPLATE.json`;
+   report and same-basename JSON using `docs/templates/REPORT_DATA_TEMPLATE.json`;
    point `--artifact` to Markdown. In the FD worktree, inspect the diff and
    commit each completed, independently reviewable Work Item before starting
-   the next. Stage only that item's files; use `aiw wt commit <id>` only when
+   the next. Stage only that item's files; use `aiw git wt commit <id>` only when
    every uncommitted change belongs to it, otherwise use path-scoped `git add`
-   and `git commit`. Commit final FD evidence before the Tester or Reviewer
+   and `git commit`. Commit final FD evidence before the Reviewer
    handoff. Do not rebase either branch as part of this workflow; delivery
    squashes the reviewed FD result onto the recorded parent branch.
    If authorization or design is missing, stop with the FD active. Emit `implementation-ready
    --producer worker --artifact <implementation-report> --source-event
    <claimed-worker-event>` only after all scoped items and required evidence
-   are resolved. New FDs have `**Test policy:** Independent`, so this event
-   routes to Tester; older FDs without the marker retain the direct Reviewer
-   route.
-3a. **Independent Tester for Pending Test.** Spawn a separate Tester subagent
-   with the pending event, FD acceptance, public contract, report template at
-   `docs/features/TEST_REPORT_TEMPLATE.md`, and authorization limits. It must
-   use a different session from Worker and Reviewer, claim the exact Tester
-   event, derive black-box cases without reading implementation source, and
-   write only assigned root `tests/` paths/report. Before any test or coverage command,
-   Tester proposes the exact command, working directory, scope, expected
-   duration, and side effects. The host acts as Planner: inspect the invoked
-   test code and decide whether it is focused, offline, inspectable, and
-   confined to assigned or temporary paths. If so, write a versioned
-   authorization using `docs/features/TEST_AUTHORIZATION_TEMPLATE.md`, bound
-   to the implementation event, FD revision/digest, and Tester session. For
-   Dual evidence, add same-basename JSON from
-   `docs/features/TEST_AUTHORIZATION_DATA_TEMPLATE.json`, keep the Markdown
-   in Chinese, then
-   allow only that exact command. If it may affect unrelated data, secrets,
-   network/external services, dependencies, privileges, release artifacts, or
-   has unknown effects, request explicit human approval first and record its
-   affirmative reference using the authorization template's
-   `approved:<source>:<id>` form. `denied` and `pending` never authorize a
-   command. Do not infer approval from the auto request or Tester handoff.
-   An unapproved Tester may report unrun tests honestly and
-   must distinguish prepared from executed cases. The report inventories
-   each distinct observable acceptance scenario rather than treating a broad
-   numbered item as one case. It maps executed, partial, and uncovered
-   behavior separately, and reports both coverage measures, raw evidence or unavailable reasons,
-   exact commands, and residual risk. For Dual evidence, use a Chinese Markdown
-   report and `docs/features/TEST_REPORT_DATA_TEMPLATE.json`; put every
-   distinct scenario in JSON `data.scenarios` and keep counts consistent.
-   Then emit `test-report-ready --producer
-   tester --artifact <report> --source-event <claimed-test-event>`.
-3b. **PM Test Report Decision.** Read the Tester report and actual evidence.
-   Give the same report, current event/revision/digest, and
-   `docs/features/TEST_RISK_ASSESSMENT_TEMPLATE.md` to independent assessor A.
-   When behavior tests failed, obtain A, B, and C from the start. Add B and C
-   if PM judges an evidence gap material or disagrees with A's vote. Assign A
-   acceptance/user impact, B technical evidence/repair, and C delivery/operations
-   as distinct focuses; each still assesses the full risk. Give each a separate
-   FD-prefixed report path and session, and do not share drafts or votes.
-   Assessors write Chinese Markdown plus same-basename JSON with an evidence-based
-   `accept-with-risk` or `repair` vote, severity, impact scope, estimated repair
-   time, delivery impact, rationale, residual risk, and uncertainty. Replace an
-   unavailable or invalid assessor without inventing a vote. Write a versioned
-   Chinese PM decision and same-basename JSON using the decision template.
-   Record `adaptive-v1`, `single` or `escalated`, the evidence-gap judgment,
-   escalation reason, all reports and votes, dissent, Tester report, FD
-   revision/digest, coverage, failed-test count, exceptions, residual risk, PM
-   identity, and time. A single vote determines the single-assessor result;
-   escalated decisions need at least two `accept-with-risk` votes to emit
-   `test-accepted` to Reviewer. Otherwise emit `test-rejected` to Worker.
-   Failed tests and coverage gaps remain factual evidence and never become
-   passing test results through a risk vote. Emit with `--producer pm`, the
-   decision artifact, and `--source-event <test-report-ready-event>`.
-4. **Independent review when Pending Verification.** Count Reviewer outcome events for this FD's active
+   are resolved. Worker performs the repository-authorized compile-only check
+   and static review; do not run tests through this workflow. New FDs omit
+   `**Test policy: Independent**` and route directly to Reviewer. Existing FDs
+   with that marker retain their recorded CLI compatibility route, but Auto
+   does not dispatch a new Tester or assess its report. Use `$fd-test` only
+   when the user explicitly requests optional tests.
+3a. **Optional standalone tests.** The default workflow does not generate or
+   run tests. When the user explicitly requests `$fd-test`, follow that Skill
+   in a separate test session. It produces factual test evidence only; it does
+   not claim or emit FD events, change status, or route a report to PM,
+   assessors, or Reviewer. Preserve existing `Pending Test` and
+   `Pending Test Acceptance` records as legacy CLI states; Auto does not
+   resume or evaluate them.
+4. **Independent review when Pending Verification.** Load `roles/reviewer.md`. Count Reviewer outcome events for this FD's active
    implementation cycle, including earlier auto invocations; the limit is
    three, not three new attempts on every resume. Spawn one separate Reviewer
    subagent through the host's subagent capability. Give it the FD ID, exact
@@ -283,12 +305,9 @@ in the user-facing Gate and final report.
    review report, and emit `verification-passed` or `changes-requested` with
    `--source-event` pointing to that claim. The host must not write the
    review report, emit a Reviewer event, or substitute a same-session review.
-   For an independent-policy FD, Reviewer inspects the Tester report, PM
-   decision, every cited risk assessment, and raw evidence. Its session must
-   differ from Worker, Tester, and the assessors. It respects PM's recorded
-   recorded risk acceptance while still reporting undisclosed implementation
-   or evidence defects. Do not reject solely for an explicitly accepted known
-   failing scenario or coverage gap.
+   Reviewer checks the FD acceptance against the actual diff, Worker report,
+   and relevant implementation evidence. Reviewer does not inspect or evaluate
+   optional `fd-test` reports. Its session must differ from Worker.
    If subagents are unavailable, stop and leave the handoff pending.
 5. **Repair, merge, and close.** Inspect the subagent's report and latest receipt;
    subagent prose alone is not a pass. On `changes-requested`, first count
@@ -301,21 +320,19 @@ in the user-facing Gate and final report.
    revision and content. Read `.ai/fd/<id>/workspace.json` and take its
    `parent_branch`, `branch`, and `worktree` as the merge coordinates. Confirm
    the parent branch is clean and still matches the recorded parent. Run
-   `aiw wt local-merge <id>` for one squash commit on the parent branch. On a
+   `aiw git wt local-merge <id>` for one squash commit on the parent branch. On a
    parent-side content conflict, the command resets the failed squash, verifies
    the parent is clean, and merges the parent into the FD worktree for resolution.
    Resolve and commit there, then rerun `local-merge` explicitly. If recovery
-   fails, leave the FD active and worktree intact. After successful delivery, close with
-   `aiw fd close <id> Complete` from the parent workspace and commit only the
-   archive/index changes. A close rejection is a Gate, never a reason to edit
-   a receipt or archive manually. After the archive commit, confirm the FD
-   worktree is clean, the resolved worktree path matches `.wt/<id>` inside this
-   repository, and parent history contains this FD's single-parent squash
-   commit with `FD-Source: <sha>` equal to the current FD HEAD. Then run
-   `git worktree remove -- .wt/<id>` and `git branch -D feature/<id>` from the
-   parent workspace. Squash does not make the FD branch an ancestor, so `-D`
-   is allowed only after that source check. If a check or command fails,
-   preserve the remaining worktree or branch and report the Gate.
+   fails, leave the FD active and preserve the worktree and branch. On success,
+   `local-merge` verifies the clean FD HEAD, exact recorded coordinates, the
+   single-parent squash, and its `FD-Source` before removing the worktree and
+   branch. It safely detaches only a verified `.ai` junction to the primary
+   workspace and preserves `.ai/fd/<id>` receipts. If cleanup partly fails,
+   report the delivered commit and remaining resources; do not roll back the
+   delivery. Then close with `aiw fd close <id> Complete` from the parent
+   workspace and commit only the archive/index changes. A close rejection is a
+   Gate, never a reason to edit a receipt or archive manually.
    Report the merge result, archive path, review count, commands actually run,
    unrun checks, and residual risks.
 

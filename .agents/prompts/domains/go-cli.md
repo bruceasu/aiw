@@ -1,7 +1,7 @@
 # Go CLI
 
 ## Inspect First
-- command tree under `cmd/`
+- command tree under `src/cmd/`
 - flag and subcommand wiring
 - business logic behind commands
 - command behavior and failure paths

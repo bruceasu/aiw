@@ -1,0 +1,21 @@
+{
+  "mode": "development",
+  "backend_mode": "openai_proxy",
+  "listen": "127.0.0.1:43127",
+  "timezone": "UTC",
+  "timeout_seconds": 600,
+  "global_concurrency": 4,
+  "proxy_base_url": "https://api.openai.com/v1",
+  "proxy_api_key_env": "AIW_OPENAI_UPSTREAM_KEY",
+  "principals": [
+    {
+      "id": "team-a",
+      "enabled": true,
+      "keys": [
+        "REPLACE_WITH_A_RANDOM_GATEWAY_KEY_AT_LEAST_43_CHARACTERS_LONG"
+      ],
+      "rpm": 10,
+      "concurrency": 2
+    }
+  ]
+}

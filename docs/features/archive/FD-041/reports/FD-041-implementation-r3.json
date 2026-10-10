@@ -1,0 +1,26 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-041",
+  "source_event": "FD-041-000013-changes-requested",
+  "human_report": "FD-041-implementation-r3.md",
+  "data": {
+    "summary": "Removed broad TERM suffix matching so unknown terminal names fail closed to plain text. ANSI is enabled only for recognized terminal families, recognized TERM_PROGRAM values, or explicit Windows ANSI capability signals.",
+    "changed_paths": [
+      "plugins/aiw-fd.py",
+      "docs/features/FD-041_COLORIZE_AIW_FD_LIST_TERMINAL_OUTPUT.md",
+      "docs/features/reports/FD-041-implementation-r3.md",
+      "docs/features/reports/FD-041-implementation-r3.json"
+    ],
+    "commands": [
+      "python -c \"from pathlib import Path; p=Path('plugins/aiw-fd.py'); compile(p.read_text(encoding='utf-8'), str(p), 'exec')\"",
+      "git diff --cached --check"
+    ],
+    "results": [
+      "Compile-only check passed after the fail-closed change.",
+      "Staged diff whitespace check passed before the fix commit.",
+      "Tests, smoke checks, lint, full build, and runtime terminal checks were not run under the repository validation budget."
+    ],
+    "residual_risk": "The allowlist and environment signals have not been exercised in actual supported and unsupported terminals; actual ANSI rendering remains unverified at runtime."
+  }
+}

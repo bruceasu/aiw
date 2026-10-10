@@ -33,12 +33,18 @@ revisions, digests, confirmed facts, Session evidence, and loaded methods.
 Read an existing Issue Plan and linked sources before editing it. A new request
 has no ID until the CLI creates one; never invent an ID. Use `aiw issue` as the
 supported command surface, checking its help before an unfamiliar or mutating
-operation. Current records may still use `REQ` IDs under
-`docs/requirements/<id>/`; preserve their paths and evidence.
+operation. New records use `ISSUE-001` IDs under `docs/issues/<id>/`.
+Existing `REQ` records remain under `docs/requirements/<id>/`; preserve their
+paths, evidence, and existing FD references. Migrate individual records only
+when needed in separately authorized work. IDs are case-insensitive; a REQ
+number abbreviation is accepted only when it matches one record.
 
-Write temporary Issue drafts under `.ai/requirements/drafts/`. Keep them
+Write temporary Issue drafts under `.ai/issues/drafts/`. Legacy drafts under
+`.ai/requirements/drafts/` remain supported. Keep drafts
 project-relative, UTF-8, and within 64 KiB. Capture copies a confirmed draft
-into `docs/requirements/<id>/`; a draft is not itself an approved record.
+into the target record directory; a draft is not itself an approved record.
+Capture `issue-plan` (or the existing `requirement-plan` alias); the Plan file
+is `issue-plan.md` for ISSUE records and `requirement-plan.md` for REQ records.
 
 The output is one source-backed Issue Plan or decision, with any split lineage,
 unresolved Gates, and a recommended next action. The Issue Plan records the
@@ -117,11 +123,12 @@ it prevents a valid decision, report `BLOCKED` or `INCOMPLETE` and the precise
 `%% NEEDS_INPUT` question. Approval and promotion are separate human decisions.
 
 After an Issue is approved, the new default handoff is a numbered FD. Use
-`aiw fd new "<title>" --issue <id>` to link the approved source, then use
-`fd-workflow` to write decisions and ordered Work Items. The existing
-`aiw issue promote --task` command remains a legacy Task handoff and must be
-chosen explicitly. Do not create an OpenSpec change unless the user explicitly
-asks for one; stable spec updates do not imply a change directory.
+`aiw issue promote <id>` to create it from the Issue title, or use
+`aiw fd new "<title>" --issue <id>` directly. Both link the approved source
+and request Planner through the FD workflow. Promotion does not create a Task
+or update the legacy `[promotion]` metadata. Do not create an OpenSpec change
+unless the user explicitly asks for one; stable spec updates do not imply a
+change directory.
 Discovery alone does not authorize implementation or establish Design
 Readiness.
 

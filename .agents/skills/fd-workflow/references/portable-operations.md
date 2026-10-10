@@ -1,6 +1,6 @@
 # Numbered FD operations
 
-The portable layout is `docs/features/TEMPLATE.md`,
+The portable layout is `docs/templates/TEMPLATE.md`,
 `docs/features/FEATURE_INDEX.md`, `docs/features/FD-XXX_SLUG.md`, and
 `docs/features/archive/<FD-ID>/<FD-ID>_SLUG.md`. The FD file owns status and
 numbered Work Items. Active reports and reviews live under
@@ -43,28 +43,34 @@ keeps parallel FD work from sharing writable files. An informational or
 design-only discussion does not create a worktree. Capture the current branch,
 commit the ready FD plan on the parent branch, and make sure the parent
 workspace is clean before creating the worktree with
-`aiw wt add FD-001`. Commit unrelated parent changes separately; do
+`aiw git wt add FD-001`. Commit unrelated parent changes separately; do
 not mix them into the FD plan commit. Keep the parent clean while the FD is in
 flight when possible, and wait to merge if it becomes dirty. The command records the FD ID,
 parent branch, feature branch, and worktree path in
 `.ai/fd/FD-001/workspace.json`. Read and verify that record immediately after
 creation; use its parent branch as the merge target. Stop if the record is
-missing or inconsistent. Use `aiw wt status FD-001` to inspect both worktrees.
+missing or inconsistent. Use `aiw git wt status FD-001` to inspect both worktrees.
 
-Use `aiw wt local-merge FD-001` for squash delivery after review. Content
+Use `aiw git wt local-merge FD-001` for squash delivery after review. Content
 conflicts are recovered in the FD worktree and require an explicit retry.
-Never create a Task to satisfy a Task-only command. Archive only after delivery
-succeeds. Commit each completed Work Item separately before the handoff for
-testing or review. Do not rebase either branch.
+Successful delivery validates the squash source and removes the FD worktree
+and branch while preserving `.ai/fd/` receipts. Never create a Task to satisfy
+a Task-only command. Archive only after delivery succeeds. Commit each completed
+Work Item separately before the Reviewer handoff. Do not rebase either branch.
 
 ## Auto
 
 `$fd-workflow auto` is a host Skill operation, not an `aiw fd auto` CLI
-command. Follow `../SKILL.md`: one numbered FD, exact handoff claims,
-independent Reviewer subagents, and at most three Reviewer outcomes across
-resumes of the same implementation cycle. With an isolation trigger,
-squash-deliver the reviewed FD result to its recorded parent before closing and archiving. Stop
-without merge or archive when a review, parent state, or merge gate fails.
+command. Follow `../SKILL.md`: one numbered FD, exact handoff claims, an
+independent Reviewer session, and at most three Reviewer outcomes across
+resumes of the same implementation cycle. New FDs go directly from Worker to
+Reviewer after compile-only and static checks. Optional tests use `$fd-test`
+only when requested and do not gate review. Existing Tester events remain a
+legacy CLI capability; Auto does not dispatch or evaluate them. The host may
+combine PM, Planner, and Worker, but it must not supply independent Reviewer
+evidence. With an isolation trigger, squash-deliver the reviewed FD result to
+its recorded parent before closing and archiving. Stop without merge or archive
+when a review, parent state, or merge gate fails.
 
 ## Close
 

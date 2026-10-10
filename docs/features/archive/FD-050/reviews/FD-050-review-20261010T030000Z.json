@@ -1,0 +1,52 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-050",
+  "source_event": "FD-050-000007-implementation-ready",
+  "human_report": "FD-050-review-20261010T030000Z.md",
+  "data": {
+    "reviewer_session": "fd050-reviewer-20261010-a61c92",
+    "reviewed_revision": "develop...e33d0fb",
+    "outcome": "changes-requested",
+    "findings": [
+      {
+        "severity": "high",
+        "path": "src/internal/plugin/discover.go",
+        "line": 128,
+        "summary": "Global extension scoring can select a source .py over an installed .exe, violating installed-plugin priority.",
+        "recommendation": "Resolve candidates directory by directory in declared precedence order, scoring extensions only within each directory."
+      },
+      {
+        "severity": "medium",
+        "path": ".github/copilot-instructions.md",
+        "line": 41,
+        "summary": "Go CLI routing still points to the removed root cmd/ directory.",
+        "recommendation": "Update the command-tree path to src/cmd/."
+      }
+    ],
+    "acceptance_results": {
+      "source_migration": "supported by the reviewed diff",
+      "python_build_entrypoint": "static review supports action mapping and install layout; runtime actions not run",
+      "plugin_priority": "not met; static logic allows source extension to beat installed plugin",
+      "active_path_updates": "partial; Copilot Go routing retains an obsolete path",
+      "compile_only": "worker report says passed; not rerun by Reviewer"
+    },
+    "commands": [
+      "aiw fd show FD-050",
+      "aiw fd claim FD-050 FD-050-000007-implementation-ready --session fd050-reviewer-20261010-a61c92",
+      "git status --porcelain=v1 --branch",
+      "git log --oneline --decorate -8",
+      "git diff --stat develop...HEAD",
+      "git diff --name-status develop...HEAD",
+      "targeted git diff, rg, and static file reads"
+    ],
+    "skipped_checks": [
+      "tests",
+      "build.py actions",
+      "full build",
+      "installation",
+      "compile-only check (worker report result was not repeated)"
+    ],
+    "residual_risk": "Windows cross-build and install copy behavior were statically reviewed only."
+  }
+}

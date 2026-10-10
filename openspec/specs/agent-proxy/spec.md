@@ -8,6 +8,43 @@
 
 ## Requirements
 
+### Requirement: Mutually exclusive Codex and OpenAI proxy backends
+
+The gateway MUST select one backend per process using `backend_mode`. An omitted field MUST select `codex` for existing configuration compatibility. `openai_proxy` MUST NOT require a Codex executable, model mapping, workspace directory, or durable usage store. Deployment `mode` MUST continue to control development/shared listening and peer policy independently.
+
+In `openai_proxy` mode, the gateway MUST authenticate the inbound gateway Bearer key and enforce the existing per-principal RPM and global/principal concurrency limits. It MUST route every `/v1` HTTP method and path, including `/v1/models` and `/v1/usage`, to one configured HTTP(S) `proxy_base_url`; `/internal/*` MUST remain local. It MUST NOT apply Codex model authorization, daily quotas, or usage parsing. It MUST NOT fall back to another backend after an error.
+
+The target URL MUST be fixed by server configuration and MUST reject userinfo, query, and fragment components. The local `/v1` prefix MUST be replaced with the configured base path while preserving the remaining path, query, method, headers not designated as credentials/identity, and streamed request/response bodies. The gateway MUST return upstream status and response body, including 3xx, without following redirects or retrying. SSE MUST be flushed as received; WebSocket upgrades MUST be proxied bidirectionally.
+
+The gateway MUST resolve the upstream credential from `proxy_api_key_env`, with an optional per-principal `upstream_api_key_env` override. Enabled principals MUST have a non-empty credential at startup. Outbound requests MUST replace `Authorization` with the resolved upstream Bearer credential and remove inbound `api-key`, `x-api-key`, caller organization/project identity, and forwarding headers. The inbound key and upstream credential MUST NOT be logged, persisted, or returned to the caller. A shared upstream credential MUST be documented as sharing that credential's upstream permissions among those principals.
+
+Proxy requests MUST retain gateway RPM and concurrency limits. Client disconnect and service shutdown MUST cancel HTTP/SSE requests, close upgraded WebSocket connections, and finish within the configured shutdown bound. Proxy mode MUST NOT require or write the Codex usage store; optional metadata audit failure MUST NOT block forwarding.
+
+#### Scenario: Keep old configuration on Codex
+
+- WHEN `backend_mode` is omitted from an existing valid Codex configuration
+- THEN the gateway MUST continue to select `codex` and preserve the existing deployment `mode` semantics
+
+#### Scenario: Forward an unknown API path to the fixed base URL
+
+- WHEN an authenticated principal sends an arbitrary `/v1/...` HTTP request with a query string
+- THEN the gateway MUST stream it to the configured upstream path under `proxy_base_url`, without applying Codex request decoding or changing the target host
+
+#### Scenario: Replace caller credentials and identity
+
+- WHEN an authenticated principal sends inbound gateway credentials and caller organization/project headers
+- THEN the upstream MUST receive the configured upstream Bearer credential and MUST NOT receive the inbound credential or those caller identity headers
+
+#### Scenario: Return an upstream redirect without following it
+
+- WHEN the configured upstream responds with a 3xx status
+- THEN the gateway MUST return that response to the caller without making a request to the redirect target
+
+#### Scenario: Stop proxy traffic without a Codex store
+
+- WHEN proxy-mode service shutdown begins with active HTTP, SSE, or WebSocket requests
+- THEN the gateway MUST cancel or close them and finish within its bounded shutdown interval without opening a Codex state store
+
 ### Requirement: Authenticated OpenAI text subset
 
 网关 MUST 对 Responses/Models/Usage 验证 Bearer 网关 Key，并关联稳定主体。运营者维护 principals[].keys 明文 Key 配置，请求通过常量时间直接比较认证；Key 为高熵值，至少 43、最多 1024 字节，不含空格、CR、LF、TAB。配置加载和请求认证 MUST 不计算 Key 摘要，MUST 不接受 key_hashes 字段；Key 是不透明字符串，原摘要值作为 keys 中的 Key 时按原字符串直接匹配。MUST 拒绝重复 Key，不披露凭据。配置重启生效；轮换不清历史额度。Models MUST 只返回当前主体允许的逻辑模型。
@@ -56,6 +93,51 @@ POST /v1/responses MUST 支持 model、文本 input（字符串/user/assistant �
 每请求 MUST 使用独立空临时工作区和固定服务端配置/环境白名单。Linux MUST 使用独立进程组终止树，Windows MUST 使用独立 Job Object 并在加入 Job 后恢复 suspended 子进程。取消、超时、正常根退出和服务关停 MUST 收敛树后清理目录；清理失败 MUST 可观测且不能返回成功。输出文本 256 KiB、原始 stdout/stderr 各 4 MiB，默认请求 600 秒，`timeout_seconds` 保持 1–3600 秒配置范围且重启生效，流写入 5 秒 deadline。客户端期限独立于服务端执行上限。
 
 development MUST 限 loopback 监听与 peer；shared MUST 显式配置认证/限额/监听。应用不操作 Docker、挂载或登录供给；Proxy/Codex 可共容器，部署/宿主隔离由用户负责。独立 cwd 不提供请求间访问隔离，Linux 恶意脱组及共容器跨读为残余风险。
+
+### Requirement: Codex Chat Completions text subset
+
+POST `/v1/chat/completions` MUST 复用 Responses 的 Gateway Key/主体认证、模型授权、RPM/并发/日额度、App Server 执行、超时/取消及清理逻辑；每个请求 MUST 仅执行和扣额一次。
+
+请求 MUST 只接受 `model`、`messages`、`stream`、`n`。`messages` MUST 为非空数组，消息仅包含 `role` 和非空白字符串 `content`；支持开头的 system/developer 指令以及有序 user/assistant 文本对话，MUST 至少包含一条 user 消息，MUST 拒绝对话开始后的 system/developer。`stream` 仅允许省略或 false，`n` 仅允许省略或 1。未知/重复字段、null、尾随 JSON、非法 UTF-8、超过 1 MiB 主体、映射后超过 64 KiB UTF-8 的指令/对话及其他角色/内容类型 MUST 在启动后端前拒绝。函数工具、流式、content 数组和生成参数控制不属于此子集。
+
+成功 MUST 返回 `object:chat.completion`、`chatcmpl_` ID、created、逻辑 model 和一个 index=0、assistant 字符串 content、finish_reason=stop 的 choice；文本来自成功执行结果。失败 MUST 返回现有脱敏错误 envelope/HTTP 状态，不伪称 stop。已知 usage MUST 映射为 prompt_tokens/completion_tokens/total_tokens，未知 usage MUST 保持 null。
+
+HTTP 请求观测 MUST 识别 `/v1/chat/completions`，沿用现有元数据结构。新版本 MUST 能加载旧记录；旧版本可能不识别新增 route 值，直接降级的限制 MUST 写入文档。本能力不要求新增代理统计/计费组件。
+
+Chat 请求的顶层和消息对象字段名 MUST 精确匹配上述白名单，包括大小写；MUST 拒绝 `MODEL`、`ROLE` 等别名以及别名与标准键同时出现的覆盖组合，不得仅依赖 Go struct 解码的大小写匹配。
+
+#### Scenario: Accept the existing Say client
+
+- WHEN Say 发送允许的 model、system/user 字符串消息和 stream:false
+- THEN Gateway 使用既有 Codex 执行链，并在成功时返回一个完整文本 choice 和 stop
+
+#### Scenario: Reject unsupported chat controls before execution
+
+- WHEN 请求包含 stream:true、n 大于 1、tools、图片/音频内容或其他不支持字段
+- THEN Gateway MUST 返回 400，且 MUST NOT 启动模型执行
+
+### Requirement: Bounded Codex App Server backend
+
+Codex execution MUST use the versioned App Server stdio JSON-RPC protocol and a process pool bounded by `global_concurrency`. A pool process MUST serve at most one HTTP request at a time; each request MUST start a new ephemeral thread with a separate temporary cwd and MUST NOT accept caller-supplied thread IDs. Healthy App Server processes MAY be reused after a terminal turn. A process with an unknown protocol or execution state MUST be discarded and MUST NOT be retried automatically.
+
+The gateway MUST bound JSONL line length, total stdout, stderr, and notification buffering. It MUST negotiate experimental API support during `initialize`, send `initialized`, and verify effective configuration and MCP server status before every turn. Any enabled or unknown MCP server state MUST reject the turn. The child MUST reuse the configured `CODEX_HOME` authentication and MUST NOT copy credentials or edit user configuration. Local shell, unified exec, image viewing, sleep, apps, plugins, hooks, web search, browser/computer use, image generation, and multi-agent features MUST be explicitly disabled through process configuration; an unexpected server request MUST receive an error and invalidate the process.
+
+Each turn MUST explicitly use the configured logical model, a request-specific cwd, `approvalPolicy=never`, and a read-only sandbox with network access disabled. The gateway MUST mark quota usage started only after a successful `turn/start` response; an ambiguous start MUST retain its conservative reservation and MUST NOT be retried. Usage MUST come from the current turn only and remain unknown when absent or invalid.
+
+#### Scenario: Refuse an enabled or unknown MCP configuration
+
+- WHEN effective configuration or `mcpServerStatus/list` reports an enabled MCP server, an unknown server state, or an unreadable safety configuration
+- THEN the gateway MUST refuse the turn, discard that process slot, and MUST NOT start a model turn
+
+#### Scenario: Discard a process after an ambiguous turn start
+
+- WHEN `turn/start` may have been submitted but its successful response cannot be confirmed
+- THEN the gateway MUST keep the reservation conservative, discard the process, return an error, and MUST NOT retry the request
+
+#### Scenario: Reuse a healthy process with a fresh thread
+
+- WHEN a turn reaches a known terminal state
+- THEN the pool MAY reuse the process for another request, but MUST start a fresh ephemeral thread and cwd
 
 ### Requirement: Local graceful shutdown control
 

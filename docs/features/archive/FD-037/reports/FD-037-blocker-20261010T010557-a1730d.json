@@ -1,0 +1,28 @@
+﻿{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-037",
+  "source_event": "FD-037-000003-design-ready",
+  "human_report": "FD-037-blocker-20261010T010557-a1730d.md",
+  "data": {
+    "stage": "Preflight",
+    "role": "PM",
+    "recorded_at": "2026-10-10T01:05:57+00:00",
+    "recorder_session": "fd037-pm-20261010-a1730d",
+    "observed_blocker": "原记录时父分支 develop 上的 docs/features/FD-048_AGENT_GATEWAY_OPENAI_API_CODEX.md 有未提交修改，导致父工作区不干净。",
+    "confirmed_cause": "父工作区当时存在一项与 FD-037 无关的 FD-048 文档修改。",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      "原记录只读检查确认父工作区有 FD-048 修改；未触碰该文件。",
+      "2026-10-10T01:16:04+00:00 用户表示工作区已干净；复查 git status --porcelain 返回 0 项。"
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "用户确认已清理工作区；本次只读状态检查证实工作区干净。",
+    "actual_resolution": "父工作区未提交修改已由用户处理；没有修改 FD-048 文件。",
+    "resolved_at": "2026-10-10T01:16:04+00:00",
+    "residual_risk_or_next_step": "无；继续当前 pending Worker handoff。",
+    "reusable_improvement": "none",
+    "improvement_status": "none"
+  }
+}

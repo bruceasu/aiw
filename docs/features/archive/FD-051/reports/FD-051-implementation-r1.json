@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-051",
+  "source_event": "FD-051-000002-decision-recorded",
+  "human_report": "FD-051-implementation-r1.md",
+  "data": {
+    "summary": "Confirmed that the requested delete, sync, and cherry-pick behavior already exists in the parent baseline. No implementation source was changed in this FD branch. Numbered the existing work and recorded current verification evidence.",
+    "changed_paths": [
+      "docs/features/FD-051_GIT_WT_SYNC_DELETE_CHERRY_PICK.md",
+      "docs/features/reports/FD-051-implementation-r1.md",
+      "docs/features/reports/FD-051-implementation-r1.json"
+    ],
+    "commands": [
+      "python -m py_compile src/plugins/aiw-git/git-wt.py"
+    ],
+    "results": [
+      "Compile-only check passed.",
+      "Static review found delete, sync, and cherry-pick implementations aligned with the FD acceptance and stable CLI specification.",
+      "Tests, final builds, formatters, and linters were not run."
+    ],
+    "residual_risk": "No source diff was produced in this FD branch because the implementation was already present in the parent baseline. The Reviewer must inspect the actual implementation. The force-emit audit's skipped checks remain historical facts and are not represented as passed."
+  }
+}

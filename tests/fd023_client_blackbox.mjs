@@ -6,7 +6,7 @@ import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
-const client = resolve(root, 'plugins/aiw-ai/aiw-ai.mjs');
+const client = resolve(root, 'src/plugins/aiw-ai/aiw-ai.mjs');
 const rawPath = resolve(root, 'docs/features/reports/FD-023-test-results-r1-retry.json');
 const key = 'a'.repeat(43);
 const requests = [];

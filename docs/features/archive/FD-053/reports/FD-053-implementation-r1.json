@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-053",
+  "source_event": "FD-053-000004-design-ready",
+  "human_report": "FD-053-implementation-r1.md",
+  "data": {
+    "summary": "Added a narrow Auto recovery path for active Open FDs with no event, using a factual blocker report and audited force-emit decision-recorded to create a Worker handoff. Documented boundaries for privileged FD state operations.",
+    "changed_paths": [
+      ".agents/skills/fd-workflow/SKILL.md",
+      "docs/features/FD-053_AUTOMATIC_RECOVERY_FOR_MISSING_FD_HANDOFFS_AND_P.md",
+      "docs/features/reports/FD-053-implementation-r1.md",
+      "docs/features/reports/FD-053-implementation-r1.json"
+    ],
+    "commands": [
+      "git diff --check develop...HEAD"
+    ],
+    "results": [
+      "Static diff check passed.",
+      "Static review confirmed the no-event recovery scope and the distinct effects and limits of privileged state operations.",
+      "Tests and skill validation scripts were not run."
+    ],
+    "residual_risk": "The workflow depends on the current CLI routing decision-recorded from Open to Worker. The force-emit audit retains skipped checks as unperformed; they are not evidence that those checks passed."
+  }
+}

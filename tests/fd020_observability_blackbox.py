@@ -35,7 +35,7 @@ with tempfile.TemporaryDirectory(prefix='aiw-fd020-') as task_dir:
            {'OPENAI_API_KEY', 'OPENAI_BASE_URL', 'CODEX_HOME', 'AIW_AI_API_KEY'}}
     env.update(GOPROXY='off', GOSUMDB='off', GOTOOLCHAIN='local', CGO_ENABLED='0')
     built = subprocess.run(['go', 'build', '-o', str(exe), '.'],
-                           cwd=ROOT / 'program/agent-gateway', env=env,
+                           cwd=ROOT / 'src/programs/agent-gateway', env=env,
                            capture_output=True, text=True, timeout=120)
     if built.returncode:
         EVIDENCE.write_text(json.dumps({'build_exit': built.returncode,
