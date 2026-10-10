@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-052",
+  "source_event": "FD-052-000004-design-ready",
+  "human_report": "FD-052-implementation-r1.md",
+  "data": {
+    "summary": "aib now includes bounded changed-file metadata and branch diff context; aic and air remain unchanged.",
+    "changed_paths": [
+      "src/plugins/aiw-git/git-aib.py",
+      "openspec/specs/cli-and-plugins/spec.md",
+      "docs/usage/aiw-git-ai.md",
+      "docs/features/FD-052_IMPROVE_AI_GIT_BRANCH_SUMMARIES_WITH_BOUNDED_DIF.md"
+    ],
+    "commands": [
+      "python -c \"from pathlib import Path; p=Path('src/plugins/aiw-git/git-aib.py'); compile(p.read_text(encoding='utf-8'), str(p), 'exec')\"",
+      "git diff 924dc1c..HEAD -- src/plugins/aiw-git/git-aib.py openspec/specs/cli-and-plugins/spec.md docs/usage/aiw-git-ai.md docs/features/FD-052_IMPROVE_AI_GIT_BRANCH_SUMMARIES_WITH_BOUNDED_DIF.md"
+    ],
+    "results": [
+      "Python source compiled in memory successfully.",
+      "Static diff review completed; changes are scoped to the FD implementation and docs."
+    ],
+    "residual_risk": "Commit history remains unbounded. Tests, provider calls, and runtime Git scenarios were not run."
+  }
+}

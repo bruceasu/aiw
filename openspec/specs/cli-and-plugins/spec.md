@@ -93,9 +93,14 @@ message using the configured CZ text provider, and pass that message to
 `git commit -F -` only after successful generation. Generation or Git failure
 MUST return a non-zero result; generation failure MUST NOT run `git commit`.
 `aiw git air` MUST review only the staged diff and MUST NOT modify repository
-state. `aiw git aib [--base REF]` MUST summarize only the commit history in
-`BASE..HEAD`, defaulting to `main`, and MUST NOT modify repository state. All
-three commands MUST use the CZ provider configuration and fallback behavior.
+state. `aiw git aib [--base REF]` MUST summarize the commit history in
+`BASE..HEAD`, defaulting to `main`, and include changed file statuses and a
+short change summary from `merge-base(BASE, HEAD)..HEAD`. It MUST include at
+most 8,000 characters of changed-file entries and
+at most 12,000 characters of diff content; omitted content MUST be marked, and
+the prompt MUST tell the model not to infer omitted details. `aib` MUST NOT
+modify repository state. All three commands MUST use the CZ provider
+configuration and fallback behavior.
 
 #### Scenario: Generate a commit message
 
@@ -112,8 +117,9 @@ three commands MUST use the CZ provider configuration and fallback behavior.
 #### Scenario: Summarize branch history
 
 - **WHEN** a user runs `aiw git aib` or supplies `--base REF`
-- **THEN** AIW summarizes one-line commits from `main..HEAD` or
-  `REF..HEAD`, without changing repository state
+- **THEN** AIW summarizes one-line commits from `main..HEAD` or `REF..HEAD`,
+  includes bounded changed-file and diff context, marks omitted content, and
+  does not change repository state
 
 ### Requirement: 鎻掍欢鍙戠幇涓庡瓙杩涚▼缁撴灉
 

@@ -1,0 +1,39 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-052",
+  "source_event": "FD-052-000006-implementation-ready",
+  "human_report": "FD-052-review-r1.md",
+  "data": {
+    "reviewer_session": "fd052-reviewer-20261010-9c81d7b6",
+    "source_revision": 6,
+    "source_fd_digest": "fc4a6fc4a4718861be6c2d3ce052c7f40fef275b84b854b9894a54e109dabe5c",
+    "reviewed_base": "924dc1c00eca0c33f7f25dc9a0b4c27339daac6a",
+    "reviewed_head": "72813e00843a910cdbd1f22e36742e27a88cc53",
+    "implementation_commits": ["e9ee804", "fdd995f", "72813e0"],
+    "conclusion": "verification-passed",
+    "findings": [],
+    "acceptance_results": [
+      "8,000-character file-status/path context limit and omission marker match the FD acceptance.",
+      "12,000-character diff limit includes the truncation marker; prompt prohibits inference about omitted details.",
+      "Git context is gathered before provider invocation; no-commit and Git-read failures use error paths; aib contains no Git write operation.",
+      "Stable specification and user documentation match implementation; aic and air source files are unchanged."
+    ],
+    "commands": [
+      "go run ./cmd/aiw/main.go fd --help",
+      "go run ./cmd/aiw/main.go fd show FD-052",
+      "go run ./cmd/aiw/main.go fd claim FD-052 FD-052-000006-implementation-ready --session fd052-reviewer-20261010-9c81d7b6",
+      "git diff --stat/name-status 924dc1c..HEAD",
+      "scoped git diff 924dc1c..HEAD",
+      "git show --stat e9ee804; git show --stat fdd995f; git show --stat 72813e0",
+      "git status --short; targeted Get-Content and rg"
+    ],
+    "skipped": [
+      "Tests",
+      "Final builds",
+      "CZ provider or AI calls",
+      "Runtime Git branch scenarios"
+    ],
+    "residual_risk": "Commit history remains unbounded, so total prompt size may grow with commit count. No runtime scenario was executed."
+  }
+}

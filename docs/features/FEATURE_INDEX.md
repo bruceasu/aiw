@@ -7,7 +7,6 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
 | [FD-051](FD-051_GIT_WT_SYNC_DELETE_CHERRY_PICK.md) | 扩展 `aiw git wt` 的分支操作 | Open | Medium |
-| [FD-052](FD-052_IMPROVE_AI_GIT_BRANCH_SUMMARIES_WITH_BOUNDED_DIF.md) | 为 AI 分支摘要增加有上限的 diff 上下文 | Open | Medium |
 
 ## Completed
 
@@ -63,6 +62,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-048](archive/FD-048/FD-048_AGENT_GATEWAY_OPENAI_API_CODEX.md) | Agent Gateway 统一 OpenAI API 出口与 Codex 兼容适配 | Complete | Medium |
 | [FD-049](archive/FD-049/FD-049_AGENT_GATEWAY_CHAT_COMPLETIONS.md) | Agent Gateway 优先支持 Chat Completions 文本接口 | Complete | Medium |
 | [FD-050](archive/FD-050/FD-050_SRC_PYTHON.md) | 将仓库源码统一迁入 `src/` 并用 Python 重写构建入口 | Complete | High |
+| [FD-052](archive/FD-052/FD-052_IMPROVE_AI_GIT_BRANCH_SUMMARIES_WITH_BOUNDED_DIF.md) | 为 AI 分支摘要增加有上限的 diff 上下文 | Complete | Medium |
 
 ## Deferred / Closed
 
