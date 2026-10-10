@@ -1,7 +1,7 @@
 # FD-048: Agent Gateway 统一 OpenAI API 出口与 Codex 兼容适配
 
 **Status:** Design
-**Revision:** 2
+**Revision:** 3
 **Priority:** Medium
 **Evidence policy:** Dual
 
