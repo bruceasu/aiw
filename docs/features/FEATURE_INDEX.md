@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-050](FD-050_SRC_PYTHON.md) | 将仓库源码统一迁入 `src/` 并用 Python 重写构建入口 | Open | High |
 
 ## Completed
 
