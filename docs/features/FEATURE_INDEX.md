@@ -6,7 +6,8 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-051](FD-051_GIT_WT_SYNC_DELETE_CHERRY_PICK.md) | 扩展 `aiw git wt` 的分支操作 | Open | Medium |
+| [FD-052](FD-052_IMPROVE_AI_GIT_BRANCH_SUMMARIES_WITH_BOUNDED_DIF.md) | 为 AI 分支摘要增加有上限的 diff 上下文 | Open | Medium |
 
 ## Completed
 
