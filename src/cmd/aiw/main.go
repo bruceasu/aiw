@@ -76,12 +76,12 @@ func main() {
 }
 
 func dispatchPlugin(pluginName string, args []string) (int, error) {
-	bin, err := plug.DiscoverPlugin(pluginName)
+	plugin, err := plug.DiscoverPluginInfo(pluginName)
 	if err != nil {
 		return 0, fmt.Errorf("plugin discovery error: %w", err)
 	}
-	env := plug.InvocationEnvironment(pluginName, bin, strings.Join(append([]string{pluginName}, args...), " "))
-	code, err := plug.ExecPlugin(bin, args, env)
+	env := plug.InvocationEnvironment(pluginName, plugin.Path, strings.Join(append([]string{pluginName}, args...), " "))
+	code, err := plug.ExecPluginWithStartup(plugin.Path, plugin.Startup, args, env)
 	if err != nil {
 		return 0, fmt.Errorf("plugin execution error: %w", err)
 	}

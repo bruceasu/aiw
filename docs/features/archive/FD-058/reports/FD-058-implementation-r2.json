@@ -1,0 +1,32 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-058",
+  "source_event": "FD-058-000007-design-ready",
+  "human_report": "FD-058-implementation-r2.md",
+  "data": {
+    "summary": "Added metadata manifests for seven plugin subdirectories only; removed the root manifest and reverted temporary search-root discovery changes so flat root plugins retain legacy discovery.",
+    "changed_paths": [
+      "src/plugins/plugin.toml",
+      "src/plugins/aiw-ai/plugin.toml",
+      "src/plugins/aiw-cz/plugin.toml",
+      "src/plugins/aiw-git/plugin.toml",
+      "src/plugins/aiw-github/plugin.toml",
+      "src/plugins/aiw-req/plugin.toml",
+      "src/plugins/aiw-say/plugin.toml",
+      "src/plugins/aiw-skills/plugin.toml",
+      "docs/features/FD-058_ADD_PLUGIN_TOML_METADATA_FOR_BUILT_IN_PLUGINS.md",
+      "docs/features/reports/FD-058-implementation-r2.md",
+      "docs/features/reports/FD-058-implementation-r2.json"
+    ],
+    "commands": [
+      "$env:GOPROXY='off'; $env:GOTOOLCHAIN='local'; python scripts/compile.py"
+    ],
+    "results": [
+      "The compile-only command was run before the scope clarification and exited 1 because Go compiler child processes could not allocate system memory/page file; no changed-source diagnostic was observed. It was not rerun.",
+      "Static review inspected the seven directory manifests and confirmed the root manifest is absent and temporary discovery/spec changes were reverted.",
+      "Tests, runtime TOML parsing, final builds, formatting, lint, and verification scripts were not run."
+    ],
+    "residual_risk": "Manifest parsing and plugin invocation were not runtime-validated; compilation remains unconfirmed due to system memory/page-file exhaustion."
+  }
+}

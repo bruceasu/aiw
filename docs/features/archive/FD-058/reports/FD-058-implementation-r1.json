@@ -1,0 +1,35 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-058",
+  "source_event": "FD-058-000004-design-ready",
+  "human_report": "FD-058-implementation-r1.md",
+  "data": {
+    "summary": "Added plugin.toml metadata for 14 root-level and 7 directory-based built-in plugins; added search-root manifest discovery and listing support.",
+    "changed_paths": [
+      "src/plugins/plugin.toml",
+      "src/plugins/aiw-ai/plugin.toml",
+      "src/plugins/aiw-cz/plugin.toml",
+      "src/plugins/aiw-git/plugin.toml",
+      "src/plugins/aiw-github/plugin.toml",
+      "src/plugins/aiw-req/plugin.toml",
+      "src/plugins/aiw-say/plugin.toml",
+      "src/plugins/aiw-skills/plugin.toml",
+      "src/internal/plugin/discover.go",
+      "src/internal/plugin/manifest.go",
+      "openspec/specs/cli-and-plugins/spec.md",
+      "docs/features/FD-058_ADD_PLUGIN_TOML_METADATA_FOR_BUILT_IN_PLUGINS.md",
+      "docs/features/reports/FD-058-implementation-r1.md",
+      "docs/features/reports/FD-058-implementation-r1.json"
+    ],
+    "commands": [
+      "$env:GOPROXY='off'; $env:GOTOOLCHAIN='local'; python scripts/compile.py"
+    ],
+    "results": [
+      "Compile-only command exited 1 because Go compiler child processes could not allocate system memory/page file; no source diagnostic from the changed code was observed.",
+      "Static review covered plugin entry names, directory layout, and root/subdirectory manifest discovery and listing paths.",
+      "Tests, runtime TOML parsing, final builds, formatting, and lint were not run."
+    ],
+    "residual_risk": "Compilation remains unconfirmed due to system memory/page-file exhaustion; manifest runtime parsing and plugin invocation were not executed."
+  }
+}

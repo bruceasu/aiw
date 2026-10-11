@@ -228,3 +228,26 @@ Sources MUST be validated before mutation; the command MUST NOT fetch or push.
 - [cz](../../../src/plugins/aiw-cz/aiw-cz.py)；[Git export](../../../src/plugins/aiw-git/git-export.py)。
 
 %% ReadOnly 鏄紶缁?provider 鐨勬墽琛岄厤缃紱澶栭儴 CLI 鐨勫疄闄呮枃浠惰闂殧绂讳粛鍙栧喅浜庡叾瀹炵幇锛宎llow-path 涓嶈兘琚硾鍖栦负鎵€鏈夊悗绔殑涓ユ牸璇诲彇鐧藉悕鍗曘€?
+
+### Requirement: Manifest-based plugin discovery
+
+A plugin package directory MAY contain `plugin.toml` with `schema = 1` and one or more `[[plugins]]` entries. Each entry MUST define a unique lowercase command `name` and a non-empty `description`. It MAY define multiline `help`, a package-relative `entrypoint`, and a `startup` mode from `auto`, `exec`, `python`, `node`, `typescript`, `bash`, or `powershell`.
+
+When a package directory has no manifest, discovery MUST preserve the existing filename and extension behavior. When a manifest exists, its entries define the commands for that package. An omitted entrypoint MUST use the existing `aiw-<name>` lookup within that package; an omitted startup mode MUST preserve extension and shebang inference. Explicit entrypoints MUST resolve to files inside the package directory. Invalid manifests and unsupported startup modes MUST produce an actionable error that identifies the manifest.
+
+Plugin help listings MUST use manifest names and descriptions. `aiw help <name>` MUST display non-empty manifest help; otherwise it MUST retain the existing plugin `-h` behavior. PATH plugin lookup, directory search order, argument forwarding, environment, standard streams, and exit status MUST remain compatible.
+
+#### Scenario: Discover multiple commands from one package
+
+- **WHEN** one package manifest declares multiple plugin entries
+- **THEN** AIW discovers each command by its declared name and uses its description and help in help output
+
+#### Scenario: Preserve legacy packages
+
+- **WHEN** a package directory has no `plugin.toml`, or a matching manifest entry omits its entrypoint or startup mode
+- **THEN** AIW uses the existing filename lookup and/or extension and shebang startup inference
+
+#### Scenario: Reject invalid manifest configuration
+
+- **WHEN** a manifest is malformed, contains duplicate names or an unsupported startup mode, or resolves an entrypoint outside its package
+- **THEN** AIW reports the manifest path and configuration error instead of silently applying legacy scanning

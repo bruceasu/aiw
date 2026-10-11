@@ -1,0 +1,28 @@
+schema = 1
+
+[[plugins]]
+name = "report"
+description = "Generate project reports."
+help = """
+Usage:
+  aiw report [format] [options]
+
+Generate a report from the current project.
+Supported formats:
+  markdown
+  json
+"""
+entrypoint = "bin/report.py"
+startup = "python"
+
+[[plugins]]
+name = "metrics"
+description = "Show project metrics."
+help = """
+Usage:
+  aiw metrics
+
+Print a summary of project metrics.
+"""
+# 未填写 entrypoint 时，按旧规则在本目录寻找 aiw-metrics.<扩展名>。
+# 未填写 startup 时，按入口扩展名推断启动方式。

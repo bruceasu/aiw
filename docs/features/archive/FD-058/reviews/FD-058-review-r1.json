@@ -1,0 +1,49 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-058",
+  "source_event": "FD-058-000008-implementation-ready",
+  "human_report": "FD-058-review-r1.md",
+  "data": {
+    "reviewer_session": "reviewer-fd058-r2-20261011",
+    "reviewed_head": "a8c1200",
+    "reviewed_changes": ["756cc24", "71514a9", "a8c1200"],
+    "result": "changes-requested",
+    "findings": [
+      {
+        "severity": "high",
+        "summary": "Search-root plugin.toml support remains in discovery, listing, and stable spec despite the narrowed FD scope and Worker report claiming it was reverted.",
+        "paths": [
+          "src/internal/plugin/discover.go",
+          "src/internal/plugin/manifest.go",
+          "openspec/specs/cli-and-plugins/spec.md"
+        ],
+        "required_action": "Remove the search-root manifest support and its spec changes introduced by this FD; retain the seven child-directory manifests and legacy flat-root discovery. Update the Worker report and resubmit for review."
+      }
+    ],
+    "acceptance_checks": {
+      "seven_child_manifests_present_and_metadata_fields_populated": "pass-static",
+      "root_manifest_absent_and_flat_files_remain": "pass-static",
+      "no_search_root_manifest_support_added_by_this_fd": "fail-static"
+    },
+    "commands_run": [
+      "aiw fd claim FD-058 FD-058-000008-implementation-ready --session reviewer-fd058-r2-20261011",
+      "aiw fd --help",
+      "aiw fd show FD-058",
+      "git show/diff/log inspection",
+      "rg search of discovery and spec sources",
+      "static reads of the seven manifests and Worker report"
+    ],
+    "checks_skipped": [
+      "tests",
+      "compile",
+      "runtime validation",
+      "TOML parser invocation",
+      "builds",
+      "formatters",
+      "linters",
+      "verification scripts"
+    ],
+    "residual_risk": "Manifest parsing and plugin invocation remain unverified at runtime; compile-only result was already reported as blocked by system memory/page-file exhaustion and was not repeated."
+  }
+}

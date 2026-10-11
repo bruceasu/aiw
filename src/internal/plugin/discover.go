@@ -2,12 +2,15 @@ package plugin
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 )
+
+var ErrPluginNotFound = errors.New("plugin not found")
 
 var extPriority = map[string]int{
 	".bat": 0,
@@ -28,6 +31,16 @@ var extPriority = map[string]int{
 // DiscoverPlugin searches standard locations for a plugin named `name` and
 // returns the absolute path to the executable/script to run, or an error if not found.
 func DiscoverPlugin(name string) (string, error) {
+	plugin, err := DiscoverPluginInfo(name)
+	if err != nil {
+		return "", err
+	}
+	return plugin.Path, nil
+}
+
+// DiscoverPluginInfo searches the standard locations and returns the complete
+// launch descriptor for a plugin.
+func DiscoverPluginInfo(name string) (PluginInfo, error) {
 	var paths []string
 	if exePath, err := os.Executable(); err == nil {
 		// println("exePath:",exePath)
@@ -45,7 +58,7 @@ func DiscoverPlugin(name string) (string, error) {
 	}
 	// println("searching plugins in paths:", paths[0])
 	// Pass plugin directories; PATH entries are handled inside DiscoverPluginIn
-	return DiscoverPluginIn(paths, name)
+	return DiscoverPluginInfoIn(paths, name)
 }
 
 func checkoutRoot() string {
@@ -59,6 +72,16 @@ func checkoutRoot() string {
 // DiscoverPluginIn searches the provided paths (in order) for a plugin named `name`.
 // Each entry in paths may be a directory; `plugins` directories may be recursive by one level.
 func DiscoverPluginIn(paths []string, name string) (string, error) {
+	plugin, err := DiscoverPluginInfoIn(paths, name)
+	if err != nil {
+		return "", err
+	}
+	return plugin.Path, nil
+}
+
+// DiscoverPluginInfoIn searches plugin directories in order, then PATH, for a
+// plugin named `name`. A directory manifest is authoritative for that package.
+func DiscoverPluginInfoIn(paths []string, name string) (PluginInfo, error) {
 	wantBase := "aiw-" + name
 
 	for _, base := range paths {
@@ -79,13 +102,30 @@ func DiscoverPluginIn(paths []string, name string) (string, error) {
 		}
 		var candidates []string
 		for _, e := range entries {
-			// check file match
 			if e.IsDir() {
-				// search one level down
 				sub := filepath.Join(base, e.Name())
-				subEntries, _ := os.ReadDir(sub)
+				manifestPath := filepath.Join(sub, manifestFileName)
+				if _, err := os.Stat(manifestPath); err == nil {
+					manifest, err := readPluginManifest(sub)
+					if err != nil {
+						return PluginInfo{}, err
+					}
+					for _, definition := range manifest {
+						if definition.Name != name {
+							continue
+						}
+						return resolveManifestPlugin(sub, definition)
+					}
+					continue
+				} else if !errors.Is(err, os.ErrNotExist) {
+					return PluginInfo{}, fmt.Errorf("inspect plugin manifest %s: %w", manifestPath, err)
+				}
+				subEntries, err := os.ReadDir(sub)
+				if err != nil {
+					continue
+				}
 				for _, se := range subEntries {
-					if matchPluginName(se.Name(), wantBase) {
+					if !se.IsDir() && matchPluginName(se.Name(), wantBase) {
 						candidates = append(candidates, filepath.Join(sub, se.Name()))
 					}
 				}
@@ -96,7 +136,7 @@ func DiscoverPluginIn(paths []string, name string) (string, error) {
 			}
 		}
 		if len(candidates) > 0 {
-			return bestCandidate(candidates), nil
+			return PluginInfo{Name: name, Path: bestCandidate(candidates), Startup: StartupAuto}, nil
 		}
 	}
 
@@ -123,10 +163,44 @@ func DiscoverPluginIn(paths []string, name string) (string, error) {
 	}
 
 	if len(candidates) == 0 {
-		return "", errors.New("plugin not found")
+		return PluginInfo{}, ErrPluginNotFound
 	}
 
-	return bestCandidate(candidates), nil
+	return PluginInfo{Name: name, Path: bestCandidate(candidates), Startup: StartupAuto}, nil
+}
+
+func resolveManifestPlugin(directory string, definition pluginManifestEntry) (PluginInfo, error) {
+	entrypoint := definition.Entrypoint
+	if entrypoint == "" {
+		wantBase := "aiw-" + definition.Name
+		entries, err := os.ReadDir(directory)
+		if err != nil {
+			return PluginInfo{}, fmt.Errorf("read plugin directory %s: %w", directory, err)
+		}
+		var candidates []string
+		for _, entry := range entries {
+			if !entry.IsDir() && matchPluginName(entry.Name(), wantBase) {
+				candidates = append(candidates, filepath.Join(directory, entry.Name()))
+			}
+		}
+		if len(candidates) == 0 {
+			return PluginInfo{}, fmt.Errorf("plugin %q in %s has no entrypoint and no legacy aiw-%s file", definition.Name, filepath.Join(directory, manifestFileName), definition.Name)
+		}
+		entrypoint = bestCandidate(candidates)
+	} else {
+		resolved, err := resolveManifestEntrypoint(directory, entrypoint)
+		if err != nil {
+			return PluginInfo{}, fmt.Errorf("plugin %q in %s: %w", definition.Name, filepath.Join(directory, manifestFileName), err)
+		}
+		entrypoint = resolved
+	}
+	return PluginInfo{
+		Name:        definition.Name,
+		Description: definition.Description,
+		Help:        definition.Help,
+		Path:        entrypoint,
+		Startup:     definition.Startup,
+	}, nil
 }
 
 func bestCandidate(candidates []string) string {

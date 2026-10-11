@@ -1,0 +1,11 @@
+schema = 1
+
+[[plugins]]
+name = "req"
+description = "运行 AIW Requirement/Issue 管理命令行工具。"
+help = """
+用法：`aiw req <子命令> [参数...]`
+
+用途：管理需求记录及其后续工作流程。
+详情：运行 `aiw req --help` 查看可用命令。
+"""

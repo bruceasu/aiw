@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-057",
+  "source_event": "FD-057-000004-design-ready",
+  "human_report": "FD-057-implementation-r1.md",
+  "data": {
+    "summary": "在现有 AIW Say SystemPrompt 上增量增加完整翻译语义和 document 专用 Markdown/技术内容规则，保留动态配置与源文安全边界。",
+    "changed_paths": [
+      "src/internal/say/prompt.go",
+      "src/programs/aiw-say/README.md",
+      "docs/features/FD-057_AIW_SAY.md"
+    ],
+    "commands": [
+      "$env:GOPROXY='off'; $env:GOSUMDB='off'; go build -o NUL ./cmd/aiw-say"
+    ],
+    "results": [
+      "compile-only passed with exit code 0; no output or executable artifact",
+      "final static review confirmed the document branch is conditional and existing request configuration and source-text safety rules remain"
+    ],
+    "residual_risk": "No tests or model/API requests were run; actual model compliance, translation quality, and byte-for-byte structure preservation remain unverified."
+  }
+}

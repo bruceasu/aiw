@@ -1,0 +1,31 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-056",
+  "source_event": "FD-056-000004-design-ready",
+  "human_report": "FD-056-implementation-r1.md",
+  "data": {
+    "summary": "Added manifest-based plugin discovery, explicit launch modes, metadata-driven help, and documentation while preserving legacy discovery fallbacks.",
+    "changed_paths": [
+      "src/internal/plugin/manifest.go",
+      "src/internal/plugin/discover.go",
+      "src/internal/plugin/exec.go",
+      "src/cmd/aiw/main.go",
+      "src/internal/commands/help/super-help.go",
+      "README.md",
+      "openspec/specs/cli-and-plugins/spec.md",
+      "docs/features/FD-056_FEATURE.md"
+    ],
+    "commands": [
+      "aiw fd claim FD-056 FD-056-000004-design-ready --session fd056-worker-20261011-0d31",
+      "aiw git wt add FD-056",
+      "python scripts/compile.py (GOPROXY=off, GOTOOLCHAIN=local)"
+    ],
+    "results": [
+      "Worktree record matched FD-056, parent develop, branch feature/FD-056, and the created worktree path.",
+      "Compile script produced no output and the process session ended, but the wrapper did not preserve the final exit code; compile success is not claimed.",
+      "No tests, final builds, formatters, linters, or runtime checks were run."
+    ],
+    "residual_risk": "Runtime behavior and platform-specific launch modes remain unverified; the compile-only script exit status was not captured."
+  }
+}

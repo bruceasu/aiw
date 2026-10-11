@@ -73,10 +73,16 @@ aiw say [options] [text]
 - `--mode`: `realtime` or `written`
 - `--style`: `spoken`, `teams`, `letter`, `document`, or `article`
 - `-p, --polite`: `casual`, `polite`, or `formal`
-- `--simple`: simplify the translation
+- `--simple`: use simpler wording while preserving the source meaning
 - `--profanity`: `mask`, `soften`, or `preserve`
 - `--profile`, `--provider`, `--model`, `--timeout`, `--config`
 - `--help`, `--version`
+
+Use `--style document` for Markdown and technical documentation. The
+translation prompt asks the model to translate explanatory text while
+preserving Markdown structure and technical syntax. As with other prompt
+instructions, this does not guarantee byte-for-byte preservation or
+translation quality.
 
 Choose exactly one input source: one positional text value, stdin, `--clipboard`, or `--dialog zenity`. Empty input, source conflicts, malformed TOML, missing profiles, missing API credentials, invalid CLI options, and failed or incomplete API responses return a non-zero exit status and write diagnostics to stderr. Invalid values for recognized configuration settings fall back to the lower-precedence value, then to the built-in default; unknown keys are ignored. The CLI buffers the complete response before writing it.
 

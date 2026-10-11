@@ -67,6 +67,9 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-053](archive/FD-053/FD-053_AUTOMATIC_RECOVERY_FOR_MISSING_FD_HANDOFFS_AND_P.md) | Automatic recovery for missing FD handoffs and privileged state operations | Complete | Medium |
 | [FD-054](archive/FD-054/FD-054_HTTP_OPENAI_PROXY.md) | 重定位 HTTP OpenAI Proxy | Complete | Medium |
 | [FD-055](archive/FD-055/FD-055_AI_CODE_TOOLS_DEPLOYMENT.md) | 将 AI Code Tools 集成为 AIW 插件 | Complete | Medium |
+| [FD-056](archive/FD-056/FD-056_FEATURE.md) | 声明式插件清单与启动方式 | Complete | Medium |
+| [FD-057](archive/FD-057/FD-057_AIW_SAY.md) | 增量优化 AIW Say 翻译提示词 | Complete | Medium |
+| [FD-058](archive/FD-058/FD-058_ADD_PLUGIN_TOML_METADATA_FOR_BUILT_IN_PLUGINS.md) | 为内置插件补充 `plugin.toml` 元数据 | Complete | Medium |
 
 ## Deferred / Closed
 

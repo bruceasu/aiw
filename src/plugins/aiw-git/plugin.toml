@@ -1,0 +1,11 @@
+schema = 1
+
+[[plugins]]
+name = "git"
+description = "提供一组可发现的 Git 仓库、分支、提交与补丁子命令。"
+help = """
+用法：`aiw git <子命令> [参数...]`
+
+用途：调用 AIW Git 命令集合。每个子命令提供自己的详细帮助。
+详情：运行 `aiw git --help` 查看子命令列表，例如 `aiw git st`。
+"""

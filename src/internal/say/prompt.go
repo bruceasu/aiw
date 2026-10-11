@@ -25,6 +25,9 @@ func SystemPrompt(request Request) string {
 	} else {
 		prompt.WriteString("no")
 	}
-	prompt.WriteString(".\nPreserve numbers, identifiers, URLs, commands, proper nouns, line breaks, and paragraph structure. Do not alter technical terms unnecessarily.")
+	prompt.WriteString(".\nTranslate the complete source text. Do not omit or summarize content. When Simplify is yes, use simpler wording while preserving all meaning. Preserve numbers, identifiers, URLs, commands, proper nouns, line breaks, and paragraph structure. Do not alter technical terms unnecessarily.")
+	if request.Style == "document" {
+		prompt.WriteString(" For document translation, translate all explanatory text, including headings, table cells, descriptions, quotations, and lists. Preserve the existing Markdown structure, list nesting, table and quotation structure, code fences, and language tags; preserve line breaks where practical. Keep code blocks, inline code, file names, paths, URLs, link destinations, reference identifiers, commands, schema field names, configuration keys, and technical syntax unchanged. Translate link display text and explanatory natural language, including normative rules; preserve normative keywords such as MUST, SHOULD, and MAY. Preserve HTML tag syntax and front matter metadata while translating explanatory text around them. Keep existing markers shaped like XPROTECT followed by six digits and X unchanged. Do not wrap the translation in new code fences.")
+	}
 	return prompt.String()
 }

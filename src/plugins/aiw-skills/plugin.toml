@@ -1,0 +1,11 @@
+schema = 1
+
+[[plugins]]
+name = "skills"
+description = "列出、发现、接管、同步并安全安装 AIW Skills。"
+help = """
+用法：`aiw skills <子命令> [参数...]`
+
+用途：管理 canonical Skills，并将其安装到项目级或用户级目录。
+详情：运行 `aiw skills --help` 查看 list、discover、install 等命令。
+"""

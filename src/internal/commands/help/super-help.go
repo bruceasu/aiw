@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"aiw/internal/util"
 	plug "aiw/internal/plugin"
 	"aiw/internal/version"
 )
@@ -49,8 +48,12 @@ func Dispatch(args []string) error {
 	if len(args) == 1 {
 		name := args[0]
 		// check plugin first
-		if ok, _ := pluginExists(name); ok {
-			return showPluginHelp(name)
+		plugin, err := plug.DiscoverPluginInfo(name)
+		if err == nil {
+			return showPluginHelp(plugin)
+		}
+		if !errors.Is(err, plug.ErrPluginNotFound) {
+			return err
 		}
 		// check builtin
 		if ok := builtinExists(name); ok {
@@ -77,8 +80,12 @@ func listAllJSON() error {
 	for _, name := range builtins {
 		doc.Builtins = append(doc.Builtins, helpEntry{Name: name, Short: builtinHelpShort(name), Description: builtinHelpShort(name), Source: "builtin"})
 	}
-	for _, name := range plugins {
-		doc.Plugins = append(doc.Plugins, helpEntry{Name: name, Short: getPluginShort(name), Description: getPluginShort(name), Source: "plugin"})
+	for _, plugin := range plugins {
+		description := plugin.Description
+		if description == "" {
+			description = getPluginShort(plugin.Path)
+		}
+		doc.Plugins = append(doc.Plugins, helpEntry{Name: plugin.Name, Short: description, Description: description, Source: "plugin"})
 	}
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
@@ -131,130 +138,87 @@ func listAll() error {
 		"  aiw help fd\n\n")
 
 	pls, err := listPlugins()
-	if err != nil || len(pls) == 0 {
+	if err != nil {
+		return fmt.Errorf("list plugins: %w", err)
+	}
+	if len(pls) == 0 {
 		fmt.Println("Plugins: none discovered beside this aiw binary.")
 		fmt.Println("Place executable plugins next to aiw, then run: aiw <plugin> --help")
 		return nil
 	}
 
 	fmt.Println("Plugins:")
-	for _, p := range pls {
-		desc := getPluginShort(p)
+	for _, plugin := range pls {
+		desc := plugin.Description
 		if desc == "" {
-			fmt.Printf("  %s\n", p)
+			desc = getPluginShort(plugin.Path)
+		}
+		if desc == "" {
+			fmt.Printf("  %s\n", plugin.Name)
 			continue
 		}
-		fmt.Printf("  %s - %s\n", p, desc)
+		fmt.Printf("  %s - %s\n", plugin.Name, desc)
 	}
 
 	return nil
-}
-
-// getPluginShort attempts to read the plugin source and extract META['short'].
-// If not found, returns empty string.
-func getPluginShort(name string) string {
-	path := pluginScriptPath(name)
-	if path == "" {
-		return ""
-	}
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return ""
-	}
-	return extractShortFromSource(string(b))
-}
-
-// extractShortFromSource looks for patterns like 'short': '...' or "short": "...".
-func extractShortFromSource(src string) string {
-	// look for "short"
-	idx := strings.Index(src, "short")
-	if idx == -1 {
-		return ""
-	}
-	// search from idx to next newline for colon
-	tail := src[idx:]
-	// find first colon
-	cidx := strings.Index(tail, ":")
-	if cidx == -1 {
-		return ""
-	}
-	// rest after colon
-	rest := tail[cidx+1:]
-	// find first quote (single or double)
-	rest = strings.TrimSpace(rest)
-	if len(rest) == 0 {
-		return ""
-	}
-	var quote byte
-	if rest[0] == '\'' || rest[0] == '"' {
-		quote = rest[0]
-	} else {
-		// not quoted; return until comma or newline
-		end := strings.IndexAny(rest, ",\n")
-		if end == -1 {
-			return strings.TrimSpace(rest)
-		}
-		return strings.TrimSpace(rest[:end])
-	}
-	// find closing quote
-	rest = rest[1:]
-	end := strings.IndexByte(rest, quote)
-	if end == -1 {
-		return strings.TrimSpace(rest)
-	}
-	return strings.TrimSpace(rest[:end])
 }
 
 func listBuiltins() ([]string, error) {
 	return staticBuiltinCommands(), nil
 }
 
+func getPluginShort(path string) string {
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	source := string(contents)
+	idx := strings.Index(source, "short")
+	if idx < 0 {
+		return ""
+	}
+	tail := source[idx:]
+	colon := strings.Index(tail, ":")
+	if colon < 0 {
+		return ""
+	}
+	value := strings.TrimSpace(tail[colon+1:])
+	if value == "" {
+		return ""
+	}
+	if value[0] != '\'' && value[0] != '"' {
+		if end := strings.IndexAny(value, ",\n"); end >= 0 {
+			return strings.TrimSpace(value[:end])
+		}
+		return value
+	}
+	end := strings.IndexByte(value[1:], value[0])
+	if end < 0 {
+		return strings.TrimSpace(value[1:])
+	}
+	return strings.TrimSpace(value[1 : end+1])
+}
+
 func staticBuiltinCommands() []string {
 	return []string{"init", "ask", "completion", "help", "version", "issue"}
 }
 
-func listPlugins() ([]string, error) {
+func listPlugins() ([]plug.PluginInfo, error) {
 	pluginsDir, err := resolvePluginsDir()
 	if err != nil {
 		return nil, err
 	}
-	files, err := os.ReadDir(pluginsDir)
+	plugins, err := plug.ListPluginsIn([]string{pluginsDir})
 	if err != nil {
 		return nil, err
 	}
-	out := []string{}
-	seen := map[string]bool{}
-	for _, f := range files {
-		if f.IsDir() {
-			subEntries, err := os.ReadDir(filepath.Join(pluginsDir, f.Name()))
-			if err != nil {
-				continue
-			}
-			for _, sub := range subEntries {
-				if sub.IsDir() {
-					continue
-				}
-				name, ok := pluginNameFromFile(sub.Name())
-				if ok && name != "wf" && !seen[name] {
-					out = append(out, name)
-					seen[name] = true
-				}
-			}
-			continue
-		}
-		if name, ok := pluginNameFromFile(f.Name()); ok && name != "wf" && !seen[name] {
-			out = append(out, name)
-			seen[name] = true
+	out := make([]plug.PluginInfo, 0, len(plugins))
+	for _, plugin := range plugins {
+		if plugin.Name != "wf" {
+			out = append(out, plugin)
 		}
 	}
 	return out, nil
-}
-
-func pluginExists(name string) (bool, string) {
-	if p, err := plug.DiscoverPlugin(name); err == nil {
-		return true, p
-	}
-	return false, ""
 }
 
 func builtinExists(name string) bool {
@@ -266,12 +230,12 @@ func builtinExists(name string) bool {
 	return false
 }
 
-func showPluginHelp(name string) error {
-	path, err := plug.DiscoverPlugin(name)
-	if err != nil {
-		return errors.New("plugin not found")
+func showPluginHelp(plugin plug.PluginInfo) error {
+	if strings.TrimSpace(plugin.Help) != "" {
+		fmt.Println(strings.TrimRight(plugin.Help, "\n"))
+		return nil
 	}
-	code, err := plug.ExecPlugin(path, []string{"-h"}, plug.InvocationEnvironment(name, path, "help "+name))
+	code, err := plug.ExecPluginWithStartup(plugin.Path, plugin.Startup, []string{"-h"}, plug.InvocationEnvironment(plugin.Name, plugin.Path, "help "+plugin.Name))
 	if err != nil {
 		return fmt.Errorf("running plugin help: %w", err)
 	}
@@ -348,7 +312,10 @@ func builtinUsageText(name string) (string, bool) {
 
 func searchAndAnswer(query string) error {
 	fmt.Fprintf(os.Stderr, "Searching docs for: %s\n", query)
-	matches := searchDocs(query)
+	matches, err := searchDocs(query)
+	if err != nil {
+		return fmt.Errorf("search docs: %w", err)
+	}
 	if len(matches) == 0 {
 		fmt.Println("no matching docs found")
 		return nil
@@ -373,8 +340,14 @@ func searchAndAnswer(query string) error {
 	return nil
 }
 
-func searchDocs(query string) []string {
+func searchDocs(query string) ([]string, error) {
 	out := []string{}
+	// A manifest error must remain visible to free-text help searches too.
+	pls, err := listPlugins()
+	if err != nil {
+		return nil, fmt.Errorf("list plugins: %w", err)
+	}
+
 	// search docs/usage
 	docsGlob := filepath.Join("docs", "usage", "*.md")
 	files, _ := filepath.Glob(docsGlob)
@@ -391,24 +364,19 @@ func searchDocs(query string) []string {
 		}
 	}
 
-	// search plugin META (quick scan)
-	pls, _ := listPlugins()
-	for _, p := range pls {
-		path := pluginScriptPath(p)
-		if path == "" {
+	// Search declared descriptions and help before scanning legacy source text.
+	for _, plugin := range pls {
+		metadata := strings.TrimSpace(strings.Join([]string{plugin.Description, plugin.Help}, "\n\n"))
+		if strings.Contains(strings.ToLower(metadata), strings.ToLower(query)) {
+			out = append(out, fmt.Sprintf("plugin %s:\n%s", plugin.Name, excerptText(metadata, query, 300)))
 			continue
 		}
-		b, err := os.ReadFile(path)
-		if err != nil {
-			continue
-		}
-		s := strings.ToLower(string(b))
-		if strings.Contains(s, strings.ToLower(query)) {
-			snippet := excerptText(string(b), query, 300)
-			out = append(out, fmt.Sprintf("plugin %s:\n%s", p, snippet))
+		b, err := os.ReadFile(plugin.Path)
+		if err == nil && strings.Contains(strings.ToLower(string(b)), strings.ToLower(query)) {
+			out = append(out, fmt.Sprintf("plugin %s:\n%s", plugin.Name, excerptText(string(b), query, 300)))
 		}
 	}
-	return out
+	return out, nil
 }
 
 func excerptText(doc, query string, max int) string {
@@ -437,36 +405,6 @@ func excerptText(doc, query string, max int) string {
 
 func buildHelpPrompt(query string, docs []string) string {
 	return fmt.Sprintf("Answer the user's AIW help question using only the following documentation. If the documentation is insufficient, say so clearly.\n\nQuestion:\n%s\n\nDocumentation:\n%s", query, strings.Join(docs, "\n\n---\n\n"))
-}
-
-func pluginNameFromFile(filename string) (string, bool) {
-	if !strings.HasPrefix(filename, "aiw-") {
-		return "", false
-	}
-	ext := filepath.Ext(filename)
-	switch strings.ToLower(ext) {
-	case "", ".py", ".exe":
-		name := strings.TrimSuffix(strings.TrimPrefix(filename, "aiw-"), ext)
-		return name, name != ""
-	}
-	return "", false
-}
-
-func pluginScriptPath(name string) string {
-	pluginsDir, err := resolvePluginsDir()
-	if err != nil {
-		return ""
-	}
-	candidates := []string{
-		filepath.Join(pluginsDir, fmt.Sprintf("aiw-%s.py", name)),
-		filepath.Join(pluginsDir, fmt.Sprintf("aiw-%s", name), fmt.Sprintf("aiw-%s.py", name)),
-	}
-	for _, candidate := range candidates {
-		if util.Exists(candidate) {
-			return candidate
-		}
-	}
-	return ""
 }
 
 func resolvePluginsDir() (string, error) {

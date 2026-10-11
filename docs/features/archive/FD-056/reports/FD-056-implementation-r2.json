@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-056",
+  "source_event": "FD-056-000006-changes-requested",
+  "human_report": "FD-056-implementation-r2.md",
+  "data": {
+    "summary": "Help text search now propagates plugin manifest discovery errors to the command error path.",
+    "changed_paths": [
+      "src/internal/commands/help/super-help.go",
+      "docs/features/FD-056_FEATURE.md",
+      "docs/features/reports/FD-056-implementation-r2.md",
+      "docs/features/reports/FD-056-implementation-r2.json"
+    ],
+    "commands": [
+      "$env:GOPROXY='off'; $env:GOTOOLCHAIN='local'; python scripts/compile.py"
+    ],
+    "results": [
+      "Compile-only command exited 0.",
+      "Tests, formatting, lint, and final-artifact builds were not run."
+    ],
+    "residual_risk": "No runtime test covers invalid plugin.toml behavior in natural-language help search; awaiting independent review."
+  }
+}

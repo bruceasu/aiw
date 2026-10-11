@@ -1,0 +1,50 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-056",
+  "source_event": "FD-056-000007-implementation-ready",
+  "human_report": "FD-056-review-r2.md",
+  "data": {
+    "reviewer_session": "fd056-reviewer-r2-20261011-1",
+    "reviewed_diff": "5de69a5..eb0f362",
+    "result": "verification-passed",
+    "findings": [],
+    "observations": [
+      {
+        "path": "docs/features/reports/FD-056-implementation-r2.md",
+        "summary": "git diff --check reports two trailing-space lines used as Markdown hard breaks; non-blocking."
+      }
+    ],
+    "acceptance_results": {
+      "1": "pass_static_prior_review",
+      "2": "pass_static_prior_review",
+      "3": "pass_static_prior_review",
+      "4": "pass_static",
+      "5": "pass_static_error_propagation_confirmed",
+      "6": "pass_static_runtime_unverified"
+    },
+    "commands": [
+      "aiw fd show FD-056",
+      "aiw fd claim FD-056 FD-056-000007-implementation-ready --session fd056-reviewer-r2-20261011-1",
+      "aiw fd --help",
+      "aiw fd emit --help",
+      "aiw git wt commit --help",
+      "git status --short",
+      "git log -6 --oneline",
+      "git diff --stat 5de69a5..eb0f362",
+      "git diff 5de69a5..eb0f362 -- src/internal/commands/help/super-help.go docs/features/FD-056_FEATURE.md docs/features/reports/FD-056-implementation-r2.md docs/features/reports/FD-056-implementation-r2.json",
+      "git diff 5de69a5..eb0f362 --check",
+      "rg -n on plugin/help call paths",
+      "PowerShell UTF-8 source and report excerpts"
+    ],
+    "not_run": [
+      "tests",
+      "compile-only check by Reviewer",
+      "final build",
+      "formatters and linters",
+      "verification scripts",
+      "runtime plugin checks"
+    ],
+    "residual_risk": "Launcher behavior across platforms, TOML runtime parsing, and end-to-end diagnostics for invalid manifests were not runtime-verified."
+  }
+}
