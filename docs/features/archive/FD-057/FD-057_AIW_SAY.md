@@ -1,7 +1,7 @@
 # FD-057: 增量优化 AIW Say 翻译提示词
 
-**Status:** Design
-**Revision:** 3
+**Status:** Complete
+**Revision:** 6
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -56,9 +56,9 @@
 
 ## Work items
 
-- [ ] 1.1 增强通用完整性与简化语义。Size: S（半天以内）；difficulty: Low；dependencies: none；完成标准：保留全部现有配置与安全规则，明确不遗漏、不总结及简化表达保留信息，不覆盖粗口策略；证据：提示词 diff 与 Request 字段静态追踪。
-- [ ] 1.2 添加 document 专用规则。Size: S（半天以内）；difficulty: Medium；dependencies: 1.1；完成标准：仅 Style=document 触发，覆盖结构、技术片段、规范关键词及已有标记保护，不引入预处理链；证据：条件分支检查与 Acceptance 逐项映射。
-- [ ] 1.3 更新说明和实施证据。Size: S（半天以内）；difficulty: Low；dependencies: 1.1、1.2；完成标准：定位当前 say 使用文档并说明 document、Simple 和保护限制，更新 TODO/Verification，执行一次覆盖 say 的离线 compile-only；实施报告为中文 Markdown 与同名 JSON sidecar；证据：文档 diff、实际编译结果与报告。
+- [x] 1.1 增强通用完整性与简化语义。Size: S（半天以内）；difficulty: Low；dependencies: none；完成标准：保留全部现有配置与安全规则，明确不遗漏、不总结及简化表达保留信息，不覆盖粗口策略；证据：prompt.go 新增完整翻译及简化语义规则，静态追踪所有 Request 字段后确认现有配置与不可信源文指令保持。
+- [x] 1.2 添加 document 专用规则。Size: S（半天以内）；difficulty: Medium；dependencies: 1.1；完成标准：仅 Style=document 触发，覆盖结构、技术片段、规范关键词及已有标记保护，不引入预处理链；证据：prompt.go 的 Style 条件分支只拼接文档规则，逐项覆盖 Acceptance 和参考映射表；没有预处理逻辑。
+- [x] 1.3 更新说明和实施证据。Size: S（半天以内）；difficulty: Low；dependencies: 1.1、1.2；完成标准：已在 `src/programs/aiw-say/README.md` 说明 document、Simple 及提示词保护限制；say 离线 compile-only 通过；实施报告及 JSON sidecar 已创建；证据见下方 Verification 和实施报告。
 
 实施开始后保持 Work Item 编号稳定。
 
@@ -82,27 +82,36 @@
 - 已静态阅读 prompt.go、say.go、profile.go、config.go 相关默认值和 openai.go，确认枚举、默认配置、消息分离及 TrimSpace 行为。
 - 已阅读 work-management、Planner 规则、资源预算、验证/沟通规则、prompt-authoring、FD 模板、FD-036 和稳定 CLI spec。
 - 创建前 git status --short 无输出；执行 aiw fd --help、aiw fd new --help、aiw fd new 和 aiw fd claim。未运行翻译程序、测试、编译或网络请求。
-- Planner 源事件：FD-057-000002-design-requested；session：fd057-planner-20261011-b72c6e。保持 Design，本轮不发出 Worker handoff。
+- Planner 源事件：`FD-057-000002-design-requested`；session：`fd057-planner-20261011-b72c6e`。用户补入参考材料后，FD 修订高于原收据；经核对完整设计后由 Planner 基于当前修订发出 `FD-057-000004-design-ready`。
 - 设计补充：根据用户反馈，将原始 SYSTEM 与正则完整记录在附录，并增加逐项取舍映射。Worker 无需读取聊天记录即可获得参考依据；附录不是应执行的指令，也不是最终提示词。
 
-### 后续实施计划
+### 实施阶段实际证据
 
-- 一次静态只读验证批次检查最终 diff，逐项追踪配置、安全边界、风格分支及文档一致性。
-- 现有 scripts/compile.py 仅编译 aiw 和 aiw-req，不覆盖 say；因此在 FD worktree 的 src/ 执行一次窄范围离线编译：`$env:GOPROXY='off'; $env:GOSUMDB='off'; go build -o NUL ./cmd/aiw-say`，不保留最终二进制。缺少本地依赖时记录失败，不下载；重试遵循仓库限制。
-- 不新增或运行测试，不执行最终构建、formatter、linter、vet、验证脚本、网络请求或反复自动审查。编译和静态检查的结果实施后如实填写。
-- 正常完成需独立 Reviewer 静态审查；本轮不启动实施或 Reviewer。
+- `SystemPrompt(Request)` 接口和 OpenAI 消息拆分保持；配置字段继续按原有顺序拼接。通用提示词要求完整翻译且不总结，并说明 Simple 只简化表达、保留信息。
+- 只有 `request.Style == "document"` 会追加 Markdown 文档规则，覆盖解释性文本、结构、代码、路径、链接目标、配置/模式标识符、规范关键词、HTML/front matter 语法及已有 XPROTECT 标记。未增加解析、占位符替换或还原逻辑。
+- 已更新 `src/programs/aiw-say/README.md` 中 `--simple` 和 `--style document` 的说明，并指出提示词不能保证字节级保真或翻译质量。
+- Compile-only 命令：`$env:GOPROXY='off'; $env:GOSUMDB='off'; go build -o NUL ./cmd/aiw-say`，工作目录 `src/`；退出码 0，无输出，无网络下载，未保留可执行文件。
+- 未运行测试、真实 API 请求、最终构建、formatter、linter、vet 或验证脚本。翻译质量、模型遵循标记与 Markdown 结构的程度仍未实测。
+- Worker 来源事件：`FD-057-000004-design-ready`，session：`fd057-worker-20261011-c4e91b`。报告：`docs/features/reports/FD-057-implementation-r1.md` 及同名 JSON。
+
+- Reviewer 已静态审查实现差异并通过：报告 docs/features/reviews/FD-057-review-r1.md，来源事件 FD-057-000005-implementation-ready，session fd057-reviewer-20261011-a8f6d2，审查 develop...f147389。未运行测试、模型/API 请求或最终构建；compile-only 仅依据 Worker 报告，Reviewer 未重跑。
 
 ## TODO
 
 - [x] 确定参考优化而非替换现有提示词。
 - [x] 明确通用/document 边界、Work Items、验收与验证计划。
 - [x] 保存用户原始参考内容，建立原文规则与实施 Work Items 的取舍映射。
-- [ ] 用户要求实施后移交 Worker。
-- [ ] 完成 1.1–1.3，更新实际证据及剩余风险。
+- [x] 领取事件 FD-057-000004-design-ready，在 feature/FD-057 隔离工作树实施；父分支计划提交 a07c9af。
+- [x] 完成 Work Item 1.1：通用规则要求完整翻译并保留简化后的信息。
+- [x] 完成 Work Item 1.2：仅 document 风格增加 Markdown 与技术内容提示规则。
+- [x] 完成 Work Items 1.1–1.3；已执行计划内离线 compile-only 并记录未运行检查及翻译质量风险。
+- [x] Worker 完成静态检查与实施报告，准备通过 implementation-ready 移交独立 Reviewer。
 
 ## Risks and notes
 
 %% RISK: 提示词不能保证模型无遗漏或字节级保护；尚无真实 LLM 翻译质量证据，不宣称实现确定性 Markdown 保真。
+
+%% RISK: 没有运行模型或 API 调用，无法验证模型对各项提示词要求的实际遵循情况。
 
 %% RISK: 自然语言与技术定义的边界可能被模型误判；使用具体保护对象，避免笼统冻结全部技术文字。
 
@@ -161,3 +170,5 @@ FRONTMATTER = re.compile(r'\A---\s*\n.*?\n---\s*(?=\n|\Z)',re.S)
 | TOKEN / FENCE / LINK_DEST / INLINE_CODE / URL / HTML / FRONTMATTER 正则 | 仅参考其保护对象，用于完善 document 提示词；不移植正则，不增加片段抽取、占位符替换或还原链。程序保护机制另设后续 FD。 | 1.2、1.3 |
 
 Worker 完成 1.1/1.2 后，在实施报告中逐项说明此表要求对应的最终提示词位置，并核对现有源文安全边界与全部配置仍被保留。1.3 的文档应说明这些保护是提示词要求，模型效果尚未通过真实调用验证。
+
+**Completed:** 2026-10-11

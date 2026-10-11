@@ -1,0 +1,44 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-057",
+  "source_event": "FD-057-000005-implementation-ready",
+  "human_report": "FD-057-review-r1.md",
+  "data": {
+    "reviewer_session": "fd057-reviewer-20261011-a8f6d2",
+    "reviewed_head": "f147389",
+    "reviewed_diff": "develop...f147389",
+    "fd_sha256": "64ad4377763306741bb352401c79462ce8a89572586ea0542ca446a2bc5baf02",
+    "result": "verification-passed",
+    "findings": [],
+    "acceptance_checks": {
+      "dynamic_language_style_and_simplify_configuration_preserved": "pass-static",
+      "untrusted_source_boundary_and_message_separation_preserved": "pass-static",
+      "complete_document_text_translation_and_markdown_structure_rules_added": "pass-static",
+      "technical_syntax_and_identifiers_protected_with_link_display_text_translatable": "pass-static",
+      "normative_natural_language_translated_and_keywords_preserved": "pass-static",
+      "existing_xprotect_markers_covered_without_processing_chain": "pass-static",
+      "document_rules_limited_to_document_style_and_api_unchanged": "pass-static",
+      "readme_describes_document_simple_and_prompt_guarantee_limits": "pass-static",
+      "worker_reported_compile_only_result": "reported-exit-0-not-independently-rerun"
+    },
+    "commands_run": [
+      "aiw fd claim FD-057 FD-057-000005-implementation-ready --session fd057-reviewer-20261011-a8f6d2",
+      "git diff develop...HEAD -- src/internal/say/prompt.go src/programs/aiw-say/README.md",
+      "rg -n \"SystemPrompt|type Request|Style|messages\" src/internal/say",
+      "python -c \"import hashlib,pathlib; p=pathlib.Path(r'docs/features/FD-057_AIW_SAY.md'); print(hashlib.sha256(p.read_bytes()).hexdigest())\"",
+      "git diff --check develop...HEAD",
+      "aiw fd emit --help"
+    ],
+    "checks_skipped": [
+      "tests",
+      "model/API runtime requests",
+      "final builds",
+      "formatters",
+      "linters",
+      "vet",
+      "verification scripts"
+    ],
+    "residual_risk": "Model compliance, translation quality, Markdown structure preservation, and byte-for-byte marker preservation remain unverified at runtime. Compile-only evidence is recorded by Worker but was not independently rerun by Reviewer."
+  }
+}
