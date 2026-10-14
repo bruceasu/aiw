@@ -1,4 +1,16 @@
-# AIW Workflow
+﻿# AIW — AI Worker
+
+AIW means **AI Worker**: an AI participant that works from an explicit goal,
+follows a recorded plan, hands off scoped work, and reports real evidence.
+The AIW CLI supplies workflow records and tool operations. Skills guide the
+host Agent; the host and configured providers supply AI execution.
+
+Humans decide goals, scope, and authorization. PM manages workflow state and
+human decisions. Planner defines the design and ordered Work Items. Worker
+implements the ready scope. An independent Reviewer checks the implementation
+against the FD. The Worker role is one stage of the broader AI Worker workflow.
+Automatic role dispatch requires a configured runner; otherwise handoffs remain
+pending for a Skill or a later resume operation.
 
 AIW manages numbered Feature Designs (FDs), role handoffs, and their execution
 context. An Issue captures intent and approval before FD design. The numbered
@@ -18,6 +30,17 @@ Optional `$fd-test` reports do not gate FD acceptance. Existing Task and
 Workflow Core records remain available for compatibility.
 
 ## Language
+
+**AI Worker**:
+The meaning of AIW and the project's organizing idea: AI work with an explicit
+scope, a maintained plan, clear handoffs, and traceable evidence.
+_Avoid_: Assuming that all roles run automatically or share one session
+
+**Worker**:
+The implementation role in the FD lifecycle. It reports actual changes and
+verification limits; it does not author its own independent review.
+_Avoid_: Using Worker as a synonym for PM, Planner, or Reviewer
+
 
 **Primary Workspace**:
 The AIW project root in the repository's primary Git checkout.

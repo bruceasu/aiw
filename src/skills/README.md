@@ -1,6 +1,6 @@
-# AIW Skills 指南
+﻿# AI Worker Skills 指南
 
-本目录存放可复用的 AIW Skills。Skill 为 Agent 描述工作流程；`aiw`
+AIW = **AI Worker**。本目录存放可复用的工作方法，帮助 AI 澄清目标、制定计划、实现工作项并交接独立审查。Skill 为宿主 Agent 描述工作流程；`aiw`
 CLI 负责发现、安装和同步 Skill。Skill 名称不是 CLI 子命令。
 
 ## Skill 目录
@@ -153,5 +153,5 @@ Engineering Skills 遵循 `skills/reviewed-skill-contract.md` 和
 
 - [Reviewed Skill Contract](reviewed-skill-contract.md)
 - [Work Management](work-management.md)
-- [AIW Work Management](../.agents/agents/work-management.md)
-- [AIW 使用说明](../README.md)
+- [AI Worker 文档导航](../../docs/README.md)
+- [AI Worker 使用说明](../../README.md)
