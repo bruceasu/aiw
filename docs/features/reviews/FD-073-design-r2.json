@@ -1,0 +1,28 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-073",
+  "source_event": "FD-073-000002-design-requested",
+  "human_report": "FD-073-design-r2.md",
+  "data": {
+    "recommendation": "ready",
+    "reviewed_revision": 2,
+    "scope": "定点复核最新 Solution 中 r1 的 D1、D2；FD 标头仍为 Revision 2。",
+    "findings": [],
+    "resolved_findings": [
+      {
+        "id": "D1",
+        "resolution": "明确 independent 发布策略、默认冲突阻断和映射所有者/投影身份分离。"
+      },
+      {
+        "id": "D2",
+        "resolution": "写前持久 pending、未完成操作阻断新写入、成功后分阶段回填目标和映射，未知 create 不重放。"
+      }
+    ],
+    "limitations": [
+      "设计反馈，不是实现验证或发布授权。",
+      "未运行 helper、测试、编译、模型或网络。",
+      "未修改 FD、实现、工作流状态或提交。"
+    ]
+  }
+}

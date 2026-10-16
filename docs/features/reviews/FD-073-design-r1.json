@@ -1,0 +1,30 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-073",
+  "source_event": "FD-073-000002-design-requested",
+  "human_report": "FD-073-design-r1.md",
+  "data": {
+    "recommendation": "changes-needed",
+    "reviewed_revision": 2,
+    "findings": [
+      {
+        "id": "D1",
+        "severity": "blocking",
+        "title": "独立 FD 目标与默认映射冲突规则需要明确例外及所有权",
+        "required_change": "明确持久化或显式核验的独立关联策略；首次关联 FD 发布写父 Issue 所有权映射，映射身份与投影身份分离。"
+      },
+      {
+        "id": "D2",
+        "severity": "blocking",
+        "title": "未知 create 结果缺少跨会话恢复依据",
+        "required_change": "远程 create 前持久化发布意图；未完成意图阻断新建，只核查远程及恢复正式映射。"
+      }
+    ],
+    "limitations": [
+      "仅本地静态设计审查，未评审尚未编写的实现。",
+      "未运行 helper、测试、编译、模型、网络或安装。",
+      "未修改 FD、工作流状态，未提交。"
+    ]
+  }
+}

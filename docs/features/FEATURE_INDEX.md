@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-073](FD-073_PUBLISH_LOCAL_ISSUE_AND_FD_PROJECTIONS_WITHOUT_R.md) | Publish local Issue and FD projections without requiring OpenSpec changes | Open | Medium |
 
 ## Completed
 
