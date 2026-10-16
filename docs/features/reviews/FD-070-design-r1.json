@@ -1,0 +1,54 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-070",
+  "source_event": "FD-070-000002-design-requested",
+  "human_report": "docs/features/reviews/FD-070-design-r1.md",
+  "data": {
+    "reviewed_revision": 2,
+    "recommendation": "changes-needed",
+    "implementation_verification": false,
+    "findings": [
+      {
+        "id": "D1",
+        "severity": "high",
+        "title": "Define interrupted commit consistency across Session and auxiliary artifacts",
+        "gate": "design-ready",
+        "affected_items": ["1.2", "1.3", "1.4", "1.6"],
+        "required_action": "Specify durable pending-turn binding, local result commit, partial-artifact handling and resume reconciliation without automatic model replay."
+      },
+      {
+        "id": "D2",
+        "severity": "medium",
+        "title": "Bound full request context for persistent courses",
+        "gate": "design-ready",
+        "affected_items": ["1.2", "1.3", "1.4", "1.6"],
+        "required_action": "Separate complete local history from bounded injected context, preserve explicit learning progress, define request limits and fail-before-dispatch behavior without hidden summarization calls."
+      }
+    ],
+    "static_evidence": [
+      "src/internal/session/execute.go",
+      "src/internal/session/store.go",
+      "src/internal/session/location.go",
+      "src/internal/session/lifecycle.go",
+      "src/internal/session/backend.go",
+      "src/internal/ai/cli.go",
+      "src/internal/ai/llm.go",
+      "src/skills/research/SKILL.md",
+      "src/skills/prototype/SKILL.md",
+      "src/skills/teach/SKILL.md",
+      "src/skills/edit-article/SKILL.md",
+      "openspec/specs/ai-routing/spec.md",
+      "openspec/specs/command-help-consistency/spec.md"
+    ],
+    "execution": {
+      "read_only_discovery_batches": 3,
+      "tests_run": false,
+      "compile_run": false,
+      "network_used": false,
+      "provider_called": false,
+      "workflow_events_changed": false,
+      "limitation": "One PowerShell rg expression failed due to quoting; not repeated. Design feedback only."
+    }
+  }
+}

@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-070](FD-070_ADD_CONVERSATIONAL_AUXILIARY_COMMANDS_AND_RESUMA.md) | Add conversational auxiliary commands and resumable teaching courses | Open | Medium |
 
 ## Completed
 

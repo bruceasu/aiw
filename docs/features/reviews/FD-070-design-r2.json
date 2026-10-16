@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-070",
+  "source_event": "FD-070-000002-design-requested",
+  "human_report": "docs/features/reviews/FD-070-design-r2.md",
+  "data": {
+    "reviewed_revision": 2,
+    "recommendation": "ready",
+    "implementation_verification": false,
+    "scope": "Focused recheck of D1, D2 and optional internal FrozenTurn.SystemPrompt adaptation only",
+    "resolved_findings": [
+      {"id": "D1", "resolution": "Durable pending identity, LastTurn reconciliation, local-only explicit recovery and no conflicting artifact overwrite specified."},
+      {"id": "D2", "resolution": "Complete local history separated from bounded recent-six-turn context, 32KiB memory, bounded snapshots and explicit recall/error behavior."}
+    ],
+    "findings": [],
+    "compatibility_note": "Optional SystemPrompt defaults empty for existing callers; Session public JSON unchanged; auxiliary caller composes frozen data and phase instructions without InvocationObserver.",
+    "remaining_limits": [
+      "Implementation review must trace failed auxiliary commit and partial artifact recovery.",
+      "Provider isolation and SystemPrompt passthrough require static implementation review; no runtime evidence generated.",
+      "Prior nonblocking Windows filename and outer-lock reminders remain applicable."
+    ],
+    "execution": {"tests_run": false, "compile_run": false, "network_used": false, "provider_called": false, "workflow_events_changed": false}
+  }
+}
