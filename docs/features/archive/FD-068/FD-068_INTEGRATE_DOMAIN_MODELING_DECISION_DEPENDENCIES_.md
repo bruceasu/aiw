@@ -76,7 +76,7 @@ explicitly cancelled item, with its reason on the same line.
 ## TODO
 
 - [x] 完成 1.1–1.4 与独立评审。
-- [ ] 正常本地合并及归档。
+- [x] 正常本地合并及归档。
 
 ## Sources
 
@@ -86,3 +86,14 @@ explicitly cancelled item, with its reason on the same line.
 - src/skills/domain-modeling/、wayfinder/、triage/、issue-management/、fd-workflow/references/planning.md。
 - src/skills/workflow-methods.md、setup-project/、openspec/specs/requirement/spec.md 与 fd-workflow/spec.md。
 - src/internal/issue/context_methods.go 的 TermsUnclear 补充加载规则保持不变。
+
+## Delivery record
+
+- 独立评审通过事件：FD-068-000005-verification-passed；Reviewer session fd068-reviewer-20261017-b72c。评审实现 d2b641c6d82d26eb5e2060e70a0e13c2733d0f0d；评审证据提交 4efe8b503455ec8f7def5ecee97c9e16aa3ffea3。
+- 交付前 FD revision 5，SHA256 4df684f26efaff9f7944280b88accb5297d6fe699332e23a2852099d1d743717 与通过事件一致；父及 FD 工作区干净，评审后只有 FD/index/评审证据变化。
+- aiw git wt local-merge FD-068 直接成功，无主动 sync 或合并冲突。develop squash 提交 7fad235，FD-Source 对应上述评审证据提交。
+- CLI 完成校验并移除 feature/FD-068 与 .wt/FD-068，保留 receipts；完整输出保存 .ai/fd/FD-068/local-merge.log。
+- aiw fd close FD-068 Complete 成功后，才补写本段及交付 TODO，不提前改变通过事件绑定的正文。
+- 一批静态一致性检查及独立静态评审通过；无可编译源码变更，编译不适用。未运行测试、构建、安装/sync、网络或宿主行为评估；用户级安装与历史外部地图不变。
+
+**Completed:** 2026-10-16
