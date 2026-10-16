@@ -81,7 +81,7 @@ assumptions, and remaining decisions.
    Plan, preserve user-goal to software-acceptance links, and do not create an
    independent wayfinder map, ticket plan or second interview. Simple Issues
    need no additional structure. Runtime method selection remains unchanged.
-   `finance-release-gate` belongs only to a later planned release after
+   `fd-release-gate` belongs only to a later planned release after
    implementation, outside Issue discovery. An unread method was not applied.
    Alongside the primary method, explicitly route `grill-with-docs` to improve
    discussion quality after initial understanding, while exploring key rules

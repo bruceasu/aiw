@@ -1,0 +1,27 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-072",
+  "source_event": "FD-072-000004-implementation-ready",
+  "human_report": "FD-072-review-r1.md",
+  "data": {
+    "reviewer_session": "fd072-reviewer-20261017-b2c9",
+    "base_commit": "d23acba",
+    "reviewed_commit": "ab80579",
+    "verdict": "passed",
+    "findings": [],
+    "static_checks": {
+      "scope_files": 53,
+      "matching_pairs": 8,
+      "local_links": 41,
+      "initial_exit_code": 1,
+      "initial_cause": "LF Git blob versus CRLF worktree byte comparison",
+      "corrected_retry_exit_code": 0,
+      "shared_contract_changes": "identifier-only; prior differences preserved",
+      "old_active_references": "only two README migration explanations",
+      "worker_evidence_truthful": true
+    },
+    "skipped": ["compile: documentation and metadata only", "tests", "runtime model evaluation", "network", "installer", "formatters", "lint", "vet", "final builds", "release", "deployment"],
+    "risks": ["External stale copies need later sync and cleanup", "Runtime model adherence unverified"]
+  }
+}

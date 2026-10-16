@@ -388,7 +388,7 @@ every FD. A planning design review is separate evidence, not that final pass.
 
 Local merge/archive is not release approval. Only when a real release is
 planned, route the release-readiness request and operational evidence to
-`finance-release-gate`. Its GO/GO_WITH_RISK/NO_GO assessment is outside normal
+`fd-release-gate`. Its GO/GO_WITH_RISK/NO_GO assessment is outside normal
 FD local completion and never grants push, publishing or deployment authority.
 
 ## Close and archive

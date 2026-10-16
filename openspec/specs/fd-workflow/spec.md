@@ -797,8 +797,22 @@ branch/PR scope without changing FD state or implying release approval.
 Methods MUST NOT themselves grant agents, review rounds or runtime checks.
 
 A local FD pass/merge/archive MUST NOT require release gate execution. Only a
-planned release calls for finance-release-gate operational evidence assessment.
+planned release calls for fd-release-gate operational evidence assessment.
 Its GO/GO_WITH_RISK/NO_GO MUST NOT authorize deployment or publishing.
+
+Release assessment evidence MUST identify its release candidate and target
+environment, separating observed results, planned or unrun checks, unknowns
+and justified inapplicable areas. Missing critical evidence MUST result in an
+incomplete assessment and NO_GO recommendation. GO_WITH_RISK MUST be limited
+to non-critical residual risks with an owner and evidence of acceptance by an
+authorized decision maker; the model MUST NOT accept risk on their behalf.
+An FD reference is optional for assessment of other implemented changes.
+
+#### Scenario: Release candidate changes after a readiness assessment
+
+- WHEN the candidate or target environment changes after a GO recommendation
+- THEN affected evidence MUST be reassessed for that candidate and environment
+- AND the previous recommendation MUST NOT be treated as deployment permission
 
 #### Scenario: Large business request versus engineering work
 

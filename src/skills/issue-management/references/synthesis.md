@@ -11,7 +11,7 @@ Consolidate existing Requirement Artifacts into a `Requirement Plan` that lets a
 - `synthesize`: consolidate supplied artifacts without running missing stages.
 - `full`: discuss intake, value, metric, and engineering-option stages only when the user explicitly requests all of them.
 
-`full` never runs `finance-release-gate`.
+`full` never runs `fd-release-gate`.
 
 ## Inputs
 

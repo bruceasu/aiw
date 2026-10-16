@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-072",
+  "source_event": "FD-072-000003-design-ready",
+  "human_report": "FD-072-implementation-r1.md",
+  "data": {
+    "worker_session": "fd072-worker-20261017-6ba1",
+    "base_commit": "d23acba",
+    "implementation_commit": "a5432a3",
+    "static_check": {"initial_exit_code": 1, "cause": "pre-existing installed root shared-contract differences", "focused_correction_exit_code": 0, "new_skill_pairs": 5, "caller_pairs": 3, "root_shared_contract": "only identifier replacement; prior differences preserved", "remaining_link_scope_checks": "not reached; independent review requested"},
+    "old_skill_removed": true,
+    "old_manifest_key_removed": true,
+    "installer_run": false,
+    "compile": "not applicable: instructions and metadata only",
+    "tests_run": false,
+    "models_run": false,
+    "network": false,
+    "independent_review": "pending",
+    "risks": ["External stale skill copies require later sync and cleanup", "No runtime model assessment"]
+  }
+}

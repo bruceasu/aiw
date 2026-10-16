@@ -100,7 +100,7 @@ Standalone code-review uses the same method for branches/PRs without invoking
 FD lifecycle operations. Loading methods does not spawn extra agents or add
 review rounds. Do not run both full workflows for every FD.
 
-Local completion is distinct from release readiness. finance-release-gate
+Local completion is distinct from release readiness. fd-release-gate
 assesses operational evidence only for a planned release; GO is not deployment
 permission and the release assessment is not a gate on ordinary local archive.
 

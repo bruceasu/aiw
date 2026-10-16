@@ -1,7 +1,7 @@
 # FD-072: Rename release gate and clarify release assessment evidence
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -25,9 +25,9 @@ Skill仍跨领域、按真实发布触发，FD可选，非每个FD的必经环�
 
 ## Work items
 
-- [ ] 1.1 改名并强化发布评估指令和README。Size: S; Difficulty: Low; Dependencies: none. Completion: 新name/目录一致，GO决策有证据与适用性，不授部署权限。
-- [ ] 1.2 更新活跃调用方、项目副本和安装记录。Size: S; Difficulty: Low; Dependencies: 1.1. Completion: 活跃资料无旧标识调用，副本一致，旧入口删除且历史不变。
-- [ ] 1.3 静态检查、独立评审和交付归档。Size: S; Difficulty: Low; Dependencies: 1.2. Completion: 双格式证据、真实独立评审和本地合并归档。
+- [x] 1.1 改名并强化发布评估指令和README。Size: S; Difficulty: Low; Dependencies: none. Completion: 新name/目录一致，GO决策有证据与适用性，不授部署权限。
+- [x] 1.2 更新活跃调用方、项目副本和安装记录。Size: S; Difficulty: Low; Dependencies: 1.1. Completion: 活跃资料无旧标识调用，副本一致，旧入口删除且历史不变。
+- [x] 1.3 静态证据和评审交接。Size: S; Difficulty: Low; Dependencies: 1.2. Completion: 双格式证据、如实记录检查失败及聚焦纠正，提交独立评审。独立评审/交付归档由TODO继续跟踪。
 
 Keep item numbers stable after implementation starts. Use `- [-]` only for an
 explicitly cancelled item, with its reason on the same line.
@@ -49,15 +49,18 @@ explicitly cancelled item, with its reason on the same line.
   failure budget, stop affected test repair/execution, diagnose statically and
   continue independent work; unresolved acceptance defects still block delivery.
 
-## Sources
+- Worker evidence: reports/FD-072-implementation-r1.md/.json. Static batch found pre-existing root installed shared-contract differences; focused correction confirmed identifier-only change. Remaining checks not reached are not claimed passed. Markdown/metadata only: compile, tests, runtime models, network and installer not run. Independent review and delivery pending.
+- Independent review: reviews/FD-072-review-r1.md/.json; reviewer fd072-reviewer-20261017-b2c9; source FD-072-000004-implementation-ready; d23acba..ab80579 passed with no blocking findings. Corrected LF/CRLF comparison retry passed; 8 pairs and 41 local links checked. Runtime checks remain unrun; local delivery pending.
 
 ## TODO
 
-- [ ] 完成1.1–1.3及独立评审。
+- [x] 完成1.1–1.3及独立评审。
 - [ ] 本地交付和归档。
 
 ## Sources
 
 - Issue: none
 
-Link relevant specs and evidence used for decisions.
+- 用户要求改名并评估三个Skill的本会话。
+- src/skills/fd-release-gate；work-management与fd-workflow/issue-management活跃引用。
+- openspec/specs/fd-workflow/spec.md：本地完成与实际发布区分。

@@ -64,7 +64,7 @@
 | [prototype](prototype/README.md) | 用一次性逻辑或 UI 原型回答设计问题，结论回到原 Issue／FD。 |
 | [handoff](handoff/README.md) | 为另一个会话准备可继续工作的交接文档，不自动派发 Agent。 |
 | [setup-project](setup-project/README.md) | 提议并配置项目级 AIW 约定与 Agent 指令。 |
-| [finance-release-gate](finance-release-gate/README.md) | 跨领域评估实际发布的运维准备，名称保留 finance 前缀。 |
+| [fd-release-gate](fd-release-gate/README.md) | 跨领域评估真实发布的候选版本、适用证据和风险，不要求每个FD执行。 |
 | [github-issues-management](github-issues-management/README.md) | 通过 aiw-github 查询和管理远程 GitHub Issue。 |
 | [publish-github-issue](publish-github-issue/README.md) | 将显式指定的 OpenSpec change 发布为 GitHub Issue 投影。 |
 | [writing-great-skills](writing-great-skills/README.md) | 创建、改善、审查或适配 Agent Skills。 |

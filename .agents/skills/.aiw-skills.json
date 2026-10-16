@@ -85,12 +85,6 @@
       "source_identity": "D:\\green\\aiw\\skills\\finance-metric-brief",
       "source_revision": null
     },
-    "finance-release-gate": {
-      "mode": "copy",
-      "sha256": "82b6167a871430430fcca30a16a7b62d4324ec20f793023e3357cfbc2c5895fa",
-      "source_identity": "D:\\green\\aiw\\skills\\finance-release-gate",
-      "source_revision": null
-    },
     "finance-requirement-intake": {
       "mode": "copy",
       "sha256": "08ce0299ad323b2606e2ba9a445c68abb049c091be618830b480c6449a01b8f1",
