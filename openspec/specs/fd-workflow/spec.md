@@ -73,13 +73,16 @@ static review. The default workflow MUST NOT require test execution, coverage
 metrics, a Tester report, a PM test-report decision, or risk-assessor reports
 as acceptance evidence.
 
-Users MAY invoke the standalone fd-test Skill to derive black-box scenarios,
-write test code under root tests/, and execute specifically authorized test
-or coverage commands. It produces a factual report that MAY contain scenario
-counts and coverage measurements. The Skill MUST NOT emit FD workflow events,
-change FD status, add acceptance thresholds, or send its report to PM,
-assessors, or Reviewer for evaluation. Reviewer MUST NOT inspect or assess an
-optional fd-test report.
+Users MAY invoke standalone fd-test or request FD test support using any
+equivalent natural-language wording, including with test or 带测试. Selected
+support MUST use suitable core-rule TDD during implementation and an independent
+fd-test round before implementation-ready, respecting narrower user limits.
+Assigned test code belongs under root tests/. Execution MUST retain repository
+command, revision, language and side-effect authorization. Reports MAY contain
+scenario counts and coverage, but MUST NOT emit FD events, change status, add
+automatic acceptance thresholds or introduce risk voting. Worker/PM/Reviewer
+MAY inspect relevant facts and MUST NOT ignore confirmed acceptance defects
+merely because testing is optional. No default test stage is added.
 
 For a Dual-evidence FD, each new Worker and Reviewer report MUST have a Chinese
 Markdown file and a same-basename JSON sidecar. Markdown MUST contain one
@@ -114,13 +117,14 @@ newly written evidence into the same FD directory.
 - AND the workflow requires no Tester report, coverage threshold, PM
   test-report decision, or assessor report
 
-#### Scenario: Optional fd-test remains outside acceptance
+#### Scenario: Optional fd-test supplies facts without owning acceptance
 
 - WHEN a user invokes fd-test for an FD
 - THEN it records requested scenarios and any authorized test results in
   an optional factual report
 - AND it does not change the FD status or create an acceptance handoff
-- AND Reviewer does not inspect or evaluate that report
+- AND relevant facts and defects may be read by Worker/PM/Reviewer without
+  adding automatic coverage thresholds or a separate test acceptance vote
 
 #### Scenario: Legacy Tester CLI remains compatible
 
@@ -370,8 +374,10 @@ focused commits and the managed independent review/archive route without
 creating a worktree, inventing Worker receipts, or merging unrelated changes.
 The operation MUST use the existing role receipt, exact claim, source-event,
 revision, and digest gates. The Reviewer MUST run in a separate subagent; the
-PM/Planner/Worker host MUST NOT emit the review result. The default lifecycle
-MUST NOT dispatch a Tester or test-report assessor. Legacy Tester CLI events
+PM/Planner/Worker host MUST NOT emit the review result. Without an explicit
+test-support selection the default lifecycle MUST NOT dispatch testing. Selected
+support MAY delegate one bounded independent fd-test assignment before the
+normal Worker handoff, without a Tester event or test-report assessor. Legacy Tester CLI events
 remain available only for FDs that already use that compatibility path. No more than three
 Reviewer outcome events MAY occur in one active implementation cycle, even if
 the auto operation is resumed. After a third `changes-requested`, the FD MUST
@@ -814,3 +820,83 @@ Its GO/GO_WITH_RISK/NO_GO MUST NOT authorize deployment or publishing.
 - THEN the host may continue authorized local delivery/archive without running
   a second standalone code-review or a release-readiness assessment
 - AND a later planned release is assessed against operational evidence separately.
+
+
+### Requirement: Reviewable test design and version-bound evidence
+
+Selected TDD/fd-test work MUST derive important scenarios from confirmed
+acceptance or contracts before using implementation as adaptation material.
+Each key scenario MUST record rule reference, input/preconditions, expected
+result and independent derivation, key assertions and plausible fault detected.
+Characterization MUST be distinguished from confirmed requirement correctness.
+Static fault reasoning MUST NOT be represented as executed mutation evidence.
+Reused tests and implementation access MUST be disclosed. Reports MUST bind
+actual implementation/test commits and dirty-diff identities, FD revision,
+commands, authorization, environment, exit codes and raw output. Observed status
+MUST be separate from product/test/environment/undetermined cause. Unrun, partial
+or stale evidence MUST NOT be reported as passed. Historical reports stay intact.
+
+#### Scenario: Expected output is uncertain
+
+- WHEN the rounding or permission rule needed for a case is unconfirmed
+- THEN the affected case is blocked with the missing rule
+- AND independent cases continue without copying production output as the oracle
+
+#### Scenario: Meaningful TDD Red
+
+- WHEN an authorized predeclared TDD cycle observes its target assertion fail
+- THEN the failure may be recorded as Red, followed by scoped implementation
+  and authorized Green with the same behavioral assertion
+- AND import/configuration failures are not target Red
+- AND absence of executed Red/Green is not represented as completed TDD
+
+### Requirement: Semantic test support and bounded diagnosis fallback
+
+The host MUST recognize a request for test support by intent in any language,
+not require literal with test syntax. Negation, cases-only, no-TDD, no-execution
+and stage limits MUST take precedence. Planner MUST record scope, appropriate
+TDD slices, independent acceptance round, authority and finite budget in FD
+Verification. No extra CLI flag, FD state, Tester event or engineering plan is
+introduced. Worker MUST NOT emit implementation-ready before selected test
+support has been accounted for. Independent testing MUST use a different
+session without concurrent workspace writers; missing capability is explicit.
+
+Each planned TDD Red/Green phase MUST have authority. Expected Red is not an
+unexpected repair retry. Unexpected failures MUST follow repository budgets:
+here one focused execution and at most one rerun after a relevant correction,
+with stricter limits prevailing. No unchanged failure rerun or allowance reset
+through new commands, cases, sessions, review rounds or resume is permitted.
+At exhaustion, no safe fix or unclear cause, host MUST automatically stop the
+affected effort's test-driven repair and execution, perform bounded static
+diagnosis-only, retain failures/versions/ledger and continue independent work.
+Renewed repair/execution requires explicit direction and valid authority.
+
+#### Scenario: Natural-language support request
+
+- WHEN a user requests FD auto with test support in equivalent English, Chinese
+  or another language
+- THEN suitable core-rule TDD and independent fd-test are selected
+- AND exact command/revision authority and local language prohibitions remain
+- AND a narrower request for cases only does not authorize execution
+
+#### Scenario: Repeated failure degrades without losing the scene
+
+- WHEN a focused test fails and the authorized rerun after correction also fails
+- THEN further affected repair/test execution stops automatically
+- AND bounded static diagnosis records observations, cause or uncertainty,
+  candidate correction, budget and remaining work
+- AND independent work continues without silently resetting retries on resume
+
+#### Scenario: Diagnosis does not hide an acceptance defect
+
+- WHEN diagnosis-only retains a confirmed acceptance defect or material unknown
+- THEN the host MUST NOT emit full-FD readiness, merge or archive Complete
+- AND it may complete other authorized work and scoped static feedback
+- AND environment failure alone is not classified as a product defect or pass
+
+#### Scenario: Changes invalidate relevant test evidence
+
+- WHEN review repair or merge recovery changes previously tested behavior
+- THEN affected results are marked stale and unrelated evidence is reused only
+  with justification
+- AND diagnosis-only does not grant automatic reruns or further test repairs

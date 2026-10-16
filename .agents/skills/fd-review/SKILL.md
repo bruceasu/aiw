@@ -6,7 +6,9 @@ description: Independently review a numbered FD implementation and hand findings
 # FD Review
 
 Read `skills/work-management.md`, the repository instructions, and only
-Implementation review in `skills/workflow-methods.md`. Use this
+Implementation review in `skills/workflow-methods.md`. Declare
+`skills/testing-methods.md`; read Evidence and feedback only when relevant
+test evidence exists. Use this
 Skill when an FD is Pending Verification or the user explicitly requests an
 independent review. The Reviewer must use a separate session from the Worker
 that wrote the code. Do not implement new scope during review.
@@ -50,9 +52,14 @@ and a same-basename structured JSON sidecar with schema
 filename, and structured findings/results. Put one `<!-- aiw-data: <same-basename-json-file> -->`
 comment in Markdown and use the Markdown as `--artifact`.
 
-Do not inspect or evaluate optional `fd-test` reports. They do not add
-acceptance conditions or replace evidence required by the FD. Review only
-artifacts and evidence relevant to the stated acceptance.
+Inspect relevant optional test evidence: confirmed rule/oracle, key assertions,
+actual tested revisions, failure classification and unverified limits. Read
+actual test code where needed, not just pass counts. Reports add no automatic
+coverage threshold, extra test-review agent or acceptance condition. Respect
+diagnosis-only and existing budgets; no automatic tests or test-driven repair
+restart. Confirmed acceptance defects/material unknowns still block a pass.
+Review only evidence relevant to the stated acceptance; an environmental
+failure may leave testing incomplete while other evidence supports behavior.
 
 If a material issue remains, emit `changes-requested` with `--producer
 reviewer --artifact <report>` and `--source-event <id>` when the original

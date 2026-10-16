@@ -28,6 +28,11 @@ Executable validation other than compile-only is allowed only when:
   Skill, or a legacy CLI Tester has the Planner approval record required for
   that exact command and implementation revision.
 
+Explicit FD test-support wording can select the optional orchestration without
+separate Skill calls. Execution still follows exact scope/revision authority and
+local language restrictions. Cases-only never authorizes execution. Planned TDD
+Red/Green phases need authorization; target Red is not an unexpected retry.
+
 For the decisive-runtime-evidence case, ask first. State the exact command, purpose, expected duration,
 scope, and any network or permission risk.
 For a legacy Planner approval, inspect invoked test code and side effects.
@@ -44,6 +49,12 @@ When authorized:
 3. Ask before widening to package, module, repository, integration, or full
    build scope.
 4. Never loop equivalent commands to obtain a passing result.
+
+When unexpected failures exhaust this budget, or no safe repair/cause is known,
+stop affected test repair/execution, perform bounded static diagnosis-only and
+continue independent authorized work. Retain the ledger across resume/review;
+restart needs explicit renewed direction and authority. Confirmed acceptance
+defects/material unknowns still block delivery; failure never becomes a pass.
 
 ## Evidence
 

@@ -18,7 +18,8 @@ an implementation Reviewer event.
 ## Boundaries
 
 - Do not resolve a material product or policy choice by guessing.
-- Do not add test execution or test-report evaluation to the default FD plan.
+- Do not add tests to the default plan. Explicit test-support intent loads
+  ../references/testing.md; record scope, authority, budgets and evidence.
 - Do not treat an FD handoff as authorization for optional tests.
 - Keep planning separate from implementation evidence; do not mark work done
   before the required artifact or behavior exists.

@@ -5,7 +5,31 @@
   "human_report": "FD-XXX-fd-test-rN.md",
   "data": {
     "tested_fd_revision": 0,
+    "implementation_revision": null,
+    "implementation_dirty_diff": null,
+    "test_revision": null,
+    "test_dirty_diff": null,
     "tester_session": "replace-with-session-reference",
+    "mode": "cases-only",
+    "execution_state": "not-run",
+    "independence": {
+      "separate_session": false,
+      "scenarios_recorded_before_implementation_access": false,
+      "implementation_access": [],
+      "reused_tests": [],
+      "limitations": []
+    },
+    "budget": {
+      "planned_tdd_cycles": [],
+      "authorization": null,
+      "unexpected_failure_reruns_used": 0,
+      "remaining_authorized_reruns": 0,
+      "prior_evidence": [],
+      "diagnosis_only": false,
+      "diagnosis_reason": null,
+      "candidate_correction": null,
+      "independent_work_remaining": []
+    },
     "applicable_scenarios": 0,
     "executed_scenarios": 0,
     "passed_scenarios": 0,
@@ -16,9 +40,48 @@
     "branch_coverage": "not measured",
     "raw_coverage_evidence": "not measured",
     "coverage_unavailable_reason": "replace-if-unavailable",
-    "scenarios": [],
+    "scenarios": [
+      {
+        "id": "S-01",
+        "rule_reference": "replace-with-confirmed-acceptance-reference",
+        "oracle_kind": "confirmed-rule",
+        "boundary": null,
+        "inputs_and_preconditions": null,
+        "expected_result": null,
+        "oracle_derivation": null,
+        "key_assertions": [],
+        "plausible_fault": null,
+        "fault_check": "static-reasoning-only",
+        "status": "not-run",
+        "observed_result": null,
+        "cause": "undetermined",
+        "cause_evidence": null,
+        "evidence": [],
+        "unrun_reason": "replace-before-reporting",
+        "stale_reason": null
+      }
+    ],
     "test_files": [],
-    "commands": [],
+    "commands": [
+      {
+        "command": null,
+        "cwd": null,
+        "scope": null,
+        "phase": "acceptance",
+        "implementation_revision": null,
+        "implementation_dirty_diff": null,
+        "test_revision": null,
+        "test_dirty_diff": null,
+        "authorization": null,
+        "expected_duration": null,
+        "environment": null,
+        "side_effects": [],
+        "executed": false,
+        "exit_code": null,
+        "raw_output": null,
+        "unrun_reason": "replace-or-remove-unplanned-command"
+      }
+    ],
     "limitations": [],
     "residual_risks": []
   }

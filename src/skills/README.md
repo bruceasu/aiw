@@ -39,7 +39,10 @@ CLI 负责发现、安装和同步 Skill。Skill 名称不是 CLI 子命令。
 - `to-spec`：更新 OpenSpec 稳定规格；只有用户明确要求时才创建 change。
 - Issue 负责按业务结果拆子 Issue；Planner 负责拆 FD Work Items。
   共同原则按需读取 `skills/workflow-methods.md`，不再有独立票据映射阶段。
-- `tdd`：在用户要求测试优先时采用 red-green-refactor。
+- `tdd`：显式测试优先或 FD 测试支持时，对合适的核心规则使用有效 Red/Green，记录独立预期依据与回归保护。
+- `fd-test`：独立推导验收场景、复用或补充测试，在授权范围内执行并产出版本绑定的事实报告。
+- FD 测试支持按语义选择：`with test`、`带测试`、`需要测试支持` 等均可；默认不增加测试。更具体的只生成用例、不运行或不用 TDD 等限制优先。
+- 测试共享 `skills/testing-methods.md`。达到非预期失败预算后自动停止该测试相关修复/执行，静态诊断并继续独立工作；已确认缺陷和关键未知仍阻止交付。
 - `code-review`：独立审查分支或 PR；与 `fd-review` 共享实现审查方法，普通 FD 不重复启动两套审查。
 - `finance-release-gate`：跨领域评估已实现变更的上线准备情况。
 
@@ -63,6 +66,8 @@ CLI 负责发现、安装和同步 Skill。Skill 名称不是 CLI 子命令。
 $issue-management 梳理这个功能请求并决定是否进入设计
 $fd-workflow 为已批准的 Issue 创建编号 FD
 $fd-workflow FD-XXX 只实现工作项 1.1，不审查、不合并
+$fd-workflow FD-XXX auto with test
+$fd-workflow FD-XXX 自动执行，需要测试支持
 ```
 
 具体语法由宿主决定。`$name` 表示调用 Skill，不是 `aiw name` 命令。

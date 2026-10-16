@@ -7,8 +7,8 @@ should reference `skills/work-management.md` in its `SKILL.md` and keep its
 own instructions focused on its domain. Do not copy lifecycle rules into each
 Skill. `aiw skills install` and `sync` materialize this file beside the Skill
 when that reference is present; treat the installed copy as generated output.
-The same applies to `skills/reviewed-skill-contract.md` and the stage-specific
-sections of `skills/workflow-methods.md`, so independently installed Skills
+The same applies to `skills/reviewed-skill-contract.md`, the stage-specific
+sections of `skills/workflow-methods.md`, and opted-in `skills/testing-methods.md`, so independently installed Skills
 remain usable outside the AIW repository. Declare every needed shared resource
 in the entry SKILL.md; references alone are not scanned by the installer.
 
@@ -109,17 +109,37 @@ the receiver checks that the artifact and FD revision still match before work.
 New/default FDs omit `**Test policy: Independent**` and route
 `implementation-ready` directly to Reviewer. The Worker performs the
 repository-authorized compile-only check and static review; tests are not a
-default workflow stage. Users may invoke the standalone `$fd-test` Skill to
-derive black-box scenarios and, when explicitly authorized, write or execute
-tests under root `tests/`. Its factual report does not change FD state, add
-acceptance thresholds, or go to PM, assessors, or Reviewer for evaluation.
+default workflow stage. Explicit test-support intent in any wording/language
+(for example with test or 带测试) selects suitable core-rule TDD and an independent
+fd-test round before implementation-ready, following fd-workflow's testing
+reference. More specific cases-only/no-TDD/no-execution/stage limits prevail.
+Standalone fd-test remains available. Assigned tests belong under root tests/.
+Test selection requests the subflow, not unrestricted execution; exact command,
+revision, side-effect and local language restrictions still apply. No new
+Tester event, state, coverage threshold or PM test vote is introduced. Relevant
+test facts and confirmed defects may be read by Worker/PM/Reviewer.
 Existing FDs carrying the Independent marker and their Tester events retain
 their legacy CLI contract; this does not make Tester a default stage for new
 work.
 
 The host may combine PM, Planner, and Worker duties, but must not author
 independent Reviewer evidence from its own session. Optional test reports are
-not workflow handoffs or Reviewer inputs.
+supporting evidence, not workflow handoffs or independent delivery verdicts.
+Their absence is not a default gate. Explicitly requested but incomplete scope
+must be recorded, never silently waived. When authorization is required,
+record the exact command and current revision before execution. Planned TDD
+Red/Green phases need authority; expected Red is not an unexpected repair retry.
+After the local unexpected-failure budget is exhausted (here one focused run
+and at most one rerun after relevant change), or no safe repair/cause exists,
+automatically stop affected test repair/execution and perform bounded static
+diagnosis-only, then continue independent work. Preserve failures, versions,
+ledger and unresolved behavior across resume/review; new commands/sessions do
+not reset the budget. Restart requires explicit new direction and valid
+authority. Confirmed defects, material unknowns and incomplete implementation
+still block whole-FD readiness and delivery. Environment failure alone does not
+prove a product defect; testing incomplete must remain explicit even if other
+evidence supports behavior. Never fabricate full-FD readiness to obtain partial
+review, weaken assertions or mark unrun checks passed.
 PM may explicitly
 override workflow gates; the record must identify skipped stages and missing
 evidence, which remain unperformed rather than being represented as passed.

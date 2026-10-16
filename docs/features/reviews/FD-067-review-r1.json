@@ -1,0 +1,56 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-067",
+  "source_event": "FD-067-000004-implementation-ready",
+  "human_report": "FD-067-review-r1.md",
+  "data": {
+    "session": "fd067-reviewer-20261017-c47e",
+    "base": "1ea549d",
+    "reviewed_commit": "2fbcf6d",
+    "outcome": "passed",
+    "findings": [
+      {
+        "severity": "P3",
+        "blocking": false,
+        "file": "src/skills/fd-workflow/references/portable-operations.md",
+        "line": 77,
+        "summary": "Portable Auto synopsis retains the old optional-tests-do-not-gate-review shorthand.",
+        "impact": "Potential ambiguity only: explicit precedence and the operative entry/testing contract require accounting for selected support before readiness.",
+        "suggestion": "Align this synopsis during follow-up maintenance."
+      }
+    ],
+    "dimensions": {
+      "correctness": "Supported by actual instruction and installer/template diff inspection",
+      "standards": "Scope, root tests convention, local language restrictions and authorization preserved",
+      "spec": "Semantic opt-in, test evidence and diagnosis fallback match changed stable requirements",
+      "evidence": "Version binding and truthful limits retained; no runtime claims from static reasoning"
+    },
+    "static_checks": {
+      "changed_skill_source_project_pairs": 13,
+      "work_management_copies": 27,
+      "workflow_methods_copies": 5,
+      "testing_methods_copies": 4,
+      "testing_resource_entries": 4,
+      "prompt_source_copy_pairs": 2,
+      "json_files_parsed": 2,
+      "changed_verification_template_text": "equal",
+      "targeted_obsolete_prohibition_scan": "no matches"
+    },
+    "commands": [
+      "Targeted Get-Content and rg reads; git diff 1ea549d..HEAD",
+      "aiw fd show FD-067",
+      "aiw fd claim FD-067 FD-067-000004-implementation-ready --session fd067-reviewer-20261017-c47e",
+      "One bounded read-only Python batch: byte comparisons, JSON parsing, AST template extraction and targeted stale-rule search",
+      "aiw fd emit --help",
+      "aiw fd emit FD-067 verification-passed --producer reviewer --artifact docs/features/reviews/FD-067-review-r1.md --source-event FD-067-000004-implementation-ready"
+    ],
+    "skipped": ["compile rerun", "tests", "builds", "linters", "formatters", "verification scripts", "installer/sync execution", "network", "mutation execution", "host behavior evaluation"],
+    "residual_risks": [
+      "Host semantic selection, independent scheduling and cross-session budget persistence have static instruction evidence only.",
+      "Installer materialization traced statically, not executed.",
+      "User-level installed skills unchanged.",
+      "Portable-operation synopsis has a nonblocking older shorthand overridden by the operative entry and shared contract."
+    ]
+  }
+}

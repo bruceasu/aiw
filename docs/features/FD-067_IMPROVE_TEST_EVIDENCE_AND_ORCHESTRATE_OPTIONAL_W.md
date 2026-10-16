@@ -1,7 +1,7 @@
 # FD-067: Improve test evidence and orchestrate optional with test workflow
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -17,7 +17,7 @@
 | 只改善两个入口的描述 | 不采用 | 不能解决证据质量、失败预算与反馈隔离。 |
 | 共享测试方法，按需 with test 编排 | 采用 | 一个用户选项，复用现有 FD 角色和报告，不增加 CLI 参数或状态。 |
 
-`with test` 是明确的测试子流程请求，仍遵守仓库的精确命令、版本、风险和次数授权；不是任意测试、网络或 Go 测试限制的豁免。TDD 正常 Red/Green 阶段与非预期失败修复预算分开：每个预先限定的行为循环需要授权，预期 Red 不是缺陷重试，不得以新场景或新会话重置失败预算。默认首次执行、相关修改后一次复测；更严格的本地预算优先。
+测试支持按用户语义识别：`with test`、`带测试`、`需要测试支持` 或其它语言同义表达均可，不做固定关键词匹配；否定、只生成用例、不运行或不用 TDD 等更具体限制优先。明确测试子流程请求仍遵守仓库的精确命令、版本、风险和次数授权；不是任意测试、网络或 Go 测试限制的豁免。TDD 正常 Red/Green 阶段与非预期失败修复预算分开：每个预先限定的行为循环需要授权，预期 Red 不是缺陷重试，不得以新场景或新会话重置失败预算。默认首次执行、相关修改后一次复测；更严格的本地预算优先。
 
 ## Solution
 
@@ -31,16 +31,16 @@ fd-workflow 新增按需 testing reference。Planner 在 FD Verification 中记�
 
 ## Scope
 
-包含：tdd/fd-test、fd-workflow 入口与角色/引用、fd-review、共享 work-management、报告模板、相关资源预算说明与 FD 模板、稳定规格、README、项目安装副本；安装器只增加共享文件白名单。
+包含：tdd/fd-test、fd-workflow 入口与角色/引用、fd-review、共享 work-management、报告模板、相关资源预算说明与 FD 模板、稳定规格、README、项目安装副本；安装器只增加共享文件白名单，FD 插件只同步内置默认模板文案，不改执行逻辑。
 
 不包含：运行本次测试或宿主行为评估、引入测试框架/变异测试、改 CLI 状态/参数/事件、部署、用户级技能安装、历史 FD/报告迁移。三个手工静态案例检查规则可操作性，不宣称运行结果。
 
 ## Work items
 
-- [ ] 1.1 共享测试质量方法与 TDD 指令。Size: M; Difficulty: Medium; Dependencies: none. Completion: oracle/现状刻画/风险选例/有效红灯/替身限制有明确操作规则。
-- [ ] 1.2 fd-test 场景过程与双报告模板。Size: M; Difficulty: Medium; Dependencies: 1.1. Completion: 场景来源、输入/预期、关键断言、错误辨别力、版本、命令、失败分类及未执行项可审查。
-- [ ] 1.3 with test 编排与诊断降级。Size: M; Difficulty: Medium; Dependencies: 1.1,1.2. Completion: 默认不测试；显式选用可委派独立测试；预算耗尽静态诊断并继续独立工作；不绕过缺陷/就绪/交付门槛。
-- [ ] 1.4 安装资源、项目副本和规格一致性。Size: M; Difficulty: Medium; Dependencies: 1.3. Completion: 安装器最小声明、源与副本匹配、无旧报告禁读冲突；一次 compile-only 与有界静态检查、独立评审证据齐备。
+- [x] 1.1 共享测试质量方法与 TDD 指令。Size: M; Difficulty: Medium; Dependencies: none. Completion: oracle/现状刻画/风险选例/有效红灯/替身限制有明确操作规则。
+- [x] 1.2 fd-test 场景过程与双报告模板。Size: M; Difficulty: Medium; Dependencies: 1.1. Completion: 场景来源、输入/预期、关键断言、错误辨别力、版本、命令、失败分类及未执行项可审查。
+- [x] 1.3 with test 编排与诊断降级。Size: M; Difficulty: Medium; Dependencies: 1.1,1.2. Completion: 默认不测试；显式选用可委派独立测试；预算耗尽静态诊断并继续独立工作；不绕过缺陷/就绪/交付门槛。
+- [x] 1.4 安装资源、项目副本和规格一致性。Size: M; Difficulty: Medium; Dependencies: 1.3. Completion: 安装器最小声明、源与副本匹配、无旧报告禁读冲突；一次 compile-only 与有界静态检查、独立评审证据齐备。
 
 Keep item numbers stable after implementation starts. Use `- [-]` only for an
 explicitly cancelled item, with its reason on the same line.
@@ -60,13 +60,17 @@ explicitly cancelled item, with its reason on the same line.
 ## Verification
 
 - 本 FD 不选择 with test，不创建/运行产品测试、coverage、安装、网络、最终构建或宿主运行评估。
-- 安装器一行声明修改后，使用 Python 内存 compile() 检查，不执行插件、不保留产物。
+- 安装器声明和 FD 插件内置模板修改后，使用一次 Python 内存 compile() 检查两个文件，不执行插件、不保留产物。
 - 一批静态检查源/副本/共享声明和 JSON 模板；静态推演计算边界、权限拒绝、环境失败三个案例，检查预算、证据与交付边界，不冒充测试通过。
 - 独立 Reviewer 检查真实 diff、FD 验收与证据后正常本地合并归档。
+- 实施报告：docs/features/reports/FD-067-implementation-r1.md 与同名 JSON。
+- Python 两个文件一次内存 compile-only 通过；未运行测试、安装、网络或宿主行为评估。
+- 静态脚本因范围映射和整模板比较假设中止，完成部分字节/JSON检查；没有声称整批通过，详见报告。
+- 独立 Reviewer 静态评审通过：docs/features/reviews/FD-067-review-r1.md 与同名 JSON；评审版本 2fbcf6d，来源 FD-067-000004-implementation-ready。独立比较源/副本、资源声明和模板变更文案，未运行测试或重复编译。便携概述一项非阻塞措辞建议见报告。
 
 ## TODO
 
-- [ ] 完成 1.1–1.4、报告和独立评审。
+- [x] 完成 1.1–1.4、报告和独立评审。
 - [ ] 正常本地交付与归档。
 
 ## Sources

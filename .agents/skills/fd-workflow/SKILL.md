@@ -8,7 +8,8 @@ description: Create or refine a numbered FD, or run its implementation through i
 Read `skills/reviewed-skill-contract.md`, `skills/work-management.md`, and the
 repository instructions. Declare `skills/workflow-methods.md` for the shared
 splitting, specification and review methods; read only the current stage's
-section. Use this
+section. Declare `skills/testing-methods.md` for opted-in test support; load
+`references/testing.md` only when that support is requested. Use this
 Skill when the user wants to create, refine, review, or close a Feature Design.
 New engineering work is FD-first. OpenSpec supplements the FD with stable
 capability requirements when needed; it is not a second work plan. Use the
@@ -35,6 +36,9 @@ Natural-language examples (host Skill invocation, not new CLI flags):
   do not mark the whole FD ready or dispatch review without separate authority.
 - `$fd-workflow FD-XXX implement and review; no merge` permits independent
   review but stops before delivery and archive.
+- `$fd-workflow FD-XXX auto with test` or `FD-XXX 自动执行，带测试` selects
+  test support by meaning, not fixed syntax: suitable core-rule TDD plus
+  independent fd-test before implementation review. More specific limits win.
 
 Preserve an explicit design-only, review-only or other narrower request.
 Dispatched roles never expand their assignment into the host PM lifecycle.
@@ -162,8 +166,9 @@ Load the stage prompt in `roles/` only when performing that role: `pm.md`,
 handoff, and authorization contract remains in `skills/work-management.md`;
 these short prompts define the current role's inputs, output, and boundaries.
 The host may combine PM, Planner, and Worker. Reviewer evidence must come from
-a session separate from Worker. Optional tests run only through the standalone
-`fd-test` Skill and do not participate in this lifecycle.
+a session separate from Worker. Test support is optional; when explicitly
+selected, the host follows `references/testing.md` without adding Tester events
+or relaxing runtime authority. Standalone fd-test remains available.
 
 ### Blocker feedback for every stop
 
@@ -263,13 +268,15 @@ in the user-facing Gate and final report.
    handoff. For primary-workspace work without a Worker handoff, use the
    managed status/review route in step 1. An incomplete FD cannot emit a
    full-FD completion handoff. Then continue only to an authorized stage.
-3a. **Optional standalone tests.** The default workflow does not generate or
-   run tests. When the user explicitly requests `$fd-test`, follow that Skill
-   in a separate test session. It produces factual test evidence only; it does
-   not claim or emit FD events, change status, or route a report to PM,
-   assessors, or Reviewer. Preserve existing `Pending Test` and
-   `Pending Test Acceptance` records as legacy CLI states; Auto does not
-   resume or evaluate them.
+3a. **Opted-in test support.** Ordinary workflow does not generate or run tests.
+   If selected in any equivalent wording, load `references/testing.md`: TDD
+   during Worker implementation, then one independent fd-test assignment
+   before emitting implementation-ready. Retain authorization and failure
+   budgets across resumes. Exhaustion switches to bounded static diagnosis
+   and independent remaining work, not repeated repair or execution. Related
+   facts and defects may go to PM/Reviewer. No Tester event, test acceptance
+   vote or coverage threshold is added. Preserve legacy `Pending Test` and
+   `Pending Test Acceptance` records; Auto does not resume that legacy route.
 4. **Independent review when Pending Verification.** Load `roles/reviewer.md`. Count Reviewer outcome events for this FD's active
    implementation cycle, including earlier auto invocations; the limit is
    three, not three new attempts on every resume. Spawn one separate Reviewer
@@ -281,8 +288,9 @@ in the user-facing Gate and final report.
    `--source-event` pointing to that claim. The host must not write the
    review report, emit a Reviewer event, or substitute a same-session review.
    Reviewer checks the FD acceptance against the actual diff, Worker report,
-   and relevant implementation evidence. Reviewer does not inspect or evaluate
-   optional `fd-test` reports. Its session must differ from Worker.
+   and relevant implementation/test evidence, including oracle quality,
+   revision coverage and limits. Optional reports add no automatic threshold
+   or extra review round. Its session must differ from Worker.
    If subagents are unavailable, stop and leave the handoff pending.
 5. **Repair, deliver, and close.** Inspect the subagent's report and latest receipt;
    subagent prose alone is not a pass. On `changes-requested`, first count

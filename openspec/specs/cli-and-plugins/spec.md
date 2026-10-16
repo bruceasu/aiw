@@ -262,3 +262,11 @@ code-review MUST not require a sibling Skill directory to read those methods.
 This resource MUST NOT be discovered as a standalone Skill or imply execution
 of a sibling Skill. Existing scopes, CLI arguments and other resource handling
 remain unchanged.
+
+### Requirement: Materialize optional shared testing methods
+
+Installation/synchronization MUST copy canonical skills/testing-methods.md
+beside each Skill that declares it in SKILL.md, using the existing shared
+resource mechanism. fd-workflow, tdd, fd-test and fd-review MUST be able to
+read that method without a sibling directory. This is an internal resource
+declaration, not a new standalone Skill, command, flag or execution permission.

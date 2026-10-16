@@ -24,6 +24,13 @@ check prerequisites before implementation, and keep planning artifacts aligned
 when facts change. This is a method, not an invocation of OpenSpec commands.
 An explicitly requested change is optional supporting material, not the plan.
 
+## Test support
+
+For an explicit request for test support (any wording/language), load
+`testing.md` and record the selected scope, suitable TDD slices, independent
+acceptance round, authority and finite budget in FD Verification. Cases-only
+or no-TDD limits prevail. No test request means no default testing stage.
+
 ## Specification collaboration
 
 When confirmed capability behavior changes, load only Specification writing

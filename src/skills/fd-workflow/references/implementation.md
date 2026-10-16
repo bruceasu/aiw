@@ -55,14 +55,22 @@ not a failed gate or permission to fabricate completion of the whole FD.
 If review is separately authorized for part of an unfinished FD, keep it scoped
 without emitting a full-FD implementation-ready event or marking that FD ready.
 
+For selected test support, load `testing.md` before implementing: use suitable
+core-rule TDD, then host arranges independent fd-test before this handoff.
+Do not emit implementation-ready first and attempt to insert tests after the
+CLI has already dispatched Reviewer. Report actual versions, failures and
+diagnosis-only in Worker evidence; continue independent work without bypassing
+whole-FD readiness or restarting exhausted test repair/execution budgets.
+
 Only when the stage permits independent review and the whole FD implementation
 scope is complete, emit `implementation-ready` with
 `--producer worker` and a project-relative implementation report as the
 artifact. Include the source event ID when completing a dispatched handoff.
 For the default path, `implementation-ready` routes directly to Reviewer after
 the Worker completes the repository-authorized compile-only check and static
-review. Optional testing is a separate `$fd-test` invocation and does not
-create a workflow event or gate review. Existing FDs with the legacy
+review and any explicitly selected testing support has been accounted for.
+Optional testing uses tdd/fd-test methods under `testing.md` without creating a
+Tester event or automatic coverage gate. Existing FDs with the legacy
 `Test policy: Independent` marker retain their recorded CLI routing, but the
 default implementation flow does not dispatch a Tester or assess a test
 report. If a new decision is needed, emit `needs-decision` with a written

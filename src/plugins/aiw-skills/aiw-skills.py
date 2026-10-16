@@ -29,6 +29,7 @@ SHARED_SKILL_REFERENCES = (
     "skills/reviewed-skill-contract.md",
     "skills/work-management.md",
     "skills/workflow-methods.md",
+    "skills/testing-methods.md",
 )
 MANAGED_SOURCE_IDENTITY = "<adopted-from-installed>"
 

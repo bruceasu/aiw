@@ -34,8 +34,12 @@ explicitly cancelled item, with its reason on the same line.
 
 ## Verification
 
-- Compile-only check and static review by default. Optional tests use `$fd-test`
-  when requested and do not gate FD acceptance.
+- Compile-only check and static review by default; record unrun tests explicitly.
+- For explicitly requested test support (any wording/language), record suitable
+  TDD scope, independent fd-test scope, command/revision authorization and finite
+  budget here. Otherwise no testing stage is added. On exhausted unexpected-
+  failure budget, stop affected test repair/execution, diagnose statically and
+  continue independent work; unresolved acceptance defects still block delivery.
 
 ## Sources
 

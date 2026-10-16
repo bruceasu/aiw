@@ -79,3 +79,8 @@ from heuristics; label uncertainty instead of inventing evidence. State what
 was inspected and what remains unverified. The active entry owns report
 format, verdict and events. Loading this method never invokes another Skill,
 spawns extra reviewers, runs tests or expands review rounds by itself.
+
+Relevant optional test evidence may support review: inspect rule/oracle quality,
+key assertions, tested versions and limits, not pass counts alone. Confirmed
+acceptance defects remain actionable even when tests are optional. An exhausted
+test effort stays diagnosis-only; review does not restart its repair/run budget.

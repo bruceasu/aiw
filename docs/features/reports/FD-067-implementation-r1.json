@@ -1,0 +1,70 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-067",
+  "source_event": "FD-067-000003-design-ready",
+  "human_report": "FD-067-implementation-r1.md",
+  "data": {
+    "worker_session": "fd067-worker-20261017-c82f",
+    "base_commit": "1ea549d",
+    "implementation_commits": [
+      "faa9af3",
+      "7d3e9fd",
+      "cf49b4c",
+      "52a1911"
+    ],
+    "completed_items": [
+      "1.1",
+      "1.2",
+      "1.3",
+      "1.4"
+    ],
+    "summary": "Shared test quality, semantic opt-in orchestration, persistent bounded diagnosis fallback and related evidence/specs/materialized resources.",
+    "compile_only": {
+      "files": [
+        "src/plugins/aiw-skills/aiw-skills.py",
+        "src/plugins/aiw-fd.py"
+      ],
+      "method": "Python built-in compile(bytes,path,exec), no execution or artifact",
+      "exit_code": 0,
+      "runs": 1
+    },
+    "static_check": {
+      "result": "partial; script aborted, not a full pass",
+      "initial_error": "top-level shared file mapped as a skill folder",
+      "corrected_retry_error": "whole fallback template equality asserted despite pre-existing differences",
+      "verified_copies": {
+        "work-management.md": 27,
+        "workflow-methods.md": 5,
+        "testing-methods.md": 4
+      },
+      "resource_declarations": 4,
+      "json_template": "parsed before second assertion",
+      "verification_text": "read and matched; whole-template equivalence not claimed",
+      "obsolete_rule_scan": "not reached; independent reviewer to inspect"
+    },
+    "static_examples": [
+      "decimal-rounding",
+      "ownership-rejection",
+      "environment-and-budget-exhaustion"
+    ],
+    "test_support_selected_for_this_fd": false,
+    "tests_run": false,
+    "not_run": [
+      "tests",
+      "coverage",
+      "installer/sync",
+      "host behavior evaluation",
+      "mutation execution",
+      "network",
+      "final builds",
+      "linters/formatters"
+    ],
+    "risks": [
+      "Host instruction behavior not executed",
+      "Report schema retained without new CLI field validation",
+      "User-global installation unchanged"
+    ],
+    "independent_review": "pending"
+  }
+}
