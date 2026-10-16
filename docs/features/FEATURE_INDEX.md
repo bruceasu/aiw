@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-067](FD-067_IMPROVE_TEST_EVIDENCE_AND_ORCHESTRATE_OPTIONAL_W.md) | Improve test evidence and orchestrate optional with test workflow | Open | Medium |
 
 ## Completed
 
