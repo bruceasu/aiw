@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-066](FD-066_UNIFY_ISSUE_DESIGN_REVIEW_AND_RELEASE_SKILL_LIFE.md) | Unify Issue design review and release skill lifecycle | Open | Medium |
 
 ## Completed
 
