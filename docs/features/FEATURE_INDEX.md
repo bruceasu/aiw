@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-069](FD-069_DOCUMENT_CANONICAL_SKILLS_AND_EXPLAIN_PACKAGING_.md) | Document canonical skills and explain packaging and installation | Open | Medium |
 
 ## Completed
 
