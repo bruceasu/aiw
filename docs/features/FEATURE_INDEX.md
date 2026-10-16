@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-075](FD-075_ADD_BOUNDED_OPTIONAL_CONSULTATION_TO_ASK_ASU_NAV.md) | Add bounded optional consultation to ask-asu navigation | Open | Medium |
 
 ## Completed
 
