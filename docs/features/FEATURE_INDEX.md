@@ -12,7 +12,6 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-059](FD-059_GENERALIZE_DISCUSSION_SKILLS_AND_ISSUE_METHOD_RO.md) | 通用讨论技能与 Issue 方法路由 | Complete | Medium |
 | [FD-001](archive/FD-001/FD-001_EVENT_DRIVEN_FD_WORKFLOW.md) | 事件驱动的 FD 工作流 | Complete | High |
 | [FD-002](archive/FD-002/FD-002_ACTIONABLE_FD_HANDOFF_RECOVERY_HINTS.md) | Actionable FD handoff recovery hints | Complete | Medium |
 | [FD-003](archive/FD-003/FD-003_COMPACT_CZ_RELEASE.md) | 精简 aiw-cz 发布包 | Complete | Medium |
@@ -71,6 +70,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-056](archive/FD-056/FD-056_FEATURE.md) | 声明式插件清单与启动方式 | Complete | Medium |
 | [FD-057](archive/FD-057/FD-057_AIW_SAY.md) | 增量优化 AIW Say 翻译提示词 | Complete | Medium |
 | [FD-058](archive/FD-058/FD-058_ADD_PLUGIN_TOML_METADATA_FOR_BUILT_IN_PLUGINS.md) | 为内置插件补充 `plugin.toml` 元数据 | Complete | Medium |
+| [FD-059](archive/FD-059/FD-059_GENERALIZE_DISCUSSION_SKILLS_AND_ISSUE_METHOD_RO.md) | 通用讨论技能与 Issue 方法路由 | Complete | Medium |
 
 ## Deferred / Closed
 

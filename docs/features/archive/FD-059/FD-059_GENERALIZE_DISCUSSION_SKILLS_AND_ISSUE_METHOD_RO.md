@@ -36,7 +36,7 @@
 
 ## TODO
 
-- 实施与双格式证据已完成，独立审查通过。交付合并与归档尚未执行，保留专用 worktree。
+- 实施与双格式证据已完成，独立审查通过；已 squash 交付至 develop（b4807ab），完成归档，专用 worktree 与 feature/FD-059 分支已由 CLI 校验后清理。
 
 ## Verification
 
@@ -46,6 +46,10 @@
 - 剩余风险：尚无运行时行为验证；旧版已安装 CLI 与用户级技能需另行更新，本轮只同步仓库内项目副本。
 - 实施报告：reports/FD-059-implementation-r1.md 与同名 JSON。
 - 独立审查通过：reviews/FD-059-review-r1.md 与同名 JSON；Reviewer `fd059-reviewer-20261016`，来源事件 `FD-059-000004-implementation-ready`，审查 `db8b7fd..e48d42a`。静态确认五种方法跨领域路由、证据与预算边界、七个技能目录副本一致及发布阶段分离；Reviewer 未运行测试或编译。
+- Auto 收尾：复核当前 FD 摘要与 FD-059-000005-verification-passed 一致，双方工作区干净，审查后仅变更流程与审查文档；本轮沿用一次独立审查与原编译结果，未重复检查实现。
+- 实际执行 `aiw git wt local-merge FD-059` 和 `aiw fd close FD-059 Complete` 均成功。交付提交 b4807ab 的 FD-Source 为 07fbf12effb299d9c358caad53f9c2ab9588bd4f；CLI 清理分支和 worktree 并保留收据。
+- PM claim 尝试被 CLI 明确拒绝（human and PM handoffs cannot be claimed by an agent session），未重试；按 PM 收尾路径直接使用受支持的交付与归档命令成功完成，无 Gate 绕过。
+- 本轮未运行测试、编译、构建、网络或下载；未更新已安装 CLI 或用户级技能。
 
 ## Sources
 
@@ -55,3 +59,5 @@
 - src/skills/issue-management/SKILL.md 与六个 finance-* 技能。
 - src/internal/issue/context_methods.go 与 conversation.go。
 - openspec/specs/requirement/spec.md。
+
+**Completed:** 2026-10-16
