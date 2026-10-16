@@ -12,7 +12,6 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-064](FD-064_SYNC_RECORDED_PARENT_BEFORE_INDEPENDENT_FD_REVIE.md) | 按需恢复 FD 本地交付失败 | Complete | Medium |
 | [FD-001](archive/FD-001/FD-001_EVENT_DRIVEN_FD_WORKFLOW.md) | 事件驱动的 FD 工作流 | Complete | High |
 | [FD-002](archive/FD-002/FD-002_ACTIONABLE_FD_HANDOFF_RECOVERY_HINTS.md) | Actionable FD handoff recovery hints | Complete | Medium |
 | [FD-003](archive/FD-003/FD-003_COMPACT_CZ_RELEASE.md) | 精简 aiw-cz 发布包 | Complete | Medium |
@@ -76,6 +75,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-061](archive/FD-061/FD-061_CONSOLIDATE_ISSUE_DISCUSSION_METHODS_INTO_REFERE.md) | 将 Issue 讨论方法收拢为内部 references | Complete | Medium |
 | [FD-062](archive/FD-062/FD-062_IMPROVE_WRITING_GREAT_SKILLS_AUTHORING_WORKFLOW.md) | 优化 writing-great-skills 的编写流程与跨平台参考 | Complete | Medium |
 | [FD-063](archive/FD-063/FD-063_AUTOMATICALLY_DELIVER_AND_ARCHIVE_REVIEWED_FD_IM.md) | 默认自动交付并归档符合条件的 FD 实现 | Complete | Medium |
+| [FD-064](archive/FD-064/FD-064_SYNC_RECORDED_PARENT_BEFORE_INDEPENDENT_FD_REVIE.md) | 按需恢复 FD 本地交付失败 | Complete | Medium |
 
 ## Deferred / Closed
 

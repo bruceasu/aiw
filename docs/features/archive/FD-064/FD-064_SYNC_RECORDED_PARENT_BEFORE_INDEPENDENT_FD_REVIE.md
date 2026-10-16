@@ -37,7 +37,7 @@ FD-063 因父分支并发删除导致交付冲突，用户手动恢复后成功�
 
 ## TODO
 
-- 按上述工作项实施、独立审查，通过后自动本地交付并归档。
+- 实现完成，独立审查 r1 通过；已 squash 到 develop（e9235a8），CLI 清理 feature/FD-064 与 .wt/FD-064，宿主 close 归档并提交归档记录。
 
 ## Verification
 
@@ -45,6 +45,13 @@ FD-063 因父分支并发删除导致交付冲突，用户手动恢复后成功�
 
 - Worker 证据：`reports/FD-064-implementation-r1.md` 及同名 JSON；最后策略修改后的最终副本一致性由独立 Reviewer 核查。
 - 独立静态审查通过：`reviews/FD-064-review-r1.md` 及同名 JSON；审查范围 `8f3f432..ce5a5ea`，31 个共享副本和六组技能文件一致。未运行测试、编译、构建或网络；未运行实际冲突恢复。
+
+## Delivery record
+
+- 2026-10-17，独立审查事件 FD-064-000005-verification-passed，FD revision/digest 与交付前文件一致。审查报告位于 reviews/FD-064-review-r1.md 及同名 JSON。
+- 源 HEAD：941ba25299e0c7cceef9b29ad5c538af247f8fe5；父分支 develop 的 squash：e9235a8。审查后仅添加审查证据、FD 和索引，无实现漂移。
+- 实际执行 aiw git wt local-merge FD-064，成功交付并校验清理；随后执行 aiw fd close FD-064 Complete，归档由宿主单独完成。本次未执行 sync，也未发生实际冲突。
+- 最终独立静态核对确认 31 个共享副本和六组技能文件一致。未运行编译（无适用目标）、测试、构建、格式化、lint、验证脚本或网络；实际冲突恢复仍未运行验证。
 
 ## Sources
 
@@ -54,3 +61,5 @@ FD-063 因父分支并发删除导致交付冲突，用户手动恢复后成功�
 - 用户随后明确选择“自动尝试明确可解的冲突，无法解决则保留现场”。此决定替代本 FD 初稿中冲突先等待恢复指令的策略。
 - FD-063 归档及冲突反馈；src/plugins/aiw-git/git-wt.py 的 sync/local_merge/commit 静态实现。
 - src/skills/work-management.md、fd-workflow、implement、fd-review；openspec/specs/fd-workflow/spec.md。
+
+**Completed:** 2026-10-16
