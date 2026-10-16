@@ -39,7 +39,7 @@ grill-with-docs、domain-modeling 和 finance-release-gate 不迁移或复制。
 
 ## TODO
 
-- 三个 Work Items 与双格式证据已完成，独立审查通过；等待 PM 后续交付决定，尚未合并或归档。
+- 三个 Work Items 与双格式证据已完成，独立审查通过；已 squash 交付至 develop 并归档 Complete，专用 worktree 和 feature/FD-061 分支已清理。
 
 ## Verification
 
@@ -49,6 +49,9 @@ grill-with-docs、domain-modeling 和 finance-release-gate 不迁移或复制。
 - 实施报告：reports/FD-061-implementation-r1.md 与同名 JSON。
 - 独立 Reviewer fd061-reviewer-20261017-6c4e 对 2d62ef9..58ff118 静态审查通过，无阻塞发现；报告 reviews/FD-061-review-r1.md 与同名 JSON，来源事件 FD-061-000004-implementation-ready。六组源/项目哈希一致、二十个旧入口/UI 文件均缺失；未重复编译或运行测试及安装同步。
 - 剩余风险：旧 CLI/用户级技能需单独更新，实际安装和模型行为未验证；诊断保留历史方法 ID。
+- Auto 收尾：复核当前 FD Revision 5 的摘要与 FD-061-000005-verification-passed 一致；审查后只有审查/流程记录变更，双方工作区干净，无未解决的 blocker 反馈文件。沿用一次独立审查与原离线编译证据。
+- 实际执行 `aiw git wt local-merge FD-061` 和 `aiw fd close FD-061 Complete` 均成功。交付来源 FD-Source 为 1de719ab7f7369c801bdce29603ee140ef8c08f1；CLI 校验交付后移除 worktree 与分支，保留收据。
+- 本轮未重复运行编译、测试、构建、安装同步或网络操作；已安装 CLI 和用户级技能仍需另行更新。
 
 ## Sources
 
@@ -59,3 +62,5 @@ grill-with-docs、domain-modeling 和 finance-release-gate 不迁移或复制。
 - src/internal/issue/context_methods.go、conversation.go。
 - src/plugins/aiw-skills/aiw-skills.py 整目录 materialize/copytree 行为。
 - openspec/specs/requirement/spec.md；FD-059/FD-060 保持历史不变。
+
+**Completed:** 2026-10-16
