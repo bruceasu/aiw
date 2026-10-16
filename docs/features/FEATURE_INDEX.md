@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-071](FD-071_IMPROVE_HANDOFF_BRIEFS_AND_SAFE_CROSS_SESSION_CO.md) | Improve handoff briefs and safe cross-session continuation | Open | Medium |
 
 ## Completed
 
