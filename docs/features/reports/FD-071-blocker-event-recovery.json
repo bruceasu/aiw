@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-071",
+  "source_event": "FD-071-000002-design-ready",
+  "human_report": "FD-071-blocker-event-recovery.md",
+  "data": {
+    "stage": "worker-claim",
+    "role": "pm",
+    "status": "resolved",
+    "observed_blocker": "duplicate revision event sequence caused latest-event mismatch",
+    "confirmed_cause": "Planner reset generated Revision 2 to 1; dependent edits continued after claim failure",
+    "recovery_attempts": [
+      "Read receipts and latest-event/refresh-worker/force-emit code; no receipt edits or retries"
+    ],
+    "human_decision_required": false,
+    "actual_resolution": "Managed force-emit created FD-071-000003-design-ready and Worker claimed it; override audit retained, independent review still required",
+    "reusable_improvement": "Preserve generated revision and stop dependent mutations on command failure"
+  }
+}

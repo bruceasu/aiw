@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-071",
+  "source_event": "FD-071-000004-implementation-ready",
+  "human_report": "FD-071-review-r1.md",
+  "data": {
+    "reviewer_session": "fd071-reviewer-20261017-f6a2",
+    "base_commit": "575440f",
+    "reviewed_commit": "b84c73d",
+    "implementation_commit": "87652be",
+    "verdict": "passed",
+    "findings": [],
+    "acceptance": "all six acceptance areas supported by static instruction review",
+    "copy_pairs_equal": 2,
+    "recovery_audit_verified": "4268e3a877be49a0b1c80b17caed9555",
+    "recovery_override_review_verified": false,
+    "review_waived": false,
+    "checks_not_run": ["tests", "compile: Markdown only", "model evaluation", "network", "install", "formatter", "lint", "vet", "release build"],
+    "command_error": "One receipt read used an incorrect filename; corrected path read actual receipts",
+    "risks": ["Real model handoff behavior unverified", "Global installation not updated"],
+    "remaining_pm_work": "local delivery and archive; compound Work Item 1.3 not fully finished until then"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-071",
+  "source_event": "FD-071-000003-design-ready",
+  "human_report": "FD-071-implementation-r1.md",
+  "data": {
+    "worker_session": "fd071-worker-20261017-92ac",
+    "base_commit": "575440f",
+    "implementation_revision": "87652be",
+    "completed_items": ["1.1", "1.2", "1.3"],
+    "static_checks": {"batches": 1, "exit_code": 0, "copy_pairs": 2, "implementation_files": 4},
+    "compile_only": "not applicable: Markdown instructions only",
+    "tests_run": false,
+    "models_run": false,
+    "independent_review": "pending",
+    "blocker_report": "FD-071-blocker-event-recovery.md",
+    "blocker_status": "resolved",
+    "process_exception": "implementation edits occurred after original claim failed; managed PM force-emit and new claim recorded, review not waived",
+    "risks": ["No runtime model handoff evaluation", "Global installed skill not updated"]
+  }
+}

@@ -1,7 +1,7 @@
 # FD-071: Improve handoff briefs and safe cross-session continuation
 
-**Status:** Open
-**Revision:** 2
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -29,9 +29,9 @@ handoff 缺少明确版本锚点、跨会话授权与预算、接手核查和未
 
 ## Work items
 
-- [ ] 1.1 优化交接与接手指令。Size: S; Difficulty: Low; Dependencies: none. Completion: 两种深度、版本、授权预算、结果核查、条件FD/辅助/课程字段明确，旧触发边界保持。
-- [ ] 1.2 更新说明并同步项目副本。Size: S; Difficulty: Low; Dependencies: 1.1. Completion: README 用途/示例/边界一致，两组文件字节相同，无全局安装。
-- [ ] 1.3 静态证据、独立评审及交付归档。Size: S; Difficulty: Low; Dependencies: 1.2. Completion: 有界静态情景核查与报告、独立评审，过门槛后本地合并归档。
+- [x] 1.1 优化交接与接手指令。Size: S; Difficulty: Low; Dependencies: none. Completion: 两种深度、版本、授权预算、结果核查、条件FD/辅助/课程字段明确，旧触发边界保持。
+- [x] 1.2 更新说明并同步项目副本。Size: S; Difficulty: Low; Dependencies: 1.1. Completion: README 用途/示例/边界一致，两组文件字节相同，无全局安装。
+- [x] 1.3 静态证据、独立评审及交付归档。Size: S; Difficulty: Low; Dependencies: 1.2. Completion: 有界静态情景核查与报告、独立评审，过门槛后本地合并归档。
 
 ## Acceptance
 
@@ -48,9 +48,13 @@ handoff 缺少明确版本锚点、跨会话授权与预算、接手核查和未
 - 一批只读检查两组副本、相对链接及diff；静态情景：无FD、FD领取中、未知模型结果、课程中断、过期摘要、预算耗尽。
 - 独立Reviewer核查真实实现。文档改动无公开接口/持久化设计，不额外设计评审。
 
+- Worker: implementation 87652be; one bounded static check passed (two copy pairs, README link, required fields, four-Markdown implementation scope). No compile applies to these instruction-only changes. Independent implementation review pending.
+- Event recovery: reports/FD-071-blocker-event-recovery.md/.json documents duplicate revision and managed PM override; actual Worker claim is FD-071-000003-design-ready. No verification waived.
+- Reviewer: reviews/FD-071-review-r1.md/.json，基线575440f、HEAD b84c73d，实现87652be，独立静态评审通过。未运行模型或测试；1.3中的本地交付归档仍由PM完成。
+
 ## TODO
 
-- [ ] 完成1.1–1.3及独立评审。
+- [x] 完成1.1–1.2、1.3静态证据及独立评审；1.3交付归档见下项。
 - [ ] 本地交付与归档。
 
 ## Sources
