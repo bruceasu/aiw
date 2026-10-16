@@ -12,7 +12,6 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-069](FD-069_DOCUMENT_CANONICAL_SKILLS_AND_EXPLAIN_PACKAGING_.md) | Document canonical skills and explain packaging and installation | Complete | Medium |
 | [FD-001](archive/FD-001/FD-001_EVENT_DRIVEN_FD_WORKFLOW.md) | 事件驱动的 FD 工作流 | Complete | High |
 | [FD-002](archive/FD-002/FD-002_ACTIONABLE_FD_HANDOFF_RECOVERY_HINTS.md) | Actionable FD handoff recovery hints | Complete | Medium |
 | [FD-003](archive/FD-003/FD-003_COMPACT_CZ_RELEASE.md) | 精简 aiw-cz 发布包 | Complete | Medium |
@@ -81,6 +80,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-066](archive/FD-066/FD-066_UNIFY_ISSUE_DESIGN_REVIEW_AND_RELEASE_SKILL_LIFE.md) | Unify Issue design review and release skill lifecycle | Complete | Medium |
 | [FD-067](archive/FD-067/FD-067_IMPROVE_TEST_EVIDENCE_AND_ORCHESTRATE_OPTIONAL_W.md) | Improve test evidence and orchestrate optional with test workflow | Complete | Medium |
 | [FD-068](archive/FD-068/FD-068_INTEGRATE_DOMAIN_MODELING_DECISION_DEPENDENCIES_.md) | Integrate domain modeling decision dependencies and intake triage | Complete | Medium |
+| [FD-069](archive/FD-069/FD-069_DOCUMENT_CANONICAL_SKILLS_AND_EXPLAIN_PACKAGING_.md) | Document canonical skills and explain packaging and installation | Complete | Medium |
 
 ## Deferred / Closed
 

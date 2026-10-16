@@ -75,7 +75,7 @@ explicitly cancelled item, with its reason on the same line.
 ## TODO
 
 - [x] 完成 1.1–1.4 与独立评审。
-- [ ] 正常本地合并及归档。
+- [x] 正常本地合并及归档。
 
 ## Sources
 
@@ -84,3 +84,14 @@ explicitly cancelled item, with its reason on the same line.
 - 本会话用户对顶层 Markdown、四个辅助技能及逐技能 README 的请求。
 - build.py 的 copy_tree/install_skills；src/plugins/aiw-skills/aiw-skills.py 的 source_root/discover_skills/shared_skill_references/materialize_skill_source。
 - src/skills/*/SKILL.md、四种共享合同/方法和当前总 README。
+
+## Delivery record
+
+- 独立通过事件：FD-069-000005-verification-passed；Reviewer session fd069-reviewer-20261017-b74e。评审实现 57fe00f；评审证据提交 2f16bbb3334bc97d515e25b420def5ac56c817eb。
+- 交付前 FD revision 5，SHA256 e77c7be9d4410df4beedc0cb5353b8aeb49ca7ab7773f03d151879514a37ea1b，与通过事件一致；父和 FD 工作区干净，评审后仅 FD/index/评审证据改变。
+- aiw git wt local-merge FD-069 直接成功，无主动 sync 或冲突；develop squash 提交 d38ef51，FD-Source 为上述证据提交。
+- CLI 校验后删除 feature/FD-069 和 .wt/FD-069，保留 receipts；完整输出保存 .ai/fd/FD-069/local-merge.log。
+- aiw fd close FD-069 Complete 成功后才补写本段和交付 TODO，未提前改动通过事件绑定的正文。
+- 静态文档检查及独立评审通过。只有文档修改，编译不适用；未执行测试、build.py、构建、install/sync、网络或宿主行为评估。发行与用户级安装未改，现有覆盖残留及共享资源定位限制保留。
+
+**Completed:** 2026-10-16
