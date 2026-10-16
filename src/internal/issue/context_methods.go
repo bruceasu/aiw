@@ -88,12 +88,14 @@ func (snapshot *ConversationContext) loadMethods(reader *contextReader, suggesti
 	selection.Suggestion = &copy
 	reader.remaining -= size
 	validDomain := copy.Domain == "finance" || copy.Domain == "generic" || copy.Domain == "unknown"
-	methods := map[string]string{
-		"intake": "finance-requirement-intake",
-		"value": "finance-value-assessment",
-		"metric": "finance-metric-brief",
-		"feasibility": "finance-engineering-options",
-		"synthesis": "finance-requirement-synthesis",
+	// Keep historical selection IDs for Session compatibility; bodies now
+	// belong to the Issue skill rather than separately installed skills.
+	methods := map[string]struct{ id, reference string }{
+		"intake": {"finance-requirement-intake", "intake.md"},
+		"value": {"finance-value-assessment", "value-assessment.md"},
+		"metric": {"finance-metric-brief", "metric-brief.md"},
+		"feasibility": {"finance-engineering-options", "engineering-options.md"},
+		"synthesis": {"finance-requirement-synthesis", "synthesis.md"},
 	}
 	method, validGap := methods[copy.Gap]
 	if !validDomain || !validGap || strings.TrimSpace(copy.Reason) == "" || !snapshot.methodEvidence(copy) {
@@ -101,8 +103,8 @@ func (snapshot *ConversationContext) loadMethods(reader *contextReader, suggesti
 		return nil
 	}
 	selection.Reason = "Evidence-linked recommendation; domain and gap are not confirmed facts"
-	selection.Primary = method
-	selected := []string{method}
+	selection.Primary = method.id
+	selected := []string{method.id}
 	if copy.TermsUnclear {
 		selection.Supplement = "domain-modeling"
 		selected = append(selected, "domain-modeling")
@@ -112,6 +114,9 @@ func (snapshot *ConversationContext) loadMethods(reader *contextReader, suggesti
 		source := ConversationSource{
 			Kind: "method", Path: ".agents/skills/" + id + "/SKILL.md",
 			Purpose: "Selected discussion method in Requirement mode: " + id,
+		}
+		if id == method.id {
+			source.Path = ".agents/skills/issue-management/references/" + method.reference
 		}
 		err := source.load(reader, false)
 		if err == nil && strings.TrimSpace(source.Content) == "" {

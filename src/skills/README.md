@@ -27,10 +27,8 @@ CLI 负责发现、安装和同步 Skill。Skill 名称不是 CLI 子命令。
 - `domain-modeling`：整理领域术语、概念关系和边界。
 - `codebase-design`：设计模块接口、职责和代码边界。
 - `improve-codebase-architecture`：发现并分析架构改进机会。
-- `finance-requirement-intake`、`finance-value-assessment`、
-  `finance-metric-brief`、`finance-engineering-options`、
-  `finance-requirement-synthesis`：跨领域澄清问题、价值、指标、
-  技术选项并整理结论。保留历史名称，金融规则仅在适用场景使用。
+- `issue-management/references/`：随 Issue 入口按需读取的问题澄清、
+  价值、指标、技术选项与综合决策方法，不作为独立 Skill 安装或调用。
 - `requirement-management`：继续处理旧版 AIW Requirement 记录，保留其
   REQ ID 和历史；新需求使用 `issue-management`。
 
@@ -93,9 +91,8 @@ OpenSpec 管理稳定能力规格。仅当用户明确要求时创建 OpenSpec c
 
 - 想先了解阶段和下一步：`ask-asu`。
 - 仅需诊断故障：`diagnosing-bugs`；需要改动时再进入 Issue/FD 流程。
-- 各领域 Issue：按当前讨论缺口选择 `finance-requirement-intake`、
-  `finance-value-assessment`、`finance-metric-brief`、
-  `finance-engineering-options` 和 `finance-requirement-synthesis`。
+- 各领域 Issue：使用 `issue-management`，由它按当前缺口选择内部
+  references；共享 `grill-with-docs` 和发布评估保持独立。
 - 用户明确要求 OpenSpec change：`to-spec`，再按需要使用 `to-tickets`。
 
 Skill 不会因为出现在工作流中就自动获得额外授权。实现、审查、测试、

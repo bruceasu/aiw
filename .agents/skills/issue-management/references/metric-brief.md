@@ -1,11 +1,6 @@
----
-name: finance-metric-brief
-description: Clarify the intended meaning, use, and unresolved conflicts of a metric in any domain before it becomes an implemented data contract or report specification. Use for metric discovery and reconciliation, not for SQL, ETL, or OpenSpec writes.
----
-
 # Metric Brief
 
-Use this method across domains. The `finance-` skill ID is retained for compatibility; it does not restrict activation to finance. Apply domain-specific rules only when relevant to the supplied evidence.
+Internal Issue discussion method. Load this reference only for the current discussion gap. Apply domain-specific rules only when relevant to the supplied evidence.
 
 Produce a `Metric Brief` that captures the intended business meaning of a number and the decisions still required before it can become a durable metric specification.
 
@@ -37,7 +32,7 @@ Capture intended definition, formula, unit, time semantics, refresh expectation,
 
 - Monetary metrics require explicit treatment of currency, precision, rounding, timezone, cut-off, settlement/value date, and snapshot-versus-transaction semantics.
 - Do not invent sources, owners, formulas, or regulatory rules.
-- `DEFINED` means the discussion evidence is sufficient for promotion consideration; it does not create a durable data contract. After user confirmation, AIW Issue Management (or legacy Requirement Management) may capture this artifact; this Skill must not invoke capture.
+- `DEFINED` means the discussion evidence is sufficient for promotion consideration; it does not create a durable data contract. After user confirmation, AIW Issue Management (or legacy Requirement Management) may capture this artifact; this method must not invoke capture.
 - Use `%%` for gaps and recommend one next discussion stage without invoking it.
 
 ## Output
@@ -47,7 +42,7 @@ Capture intended definition, formula, unit, time semantics, refresh expectation,
 Apply this method to the current Issue and discussion gap in any domain.
 Use domain-specific checks only when the supplied context requires them. The current host JSON contract overrides the Markdown template below;
 use the template only for a requested draft or standalone discussion.
-Use loaded source bodies and exact references. Do not load sibling Skills or
+Use loaded source bodies and exact references. Do not load other references, Skills, or
 linked materials, invent missing evidence, or treat capture as confirmation.
 Ask only the highest-impact open questions; keep conflicts and proposed
 conclusions separate from host-confirmed fragments. Report missing evidence

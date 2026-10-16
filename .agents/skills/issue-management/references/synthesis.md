@@ -1,11 +1,6 @@
----
-name: finance-requirement-synthesis
-description: Synthesize Issue discussion artifacts in any domain into a human decision package. Use to resume, focus, or consolidate discovery, value, metric, and engineering-option discussions; not to create an FD, Task, OpenSpec change, or release decision.
----
-
 # Requirement Synthesis
 
-Use this method across domains. The `finance-` skill ID is retained for compatibility; it does not restrict activation to finance. Apply domain-specific rules only when relevant to the supplied evidence.
+Internal Issue discussion method. Load this reference only for the current discussion gap. Apply domain-specific rules only when relevant to the supplied evidence.
 
 Consolidate existing Requirement Artifacts into a `Requirement Plan` that lets a human decide whether to promote the requirement into managed engineering work.
 
@@ -32,8 +27,8 @@ The plan indexes available evidence, separates facts from assumptions, identifie
 ## Rules
 
 - Do not claim missing sibling discussions were performed. A mode may only summarize supplied artifacts or discuss the requested scope.
-- Do not call sibling Skills automatically.
-- Do not create a Task, OpenSpec change, implementation checklist, branch, worktree, or release decision. After user confirmation, AIW Issue Management (or legacy Requirement Management) may capture this artifact; this Skill must not invoke capture.
+- Do not load other methods automatically.
+- Do not create a Task, OpenSpec change, implementation checklist, branch, worktree, or release decision. After user confirmation, AIW Issue Management (or legacy Requirement Management) may capture this artifact; this method must not invoke capture.
 - Release status is always `NOT_STARTED` until an implemented FD or legacy AIW Task reaches the separate release stage.
 - `READY_FOR_HUMAN_DECISION` is not engineering readiness. Use `%%` for all unresolved gates.
 - Include goals, explicit non-goals, key rules, and verifiable acceptance
@@ -50,7 +45,7 @@ The plan indexes available evidence, separates facts from assumptions, identifie
 Apply this method to the current Issue and discussion gap in any domain.
 Use domain-specific checks only when the supplied context requires them. The current host JSON contract overrides the Markdown template below;
 use the template only for a requested draft or standalone discussion.
-Use loaded source bodies and exact references. Do not load sibling Skills or
+Use loaded source bodies and exact references. Do not load other references, Skills, or
 linked materials, invent missing evidence, or treat capture as confirmation.
 Ask only the highest-impact open questions; keep conflicts and proposed
 conclusions separate from host-confirmed fragments. Report missing evidence

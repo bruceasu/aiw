@@ -1,0 +1,32 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-061",
+  "source_event": "FD-061-000004-implementation-ready",
+  "human_report": "FD-061-review-r1.md",
+  "data": {
+    "reviewer_session": "fd061-reviewer-20261017-6c4e",
+    "reviewed_base": "2d62ef9",
+    "reviewed_head": "58ff118",
+    "implementation_commits": ["9a2e0bd", "36aa594"],
+    "fd_revision": 4,
+    "outcome": "passed",
+    "findings": [],
+    "acceptance": {
+      "migration_semantics_and_links": "supported by rename-aware diff",
+      "old_skill_and_ui_entries_removed": "all twenty file presence checks false",
+      "canonical_project_consistency": "all six hash comparisons true",
+      "fixed_gap_paths_and_historical_ids": "supported by loader and exact diff",
+      "json_and_old_session_compatibility": "unchanged suggestion fields and gap routing",
+      "failure_and_budget_boundaries": "unchanged branches inspected",
+      "installer_references": "supported by existing whole-directory copytree; not executed",
+      "shared_methods_and_documentation": "supported by scoped diff and README/spec"
+    },
+    "commands": ["Get-Content", "rg", "git diff --stat/--find-renames/--unified=0 2d62ef9 58ff118", "git status --short", "Get-FileHash", "Test-Path", "aiw fd --help", "aiw fd claim FD-061 FD-061-000004-implementation-ready --session fd061-reviewer-20261017-6c4e", "aiw fd emit --help"],
+    "command_limitations": ["One batched rg referenced nonexistent src/internal/issue/session.go and exited 1; not rerun"],
+    "worker_compile_evidence": {"command": "go build ./internal/issue", "cwd": "src", "offline": true, "reported_exit_code": 0, "reviewer_reran": false},
+    "skipped": ["tests", "compile", "final builds", "verification scripts", "installer execution", "formatters", "linters", "vet", "network", "downloads", "optional Tester reports"],
+    "residual_risks": ["Installation and real model discussion not executed", "Old installed CLI and user-level Skills need separate updating", "Historical finance method IDs remain in diagnostics"],
+    "delivery": "not committed, merged, released or archived"
+  }
+}

@@ -1,11 +1,6 @@
----
-name: finance-engineering-options
-description: Explore technical feasibility, constraints, boundaries, and trade-offs for an Issue in any domain before FD design. Use for solution options; not for implementation review, final design approval, or release readiness.
----
-
 # Engineering Options
 
-Use this method across domains. The `finance-` skill ID is retained for compatibility; it does not restrict activation to finance. Apply domain-specific rules only when relevant to the supplied evidence.
+Internal Issue discussion method. Load this reference only for the current discussion gap. Apply domain-specific rules only when relevant to the supplied evidence.
 
 Produce `Engineering Options` for a requirement: alternatives, constraints, dependencies, security and audit implications, and decisions a later design must make. This is not a review of implemented code and does not create `design.md`.
 
@@ -15,7 +10,7 @@ Produce `Engineering Options` for a requirement: alternatives, constraints, depe
 
 ## Do not use when
 
-- The request is still feature-centred or lacks a decision flow; route to `finance-requirement-intake`.
+- The request is still feature-centred or lacks a decision flow; route to [intake](intake.md).
 - The user asks for code review, implementation, schema migration, Task creation, final OpenSpec design, or release approval.
 
 ## Inputs
@@ -32,7 +27,7 @@ Describe options rather than prescribing implementation. Cover boundaries, depen
 
 ## Rules
 
-- Do not write code, migrations, deployment plans, OpenSpec design files, or implementation tasks. After user confirmation, AIW Issue Management (or legacy Requirement Management) may capture this artifact; this Skill must not invoke capture.
+- Do not write code, migrations, deployment plans, OpenSpec design files, or implementation tasks. After user confirmation, AIW Issue Management (or legacy Requirement Management) may capture this artifact; this method must not invoke capture.
 - Do not promise backward compatibility, permissions, audit retention, or data contracts without evidence.
 - Do not produce release `GO`/`NO_GO` conclusions.
 - Separate business blockers from engineering choices that could wait. State
@@ -47,7 +42,7 @@ Describe options rather than prescribing implementation. Cover boundaries, depen
 Apply this method to the current Issue and discussion gap in any domain.
 Use domain-specific checks only when the supplied context requires them. The current host JSON contract overrides the Markdown template below;
 use the template only for a requested draft or standalone discussion.
-Use loaded source bodies and exact references. Do not load sibling Skills or
+Use loaded source bodies and exact references. Do not load other references, Skills, or
 linked materials, invent missing evidence, or treat capture as confirmation.
 Ask only the highest-impact open questions; keep conflicts and proposed
 conclusions separate from host-confirmed fragments. Report missing evidence

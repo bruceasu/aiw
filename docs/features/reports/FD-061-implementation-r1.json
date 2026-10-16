@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-061",
+  "source_event": "FD-061-000003-design-ready",
+  "human_report": "FD-061-implementation-r1.md",
+  "data": {
+    "summary": "Consolidate five Issue discussion Skills into issue-management references; load fixed new paths while retaining historical selection IDs.",
+    "worker_session": "fd061-worker-20261017-a9d2",
+    "implementation_commits": ["9a2e0bd", "36aa594"],
+    "changed_paths": ["src/skills/issue-management", ".agents/skills/issue-management", "src/skills/README.md", "five former canonical and project finance discussion Skills", "src/internal/issue/context_methods.go", "src/internal/issue/conversation.go", "openspec/specs/requirement/spec.md"],
+    "commands": [
+      {"command": "git diff --find-renames develop -- src/skills src/internal/issue openspec/specs/requirement/spec.md", "result": "Static migration, link and call-path inspection completed"},
+      {"command": "Get-FileHash on five reference pairs and the Issue entry pair", "result": "All six comparisons true; wording-only edits later applied identically to both copies"},
+      {"command": "$env:GOPROXY='off'; $env:GOSUMDB='off'; $env:GOTOOLCHAIN='local'; go build ./internal/issue", "cwd": "src", "exit_code": 0}
+    ],
+    "results": {"static_review": "completed", "compile_only": "passed", "tests": "not run", "final_build": "not run", "installer_execution": "not run", "network": "not used", "independent_review": "pending"},
+    "residual_risk": ["Installed CLI and user-level skills require separate updating", "Historical selection IDs remain in diagnostics", "Runtime discussion and installation not tested", "Changes remain in dedicated worktree pending review and delivery"]
+  }
+}

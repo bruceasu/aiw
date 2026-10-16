@@ -1,11 +1,6 @@
----
-name: finance-value-assessment
-description: Assess whether an Issue in any domain has sufficient business or user value and an appropriately small scope. Use after problem discovery; not for technical design, FD creation, or implementation approval.
----
-
 # Value Assessment
 
-Use this method across domains. The `finance-` skill ID is retained for compatibility; it does not restrict activation to finance. Apply domain-specific rules only when relevant to the supplied evidence.
+Internal Issue discussion method. Load this reference only for the current discussion gap. Apply domain-specific rules only when relevant to the supplied evidence.
 
 Assess the value claim behind a clear requirement and produce a `Business Case` draft. This is a human decision aid, not a project approval or implementation gate.
 
@@ -15,7 +10,7 @@ Assess the value claim behind a clear requirement and produce a `Business Case` 
 
 ## Do not use when
 
-- The decision flow is unclear; route to `finance-requirement-intake`.
+- The decision flow is unclear; route to [intake](intake.md).
 - The request asks for metric definition, engineering design, Task creation, code, or release approval.
 
 ## Inputs
@@ -34,7 +29,7 @@ Assess evidence for user outcomes, reliability, time savings, revenue, risk redu
 - Evidence must name a person, incident, metric, research finding, or applicable regulatory source; do not treat sentiment as evidence.
 - Prefer a smaller scope or validation experiment where credible.
 - Do not infer human approval from `SUPPORTED`.
-- Do not create tasks, tickets, OpenSpec artifacts, or implementation plans. After user confirmation, AIW Issue Management (or legacy Requirement Management) may capture this artifact; this Skill must not invoke capture.
+- Do not create tasks, tickets, OpenSpec artifacts, or implementation plans. After user confirmation, AIW Issue Management (or legacy Requirement Management) may capture this artifact; this method must not invoke capture.
 - Use `%%` for missing evidence, owners, or decisions; recommend one next discussion stage without invoking it.
 
 ## Output
@@ -44,7 +39,7 @@ Assess evidence for user outcomes, reliability, time savings, revenue, risk redu
 Apply this method to the current Issue and discussion gap in any domain.
 Use domain-specific checks only when the supplied context requires them. The current host JSON contract overrides the Markdown template below;
 use the template only for a requested draft or standalone discussion.
-Use loaded source bodies and exact references. Do not load sibling Skills or
+Use loaded source bodies and exact references. Do not load other references, Skills, or
 linked materials, invent missing evidence, or treat capture as confirmation.
 Ask only the highest-impact open questions; keep conflicts and proposed
 conclusions separate from host-confirmed fragments. Report missing evidence

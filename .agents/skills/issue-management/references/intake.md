@@ -1,13 +1,8 @@
----
-name: finance-requirement-intake
-description: Clarify a bug, feature, or modification request in any domain before solution design. Use for problem discovery, decision flow, scope reduction, stakeholders, and unknowns; not for implementation planning or release approval.
----
-
 # Requirement Intake
 
-Use this method across domains. The `finance-` skill ID is retained for compatibility; it does not restrict activation to finance. Apply domain-specific rules only when relevant to the supplied evidence.
+Internal Issue discussion method. Load this reference only for the current discussion gap. Apply domain-specific rules only when relevant to the supplied evidence.
 
-Turn a raw request into a decision-centred `Problem Brief`. This is a requirement-discussion skill, not an AIW Task or OpenSpec workflow.
+Turn a raw request into a decision-centred `Problem Brief`. This is a requirement-discussion method, not an AIW Task or OpenSpec workflow.
 
 ## Use when
 
@@ -16,7 +11,7 @@ Turn a raw request into a decision-centred `Problem Brief`. This is a requiremen
 
 ## Do not use when
 
-- A clear Problem Brief already exists; route to `finance-value-assessment`, `finance-metric-brief`, or `finance-engineering-options` according to the gap.
+- A clear Problem Brief already exists; route to [value-assessment](value-assessment.md), [metric-brief](metric-brief.md), or [engineering-options](engineering-options.md) according to the gap.
 - The user asks to create a Task, proposal, design, code, schema, branch, or worktree.
 
 ## Inputs
@@ -40,7 +35,7 @@ Include: problem, actor, situation, signal seen, decision, action, downstream im
 - Do not write files or create AIW/OpenSpec artifacts. Requirement Management
   prepares the draft and host confirmation checkpoint; do not require the human
   to construct a file path or capture command. This method must not invoke capture.
-- Recommend one next stage; do not invoke sibling Skills or map its status to their status.
+- Recommend one next stage; do not load other methods or map its status to their status.
 
 ## Output
 
@@ -49,7 +44,7 @@ Include: problem, actor, situation, signal seen, decision, action, downstream im
 Apply this method to the current Issue and discussion gap in any domain.
 Use domain-specific checks only when the supplied context requires them. The current host JSON contract overrides the Markdown template below;
 use the template only for a requested draft or standalone discussion.
-Use loaded source bodies and exact references. Do not load sibling Skills or
+Use loaded source bodies and exact references. Do not load other references, Skills, or
 linked materials, invent missing evidence, or treat capture as confirmation.
 Ask only the highest-impact open questions; keep conflicts and proposed
 conclusions separate from host-confirmed fragments. Report missing evidence

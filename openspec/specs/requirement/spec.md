@@ -220,7 +220,13 @@ archive / cancel MUST 要求操作人与原因，并将需求移动至对应终�
 
 ### Requirement: 实际装载发现方法
 
-系统 MUST 装载内置 generic-discovery 基线。讨论方法建议 MUST 带有当前已装载内容的有效摘要和原文引用。通过校验的建议 MUST 按当前 intake、value、metric、feasibility 或 synthesis 缺口选择项目 `.agents/skills/` 中对应方法，不以 finance、generic 或 unknown 领域标签限制激活。保留 finance-* 技能 ID 以兼容既有引用；金融专用规则仅在相关场景适用。术语不明确可增加 domain-modeling。方法正文 MUST 实际进入上下文，不自动装载完整讨论链；发布评估不属于需求发现阶段。
+系统 MUST 装载内置 generic-discovery 基线。讨论方法建议 MUST 带有当前已装载内容的有效摘要和原文引用。通过校验的建议 MUST 按当前 intake、value、metric、feasibility 或 synthesis 缺口，分别装载项目 `.agents/skills/issue-management/references/` 下的 intake.md、value-assessment.md、metric-brief.md、engineering-options.md 或 synthesis.md，不以 finance、generic 或 unknown 领域标签限制激活。五个方法是 issue-management 的内部材料，不再作为独立 Skill 入口；历史 finance-* 方法 ID 仅保留于选择元数据以兼容既有 Session，正文来源 MUST 记录新路径。金融专用规则仅在相关场景适用。术语不明确可增加独立 domain-modeling。方法正文 MUST 实际进入上下文，不自动装载全部 references 或完整讨论链；共享 grill-with-docs 和实现后的发布评估保持独立。
+
+#### Scenario: 安装 Issue 入口包含内部方法
+
+- **WHEN** 安装或同步 issue-management Skill
+- **THEN** 随其目录包含五个 references，当前 canonical 与项目目录不再提供对应的五个独立 finance-* 讨论 Skill；既有 Session 方法建议无需新增字段即可解析新路径。
+- **AND** 已安装的旧 CLI 或用户级旧技能需另行更新，本次重组不自动修改这些安装或历史记录。
 
 #### Scenario: 非金融 Issue 按缺口加载方法
 
