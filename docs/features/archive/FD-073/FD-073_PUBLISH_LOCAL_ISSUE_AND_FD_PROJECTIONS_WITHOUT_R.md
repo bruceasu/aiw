@@ -73,8 +73,10 @@ explicitly cancelled item, with its reason on the same line.
 ## TODO
 
 - [x] 设计和实现已完成；独立实现评审 r2 通过，R1 已修复并独立复核。
-- [ ] 本地合并和归档。
+- [x] 本地合并和归档：develop d276c6c，FD-Source 647a1bb；local-merge和清理成功，Complete归档完成。见reports/FD-073-delivery.md/.json。
 
 - Issue: none
 
 - 验证：仅Python helper改动，采用内存compile源/项目副本，不使用无关Go构建，不运行现有测试、模型、网络或验证脚本。一次有界静态核对调用、来源块边界、映射/错误路径、字节副本及链接；独立Reviewer按实际diff检查。
+
+**Completed:** 2026-10-16

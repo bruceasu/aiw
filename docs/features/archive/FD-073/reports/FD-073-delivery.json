@@ -1,0 +1,26 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "delivery-report",
+  "fd_id": "FD-073",
+  "source_event": "FD-073-000007-verification-passed",
+  "human_report": "FD-073-delivery.md",
+  "data": {
+    "source_commit": "647a1bbe0ca64128ba69de46a372e92f8f6a1161",
+    "delivered_commit": "d276c6c915f10e60062abe96fe4ec10db7e29738",
+    "parent_branch": "develop",
+    "local_merge": "passed",
+    "cleanup": "CLI confirmed worktree and branch removed; receipts retained",
+    "archive": "Complete",
+    "design_rounds": 2,
+    "review_rounds": 2,
+    "blocker_status": "resolved",
+    "compile_only_runs": 2,
+    "helper_executed": false,
+    "tests_run": false,
+    "models_run": false,
+    "network_used": false,
+    "remote_publication": false,
+    "global_install": false,
+    "remaining_risks": ["Pending orchestration is an agent contract", "No remote CAS guarantee", "Remote/filesystem failure behavior unverified"]
+  }
+}
