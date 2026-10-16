@@ -275,17 +275,27 @@ existing per-FD evidence archive path; historical evidence remains valid.
 
 ### Requirement: Bounded host-operated automatic FD lifecycle
 
-When a human explicitly requests `$fd-workflow auto`, the host agent MAY
-create or resume one numbered FD, design and split its Work Items, implement
-them, request independent review, repair findings, archive a passed FD, and
-remove its clean worktree and delivered branch after the archive commit.
+A human request to implement one numbered FD MUST default to its normal local
+lifecycle without a second `$fd-workflow auto` or merge confirmation. The host
+agent prepares or resumes that FD, commits its ready plan, implements its scope,
+requests independent review, and continues delivery/archive when gates pass.
+Explicit auto/full-lifecycle requests remain supported. Planning-only,
+implementation-only, review-only, selected-item, and no-merge limits MUST take
+priority; a partial FD MUST NOT be delivered or archived as complete.
 It MUST commit each completed, independently reviewable Work Item with only
 that item's changes and MUST NOT rebase either branch as part of the workflow.
 After review, local delivery MUST squash the FD result into one single-parent
 commit on the recorded parent branch, with the delivered FD HEAD recorded as
 `FD-Source`. The parent MUST NOT inherit the FD's individual Work Item commits.
-After archive, branch removal MUST require the current FD HEAD to match that
-trailer in the parent's delivery history.
+Before automatic delivery, all FD scope MUST be complete with no unresolved
+blocker, current independent review MUST cover the implementation, the event
+MUST match FD revision/digest, and recorded coordinates and clean FD/parent
+workspaces MUST be verified. After delivery, `local-merge` MUST verify the
+single-parent squash and matching FD-Source before its worktree/branch cleanup;
+the host MUST then close Complete and commit only archive/index changes.
+For explicitly selected primary-workspace implementation, the host MUST use
+focused commits and the managed independent review/archive route without
+creating a worktree, inventing Worker receipts, or merging unrelated changes.
 The operation MUST use the existing role receipt, exact claim, source-event,
 revision, and digest gates. The Reviewer MUST run in a separate subagent; the
 PM/Planner/Worker host MUST NOT emit the review result. The default lifecycle
@@ -295,8 +305,35 @@ Reviewer outcome events MAY occur in one active implementation cycle, even if
 the auto operation is resumed. After a third `changes-requested`, the FD MUST
 remain active with its findings. The operation MUST stop for missing human
 decisions, authorization, subagent capability, or an in-flight/foreign-claimed
-handoff. It MUST NOT infer permission to run restricted validation or Git
-delivery operations from the auto request.
+handoff. Dispatched roles MUST remain within their assignments; host PM owns
+continuation. Dirty workspaces, stale evidence, unresolved blockers, merge
+conflicts, failed delivery/cleanup, or archive rejection MUST stop the affected
+stage, preserve state, and produce blocker feedback. A conflict MUST NOT be
+automatically resolved or retried without a later explicit recovery instruction.
+The implementation request authorizes only the FD's focused local commits,
+reviewed squash delivery, verified cleanup, and successful-delivery archive.
+It MUST NOT authorize restricted validation, network/downloads, push, release,
+deployment, privilege changes, or bypassing evidence gates.
+
+#### Scenario: Ordinary implementation completes without another auto request
+
+- **WHEN** a normal full FD implementation has a current independent pass,
+  complete scope, no unresolved blocker, clean workspaces and verified coordinates
+- **THEN** host PM automatically delivers, allows verified CLI cleanup, archives
+  Complete and commits the archive/index without another human confirmation
+
+#### Scenario: Explicit stage limit or failed delivery gate
+
+- **WHEN** the user limits the stage, or a required delivery condition fails
+- **THEN** the host honors that boundary, preserves state and reports remaining
+  work rather than automatically widening scope, overriding the gate or retrying
+- **AND** stage limits MUST be checked before emitting a next-role event,
+  invoking a runner or requesting managed review; implementation-only/no-review
+  and partial-item scopes without review authorization stop after scoped evidence,
+  while no-merge can permit review but MUST stop delivery
+- **AND** implementation-ready MUST require the whole FD implementation scope
+  to be complete; separately authorized partial review MUST NOT mark an unfinished
+  FD ready or emit its full-FD completion/review handoff
 
 #### Scenario: Review findings are repaired and the next review passes
 
@@ -519,9 +556,10 @@ unresolved `%% NEEDS_INPUT` notes MUST still prevent `verification-passed`.
 
 ### Requirement: Git and workspace boundary
 
-An FD MAY have an isolated worktree once its plan is committed. Local focused
-commits MAY be made when authorized. Commit MUST NOT imply push, merge,
-release, deployment, worktree deletion, or archive.
+An FD MAY have an isolated worktree once its plan is committed. A normal full
+numbered FD implementation request authorizes the focused local lifecycle
+above unless explicitly limited. A standalone commit or review MUST NOT imply
+delivery or archive, and no local request implies push, release or deployment.
 Before `aiw git wt add` creates a worktree or metadata, it MUST confirm that the
 FD worktree path and `.ai` metadata path are ignored by Git. If either path is
 not ignored, add MUST fail without changing Git state and tell the user which

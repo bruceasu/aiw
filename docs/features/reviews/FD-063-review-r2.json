@@ -1,0 +1,35 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-063",
+  "source_event": "FD-063-000006-implementation-ready",
+  "human_report": "FD-063-review-r2.md",
+  "data": {
+    "reviewer_session": "fd063-reviewer-20261017-r2",
+    "outcome": "verification-passed",
+    "reviewed_commit": "cd6582a908bd1191b0e5a8b351353639d2ac4df2",
+    "repair_diff_base": "cd6582a^",
+    "prior_review": "FD-063-review-r1.md",
+    "fd_revision": 6,
+    "source_fd_sha256": "edba63c49a775177f638071a44d4f258fd005b249166e0cb1aa8dd491a889732",
+    "findings": [],
+    "resolved_findings": ["R1: stage and full-FD completion checks now precede dispatch", "Primary-workspace blocker commit wording inherits scoped authorization"],
+    "results": {
+      "focused_static_review": "passed",
+      "source_event_digest_match": true,
+      "generated_contract_copies": 31,
+      "generated_contract_mismatches": 0,
+      "changed_skill_pair_matches": 3,
+      "implementation_drift_at_intake": false,
+      "delivery_gate": "host PM must commit current evidence and recheck clean workspaces and all current gates",
+      "compile": "not applicable",
+      "tests": "not run",
+      "build": "not run",
+      "network": "not used",
+      "runtime_runner": "not executed"
+    },
+    "commands": ["Get-Content", "git diff / status / rev-parse / ls-files", "Get-FileHash", "aiw fd claim FD-063 FD-063-000006-implementation-ready --session fd063-reviewer-20261017-r2", "One static report/FD read and JSON parse"],
+    "residual_risks": ["Multi-session dispatch and failure paths were not executed", "User-level installation remains unchanged"],
+    "next_owner": "host PM: automatically continue gated local delivery, verified cleanup and archive"
+  }
+}

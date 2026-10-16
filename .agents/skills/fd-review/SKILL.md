@@ -48,5 +48,7 @@ reviewer --artifact <report>` and `--source-event <id>` when the original
 handoff was dispatched. This returns work to Worker. If all stated acceptance
 conditions are supported by real evidence, emit `verification-passed` with the
 same identity fields. Update the FD Verification section with the report path
-and outcome. A passed review permits a later close decision; it does not
-push, merge, release, deploy, or archive by itself.
+and outcome. The Reviewer event does not itself merge or archive. For a normal
+full FD implementation, the host PM automatically checks the shared delivery
+gates and continues local delivery/archive; explicit review-only or no-merge
+limits still apply. The Reviewer does not push, merge, release, deploy, or archive.

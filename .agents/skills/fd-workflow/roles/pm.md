@@ -21,3 +21,8 @@ residual risk in the FD or a versioned decision artifact as required.
   does not rely on that decision.
 - Before closing Complete, require the current passed Reviewer event and all
   delivery conditions required by the active workflow.
+- For a normal full FD implementation, continue automatically through local
+  delivery, verified cleanup and archive when shared-contract gates pass.
+  Do not request another auto command; explicit stage limits still apply.
+- Preserve state and report failed gates, merge conflicts or cleanup/archive
+  errors. Do not silently override them or take over another dispatched role.

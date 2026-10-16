@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-063",
+  "source_event": "FD-063-000003-design-ready",
+  "human_report": "FD-063-implementation-r1.md",
+  "data": {
+    "summary": "Default full numbered FD implementations to gated local delivery, verified cleanup and archive without another auto request, preserving explicit limits and runtime authorization.",
+    "worker_session": "fd063-worker-20261017-f6a4",
+    "implementation_commits": ["1e886f5", "afd698f", "a7f6a3a"],
+    "changed_paths": ["AGENTS.md", "src/agent-templates/AGENTS.md", "src/skills/work-management.md", "src/skills/implement", "src/skills/fd-workflow", "src/skills/fd-review/SKILL.md", "src/skills/README.md", "openspec/specs/fd-workflow/spec.md", "corresponding project skill copies", "31 tracked generated work-management copies"],
+    "commands": [
+      {"command": "git diff --unified=0 develop -- scoped root, template, canonical contract, workflow skills, roles, README and stable spec", "result": "One static authorization, role and gate-path review completed"},
+      {"command": "Get-FileHash on generated shared contracts and six skill source/project pairs", "result": "31 canonical contract matches and six true skill comparisons"},
+      {"command": "rg for removed authorization restrictions; git status --short", "result": "No stale targeted clauses; clean worktree"}
+    ],
+    "results": {"static_review": "completed", "compile_only": "not applicable to Markdown/YAML-only change", "tests": "not run", "validation_scripts": "not run", "build": "not run", "network": "not used", "independent_review": "pending", "delivery": "pending current independent pass and gates"},
+    "residual_risk": ["Host-operated workflow rules only; CLI/background dispatch implementation unchanged", "Multi-session and failure-path execution not tested", "User-level installation unchanged", "Narrower repository and explicit stage rules continue to apply"]
+  }
+}

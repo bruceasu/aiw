@@ -22,3 +22,11 @@ tests. Inspect the final diff and produce the required implementation report bef
 - Do not write Reviewer findings or mark Reviewer verification passed.
 - Include commands actually run, checks skipped, and residual risks in the
   report.
+- A dispatched Worker ends at its assigned handoff; the host PM continues
+  normal reviewed delivery/archive automatically unless the user limited the
+  stage. Do not perform PM delivery from a Worker-only assignment.
+- Check user stage/scope limits before emitting a next-role event. An
+  implementation-only/no-review or unreviewed partial-item request stops after
+  saving its evidence; do not use a handoff that starts Reviewer beyond that limit.
+- Full-FD implementation-ready requires the whole FD implementation scope to
+  be complete; permission for a partial review does not satisfy that condition.

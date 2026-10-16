@@ -1,119 +1,261 @@
 # AIW Work Management Contract
 
-Use this contract for engineering Skills in an AIW repository.
+Use this contract for AIW engineering Skills.
 
-## Ownership
+This file is the canonical shared contract. A Skill that needs these rules
+should reference `skills/work-management.md` in its `SKILL.md` and keep its
+own instructions focused on its domain. Do not copy lifecycle rules into each
+Skill. `aiw skills install` and `sync` materialize this file beside the Skill
+when that reference is present; treat the installed copy as generated output.
+The same applies to `skills/reviewed-skill-contract.md`, so user-level
+installations remain usable outside the AIW repository.
 
-- An Issue describes a bug, feature, or modification and may be split into
-  smaller Issues. Existing Requirement records and `aiw req` remain compatible
-  Issue entry points until their data is migrated explicitly.
-- Feature Design (FD) owns engineering decisions and planned work items.
-  An approved Issue may lead directly to an FD and AIW Task.
-- `.ai/tasks/<task-id>/` is the center of execution. AIW owns Task lifecycle,
-  branch, worktree, Session, handoff lineage, and external mappings. Workflow
-  Core owns Work Items, Attempts, Gates, Evidence, write leases, and derived
-  execution, validation, and readiness state there.
-- OpenSpec owns stable capability specs in `openspec/specs/`. An OpenSpec change
-  may be linked when spec changes need that workflow; it is not required to
-  create, plan, implement, merge, or complete a Task.
-- GitHub and GitLab are optional Issue projections used only on explicit request.
+## New FD workflow
 
-Do not create a second Task tracker or treat `task.toml.status` as an
-independently writable execution source. Request Workflow Core transitions
-through the managed Task context and report the resulting summary. Keep
-human-authored FD work items distinct from Core-owned generated state.
+- FD-first is the normal path for new engineering work. OpenSpec supplements
+  it with stable capability requirements; it does not replace the FD plan.
+- A numbered file under `docs/features/FD-XXX_SLUG.md` is the source of truth
+  for design, Work Items, status, Verification, and unresolved `%%` notes.
+- `docs/features/FEATURE_INDEX.md` is an index. Rebuild it from FD files; do
+  not treat it as a second state owner.
+- An Issue may link to an FD. An AIW Task is not required for a new FD.
+- `aiw fd` is the FD command surface. Read `aiw fd --help` before an unfamiliar
+  or mutating operation. `aiw fd emit` records an explicit handoff; ordinary
+  file saves and Git commits do not dispatch roles.
+- `.ai/fd/<fd-id>/` contains dispatch receipts and logs. It does not own FD
+  status or replace the Markdown plan. Never write a fake event or review.
+- `docs/features/reports/` and `docs/features/reviews/` contain authored
+  evidence while an FD is active. `aiw fd close` archives its design at
+  `docs/features/archive/<FD-ID>/` and the FD's evidence in that directory's
+  `reports/` and `reviews/` subdirectories.
+  Under `**Evidence policy:** Dual`, each new report is Chinese Markdown for
+  people plus same-basename JSON for CLI/AI. The Markdown contains one
+  `<!-- aiw-data: <same-basename-json-file> -->` comment; JSON names its
+  Markdown, FD, evidence kind, and source event. Emit the Markdown path as
+  `--artifact`. Both files are archived together. Older Markdown-only
+  evidence remains historical.
+  Prior evidence stays archived if a completed FD is reopened for review.
+- An automatic FD workflow Gate has a separate FD-prefixed blocker feedback
+  Markdown report and same-basename JSON sidecar under `docs/features/reports/`.
+  Use `docs/templates/BLOCKER_FEEDBACK_TEMPLATE.md` and its JSON template.
+  Record observed facts, unknowns, attempts, unresolved or resolved state,
+  human decision needs, and reusable improvements. Review existing feedback
+  on resume and before archive. FD-prefixed pairs follow the normal `reports/`
+  archive move; they do not alter an active FD handoff or authorize recovery.
+- Legacy compatibility only: `aiw fd refresh-tester <id> --reason <text> --artifact <report>` replaces
+  only a stale unclaimed pending Tester handoff for an independent Pending Test
+  FD. It retains Worker identity and implementation provenance, validates the
+  current report, and creates a PM-produced `test-requested` event. Tester
+  claims that event and cites its ID in reports and new test authorization;
+  refreshing grants no permission to execute tests or reuse old approvals.
+  New/default FDs do not use this route.
+- `aiw fd reopen <id> --reason <text>` returns an archived `Closed` or
+  `Deferred` FD to active `In Progress` with a fresh Worker handoff. It keeps
+  prior close metadata and evidence. Archived `Complete` uses `request-review`.
+  New reports and reviews need filenames distinct from archived evidence.
+- `aiw fd refresh-worker <id> --reason <text>` replaces a stale pending Worker
+  handoff for an active `Open` or `In Progress` FD. It cancels the old receipt,
+  records supersession, and creates a digest-bound `work-requested` event.
+  Claimed or in-flight handoffs cannot be replaced.
+- `aiw fd recover-worker <id> --expected-event <event-id> --expected-session
+  <session-ref> --reason <text>` is an explicit PM recovery for a latest
+  dispatched Worker session that PM has confirmed stopped. It records the
+  abandoned session and reason, cancels the old receipt, and creates a new
+  pending Worker handoff. The new Worker claims that event under its own
+  session. Normal resume and refresh rules remain unchanged.
+- In the normal workflow, when a pending Worker handoff has expired after
+  a long pause, refresh it automatically when the workflow resumes; do not wait
+  for human intervention. Use `refresh-worker`, preserve its required reason
+  and provenance, and continue from the new handoff. A stale legacy Tester
+  handoff is not refreshed automatically; preserve it unless the user requests
+  the legacy CLI path. Do not treat elapsed time alone as proof that
+  a claimed or in-flight handoff expired; inspect its recorded session or log
+  before deciding how to recover it.
+- OpenSpec owns stable capability specs in `openspec/specs/`. Create an
+  OpenSpec change only when the user explicitly asks for one.
 
-## Discover Commands
+## Roles and handoffs
 
-Before an unfamiliar or mutating operation, inspect `aiw help --json` or the
-specific command help once. Use the installed command surface rather than
-inventing subcommands. Do not install AIW or OpenSpec automatically.
+PM owns workflow state and human decisions. Planner turns approved intent into
+options, decisions, acceptance, and ordered Work Items. Worker implements the
+ready scope and reports actual evidence and limits. Reviewer independently
+checks the current diff against the FD and records actionable findings or a
+pass. Each handoff names one role, one source event, and an existing artifact;
+the receiver checks that the artifact and FD revision still match before work.
 
-## Resolve Or Create The Task
+New/default FDs omit `**Test policy: Independent**` and route
+`implementation-ready` directly to Reviewer. The Worker performs the
+repository-authorized compile-only check and static review; tests are not a
+default workflow stage. Users may invoke the standalone `$fd-test` Skill to
+derive black-box scenarios and, when explicitly authorized, write or execute
+tests under root `tests/`. Its factual report does not change FD state, add
+acceptance thresholds, or go to PM, assessors, or Reviewer for evaluation.
+Existing FDs carrying the Independent marker and their Tester events retain
+their legacy CLI contract; this does not make Tester a default stage for new
+work.
 
-Resolve context in this order:
+The host may combine PM, Planner, and Worker duties, but must not author
+independent Reviewer evidence from its own session. Optional test reports are
+not workflow handoffs or Reviewer inputs.
+PM may explicitly
+override workflow gates; the record must identify skipped stages and missing
+evidence, which remain unperformed rather than being represented as passed.
+A failed review returns concrete, actionable findings to Worker. Material
+human decisions and missing execution authorization stop only the affected
+stage; continue independent work that does not depend on them.
 
-1. Task ID explicitly supplied by the user.
-2. Task established by the active AIW Session.
-3. AIW Task associated with the current worktree or branch.
-4. Unique Task linked from the current Issue or FD.
-5. Unique Task linked to an OpenSpec change, when one exists.
+Stage-specific role prompts live under `skills/fd-workflow/roles/`. Load only
+the prompt for the role handling the current event; the contract here remains
+the shared source for lifecycle and authorization rules.
 
-If several Tasks match, ask for the Task ID. Create a new lifecycle through
-AIW. Choose its supported native backend when no OpenSpec change is needed;
-do not create a change just to satisfy Task creation.
+Use an explicit stage event after the producing role has written its result.
+The event must name an existing project-relative artifact. If the host has a
+configured role runner, AIW starts the next role. Otherwise the event stays
+pending for a Skill or later `aiw fd resume`. Before a host session writes for
+a pending handoff, claim its exact event with `aiw fd claim <id> <event-id>
+--session <host-session-id>`; include that event in `--source-event` at the
+next handoff. Do not redispatch an unknown in-flight result; inspect the
+recorded session or log first.
 
-One Issue may be split into smaller Issues when each has independently useful
-scope. One Issue or FD may lead to multiple Tasks when delivery or archive
-lifecycles differ. Record the lineage; do not silently duplicate work.
+FD Work Item checkboxes record authored progress. Mark one complete only when
+the required change and real evidence exist. Report checks that were not run.
+Do not mark the FD Complete until all scoped items are resolved and the
+Reviewer has recorded a passed result.
 
-## Issue Decisions
+PM has final authority over the FD workflow and may explicitly override its
+normal gates. PM may directly change an FD's status, waive any test or
+verification stage, and accept without supporting test or review evidence.
+PM may make any decision needed to advance the FD regardless of whether a
+handoff is missing, stale, expired, or otherwise incomplete. PM may bypass or
+supersede that handoff and directly change the FD's status without Reviewer
+or other role approval. Keep the FD record truthful: skipped stages,
+missing or stale handoffs, and absent evidence remain identified as such, and
+must never be represented as performed or passed. Do not invent a handoff,
+receipt, report, or verification result to make an override appear to have
+followed the normal route.
 
-Use confirmed user preferences and current evidence to choose a clearly better
-approach within the approved scope. A bounded sub-agent may compare options;
-the main agent remains responsible for the choice and records the rationale in
-the Issue or FD. Ask the human when options are materially close, a critical
-fact is missing, or the decision changes scope, risk, or authorization. Do not
-interrupt for routine implementation choices.
+## Workspace and Git
 
-## Feature Design And Specs
+Use the primary workspace for FD design and planning. By default, every numbered
+FD moves to its isolated worktree before implementation starts, so parallel FD
+work does not share writable files. A user may explicitly direct implementation
+in the primary workspace; treat that as an alternate workspace choice for that
+FD, not as an implicit change to the default. A question or design-only
+discussion does not start implementation and does not create a worktree. Legacy
+Tasks keep their existing Task worktree policy.
 
-FD is the primary engineering planning artifact for a Task. It records the
-goal, constraints, decisions, compatibility effects, acceptance evidence,
-work items, TODO, Verification, and unresolved `%% NEEDS_INPUT` notes. Generate
-or update Task work from its selected FD items. Implementation does not depend
-on an OpenSpec `tasks.md` checklist.
+For an explicitly authorized primary-workspace implementation, do not create a
+branch, worktree, or `.ai/fd/<fd-id>/workspace.json`. Do not claim or invent a
+Worker receipt when no handoff exists. Keep the FD itself current: check off
+only completed Work Items, update TODO, and record actual static/compile
+evidence and skipped checks in Verification. Inspect the primary-workspace diff
+before handoff. File edits do not advance the FD lifecycle status automatically.
+At completion, the host PM continues the default review and archive path below;
+do not treat the workspace choice as an implementation-only limit. An explicit
+FD implementation request includes focused local commits and normal archive
+after a current independent pass, unless the user narrows the stage or Git
+scope. A workspace choice alone grants no implementation or runtime authority.
+Follow the repository budget and preserve unrelated primary-workspace changes.
 
-Read relevant stable specs before changing behavior. Update `openspec/specs/`
-when stable requirements change. Link an OpenSpec change only when its proposal,
-spec delta, or archive workflow adds value. If linked, keep its artifacts
-consistent with the FD, but do not let its checklist or lifecycle override the
-Task. A legacy Task whose only plan is `tasks.md` remains actionable; migrate
-its plan deliberately rather than discarding completed items.
+The ordinary completion gate still applies in either workspace: a separate
+Reviewer must record a pass before normal Complete archive. For a direct
+implementation with no Worker handoff, use the managed FD status/review CLI
+route instead of fabricating lifecycle evidence. If PM explicitly overrides
+the gate, record the skipped review and missing evidence in the reason and use
+`aiw fd close <id> Complete --force --reason "..."`; the operation audit is
+the override record. Never describe skipped review or checks as passed.
 
-## Workspace Rules
+Use `feature/<fd-id>` and `.wt/<fd-id>` for an isolated FD. Determine the
+current branch before creation. Before creating the worktree, commit the ready
+FD plan on the parent branch and make sure the parent workspace is clean. Do
+not mix unrelated changes into the FD plan commit; if other parent changes are
+uncommitted, resolve and commit them separately before proceeding. Keep the
+parent clean while the FD is in flight when possible; if it becomes dirty,
+wait to merge until it is clean again. These focused commits are part of the
+default FD implementation workflow.
+`aiw git wt add` records `fd_id`,
+`parent_branch`, `branch`, and `worktree` in `.ai/fd/<fd-id>/workspace.json`.
+Before creating the worktree, ensure `.wt/` and `.ai/` are ignored by Git;
+`wt add` checks both paths and rejects missing rules before changing Git state.
+Read that file immediately after creation and verify all four values; use its
+`parent_branch` as the sole merge target. Stop if the file is missing or does
+not match the created worktree. Use `aiw git wt status <fd-id>` for both worktrees,
+`aiw git wt commit <fd-id> "message"` for focused commits, and
+`aiw git wt local-merge <fd-id>` for squash delivery after review. It creates one
+single-parent commit on the recorded parent branch with an `FD-Source` trailer
+naming the delivered FD HEAD; individual Work Item commits remain on the FD
+branch. If delivery finds a content conflict, `local-merge` resets the failed
+parent squash and merges the parent into the FD worktree for resolution.
+Automatic delivery stops at that conflict; after an explicit recovery
+instruction, resolve and commit there before rerunning `local-merge`.
+After verified delivery, the command
+removes the recorded clean FD worktree and branch automatically. Before Git
+removes a worktree `.ai` junction, it verifies that the target is the primary
+workspace `.ai` and removes only the link itself. It preserves FD receipts; if
+a cleanup check or step fails, it reports the state and preserves resources
+not already safely removed. Do not create a Task to satisfy a Task-only
+command. Keep each FD's writing role in one workspace at a time and do not mix
+unrelated files into its commits.
+Commit each completed, independently reviewable Work Item before starting the
+next, staging only its files. Commit final FD evidence before handoff to
+Reviewer. Do not rebase either branch as part of the FD workflow. Successful
+`local-merge` performs worktree and branch cleanup only after checking that
+parent history contains this FD's single-parent squash commit and its
+`FD-Source` trailer equals the current clean FD HEAD. The FD branch is not an
+ancestor after squash, so use `git branch -D` only after that check.
 
-- Work in the primary Git checkout and current branch for ordinary manual work.
-  Automated Task execution uses an isolated worktree by default; use the
-  documented explicit primary-workspace opt-out when authorized.
-- A Task lifecycle does not imply a feature branch or linked worktree.
-- Use isolation for parallel writes, conflicting work, long-running work,
-  disposable experiments, or an explicit user request. State the reason first.
-- Create or resolve isolated worktrees only through `aiw wt`.
-- Require explicit Task or Session context when several Tasks share primary.
-- Treat `unassigned` and unknown workspace bindings as read-only until bound.
-- Planning artifacts created on the current branch must be committed before
-  creating an isolated Task worktree, so it inherits the Task and FD records.
-- Record `parent_branch` before creating the Task branch/worktree. Delivery
-  targets that branch, never an inferred current checkout.
-- Do not silently implement in a workspace that does not match the Task.
-- Do not commit, merge, push, remove a worktree, or delete a branch merely
-  because implementation is complete. Git delivery is separately authorized.
-  Preserve Task resources on any failure or conflict.
+## Default completion and authorization
 
-If AIW is unavailable, report the missing capability and ask before using a raw
-Git fallback.
+A request to implement a numbered FD authorizes that FD's normal local
+lifecycle: prepare and commit its ready plan, create its isolated workspace,
+make focused implementation/evidence commits, obtain independent review,
+squash-deliver to its recorded parent, use the CLI's verified cleanup, and
+archive Complete with a focused archive/index commit after delivery succeeds.
+The host PM MUST continue these steps when their gates pass; do not stop at a
+passing review merely to request another `auto` command or merge confirmation.
+`fd-workflow auto` remains an explicit entry to the same lifecycle.
 
-## Delivery And Completion
+A request limited to planning, implementation only, review only, selected Work
+Items, or no merge MUST retain that limit. Completing a partial scope is not
+permission to complete or archive the whole FD. A design-only discussion does
+not start implementation. A standalone commit or review is not a delivery
+request. More specific user limits and applicable repository rules prevail.
+Check stage limits before emitting any next-role event, invoking a runner, or
+using a managed review command, not only before merge. Save scoped evidence
+and report an intentional stage stop without dispatching beyond it. A no-merge
+limit can permit review but cannot authorize delivery.
+An implementation-ready event requires the whole FD implementation scope to
+be complete. Separately authorized review of an unfinished FD's partial scope
+must not emit a full-FD completion/review handoff or mark that FD ready.
 
-`local-merge` is a delivery operation, independent of Task completion status.
-After a successful merge, an unfinished Task remains unfinished and resumes in
-the primary workspace. Preserve its Work Items, Evidence, Gates, and Session
-lineage; do not mark it done or archive it as a side effect of delivery.
+Before delivery, require all FD scope complete, no unresolved blocking question
+or feedback, a current independent passed event matching FD revision/digest,
+no implementation drift since review, correct recorded coordinates, and clean
+FD and parent workspaces. Required evidence remains real; a skipped check
+cannot be labelled passed. In an explicitly selected primary workspace, skip
+worktree creation and merge; commit only scoped changes, obtain independent
+review through the supported managed route, then archive and commit that FD.
+If unrelated changes prevent a safe focused commit or clean completion, stop
+the affected step without staging or discarding them.
 
-After implementation, update the selected FD work item, TODO, Verification,
-and remaining `%%` notes. Request the appropriate Core transition and report
-Task completion separately from Git delivery. Archive only under the Task's
-documented archive rules. Archive a managed FD with its Task at
-`docs/features/archive/<date>-<task-id>.md`; a linked OpenSpec change remains
-optional. Do not automatically commit, merge, push, clean a
-worktree, delete a branch, or archive.
+The host PM owns continuation after role handoffs. A dispatched Worker or
+Reviewer remains confined to its assigned role; never take over an in-flight
+or foreign claim, fabricate a handoff, or self-review. Missing decisions,
+required role capability, stale evidence, a dirty parent, failed command,
+merge conflict, or archive rejection stop the affected automatic stage.
+Preserve state and report the exact gate. CLI conflict recovery is unchanged;
+do not automatically resolve a merge conflict or retry delivery without a
+subsequent explicit recovery instruction. Record blocker feedback under the
+fd-workflow procedure. Successful delivery followed by cleanup/archive failure
+is reported as partial completion, never rolled back or described as complete.
+
+This authorization does not include push, release, deployment, tests, final
+builds, network/downloads, privilege changes, or bypassing workflow gates.
+Follow existing validation budgets and explicit stage limits.
 
 ## Validation
 
-Static review is the default. After implementation, run one compile-only check:
-prefer `scripts/compile*` or root `compile*`, otherwise the narrowest language
-compiler command without retaining a final distributable artifact. Do not run
-tests, final-artifact builds, formatters, linters, vet, or verification scripts
-without authorization under the repository rules. Report actual commands,
-static evidence, skipped checks, and unresolved risks.
+Static review is the default. After code edits, run one compile-only check
+using a repository `compile*` script when available. Tests, final builds,
+formatters, linters, vet, network calls, and deployment follow the repository's
+authorization rules. Report actual commands, skipped checks, and risks.

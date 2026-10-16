@@ -47,6 +47,8 @@ authorization and retry rules.
 - Preserve current contracts unless explicitly changed.
 - Keep diffs small, local, and reviewable.
 - Update nearby docs when behavior or workflow changes.
+- For numbered AIW FDs, follow default completion and explicit stage limits in
+  the supplied work-management contract.
 
 ## Stop And Ask
 

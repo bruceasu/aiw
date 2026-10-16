@@ -150,10 +150,12 @@ Worker receipt when no handoff exists. Keep the FD itself current: check off
 only completed Work Items, update TODO, and record actual static/compile
 evidence and skipped checks in Verification. Inspect the primary-workspace diff
 before handoff. File edits do not advance the FD lifecycle status automatically.
-At completion, PM must explicitly route the active FD to review or archive it
-under an explicit override. Primary-workspace authorization alone does not
-authorize Git commits, tests, builds, deployment, or archive; follow the
-repository budget and any separate user authorization.
+At completion, the host PM continues the default review and archive path below;
+do not treat the workspace choice as an implementation-only limit. An explicit
+FD implementation request includes focused local commits and normal archive
+after a current independent pass, unless the user narrows the stage or Git
+scope. A workspace choice alone grants no implementation or runtime authority.
+Follow the repository budget and preserve unrelated primary-workspace changes.
 
 The ordinary completion gate still applies in either workspace: a separate
 Reviewer must record a pass before normal Complete archive. For a direct
@@ -183,8 +185,10 @@ not match the created worktree. Use `aiw git wt status <fd-id>` for both worktre
 single-parent commit on the recorded parent branch with an `FD-Source` trailer
 naming the delivered FD HEAD; individual Work Item commits remain on the FD
 branch. If delivery finds a content conflict, `local-merge` resets the failed
-parent squash and merges the parent into the FD worktree for resolution; commit
-there and rerun `local-merge` to deliver. After verified delivery, the command
+parent squash and merges the parent into the FD worktree for resolution.
+Automatic delivery stops at that conflict; after an explicit recovery
+instruction, resolve and commit there before rerunning `local-merge`.
+After verified delivery, the command
 removes the recorded clean FD worktree and branch automatically. Before Git
 removes a worktree `.ai` junction, it verifies that the target is the primary
 workspace `.ai` and removes only the link itself. It preserves FD receipts; if
@@ -200,16 +204,54 @@ parent history contains this FD's single-parent squash commit and its
 `FD-Source` trailer equals the current clean FD HEAD. The FD branch is not an
 ancestor after squash, so use `git branch -D` only after that check.
 
-The user permits local Git commits for the new FD workflow. A Worker may make
-a focused commit for an independently reviewable slice. A Reviewer checks a
-specific commit or diff. When an isolation request asks for the complete
-worktree lifecycle, it authorizes local commits, squash-delivering that FD
-result to its recorded parent after a passed review, and the verified cleanup
-that `local-merge` performs. It authorizes archiving after delivery succeeds,
-but not push, release, or deployment.
-For other requests, commit does not authorize delivery or archive. A squash conflict
-or dirty parent workspace is a stop condition; preserve the worktree and active
-FD until the parent is clean. Follow any narrower local rule.
+## Default completion and authorization
+
+A request to implement a numbered FD authorizes that FD's normal local
+lifecycle: prepare and commit its ready plan, create its isolated workspace,
+make focused implementation/evidence commits, obtain independent review,
+squash-deliver to its recorded parent, use the CLI's verified cleanup, and
+archive Complete with a focused archive/index commit after delivery succeeds.
+The host PM MUST continue these steps when their gates pass; do not stop at a
+passing review merely to request another `auto` command or merge confirmation.
+`fd-workflow auto` remains an explicit entry to the same lifecycle.
+
+A request limited to planning, implementation only, review only, selected Work
+Items, or no merge MUST retain that limit. Completing a partial scope is not
+permission to complete or archive the whole FD. A design-only discussion does
+not start implementation. A standalone commit or review is not a delivery
+request. More specific user limits and applicable repository rules prevail.
+Check stage limits before emitting any next-role event, invoking a runner, or
+using a managed review command, not only before merge. Save scoped evidence
+and report an intentional stage stop without dispatching beyond it. A no-merge
+limit can permit review but cannot authorize delivery.
+An implementation-ready event requires the whole FD implementation scope to
+be complete. Separately authorized review of an unfinished FD's partial scope
+must not emit a full-FD completion/review handoff or mark that FD ready.
+
+Before delivery, require all FD scope complete, no unresolved blocking question
+or feedback, a current independent passed event matching FD revision/digest,
+no implementation drift since review, correct recorded coordinates, and clean
+FD and parent workspaces. Required evidence remains real; a skipped check
+cannot be labelled passed. In an explicitly selected primary workspace, skip
+worktree creation and merge; commit only scoped changes, obtain independent
+review through the supported managed route, then archive and commit that FD.
+If unrelated changes prevent a safe focused commit or clean completion, stop
+the affected step without staging or discarding them.
+
+The host PM owns continuation after role handoffs. A dispatched Worker or
+Reviewer remains confined to its assigned role; never take over an in-flight
+or foreign claim, fabricate a handoff, or self-review. Missing decisions,
+required role capability, stale evidence, a dirty parent, failed command,
+merge conflict, or archive rejection stop the affected automatic stage.
+Preserve state and report the exact gate. CLI conflict recovery is unchanged;
+do not automatically resolve a merge conflict or retry delivery without a
+subsequent explicit recovery instruction. Record blocker feedback under the
+fd-workflow procedure. Successful delivery followed by cleanup/archive failure
+is reported as partial completion, never rolled back or described as complete.
+
+This authorization does not include push, release, deployment, tests, final
+builds, network/downloads, privilege changes, or bypassing workflow gates.
+Follow existing validation budgets and explicit stage limits.
 
 ## Validation
 

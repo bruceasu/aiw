@@ -34,6 +34,16 @@ while the FD is in flight when possible; a dirty parent blocks merge until it
 is clean again. Do not mix unrelated changes into the FD plan commit. Legacy
 Tasks keep their existing `feature/<task-id>` and `.wt/<task-id>` conventions.
 
+A request to implement a numbered FD includes its normal local lifecycle:
+focused plan/implementation commits, independent review, squash delivery to
+the recorded parent, verified worktree cleanup, and Complete archive plus
+archive commit. Continue automatically when the current review and delivery
+gates pass; no second `auto` request is needed. Explicit planning-only,
+implementation-only, review-only, partial-item, or no-merge limits take priority.
+Stop for unresolved blockers, stale review, dirty workspaces, merge conflicts,
+or failed delivery/cleanup/archive; preserve state and report the gate.
+This scope excludes push, release, deployment, tests, builds, and network.
+
 ## Resource Budget
 
 Token and command cost are hard constraints.
@@ -116,7 +126,9 @@ to the user's requested outcome.
 - Keep interfaces and package boundaries stable.
 - Pause before dependency, public API, concurrency, persistence, auth,
   migration, deployment, or CI changes.
-- Do not perform Git write operations unless the user asks.
+- Git writes require user authorization. A numbered FD implementation request
+  provides the scoped local lifecycle authorization above; other Git writes
+  and explicit stage limits retain their existing boundaries.
 
 ## Validation And Reporting
 
@@ -194,6 +206,8 @@ authorization and retry rules.
 - Preserve current contracts unless explicitly changed.
 - Keep diffs small, local, and reviewable.
 - Update nearby docs when behavior or workflow changes.
+- For numbered AIW FDs, follow default completion and explicit stage limits in
+  the supplied work-management contract.
 
 ## Stop And Ask
 

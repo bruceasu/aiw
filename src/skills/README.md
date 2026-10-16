@@ -78,12 +78,18 @@ issue-management（需要澄清或批准时）
   -> fd-workflow
   -> implement
   -> fd-review
+  -> PM：local-merge、归档与清理（条件满足时自动继续）
 ```
 
 可以直接为明确请求创建 FD；新 FD 不要求先创建 AIW Task。FD 是
 `docs/features/FD-XXX_SLUG.md` 中的权威计划，包含决策、Work Items、状态
 和 Verification。`docs/features/FEATURE_INDEX.md` 仅作索引；`.ai/fd/<id>/`
 存放 AIW 生成的交接收据和日志。
+
+编号 FD 实现请求默认包含本地聚焦提交、独立审查、通过后的自动交付及
+归档，无需再补发 `auto`。只规划、只实现、只审查、部分工作项或暂不合并等
+明确限制优先；脏工作区、过期审查、未解决 blocker、冲突和失败会停止受影响的
+步骤并保留现场。该默认不授权测试、构建、网络、push 或部署。
 
 OpenSpec 管理稳定能力规格。仅当用户明确要求时创建 OpenSpec change。
 既有 AIW Task 和 Core 状态仍按原记录继续，不要为了迁移改写其历史。

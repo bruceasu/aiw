@@ -1,0 +1,43 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-063",
+  "source_event": "FD-063-000004-implementation-ready",
+  "human_report": "FD-063-review-r1.md",
+  "data": {
+    "reviewer_session": "fd063-reviewer-20261017-r1",
+    "outcome": "changes-requested",
+    "diff_base": "785ead2",
+    "reviewed_commit": "2e0a42b2c5b222f49609ce10adb7500860312f6f",
+    "fd_revision": 4,
+    "source_fd_sha256": "f2665d6328f949034bf6c846fc5a040560678b52434ddf338850530100dd4794",
+    "findings": [
+      {
+        "id": "R1",
+        "severity": "P1",
+        "blocking": true,
+        "paths": ["src/skills/implement/SKILL.md:50", "src/skills/fd-workflow/SKILL.md:248"],
+        "summary": "Unconditional implementation-ready emission can dispatch review beyond implementation-only or partial-item limits.",
+        "requested_change": "Before emit or dispatch, require permission to enter review and full FD scope completion; otherwise record actual scoped evidence and stop without a whole-FD ready event. Synchronize project copies."
+      }
+    ],
+    "advisories": ["Clarify direct-workspace blocker commit wording at src/skills/fd-workflow/SKILL.md:156 by referencing shared default authorization."],
+    "results": {
+      "static_review": "completed",
+      "source_event_digest_match": true,
+      "generated_contract_copies": 31,
+      "generated_contract_mismatches": 0,
+      "skill_pair_matches": 6,
+      "implementation_drift_at_intake": false,
+      "delivery_workspace_clean": "not yet; FD/index handoff updates remain uncommitted",
+      "compile": "not applicable",
+      "tests": "not run",
+      "build": "not run",
+      "network": "not used",
+      "runtime_runner": "not executed"
+    },
+    "commands": ["Get-Content / Get-ChildItem / rg", "git diff / status / rev-parse / ls-files", "Get-FileHash", "aiw fd --help", "aiw fd emit --help", "aiw fd claim FD-063 FD-063-000004-implementation-ready --session fd063-reviewer-20261017-r1"],
+    "residual_risks": ["Host instruction behavior and multi-session failure paths were not executed", "User-level skill installation remains unchanged"],
+    "next_owner": "worker; host PM resumes gated delivery only after a current independent pass"
+  }
+}

@@ -1,6 +1,6 @@
 ---
 name: fd-workflow
-description: Create or refine a numbered FD; use when an implementation request asks for parallel work, isolation, a worktree, or wt, or asks to run the FD lifecycle through review and archive.
+description: Create or refine a numbered FD, or run its implementation through independent review and default automatic local delivery and archive, respecting explicit stage limits.
 ---
 
 # Feature Design Workflow
@@ -9,10 +9,11 @@ Read `skills/work-management.md` and the repository instructions. Use this
 Skill when the user wants to create, refine, review, or close a Feature Design.
 New engineering work is FD-first. OpenSpec supplements the FD with stable
 capability requirements when needed; it is not a second work plan. Use the
-automatic lifecycle below when the user invokes `$fd-workflow auto`, asks to
-run an FD through implementation and review, or makes an implementation request
-that asks for parallel work, isolation, a worktree, or `wt`. A mere question
-about those terms, or a design-only request, does not start implementation.
+automatic lifecycle below for an ordinary numbered FD implementation request,
+including an implementation routed through `implement`. Explicit `auto`, full
+lifecycle, isolation, and worktree requests remain supported. A design-only
+request or question does not start implementation. Respect implementation-only,
+review-only, partial-item, and no-merge limits instead of expanding their scope.
 
 ## Resolve the FD
 
@@ -113,17 +114,19 @@ If a reopen reason is unreadable or mistaken, correct it with `aiw fd reopen
 event. This managed correction keeps the event ID, records the previous value,
 and updates the FD and receipt digest together. Never hand-edit a receipt.
 
-## Auto: one FD through review, merge, and archive
+## Default lifecycle: one FD through review, merge, and archive
 
-Apply this procedure to one numbered FD when the user invokes
-`$fd-workflow auto`, asks for the whole FD lifecycle, or requests implementation
-with parallelism/isolation/worktree/`wt`. The host agent is PM, Planner, and
-Worker; the Reviewer stage uses a separate subagent. An
-isolation request uses
-the recorded FD branch and worktree. Under the shared work-management contract,
-this request authorizes local commits, squash delivery to the recorded parent
-after a passed review, automatic verified cleanup by `local-merge`, and FD
-archive after successful delivery. It does not authorize tests,
+Apply this procedure by default to one numbered FD implementation request.
+`$fd-workflow auto` is an explicit alias for this lifecycle, not a second
+approval required after a pass. Stop at any narrower user-requested stage;
+an incomplete or partial FD is not eligible for delivery or archive.
+The host agent is PM, Planner, and Worker; Reviewer uses a separate subagent.
+A dispatched role stays within its own assignment while the host PM owns
+continuation. Use the recorded FD branch/worktree unless the user explicitly
+selected the primary workspace. The shared contract authorizes focused local
+commits, squash delivery to the recorded parent after a current passed review,
+verified CLI cleanup, and successful-delivery archive plus its focused commit.
+This default does not authorize tests,
 final builds, network access, permission escalation, push, deployment, or
 publishing. Follow narrower repository rules.
 
@@ -137,7 +140,7 @@ a session separate from Worker. Optional tests run only through the standalone
 
 ### Blocker feedback for every stop
 
-Whenever Auto cannot continue at any preflight, design, Worker, PM, Reviewer,
+Whenever the default lifecycle or explicit Auto cannot continue at preflight, design, Worker, PM, Reviewer,
 delivery, archive, or cleanup Gate, write one factual feedback pair
 under `docs/features/reports/FD-XXX-blocker-<unique-suffix>.md` and `.json`
 before reporting the stop. Use
@@ -150,8 +153,9 @@ decision need, next step or risk, and a concrete reusable improvement or
 `none`. If no event exists, use JSON `source_event: null` and explain why
 in the report. Make the suffix unique across resumes and archived records.
 Keep the pair in the writing role's workspace and commit tracked feedback
-before a handoff or merge in isolated mode. In direct-workspace mode, do not
-commit unless separately authorized; do not edit an active handoff's FD body or
+before a handoff or merge in isolated mode. In direct-workspace mode, commit
+only within the shared contract's scoped FD authorization and any explicit
+user limits; do not edit an active handoff's FD body or
 receipt merely to record a blocker. Feedback is supplemental evidence, not a new
 handoff artifact, and does not itself authorize tests, rule changes, Gate
 overrides, or risky recovery.
@@ -206,8 +210,10 @@ in the user-facing Gate and final report.
    direct-workspace path in `skills/work-management.md`: do not create a
    worktree or workspace record, and do not invent a Worker event or receipt.
    Keep the FD's Work Items, TODO, and Verification current, inspect the
-   primary-workspace diff, and preserve skipped checks as unrun. This choice
-   does not authorize Git commits. To continue through normal independent
+   primary-workspace diff, and preserve skipped checks as unrun. The FD
+   implementation request includes focused local commits and completion under
+   the shared contract, unless explicitly limited. Workspace selection alone
+   does not grant implementation or runtime authority. To obtain independent
    review without a Worker handoff, PM sets the active FD to `Pending Verification`
    with `aiw fd set-status <id> "Pending Verification" --operator <pm>
    --reason "..."`, then creates the Reviewer handoff with
@@ -232,10 +238,19 @@ in the user-facing Gate and final report.
    completed, independently reviewable Work Item before starting the next.
    Stage only that item's files; use `aiw git wt commit <id>` only when every
    uncommitted change belongs to it, otherwise use path-scoped `git add` and
-   `git commit`. In the primary workspace, do not commit unless separately
-   authorized. Commit final FD evidence before the Reviewer handoff only when
-   working in a worktree. Do not rebase either branch as part of this workflow;
+   `git commit`. Apply the same scoped commit authorization in an explicitly
+   selected primary workspace; preserve unrelated changes and narrower limits.
+   Commit final FD evidence before the Reviewer handoff when this FD's local
+   lifecycle permits it. Do not rebase either branch as part of this workflow;
    delivery squashes the reviewed FD result onto the recorded parent branch.
+   Before any next-role event or managed review command, honor the requested
+   stage and scope. For implementation-only/no-review, or selected Work Items
+   without review authorization, save scoped progress and evidence and stop
+   before emitting or dispatching Reviewer. A no-merge limit can allow review
+   but stops delivery. A requested stage stop is not an automation failure.
+   Separately authorized review of an unfinished FD's partial scope must remain
+   scoped; do not emit a full-FD implementation-ready event until the whole
+   FD implementation scope is complete.
    If authorization or design is missing, stop with the FD active. In direct-
    workspace mode, do not emit `implementation-ready` without a claimed Worker
    event; use the status/review CLI route described in step 1. Otherwise emit
@@ -276,8 +291,11 @@ in the user-facing Gate and final report.
    claiming the new Worker handoff; leave it pending, preserve the report, and
    state the Gate. Otherwise claim that handoff, fix the concrete findings,
    update the FD/report, and emit `implementation-ready` again. On
-   `verification-passed`, verify the latest receipt matches the current FD
-   revision and content. In direct-workspace mode, the reviewed changes are
+   `verification-passed`, the host PM MUST continue without another auto/merge
+   confirmation when the requested full FD scope is complete, no unresolved
+   blocker exists, current review covers the implementation, and the latest
+   receipt matches the FD revision and content. Preserve explicit stage limits.
+   In direct-workspace mode, the reviewed changes are
    already in the primary workspace; skip worktree delivery and proceed to
    archive. In isolated mode, read `.ai/fd/<id>/workspace.json` and take its
    `parent_branch`, `branch`, and `worktree` as the merge coordinates. Confirm
@@ -285,8 +303,10 @@ in the user-facing Gate and final report.
    `aiw git wt local-merge <id>` for one squash commit on the parent branch. On a
    parent-side content conflict, the command resets the failed squash, verifies
    the parent is clean, and merges the parent into the FD worktree for resolution.
-   Resolve and commit there, then rerun `local-merge` explicitly. If recovery
-   fails, leave the FD active and preserve the worktree and branch. On success,
+   Stop automatic delivery at that conflict, report the gate and preserved
+   state, and wait for an explicit recovery instruction before resolving or
+   rerunning `local-merge`. If recovery fails, leave the FD active and preserve
+   the worktree and branch. On success,
    `local-merge` verifies the clean FD HEAD, exact recorded coordinates, the
    single-parent squash, and its `FD-Source` before removing the worktree and
    branch. It safely detaches only a verified `.ai` junction to the primary
@@ -310,8 +330,9 @@ Deferred and Closed need `--reason "..."`. Native archives use
 go into that FD directory. Archive changes the FD path and index; it does not
 merge or publish code. Update a changelog only if the repository uses one. Do
 not commit, push, or merge as a side effect of design or archive unless the
-user authorized that action. The isolated implementation trigger authorizes
-merge and archive only as described in the Auto procedure.
+user authorized that action. A normal numbered FD implementation request
+provides the scoped local authorization described in the default lifecycle;
+design-only requests, standalone commits/reviews, and explicit stage limits do not.
 
 Read `references/portable-operations.md` for numbered FD conventions and
 `references/templates.md` for layout examples. When they conflict with the

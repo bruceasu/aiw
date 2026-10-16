@@ -1,0 +1,15 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-063",
+  "source_event": "FD-063-000005-changes-requested",
+  "human_report": "FD-063-implementation-r2.md",
+  "data": {
+    "summary": "Check stage and complete-FD scope before any next-role dispatch; clarify primary-workspace blocker commit authorization.",
+    "worker_session": "fd063-worker-20261017-f6a4",
+    "changed_paths": ["src/skills/implement/SKILL.md", "src/skills/fd-workflow/SKILL.md", "src/skills/fd-workflow/roles/worker.md", "src/skills/work-management.md", "corresponding project skill copies", "31 generated shared-contract copies", "openspec/specs/fd-workflow/spec.md"],
+    "commands": ["aiw fd claim FD-063 FD-063-000005-changes-requested --session fd063-worker-20261017-f6a4"],
+    "results": {"review_findings": "R1 and primary-workspace clarification addressed in documentation", "compile_only": "not applicable to Markdown/YAML-only repair", "tests": "not run", "runtime_dispatch": "not run", "independent_review": "fresh review required"},
+    "residual_risk": ["Original worker report residual risks remain", "Final repaired consistency awaits independent review"]
+  }
+}
