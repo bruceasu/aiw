@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-059](FD-059_GENERALIZE_DISCUSSION_SKILLS_AND_ISSUE_METHOD_RO.md) | 通用讨论技能与 Issue 方法路由 | Open | Medium |
 
 ## Completed
 
