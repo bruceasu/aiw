@@ -40,7 +40,7 @@
 
 ## TODO
 
-- 三个 Work Items、双格式实施证据和独立静态审查已完成；交付合并和归档尚未执行。
+- 三个 Work Items、双格式实施证据和独立静态审查已完成；已 squash 交付至 develop（3240c46）并归档 Complete，专用 worktree 和 feature/FD-062 分支已清理。
 
 ## Verification
 
@@ -50,6 +50,9 @@
 - 实施证据：reports/FD-062-implementation-r1.md 与同名 JSON。
 - 独立 Reviewer 已完成一次有界静态审查，无阻塞发现；证据：reviews/FD-062-review-r1.md 与同名 JSON，来源事件 FD-062-000004-implementation-ready。八个技能文件对和两个共享契约对均一致，全部验收项有静态支持；此结论不代表行为或效果已验证。
 - 剩余风险：真实触发、质量和成本未验证，Claude 宿主未运行，上游版本未固定，用户级安装未更新。
+- Auto 收尾：复核 FD Revision 5 的摘要与 FD-062-000005-verification-passed 一致，审查后仅有审查/流程记录变更，双方工作区干净，无未解决的 blocker 反馈文件。沿用一次独立静态审查，不重复实现检查。
+- 实际执行 `aiw git wt local-merge FD-062` 与 `aiw fd close FD-062 Complete` 均成功；交付提交 3240c46 的 FD-Source 为 9d6ba5a328e1d2a03625aacca48343ad9d10dda8。CLI 校验交付后清理分支和 worktree，保留收据。
+- 本轮未运行编译、测试、效果评估、构建、安装或网络；纯文档变更无适用编译目标，实际行为效果的剩余风险保持不变。
 
 ## Sources
 
@@ -60,3 +63,5 @@
 - 会话已读取的 Codex 系统 skill-creator 和 UI 元数据参考；OpenAI 官方 Build skills 文档。
 - 会话已读取的 anthropics/skills 官方 skill-creator。
 - src/skills/work-management.md、reviewed-skill-contract.md 及安装器共享引用物化逻辑。
+
+**Completed:** 2026-10-16
