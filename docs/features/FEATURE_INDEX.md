@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-068](FD-068_INTEGRATE_DOMAIN_MODELING_DECISION_DEPENDENCIES_.md) | Integrate domain modeling decision dependencies and intake triage | Open | Medium |
 
 ## Completed
 
