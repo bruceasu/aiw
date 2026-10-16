@@ -1,0 +1,17 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-073",
+  "source_event": "FD-073-000005-changes-requested",
+  "human_report": "FD-073-implementation-r2.md",
+  "data": {
+    "worker_session": "fd073-worker-20261017-c7a2",
+    "findings_addressed": ["R1"],
+    "repair": "Unified ordered legacy/source marker validation on the source-aware path",
+    "compile_only": {"method": "Python compile() in memory for two helper copies", "repair_exit_code": 0, "cumulative_runs": 2},
+    "helper_executed": false,
+    "tests_run": false,
+    "network_used": false,
+    "independent_review": "pending"
+  }
+}

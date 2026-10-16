@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-073",
+  "source_event": "FD-073-000006-implementation-ready",
+  "human_report": "FD-073-review-r2.md",
+  "data": {
+    "reviewer_session": "fd073-reviewer-20261017-r2",
+    "base_commit": "91aaec3",
+    "reviewed_head": "96caf9e",
+    "repair_commit": "f01b62d",
+    "verdict": "verification-passed",
+    "findings": [],
+    "resolved_findings": ["R1"],
+    "evidence": "Independent static review of unified legacy/source boundary stream, migration/sibling preservation and unchanged legacy path; combined with whole-scope r1 review",
+    "tests_run": false,
+    "helper_executed": false,
+    "compile_run_by_reviewer": false,
+    "network_used": false,
+    "models_run": false,
+    "remaining_risks": ["Remote and filesystem failure behavior not exercised", "Pending receipt orchestration remains an agent contract", "Full-body remote updates lack CAS"]
+  }
+}

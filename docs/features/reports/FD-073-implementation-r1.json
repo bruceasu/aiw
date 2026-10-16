@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-073",
+  "source_event": "FD-073-000003-design-ready",
+  "human_report": "FD-073-implementation-r1.md",
+  "data": {
+    "worker_session": "fd073-worker-20261017-c7a2",
+    "base_commit": "91aaec3",
+    "implementation_commit": "c569141",
+    "completed_items": ["1.1", "1.2", "1.3", "1.4"],
+    "compile_only": {"method": "Python compile() in memory for two projection.py copies; no execution", "exit_code": 0},
+    "static_check": {"batches": 1, "exit_code": 0, "pairs": 5, "local_links": 31, "historical_tests": "unchanged and not run"},
+    "tests_run": false,
+    "models_run": false,
+    "network_used": false,
+    "remote_publication": false,
+    "installer_run": false,
+    "independent_review": "pending",
+    "risks": ["Pending publication contract is agent-orchestrated, not an automatic service", "Full-body remote writes have no CAS guarantee", "Runtime helper/model/remote behavior unverified", "External skill copies not updated"]
+  }
+}

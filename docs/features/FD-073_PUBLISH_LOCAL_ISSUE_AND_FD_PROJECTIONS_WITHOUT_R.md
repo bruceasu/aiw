@@ -1,7 +1,7 @@
 # FD-073: Publish local Issue and FD projections without requiring OpenSpec changes
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 7
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -31,10 +31,10 @@
 
 ## Work items
 
-- [ ] 1.1 定义来源/映射/兼容合同并独立设计反馈。Size: S; Difficulty: Medium; Dependencies: none. Completion: 来源聚合、路径、冲突和恢复语义明确，设计发现解决。
-- [ ] 1.2 更新Skill与纯helper。Size: M; Difficulty: Medium; Dependencies: 1.1. Completion: Issue/FD主入口、来源块隔离、旧接口兼容、严格映射和不重放恢复。
-- [ ] 1.3 文档/metadata/项目副本与稳定规格。Size: S; Difficulty: Low; Dependencies: 1.2. Completion: 调用示例、边界、来源及链接一致，未声称全局安装。
-- [ ] 1.4 编译/静态证据并提交独立评审。Size: S; Difficulty: Low; Dependencies: 1.3. Completion: Python内存compile不产生pyc，一批静态核查和双格式报告，后续独立评审/交付见TODO。
+- [x] 1.1 定义来源/映射/兼容合同并独立设计反馈。Size: S; Difficulty: Medium; Dependencies: none. Completion: 来源聚合、路径、冲突和恢复语义明确，设计发现解决。
+- [x] 1.2 更新Skill与纯helper。Size: M; Difficulty: Medium; Dependencies: 1.1. Completion: Issue/FD主入口、来源块隔离、旧接口兼容、严格映射和不重放恢复。
+- [x] 1.3 文档/metadata/项目副本与稳定规格。Size: S; Difficulty: Low; Dependencies: 1.2. Completion: 调用示例、边界、来源及链接一致，未声称全局安装。
+- [x] 1.4 编译/静态证据并提交独立评审。Size: S; Difficulty: Low; Dependencies: 1.3. Completion: Python内存compile不产生pyc，一批静态核查和双格式报告，后续独立评审/交付见TODO。
 
 Keep item numbers stable after implementation starts. Use `- [-]` only for an
 explicitly cancelled item, with its reason on the same line.
@@ -50,6 +50,8 @@ explicitly cancelled item, with its reason on the same line.
 
 ## Verification
 
+- Reviewer r2: `reviews/FD-073-review-r2.md/.json`, verification-passed, source `FD-073-000006-implementation-ready`, HEAD `96caf9e`, repair `f01b62d`. R1 independently resolved via unified legacy/source boundaries; blocker feedback resolved. Static review only; no tests, helper execution, models or network. Local delivery/archive remains PM-owned.
+- Reviewer r1: `reviews/FD-073-review-r1.md/.json`, changes-requested, source `FD-073-000004-implementation-ready`, HEAD `6b34ce3`. R1: legacy/source overlapping spans can delete another FD block during migration; repair and fresh independent review required. No runtime validation performed by Reviewer.
 - Compile-only check and static review by default; record unrun tests explicitly.
 - For explicitly requested test support (any wording/language), record suitable
   TDD scope, independent fd-test scope, command/revision authorization and finite
@@ -63,9 +65,14 @@ explicitly cancelled item, with its reason on the same line.
 - src/skills/publish-github-issue，github-issues-management，issue-management；src/internal/issue/location.go。
 - 稳定规格：openspec/specs/fd-workflow；仅扩展可选外部投影边界。
 
+- Design: reviews/FD-073-design-r1.md/.json changes-needed D1/D2, reconciled in Solution; r2 ready. No implementation verdict implied.
+- Worker: reports/FD-073-implementation-r1.md/.json, implementation c569141; in-memory compile passed for source/project helper and one bounded static batch passed (5 pairs, 31 links, legacy signatures and unchanged historical tests). No test/model/network/remote publication or installer executed. Independent implementation review pending.
+
+- Worker repair r2: reports/FD-073-implementation-r2.md/.json addresses review R1 with unified legacy/source marker boundary validation; repair in-memory compile passed for both copies, no helper/runtime tests. Blocker reports/FD-073-blocker-legacy-boundary.md/.json awaits independent review.
+
 ## TODO
 
-- [ ] 独立设计反馈、1.1–1.4及独立实现评审。
+- [x] 设计和实现已完成；独立实现评审 r2 通过，R1 已修复并独立复核。
 - [ ] 本地合并和归档。
 
 - Issue: none

@@ -1,0 +1,32 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-073",
+  "source_event": "FD-073-000004-implementation-ready",
+  "human_report": "FD-073-review-r1.md",
+  "data": {
+    "reviewer_session": "fd073-reviewer-20261017-r1",
+    "base_commit": "91aaec3",
+    "reviewed_head": "6b34ce3",
+    "implementation_commit": "c569141",
+    "verdict": "changes-requested",
+    "findings": [
+      {
+        "id": "R1",
+        "severity": "high",
+        "dimensions": ["correctness", "spec"],
+        "path": "src/skills/publish-github-issue/scripts/projection.py",
+        "line": 158,
+        "summary": "Legacy migration can delete another source block because legacy/source spans are validated separately",
+        "required_fix": "Reject nested or crossing legacy and source blocks on the new source path; sync project copy and preserve legacy interface compatibility",
+        "evidence": "Static control-flow trace; helper not executed"
+      }
+    ],
+    "tests_run": false,
+    "helper_executed": false,
+    "compile_run_by_reviewer": false,
+    "network_used": false,
+    "models_run": false,
+    "remaining_risks": ["Remote behavior not exercised", "Full-body remote updates lack CAS"]
+  }
+}

@@ -66,7 +66,7 @@
 | [setup-project](setup-project/README.md) | 提议并配置项目级 AIW 约定与 Agent 指令。 |
 | [fd-release-gate](fd-release-gate/README.md) | 跨领域评估真实发布的候选版本、适用证据和风险，不要求每个FD执行。 |
 | [github-issues-management](github-issues-management/README.md) | 通过 aiw-github 查询和管理远程 GitHub Issue。 |
-| [publish-github-issue](publish-github-issue/README.md) | 将显式指定的 OpenSpec change 发布为 GitHub Issue 投影。 |
+| [publish-github-issue](publish-github-issue/README.md) | 将指定本地 Issue／FD 发布为 GitHub Issue 摘要，OpenSpec change 可选。 |
 | [writing-great-skills](writing-great-skills/README.md) | 创建、改善、审查或适配 Agent Skills。 |
 
 ## 四个辅助技能如何配合工程工作

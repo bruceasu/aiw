@@ -1,0 +1,18 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-073",
+  "source_event": "FD-073-000005-changes-requested",
+  "human_report": "FD-073-blocker-legacy-boundary.md",
+  "data": {
+    "stage": "worker-repair",
+    "role": "worker",
+    "status": "resolved",
+    "observed_blocker": "Legacy migration could swallow another source block",
+    "confirmed_cause": "Legacy and source marker boundaries validated separately",
+    "recovery_attempts": [{"action": "unify ordered boundaries and sync helper copies", "outcome": "in-memory compile passed; independent review pending"}],
+    "human_decision_required": false,
+    "actual_resolution": {"date": "2026-10-17", "review_report": "reviews/FD-073-review-r2.md", "reviewed_head": "96caf9e", "repair_commit": "f01b62d", "evidence": "Independent static review confirms overlap rejected before migration; no runtime case execution"},
+    "reusable_improvement": "Validate old and new formats together when migrating managed ranges"
+  }
+}
