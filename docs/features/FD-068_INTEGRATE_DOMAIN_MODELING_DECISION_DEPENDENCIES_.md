@@ -1,7 +1,7 @@
 # FD-068: Integrate domain modeling decision dependencies and intake triage
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -37,10 +37,10 @@ triage 专注多来源用户反馈与队列整理：请求来源、用户目标�
 
 ## Work items
 
-- [ ] 1.1 领域建模方法与产物归属。Size: M; Difficulty: Medium; Dependencies: none. Completion: 术语、关系、状态/不变量、例子、来源和未知有明确定义，Requirement mode 保持快照只读，工程写入仅限授权范围。
-- [ ] 1.2 决策依赖吸收与 wayfinder 入口退役。Size: M; Difficulty: Medium; Dependencies: 1.1. Completion: Issue/Planner 按需共享方法，原 Plan/FD 唯一归属，不再有新独立 map/ticket/会话限额或 wayfinder 入口，清理安装索引和当前引用。
-- [ ] 1.3 triage 收窄到用户诉求队列。Size: M; Difficulty: Medium; Dependencies: 1.1. Completion: 保留来源/重复/信息/优先级分析，brief 非权威执行计划，无强制复现、自动外部操作、自动关闭或重复深度访谈。
-- [ ] 1.4 文档、安装副本与证据一致。Size: M; Difficulty: Medium; Dependencies: 1.2,1.3. Completion: 相关 stable specs/setup/README/项目副本一致，一批静态检查与独立评审后正常交付归档。
+- [x] 1.1 领域建模方法与产物归属。Size: M; Difficulty: Medium; Dependencies: none. Completion: 术语、关系、状态/不变量、例子、来源和未知有明确定义，Requirement mode 保持快照只读，工程写入仅限授权范围。
+- [x] 1.2 决策依赖吸收与 wayfinder 入口退役。Size: M; Difficulty: Medium; Dependencies: 1.1. Completion: Issue/Planner 按需共享方法，原 Plan/FD 唯一归属，不再有新独立 map/ticket/会话限额或 wayfinder 入口，清理安装索引和当前引用。
+- [x] 1.3 triage 收窄到用户诉求队列。Size: M; Difficulty: Medium; Dependencies: 1.1. Completion: 保留来源/重复/信息/优先级分析，brief 非权威执行计划，无强制复现、自动外部操作、自动关闭或重复深度访谈。
+- [x] 1.4 文档、安装副本与证据一致。Size: M; Difficulty: Medium; Dependencies: 1.2,1.3. Completion: 相关 stable specs/setup/README/项目副本一致，一批静态检查与独立评审后正常交付归档。
 
 Keep item numbers stable after implementation starts. Use `- [-]` only for an
 explicitly cancelled item, with its reason on the same line.
@@ -68,10 +68,14 @@ explicitly cancelled item, with its reason on the same line.
 - 一批静态只读检查：源/项目字节比较、共享资源声明与自包含、wayfinder 退役、活动引用与元数据、审批/产物归属一致性。
 - 静态推演术语混淆、大型依赖恢复、重复反馈三个场景，不声称宿主运行效果。
 - 独立 Reviewer 必须检查实际 diff，记录中文 Markdown 与同名 JSON；通过后自动本地交付和归档。
+- 实施报告：docs/features/reports/FD-068-implementation-r1.md 与同名 JSON；Work Items 1.1–1.4 已实现，独立评审待完成。
+- 一批静态检查通过：17 个源/项目文件、26 份工作管理副本、7 份方法副本、4 入口声明与资源、manifest 唯一移除 wayfinder 及活动调用清理。三个案例仅静态推演。
+- 无可编译源码修改，编译不适用；未运行测试、安装/sync、网络、最终构建、lint 或宿主行为评估。
+- 独立评审通过：docs/features/reviews/FD-068-review-r1.md 与同名 JSON；Reviewer fd068-reviewer-20261017-b72c 认领 FD-068-000004-implementation-ready，审查基线 1cbd0fa 至实现 d2b641c，未发现阻塞问题。确认 17 对技能文件、26/7 份共享副本及四入口材料一致；仅静态证据，不声称宿主行为验证。
 
 ## TODO
 
-- [ ] 完成 1.1–1.4 与独立评审。
+- [x] 完成 1.1–1.4 与独立评审。
 - [ ] 正常本地合并及归档。
 
 ## Sources

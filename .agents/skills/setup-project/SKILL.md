@@ -53,10 +53,10 @@ Propose the AIW ownership contract in `.agents/agents/work-management.md`:
 - External Issues are optional projections used only on explicit request.
 
 Do not create a separate issue-tracker configuration for an AIW/OpenSpec
-repository. If triage is installed, ask once whether to keep the default role
-labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`,
-`wontfix`). Propose `.agents/agents/triage-labels.md` only if the answer or
-existing project conventions require it. Use root `CONTEXT.md` and `docs/adr/`
+repository. Triage labels are optional queue vocabulary, not a required new
+workflow. Propose `.agents/agents/triage-labels.md` only when requested or
+existing project conventions require a mapping; do not add a label decision
+merely because triage is installed. Use root `CONTEXT.md` and `docs/adr/`
 by default; propose a multi-context layout only when repository evidence shows
 clear monorepo boundaries.
 

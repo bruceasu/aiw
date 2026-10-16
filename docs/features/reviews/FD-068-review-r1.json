@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-068",
+  "source_event": "FD-068-000004-implementation-ready",
+  "human_report": "FD-068-review-r1.md",
+  "data": {
+    "reviewer_session": "fd068-reviewer-20261017-b72c",
+    "base_commit": "1cbd0fa",
+    "reviewed_commit": "d2b641c6d82d26eb5e2060e70a0e13c2733d0f0d",
+    "result": "passed",
+    "findings": [],
+    "acceptance_areas": ["domain-mode-boundaries", "decision-ownership-and-resume", "intake-queue-and-external-authority", "wayfinder-retirement", "stable-specs-and-materialization"],
+    "static_checks": {"result": "passed", "source_project_pairs": 17, "work_management_copies": 26, "workflow_methods_copies": 7, "resource_entries": 4, "manifest_diff": "only wayfinder removed"},
+    "commands": ["Get-Content / git diff / rg targeted static reads", "One inline Python read-only byte/resource/retirement comparison batch", "git status --short / git rev-parse HEAD", "aiw fd show/help/claim"],
+    "compile_only": "not applicable: no compilable source changes",
+    "tests_run": false,
+    "not_run": ["tests", "builds", "linters/formatters", "verification scripts", "installer/sync", "network", "host behavioral evaluation"],
+    "risks": ["Static contracts do not establish actual host/model behavior", "User-global installs and historical external maps unchanged"],
+    "delivery": "not performed by Reviewer"
+  }
+}

@@ -81,6 +81,13 @@ in the entry SKILL.md; references alone are not scanned by the installer.
 Issue owns business scope and child approval; Planner owns the sole FD design
 and engineering Work Items. Use only the current stage's section of
 `skills/workflow-methods.md`, not a second checklist or ticket mapping.
+Domain clarification supplies definitions, concept/state/rule distinctions and
+examples; snapshot Requirement mode returns proposals without stable writes.
+For large uncertain scope, keep decision dependencies in the owning Issue Plan
+or FD and use existing grilling methods for discussion. No standalone map or
+wayfinder stage remains. Triage sorts incoming user requests and next actions;
+its brief is input, not software approval, FD readiness or a PR merge verdict.
+Keep user goals linked to software acceptance and engineering decisions.
 Planner loads fd-workflow's planning reference, collaborates on stable specs
 only when settled capability rules change, and obtains conditional independent
 design feedback for material design decisions. Design evidence does not emit

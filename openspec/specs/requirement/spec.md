@@ -379,8 +379,81 @@ approval MUST NOT approve children. Each original outcome MUST belong once to
 child, retained or deferred scope; shared safety/release gates MUST be retained.
 Inseparable outcomes MAY remain one Issue with a stated reason.
 
-Issue Management MUST use only the splitting section of the installed shared
-workflow method. It MUST NOT invoke a legacy ticket mapper or write the FD's
+When splitting, Issue Management MUST use the splitting section of the installed
+shared workflow method. It MUST NOT invoke a legacy ticket mapper or write the FD's
 engineering execution checklist during Issue discovery. Planner owns that
 Work Item breakdown after a confirmed FD handoff. Splitting alone MUST NOT be
 treated as proof of low risk or readiness; missing acceptance remains a gate.
+
+
+### Requirement: Domain clarification preserves the original user need
+
+Issue discovery MUST retain source user problems and goals when deriving
+software behavior and acceptance. Domain modeling MAY supplement unclear terms,
+concept relationships, ownership or state/invariant meanings. Snapshot
+Requirement mode MUST use only supplied evidence and the host output contract,
+return definitions, distinctions, relevant relationships/states/invariants,
+normal/boundary examples, sources and unresolved questions. It MUST NOT scan
+code, load additional format files or write glossary/spec/ADR/FD/Session artifacts.
+Proposals MUST remain distinguishable from host-confirmed rules; existing
+TermsUnclear selection and method IDs remain unchanged.
+
+#### Scenario: Completion has several meanings
+
+- WHEN the conversation uses completion for implementation, local delivery and
+  release readiness without distinguishing them
+- THEN the method proposes precise definitions and normal/boundary examples
+- AND unresolved meaning is not silently converted into a confirmed rule
+- AND conclusions return to the same Issue Plan under existing confirmation
+
+### Requirement: Dependent decisions stay inside the owning plan
+
+For large uncertain Issues, the host MAY keep a compact decision-dependency
+section in the current Issue Plan. It MUST record the destination, precise
+questions, prerequisites, current frontier and authoritative answer links;
+loose in-scope unknowns and out-of-scope work remain distinct. Existing
+conversation methods handle discussion without a second full interview.
+The method MUST NOT introduce a wayfinder entry, second tracker/map, execution
+checklist, mandatory research agents or one-ticket-per-session limit.
+Question IDs/states are discussion references, not new CLI entities/states.
+
+#### Scenario: Resume a blocked large Issue
+
+- WHEN one question depends on an already settled question and another lacks
+  a material business rule
+- THEN resume reuses settled answers, advances actionable questions and records
+  the missing rule/dependency
+- AND an empty frontier with unresolved material questions is not readiness
+- AND a cycle or missing prerequisite is reported rather than guessed
+
+#### Scenario: Decision questions are not business deliverables
+
+- WHEN the host identifies several questions about one business outcome
+- THEN they remain discussion questions unless independently useful outcomes
+  justify child Issues under the existing splitting/approval rules
+- AND unresolved business acceptance cannot be deferred as engineering design
+- AND Planner receives linked confirmed rules and owns the FD Work Items
+
+### Requirement: Intake triage does not replace software requirements
+
+Optional triage MUST organize requested feedback/queue items by source, user
+problem/outcome, facts, gaps, related candidates, impact/priority reason and
+next action. It MUST route individual discovery to Issue Management, engineering
+to FD planning and PR correctness to independent review. A handoff brief is input,
+not approval, authoritative software requirements, FD readiness or merge permission.
+No mandatory triage stage, label pair or priority score is added.
+
+#### Scenario: Existing capability or prior rejection is found
+
+- WHEN triage finds code resembling a request or an earlier rejection
+- THEN it checks the unmet need, meaningful differences and changed constraints
+  in authorized evidence and reports a candidate match with rationale
+- AND it does not automatically close/reject the request or erase prior rationale
+- AND deferral is distinguished from rejection
+
+#### Scenario: No external action authority
+
+- WHEN a user requests backlog advice without authorizing external operations
+- THEN triage returns local sourced recommendations and missing inputs
+- AND it performs no network read, comment, label, assignment or close operation
+- AND already authorized exact actions do not require another approval checkpoint

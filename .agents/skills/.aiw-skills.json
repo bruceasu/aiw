@@ -235,12 +235,6 @@
       "source_identity": "D:\\green\\aiw\\skills\\triage",
       "source_revision": null
     },
-    "wayfinder": {
-      "mode": "copy",
-      "sha256": "57213576a0ce8cc6a91d421fae734b0dd0f8118ebb21499e57a7eb9db95d8982",
-      "source_identity": "D:\\green\\aiw\\skills\\wayfinder",
-      "source_revision": null
-    },
     "writing-great-skills": {
       "mode": "copy",
       "sha256": "3d32be1cb8bebfc27b69ef6298d1c19eab3c781635bddd7f649bff3229e5dd9b",

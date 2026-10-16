@@ -72,7 +72,15 @@ assumptions, and remaining decisions.
    standalone Skills. Read only the method needed for the current gap; do not
    load all references or run the entire chain. Legacy method IDs in Session
    diagnostics do not imply that separate finance-* Skills must be installed.
-   `domain-modeling` helps when terms or boundaries are unstable.
+   `domain-modeling` helps when terms, concept ownership, relationships or
+   states/invariants are unstable; in Requirement mode it returns snapshot-only
+   proposals and examples to this same Plan, not stable glossary/spec writes.
+   For several dependent decisions, load
+   [decision dependencies](references/decision-dependencies.md) and only Decision
+   dependencies in `skills/workflow-methods.md`. Keep questions/answers in this
+   Plan, preserve user-goal to software-acceptance links, and do not create an
+   independent wayfinder map, ticket plan or second interview. Simple Issues
+   need no additional structure. Runtime method selection remains unchanged.
    `finance-release-gate` belongs only to a later planned release after
    implementation, outside Issue discovery. An unread method was not applied.
    Alongside the primary method, explicitly route `grill-with-docs` to improve

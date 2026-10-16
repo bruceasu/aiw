@@ -1,0 +1,63 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-068",
+  "source_event": "FD-068-000003-design-ready",
+  "human_report": "FD-068-implementation-r1.md",
+  "data": {
+    "worker_session": "fd068-worker-20261017-6ea1",
+    "base_commit": "1cbd0fa",
+    "implementation_commits": [
+      "cf49d38",
+      "10a4cb4",
+      "ed3aec8",
+      "962e281"
+    ],
+    "completed_items": [
+      "1.1",
+      "1.2",
+      "1.3",
+      "1.4"
+    ],
+    "summary": "Shared domain clarification, Issue/FD decision dependencies, retired wayfinder and narrowed user-intake triage.",
+    "static_check": {
+      "result": "passed",
+      "exit_code": 0,
+      "source_project_pairs": 17,
+      "work_management_copies": 26,
+      "workflow_methods_copies": 7,
+      "resource_entries": 4,
+      "manifest_change": "only wayfinder removed",
+      "retired_entry_call_matches": 0
+    },
+    "static_examples": [
+      "completion-terminology",
+      "dependent-decision-resume",
+      "related-feedback-triage"
+    ],
+    "commands": [
+      "Targeted Get-Content and rg reads",
+      "One read-only Python byte/resource/manifest/retirement comparison batch",
+      "git diff 1cbd0fa",
+      "Managed FD new/claim/emit and worktree/scoped commit operations"
+    ],
+    "compile_only": "not applicable: no compilable source edits",
+    "tests_run": false,
+    "not_run": [
+      "tests",
+      "builds",
+      "linters/formatters",
+      "verification scripts",
+      "installer/sync",
+      "network",
+      "external tracker operations",
+      "host behavioral evaluation"
+    ],
+    "risks": [
+      "Host adherence and actual model output not runtime evaluated",
+      "User-global skill installs untouched",
+      "Historical external maps not migrated"
+    ],
+    "independent_review": "pending"
+  }
+}

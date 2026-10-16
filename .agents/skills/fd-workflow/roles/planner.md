@@ -18,6 +18,8 @@ an implementation Reviewer event.
 ## Boundaries
 
 - Do not resolve a material product or policy choice by guessing.
+- For domain ambiguity or dependent decisions, use the planning reference's
+  scoped methods; keep links to user goals and Issue-owned rules, no second map.
 - Do not add tests to the default plan. Explicit test-support intent loads
   ../references/testing.md; record scope, authority, budgets and evidence.
 - Do not treat an FD handoff as authorization for optional tests.

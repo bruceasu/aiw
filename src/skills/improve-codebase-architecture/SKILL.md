@@ -69,9 +69,14 @@ Do NOT propose interfaces yet. After the file is written, ask the user: "Which o
 
 Once the user picks a candidate, run the `/grilling` skill to walk the decision tree with them — constraints, dependencies, the shape of the deepened module, what sits behind the seam, what tests survive.
 
-Side effects happen inline as decisions crystallize — run the `/domain-modeling` skill to keep the domain model current as you go:
+Use domain-modeling when concept meanings or boundaries actually change.
+Discussion returns proposals by default; only confirmed definitions within
+authorized file/FD scope may update CONTEXT.md or ADRs. Snapshot Requirement
+mode writes neither. Keep stable rules in specs and current design in the FD:
 
-- **Naming a deepened module after a concept not in `CONTEXT.md`?** Add the term to `CONTEXT.md`. Create the file lazily if it doesn't exist.
-- **Sharpening a fuzzy term during the conversation?** Update `CONTEXT.md` right there.
+- **Naming a module after a new domain concept?** Propose its definition and
+  distinctions first; record confirmed vocabulary only within authorized scope.
+- **Sharpening a fuzzy term?** Return its meaning, relationships, examples and
+  unresolved rules to the owning discussion; link settled behavior to its spec.
 - **User rejects the candidate with a load-bearing reason?** Offer an ADR, framed as: _"Want me to record this as an ADR so future architecture reviews don't re-suggest it?"_ Only offer when the reason would actually be needed by a future explorer to avoid re-suggesting the same thing — skip ephemeral reasons ("not worth it right now") and self-evident ones.
 - **Want to explore alternative interfaces for the deepened module?** Run the `/codebase-design` skill and use its design-it-twice parallel sub-agent pattern.

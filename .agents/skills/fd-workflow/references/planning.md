@@ -24,6 +24,25 @@ check prerequisites before implementation, and keep planning artifacts aligned
 when facts change. This is a method, not an invocation of OpenSpec commands.
 An explicitly requested change is optional supporting material, not the plan.
 
+## Domain and decision gaps
+
+For conflicting terminology, boundaries or state/invariant meanings, read only
+Domain clarification in `../skills/workflow-methods.md`; use domain-modeling
+when its scoped modeling/file guidance is needed. Respect Issue-confirmed
+business rules, use normal and boundary examples, and surface contradictions
+between intended rules and observed implementation rather than choosing silently.
+Preserve user goal -> software acceptance -> engineering decision traceability.
+
+For several dependent engineering decisions, read only Decision dependencies
+from that same resource. Keep a small question/dependency section in the FD,
+link Issue-owned answers and continue from settled prerequisites on resume.
+Do not create a second map or execution checklist, automatically dispatch research
+agents, or impose a one-ticket-per-session limit. Cycles/missing prerequisites
+are explicit gates. Unresolved business acceptance returns to the Issue owner;
+material engineering unknowns block design-ready. Stable behavior belongs in
+specs, glossary terms in CONTEXT, current decisions/items in the FD, and only
+important durable trade-offs in ADRs. Link facts instead of maintaining copies.
+
 ## Test support
 
 For an explicit request for test support (any wording/language), load

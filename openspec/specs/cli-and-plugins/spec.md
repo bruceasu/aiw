@@ -270,3 +270,16 @@ beside each Skill that declares it in SKILL.md, using the existing shared
 resource mechanism. fd-workflow, tdd, fd-test and fd-review MUST be able to
 read that method without a sibling directory. This is an internal resource
 declaration, not a new standalone Skill, command, flag or execution permission.
+
+
+### Requirement: Share intake and design methods without duplicate entries
+
+Domain clarification, decision dependencies and intake queue methods MUST be
+sections of the existing shared workflow-methods.md resource. Standalone
+domain-modeling and triage entries MUST declare it literally in SKILL.md so
+existing installation materializes it without a sibling Skill dependency.
+Issue/FD entries already declaring that resource MUST use only needed sections.
+Snapshot domain-modeling MUST remain usable from its injected entry contract
+without loading supporting files. The source/project wayfinder entry and
+installed index item are retired; no thin alias or CLI argument is introduced.
+Existing external maps, historical evidence and user-level installs are untouched.

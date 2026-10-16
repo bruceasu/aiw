@@ -11,8 +11,8 @@ CLI 负责发现、安装和同步 Skill。Skill 名称不是 CLI 子命令。
 ### 路由、探索与问题澄清
 
 - `ask-asu`：根据当前阶段建议下一步 Skill 或 AIW 操作，不代替执行。
-- `wayfinder`：将较大的不确定工作组织成可逐步解决的问题。
-- `triage`：按证据和状态整理问题或外部 PR。
+- 大型不确定需求：Issue／Planner 按需读取共享决策依赖方法，由现有 grilling 方法澄清问题，不再有独立 wayfinder 入口或地图票据流程。
+- `triage`：整理多来源用户诉求、重复候选、信息缺口和下一步；深入需求交 Issue，工程计划交 FD，PR 正确性交独立评审。
 - `grilling`、`grill-me`：按用户要求通过追问检验方案。
 - `grill-with-docs`：在 Issue 初步理解、关键规则讨论和决策交接时，
   按复杂度检验需求质量；确认结论交回原 Issue Plan，由宿主确认和记录。
@@ -24,7 +24,7 @@ CLI 负责发现、安装和同步 Skill。Skill 名称不是 CLI 子命令。
 
 - `issue-management`：澄清并决策一个 AIW Issue，可交接到 FD。
 - `fd-workflow`：统一编号 FD 的设计、实现、独立审查交接及自动交付归档；支持只实现或部分工作项等明确限制。
-- `domain-modeling`：整理领域术语、概念关系和边界。
+- `domain-modeling`：澄清术语、概念关系、状态和不变量，给出正常／边界例子；Issue 快照模式只返回建议，稳定文档写入遵守所属阶段与授权范围。
 - `codebase-design`：设计模块接口、职责和代码边界。
 - `improve-codebase-architecture`：发现并分析架构改进机会。
 - `issue-management/references/`：随 Issue 入口按需读取的问题澄清、
@@ -38,7 +38,7 @@ CLI 负责发现、安装和同步 Skill。Skill 名称不是 CLI 子命令。
 - `fd-review`：独立审查编号 FD 的实现和证据。
 - `to-spec`：更新 OpenSpec 稳定规格；只有用户明确要求时才创建 change。
 - Issue 负责按业务结果拆子 Issue；Planner 负责拆 FD Work Items。
-  共同原则按需读取 `skills/workflow-methods.md`，不再有独立票据映射阶段。
+  共同原则按需读取 `skills/workflow-methods.md` 的领域澄清、决策依赖、业务拆分、规格或评审章节；triage 只用队列分流章节，不加载全套。
 - `tdd`：显式测试优先或 FD 测试支持时，对合适的核心规则使用有效 Red/Green，记录独立预期依据与回归保护。
 - `fd-test`：独立推导验收场景、复用或补充测试，在授权范围内执行并产出版本绑定的事实报告。
 - FD 测试支持按语义选择：`with test`、`带测试`、`需要测试支持` 等均可；默认不增加测试。更具体的只生成用例、不运行或不用 TDD 等限制优先。

@@ -900,3 +900,36 @@ Renewed repair/execution requires explicit direction and valid authority.
 - THEN affected results are marked stale and unrelated evidence is reused only
   with justification
 - AND diagnosis-only does not grant automatic reruns or further test repairs
+
+
+### Requirement: Scoped domain and decision methods support FD design
+
+Planner MAY load Domain clarification and Decision dependencies from the
+entry-declared shared workflow-methods resource for actual design gaps.
+It MUST preserve user-goal -> software-acceptance -> engineering-decision links.
+Issue owns business rules/approval; the FD remains the only engineering plan
+and Work Item checklist. Material business gaps return to the Issue owner and
+material engineering unknowns MUST block design-ready. Independent ready work
+may continue without inventing a full-FD readiness result.
+
+Confirmed vocabulary belongs in CONTEXT, stable capability rules in specs,
+current choices/dependencies/items in the FD and durable non-obvious trade-offs
+in ADRs when justified. Cross-links MUST prevent competing copies of rules.
+Discussion/modeling alone MUST NOT authorize stable writes, new ADRs, automatic
+research/prototype agents or runtime checks. No wayfinder stage or label machine
+is introduced; historical maps and user-global installs are not auto-migrated.
+
+#### Scenario: Domain discussion reaches an engineering decision
+
+- WHEN scoped modeling resolves a term and a related state invariant
+- THEN authorized vocabulary edits hold the concise definition and link to the
+  owning stable/proposed rule, without duplicating a state specification
+- AND the FD records current engineering choices and unresolved gates
+
+#### Scenario: Dependent design spans sessions
+
+- WHEN several engineering questions depend on prior decisions
+- THEN Planner records prerequisites and answer links in the same FD, resumes
+  from settled evidence and preserves the sole Work Item plan
+- AND resolving one question neither limits the whole session to one ticket
+  nor grants implementation authority for unresolved decisions
