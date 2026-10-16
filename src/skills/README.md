@@ -45,7 +45,7 @@
 
 | Skill | 用途与选择时机 |
 | --- | --- |
-| [ask-asu](ask-asu/README.md) | 只读判断当前阶段和下一步，不执行建议操作。 |
+| [ask-asu](ask-asu/README.md) | 默认只读导航；按实际授权选择一次有界子Agent或aiw ask咨询，不执行流程建议。 |
 | [fd-workflow](fd-workflow/README.md) | 编号 FD 的设计、实现、独立评审、本地交付和归档主入口。 |
 | [fd-review](fd-review/README.md) | 独立检查编号 FD 的实际实现、验收与证据，并记录正式结论。 |
 | [code-review](code-review/README.md) | 审查指定分支、PR 或 diff，也适合没有 FD 编号的工作。 |

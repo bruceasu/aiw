@@ -1,7 +1,7 @@
 # FD-075: Add bounded optional consultation to ask-asu navigation
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -29,9 +29,9 @@ ask-asu入口、README、development-workflow引用、按需consultation引用�
 
 ## Work items
 
-- [ ] 1.1 明确导航和可选咨询合同。Size: S; Difficulty: Low; Dependencies: none. Completion: 触发、授权、channel选择、一次咨询与失败停止、结果边界清晰。
-- [ ] 1.2 更新aiw ask/子Agent能力参考及说明。Size: S; Difficulty: Low; Dependencies: 1.1. Completion: 当前参数/固定provider/历史副作用/最小上下文准确，源项目同步。
-- [ ] 1.3 静态证据和独立评审交接。Size: S; Difficulty: Low; Dependencies: 1.2. Completion: 有界静态核查、双格式报告、实际独立Reviewer；交付另见TODO。
+- [x] 1.1 明确导航和可选咨询合同。Size: S; Difficulty: Low; Dependencies: none. Completion: 触发、授权、channel选择、一次咨询与失败停止、结果边界清晰。
+- [x] 1.2 更新aiw ask/子Agent能力参考及说明。Size: S; Difficulty: Low; Dependencies: 1.1. Completion: 当前参数/固定provider/历史副作用/最小上下文准确，源项目同步。
+- [x] 1.3 静态证据和独立评审交接。Size: S; Difficulty: Low; Dependencies: 1.2. Completion: 有界静态核查、双格式报告、实际独立Reviewer；交付另见TODO。
 
 Keep item numbers stable after implementation starts. Use `- [-]` only for an
 explicitly cancelled item, with its reason on the same line.
@@ -47,6 +47,8 @@ explicitly cancelled item, with its reason on the same line.
 
 ## Verification
 
+- Independent Reviewer fd075-reviewer-20261017-7c16: PASS for f1415a8..8e56ef4; source event FD-075-000004-implementation-ready. Evidence: reviews/FD-075-review-r1.md/.json. No blocking findings; static contract/code-path review only, no runtime consultation/tests/compile/network. Implementation/review TODO complete; local delivery/archive remain PM-owned.
+
 - Compile-only check and static review by default; record unrun tests explicitly.
 - For explicitly requested test support (any wording/language), record suitable
   TDD scope, independent fd-test scope, command/revision authorization and finite
@@ -60,9 +62,11 @@ explicitly cancelled item, with its reason on the same line.
 - src/skills/ask-asu、src/internal/commands/ask/{command,config,path_policy}.go与src/internal/ai/llm.go。
 - openspec/specs/ai-routing/spec.md、fd-workflow/spec.md：模型名称不代表能力，阶段与派发权威保留。
 
+- Worker: reports/FD-075-implementation-r1.md/.json. Main implementation 5863954 with final spec heading correction in evidence commit. One static batch passed: 13 instruction/metadata files, 6 source/materialized pairs, 34 local links. No runtime consultation, network, compile, tests or installer. Independent implementation review and delivery pending.
+
 ## TODO
 
-- [ ] 完成1.1–1.3及独立实现评审。
+- [x] 完成1.1–1.3及独立实现评审。
 - [ ] 本地交付与归档。
 
 - Issue: none

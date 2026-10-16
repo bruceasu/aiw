@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-075",
+  "source_event": "FD-075-000003-design-ready",
+  "human_report": "FD-075-implementation-r1.md",
+  "data": {
+    "worker_session": "fd075-worker-20261017-2e49",
+    "base_commit": "f1415a8",
+    "implementation_commit": "5863954",
+    "completed_items": ["1.1", "1.2", "1.3"],
+    "static_check": {"batches": 1, "exit_code": 0, "implementation_files": 13, "matching_pairs": 6, "local_links": 34},
+    "compile": "not applicable: instructions/UI metadata only",
+    "tests_run": false,
+    "ask_invoked": false,
+    "consultation_agents_dispatched": false,
+    "network_used": false,
+    "installer_run": false,
+    "independent_review": "pending",
+    "risks": ["Runtime model adherence not evaluated", "Provider-internal retries not bounded by a single CLI invocation", "Copilot ask SystemPrompt and CLI isolation limitations remain", "Global external skill copies not updated"]
+  }
+}

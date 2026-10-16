@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-075",
+  "source_event": "FD-075-000004-implementation-ready",
+  "human_report": "FD-075-review-r1.md",
+  "data": {
+    "reviewer_session": "fd075-reviewer-20261017-7c16",
+    "base_commit": "f1415a8",
+    "reviewed_commit": "8e56ef4",
+    "verdict": "PASS",
+    "findings": [],
+    "static_check": {"exit_code": 0, "matching_skill_files": 5, "shared_contract_matches": true, "local_links": 7, "scoped_files": 17},
+    "tests_run": false,
+    "compile_run": false,
+    "consultation_run": false,
+    "network_used": false,
+    "limitations": ["Runtime model adherence not evaluated", "Provider isolation and internal transport retries not runtime verified", "External global skill copies not updated"]
+  }
+}

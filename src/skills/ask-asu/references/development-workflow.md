@@ -21,3 +21,11 @@ planning and execution; do not introduce a separate ticket-mapping stage.
 
 OpenSpec stable specs remain relevant; a change directory is created only on
 explicit request.
+
+## Navigation versus consultation
+
+This table recommends workflow actions; Ask Asu does not execute them. Optional
+consultation follows [consultation.md](consultation.md), with separate authority
+and one bounded channel. Consultation creates no role event and does not stand
+in for an independent Reviewer or a human decision. Unknown in-flight work is
+reconciled from existing receipts/logs, not retried via another model.

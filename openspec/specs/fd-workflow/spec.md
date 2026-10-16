@@ -20,6 +20,37 @@ OpenSpec change.
 - **WHEN** a title is supplied to `aiw fd new`
 - **THEN** a non-reused ID, FD file, index row, and Planner handoff are created.
 
+### Requirement: Navigation with optional bounded consultation
+
+ask-asu MUST default to current-state navigation without extra model calls,
+artifact writes or role dispatch. It MAY obtain a second opinion only for a
+concrete question under actual consultation authority. The host MUST choose
+one bounded channel: one read-only non-recursive host agent or one single-turn
+aiw ask invocation with a known fixed provider. An unresolved auto-provider
+fallback MUST NOT be represented as one bounded model call. Failed or unknown
+outcomes MUST NOT trigger automatic retries or channel/model switching.
+
+The consultation MUST receive explicit necessary context/access, not assumed
+conversation inheritance. Side effects including ask history and applicable
+network/data access MUST fit authorization. Model/reasoning settings and provider
+capabilities MUST be reported as actually known; an agent/profile label MUST NOT
+be claimed to guarantee stronger reasoning. Consultation MUST remain advice,
+not human approval or independent FD review, and MUST NOT reset consumed budgets,
+restart diagnosis-only or change workflow state. Navigation MUST remain usable
+without any consultation capability.
+
+#### Scenario: Routine workflow navigation
+
+- WHEN the current stage and next action can be established from existing evidence
+- THEN ask-asu MUST recommend that action without dispatching it or calling another model
+
+#### Scenario: Authorized second opinion
+
+- WHEN a concrete question has authority for one consultation
+- THEN only the chosen bounded channel MAY be used with explicit evidence/context limits
+- AND its actual outcome and limitations MUST return to the owning discussion or FD
+- AND the response MUST NOT substitute for a managed Reviewer verdict
+
 ### Requirement: Explicit role handoffs
 
 Only an explicit stage operation MAY create a handoff event. The event MUST
