@@ -1,7 +1,7 @@
 # FD-069: Document canonical skills and explain packaging and installation
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -37,10 +37,10 @@ aiw skills 默认从插件发行树的 skills 获取 canonical source，可由 A
 
 ## Work items
 
-- [ ] 1.1 总览与打包安装说明。Size: M; Difficulty: Low; Dependencies: none. Completion: 全部 canonical Skills 有可用导航，顶层 MD/build/install/声明机制与源码一致，四个辅助技能用途明确。
-- [ ] 1.2 核心流程和工程技能独立说明。Size: M; Difficulty: Low; Dependencies: 1.1. Completion: 路由、Issue、领域建模、FD、测试、设计、诊断、规格与评审 README 描述真实输入/输出、调用与边界。
-- [ ] 1.3 辅助与集成技能独立说明。Size: M; Difficulty: Low; Dependencies: 1.1. Completion: 教学、写作、研究、原型、交接、初始化、发布和技能维护等其余 README 齐全，不添加原技能未有的默认权限。
-- [ ] 1.4 项目副本、一致性与交付证据。Size: M; Difficulty: Low; Dependencies: 1.2,1.3. Completion: 27 个 README 与总目录匹配，本地文档链接和项目副本一致，通过独立静态评审后交付归档。
+- [x] 1.1 总览与打包安装说明。Size: M; Difficulty: Low; Dependencies: none. Completion: 全部 canonical Skills 有可用导航，顶层 MD/build/install/声明机制与源码一致，四个辅助技能用途明确。
+- [x] 1.2 核心流程和工程技能独立说明。Size: M; Difficulty: Low; Dependencies: 1.1. Completion: 路由、Issue、领域建模、FD、测试、设计、诊断、规格与评审 README 描述真实输入/输出、调用与边界。
+- [x] 1.3 辅助与集成技能独立说明。Size: M; Difficulty: Low; Dependencies: 1.1. Completion: 教学、写作、研究、原型、交接、初始化、发布和技能维护等其余 README 齐全，不添加原技能未有的默认权限。
+- [x] 1.4 项目副本、一致性与交付证据。Size: M; Difficulty: Low; Dependencies: 1.2,1.3. Completion: 27 个 README 与总目录匹配，本地文档链接和项目副本一致，通过独立静态评审后交付归档。
 
 Keep item numbers stable after implementation starts. Use `- [-]` only for an
 explicitly cancelled item, with its reason on the same line.
@@ -66,10 +66,15 @@ explicitly cancelled item, with its reason on the same line.
 - 本 FD 无可编译源码变更，编译检查不适用；不运行测试、build.py、安装/sync、lint、网络或宿主效果评估。
 - 一批有界只读检查 canonical 覆盖数量、总览链接、各 README 的本地链接/必要信息、源与项目副本、变更范围；结合实际复制调用链静态检查安装结论。
 - 独立 Reviewer 检查真实文档与对应技能合同，不用测试数量代替质量；正常通过后本地合并归档。
+- 实施报告：docs/features/reports/FD-069-implementation-r1.md 与同名 JSON；27 个独立说明和总览已完成。
+- 一批静态检查通过：27 技能目录覆盖一致，27 源／项目 README 字节一致，总览及各说明本地链接有效，实现范围仅 README。
+- 核对发现 AIW_SKILLS_SOURCE_ROOT 不会改变共享白名单文件的插件树定位，已补文档说明；工具行为不变。
+- 无可编译源码，编译不适用；未运行测试、build.py、install/sync、网络或宿主效果评估。
+- 独立静态评审通过：docs/features/reviews/FD-069-review-r1.md 与同名 JSON。Reviewer fd069-reviewer-20261017-b74e 核对基线 6daa683 至 57fe00f 的文档、实际技能合同及打包安装调用链；独立确认 27 项目录、27 对副本、本地链接与仅 README 实现范围，无阻塞发现。
 
 ## TODO
 
-- [ ] 完成 1.1–1.4 与独立评审。
+- [x] 完成 1.1–1.4 与独立评审。
 - [ ] 正常本地合并及归档。
 
 ## Sources

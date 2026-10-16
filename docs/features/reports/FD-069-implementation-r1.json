@@ -1,0 +1,67 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-069",
+  "source_event": "FD-069-000003-design-ready",
+  "human_report": "FD-069-implementation-r1.md",
+  "data": {
+    "worker_session": "fd069-worker-20261017-1ed8",
+    "base_commit": "6daa683",
+    "implementation_commits": [
+      "db73c9c",
+      "cbc93f8",
+      "74ec650",
+      "e3d20ce"
+    ],
+    "completed_items": [
+      "1.1",
+      "1.2",
+      "1.3",
+      "1.4"
+    ],
+    "summary": "Complete canonical skill guides and verified source/distribution/project packaging explanation.",
+    "documents": {
+      "catalogs": 1,
+      "canonical_readmes": 27,
+      "project_readme_copies": 27
+    },
+    "static_checks": {
+      "result": "passed",
+      "exit_code": 0,
+      "canonical_coverage": "exact",
+      "readme_source_project_pairs": 27,
+      "local_links": "all resolve",
+      "implementation_scope": "README files only"
+    },
+    "source_trace": [
+      "build.py copy_tree/install_skills",
+      "aiw-skills.py source_root/discover_skills",
+      "aiw-skills.py shared_skill_references/materialize_skill_source"
+    ],
+    "commands": [
+      "Targeted Get-Content/rg and read-only source excerpts",
+      "One read-only Python catalog/link/byte/diff check batch",
+      "git diff",
+      "Managed FD and scoped Git operations"
+    ],
+    "compile_only": "not applicable: Markdown only",
+    "tests_run": false,
+    "not_run": [
+      "tests",
+      "build.py",
+      "builds",
+      "installer/sync",
+      "linters/formatters",
+      "verification scripts",
+      "network",
+      "host behavior evaluation"
+    ],
+    "risks": [
+      "Overlay copy does not remove retired distribution files",
+      "Shared resource location does not follow source-root override",
+      "User/distribution installs not updated",
+      "Runtime installation and host behavior not evaluated"
+    ],
+    "independent_review": "pending"
+  }
+}

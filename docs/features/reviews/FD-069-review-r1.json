@@ -1,0 +1,38 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-069",
+  "source_event": "FD-069-000004-implementation-ready",
+  "human_report": "FD-069-review-r1.md",
+  "data": {
+    "reviewer_session": "fd069-reviewer-20261017-b74e",
+    "base_commit": "6daa683",
+    "reviewed_commit": "57fe00f",
+    "verdict": "passed",
+    "findings": [],
+    "acceptance": {
+      "canonical_catalog": "27 exact entries",
+      "canonical_readmes": 27,
+      "project_readme_byte_pairs": 27,
+      "local_links": "resolve",
+      "implementation_scope": "55 README files only",
+      "skill_contract_consistency": "reviewed",
+      "packaging_installation_source_trace": "consistent"
+    },
+    "commands": [
+      "Get-Content UTF8 and rg targeted reads",
+      "git diff and git status",
+      "One bounded read-only Python catalog, links, byte pairs and diff-scope check",
+      "aiw fd claim and emit; focused review-evidence commit"
+    ],
+    "static_check_exit_code": 0,
+    "compile_only": "not applicable: Markdown only",
+    "not_run": ["tests", "build.py", "final builds", "install/sync", "lint/format", "verification scripts", "network", "host behavior evaluation"],
+    "risks": [
+      "Distribution and user installations were not updated",
+      "Overlay distribution copy does not clean retired files",
+      "Shared-resource location does not follow source-root override",
+      "Runtime installation and host behavior remain unverified"
+    ]
+  }
+}

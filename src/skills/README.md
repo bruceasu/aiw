@@ -1,176 +1,156 @@
-﻿# AI Worker Skills 指南
+# AI Worker Skills 使用指南
 
-AIW = **AI Worker**。本目录存放可复用的工作方法，帮助 AI 澄清目标、制定计划、实现工作项并交接独立审查。Skill 为宿主 Agent 描述工作流程；`aiw`
-CLI 负责发现、安装和同步 Skill。Skill 名称不是 CLI 子命令。
+这里维护当前 AIW 的 27 个 canonical Skills。每个技能的 `README.md` 面向使用者，
+说明用途和选择方法；`SKILL.md` 是 Agent 执行时的行为合同。二者发生差异时，以
+仓库指令和 `SKILL.md` 为准。README 本身不会增加执行、联网或发布权限。
 
-## Skill 目录
-
-以下条目对应本目录中的 Skill。具体触发条件和边界以各自的
-`SKILL.md` 为准。
-
-### 路由、探索与问题澄清
-
-- `ask-asu`：根据当前阶段建议下一步 Skill 或 AIW 操作，不代替执行。
-- 大型不确定需求：Issue／Planner 按需读取共享决策依赖方法，由现有 grilling 方法澄清问题，不再有独立 wayfinder 入口或地图票据流程。
-- `triage`：整理多来源用户诉求、重复候选、信息缺口和下一步；深入需求交 Issue，工程计划交 FD，PR 正确性交独立评审。
-- `grilling`、`grill-me`：按用户要求通过追问检验方案。
-- `grill-with-docs`：在 Issue 初步理解、关键规则讨论和决策交接时，
-  按复杂度检验需求质量；确认结论交回原 Issue Plan，由宿主确认和记录。
-- `research`：基于高可信资料调查问题，并在仓库记录发现。
-- `prototype`：构建一次性原型以检验设计想法。
-- `diagnosing-bugs`：根据证据诊断故障、回归或性能问题。
-
-### Issue、FD 与领域设计
-
-- `issue-management`：澄清并决策一个 AIW Issue，可交接到 FD。
-- `fd-workflow`：统一编号 FD 的设计、实现、独立审查交接及自动交付归档；支持只实现或部分工作项等明确限制。
-- `domain-modeling`：澄清术语、概念关系、状态和不变量，给出正常／边界例子；Issue 快照模式只返回建议，稳定文档写入遵守所属阶段与授权范围。
-- `codebase-design`：设计模块接口、职责和代码边界。
-- `improve-codebase-architecture`：发现并分析架构改进机会。
-- `issue-management/references/`：随 Issue 入口按需读取的问题澄清、
-  价值、指标、技术选项与综合决策方法，不作为独立 Skill 安装或调用。
-- `requirement-management`：继续处理旧版 AIW Requirement 记录，保留其
-  REQ ID 和历史；新需求使用 `issue-management`。
-
-### 实现、规格与审查
-
-- `fd-workflow/references/implementation.md`：由 Worker 阶段按需加载的实现方法，不作为独立 Skill 安装或调用。
-- `fd-review`：独立审查编号 FD 的实现和证据。
-- `to-spec`：更新 OpenSpec 稳定规格；只有用户明确要求时才创建 change。
-- Issue 负责按业务结果拆子 Issue；Planner 负责拆 FD Work Items。
-  共同原则按需读取 `skills/workflow-methods.md` 的领域澄清、决策依赖、业务拆分、规格或评审章节；triage 只用队列分流章节，不加载全套。
-- `tdd`：显式测试优先或 FD 测试支持时，对合适的核心规则使用有效 Red/Green，记录独立预期依据与回归保护。
-- `fd-test`：独立推导验收场景、复用或补充测试，在授权范围内执行并产出版本绑定的事实报告。
-- FD 测试支持按语义选择：`with test`、`带测试`、`需要测试支持` 等均可；默认不增加测试。更具体的只生成用例、不运行或不用 TDD 等限制优先。
-- 测试共享 `skills/testing-methods.md`。达到非预期失败预算后自动停止该测试相关修复/执行，静态诊断并继续独立工作；已确认缺陷和关键未知仍阻止交付。
-- `code-review`：独立审查分支或 PR；与 `fd-review` 共享实现审查方法，普通 FD 不重复启动两套审查。
-- `finance-release-gate`：跨领域评估已实现变更的上线准备情况。
-
-### 会话、维护与集成
-
-- `handoff`：准备供另一 Agent 或会话继续工作的交接文档。
-- `resume-ext`：列出当前工作区的 Codex 会话并准备可复制的恢复命令。
-- `resolving-merge-conflicts`：处理进行中的 Git merge/rebase 冲突。
-- `setup-project`：提议并配置 AIW 工程约定和 Agent 指令；写入前展示变更并等待确认。
-- `edit-article`、`teach`：编辑文章或循序渐进地讲解技术内容。
-- `writing-great-skills`：创建、改进、只读审查和适配 Skill；按需读取
-  通用原则、Codex/Claude 平台参考与可选效果评估，区分静态证据和实际效果。
-- `github-issues-management`：通过 AIW GitHub 集成管理 GitHub Issues。
-- `publish-github-issue`：仅在用户明确要求时发布 GitHub Issue。
-
-## 调用 Skill
-
-在支持 Skill 的宿主 Agent 中按名称调用，例如：
+## 从哪里开始
 
 ```text
-$issue-management 梳理这个功能请求并决定是否进入设计
-$fd-workflow 为已批准的 Issue 创建编号 FD
-$fd-workflow FD-XXX 只实现工作项 1.1，不审查、不合并
-$fd-workflow FD-XXX auto with test
-$fd-workflow FD-XXX 自动执行，需要测试支持
+多来源反馈 → 按需 triage → issue-management → fd-workflow
+                                          → 独立 fd-review
+                                          → 本地交付及归档
 ```
 
-具体语法由宿主决定。`$name` 表示调用 Skill，不是 `aiw name` 命令。
-带有 `disable-model-invocation: true` 的 Skill 需要用户或已定义的流程
-显式调用；不要假设 Agent 会自动选择它。
+明确的工程请求可以直接创建 FD。Issue 保留用户目标、软件规则和验收依据；FD 是唯一
+工程设计与 Work Item 计划；OpenSpec 管理稳定能力规则，只有显式请求才创建 change。
+大型不确定需求在原 Issue／FD 内记录决策依赖，由已有 grilling 方法澄清，不另建地图。
 
-## 推荐工作流
+编号 FD 的完整实现请求默认继续独立评审、条件满足后的本地合并和归档，不需要再次
+发送 `auto`。只规划、只实现、只审查、部分工作项和不合并等明确限制优先。
 
-### 新工程工作
+需要测试时，可以说“带测试”“需要测试支持”或 `with test`。流程按语义选择合适的
+核心规则 TDD 和实现后独立 fd-test；没有这一请求时，不增加默认测试。测试命令仍
+遵守仓库授权和有限预算，持续失败后只做静态诊断并继续独立工作；验收缺陷仍阻止交付。
 
-```text
-issue-management（需要澄清或批准时）
-  -> fd-workflow
-  -> fd-workflow 的 Worker 阶段（按需加载 implementation.md）
-  -> fd-review
-  -> PM：local-merge、归档与清理（条件满足时自动继续）
-```
+## 技能目录
 
-可以直接为明确请求创建 FD。FD 是
-`docs/features/FD-XXX_SLUG.md` 中的权威计划，包含决策、Work Items、状态
-和 Verification。`docs/features/FEATURE_INDEX.md` 仅作索引；`.ai/fd/<id>/`
-存放 AIW 生成的交接收据和日志。
+链接进入独立说明；目录只列当前 `src/skills/<name>/SKILL.md` 实际存在的条目。
 
-编号 FD 实现请求默认包含本地聚焦提交、独立审查、通过后的自动交付及
-归档，无需再补发 `auto`。只规划、只实现、只审查、部分工作项或暂不合并等
-明确限制优先；脏工作区、过期审查、未解决 blocker、冲突和失败会停止受影响的
-步骤并保留现场。该默认不授权测试、构建、网络、push 或部署。
+### 需求、领域与设计
 
-OpenSpec 管理稳定能力规格。仅当用户明确要求时创建 OpenSpec change。
-FD 是唯一工程计划，历史 FD 和审查证据保留；当前技能不再使用旧 Task 流程。
+| Skill | 用途与选择时机 |
+| --- | --- |
+| [triage](triage/README.md) | 整理多来源用户诉求、信息缺口、相关请求和下一步，不替代软件需求。 |
+| [issue-management](issue-management/README.md) | 澄清单个问题、价值、软件规则与验收，批准后交给 FD。 |
+| [domain-modeling](domain-modeling/README.md) | 澄清术语、概念关系、状态和不变量，提供正常／边界例子。 |
+| [grill-with-docs](grill-with-docs/README.md) | 在关键讨论节点结合资料追问，提高需求和设计结论质量。 |
+| [grilling](grilling/README.md) | 沿决策依赖追问，检验计划与假设，等待用户实际作答。 |
+| [grill-me](grill-me/README.md) | 显式进入 grilling 访谈的简短入口。 |
+| [codebase-design](codebase-design/README.md) | 用小接口、深模块和稳定边界讨论模块设计。 |
+| [improve-codebase-architecture](improve-codebase-architecture/README.md) | 查找架构摩擦，生成候选 HTML 报告，再讨论选中的方向。 |
+| [to-spec](to-spec/README.md) | 把已确认规则写入稳定规格；不替代 FD 工程计划。 |
 
-### 其他入口
+### 工程执行、诊断与评审
 
-- 想先了解阶段和下一步：`ask-asu`。
-- 仅需诊断故障：`diagnosing-bugs`；需要改动时再进入 Issue/FD 流程。
-- 各领域 Issue：使用 `issue-management`，由它按当前缺口选择内部
-  references；共享 `grill-with-docs` 和发布评估保持独立。
-- 用户明确要求 OpenSpec change：`to-spec`；FD 仍拥有工程执行清单。
+| Skill | 用途与选择时机 |
+| --- | --- |
+| [ask-asu](ask-asu/README.md) | 只读判断当前阶段和下一步，不执行建议操作。 |
+| [fd-workflow](fd-workflow/README.md) | 编号 FD 的设计、实现、独立评审、本地交付和归档主入口。 |
+| [fd-review](fd-review/README.md) | 独立检查编号 FD 的实际实现、验收与证据，并记录正式结论。 |
+| [code-review](code-review/README.md) | 审查指定分支、PR 或 diff，也适合没有 FD 编号的工作。 |
+| [tdd](tdd/README.md) | 实现期间用有效 Red／Green 推动明确行为，保留回归保护。 |
+| [fd-test](fd-test/README.md) | 从 FD 规则独立推导黑盒场景，在授权范围内编写／执行测试。 |
+| [diagnosing-bugs](diagnosing-bugs/README.md) | 诊断难复现故障和性能问题，记录假设、证据及复现限制。 |
+| [resolving-merge-conflicts](resolving-merge-conflicts/README.md) | 根据 FD 和双方历史解决明确可解的冲突，无法安全解决则保留现场。 |
 
-Planner 负责设计方案、验收和工程拆分，按能力规则变化加载共享规格方法。
-重要设计或用户要求时，按 `fd-workflow/references/planning.md` 进行独立设计反馈；
-它不替代实现后的 `fd-review`。简单改动不固定增加设计审查轮次。
+### 学习、写作、探索与集成
 
-`fd-review` 检查真实代码/配置、正确性、Standards、Spec 和证据，独立生成
-FD 验收结论。共享方法不自动启动额外 Agent、测试或完整 `code-review`。
-`finance-release-gate` 仅在计划发布时检查运维准备；本地合并和归档不是发布，
-GO 也不授权部署。
+| Skill | 用途与选择时机 |
+| --- | --- |
+| [teach](teach/README.md) | 围绕学习目标组织跨会话课程、练习、参考材料和学习记录。 |
+| [edit-article](edit-article/README.md) | 调整文章结构与信息顺序，逐段改善清晰度和表达。 |
+| [research](research/README.md) | 委派资料调查，基于一手来源形成有引用的 Markdown 研究记录。 |
+| [prototype](prototype/README.md) | 用一次性逻辑或 UI 原型回答设计问题，结论回到原 Issue／FD。 |
+| [handoff](handoff/README.md) | 为另一个会话准备可继续工作的交接文档，不自动派发 Agent。 |
+| [setup-project](setup-project/README.md) | 提议并配置项目级 AIW 约定与 Agent 指令。 |
+| [finance-release-gate](finance-release-gate/README.md) | 跨领域评估实际发布的运维准备，名称保留 finance 前缀。 |
+| [github-issues-management](github-issues-management/README.md) | 通过 aiw-github 查询和管理远程 GitHub Issue。 |
+| [publish-github-issue](publish-github-issue/README.md) | 将显式指定的 OpenSpec change 发布为 GitHub Issue 投影。 |
+| [writing-great-skills](writing-great-skills/README.md) | 创建、改善、审查或适配 Agent Skills。 |
 
-Skill 不会因为出现在工作流中就自动获得额外授权。实现、审查、测试、
-发布和工作流状态操作仍受仓库指令及各 Skill 边界约束。
+## 四个辅助技能如何配合工程工作
 
-## 使用 CLI 管理 Skills
+- **teach** 教人：适合持续学习一个概念或能力，产出课程、练习和学习记录；不是普通
+  一问一答，也不默认创建 FD。
+- **edit-article** 改文章：根据读者和表达目标确认章节结构，再改善行文；不会自动
+  核实所有事实、发布文章或启动工程流程。
+- **research** 查证据：适合官方文档、接口约束和方案事实调查，产出可追溯来源的
+  研究记录；网络和子 Agent 操作仍遵守授权与预算，不等于已验证实现。
+- **prototype** 验想法：分别提供逻辑／状态模型和 UI 探索两条路径，产物明确是一次性
+  原型；不是生产代码或验收结论。被接受的想法通过原 Issue／FD 进入正式设计与实现。
 
-以下命令管理仓库中的 canonical Skills，并将它们安装到项目的
-`.agents/skills/`：
+## 源文件、发行目录与项目安装
+
+### 顶层 Markdown 是什么
+
+| 文件 | 角色 | `aiw skills install` 的处理 |
+| --- | --- | --- |
+| `README.md` | 人类目录导航与用法 | 不作为 Skill 安装，不默认复制到项目技能根目录。 |
+| `reviewed-skill-contract.md` | 技能输入、输出、授权与证据通用合同 | 入口声明白名单路径时，复制到该技能的 `skills/`。 |
+| `work-management.md` | Issue／FD 角色、交接、工作区与交付合同 | 同上。 |
+| `workflow-methods.md` | 分阶段的领域澄清、决策依赖、分流、拆分、规格和评审方法 | 同上，执行时按需读取章节。 |
+| `testing-methods.md` | 可选测试的设计、执行与证据方法 | 同上，测试支持按需加载。 |
+
+任意新增顶层 `.md` 不会自动成为共享依赖。当前白名单是上表四个合同／方法文件，
+声明形式如 `skills/work-management.md`，必须出现在入口 `SKILL.md` 中。安装器做
+字面路径匹配，不递归扫描 README 或 references 来发现额外共享依赖。
+
+### `build.py skills`：复制发行源
+
+在仓库根目录运行 `python build.py skills`，会把整个 `src/skills` 合并复制到
+`AIW_INSTALL_DIR/skills`，包含顶层 Markdown、每个技能的 README、入口及支持资源。
+`AIW_INSTALL_DIR` 默认是 `C:\green\aiw`，可用同名环境变量覆盖。
+
+它不是向当前项目 `.agents/skills` 安装技能，也不自动加载文件到 Agent。复制采用
+`dirs_exist_ok=True`，会覆盖同名文件，**不会清理源中已删除的旧文件或退役技能目录**。
+例如仅从仓库删除技能后再复制，发行目录仍可能保留旧条目；本页说明这个限制，不提供
+未经核对的自动删除操作。`build.py all` 还会执行其它构建／安装动作，不能用它替代文档检查。
+
+### `aiw skills install`：安装到 Agent 技能目录
+
+canonical source 默认是插件发行树旁的 `skills` 目录；在仓库插件源码布局下对应
+`src/skills`。可通过 `AIW_SKILLS_SOURCE_ROOT` 覆盖。当前目录不会自动决定发行版 CLI
+使用哪个源，因此修改仓库文档后，旧发行目录中的同名技能不会自行更新。
+
+另一个细节：白名单共享文件目前仍从插件所在树的 `skills` 读取，
+`AIW_SKILLS_SOURCE_ROOT` 只改变技能源的选择，不改变这些共享文件的定位。只切换
+技能源不能保证发行版中的旧合同也同步更新，应分别核对技能源和共享资源版本。
+
+canonical `list` 和 `install --all` 只识别直接子目录中含 `SKILL.md` 的技能；目录名
+需与 frontmatter 的 `name` 一致。显式目录／ZIP 安装另有收集逻辑，不应混同为任意
+顶层 Markdown 都能安装。
+
+安装会整体复制选中技能的目录，所以独立 README、references 和其它本地资源都会
+保留；随后补入入口声明的白名单共享文件。默认目标是当前项目 `.agents/skills`，
+`--scope user` 则使用用户主目录下 `.agents/skills`。已有 unmanaged 同名目录受到保护；
+managed 安装记录和本地改动保护仍按 CLI 规则处理。
+
+README 被携带不等于被宿主自动加载。Agent 以 `SKILL.md` 为入口，支持资料按指令读取。
+
+以下为实际 CLI 用法，供需要安装时选择；本次文档更新不会执行这些操作：
 
 ```powershell
 aiw skills list
-aiw skills list --json
 aiw skills install fd-workflow --dry-run
 aiw skills install fd-workflow
 aiw skills install --all --dry-run
-aiw skills install --all
 aiw skills discover
-aiw skills discover --json
-aiw skills adopt
 aiw skills sync fd-workflow
+aiw skills install research --scope user
 ```
 
-默认作用域为当前项目。安装或检查用户级 Skills 时使用 `--scope user`：
+## 调用与维护
 
-```powershell
-aiw skills install tdd --scope user
-aiw skills discover --scope user
-```
+独立 README 中的 `$skill-name` 是宿主支持的 Skill 调用形式，不是 `aiw` 子命令。
+带 `disable-model-invocation: true` 的入口需要显式调用或已定义的流程选用；不能因名称
+出现在 README 就假设自动执行。调用例子是示意，具体宿主语法与授权以实际环境为准。
 
-也可以安装包含 `SKILL.md` 的目录或 ZIP：
+新增／删除 canonical Skill 时同步本页目录和独立 README。修改用途或边界时先修改
+相应行为合同，再同步用户说明；不要通过 README 暗改授权。共享方法只维护规范源，
+安装副本由现有机制分发。用户级旧副本和已退役技能残留不属于当前 canonical 清单。
 
-```powershell
-aiw skills install .\skills\my-skill
-aiw skills install .\skill-bundle.zip --dry-run
-```
-
-- Skill 目录名必须与 frontmatter 中的 `name` 相同，并包含 `description`。
-- 默认不会覆盖同名的 unmanaged Skill。
-- `adopt` 登记已有目标；不会把它转成 canonical source。
-- `sync` 只更新已登记为 managed 的目标，并从权威文件重新生成共享引用。
-- `--dry-run` 只显示计划，不写入目标目录。
-
-## 统一边界与验证
-
-Engineering Skills 遵循 `skills/reviewed-skill-contract.md` 和
-`skills/work-management.md`。缺少关键事实时记录
-`%% NEEDS_INPUT: ...`；存在阻塞时标明 `BLOCKED` 或 `INCOMPLETE`。报告真实
-产生的文件、证据、未决事项和实际运行的命令，不伪造状态或验证结果。
-
-按仓库资源预算执行验证：默认不运行测试、最终构建、格式化、Lint、vet、
-验证脚本或网络操作。代码修改后允许一次 compile-only 检查；遵从更具体的
-仓库或 Skill 指令，并在总结中说明实际运行和跳过的检查。
-
-## 相关文档
-
-- [Reviewed Skill Contract](reviewed-skill-contract.md)
-- [Work Management](work-management.md)
-- [AI Worker 文档导航](../../docs/README.md)
-- [AI Worker 使用说明](../../README.md)
+源码核对位置：仓库 `build.py` 的 `copy_tree`／`install_skills`，以及
+`src/plugins/aiw-skills/aiw-skills.py` 的 `source_root`、`discover_skills`、
+`shared_skill_references`、`materialize_skill_source`。这些处理方式由静态阅读确认，
+不表示本页示例中的构建、安装或测试已经执行。
