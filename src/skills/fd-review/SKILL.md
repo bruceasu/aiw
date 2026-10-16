@@ -33,6 +33,10 @@ Write a concise review report to a project-relative file under
 `docs/features/reviews/`. Include FD ID, source event ID, reviewed commit or
 diff base, findings with file paths, commands actually run, skipped checks,
 and residual risk. Keep the report separate from the Worker's report.
+For delivery recovery, inspect the recovery commit and diff together with the
+original Worker report and supplemental recovery evidence. Do not treat a
+commit or an empty sync result as proof of correct conflict resolution. A
+clean parent advancing alone does not require a new review of unchanged FD work.
 For an FD with `**Evidence policy:** Dual`, write the human report in Chinese
 and a same-basename structured JSON sidecar with schema
 `aiw.fd.evidence.v1`, kind `reviewer-report`, FD ID, source event, Markdown

@@ -1,0 +1,31 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-064",
+  "source_event": "FD-064-000004-implementation-ready",
+  "human_report": "FD-064-review-r1.md",
+  "data": {
+    "session": "fd064-reviewer-20261017-r1-84bc",
+    "diff_base": "8f3f432",
+    "reviewed_commit": "ce5a5ea",
+    "outcome": "verification-passed",
+    "findings": [],
+    "results": [
+      "Final 31 tracked shared contract copies match canonical hashes",
+      "All six source/project skill and role document pairs match",
+      "Direct reviewed delivery, diagnosis-first recovery and explicit recorded-parent sync match acceptance",
+      "Bounded conflict Skill attempt preserves unsafe conflicts and does not grant runtime or broader Git authority",
+      "Managed set-status/request-review recovery is supported by existing CLI source and retains ownership and review limits",
+      "Local-merge cleanup and separate close/archive are correctly distinguished"
+    ],
+    "commands": [
+      "Get-Content and rg targeted instruction, FD, event, report and CLI source reads",
+      "aiw fd claim --help; aiw fd emit --help",
+      "aiw fd claim FD-064 FD-064-000004-implementation-ready --session fd064-reviewer-20261017-r1-84bc",
+      "One bounded static batch: git diff 8f3f432..ce5a5ea -- selected canonical files/spec; Get-FileHash copy comparisons; git status --short",
+      "aiw fd emit FD-064 verification-passed --producer reviewer --artifact docs/features/reviews/FD-064-review-r1.md --source-event FD-064-000004-implementation-ready"
+    ],
+    "skipped": ["tests", "compile: documentation only", "builds", "formatters", "linters", "validation scripts", "network", "runtime conflict recovery validation"],
+    "residual_risk": "Host instruction policy only; actual conflict recovery has not been executed or proven."
+  }
+}

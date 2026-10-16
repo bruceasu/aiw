@@ -181,15 +181,33 @@ Read that file immediately after creation and verify all four values; use its
 `parent_branch` as the sole merge target. Stop if the file is missing or does
 not match the created worktree. Use `aiw git wt status <fd-id>` for both worktrees,
 `aiw git wt commit <fd-id> "message"` for focused commits, and
-`aiw git wt local-merge <fd-id>` for squash delivery after review. It creates one
+`aiw git wt local-merge <fd-id>` for squash delivery after review. Do not
+proactively sync the parent into every FD before review or delivery. A clean
+parent advancing alone does not invalidate a review of unchanged FD work.
+Only investigate parent synchronization when delivery fails and the diagnosed
+cause calls for it. It creates one
 single-parent commit on the recorded parent branch with an `FD-Source` trailer
 naming the delivered FD HEAD; individual Work Item commits remain on the FD
 branch. If delivery finds a content conflict, `local-merge` resets the failed
 parent squash and merges the parent into the FD worktree for resolution.
-Automatic delivery stops at that conflict; after an explicit recovery
-instruction, resolve and commit there before rerunning `local-merge`.
+Pause delivery at that conflict and load `resolving-merge-conflicts` for one
+bounded recovery attempt under the full FD lifecycle authorization. Resolve
+only conflicts whose intent is supported by the FD and both histories. If any
+conflict is uncertain or cannot be safely resolved, preserve the merge state,
+remaining unmerged entries and any clearly resolved edits; report the blocker
+and stop without abort, reset, blind side selection or retry. Commit only
+a fully inspected, resolved and in-scope merge. Explicit stage limits prevail.
+`wt commit` stages all changes; it does not resolve conflicts semantically.
+Do not repeat `sync` when CLI recovery already started the parent merge. If
+a separate sync is needed after diagnosis, use `aiw git wt sync <fd-id>
+<parent_branch>` with the recorded parent explicitly. Preserve full command
+output and inspect both workspaces and any merge in progress before recovery.
+If recovery changes implementation beyond the current review, obtain a fresh
+independent review through the managed route in `fd-workflow` before retrying
+delivery; retain historical evidence and the active cycle review count.
 After verified delivery, the command
-removes the recorded clean FD worktree and branch automatically. Before Git
+removes the recorded clean FD worktree and branch automatically. It does not
+archive the FD; the host must separately close and commit the archive. Before Git
 removes a worktree `.ai` junction, it verifies that the target is the primary
 workspace `.ai` and removes only the link itself. It preserves FD receipts; if
 a cleanup check or step fails, it reports the state and preserves resources
@@ -242,10 +260,11 @@ The host PM owns continuation after role handoffs. A dispatched Worker or
 Reviewer remains confined to its assigned role; never take over an in-flight
 or foreign claim, fabricate a handoff, or self-review. Missing decisions,
 required role capability, stale evidence, a dirty parent, failed command,
-merge conflict, or archive rejection stop the affected automatic stage.
-Preserve state and report the exact gate. CLI conflict recovery is unchanged;
-do not automatically resolve a merge conflict or retry delivery without a
-subsequent explicit recovery instruction. Record blocker feedback under the
+unresolved merge conflict, or archive rejection stop the affected automatic
+stage. Preserve state and report the exact gate. CLI conflict recovery is
+unchanged; the host may use the bounded `resolving-merge-conflicts` attempt
+above before reporting an unresolved conflict. Retry delivery only after the
+cause is resolved and a current independent pass covers the recovered result. Record blocker feedback under the
 fd-workflow procedure. Successful delivery followed by cleanup/archive failure
 is reported as partial completion, never rolled back or described as complete.
 

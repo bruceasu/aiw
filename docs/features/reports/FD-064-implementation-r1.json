@@ -1,0 +1,30 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-064",
+  "source_event": "FD-064-000003-design-ready",
+  "human_report": "FD-064-implementation-r1.md",
+  "data": {
+    "session": "fd064-worker-20261017-c48e",
+    "implementation_commit": "17d94abe0a2d3d88ead00219c4c5bed4bd8f0bf6",
+    "summary": "Direct reviewed delivery without proactive sync; diagnose failure, load conflict Skill for one bounded attempt, preserve unsafe conflicts, re-review changed recovery before delivery.",
+    "commands": [
+      "One static diff and read-only source/copy comparison batch before the final policy amendment",
+      "FD lifecycle, worktree creation and scoped git commits"
+    ],
+    "results": [
+      "Initial static comparison: 31 shared copies and 5 skill pairs matched; no CLI changes",
+      "Final policy amendment and 6th skill pair require independent final static review; no repeated Worker validation"
+    ],
+    "skipped": [
+      "tests",
+      "compile (documentation only)",
+      "builds",
+      "formatters",
+      "linters",
+      "network",
+      "runtime conflict recovery validation"
+    ],
+    "residual_risk": "Host policy only; actual merge conflict recovery not executed or proven."
+  }
+}

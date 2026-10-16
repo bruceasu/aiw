@@ -300,12 +300,15 @@ in the user-facing Gate and final report.
    archive. In isolated mode, read `.ai/fd/<id>/workspace.json` and take its
    `parent_branch`, `branch`, and `worktree` as the merge coordinates. Confirm
    the parent branch is clean and still matches the recorded parent. Run
-   `aiw git wt local-merge <id>` for one squash commit on the parent branch. On a
+   `aiw git wt local-merge <id>` directly for one squash commit on the parent
+   branch. Do not proactively `sync` every FD before review or delivery; a
+   clean parent advancing alone does not invalidate unchanged reviewed FD work. On a
    parent-side content conflict, the command resets the failed squash, verifies
    the parent is clean, and merges the parent into the FD worktree for resolution.
-   Stop automatic delivery at that conflict, report the gate and preserved
-   state, and wait for an explicit recovery instruction before resolving or
-   rerunning `local-merge`. If recovery fails, leave the FD active and preserve
+   Pause delivery and load `resolving-merge-conflicts` for the bounded
+   recovery below. If any conflict cannot be safely resolved, preserve the
+   state and report the unresolved gate without aborting or retrying. Do
+   not blindly run commit/sync/retry for every error. If recovery fails, leave the FD active and preserve
    the worktree and branch. On success,
    `local-merge` verifies the clean FD HEAD, exact recorded coordinates, the
    single-parent squash, and its `FD-Source` before removing the worktree and
@@ -321,6 +324,52 @@ in the user-facing Gate and final report.
 Treat an interruption or a new user instruction as a checkpoint: inspect the
 latest FD and receipt before continuing. Do not reset the three-review limit
 on resume. Never collapse a failed review into a passed one to meet the cap.
+
+## Recover a failed local delivery
+
+Keep full failure output and inspect both workspaces, the delivered commit if
+any, `MERGE_HEAD`, and the unmerged index. Distinguish dirty-workspace or
+coordinate errors, actual content conflicts, and delivery that succeeded but
+failed cleanup. Diagnose first; a failed command alone does not call for sync.
+Never discard unrelated changes or repeat an unchanged failed command.
+
+For an actual conflict in this full FD lifecycle, load the standalone
+`resolving-merge-conflicts` Skill and attempt one bounded resolution based on
+the FD, both histories and local evidence. This is authorized recovery, not a
+waiver of gates or runtime limits. If the Skill is unavailable, intent is
+unclear, or any conflict cannot be safely resolved, preserve the in-progress
+merge and remaining conflict entries, report resolved and unresolved paths,
+and stop. Keep any clearly resolved edits documented; do not abort, reset,
+force a side or commit a partial resolution. Explicit stage limits and foreign
+role ownership still apply. CLI recovery may already have merged the parent
+into the FD; finish or diagnose that merge before considering a separate sync.
+If the cause
+requires a separate sync, use `aiw git wt sync <id> <parent_branch>` with the
+recorded parent explicitly. Inspect and resolve each conflict, including
+modify/delete intent, before staging. `wt commit` runs `git add -A` and commits
+all changes; it does not choose a correct resolution or remove conflict markers.
+Use it only when every changed file is intentionally resolved and in scope.
+
+Record the recovery commit, diff, commands and blocker resolution. When the
+recovered implementation is outside the current passed review, do not deliver
+under that old pass. With no foreign or in-flight role, the host PM uses
+`aiw fd set-status <id> "Pending Verification" --operator <pm>
+--reason "recovery changed reviewed implementation"` if the active status is
+Complete, then `aiw fd request-review <id> --reason "review recovered result"`.
+For an existing Pending Verification FD use request-review only when its
+handoff is stale and unclaimed; otherwise honor the existing valid handoff.
+Update recovery evidence before requesting review, never edit receipts, and
+give the separate Reviewer the current FD, original Worker report, recovery
+evidence, commit and diff. Keep the active cycle's review count and stage
+limits; stop at the existing review limit rather than resetting it. Resume
+normal delivery only after a current independent pass covers the recovered
+implementation and all delivery gates pass. Do not require a new review merely
+because the parent advanced without changing the reviewed FD implementation.
+
+`local-merge` verifies delivery and cleans Git resources. The host then runs
+`aiw fd close <id> Complete` and commits the archive/index separately. If only
+cleanup failed after a verified squash, follow the CLI cleanup recovery path;
+do not create another squash, revert delivery or call an unarchived FD done.
 
 ## Close and archive
 

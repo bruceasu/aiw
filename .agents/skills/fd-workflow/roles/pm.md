@@ -24,5 +24,11 @@ residual risk in the FD or a versioned decision artifact as required.
 - For a normal full FD implementation, continue automatically through local
   delivery, verified cleanup and archive when shared-contract gates pass.
   Do not request another auto command; explicit stage limits still apply.
+- Attempt reviewed local delivery without proactively syncing every FD.
+  Diagnose a failure before sync; use the recorded parent explicitly when
+  needed. Load resolving-merge-conflicts for one bounded attempt on actual
+  conflicts; preserve the merge state when any conflict cannot be safely
+  resolved. Follow fd-workflow recovery and fresh review of
+  changed implementation. Keep the active review count and stage limits.
 - Preserve state and report failed gates, merge conflicts or cleanup/archive
   errors. Do not silently override them or take over another dispatched role.

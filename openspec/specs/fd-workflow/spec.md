@@ -273,6 +273,49 @@ existing per-FD evidence archive path; historical evidence remains valid.
 - **AND** closing the FD moves its Markdown and JSON feedback with its other
   `reports/` evidence, without changing an earlier handoff digest.
 
+### Requirement: Diagnose failed delivery before parent synchronization
+
+The normal isolated FD lifecycle MUST preserve independent implementation and
+review, attempt `local-merge` directly, and MUST NOT proactively sync the parent
+into every FD. A clean parent advancing alone MUST NOT invalidate unchanged
+reviewed FD work or force the parent to become an ancestor of the FD branch.
+After a delivery failure the host MUST preserve full output and diagnose the
+state before choosing recovery. Existing CLI conflict recovery remains intact.
+If it already started the parent merge in the FD worktree, the host MUST NOT
+blindly repeat sync. A separately needed sync MUST name the recorded parent
+explicitly. For actual conflicts in the full FD lifecycle the host MUST load
+`resolving-merge-conflicts` for one bounded attempt at resolutions supported by
+the FD and both histories. Missing Skill, unclear intent or any conflict that
+cannot safely be resolved MUST stop recovery, preserve the in-progress merge,
+remaining conflict entries and documented resolved edits, and produce blocker
+feedback. The host MUST NOT abort, reset, force a side, commit a partial merge,
+or bypass stage limits and runtime budgets. Staging or committing MUST NOT be
+represented as semantic conflict resolution.
+
+If recovery changes implementation outside the current passed review, the
+host MUST record the recovery commit/diff and obtain a fresh independent
+review through existing managed status/request-review operations before retrying
+delivery. It MUST preserve historical reports, stage limits, exact role
+ownership and the cumulative active-cycle review limit. A dirty workspace or
+failed cleanup MUST NOT be treated as a reason to blindly sync or create a
+second squash. Successful local-merge cleans Git resources; the host MUST
+separately close and commit the FD archive.
+
+#### Scenario: Clean direct delivery
+
+- **WHEN** an independently reviewed FD and its recorded parent are clean
+- **THEN** the host attempts local-merge without a mandatory parent sync
+- **AND** successful verified delivery/cleanup is followed by close and archive commit.
+
+#### Scenario: Conflict recovery changes the implementation
+
+- **WHEN** a failed delivery leaves a parent merge conflict in the FD worktree
+- **THEN** the host loads resolving-merge-conflicts for one bounded resolution attempt
+- **AND** uncertain or unsafe conflicts preserve the merge state and stop recovery
+- **AND** it inspects and resolves each conflict before staging or committing
+- **AND** recovered implementation outside the prior pass needs fresh independent review
+  before retry; a no-op sync or successful commit is not proof of a correct resolution.
+
 ### Requirement: Bounded host-operated automatic FD lifecycle
 
 A human request to implement one numbered FD MUST default to its normal local
@@ -307,9 +350,11 @@ remain active with its findings. The operation MUST stop for missing human
 decisions, authorization, subagent capability, or an in-flight/foreign-claimed
 handoff. Dispatched roles MUST remain within their assignments; host PM owns
 continuation. Dirty workspaces, stale evidence, unresolved blockers, merge
-conflicts, failed delivery/cleanup, or archive rejection MUST stop the affected
-stage, preserve state, and produce blocker feedback. A conflict MUST NOT be
-automatically resolved or retried without a later explicit recovery instruction.
+conflicts left unresolved after the bounded Skill attempt, failed
+delivery/cleanup, or archive rejection MUST stop the affected stage, preserve
+state, and produce blocker feedback. Clearly supported conflict resolution
+MAY proceed under the full FD lifecycle authorization, but delivery MUST NOT
+retry until recovery and the required current independent review are complete.
 The implementation request authorizes only the FD's focused local commits,
 reviewed squash delivery, verified cleanup, and successful-delivery archive.
 It MUST NOT authorize restricted validation, network/downloads, push, release,

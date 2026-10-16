@@ -40,8 +40,13 @@ the recorded parent, verified worktree cleanup, and Complete archive plus
 archive commit. Continue automatically when the current review and delivery
 gates pass; no second `auto` request is needed. Explicit planning-only,
 implementation-only, review-only, partial-item, or no-merge limits take priority.
-Stop for unresolved blockers, stale review, dirty workspaces, merge conflicts,
-or failed delivery/cleanup/archive; preserve state and report the gate.
+Stop for unresolved blockers, stale review, dirty workspaces, unresolved merge
+conflicts, or failed delivery/cleanup/archive; preserve state and report the gate.
+For a delivery conflict in the full FD lifecycle, first load
+`resolving-merge-conflicts` for one bounded attempt at clearly supported
+resolutions. If any conflict remains uncertain or unsafe, preserve the merge
+state without abort/reset or partial commit. Follow the shared recovery and
+fresh-review requirements before retrying delivery.
 This scope excludes push, release, deployment, tests, builds, and network.
 
 ## Resource Budget

@@ -78,7 +78,12 @@ Do not claim verification passed because Worker checked the FD box.
 
 The host PM continues through `fd-workflow`'s delivery and close procedure when
 the full FD scope and current independent pass satisfy the shared contract's
-gates. Verify the recorded coordinates, clean workspaces, current FD digest,
+gates. Do not proactively sync the parent; attempt reviewed delivery directly.
+If it fails, follow fd-workflow recovery: diagnose before any sync, load
+`resolving-merge-conflicts` for one bounded attempt at clearly supported
+resolutions, preserve unresolved conflicts, and obtain a new independent review
+when recovery changes implementation beyond the current pass. Verify the
+recorded coordinates, clean workspaces, current FD digest,
 and no implementation drift or unresolved blocker. Automatically local-merge,
 use verified CLI cleanup, close Complete, and commit the archive/index changes.
 For an explicitly selected primary workspace, skip worktree merge and follow
@@ -87,7 +92,8 @@ the managed review/archive path instead. Do not ask for another auto command.
 An explicit stage limit ends at that stage; a partial FD does not qualify for
 delivery. A dispatched Worker only emits its assigned handoff and the host PM
 owns continuation. Do not take over a runner or foreign claim. A failed gate,
-merge conflict, or delivery/cleanup/archive error stops the affected step with
-state and blocker feedback preserved; do not bypass it or auto-resolve conflicts.
+unresolved merge conflict, or delivery/cleanup/archive error stops the affected
+step with state and blocker feedback preserved. The bounded conflict Skill
+attempt does not authorize guessing, gate bypasses or unchanged retries.
 This continuation grants no tests, builds, network, push, release, or deployment.
 
