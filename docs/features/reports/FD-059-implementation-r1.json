@@ -1,0 +1,19 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-059",
+  "source_event": "FD-059-000003-design-ready",
+  "human_report": "FD-059-implementation-r1.md",
+  "data": {
+    "summary": "Generalize six discussion/release skills while retaining IDs; select Issue discussion methods by validated gap across domains.",
+    "worker_session": "fd059-worker-20261016-b9e2",
+    "implementation_commits": ["5fe808b", "63307c2"],
+    "changed_paths": ["src/skills/finance-*", "src/skills/issue-management/SKILL.md", "src/skills/README.md", ".agents/skills/finance-*", ".agents/skills/issue-management/SKILL.md", "src/internal/issue/context_methods.go", "src/internal/issue/conversation.go", "openspec/specs/requirement/spec.md"],
+    "commands": [
+      {"command": "git diff develop -- src/skills src/internal/issue openspec/specs/requirement/spec.md docs/features/FD-059_GENERALIZE_DISCUSSION_SKILLS_AND_ISSUE_METHOD_RO.md", "result": "Static diff and call-path inspection completed"},
+      {"command": "$env:GOPROXY='off'; $env:GOSUMDB='off'; $env:GOTOOLCHAIN='local'; go build ./internal/issue", "cwd": "src", "exit_code": 0}
+    ],
+    "results": {"static_review": "completed", "compile_only": "passed", "tests": "not run", "final_build": "not run", "network": "not used", "independent_review": "pending"},
+    "residual_risk": ["Runtime behavior not tested", "Selected methods still require installed skill files", "Installed CLI and user-level skills were not updated", "Changes remain in the dedicated worktree pending review and delivery"]
+  }
+}

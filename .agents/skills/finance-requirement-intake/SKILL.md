@@ -1,9 +1,11 @@
 ---
 name: finance-requirement-intake
-description: Clarify a financial, operations, reporting, risk, or analytics request before solution design. Use for discovery, decision flow, scope reduction, stakeholders, and unknowns; not for implementation planning or release approval.
+description: Clarify a bug, feature, or modification request in any domain before solution design. Use for problem discovery, decision flow, scope reduction, stakeholders, and unknowns; not for implementation planning or release approval.
 ---
 
-# Finance Requirement Intake
+# Requirement Intake
+
+Use this method across domains. The `finance-` skill ID is retained for compatibility; it does not restrict activation to finance. Apply domain-specific rules only when relevant to the supplied evidence.
 
 Turn a raw request into a decision-centred `Problem Brief`. This is a requirement-discussion skill, not an AIW Task or OpenSpec workflow.
 
@@ -42,10 +44,10 @@ Include: problem, actor, situation, signal seen, decision, action, downstream im
 
 ## Output
 
-### When loaded by Requirement Management
+### When loaded by Issue Management or legacy Requirement Management
 
-Apply this method only to the financial domain identified in the supplied
-context. The current host JSON contract overrides the Markdown template below;
+Apply this method to the current Issue and discussion gap in any domain.
+Use domain-specific checks only when the supplied context requires them. The current host JSON contract overrides the Markdown template below;
 use the template only for a requested draft or standalone discussion.
 Use loaded source bodies and exact references. Do not load sibling Skills or
 linked materials, invent missing evidence, or treat capture as confirmation.

@@ -1,3 +1,3 @@
 interface:
-  display_name: "Finance Engineering Options"
-  short_description: "Explore feasibility, constraints, and technical options before a managed engineering Task exists."
+  display_name: "Engineering Options"
+  short_description: "Explore feasibility and options before FD design."

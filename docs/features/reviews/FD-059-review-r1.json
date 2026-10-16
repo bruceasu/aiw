@@ -1,0 +1,40 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-059",
+  "source_event": "FD-059-000004-implementation-ready",
+  "human_report": "FD-059-review-r1.md",
+  "data": {
+    "reviewer_session": "fd059-reviewer-20261016",
+    "reviewed_base": "db8b7fd",
+    "reviewed_commit": "e48d42a",
+    "implementation_commits": ["5fe808b", "63307c2"],
+    "findings": [],
+    "results": {
+      "decision": "passed",
+      "generic_unknown_finance_gap_routing": "supported by static inspection",
+      "baseline_evidence_budget_and_load_failure_boundaries": "preserved",
+      "release_gate_separation": "preserved",
+      "source_project_skill_equality": "no file hash mismatches in seven scoped skill directories",
+      "dual_worker_evidence": "consistent with structured_evidence constraints",
+      "worker_compile_only": "reported exit code 0; not rerun by Reviewer",
+      "tests": "not run",
+      "reviewer_compile_or_build": "not run",
+      "network": "not used"
+    },
+    "commands": [
+      "Get-Content / rg: scoped instructions, FD, Worker evidence and selected source excerpts",
+      "aiw fd --help; aiw fd claim --help; aiw fd emit --help; aiw fd show FD-059",
+      "aiw fd claim FD-059 FD-059-000004-implementation-ready --session fd059-reviewer-20261016",
+      "git diff db8b7fd..e48d42a --stat; git diff db8b7fd..e48d42a -- scoped skills, Issue sources and stable spec; git status --short",
+      "Get-FileHash: compare source and project copies for six finance-* skills plus issue-management",
+      "Targeted continuation read for three truncated skill diffs and src/plugins/aiw-fd.py structured_evidence"
+    ],
+    "residual_risk": [
+      "Runtime and model selection behavior not tested",
+      "Selected generic/unknown methods require available project-local skill files",
+      "Installed CLI, user-level skills and current session catalog were not updated",
+      "No merge, archive or release performed"
+    ]
+  }
+}

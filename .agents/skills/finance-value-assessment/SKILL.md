@@ -1,9 +1,11 @@
 ---
 name: finance-value-assessment
-description: Assess whether a financial, operations, reporting, risk, or analytics requirement has sufficient business value and an appropriately small scope. Use after problem discovery; not for technical design, Task creation, or implementation approval.
+description: Assess whether an Issue in any domain has sufficient business or user value and an appropriately small scope. Use after problem discovery; not for technical design, FD creation, or implementation approval.
 ---
 
-# Finance Value Assessment
+# Value Assessment
+
+Use this method across domains. The `finance-` skill ID is retained for compatibility; it does not restrict activation to finance. Apply domain-specific rules only when relevant to the supplied evidence.
 
 Assess the value claim behind a clear requirement and produce a `Business Case` draft. This is a human decision aid, not a project approval or implementation gate.
 
@@ -25,22 +27,22 @@ Assess the value claim behind a clear requirement and produce a `Business Case` 
 
 Return a Requirement Artifact with `Artifact Type: Business Case` and local status `SUPPORTED`, `VALIDATE_FIRST`, or `NOT_SUPPORTED`.
 
-Assess evidence for revenue, risk reduction, labour cost, decision efficiency, regulatory need, or customer experience. Compare smaller alternatives and identify a measurable validation path.
+Assess evidence for user outcomes, reliability, time savings, revenue, risk reduction, labour cost, decision efficiency, regulatory need, or customer experience, as applicable. Compare smaller alternatives and identify a measurable validation path.
 
 ## Rules
 
-- Evidence must name a person, incident, metric, or regulatory source; do not treat sentiment as evidence.
+- Evidence must name a person, incident, metric, research finding, or applicable regulatory source; do not treat sentiment as evidence.
 - Prefer a smaller scope or validation experiment where credible.
 - Do not infer human approval from `SUPPORTED`.
-- Do not create tasks, tickets, OpenSpec artifacts, or implementation plans. After user confirmation, AIW Requirement Management may capture this artifact; this Skill must not invoke capture.
+- Do not create tasks, tickets, OpenSpec artifacts, or implementation plans. After user confirmation, AIW Issue Management (or legacy Requirement Management) may capture this artifact; this Skill must not invoke capture.
 - Use `%%` for missing evidence, owners, or decisions; recommend one next discussion stage without invoking it.
 
 ## Output
 
-### When loaded by Requirement Management
+### When loaded by Issue Management or legacy Requirement Management
 
-Apply this method only to the financial domain identified in the supplied
-context. The current host JSON contract overrides the Markdown template below;
+Apply this method to the current Issue and discussion gap in any domain.
+Use domain-specific checks only when the supplied context requires them. The current host JSON contract overrides the Markdown template below;
 use the template only for a requested draft or standalone discussion.
 Use loaded source bodies and exact references. Do not load sibling Skills or
 linked materials, invent missing evidence, or treat capture as confirmation.

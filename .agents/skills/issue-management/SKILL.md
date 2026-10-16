@@ -61,9 +61,16 @@ assumptions, and remaining decisions.
 2. **Choose the next method.** The host makes a method-selection call and a
    coverage call; return only the JSON shape requested for each. Apply the
    generic discovery baseline to every domain. Load a support method only
-   when its trigger applies: finance intake, value, metric, engineering
-   options, and synthesis are for finance Issues; `domain-modeling` helps when
-   terms or boundaries are unstable. An unread method was not applied.
+   when its trigger applies, regardless of domain: `finance-requirement-intake`
+   for an unclear problem, `finance-value-assessment` for value or scope,
+   `finance-metric-brief` for uncertain metric semantics,
+   `finance-engineering-options` for feasibility or trade-offs, and
+   `finance-requirement-synthesis` for consolidation or decision readiness.
+   These IDs retain their historical prefix for compatibility. Select only
+   the method needed for the current gap; do not run the entire chain.
+   `domain-modeling` helps when terms or boundaries are unstable.
+   `finance-release-gate` belongs only to a later planned release after
+   implementation, outside Issue discovery. An unread method was not applied.
 3. **Resolve decisions.** Distinguish missing business facts from engineering
    strategy choices. Use evidence and confirmed preferences to choose a
    clearly better strategy within scope, recording the rationale. Ask the

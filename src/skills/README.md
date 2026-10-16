@@ -28,8 +28,8 @@ CLI 负责发现、安装和同步 Skill。Skill 名称不是 CLI 子命令。
 - `improve-codebase-architecture`：发现并分析架构改进机会。
 - `finance-requirement-intake`、`finance-value-assessment`、
   `finance-metric-brief`、`finance-engineering-options`、
-  `finance-requirement-synthesis`：澄清金融及运营需求、价值、指标、
-  技术选项并整理结论。
+  `finance-requirement-synthesis`：跨领域澄清问题、价值、指标、
+  技术选项并整理结论。保留历史名称，金融规则仅在适用场景使用。
 - `requirement-management`：继续处理旧版 AIW Requirement 记录，保留其
   REQ ID 和历史；新需求使用 `issue-management`。
 
@@ -42,7 +42,7 @@ CLI 负责发现、安装和同步 Skill。Skill 名称不是 CLI 子命令。
   change；新工作默认采用编号 FD 流程。
 - `tdd`：在用户要求测试优先时采用 red-green-refactor。
 - `code-review`：按仓库标准和原始规格审查变更。
-- `finance-release-gate`：在发布前评估金融变更的上线准备情况。
+- `finance-release-gate`：跨领域评估已实现变更的上线准备情况。
 
 ### 会话、维护与集成
 
@@ -92,7 +92,7 @@ OpenSpec 管理稳定能力规格。仅当用户明确要求时创建 OpenSpec c
 
 - 想先了解阶段和下一步：`ask-asu`。
 - 仅需诊断故障：`diagnosing-bugs`；需要改动时再进入 Issue/FD 流程。
-- 金融需求：按需要组合 `finance-requirement-intake`、
+- 各领域 Issue：按当前讨论缺口选择 `finance-requirement-intake`、
   `finance-value-assessment`、`finance-metric-brief`、
   `finance-engineering-options` 和 `finance-requirement-synthesis`。
 - 用户明确要求 OpenSpec change：`to-spec`，再按需要使用 `to-tickets`。

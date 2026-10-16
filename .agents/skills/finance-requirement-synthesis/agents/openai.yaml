@@ -1,3 +1,3 @@
 interface:
-  display_name: "Finance Requirement Synthesis"
-  short_description: "Consolidate requirement discussion artifacts into a human decision package."
+  display_name: "Requirement Synthesis"
+  short_description: "Consolidate Issue evidence for a human decision."

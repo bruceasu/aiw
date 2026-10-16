@@ -1,15 +1,17 @@
 ---
 name: finance-release-gate
-description: Assess whether an implemented financial change is safe to release. Use only near launch when implementation, migration, rollback, monitoring, permission, audit, and ownership evidence are available; not for requirement discovery or design discussion.
+description: Assess whether an implemented change in any domain is ready to release. Use only near launch with implementation and relevant operational evidence; not for Issue discovery or design discussion.
 ---
 
-# Finance Release Gate
+# Release Gate
 
-Evaluate release evidence for an implemented AIW Task and return a `Release Review`. This is a post-implementation release gate; it is outside the requirement-discussion chain.
+Use this method across domains. The `finance-` skill ID is retained for compatibility; it does not restrict activation to finance. Apply domain-specific rules only when relevant to the supplied evidence.
+
+Evaluate release evidence for an implemented FD or legacy AIW Task and return a `Release Review`. This is a post-implementation release gate; it is outside the requirement-discussion chain.
 
 ## Use when
 
-- A release window is planned and the change affects money, data, permissions, reports, dashboards, risk indicators, migrations, or backfills.
+- A release is planned and the implemented change needs an evidence-based readiness assessment, regardless of domain.
 - The user supplies implementation and operational evidence sufficient to assess launch risk.
 
 ## Do not use when
@@ -21,7 +23,7 @@ Evaluate release evidence for an implemented AIW Task and return a `Release Revi
 
 - Implemented change scope and affected systems.
 - Target launch window.
-- Evidence for migration/data impact, permissions, audit, rollback, monitoring, and named ownership.
+- Evidence for rollback, monitoring, and named ownership, plus migration/data impact, permissions, and audit where relevant. Mark inapplicable areas with a reason.
 
 ## Produce
 
@@ -31,7 +33,7 @@ Return `Release Review` with `GO`, `GO_WITH_RISK`, or `NO_GO`, clearly separatin
 
 - Missing critical evidence yields `NO_GO`; do not infer procedures or owners.
 - Do not create or modify Task, OpenSpec, deployment, migration, rollback, or monitoring artifacts.
-- Refer missing requirement intent or metric semantics back to the appropriate Requirement Artifact; refer implementation gaps to the managed Task workflow.
+- Refer missing requirement intent or metric semantics back to the appropriate Requirement Artifact; refer implementation gaps to the managed FD workflow (or legacy Task workflow).
 - Use `%%` for missing evidence and name the required next action and owner.
 
 ## Output
@@ -40,7 +42,7 @@ Return `Release Review` with `GO`, `GO_WITH_RISK`, or `NO_GO`, clearly separatin
 # Release Review
 
 ## Metadata
-- Task ID: %% REQUIRED
+- FD or Legacy Task ID: %% REQUIRED
 - Release Window:
 - Decision: GO / GO_WITH_RISK / NO_GO
 

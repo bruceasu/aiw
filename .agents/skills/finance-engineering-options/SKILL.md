@@ -1,9 +1,11 @@
 ---
 name: finance-engineering-options
-description: Explore technical feasibility, constraints, boundaries, and trade-offs for a financial requirement before an AIW Task or OpenSpec design exists. Use for solution options; not for implementation review, final design approval, or release readiness.
+description: Explore technical feasibility, constraints, boundaries, and trade-offs for an Issue in any domain before FD design. Use for solution options; not for implementation review, final design approval, or release readiness.
 ---
 
-# Finance Engineering Options
+# Engineering Options
+
+Use this method across domains. The `finance-` skill ID is retained for compatibility; it does not restrict activation to finance. Apply domain-specific rules only when relevant to the supplied evidence.
 
 Produce `Engineering Options` for a requirement: alternatives, constraints, dependencies, security and audit implications, and decisions a later design must make. This is not a review of implemented code and does not create `design.md`.
 
@@ -20,7 +22,7 @@ Produce `Engineering Options` for a requirement: alternatives, constraints, depe
 
 - Problem Brief or Business Case.
 - Target systems and known producers/consumers.
-- Metric Brief when the capability surfaces financial metrics.
+- Metric Brief when the capability depends on metrics with unresolved meaning.
 
 ## Produce
 
@@ -30,7 +32,7 @@ Describe options rather than prescribing implementation. Cover boundaries, depen
 
 ## Rules
 
-- Do not write code, migrations, deployment plans, OpenSpec design files, or implementation tasks. After user confirmation, AIW Requirement Management may capture this artifact; this Skill must not invoke capture.
+- Do not write code, migrations, deployment plans, OpenSpec design files, or implementation tasks. After user confirmation, AIW Issue Management (or legacy Requirement Management) may capture this artifact; this Skill must not invoke capture.
 - Do not promise backward compatibility, permissions, audit retention, or data contracts without evidence.
 - Do not produce release `GO`/`NO_GO` conclusions.
 - Separate business blockers from engineering choices that could wait. State
@@ -40,10 +42,10 @@ Describe options rather than prescribing implementation. Cover boundaries, depen
 
 ## Output
 
-### When loaded by Requirement Management
+### When loaded by Issue Management or legacy Requirement Management
 
-Apply this method only to the financial domain identified in the supplied
-context. The current host JSON contract overrides the Markdown template below;
+Apply this method to the current Issue and discussion gap in any domain.
+Use domain-specific checks only when the supplied context requires them. The current host JSON contract overrides the Markdown template below;
 use the template only for a requested draft or standalone discussion.
 Use loaded source bodies and exact references. Do not load sibling Skills or
 linked materials, invent missing evidence, or treat capture as confirmation.

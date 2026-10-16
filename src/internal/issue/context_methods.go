@@ -15,7 +15,8 @@ Keep facts, assumptions and open questions separate. Unknown domains use this ba
 // ConversationMethodSuggestion is an unconfirmed model recommendation. Evidence
 // must quote current input or a loaded Requirement source, not model history.
 // Gap is intake, value, metric, feasibility or synthesis. Domain is finance,
-// generic or unknown. TermsUnclear adds only the domain-modeling supplement.
+// generic or unknown; it does not gate method selection. TermsUnclear adds
+// only the domain-modeling supplement.
 type ConversationMethodSuggestion struct {
 	Domain       string `json:"domain"`
 	Gap          string `json:"gap"`
@@ -98,11 +99,8 @@ func (snapshot *ConversationContext) loadMethods(reader *contextReader, suggesti
 		return nil
 	}
 	selection.Reason = "Evidence-linked recommendation; domain and gap are not confirmed facts"
-	var selected []string
-	if copy.Domain == "finance" {
-		selection.Primary = method
-		selected = append(selected, method)
-	}
+	selection.Primary = method
+	selected := []string{method}
 	if copy.TermsUnclear {
 		selection.Supplement = "domain-modeling"
 		selected = append(selected, "domain-modeling")

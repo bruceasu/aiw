@@ -220,7 +220,17 @@ archive / cancel MUST 要求操作人与原因，并将需求移动至对应终�
 
 ### Requirement: 实际装载发现方法
 
-系统 MUST 装载内置 generic-discovery 基线。领域方法建议 MUST 带有当前已装载内容的有效摘要和原文引用。通过校验的金融领域建议可选择项目 `.agents/skills/` 中对应方法；术语不明确可增加 domain-modeling。方法正文 MUST 实际进入上下文。
+系统 MUST 装载内置 generic-discovery 基线。讨论方法建议 MUST 带有当前已装载内容的有效摘要和原文引用。通过校验的建议 MUST 按当前 intake、value、metric、feasibility 或 synthesis 缺口选择项目 `.agents/skills/` 中对应方法，不以 finance、generic 或 unknown 领域标签限制激活。保留 finance-* 技能 ID 以兼容既有引用；金融专用规则仅在相关场景适用。术语不明确可增加 domain-modeling。方法正文 MUST 实际进入上下文，不自动装载完整讨论链；发布评估不属于需求发现阶段。
+
+#### Scenario: 非金融 Issue 按缺口加载方法
+
+- **WHEN** generic 或 unknown 领域建议具有有效证据，并指定受支持的讨论缺口
+- **THEN** 系统装载对应方法正文，而不是仅因非金融领域而停留在内置基线。
+
+#### Scenario: 无方法建议
+
+- **WHEN** 本轮没有方法建议
+- **THEN** 系统仅装载内置发现基线，不自动执行其他方法。
 
 #### Scenario: 无法证明领域建议
 

@@ -1,7 +1,7 @@
 # FD-059: 通用讨论技能与 Issue 方法路由
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -23,9 +23,9 @@
 
 ## Work items
 
-- [ ] 1.1 通用化技能与说明并同步仓库副本。规模小、难度低，无依赖；描述和正文按缺口触发，金融规则条件化，发布评估独立。
-- [ ] 1.2 修正加载器、方法选择提示与稳定规格。规模小、难度中，依赖 1.1；有效的 generic/unknown/finance 建议均可选对应方法，保留证据及预算边界。
-- [ ] 1.3 记录静态与编译证据并交接独立 Reviewer。规模小、难度低，依赖 1.2；双格式报告与真实验证记录齐全。
+- [x] 1.1 通用化技能与说明并同步仓库副本。规模小、难度低，无依赖；描述和正文按缺口触发，金融规则条件化，发布评估独立。
+- [x] 1.2 修正加载器、方法选择提示与稳定规格。规模小、难度中，依赖 1.1；有效的 generic/unknown/finance 建议均可选对应方法，保留证据及预算边界。
+- [x] 1.3 记录静态与编译证据并交接独立 Reviewer。规模小、难度低，依赖 1.2；双格式报告与真实验证记录齐全。
 
 ## Acceptance
 
@@ -36,13 +36,16 @@
 
 ## TODO
 
-- 完成 1.1 至 1.3，交接独立审查；审查通过前不声明 Complete。
+- 实施与双格式证据已完成，独立审查通过。交付合并与归档尚未执行，保留专用 worktree。
 
 ## Verification
 
-- 计划：一次静态 diff 与调用路径检查；在 src 对 ./internal/issue 执行一次离线 go build，不保留最终分发产物。
-- 不创建或运行测试，不运行 formatter/linter/vet、全量构建、网络或下载。
-- 尚未实施或验证。
+- 已执行一次静态 diff 与调用路径检查：技能描述、正文、界面元数据、Issue 指引、固定 gap 映射、证据校验与错误分支、模型提示及稳定规格保持一致。
+- 已在 src 执行 `$env:GOPROXY='off'; $env:GOSUMDB='off'; $env:GOTOOLCHAIN='local'; go build ./internal/issue`，退出码 0。仅编译库包，无最终分发产物。
+- 未创建或运行测试，未运行 formatter/linter/vet、全量构建、网络或下载。
+- 剩余风险：尚无运行时行为验证；旧版已安装 CLI 与用户级技能需另行更新，本轮只同步仓库内项目副本。
+- 实施报告：reports/FD-059-implementation-r1.md 与同名 JSON。
+- 独立审查通过：reviews/FD-059-review-r1.md 与同名 JSON；Reviewer `fd059-reviewer-20261016`，来源事件 `FD-059-000004-implementation-ready`，审查 `db8b7fd..e48d42a`。静态确认五种方法跨领域路由、证据与预算边界、七个技能目录副本一致及发布阶段分离；Reviewer 未运行测试或编译。
 
 ## Sources
 
