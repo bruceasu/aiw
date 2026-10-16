@@ -43,7 +43,7 @@ fd-review 统一当前 FD 的实现验收、真实代码、证据与状态结论
 
 ## TODO
 
-- 全部实现及编译/静态证据完成，独立实现审查通过；由宿主检查交付 Gate 后自动本地交付并归档。
+- 全部实现、编译和独立静态审查完成；已交付 develop（1a97a18），CLI 清理分支/worktree，宿主 close 归档并提交归档记录。
 
 ## Verification
 
@@ -51,6 +51,13 @@ fd-review 统一当前 FD 的实现验收、真实代码、证据与状态结论
 - 安装器只新增共享参考常量，窄编译命令：python -c "from pathlib import Path; p=Path('src/plugins/aiw-skills/aiw-skills.py'); compile(p.read_bytes(), str(p), 'exec')"。仅编译不执行、不生成 pyc。
 - 一次静态核对变更 diff、当前 Task 引用、源项目副本、共享参考声明和安装器读取路径、索引单项删除、设计/实现/发布边界。无测试、构建、格式化、安装、验证脚本或网络。
 - 本 FD 不改重要系统设计或公共接口，按需设计审查条件不触发；实现仍交独立 Reviewer。
+
+## Delivery record
+
+- 2026-10-17，独立审查 r1 通过，事件 FD-066-000005-verification-passed；FD revision/digest 与交付前文件一致。审查证据在 reviews/FD-066-review-r1.md 及同名 JSON。
+- 源 HEAD：5f8b0775c041511bca982dab6e0fcb709cd0b533；父分支 develop 的 squash：1a97a18。审查后仅增加审查报告、FD 和索引，无实现漂移。
+- 实际执行 aiw git wt local-merge FD-066，成功交付并清理 feature/FD-066、.wt/FD-066 及 workspace 记录；随后 aiw fd close FD-066 Complete 归档。完整交付输出保存在 .ai/fd/FD-066/local-merge.log。本次无同步、冲突或发布操作。
+- 安装器 compile-only 通过；独立静态审查确认共享方法物化调用链、五个入口依赖及源项目一致性。未运行测试、最终构建、安装、验证脚本、网络或宿主行为评估；用户级技能和旧 CLI/历史资料保持本 FD 明确范围。
 
 ## Sources
 
@@ -61,3 +68,5 @@ fd-review 统一当前 FD 的实现验收、真实代码、证据与状态结论
 - 用户对整体方案及删除旧 Task 内容的明确确认；FD-063 至 FD-065 已完成的本地生命周期约定。
 - src/skills/work-management.md、issue-management、fd-workflow、fd-review、code-review、to-spec、to-tickets、finance-release-gate。
 - src/plugins/aiw-skills/aiw-skills.py 的共享参考物化实现；openspec/specs/fd-workflow/spec.md 与适用 Issue/skills 稳定规格。
+
+**Completed:** 2026-10-16
