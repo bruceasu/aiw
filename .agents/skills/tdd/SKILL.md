@@ -53,3 +53,12 @@ Complete when the requested behavior and regression artifacts exist and the
 report accurately distinguishes observed Red/Green, not-run and diagnosis-only.
 Without execution, report prepared tests/implementation, not completed TDD.
 Do not claim independent acceptance or change FD status from this method.
+
+For unexplained Red/Green failures, diagnosing-bugs may analyze existing output
+and caller paths within the same authority and attempt ledger. It does not turn
+a fixture/import error into target Red or permit oracle changes to fit code.
+In diagnosis-only, one bounded static analysis (or its existing report) yields
+a candidate correction only, with no test edits, production repair or execution.
+Use codebase-design for an in-scope interface question; propose broader
+structural changes to Planner rather than expanding the behavior cycle. Missing
+supporting Skills are an explicit limitation, not a new budget or phase.

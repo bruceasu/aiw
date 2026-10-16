@@ -54,6 +54,17 @@ and rerun only when allowed. A test defect needs rule-based correction; never
 change an oracle merely to fit production. Unknown causes trigger diagnosis.
 No separate PM test-acceptance vote or mandatory coverage metric is introduced.
 
+After acceptance scenarios/oracles have been recorded, an unclear failure may
+use diagnosing-bugs to distinguish product, test/oracle, fixture/setup and
+environment causes from existing evidence. This does not grant implementation
+access beyond the assignment, change an oracle or authorize another execution.
+At diagnosis-only, use its static path once, or reference the analysis already
+produced for that effort; no additional repair, instrumentation or runtime loop.
+Structural observations may suggest codebase-design or a scoped architecture
+discussion to Planner, but do not turn a test assignment into refactoring.
+If the Skill is unavailable, retain the shared bounded diagnosis behavior and
+record the limitation. No extra agent or workflow event is introduced.
+
 ## Persistent failure: diagnose and continue
 
 Use shared Execution's finite budget and retain the ledger across resume,

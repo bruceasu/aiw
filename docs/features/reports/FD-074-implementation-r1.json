@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-074",
+  "source_event": "FD-074-000003-design-ready",
+  "human_report": "FD-074-implementation-r1.md",
+  "data": {
+    "worker_session": "fd074-worker-20261017-8d61",
+    "base_commit": "0ea50f1",
+    "implementation_commit": "fcc4b40",
+    "completed_items": ["1.1", "1.2", "1.3", "1.4"],
+    "static_check": {"batches": 1, "exit_code": 0, "implementation_files": 32, "matching_pairs": 15, "local_links": 39},
+    "compile": "not applicable: Markdown and UI metadata only",
+    "tests_run": false,
+    "models_run": false,
+    "network_used": false,
+    "scripts_run": false,
+    "installer_run": false,
+    "independent_review": "pending",
+    "risks": ["Runtime model behavior and selection unverified", "Global external skill copies not updated"]
+  }
+}

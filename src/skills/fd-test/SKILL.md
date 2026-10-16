@@ -55,6 +55,14 @@ scope. Return the report to the host, not a fabricated Tester event.
 
 ## Boundaries and completion
 
+For unclear failures after the independent scenarios are fixed, diagnosing-bugs
+may supply bounded cause analysis within the existing evidence/access scope.
+At diagnosis-only use preserved evidence once, or cite the existing diagnosis;
+never repair production/tests, instrument or run again through that method.
+Report structural test-seam gaps to Worker/Planner as proposals, not permission
+for an architecture refactor. Missing diagnostic Skill does not restart or
+block the existing bounded shared method; record which method was actually used.
+
 This Skill does not claim/emit FD events, change FD status or acceptance, merge,
 archive, or own a delivery recommendation. Relevant facts may be read by Worker,
 PM and Reviewer. Confirmed acceptance defects are not erased by optionality;

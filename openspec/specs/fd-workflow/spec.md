@@ -916,7 +916,55 @@ Renewed repair/execution requires explicit direction and valid authority.
 - AND diagnosis-only does not grant automatic reruns or further test repairs
 
 
+### Requirement: Conditional diagnosis and architecture methods
+
+FD design MAY load codebase-design for an actual interface/responsibility or
+test-seam question, and improve-codebase-architecture for an observed structural
+obstacle. Implementation and selected testing MAY use diagnosing-bugs for an
+unclear failure. These MUST remain independently usable methods, not mandatory
+FD stages, extra role events or a replacement for fd-review's independent verdict.
+Decisions/evidence MUST return to the current FD/report; out-of-scope refactors
+MUST remain follow-up proposals rather than automatic implementation.
+
+Diagnosis MUST permit static evidence without a previously run failing command.
+It MUST separate observations from product, oracle/test, fixture/setup,
+environment or undetermined causes and distinguish confirmed cause from
+hypothesis. Runtime experiments MUST retain the existing command/revision
+authority and budget. In diagnosis-only, the method MUST use one bounded static
+analysis or reference the analysis already recorded, preserve evidence/ledger
+and propose corrections without applying them. Changing methods MUST NOT restart
+repair/execution or waive unresolved acceptance defects.
+
+Architecture exploration MUST default to scoped Markdown and local analysis.
+It MUST NOT require HTML, agents, a browser, CDN access or grilling. Requested
+HTML MUST be offline, uniquely stored under workspace .ai/tmp and not opened
+automatically. Alternative interfaces SHOULD be compared in the current session;
+explicitly authorized independent comparison MUST use at most two bounded static
+agent passes total without recursive delegation or extra runtime authority.
+Design principles MUST be contextual guidance, not adapter-count requirements,
+project terminology bans or permission to delete existing tests automatically.
+
+#### Scenario: Static bug diagnosis without runtime authority
+
+- WHEN Worker has a reported symptom and relevant source/output but no runtime authorization
+- THEN a bounded static diagnosis MAY identify a cause or supported hypothesis
+- AND not-run reproduction MUST remain explicit rather than blocking all source analysis
+
+#### Scenario: Testing budget already exhausted
+
+- WHEN the selected testing effort is already diagnosis-only
+- THEN diagnosing-bugs MUST reuse the existing analysis or consume preserved evidence once
+- AND it MUST NOT execute, instrument or apply the candidate repair through another Skill
+- AND independent work MAY continue while unresolved acceptance defects remain blocking
+
+#### Scenario: Structural obstacle during FD design
+
+- WHEN a caller/interface or structural issue prevents a suitable scoped design
+- THEN Planner MAY use the relevant design/architecture method and record the result in this FD
+- AND broader redesign MUST remain a proposal without automatic implementation, HTML or agents
+
 ### Requirement: Scoped domain and decision methods support FD design
+
 
 Planner MAY load Domain clarification and Decision dependencies from the
 entry-declared shared workflow-methods resource for actual design gaps.

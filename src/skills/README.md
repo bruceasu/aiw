@@ -37,8 +37,8 @@
 | [grill-with-docs](grill-with-docs/README.md) | 在关键讨论节点结合资料追问，提高需求和设计结论质量。 |
 | [grilling](grilling/README.md) | 沿决策依赖追问，检验计划与假设，等待用户实际作答。 |
 | [grill-me](grill-me/README.md) | 显式进入 grilling 访谈的简短入口。 |
-| [codebase-design](codebase-design/README.md) | 用小接口、深模块和稳定边界讨论模块设计。 |
-| [improve-codebase-architecture](improve-codebase-architecture/README.md) | 查找架构摩擦，生成候选 HTML 报告，再讨论选中的方向。 |
+| [codebase-design](codebase-design/README.md) | 独立模块/接口设计方法，可按需用于FD；不属于code-review专属阶段。 |
+| [improve-codebase-architecture](improve-codebase-architecture/README.md) | 局部架构摩擦和方案比较，默认Markdown；HTML及额外分析按需。 |
 | [to-spec](to-spec/README.md) | 把已确认规则写入稳定规格；不替代 FD 工程计划。 |
 
 ### 工程执行、诊断与评审
@@ -51,7 +51,7 @@
 | [code-review](code-review/README.md) | 审查指定分支、PR 或 diff，也适合没有 FD 编号的工作。 |
 | [tdd](tdd/README.md) | 实现期间用有效 Red／Green 推动明确行为，保留回归保护。 |
 | [fd-test](fd-test/README.md) | 从 FD 规则独立推导黑盒场景，在授权范围内编写／执行测试。 |
-| [diagnosing-bugs](diagnosing-bugs/README.md) | 诊断难复现故障和性能问题，记录假设、证据及复现限制。 |
+| [diagnosing-bugs](diagnosing-bugs/README.md) | 默认静态诊断故障/测试失败，运行按授权；diagnosis-only不恢复修复执行。 |
 | [resolving-merge-conflicts](resolving-merge-conflicts/README.md) | 根据 FD 和双方历史解决明确可解的冲突，无法安全解决则保留现场。 |
 
 ### 学习、写作、探索与集成

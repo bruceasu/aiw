@@ -26,6 +26,17 @@ An explicitly requested change is optional supporting material, not the plan.
 
 ## Domain and decision gaps
 
+For a concrete module/interface, responsibility, state/error contract or test
+seam question, load codebase-design as a scoped design method. If observed
+structural friction prevents a suitable design, use improve-codebase-architecture
+to compare the current structure with proportionate alternatives. These are
+conditional methods, not extra stages: keep decisions in this FD, preserve
+approved behavior and record out-of-scope refactors as follow-up proposals.
+Neither method authorizes implementation, runtime checks, agents, HTML reports
+or a separate grilling loop. If unavailable, record the limitation and use
+available evidence without claiming the method ran. Routine designs need none
+of these methods; fd-review remains the implementation verdict owner.
+
 For conflicting terminology, boundaries or state/invariant meanings, read only
 Domain clarification in `../skills/workflow-methods.md`; use domain-modeling
 when its scoped modeling/file guidance is needed. Respect Issue-confirmed

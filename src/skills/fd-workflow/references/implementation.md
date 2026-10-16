@@ -34,6 +34,18 @@ event that names another active or unknown session.
 
 ## Implement and record
 
+For a reported bug or an unexplained implementation failure, use diagnosing-bugs
+when its bounded evidence method would clarify the cause. Start from preserved
+outputs and source; no runtime reproducer is required for static diagnosis.
+Loading it does not expand command, repair or retry authority. Respect an
+existing diagnosis-only state before any action; cite an existing analysis
+rather than repeating it. Return evidence to this FD/Worker report, then make
+only repairs already authorized outside that state. For a local interface
+question use codebase-design; a structural scope change returns to Planner or
+becomes a follow-up proposal, not an unplanned architecture refactor. Missing
+supporting Skills are reported; use the available scoped method without a
+false claim of invocation. Passing work does not need a diagnostic stage.
+
 Make the smallest complete change for each item. Update its checkbox only
 when the change and required evidence are real. Record TODO, Verification,
 unresolved `%%` notes, and paths or commits that a Reviewer should inspect.

@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-074",
+  "source_event": "FD-074-000004-implementation-ready",
+  "human_report": "FD-074-review-r1.md",
+  "data": {
+    "reviewer_session": "fd074-reviewer-20261017-31a9",
+    "base_commit": "0ea50f1",
+    "reviewed_commit": "6f6018d",
+    "implementation_commit": "fcc4b40",
+    "verdict": "pass",
+    "findings": [],
+    "dimensions": {"correctness": "pass", "standards": "pass", "spec": "pass", "evidence": "pass"},
+    "static_check": {"batches": 1, "exit_code": 0, "implementation_files": 32, "matching_pairs": 15, "local_links": 39, "shared_testing_contract_changed": false},
+    "compile": "not applicable: no executable code changes",
+    "tests_run": false,
+    "models_run": false,
+    "network_used": false,
+    "limits": ["Actual model compliance and selection behavior not evaluated", "Global installation copies not updated", "Delivery gates remain owned by PM"]
+  }
+}

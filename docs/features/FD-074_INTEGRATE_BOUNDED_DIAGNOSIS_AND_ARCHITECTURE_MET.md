@@ -1,7 +1,7 @@
 # FD-074: Integrate bounded diagnosis and architecture methods into FD workflows
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -29,10 +29,10 @@
 
 ## Work items
 
-- [ ] 1.1 优化诊断方法和说明。Size: S; Difficulty: Low; Dependencies: none. Completion: 静态可用、运行可选、原因/证据分离、diagnosis-only有界且不修复。
-- [ ] 1.2 优化架构探索/设计入口与引用。Size: M; Difficulty: Medium; Dependencies: none. Completion: 无强制Agent/HTML/联网/浏览器或词汇禁令，两Agent上限统一，不自动删测试/扩大重构。
-- [ ] 1.3 条件接入FD/测试并同步说明/副本/规格。Size: S; Difficulty: Low; Dependencies: 1.1,1.2. Completion: 触发与返回位置明确、无新阶段、原测试预算不变。
-- [ ] 1.4 静态证据与独立评审交接。Size: S; Difficulty: Low; Dependencies: 1.3. Completion: 一批有界只读核查、双格式报告、真实独立Reviewer；交付由TODO跟踪。
+- [x] 1.1 优化诊断方法和说明。Size: S; Difficulty: Low; Dependencies: none. Completion: 静态可用、运行可选、原因/证据分离、diagnosis-only有界且不修复。
+- [x] 1.2 优化架构探索/设计入口与引用。Size: M; Difficulty: Medium; Dependencies: none. Completion: 无强制Agent/HTML/联网/浏览器或词汇禁令，两Agent上限统一，不自动删测试/扩大重构。
+- [x] 1.3 条件接入FD/测试并同步说明/副本/规格。Size: S; Difficulty: Low; Dependencies: 1.1,1.2. Completion: 触发与返回位置明确、无新阶段、原测试预算不变。
+- [x] 1.4 静态证据与独立评审交接。Size: S; Difficulty: Low; Dependencies: 1.3. Completion: 一批有界只读核查、双格式报告、真实独立Reviewer；交付由TODO跟踪。
 
 Keep item numbers stable after implementation starts. Use `- [-]` only for an
 explicitly cancelled item, with its reason on the same line.
@@ -48,6 +48,8 @@ explicitly cancelled item, with its reason on the same line.
 
 ## Verification
 
+- 独立 Reviewer fd074-reviewer-20261017-31a9：基线 0ea50f1、交接 HEAD 6f6018d、实现 fcc4b40；评审通过，无阻断。证据见 reviews/FD-074-review-r1.md/.json，来源 FD-074-000004-implementation-ready。一批静态检查确认 32 个实现文件、15 组副本、39 个链接，未改 shared testing-methods；未运行测试、编译、模型、网络或安装器。实际模型遵从仍未评估。
+
 - Compile-only check and static review by default; record unrun tests explicitly.
 - For explicitly requested test support (any wording/language), record suitable
   TDD scope, independent fd-test scope, command/revision authorization and finite
@@ -61,9 +63,11 @@ explicitly cancelled item, with its reason on the same line.
 - 三个源Skill及supporting文件；FD planning/implementation/testing、fd-test、tdd与testing-methods预算。
 - openspec/specs/fd-workflow/spec.md现有有限测试/diagnosis-only规则。
 
+- Worker: implementation fcc4b40; reports/FD-074-implementation-r1.md/.json. One bounded static batch passed: 32 Markdown/metadata files, 15 changed source/project pairs equal, 39 local links resolve. No executable changes: compile/tests/model/network/installer not run. Independent review and delivery pending.
+
 ## TODO
 
-- [ ] 完成1.1–1.4并取得独立实现评审。
+- [x] 完成1.1–1.4并取得独立实现评审。
 - [ ] 本地合并和归档。
 
 - Issue: none
