@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-062](FD-062_IMPROVE_WRITING_GREAT_SKILLS_AUTHORING_WORKFLOW.md) | 优化 writing-great-skills 的编写流程与跨平台参考 | Open | Medium |
 
 ## Completed
 
