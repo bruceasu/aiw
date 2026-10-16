@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-074](FD-074_INTEGRATE_BOUNDED_DIAGNOSIS_AND_ARCHITECTURE_MET.md) | Integrate bounded diagnosis and architecture methods into FD workflows | Open | Medium |
 
 ## Completed
 
