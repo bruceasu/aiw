@@ -12,7 +12,6 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-075](FD-075_ADD_BOUNDED_OPTIONAL_CONSULTATION_TO_ASK_ASU_NAV.md) | Add bounded optional consultation to ask-asu navigation | Complete | Medium |
 | [FD-001](archive/FD-001/FD-001_EVENT_DRIVEN_FD_WORKFLOW.md) | 事件驱动的 FD 工作流 | Complete | High |
 | [FD-002](archive/FD-002/FD-002_ACTIONABLE_FD_HANDOFF_RECOVERY_HINTS.md) | Actionable FD handoff recovery hints | Complete | Medium |
 | [FD-003](archive/FD-003/FD-003_COMPACT_CZ_RELEASE.md) | 精简 aiw-cz 发布包 | Complete | Medium |
@@ -87,6 +86,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-072](archive/FD-072/FD-072_RENAME_RELEASE_GATE_AND_CLARIFY_RELEASE_ASSESSME.md) | Rename release gate and clarify release assessment evidence | Complete | Medium |
 | [FD-073](archive/FD-073/FD-073_PUBLISH_LOCAL_ISSUE_AND_FD_PROJECTIONS_WITHOUT_R.md) | Publish local Issue and FD projections without requiring OpenSpec changes | Complete | Medium |
 | [FD-074](archive/FD-074/FD-074_INTEGRATE_BOUNDED_DIAGNOSIS_AND_ARCHITECTURE_MET.md) | Integrate bounded diagnosis and architecture methods into FD workflows | Complete | Medium |
+| [FD-075](archive/FD-075/FD-075_ADD_BOUNDED_OPTIONAL_CONSULTATION_TO_ASK_ASU_NAV.md) | Add bounded optional consultation to ask-asu navigation | Complete | Medium |
 
 ## Deferred / Closed
 

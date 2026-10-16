@@ -67,8 +67,10 @@ explicitly cancelled item, with its reason on the same line.
 ## TODO
 
 - [x] 完成1.1–1.3及独立实现评审。
-- [ ] 本地交付与归档。
+- [x] 本地交付与归档：local-merge成功，专属worktree/分支清理完成，Complete归档成功，见reports/FD-075-delivery.md/.json。
 
 - Issue: none
 
 - 本次纯Markdown/metadata不编译无关产品、不跑测试/模型/网络/脚本/安装/格式化。一批只读核对副本/链接/范围和实际参数路径；静态情景包含仅导航、宿主咨询、固定provider ask、auto后端阻断、缺权限/材料、失败结束及诊断预算不重置。
+
+**Completed:** 2026-10-16
