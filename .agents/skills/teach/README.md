@@ -24,3 +24,18 @@ $teach Help me learn state machines through short lessons and practice.
 目标先按入口要求确认。不隐式创建 FD、修改产品实现或把完成课程当作工程验收。
 见 [SKILL.md](SKILL.md)、[目标格式](MISSION-FORMAT.md)、
 [资源格式](RESOURCES-FORMAT.md) 和 [学习记录格式](LEARNING-RECORD-FORMAT.md)。
+
+## AIW auxiliary CLI
+
+```text
+aiw teach [new] [TOPIC] [--source PATH] [--provider NAME] [--model NAME]
+aiw teach list
+aiw teach resume ID
+aiw teach recover ID
+```
+
+Command mode uses [the auxiliary adapter](references/auxiliary-cli.md): discuss,
+then /run from a ready brief; results are new artifacts, never automatically run.
+Teach courses are independent and resumable. Research command mode uses supplied
+local sources, not automatic background/web research. Agent invocation above
+retains its separate base method. See repository docs/usage/aiw-auxiliary.md.

@@ -4,6 +4,22 @@
 
 固定当前 provider 解析、角色 Profile 和监督请求使用模型的规则，区分默认配置、单次覆盖与请求快照，说明配置了角色名称之后实际会执行哪些路由行为。
 ## Requirements
+
+### Requirement: Frozen auxiliary instructions preserve existing routing
+
+Frozen Session turns MAY carry an optional internal SystemPrompt, forwarded
+to the existing provider Request. Omitted values MUST preserve existing call
+behavior and Session JSON shape. OpenAI maps supplied system instructions to
+its existing instructions field; Codex auxiliary phases honor their resolved
+model without changing other phases' argument rules. Auxiliary turns MUST use
+read-only requests without a managed InvocationObserver, and MUST NOT claim
+uniform CLI tool/network isolation across providers.
+
+#### Scenario: Auxiliary frozen turn with system instructions
+
+- WHEN an auxiliary turn supplies a frozen SystemPrompt and resolved model
+- THEN the provider receives the instructions through its supported mapping
+- AND omitted fields in older callers preserve their previous argument rules
 ### Requirement: 后端解析与覆盖顺序
 
 系统 MUST 通过共享 AI 层解析 provider。单次显式 provider / model MUST 优先于 Session 保存值，Session 值 MUST 优先于全局配置解析结果。全局配置支持 aiw.toml / .aiw.toml 及 AIW_LLM_PROVIDER、AIW_LLM_MODEL、AIW_LLM_BASE_URL、AIW_LLM_API_KEY 等环境覆盖。

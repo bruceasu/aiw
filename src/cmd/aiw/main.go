@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	askcmd "aiw/internal/commands/ask"
+	assistcmd "aiw/internal/commands/assist"
 	completioncmd "aiw/internal/commands/completion"
 	help "aiw/internal/commands/help"
 	initcmd "aiw/internal/commands/initcmd"
@@ -47,6 +48,8 @@ func main() {
 		err = completioncmd.Dispatch(os.Args[2:])
 	case "ask":
 		err = askcmd.Dispatch(os.Args[2:])
+	case "research", "prototype", "edit-article", "teach":
+		err = assistcmd.Dispatch(os.Args[1], os.Args[2:])
 	case "issue":
 		// The existing req plugin remains the compatibility implementation.
 		code, pluginErr := dispatchPlugin("req", os.Args[2:])

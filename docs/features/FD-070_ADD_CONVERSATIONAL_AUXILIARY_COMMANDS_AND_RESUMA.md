@@ -1,7 +1,7 @@
 # FD-070: Add conversational auxiliary commands and resumable teaching courses
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 7
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -21,7 +21,7 @@
 
 新增 internal/commands/assist，主 CLI 注册 aiw research、prototype、edit-article、teach。复用 internal/session 的持久化、冻结请求、输出/usage 保存和 provider 路由，不修改 Session 公共 JSON 形状。辅助元数据存为当前 Session artifacts/auxiliary.json；课程是 kind=teach 的独立 Session，各课程资料、目标、历史和课件隔离。所有辅助工作不创建、批准或推广 Issue/FD，不操作 Git。
 
-公共形式：`aiw <kind> [new] [topic] [--source PATH ...] [--provider NAME] [--model NAME]`、`list`、`resume <id>`；prototype 加 `--kind logic|ui`。无参数时先展示该类型可继续项目并选择新建或恢复。交互命令 `/run`（根据已有澄清摘要生成成果）、`/brief`、`/pause`、`/exit`、`/help`；teach 日常问答持续教与练，`/run`生成本节课件，非一次性任务结束。Ctrl+C/EOF 安全暂停；恢复读取已保存目标、对话与产物，不重置为新课程。只查询/list/help不调用模型。
+公共形式：`aiw <kind> [new] [topic] [--source PATH ...] [--provider NAME] [--model NAME]`、`list`、`resume <id>`；prototype 加 `--kind logic|ui`。无参数时先展示该类型可继续项目并选择新建或恢复。交互命令 `/run`（根据已有澄清摘要生成成果）、`/brief`、`/pause`、`/exit`、`/help`；teach 日常问答持续教与练，`/run`生成本节课件，非一次性任务结束。Ctrl+C 安全暂停；恢复读取已保存目标、对话与产物，不重置为新课程。只查询/list/help不调用模型。
 
 每个普通输入最多一次模型调用。澄清返回结构化 reply/ready/brief；仅用户 `/run` 明确使用最近就绪的 brief 进入成果生成，不再加重复 confirm。新的澄清输入使旧ready失效；生成失败保留 brief 供显式重试，无自动重复模型调用。teach 的问答和课件增量保存，原稿与旧成果不覆盖。
 
@@ -37,6 +37,10 @@
 
 新CLI/持久化设计先进行有界独立设计评审，确认后才design-ready；不变更已有provider、Session状态机、auth或依赖。FrozenTurn可新增可选SystemPrompt内部字段并透传Request，原调用默认空且Session公共JSON不变。辅助调用显式组装冻结Prompt数据与高优先级阶段指令，不依赖Instructions自动拼接，不使用InvocationObserver（其Codex路径会选择workspace-write）。保留现有命令兼容，帮助/补全/README/规格同步。
 
+实施适配细化：共享provider仅最小补足已有字段的映射（OpenAI SystemPrompt写入Instructions；Codex仅aux-阶段传递显式或已解析model），旧阶段参数规则不变。辅助结果失效先持久化，再组装上下文，避免预算错误留下可运行旧摘要。`/window N`实现显式缩小历史范围；只带source/分支参数时直接新建，避免选择旧课程后忽略输入来源。
+
+Planner decision after review R2: EOF ends further input; an already submitted turn completes and is saved before exit. Ctrl+C cancels the active model request. This distinguishes stream completion from explicit interruption and avoids cancelling submitted piped input through eager EOF reading. Acceptance and guide are reconciled; no new runtime authorization.
+
 ## Scope
 
 包含：四命令与共享辅助包；受限文本上下文与Skill快照；共用Session的任务/课程恢复和产物；帮助/补全、独立使用文档、四Skill的辅助CLI适配引用、stable capability规格及双格式证据。
@@ -45,12 +49,12 @@
 
 ## Work items
 
-- [ ] 1.1 定义CLI/持久化合同并取得独立设计反馈。Size: M; Difficulty: Medium; Dependencies: none. Completion: 命令、恢复、权限和数据边界明确，重要设计发现解决后就绪。
-- [ ] 1.2 辅助会话存储、列表与课程恢复。Size: M; Difficulty: Medium; Dependencies: 1.1. Completion: 每任务/课程独立Session和元数据，类型/项目验证、锁、持久历史、暂停/恢复、不覆盖旧成果。
-- [ ] 1.3 有界来源/Skill加载与模型协议。Size: M; Difficulty: Medium; Dependencies: 1.2. Completion: 路径/敏感文件/体积约束、冻结技能与输入、只读模型轮次、结构化结果校验与host产物写入。
-- [ ] 1.4 共享对话循环及四模式行为。Size: M; Difficulty: Medium; Dependencies: 1.3. Completion: 澄清/brief/run、teach持续问答、EOF/Ctrl+C保留现场，无隐式执行/自动重试，错误可解释。
-- [ ] 1.5 主CLI/帮助/补全接入。Size: S; Difficulty: Low; Dependencies: 1.4. Completion: 四名称可达、帮助/list无需模型，旧命令保留。
-- [ ] 1.6 文档/技能适配/规格和交付证据。Size: M; Difficulty: Medium; Dependencies: 1.5. Completion: 新辅助能力可理解且不冒充运行验证，一次离线compile-only与有界静态检查、独立实现评审、正常本地交付归档。
+- [x] 1.1 定义CLI/持久化合同并取得独立设计反馈。Size: M; Difficulty: Medium; Dependencies: none. Completion: 命令、恢复、权限和数据边界明确，重要设计发现解决后就绪。
+- [x] 1.2 辅助会话存储、列表与课程恢复。Size: M; Difficulty: Medium; Dependencies: 1.1. Completion: 每任务/课程独立Session和元数据，类型/项目验证、锁、持久历史、暂停/恢复、不覆盖旧成果。
+- [x] 1.3 有界来源/Skill加载与模型协议。Size: M; Difficulty: Medium; Dependencies: 1.2. Completion: 路径/敏感文件/体积约束、冻结技能与输入、只读模型轮次、结构化结果校验与host产物写入。
+- [x] 1.4 共享对话循环及四模式行为。Size: M; Difficulty: Medium; Dependencies: 1.3. Completion: 澄清/brief/run、teach持续问答、Ctrl+C保留现场，无隐式执行/自动重试，错误可解释。
+- [x] 1.5 主CLI/帮助/补全接入。Size: S; Difficulty: Low; Dependencies: 1.4. Completion: 四名称可达、帮助/list无需模型，旧命令保留。
+- [x] 1.6 文档/技能适配/规格和交付证据。Size: M; Difficulty: Medium; Dependencies: 1.5. Completion: 新辅助能力可理解且不冒充运行验证，一次离线compile-only与有界静态检查、独立实现评审、正常本地交付归档。
 
 Keep item numbers stable after implementation starts. Use `- [-]` only for an
 explicitly cancelled item, with its reason on the same line.
@@ -62,7 +66,7 @@ explicitly cancelled item, with its reason on the same line.
 - 新输入使先前生成就绪状态失效；/run只执行用户已看到的当前任务摘要；未就绪不调用生成模型。普通轮次/生成轮次各一次，无隐式重试。
 - 用户source/原稿仅只读，跨项目/符号链接/凭据或过大输入被拒绝或明确说明；冻结Skill来源和原文版本可追溯。
 - 模型只返回成果内容，由host约束文件名/大小/数量后保存；原型生成不等于运行，研究来源不足不伪装为联网证据，课程不默认联网获取资料。
-- EOF/Ctrl+C在输入或模型调用期间可取消并保存到可恢复状态，硬杀未知现场不自动抢锁；并发同一课程被拒绝。
+- Ctrl+C在输入或模型调用期间可取消并保存到可恢复状态，硬杀未知现场不自动抢锁；并发同一课程被拒绝。
 - 中断或提交失败造成pending/LastTurn不一致时禁止重放模型；recover仅从已保存结果恢复本地材料，冲突不覆盖。长期课程保留完整历史但冻结上下文有限，/recall允许显式回顾旧轮次。
 - list/help不调用provider；错误/无效JSON/取消保留原始模型输出，不能记为成果成功或自动循环修复。
 - 新命令帮助、补全、README、四种Skill适配和stable规格一致；无新依赖或共享Session/API行为破坏。
@@ -81,9 +85,17 @@ explicitly cancelled item, with its reason on the same line.
 - 一批有界静态检查主分发/帮助/补全、状态/错误/取消路径、路径与产物限制、文档一致性；独立设计反馈和实现Reviewer不自审。
 - 独立设计反馈第1轮：docs/features/reviews/FD-070-design-r1.md/.json，D1本地提交恢复与D2有限课程上下文已按上述补足；第2轮聚焦复核 docs/features/reviews/FD-070-design-r2.md/.json 建议ready，设计门槛已解决，不是实现通过事件。
 
+- Worker evidence: reports/FD-070-implementation-r1.md and .json. Offline compile-only passed twice: initial revision and recovery hardening revision bd1aa3b. No tests or model/runtime validation run. Independent implementation review pending.
+
+- Independent Reviewer r1: changes-requested against e7acefd (implementation bd1aa3b), source FD-070-000004-implementation-ready, session fd070-reviewer-20261017-71c3. Evidence: reviews/FD-070-review-r1.md/.json. R1/R2 block delivery; tests and runtime model checks not run.
+
+- Independent Reviewer r2: passed against ed1dd5a (repair f210320), source FD-070-000006-implementation-ready, session fd070-reviewer-20261017-71c3. Evidence: reviews/FD-070-review-r2.md/.json. R1 fixed; R2 resolved under explicit Planner EOF decision. Prior blocker resolved; no runtime or test validation implied. Delivery remains PM-owned.
+
 ## TODO
 
-- [ ] 完成1.1–1.6、静态证据与独立实现评审。
+- [x] Independent implementation review r1 findings resolved by r2; historical reviews/FD-070-review-r1.md/.json retained. Current pass: reviews/FD-070-review-r2.md/.json; blocker reports/FD-070-blocker-review-r1.md/.json resolved.
+
+- [x] 完成1.1–1.6实现、静态证据与独立实现评审；本地交付与归档见下一项。
 - [ ] 正常本地交付及归档。
 
 ## Sources
@@ -93,3 +105,5 @@ explicitly cancelled item, with its reason on the same line.
 - 本会话用户已确认的辅助对话命令设计、多课程/中断/恢复及不属于Issue/FD的决定。
 - src/internal/session、src/internal/ai、src/internal/commands/ask、src/cmd/aiw/main.go。
 - src/skills/{research,prototype,edit-article,teach}/SKILL.md及引用；openspec/specs/cli-and-plugins、ai-routing和command-help-consistency。
+
+Worker repair r2: R1 auxiliary Copilot prompt now includes frozen SystemPrompt via cliPrompt, scoped to aux- phases. R2 EOF contract reconciled by Planner as above. Prior findings retained as historical evidence.

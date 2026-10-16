@@ -2,6 +2,7 @@ package help
 
 import (
 	"aiw/internal/ai"
+	"aiw/internal/commands/assist"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -47,6 +48,11 @@ func Dispatch(args []string) error {
 	// join args as one query if more than one
 	if len(args) == 1 {
 		name := args[0]
+		switch name {
+		case "research", "prototype", "edit-article", "teach":
+			fmt.Print(assist.Usage(name))
+			return nil
+		}
 		// check plugin first
 		plugin, err := plug.DiscoverPluginInfo(name)
 		if err == nil {
@@ -137,6 +143,13 @@ func listAll() error {
 		"  aiw fd show FD-001\n" +
 		"  aiw help fd\n\n")
 
+	fmt.Print("Auxiliary chats (no Issue/FD lifecycle):\n" +
+        "  research [TOPIC]             Investigate supplied local sources.\n" +
+        "  prototype [TOPIC]            Generate throwaway logic/UI artifacts.\n" +
+        "  edit-article [TOPIC]         Discuss and generate a revised copy.\n" +
+        "  teach [TOPIC]                Learn in a resumable course.\n" +
+        "  <command> list|resume ID|recover ID; use --help for options.\n\n")
+
 	pls, err := listPlugins()
 	if err != nil {
 		return fmt.Errorf("list plugins: %w", err)
@@ -200,7 +213,7 @@ func getPluginShort(path string) string {
 }
 
 func staticBuiltinCommands() []string {
-	return []string{"init", "ask", "completion", "help", "version", "issue"}
+	return []string{"init", "ask", "research", "prototype", "edit-article", "teach", "completion", "help", "version", "issue"}
 }
 
 func listPlugins() ([]plug.PluginInfo, error) {
@@ -278,6 +291,14 @@ func showBuiltinHelp(name string) error {
 
 func builtinHelpShort(name string) string {
 	switch name {
+	case "research":
+		return "research supplied sources in a resumable auxiliary chat"
+	case "prototype":
+		return "create throwaway logic or UI artifacts without running them"
+	case "edit-article":
+		return "discuss and generate a revised article without overwriting it"
+	case "teach":
+		return "learn through multiple resumable courses and saved lessons"
 	case "init":
 		return "initialize project instructions and prompt templates"
 	case "ask":
@@ -297,6 +318,8 @@ func builtinHelpShort(name string) string {
 
 func builtinUsageText(name string) (string, bool) {
 	switch name {
+	case "research", "prototype", "edit-article", "teach":
+		return assist.Usage(name), true
 	case "init":
 		return "usage: aiw init [--no-setup] [--prompts] [--merge] [--force] [--template <name>]\n  --no-setup skips creating base AGENTS.md and Copilot instructions.\n  With --merge, --force refreshes .agents prompt files while instruction files are merged.\n", true
 	case "help":

@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-070",
+  "source_event": "FD-070-000004-implementation-ready",
+  "human_report": "FD-070-review-r1.md",
+  "data": {
+    "reviewer_session": "fd070-reviewer-20261017-71c3",
+    "base_commit": "8f4d6bb",
+    "reviewed_commit": "e7acefd",
+    "implementation_revision": "bd1aa3b",
+    "verdict": "changes-requested",
+    "findings": [
+      {"id": "R1", "severity": "high", "file": "src/internal/ai/cli.go", "symbol": "cliProvider.args", "problem": "Copilot receives r.Prompt without auxiliary SystemPrompt, dropping Skill and required JSON protocol", "correction": "Deliver the frozen auxiliary instructions through the selected backend or explicitly reject unsupported auxiliary backend before execution"},
+      {"id": "R2", "severity": "medium", "file": "src/internal/commands/assist/command.go", "symbol": "inputStream / Dispatch", "problem": "EOF closes input channel but does not cancel the active model context, contrary to FD acceptance and guide", "correction": "Propagate the approved EOF cancellation semantics or obtain and record a reconciled Planner decision and revise the acceptance/docs before review"}
+    ],
+    "commands": ["Targeted Get-Content UTF8 and rg static reads", "git diff 8f4d6bb e7acefd", "aiw fd show FD-070", "aiw fd claim FD-070 FD-070-000004-implementation-ready --session fd070-reviewer-20261017-71c3", "Focused review-evidence commit and changes-requested emit"],
+    "compile_only": "Worker reported two successful offline runs; not rerun by Reviewer",
+    "not_run": ["tests", "compile", "runtime models", "network", "install", "final builds", "formatters", "linters", "vet", "validation scripts"],
+    "risks": ["CLI backend isolation differs", "Platform cancellation and recovery not runtime verified", "Copilot command-line size constraints not runtime verified"],
+    "blocker_report": "../reports/FD-070-blocker-review-r1.md"
+  }
+}

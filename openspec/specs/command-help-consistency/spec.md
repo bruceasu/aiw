@@ -5,6 +5,10 @@ TBD - created by archiving change command-help-consistency. Update Purpose after
 ## Requirements
 ### Requirement: CLI help reflects the public command surface
 
+Auxiliary research/prototype/edit-article/teach MUST appear in root help,
+structured built-in inventory and root shell completion. Their --help and
+`aiw help <name>` MUST show accepted options/forms without a model call.
+
 AIW MUST expose help text whose command names, aliases, subcommand forms, argument shapes, and documented options match the commands accepted by the source-code dispatch and validation paths.
 
 #### Scenario: FD worktree help matches the command surface

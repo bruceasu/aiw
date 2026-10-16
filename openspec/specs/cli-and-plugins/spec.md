@@ -8,6 +8,11 @@
 
 ### Requirement: Built-in and plugin dispatch
 
+The built-in auxiliary commands research, prototype, edit-article and teach
+MUST dispatch before same-name plugins and expose their own local help.
+Their conversations and course artifacts are independent of Issue/FD state;
+the detailed contract is in auxiliary-chat/spec.md.
+
 AIW MUST dispatch built-in commands before external plugins. Unknown commands
 MUST resolve through the `aiw-<name>` plugin convention. The removed `aiw wf`
 command MUST NOT be advertised as available. Numbered FD worktrees MUST be

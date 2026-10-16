@@ -24,3 +24,18 @@ $prototype Compare UI approaches for this interaction.
 操作仍遵守仓库范围和授权。已接受结论交回原 Issue／FD，再进入正式实现；不能
 把临时代码直接当成交付或测试证据。见 [SKILL.md](SKILL.md)、
 [逻辑分支](LOGIC.md) 和 [UI 分支](UI.md)。
+
+## AIW auxiliary CLI
+
+```text
+aiw prototype [new] [TOPIC] [--source PATH] [--provider NAME] [--model NAME]
+aiw prototype list
+aiw prototype resume ID
+aiw prototype recover ID
+```
+
+Command mode uses [the auxiliary adapter](references/auxiliary-cli.md): discuss,
+then /run from a ready brief; results are new artifacts, never automatically run.
+Teach courses are independent and resumable. Research command mode uses supplied
+local sources, not automatic background/web research. Agent invocation above
+retains its separate base method. See repository docs/usage/aiw-auxiliary.md.

@@ -6,7 +6,7 @@ import (
 )
 
 var rootCommands = []string{
-	"init", "ask", "completion", "help", "version", "issue", "fd", "wt",
+	"init", "ask", "research", "prototype", "edit-article", "teach", "completion", "help", "version", "issue", "fd", "wt",
 }
 
 var fdCommands = []string{

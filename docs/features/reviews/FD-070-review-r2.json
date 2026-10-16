@@ -1,0 +1,27 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-070",
+  "source_event": "FD-070-000006-implementation-ready",
+  "human_report": "FD-070-review-r2.md",
+  "data": {
+    "reviewer_session": "fd070-reviewer-20261017-71c3",
+    "fd_revision": 6,
+    "base_commit": "5f2c2fd",
+    "original_base_commit": "8f4d6bb",
+    "reviewed_commit": "ed1dd5a",
+    "implementation_revision": "f210320",
+    "verdict": "passed",
+    "findings": [],
+    "prior_findings": [
+      {"id": "R1", "status": "resolved", "evidence": "Auxiliary Copilot args now use cliPrompt with frozen SystemPrompt; old phase arguments remain unchanged"},
+      {"id": "R2", "status": "resolved-contract-reconciled", "evidence": "Explicit Planner decision distinguishes EOF drain from Ctrl+C cancellation; guide/spec and actual loop agree"}
+    ],
+    "commands": ["aiw fd show and exact claim", "git diff 5f2c2fd ed1dd5a and diff stat", "Targeted Get-Content UTF8 source and contract reads", "Clock read", "One static JSON/reference check after evidence edits", "Scoped evidence commit and verification-passed emit"],
+    "compile_only": "Worker reports repair compile exit 0, cumulative 3 offline source-revision runs; not rerun by Reviewer",
+    "not_run": ["tests", "compile", "models", "network", "install", "final builds", "formatters", "linters", "vet", "verification scripts"],
+    "risks": ["Copilot command-line length limit", "Backend-dependent CLI isolation", "Cancellation and recovery not runtime verified"],
+    "blocker_report": "../reports/FD-070-blocker-review-r1.md",
+    "blocker_status": "resolved"
+  }
+}

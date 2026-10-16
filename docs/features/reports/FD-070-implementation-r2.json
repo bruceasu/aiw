@@ -1,0 +1,16 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-070",
+  "source_event": "FD-070-000005-changes-requested",
+  "human_report": "FD-070-implementation-r2.md",
+  "data": {
+    "worker_session": "fd070-worker-20261017-4c82",
+    "findings_addressed": ["R1", "R2"],
+    "compile": {"command": "python scripts/compile.py", "repair_exit_code": 0, "cumulative_runs": 3, "offline": true},
+    "tests": "not_run",
+    "runtime_models": "not_run",
+    "independent_review": "pending",
+    "risks": ["Copilot command-line length limit", "interrupt and recovery statically reviewed only", "prior report risks retained"]
+  }
+}

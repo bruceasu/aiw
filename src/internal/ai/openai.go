@@ -55,6 +55,7 @@ func (p openAIResponsesProvider) Generate(ctx context.Context, request Request) 
 		Input: responses.ResponseNewParamsInputUnion{OfString: openai.String(request.Prompt)},
 		Store: openai.Bool(true),
 	}
+	if request.SystemPrompt != "" { params.Instructions = openai.String(request.SystemPrompt) }
 	if request.ThreadID != "" && !request.ForceNewThread {
 		params.PreviousResponseID = openai.String(request.ThreadID)
 	}

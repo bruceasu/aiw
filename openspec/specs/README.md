@@ -14,6 +14,7 @@
 | [Requirement 管理与发现](requirement/spec.md) | Issue 生命周期、人工决策、推广、来源校验、发现上下文、覆盖评估、提问、恢复与就绪 |
 | [Agent Session](agent-session/spec.md) | 持久化会话、prompt 构造、后端调用与 turn 证据 |
 | [AI 路由](ai-routing/spec.md) | provider、profile、路由计划与监督请求快照 |
+| [辅助对话](auxiliary-chat/spec.md) | 研究、原型、文章修改、多课程学习及中断恢复；独立于Issue/FD |
 | [Workflow 监督执行](workflow-supervision/spec.md) | Work Item、Attempt、结构化结果、重试与完成语义 |
 | [验证与报告](verification/spec.md) | 编译修复、受控测试、Verifier 当前边界 |
 | [工作区与本地交付](workspace-delivery/spec.md) | 隔离工作区、Git 预检、本地合并与清理 |

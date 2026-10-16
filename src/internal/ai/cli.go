@@ -323,6 +323,11 @@ func (p cliProvider) args(r Request) []string {
 		if r.Phase == "artifact-generation" && r.Model != "" {
 			args = append(args, "--model", r.Model)
 		}
+        if strings.HasPrefix(r.Phase, "aux-") {
+            model := r.Model
+            if model == "" { model = p.model }
+            if model != "" { args = append(args, "--model", model) }
+        }
 		if r.ReadOnly {
 			if r.Workspace != "" {
 				args = append(args, "--cd", r.Workspace)
@@ -356,6 +361,9 @@ func (p cliProvider) args(r Request) []string {
 		args = append(args, "--resume="+id)
 	} else {
 		args = append(args, "--session-id="+id)
+	}
+	if strings.HasPrefix(r.Phase, "aux-") {
+		return append(args, "--prompt", cliPrompt(r))
 	}
 	return append(args, "--prompt", r.Prompt)
 }

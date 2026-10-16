@@ -21,6 +21,7 @@ Issue 用于需要讨论与批准的目标；明确的工程请求可直接进�
 | 场景 | 指南 |
 |---|---|
 | 询问 aiw 用法 | [AIW Ask](usage/aiw-ask.md) |
+| 研究、原型、文章修改、多课程教学与恢复 | [辅助对话](usage/aiw-auxiliary.md) |
 | 管理 GitHub Issues | [GitHub Issues 集成](usage/aiw-github-issues.md) |
 | 导出或应用 Git patch | [Git patch](usage/aiw-git-patch.md) |
 | 使用 AI 辅助 Git 操作 | [AI Git 命令](usage/aiw-git-ai.md) |

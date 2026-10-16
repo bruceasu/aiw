@@ -1,0 +1,30 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-070",
+  "source_event": "FD-070-000004-implementation-ready",
+  "human_report": "FD-070-blocker-review-r1.md",
+  "data": {
+    "stage": "implementation-review",
+    "role": "reviewer",
+    "recorded_at": "2026-10-16T18:13:25+00:00",
+    "recorder_session": "fd070-reviewer-20261017-71c3",
+    "observed_blocker": "Copilot loses auxiliary SystemPrompt; EOF does not cancel active model request",
+    "confirmed_cause": "CLI Copilot args use r.Prompt only; stdin EOF closes channel without canceling context",
+    "cause_status": "confirmed-static",
+    "recovery_attempts": [
+      {
+        "action": "Propagate auxiliary system prompt in Copilot args; reconcile EOF contract with Planner decision",
+        "outcome": "offline compile passed; independent review pending"
+      }
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "Worker can make bounded implementation repairs; Planner must explicitly record any acceptance reconciliation",
+    "actual_resolution": "Independent review r2 of ed1dd5a confirms R1 auxiliary instruction delivery fixed and R2 EOF semantics explicitly reconciled by Planner; see ../reviews/FD-070-review-r2.md",
+    "resolved_at": "2026-10-16T18:14:24+00:00",
+    "residual_risk_or_next_step": "PM delivery gates remain; platform/model runtime not verified and CLI command-line limits retained",
+    "reusable_improvement": "Trace full backend instruction delivery and distinguish EOF versus Ctrl+C cancellation in static review",
+    "improvement_status": "proposed"
+  }
+}

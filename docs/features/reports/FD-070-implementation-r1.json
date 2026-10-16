@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-070",
+  "source_event": "FD-070-000003-design-ready",
+  "human_report": "FD-070-implementation-r1.md",
+  "data": {
+    "worker_session": "fd070-worker-20261017-4c82",
+    "baseline": "8f4d6bb",
+    "implementation_revision": "bd1aa3b",
+    "work_items": ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6"],
+    "compile": {"command": "python scripts/compile.py", "runs": 2, "exit_codes": [0, 0], "offline": true, "final_artifact": false},
+    "static_review": {"batches": 1, "skill_copy_pairs": 12, "result": "completed"},
+    "tests": "not_run",
+    "runtime_model_validation": "not_run",
+    "network": "not_used",
+    "independent_review": "pending",
+    "risks": ["CLI provider readonly is not full isolation", "research uses supplied local sources", "hard-kill locks require diagnosis", "interrupt and recovery paths reviewed statically only", "installed binary not updated"]
+  }
+}

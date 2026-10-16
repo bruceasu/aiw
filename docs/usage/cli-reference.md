@@ -66,6 +66,23 @@ source or `node_modules`. See [CZ configuration](cz-configuration.md).
 
 ## Commands
 
+### Auxiliary conversations
+
+```text
+aiw research [new] [TOPIC] [--source PATH] [--provider NAME] [--model NAME]
+aiw prototype [new] [TOPIC] [--kind logic|ui] [--source PATH]
+aiw edit-article [new] [TOPIC] [--source PATH]
+aiw teach [new] [TOPIC] [--source PATH]
+aiw <research|prototype|edit-article|teach> list
+aiw <research|prototype|edit-article|teach> resume ID
+aiw <research|prototype|edit-article|teach> recover ID
+```
+
+These are independent auxiliary tasks, not Issue/FD workflow stages. All four
+accept provider/model overrides. Teaching supports multiple resumable courses.
+Model calls do not execute generated artifacts; recover uses saved output only.
+See [auxiliary conversations](aiw-auxiliary.md) for chat controls and boundaries.
+
 ```text
 aiw --help
 aiw help [command|topic]

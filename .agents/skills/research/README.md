@@ -22,3 +22,18 @@ $research Investigate this API constraint using primary sources.
 入口要求后台研究 Agent，但不因此放宽子 Agent、网络或下载预算。不能调用外部
 来源时明确限制，不把二手转述或推断伪装成已查证事实。研究结论可支持 Issue／FD，
 不会自动创建工程任务、实现代码或证明运行正确。见 [SKILL.md](SKILL.md)。
+
+## AIW auxiliary CLI
+
+```text
+aiw research [new] [TOPIC] [--source PATH] [--provider NAME] [--model NAME]
+aiw research list
+aiw research resume ID
+aiw research recover ID
+```
+
+Command mode uses [the auxiliary adapter](references/auxiliary-cli.md): discuss,
+then /run from a ready brief; results are new artifacts, never automatically run.
+Teach courses are independent and resumable. Research command mode uses supplied
+local sources, not automatic background/web research. Agent invocation above
+retains its separate base method. See repository docs/usage/aiw-auxiliary.md.

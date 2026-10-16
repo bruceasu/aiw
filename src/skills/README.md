@@ -71,6 +71,12 @@
 
 ## 四个辅助技能如何配合工程工作
 
+现在也可直接使用内置 `aiw research`、`aiw prototype`、`aiw edit-article` 和
+`aiw teach` 启动辅助对话，不创建 Issue／FD。命令模式读取技能适配引用，采用只读
+模型轮次、host 保存新成果；teach 支持多课程与暂停／继续。research 命令首版只用
+显式本地资料，不自动启动后台调查。直接 Agent Skill 调用仍遵守各自原始方法。
+详细参数与恢复见仓库 `docs/usage/aiw-auxiliary.md`。
+
 - **teach** 教人：适合持续学习一个概念或能力，产出课程、练习和学习记录；不是普通
   一问一答，也不默认创建 FD。
 - **edit-article** 改文章：根据读者和表达目标确认章节结构，再改善行文；不会自动

@@ -36,7 +36,20 @@ aiw 是面向 AI 辅助开发的命令行工具。它将需求讨论、工程设
 
 CLI 管理记录和工具操作，Skills 指导 Agent 的工作方式，宿主与配置的 provider 提供 AI 执行能力。配置了角色 runner 时，交接可以启动下一角色；未配置时保留待处理交接，由 Skill 或后续 `aiw fd resume` 继续。
 
-## 快速开始
+## 独立辅助对话
+
+除工程工作流外，AIW 提供 `research`、`prototype`、`edit-article` 和 `teach`。
+先通过对话明确目标，再生成研究记录、一次性原型、文章副本或课程材料；teach 支持
+多个课程及暂停／继续。辅助任务本身不创建 Issue／FD。见
+[辅助对话使用指南](docs/usage/aiw-auxiliary.md)。
+
+```powershell
+aiw teach new "Learn system design"
+aiw teach list
+aiw research "Understand this module" --source src/internal
+```
+
+## 快速开始（工程）
 
 从源码编译主程序需要 Go 1.25.1 或兼容版本。在仓库根目录执行：
 
