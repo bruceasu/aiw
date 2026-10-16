@@ -60,3 +60,9 @@
 - AGENTS.md、src/agent-templates/AGENTS.md、src/skills/work-management.md。
 - src/skills/implement、fd-workflow、fd-review 与相关角色。
 - openspec/specs/fd-workflow/spec.md。
+
+**Completed:** 2026-10-16
+
+## Archive follow-up (2026-10-17)
+
+User recovered the conflict and delivered squash 7a8013e (FD-Source: 99d866bf3bd53489582075d230dd32001dfa7c22). Worktree, branch and workspace metadata were cleaned. Host PM closed and archived the FD. Earlier pending-delivery TODO and Verification entries are historical. No fresh review of the manual recovery is claimed; the recovered resume-ext contract file is preserved. The blocker report records the resolution. Sync-before-review policy is follow-up work. No tests, builds or network calls were run.

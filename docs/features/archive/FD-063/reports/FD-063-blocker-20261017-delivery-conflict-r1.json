@@ -22,13 +22,13 @@
         "result": "Confirmed the concurrent deletion and exact conflict; parent is clean, worktree and branch retained"
       }
     ],
-    "status": "unresolved",
-    "human_decision_required": true,
-    "human_decision_detail": "The agreed default stops at merge conflicts. A subsequent explicit recovery instruction is required before resolving and retrying delivery; no request to bypass gates is made.",
-    "actual_resolution": null,
-    "resolved_at": null,
-    "residual_risk_or_next_step": "Preserve feature/FD-063 and .wt/FD-063. After explicit recovery instructions, resolve without undoing the parent's intended deletion, commit the resolution and feedback, reassess review/delivery provenance, and invoke local-merge only when gates pass. Feedback is not committed because the index remains unmerged.",
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "User reported manual recovery and confirmed archive follow-up.",
+    "actual_resolution": "User recovered and delivered squash 7a8013e with FD-Source 99d866bf3bd53489582075d230dd32001dfa7c22. Only the primary worktree remains; workspace metadata was removed. No fresh independent review of the manual recovery is claimed.",
+    "resolved_at": "2026-10-17",
+    "residual_risk_or_next_step": "Host PM to archive. User recovery retained the resume-ext shared-contract file; preserve that result. Track sync-before-review policy in a new FD.",
     "reusable_improvement": "Preserve complete local-merge failure output instead of reducing it to selected success/error prefixes; review concurrent parent deletions before refreshing generated copies. The conflict-stop rule worked as designed.",
-    "improvement_status": "proposed"
+    "improvement_status": "accepted-for-follow-up"
   }
 }
