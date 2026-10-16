@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-060](FD-060_USE_GRILL_WITH_DOCS_DURING_ISSUE_DISCUSSION.md) | 在 Issue 讨论中使用 grill-with-docs 提高需求质量 | Open | Medium |
 
 ## Completed
 
