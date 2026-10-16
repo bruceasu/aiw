@@ -1,0 +1,40 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-060",
+  "source_event": "FD-060-000004-implementation-ready",
+  "human_report": "FD-060-review-r1.md",
+  "data": {
+    "reviewer_session": "fd060-reviewer-20261017",
+    "reviewed_base": "d9bd08b",
+    "reviewed_commit": "69e335c",
+    "implementation_commits": ["a8c3881", "2619285"],
+    "findings": [{"severity": "medium", "path": ".agents/skills/reviewed-skill-contract.md", "summary": "New grill-with-docs shared-contract reference has no installed project copy", "required_change": "Synchronize the referenced shared contract into the project skills installation"}],
+    "results": {
+      "decision": "changes-requested",
+      "prior_pass_event": "FD-060-000005-verification-passed was emitted before additional contract check; PM rerouting required",
+      "valid_selection_and_required_method_order": "supported by current source inspection",
+      "baseline_invalid_and_required_failure_branches": "preserved",
+      "optional_failure": "diagnostic source appended; errors not returned; primary status unchanged",
+      "question_depth_and_same_plan_boundary": "consistent across skill, host prompt and stable spec",
+      "model_calls_and_selection_json": "unchanged",
+      "three_changed_skill_copies": "no hash mismatches",
+      "dual_worker_evidence": "required fields present and consistent",
+      "worker_compile_only": "reported exit code 0; not rerun",
+      "tests_and_reviewer_compile": "not run"
+    },
+    "commands": [
+      "Get-ChildItem and Get-Content: primary-workspace FD-060 event receipt",
+      "aiw fd claim FD-060 FD-060-000004-implementation-ready --session fd060-reviewer-20261017",
+      "Get-Content, git diff d9bd08b..69e335c, rg, Get-FileHash and git status: bounded static review batch",
+      "Targeted continuation for truncated code/spec diff and Worker JSON tail; source.load search returned no match",
+      "Get-ChildItem .agents/skills and .agents/skills/grill-with-docs: requested shared-contract presence check"
+    ],
+    "residual_risk": [
+      "Real model question quality, turn count and runtime diagnostics not tested",
+      "Optional guidance consumes remaining context budget",
+      "Installed CLI, user-level skills and session catalog not updated",
+      "No merge, archive or release performed"
+    ]
+  }
+}

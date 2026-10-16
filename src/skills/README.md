@@ -13,8 +13,9 @@ CLI 负责发现、安装和同步 Skill。Skill 名称不是 CLI 子命令。
 - `ask-asu`：根据当前阶段建议下一步 Skill 或 AIW 操作，不代替执行。
 - `wayfinder`：将较大的不确定工作组织成可逐步解决的问题。
 - `triage`：按证据和状态整理问题或外部 PR。
-- `grilling`、`grill-me`、`grill-with-docs`：压力测试方案；后两者分别
-  持续追问、同步记录设计材料。
+- `grilling`、`grill-me`：按用户要求通过追问检验方案。
+- `grill-with-docs`：在 Issue 初步理解、关键规则讨论和决策交接时，
+  按复杂度检验需求质量；确认结论交回原 Issue Plan，由宿主确认和记录。
 - `research`：基于高可信资料调查问题，并在仓库记录发现。
 - `prototype`：构建一次性原型以检验设计想法。
 - `diagnosing-bugs`：根据证据诊断故障、回归或性能问题。

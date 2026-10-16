@@ -29,6 +29,8 @@ type ConversationMethodSuggestion struct {
 
 // ConversationMethodSelection records a routing decision, not a confirmed
 // business fact. Degraded means only the generic baseline was selected.
+// Optional discussion-quality guidance is recorded in Methods; Supplement
+// retains its existing domain-modeling meaning.
 type ConversationMethodSelection struct {
 	Suggestion *ConversationMethodSuggestion `json:"suggestion,omitempty"`
 	Primary    string                        `json:"primary"`
@@ -123,6 +125,17 @@ func (snapshot *ConversationContext) loadMethods(reader *contextReader, suggesti
 	}
 	if len(failures) != 0 {
 		selection.Status, selection.Reason = "blocked", "Selected method could not be loaded; restore it or narrow the scope before continuing"
+		return errors.Join(failures...)
 	}
-	return errors.Join(failures...)
+	// Quality guidance follows required methods so it cannot crowd them out.
+	// Its absence is diagnostic, not another readiness or approval gate.
+	quality := ConversationSource{
+		Kind: "method", Path: ".agents/skills/grill-with-docs/SKILL.md",
+		Purpose: "Optional focused discussion-quality guidance; apply only the current checkpoint",
+	}
+	if err := quality.load(reader, false); err == nil && strings.TrimSpace(quality.Content) == "" {
+		quality.Status, quality.Reason = "unavailable", "Discussion-quality method is empty"
+	}
+	snapshot.Methods = append(snapshot.Methods, quality)
+	return nil
 }

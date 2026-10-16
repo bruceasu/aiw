@@ -1,7 +1,7 @@
 # FD-060: 在 Issue 讨论中使用 grill-with-docs 提高需求质量
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 8
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -25,9 +25,9 @@
 
 ## Work items
 
-- [ ] 1.1 定义讨论质量方法及 Issue 路由节点，同步项目副本和界面说明。规模小、难度低，无依赖；触发、深度、结束和记录边界清晰。
-- [ ] 1.2 接入可选方法装载、模型提示和稳定规格。规模小、难度中，依赖 1.1；有效建议才尝试装载，缺失/空/预算不足不阻塞，既有边界保留。
-- [ ] 1.3 完成一次离线库包编译及静态检查，记录双格式证据并交接独立审查。规模小、难度低，依赖 1.2；如实记录执行和未执行检查。
+- [x] 1.1 定义讨论质量方法及 Issue 路由节点，同步项目副本和界面说明。规模小、难度低，无依赖；触发、深度、结束和记录边界清晰。
+- [x] 1.2 接入可选方法装载、模型提示和稳定规格。规模小、难度中，依赖 1.1；有效建议才尝试装载，缺失/空/预算不足不阻塞，既有边界保留。
+- [x] 1.3 完成一次离线库包编译及静态检查，记录双格式证据并交接独立审查。规模小、难度低，依赖 1.2；如实记录执行和未执行检查。
 
 ## Acceptance
 
@@ -39,13 +39,19 @@
 
 ## TODO
 
-- 完成三个 Work Items 并取得独立审查；交付合并与归档须按已授权范围执行。
+- 实施与双格式报告已记录；新增共享契约引用已从源技能及项目副本移除，独立 r2 审查通过。尚未交付合并或归档。
 
 ## Verification
 
-- 计划一次静态 diff 与调用路径检查，并在 src 离线执行 go build ./internal/issue；只编译库包，不保留最终分发产物。
-- 不创建或运行测试，不运行 formatter/linter/vet、全量构建、网络或下载。
-- 尚未实施或验证。
+- 一次静态 diff/调用路径检查完成：有效建议和主方法优先、可选方法失败不阻塞、空内容诊断、Methods 来源输出、JSON/审批边界及技能描述/提示/规格一致。
+- 三个变更文件的源/项目副本 Get-FileHash 比较均为 True。
+- 在 src 执行 `$env:GOPROXY='off'; $env:GOSUMDB='off'; $env:GOTOOLCHAIN='local'; go build ./internal/issue`，退出码 0；仅编译库包，无最终分发产物。
+- 未创建或运行测试，未运行 formatter/linter/vet、全量构建、网络或下载。
+- 实施证据：reports/FD-060-implementation-r1.md 与同名 JSON。
+- 独立审查：reviews/FD-060-review-r1.md 与同名 JSON；Reviewer `fd060-reviewer-20261017`，来源事件 `FD-060-000004-implementation-ready`，范围 `d9bd08b..69e335c`。追加发现新共享契约 `.agents/skills/reviewed-skill-contract.md` 缺失，结论更正为请求修改；先前通过事件 `FD-060-000005-verification-passed` 不覆盖此发现，待 PM 重新路由。其余静态检查未发现阻塞；Reviewer 未运行测试或编译。
+- 剩余风险：真实模型追问质量未运行验证；可选方法占用剩余上下文；已安装 CLI 和用户级技能未更新。
+- 修复证据：reports/FD-060-implementation-r2.md 与同名 JSON；修复提交 `b7f375f` 不修改 Go，沿用原编译证据。
+- 最新独立审查通过：reviews/FD-060-review-r2.md 与同名 JSON，Reviewer `fd060-reviewer-r2-20261017`，来源 `FD-060-000007-review-requested`，HEAD `e60a5e7`。本轮仅复核文档修复与 r2 证据，r1 晚发现原因已解除；其余代码沿用先前审查，未重复运行检查。r1 报告与旧 pass 保留为历史。
 
 ## Sources
 

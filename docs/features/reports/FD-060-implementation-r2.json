@@ -1,0 +1,15 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-060",
+  "source_event": "FD-060-000003-design-ready",
+  "human_report": "FD-060-implementation-r2.md",
+  "data": {
+    "summary": "Remove unnecessary newly introduced shared-contract links from source and installed skill copy after a late review finding.",
+    "worker_session": "fd060-worker-20261016-e2a7",
+    "changed_paths": ["src/skills/grill-with-docs/SKILL.md", ".agents/skills/grill-with-docs/SKILL.md"],
+    "commands": [],
+    "results": {"source_and_copy": "Same one-line removal applied to both files", "compile_only": "Prior successful result retained; no Go change", "tests": "not run", "independent_review": "New review required; earlier pass is superseded for delivery"},
+    "residual_risk": ["Original Worker report residual risks remain", "Current documentation repair awaits a fresh independent review event"]
+  }
+}

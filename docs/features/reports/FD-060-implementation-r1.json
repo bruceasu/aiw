@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-060",
+  "source_event": "FD-060-000003-design-ready",
+  "human_report": "FD-060-implementation-r1.md",
+  "data": {
+    "summary": "Use grill-with-docs as optional, focused discussion-quality guidance alongside valid Issue methods, with unchanged host approval and storage boundaries.",
+    "worker_session": "fd060-worker-20261016-e2a7",
+    "implementation_commits": ["a8c3881", "2619285"],
+    "changed_paths": ["src/internal/issue/context_methods.go", "src/internal/issue/context.go", "src/internal/issue/conversation.go", "src/skills/issue-management/SKILL.md", "src/skills/grill-with-docs/SKILL.md", "src/skills/grill-with-docs/agents/openai.yaml", "src/skills/README.md", ".agents/skills/issue-management/SKILL.md", ".agents/skills/grill-with-docs/SKILL.md", ".agents/skills/grill-with-docs/agents/openai.yaml", "openspec/specs/requirement/spec.md"],
+    "commands": [
+      {"command": "git diff develop -- src/internal/issue src/skills/issue-management/SKILL.md src/skills/grill-with-docs src/skills/README.md openspec/specs/requirement/spec.md", "result": "Static diff and call-path inspection completed"},
+      {"command": "Get-FileHash for the three changed source/project-copy pairs", "result": "All three pairs equal"},
+      {"command": "$env:GOPROXY='off'; $env:GOSUMDB='off'; $env:GOTOOLCHAIN='local'; go build ./internal/issue", "cwd": "src", "exit_code": 0}
+    ],
+    "results": {"static_review": "completed", "compile_only": "passed", "tests": "not run", "final_build": "not run", "network": "not used", "independent_review": "pending"},
+    "residual_risk": ["Real model interview quality and turn count not tested", "Optional guidance consumes remaining context budget", "Installed CLI and user-level skills not updated", "Changes remain in dedicated worktree pending review and delivery"]
+  }
+}

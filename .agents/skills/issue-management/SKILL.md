@@ -71,6 +71,16 @@ assumptions, and remaining decisions.
    `domain-modeling` helps when terms or boundaries are unstable.
    `finance-release-gate` belongs only to a later planned release after
    implementation, outside Issue discovery. An unread method was not applied.
+   Alongside the primary method, explicitly route `grill-with-docs` to improve
+   discussion quality after initial understanding, while exploring key rules
+   or options, and before a human decision or FD handoff. Use only the current
+   checkpoint, scale depth to uncertainty, and ask one high-impact question at
+   a time; simple Issues may need only one or two questions in total. Do not
+   repeat confirmed answers or run a complete interview on every turn.
+   Return conclusions to this same Issue Plan under the host's confirmation
+   rules. This adds no approval gate and does not invoke `grill-me`.
+   If `grill-with-docs` is unavailable or cannot fit the context budget, record
+   that it was not applied and continue with the available primary method.
 3. **Resolve decisions.** Distinguish missing business facts from engineering
    strategy choices. Use evidence and confirmed preferences to choose a
    clearly better strategy within scope, recording the rationale. Ask the

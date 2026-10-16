@@ -177,6 +177,7 @@ func decodeConversationJSON(raw string, target any) error {
 const methodOutputInstructions = `Select a discussion method only. Do not use tools or prepare actions.
 
 Choose the method for the current discussion gap in any domain. The domain label is context, not an activation gate. Select only one primary method; do not run every stage. Financial checks apply only when relevant to the Issue.
+The host also attempts to load grill-with-docs as optional discussion-quality guidance after valid selection. It is not a gap value and needs no extra output field.
 
 Return exactly one JSON object with these fields:
 - domain: generic, unknown, or finance

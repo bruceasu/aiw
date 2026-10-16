@@ -1,0 +1,28 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-060",
+  "source_event": "FD-060-000007-review-requested",
+  "human_report": "FD-060-review-r2.md",
+  "data": {
+    "reviewer_session": "fd060-reviewer-r2-20261017",
+    "reviewed_commit": "e60a5e7",
+    "repair_commit": "b7f375f",
+    "retained_code_review_range": "d9bd08b..69e335c",
+    "findings": [],
+    "results": {
+      "decision": "passed",
+      "late_r1_finding": "resolved by removing the new shared-contract reference from both skill files",
+      "source_and_copy": "identical old and new blobs in the repair diff",
+      "worker_r2_evidence": "consistent required metadata and truthful historical provenance",
+      "prior_worker_compile": "retained reported exit code 0; not rerun",
+      "runtime_checks": "not run"
+    },
+    "commands": [
+      "Get-Content: latest main-workspace FD-060 receipt",
+      "aiw fd claim FD-060 FD-060-000007-review-requested --session fd060-reviewer-r2-20261017",
+      "git show/stat b7f375f; scoped git diff b7f375f^ b7f375f; Get-Content Worker r2 evidence and FD excerpts"
+    ],
+    "residual_risk": ["Real model question quality, turn count and runtime diagnostics not tested", "Optional guidance consumes remaining context budget", "Installed CLI, user-level skills and session catalog not updated"]
+  }
+}
