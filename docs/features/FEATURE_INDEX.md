@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-061](FD-061_CONSOLIDATE_ISSUE_DISCUSSION_METHODS_INTO_REFERE.md) | 将 Issue 讨论方法收拢为内部 references | Open | Medium |
 
 ## Completed
 
