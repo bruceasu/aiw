@@ -55,7 +55,7 @@ handoff 缺少明确版本锚点、跨会话授权与预算、接手核查和未
 ## TODO
 
 - [x] 完成1.1–1.2、1.3静态证据及独立评审；1.3交付归档见下项。
-- [ ] 本地交付与归档。
+- [x] 本地交付与归档；独立评审通过后 local-merge 成功，worktree/分支已清理，Complete 归档成功。交付见 reports/FD-071-delivery.md/.json，1.3整体完成。
 
 ## Sources
 
@@ -63,3 +63,5 @@ handoff 缺少明确版本锚点、跨会话授权与预算、接手核查和未
 - 用户确认本会话五项优化及辅助课程/两种深度建议。
 - src/skills/handoff/{SKILL.md,README.md,agents/openai.yaml}。
 - src/skills/work-management.md、reviewed-skill-contract.md；FD-070 辅助Session与使用指南。
+
+**Completed:** 2026-10-16
