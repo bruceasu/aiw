@@ -1,0 +1,32 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-065",
+  "source_event": "FD-065-000005-changes-requested",
+  "human_report": "FD-065-implementation-r2.md",
+  "data": {
+    "session": "fd065-worker-20261017-6b72",
+    "summary": "Declare reviewed-skill-contract shared dependency in fd-workflow entry and materialize canonical project copy.",
+    "changed_paths": [
+      "src/skills/fd-workflow/SKILL.md",
+      ".agents/skills/fd-workflow/SKILL.md",
+      ".agents/skills/fd-workflow/skills/reviewed-skill-contract.md"
+    ],
+    "commands": [
+      "Exact Worker claim, file edits, scoped commit, implementation-ready emit"
+    ],
+    "results": [
+      "R1 fix implemented; independent focused review pending",
+      "No repeated Worker validation command"
+    ],
+    "skipped": [
+      "compile: documentation only",
+      "tests",
+      "builds",
+      "installation",
+      "validation scripts",
+      "network"
+    ],
+    "residual_risk": "Installer behavior statically traced by Reviewer; no installation execution."
+  }
+}

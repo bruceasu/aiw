@@ -14,7 +14,8 @@ tracker or duplicate Issue/FD lifecycle rules.
    It owns engineering decisions, ordered Work Items, status, Verification,
    and unresolved `%% NEEDS_INPUT` notes. `docs/features/FEATURE_INDEX.md` is
    only its index.
-3. Use `implement` to execute ready FD Work Items. Follow
+3. Use the Worker stage of `fd-workflow` to execute ready FD Work Items; it
+   loads `references/implementation.md` as needed. Follow
    `skills/work-management.md` for role handoffs, state, and evidence.
 
 An Issue may link to an FD. A Task is not required for a new FD. Create an

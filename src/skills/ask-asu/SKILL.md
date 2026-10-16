@@ -17,14 +17,17 @@ mutating command or write an artifact while acting only as Ask Asu.
    `fd-workflow` and `aiw fd new` without an Issue.
 2. For a Design FD, route to Planner through `fd-workflow`. Record options,
    decisions, Work Items, acceptance, and Verification before `design-ready`.
-3. For an Open FD or a review correction, route to `implement`. Worker handles
+3. For an Open FD or a review correction, route to the Worker stage of
+   `fd-workflow`, which loads `references/implementation.md`. Worker handles
    all ready Work Items in order and emits `implementation-ready` when done.
 4. For Pending Verification, route to `fd-review` in an independent Reviewer
    session. Use
    actual diffs and evidence. A failed review returns to Worker; a passed
    review records `verification-passed`.
-5. For a completed FD, recommend a separate delivery or archive decision.
-   A local commit does not imply push, merge, release, or archive.
+5. For a reviewed complete FD, route the host PM to fd-workflow completion
+   under the existing request and stage limits. A normal full-FD implementation
+   continues local delivery/archive automatically; a standalone commit or
+   review does not authorize it. Push and release remain separate requests.
 
 An explicit `needs-decision` or authorization gap stops dispatch. Recommend
 the smallest user question that resolves it. A pending event may be continued

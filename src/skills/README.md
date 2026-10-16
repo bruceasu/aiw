@@ -23,7 +23,7 @@ CLI 负责发现、安装和同步 Skill。Skill 名称不是 CLI 子命令。
 ### Issue、FD 与领域设计
 
 - `issue-management`：澄清并决策一个 AIW Issue，可交接到 FD。
-- `fd-workflow`：创建或细化编号 FD、记录工程决策和有序 Work Items。
+- `fd-workflow`：统一编号 FD 的设计、实现、独立审查交接及自动交付归档；支持只实现或部分工作项等明确限制。
 - `domain-modeling`：整理领域术语、概念关系和边界。
 - `codebase-design`：设计模块接口、职责和代码边界。
 - `improve-codebase-architecture`：发现并分析架构改进机会。
@@ -34,7 +34,7 @@ CLI 负责发现、安装和同步 Skill。Skill 名称不是 CLI 子命令。
 
 ### 实现、规格与审查
 
-- `implement`：按 FD 实现选定的 Work Item；旧 AIW Task 按其现有记录继续。
+- `fd-workflow/references/implementation.md`：由 Worker 阶段按需加载的实现方法，不作为独立 Skill 安装或调用；旧 AIW Task 按其现有记录继续。
 - `fd-review`：独立审查编号 FD 的实现和证据。
 - `to-spec`：更新 OpenSpec 稳定规格；只有用户明确要求时才创建 change。
 - `to-tickets`：将 Issue 或设计拆为 AIW Task work items，可选 OpenSpec
@@ -62,7 +62,7 @@ CLI 负责发现、安装和同步 Skill。Skill 名称不是 CLI 子命令。
 ```text
 $issue-management 梳理这个功能请求并决定是否进入设计
 $fd-workflow 为已批准的 Issue 创建编号 FD
-$implement 实现当前 FD 中已选定的 Work Item
+$fd-workflow FD-XXX 只实现工作项 1.1，不审查、不合并
 ```
 
 具体语法由宿主决定。`$name` 表示调用 Skill，不是 `aiw name` 命令。
@@ -76,7 +76,7 @@ $implement 实现当前 FD 中已选定的 Work Item
 ```text
 issue-management（需要澄清或批准时）
   -> fd-workflow
-  -> implement
+  -> fd-workflow 的 Worker 阶段（按需加载 implementation.md）
   -> fd-review
   -> PM：local-merge、归档与清理（条件满足时自动继续）
 ```
@@ -113,14 +113,14 @@ Skill 不会因为出现在工作流中就自动获得额外授权。实现、�
 ```powershell
 aiw skills list
 aiw skills list --json
-aiw skills install implement --dry-run
-aiw skills install implement
+aiw skills install fd-workflow --dry-run
+aiw skills install fd-workflow
 aiw skills install --all --dry-run
 aiw skills install --all
 aiw skills discover
 aiw skills discover --json
 aiw skills adopt
-aiw skills sync implement
+aiw skills sync fd-workflow
 ```
 
 默认作用域为当前项目。安装或检查用户级 Skills 时使用 `--scope user`：

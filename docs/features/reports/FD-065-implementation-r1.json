@@ -1,0 +1,35 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-065",
+  "source_event": "FD-065-000003-design-ready",
+  "human_report": "FD-065-implementation-r1.md",
+  "data": {
+    "session": "fd065-worker-20261017-6b72",
+    "implementation_commit": "b1552bb03ec8b549d132d10f330cae93d1249c0b",
+    "summary": "Consolidate implementation method under fd-workflow; remove standalone source/project entry without an alias; preserve stage limits and lifecycle.",
+    "commands": [
+      "One static batch: git diff a88b62d with read-only Python checks for copy pairs, retired files, current references, index and CLI scope",
+      "FD new/claim/emit, worktree add and scoped git commits"
+    ],
+    "results": [
+      "8 source/project pairs match",
+      "6 retired files absent",
+      "No old skill invocation/path references in current skills or stable specs",
+      "implement removed from project installed-skills index; other entries preserved",
+      "CLI unchanged"
+    ],
+    "skipped": [
+      "compile: documentation/metadata only",
+      "tests",
+      "builds",
+      "formatters",
+      "linters",
+      "validation scripts",
+      "network",
+      "installation sync",
+      "host behavioral evaluation"
+    ],
+    "residual_risk": "No compatibility alias by user decision. User-level global installation not changed; hosts may require discovery refresh."
+  }
+}

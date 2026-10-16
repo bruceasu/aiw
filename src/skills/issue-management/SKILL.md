@@ -20,9 +20,10 @@ per-Skill copy from the canonical source.
 A request may name source files, exact edits, or tests while invoking this
 skill. Treat those details as Issue input, not as permission to implement.
 Finish the Issue stage before starting engineering design or changing code.
-Use `fd-workflow` for design after handoff and `implement` for code changes
-under its FD rules. If the user clearly asks to switch to
-implementation, state the switch and follow `implement` before any edit.
+Use `fd-workflow` for design and implementation after handoff under its FD
+rules; its Worker stage loads `references/implementation.md`. If the user clearly asks to switch to
+implementation, state the switch and follow the Worker stage of `fd-workflow`
+before any edit.
 If the intended stage is unclear, ask which stage the user wants. Do not
 change source files or run implementation validation while using this skill.
 

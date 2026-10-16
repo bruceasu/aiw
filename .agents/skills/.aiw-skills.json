@@ -139,12 +139,6 @@
       "source_identity": "D:\\green\\aiw\\skills\\handoff",
       "source_revision": null
     },
-    "implement": {
-      "mode": "copy",
-      "sha256": "b32bb3c39a4a3dfef44937481aed34037c9197ccb321f865c851483661b1ff54",
-      "source_identity": "D:\\green\\aiw\\skills\\implement",
-      "source_revision": null
-    },
     "improve-codebase-architecture": {
       "mode": "copy",
       "sha256": "6efefa6f0f6e51eb189ff214e4d18487a55d29c5641ab3942bde1965598d09a7",

@@ -316,6 +316,35 @@ separately close and commit the FD archive.
 - **AND** recovered implementation outside the prior pass needs fresh independent review
   before retry; a no-op sync or successful commit is not proof of a correct resolution.
 
+### Requirement: One FD skill entry owns implementation routing
+
+The host MUST use `fd-workflow` for numbered FD design and implementation.
+Its Worker stage MUST load `references/implementation.md` and its Worker role
+as needed. The implementation method MUST NOT be a separately discoverable
+Skill or call back into a duplicate implementation entry. The retired standalone
+entry MUST NOT retain a compatibility alias in canonical or project skills.
+Current routing, installation examples and the project installed-skills index
+MUST point to the unified workflow. Historical FD evidence and user-level
+installations MUST NOT be rewritten as part of this repository consolidation.
+
+Natural-language implementation-only, partial-item, review-only and no-merge
+requests MUST preserve their existing stage/scope boundaries before any
+next-role dispatch. No new CLI flags are implied. Normal full-FD implementation
+MUST retain independent review, automatic local completion and bounded conflict
+recovery under the shared contract; design discussion alone MUST NOT implement.
+
+#### Scenario: Implement only through the unified entry
+
+- **WHEN** the user requests only implementation of one ready FD through fd-workflow
+- **THEN** Worker loads its implementation reference, records scoped evidence and commits
+- **AND** it stops before Reviewer dispatch, delivery or archive.
+
+#### Scenario: Normal implementation through the unified entry
+
+- **WHEN** the user requests a normal complete FD implementation through fd-workflow
+- **THEN** Worker uses the same reference and the host continues the existing lifecycle
+- **AND** no standalone implementation Skill or second auto request is required.
+
 ### Requirement: Bounded host-operated automatic FD lifecycle
 
 A human request to implement one numbered FD MUST default to its normal local

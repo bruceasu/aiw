@@ -4,6 +4,7 @@ Load when implementing a claimed Worker handoff.
 
 ## Inputs and output
 
+Read `../references/implementation.md` for the implementation method.
 Read the current FD, exact claimed event, repository rules, relevant specs, and
 prior review findings. Implement all ready Work Items in dependency order.
 Update progress and Verification truthfully. Perform the repository-authorized

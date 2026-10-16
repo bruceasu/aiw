@@ -5,15 +5,37 @@ description: Create or refine a numbered FD, or run its implementation through i
 
 # Feature Design Workflow
 
-Read `skills/work-management.md` and the repository instructions. Use this
+Read `skills/reviewed-skill-contract.md`, `skills/work-management.md`, and the
+repository instructions. Use this
 Skill when the user wants to create, refine, review, or close a Feature Design.
 New engineering work is FD-first. OpenSpec supplements the FD with stable
 capability requirements when needed; it is not a second work plan. Use the
 automatic lifecycle below for an ordinary numbered FD implementation request,
-including an implementation routed through `implement`. Explicit `auto`, full
+including requests to execute ready FD Work Items. Explicit `auto`, full
 lifecycle, isolation, and worktree requests remain supported. A design-only
 request or question does not start implementation. Respect implementation-only,
 review-only, partial-item, and no-merge limits instead of expanding their scope.
+
+## Implementation entry and stage limits
+
+Use this Skill for both FD design and implementation; there is no separate
+implementation Skill or compatibility alias. Resolve the FD and pending role
+first. An Open/In Progress FD or an assigned repair routes to Worker; read
+`roles/worker.md` and `references/implementation.md` only when implementing.
+Design discussion and questions do not start implementation.
+
+Natural-language examples (host Skill invocation, not new CLI flags):
+
+- `$fd-workflow FD-XXX implement` requests the normal full FD lifecycle.
+- `$fd-workflow FD-XXX implementation only; no review or merge` stops after
+  implementation evidence and scoped commits, before Reviewer dispatch.
+- `$fd-workflow FD-XXX only Work Item 1.1` limits implementation to that item;
+  do not mark the whole FD ready or dispatch review without separate authority.
+- `$fd-workflow FD-XXX implement and review; no merge` permits independent
+  review but stops before delivery and archive.
+
+Preserve an explicit design-only, review-only or other narrower request.
+Dispatched roles never expand their assignment into the host PM lifecycle.
 
 ## Resolve the FD
 
@@ -228,41 +250,14 @@ in the user-facing Gate and final report.
    Stop for a material `%% NEEDS_INPUT` decision. When ready, emit
    `design-ready --producer planner --artifact <fd-path> --source-event
    <claimed-design-event>`. Claim the resulting Worker handoff as this host.
-3. **Implement when assigned Worker.** Load `roles/worker.md`. Complete all ready Work Items in order, making
-   minimal code/doc changes. Update checkboxes, TODO, Verification, and
-   remaining `%%` notes with actual evidence and skipped checks. Apply the
-   repo's validation budget. For a Dual evidence FD, write a Chinese Markdown
-   report and same-basename JSON using `docs/templates/REPORT_DATA_TEMPLATE.json`;
-   point `--artifact` to Markdown. In the selected workspace, inspect the diff
-   and update the FD as work is completed. In an isolated worktree, commit each
-   completed, independently reviewable Work Item before starting the next.
-   Stage only that item's files; use `aiw git wt commit <id>` only when every
-   uncommitted change belongs to it, otherwise use path-scoped `git add` and
-   `git commit`. Apply the same scoped commit authorization in an explicitly
-   selected primary workspace; preserve unrelated changes and narrower limits.
-   Commit final FD evidence before the Reviewer handoff when this FD's local
-   lifecycle permits it. Do not rebase either branch as part of this workflow;
-   delivery squashes the reviewed FD result onto the recorded parent branch.
-   Before any next-role event or managed review command, honor the requested
-   stage and scope. For implementation-only/no-review, or selected Work Items
-   without review authorization, save scoped progress and evidence and stop
-   before emitting or dispatching Reviewer. A no-merge limit can allow review
-   but stops delivery. A requested stage stop is not an automation failure.
-   Separately authorized review of an unfinished FD's partial scope must remain
-   scoped; do not emit a full-FD implementation-ready event until the whole
-   FD implementation scope is complete.
-   If authorization or design is missing, stop with the FD active. In direct-
-   workspace mode, do not emit `implementation-ready` without a claimed Worker
-   event; use the status/review CLI route described in step 1. Otherwise emit
-   `implementation-ready
-   --producer worker --artifact <implementation-report> --source-event
-   <claimed-worker-event>` only after all scoped items and required evidence
-   are resolved. Worker performs the repository-authorized compile-only check
-   and static review; do not run tests through this workflow. New FDs omit
-   `**Test policy: Independent**` and route directly to Reviewer. Existing FDs
-   with that marker retain their recorded CLI compatibility route, but Auto
-   does not dispatch a new Tester or assess its report. Use `$fd-test` only
-   when the user explicitly requests optional tests.
+3. **Implement when assigned Worker.** Load `roles/worker.md` and
+   `references/implementation.md`. The reference owns preparation, per-item
+   changes, compile/static evidence and the implementation-ready handoff.
+   Apply the shared workspace/authorization contract and the user's stage
+   limits before any next-role event. Commit final scoped evidence before
+   handoff. For primary-workspace work without a Worker handoff, use the
+   managed status/review route in step 1. An incomplete FD cannot emit a
+   full-FD completion handoff. Then continue only to an authorized stage.
 3a. **Optional standalone tests.** The default workflow does not generate or
    run tests. When the user explicitly requests `$fd-test`, follow that Skill
    in a separate test session. It produces factual test evidence only; it does

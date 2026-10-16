@@ -1,12 +1,8 @@
----
-name: implement
-description: Implement ready Work Items in one numbered FD, obtain independent review, and continue automatic local delivery and archive when gates pass, unless the user limits the stage.
----
+# FD implementation
 
-# Implement
-
-Read `skills/reviewed-skill-contract.md`, `skills/work-management.md`, and the
-repository instructions. Use this Skill after a numbered FD is Open, or when
+Read `../skills/reviewed-skill-contract.md`, `../skills/work-management.md`, and
+the repository instructions. Load this reference for the Worker stage after
+a numbered FD is Open, or when
 returning from a failed review. A user may limit work to one item; otherwise
 continue through all ready items in dependency order. A normal FD implementation
 request includes the shared contract's default local lifecycle; a separate
@@ -21,6 +17,10 @@ the FD, approved Issue evidence when present, relevant stable specs, code,
 tests, and workspace rules. Read a linked OpenSpec change only when it exists
 and affects the work. For an existing legacy AIW Task, continue under its
 original Task and Core contract; do not silently convert it.
+
+For an explicitly selected primary workspace without a Worker handoff, use the
+managed status/review route in the fd-workflow entry; do not fabricate a claim
+or emit implementation-ready without a claimed Worker event.
 
 Before each item, check its outcome, dependencies, acceptance, and unresolved
 `%%` notes. Use the FD's recorded workspace, isolated by default unless the
@@ -74,26 +74,12 @@ It emits `changes-requested` with findings or `verification-passed` with its
 review report. A failed review returns to Worker; continue from the same FD.
 Do not claim verification passed because Worker checked the FD box.
 
-## Continue after review
+## Return to the lifecycle
 
-The host PM continues through `fd-workflow`'s delivery and close procedure when
-the full FD scope and current independent pass satisfy the shared contract's
-gates. Do not proactively sync the parent; attempt reviewed delivery directly.
-If it fails, follow fd-workflow recovery: diagnose before any sync, load
-`resolving-merge-conflicts` for one bounded attempt at clearly supported
-resolutions, preserve unresolved conflicts, and obtain a new independent review
-when recovery changes implementation beyond the current pass. Verify the
-recorded coordinates, clean workspaces, current FD digest,
-and no implementation drift or unresolved blocker. Automatically local-merge,
-use verified CLI cleanup, close Complete, and commit the archive/index changes.
-For an explicitly selected primary workspace, skip worktree merge and follow
-the managed review/archive path instead. Do not ask for another auto command.
-
-An explicit stage limit ends at that stage; a partial FD does not qualify for
-delivery. A dispatched Worker only emits its assigned handoff and the host PM
-owns continuation. Do not take over a runner or foreign claim. A failed gate,
-unresolved merge conflict, or delivery/cleanup/archive error stops the affected
-step with state and blocker feedback preserved. The bounded conflict Skill
-attempt does not authorize guessing, gate bypasses or unchanged retries.
-This continuation grants no tests, builds, network, push, release, or deployment.
-
+After the assigned implementation output is saved, return control to the host
+PM. The fd-workflow entry owns independent review, repair, delivery, conflict
+recovery and archive. This reference is not another Skill invocation and does
+not call an implementation entry. A Worker-only assignment ends at its handoff;
+an explicit implementation-only or partial-scope limit ends before any
+unauthorized next-role event. The normal full-FD request continues through the
+entry's lifecycle without another auto confirmation.

@@ -1,0 +1,19 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-065",
+  "source_event": "FD-065-000006-implementation-ready",
+  "human_report": "FD-065-review-r2.md",
+  "data": {
+    "session": "fd065-reviewer-20261017-r2-47bd",
+    "diff_base": "d9650be",
+    "reviewed_commit": "cef9b780ef1af41261003065063fb674168bab45",
+    "outcome": "verification-passed",
+    "findings": [],
+    "resolved_findings": ["R1"],
+    "results": ["Entry declares shared dependency recognized by unchanged installer", "Source/project entry identical", "Canonical/project shared contract SHA-256 matches", "Implementation reference resolves to installed dependency", "No new skill entry or installer change", "Other acceptance evidence retained from r1"],
+    "commands": ["Static event/report/diff reads", "aiw fd claim FD-065 FD-065-000006-implementation-ready --session fd065-reviewer-20261017-r2-47bd", "One focused static batch: read-only Python comparisons/path and hash checks, git diff/rev-parse, installer and contract reads"],
+    "skipped": ["tests", "compile: docs only", "builds", "lint", "formatters", "validation scripts", "installation sync", "network", "host behavior evaluation"],
+    "residual_risk": "Installation and host behavior were traced statically, not executed."
+  }
+}

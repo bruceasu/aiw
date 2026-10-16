@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-065",
+  "source_event": "FD-065-000004-implementation-ready",
+  "human_report": "FD-065-review-r1.md",
+  "data": {
+    "session": "fd065-reviewer-20261017-94ac",
+    "diff_base": "a88b62d",
+    "reviewed_commit": "d9650bea752a1df9bdff596fad1ae12d8d997c58",
+    "outcome": "changes-requested",
+    "findings": [{
+      "id": "R1",
+      "severity": "medium",
+      "path": "src/skills/fd-workflow/references/implementation.md",
+      "line": 3,
+      "problem": "The required reviewed-skill-contract is neither declared in entry SKILL.md nor materialized in the project copy. Installer scans only entry text for shared dependencies.",
+      "correction": "Declare skills/reviewed-skill-contract.md in fd-workflow/SKILL.md, sync entry and add its generated project shared copy."
+    }],
+    "results": ["8 source/project pairs match", "6 retired files absent", "Manifest only drops implement", "Stage limits and full-scope handoff remain", "Implementation reference is not a discoverable skill"],
+    "commands": ["Static reads and git diff a88b62d d9650be", "aiw fd claim FD-065 FD-065-000004-implementation-ready --session fd065-reviewer-20261017-94ac", "One bounded static batch: read-only Python, rg, git status, git rev-parse"],
+    "skipped": ["tests", "compile: docs only", "builds", "lint", "formatters", "validation scripts", "installation sync", "network", "host behavior evaluation"],
+    "residual_risk": "Runtime installation and host behavior were not observed. Required shared dependency must be restored before pass."
+  }
+}
