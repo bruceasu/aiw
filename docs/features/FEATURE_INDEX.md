@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-063](FD-063_AUTOMATICALLY_DELIVER_AND_ARCHIVE_REVIEWED_FD_IM.md) | 默认自动交付并归档符合条件的 FD 实现 | Open | Medium |
 
 ## Completed
 
