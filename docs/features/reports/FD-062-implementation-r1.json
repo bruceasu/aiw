@@ -1,0 +1,19 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-062",
+  "source_event": "FD-062-000003-design-ready",
+  "human_report": "FD-062-implementation-r1.md",
+  "data": {
+    "summary": "Turn writing-great-skills into a practical authoring workflow with scoped platform guidance and optional evidence-based evaluation.",
+    "worker_session": "fd062-worker-20261017-c5a9",
+    "implementation_commits": ["fb1b042", "66bab18"],
+    "changed_paths": ["src/skills/writing-great-skills", ".agents/skills/writing-great-skills", "src/skills/README.md"],
+    "commands": [
+      {"command": "git diff --stat develop -- scoped source/project skills and README; git diff develop -- UI and README; Get-Content final entry; Select-String Markdown links; git status --short", "result": "One scoped static review completed"},
+      {"command": "Get-FileHash on eight source/project skill pairs and two canonical/materialized shared contracts", "result": "All ten comparisons true"}
+    ],
+    "results": {"static_review": "completed", "compile_only": "not applicable to Markdown/YAML-only change", "tests": "not run", "evaluation": "not run", "final_build": "not run", "network": "not used in implementation", "independent_review": "pending"},
+    "residual_risk": ["No runtime trigger, task quality, or cost evidence", "Claude-specific host behavior not executed", "Upstream revisions not pinned; dated provenance records limits", "User-level installation not updated", "Changes pending review and delivery in dedicated worktree"]
+  }
+}

@@ -50,7 +50,8 @@ CLI 负责发现、安装和同步 Skill。Skill 名称不是 CLI 子命令。
 - `resolving-merge-conflicts`：处理进行中的 Git merge/rebase 冲突。
 - `setup-project`：提议并配置 AIW 工程约定和 Agent 指令；写入前展示变更并等待确认。
 - `edit-article`、`teach`：编辑文章或循序渐进地讲解技术内容。
-- `writing-great-skills`：编写和改进 Skill 的参考规范。
+- `writing-great-skills`：创建、改进、只读审查和适配 Skill；按需读取
+  通用原则、Codex/Claude 平台参考与可选效果评估，区分静态证据和实际效果。
 - `github-issues-management`：通过 AIW GitHub 集成管理 GitHub Issues。
 - `publish-github-issue`：仅在用户明确要求时发布 GitHub Issue。
 

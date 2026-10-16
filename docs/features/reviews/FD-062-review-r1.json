@@ -1,0 +1,34 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-062",
+  "source_event": "FD-062-000004-implementation-ready",
+  "human_report": "FD-062-review-r1.md",
+  "data": {
+    "reviewer_session": "fd062-reviewer-20261017-independent-r1",
+    "reviewed_base": "85643f8",
+    "reviewed_head": "f3ac440",
+    "implementation_commits": ["fb1b042", "66bab18"],
+    "outcome": "passed",
+    "findings": [],
+    "results": {
+      "acceptance": "All six FD acceptance areas supported by static evidence",
+      "skill_copy_comparisons": "8 of 8 equal",
+      "shared_contract_comparisons": "2 of 2 equal and installed references exist",
+      "invocation_policy": "name, disable-model-invocation, allow_implicit_invocation preserved",
+      "platform_and_loading": "Five references have loading conditions; Codex and Claude separated; native creator optional",
+      "evidence_boundaries": "Structure, behavior and comparative outcomes separated; execution requires authorization",
+      "provenance": "Dated sources and unpinned upstream limitation recorded"
+    },
+    "commands": [
+      "Get-Content/Get-ChildItem/rg for local rules, event, final files and relevant references",
+      "git status --short; git log -4 --oneline; git diff --stat 85643f8..f3ac440; scoped README/UI diff; git show baseline entry header",
+      "Get-FileHash on eight source/project pairs and two canonical/installed shared contract pairs",
+      "aiw fd --help; aiw fd claim FD-062 FD-062-000004-implementation-ready --session fd062-reviewer-20261017-independent-r1; aiw fd emit --help"
+    ],
+    "command_limitations": ["One rg candidate path src/internal/skills did not exist; not retried"],
+    "skipped": ["tests", "compile: no Markdown/YAML target", "validation scripts", "effect evaluation", "installation", "network", "downloads", "builds", "formatter/linter/vet"],
+    "residual_risk": ["Runtime trigger accuracy, output quality and cost unknown", "Claude host behavior not executed", "Upstream versions not pinned", "User-level installation unchanged"],
+    "next_event": "verification-passed"
+  }
+}
