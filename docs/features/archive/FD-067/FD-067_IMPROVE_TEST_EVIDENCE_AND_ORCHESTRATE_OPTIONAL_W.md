@@ -71,7 +71,7 @@ explicitly cancelled item, with its reason on the same line.
 ## TODO
 
 - [x] 完成 1.1–1.4、报告和独立评审。
-- [ ] 正常本地交付与归档。
+- [x] 正常本地交付与归档。
 
 ## Sources
 
@@ -81,3 +81,14 @@ explicitly cancelled item, with its reason on the same line.
 - src/skills/tdd/、src/skills/fd-test/、src/skills/fd-workflow/、src/skills/fd-review/。
 - src/skills/work-management.md、docs/templates/FD_TEST_REPORT*、openspec/specs/fd-workflow/spec.md。
 - FD-039 历史隔离决定由本 FD 在显式测试证据反馈范围内调整，历史文件不改。
+
+## Delivery record
+
+- 独立评审：FD-067-000005-verification-passed，Reviewer session fd067-reviewer-20261017-c47e；评审实现 2fbcf6d，证据提交 41440248639e0a0f14abfad7f853c9a68c5911f5。
+- 交付前 FD revision 5，SHA256 174d24949cbfd9e43809b837f165e715ca6ab15be4ed13b8863971c4582a5fb6，与通过事件一致；父与 FD 工作区干净，评审后只有 FD/index/评审证据变化。
+- 直接 local-merge 成功，无主动 sync、无合并冲突；develop squash 提交 5c37728，FD-Source 为上述证据提交。
+- CLI 校验后删除 feature/FD-067 和 .wt/FD-067，保留 receipts；完整输出位于 .ai/fd/FD-067/local-merge.log。
+- aiw fd close FD-067 Complete 成功。归档后才补写本段与交付 TODO，未提前改变通过事件绑定的正文。
+- compile-only 通过及独立静态审查通过；未执行测试、安装/sync、覆盖率、网络、最终构建或宿主行为评估。便携操作概述的一处旧用语为非阻塞维护建议，见归档评审报告。
+
+**Completed:** 2026-10-16
