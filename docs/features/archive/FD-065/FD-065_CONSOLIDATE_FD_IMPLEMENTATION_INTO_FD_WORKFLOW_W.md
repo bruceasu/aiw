@@ -37,7 +37,7 @@ fd-workflow 统一设计、实现、审查和交付的宿主入口，实现阶�
 
 ## TODO
 
-- 实现及 r1 共享依赖修复完成，等待独立复核；通过后宿主自动本地交付并归档。
+- 实现及共享依赖修复完成，独立审查 r2 通过；已合并到 develop（57cc918），CLI 清理分支与 worktree，宿主完成 close 归档并提交归档记录。
 
 ## Verification
 
@@ -47,9 +47,16 @@ fd-workflow 统一设计、实现、审查和交付的宿主入口，实现阶�
 
 - 纯 Markdown/YAML/JSON 元数据变更，无适用编译目标。一次静态检查最终 diff、当前引用、六个旧文件删除、项目副本与索引、范围限制；不运行测试、安装、构建、验证脚本或网络。
 
+## Delivery record
+
+- 2026-10-17，独立复核事件 FD-065-000007-verification-passed，FD revision/digest 与交付前文件一致；r1 共享依赖问题已解决，历史报告保留。
+- 源 HEAD 为 b9d8f95ab5f26caf3573bb2b400eb0a54d0c6098，父分支 develop 的 squash 为 57cc918；审查后仅提交审查证据、FD 和索引，没有实现漂移。
+- 实际执行 aiw git wt local-merge FD-065，成功交付并清理 feature/FD-065、.wt/FD-065 和 workspace 记录；随后 aiw fd close FD-065 Complete 归档。本次未执行 sync 或实际冲突恢复。
+- 未运行编译（无适用目标）、测试、构建、格式化、lint、验证脚本、安装或网络。当前源码/项目已无旧入口；用户级全局安装未改，宿主目录刷新及安装效果未作运行验证。
+
 ## Sources
 
-- r1 发现实现参考的共享契约未在入口声明，已补齐入口声明和项目物化副本；修复证据 reports/FD-065-implementation-r2.md 及同名 JSON，等待独立复核。未重复运行 Worker 验证命令。
+- r1 发现实现参考的共享契约未在入口声明，已补齐入口声明和项目物化副本；修复证据 reports/FD-065-implementation-r2.md 及同名 JSON，独立复核已通过。未重复运行 Worker 验证命令。
 
 - 实现证据：reports/FD-065-implementation-r1.md 及同名 JSON；一次静态检查确认八组副本一致、六个旧文件已删除、当前引用与索引无旧入口。尚未运行实际安装或宿主行为评估。
 
@@ -58,3 +65,5 @@ fd-workflow 统一设计、实现、审查和交付的宿主入口，实现阶�
 - 用户明确同意整合 implement，且不保留薄入口。
 - src/skills/implement、fd-workflow、ask-asu、issue-management、setup-project、tdd 与 README。
 - openspec/specs/fd-workflow/spec.md、src/skills/work-management.md；FD-063/064 已完成的默认交付和冲突恢复约定。
+
+**Completed:** 2026-10-16
