@@ -39,7 +39,7 @@
 
 ## TODO
 
-- 实施与双格式报告已记录；新增共享契约引用已从源技能及项目副本移除，独立 r2 审查通过。尚未交付合并或归档。
+- 实施与双格式报告已记录，文档引用修复经独立 r2 审查通过；已 squash 交付至 develop（05ba46a）并归档 Complete，专用 worktree 和 feature/FD-060 分支已清理。
 
 ## Verification
 
@@ -52,6 +52,9 @@
 - 剩余风险：真实模型追问质量未运行验证；可选方法占用剩余上下文；已安装 CLI 和用户级技能未更新。
 - 修复证据：reports/FD-060-implementation-r2.md 与同名 JSON；修复提交 `b7f375f` 不修改 Go，沿用原编译证据。
 - 最新独立审查通过：reviews/FD-060-review-r2.md 与同名 JSON，Reviewer `fd060-reviewer-r2-20261017`，来源 `FD-060-000007-review-requested`，HEAD `e60a5e7`。本轮仅复核文档修复与 r2 证据，r1 晚发现原因已解除；其余代码沿用先前审查，未重复运行检查。r1 报告与旧 pass 保留为历史。
+- Auto 收尾：复核 FD Revision 8 的摘要与最新事件 FD-060-000008-verification-passed 一致，审查后仅有审查和流程记录变更；双方工作区干净，无未解决的 blocker 反馈文件。共两轮独立审查，r2 为最终通过依据。
+- 实际执行 `aiw git wt local-merge FD-060` 与 `aiw fd close FD-060 Complete` 均成功。交付提交 05ba46a 的 FD-Source 为 e4b1167bbabecf8977f972c409343eeb0dc75e59；CLI 校验交付后清理 worktree 和分支，保留收据。
+- 本轮未重复运行编译、测试、构建或网络操作；已安装 CLI、用户级技能和真实模型追问效果的剩余风险保持不变。
 
 ## Sources
 
@@ -61,3 +64,5 @@
 - src/skills/issue-management/SKILL.md、src/skills/grill-with-docs/SKILL.md。
 - src/internal/issue/context_methods.go、context.go、context_sources.go、conversation.go。
 - openspec/specs/requirement/spec.md；FD-059 归档保持不变。
+
+**Completed:** 2026-10-16
