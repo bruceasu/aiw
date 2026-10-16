@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-072](FD-072_RENAME_RELEASE_GATE_AND_CLARIFY_RELEASE_ASSESSME.md) | Rename release gate and clarify release assessment evidence | Open | Medium |
 
 ## Completed
 
