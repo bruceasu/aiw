@@ -18,7 +18,7 @@ tracker or duplicate Issue/FD lifecycle rules.
    loads `references/implementation.md` as needed. Follow
    `skills/work-management.md` for role handoffs, state, and evidence.
 
-An Issue may link to an FD. A Task is not required for a new FD. Create an
+An approved Issue may link to its numbered FD. Create an
 OpenSpec change only when the user explicitly requests one; stable capability
 specifications belong in `openspec/specs/`.
 

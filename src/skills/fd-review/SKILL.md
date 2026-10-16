@@ -5,7 +5,8 @@ description: Independently review a numbered FD implementation and hand findings
 
 # FD Review
 
-Read `skills/work-management.md` and the repository instructions. Use this
+Read `skills/work-management.md`, the repository instructions, and only
+Implementation review in `skills/workflow-methods.md`. Use this
 Skill when an FD is Pending Verification or the user explicitly requests an
 independent review. The Reviewer must use a separate session from the Worker
 that wrote the code. Do not implement new scope during review.
@@ -13,7 +14,13 @@ that wrote the code. Do not implement new scope during review.
 Read the FD, Issue evidence when present, relevant stable specs, the Worker's
 implementation report, and the exact diff or commits under review. Check
 correctness, acceptance coverage, compatibility, unexpected files, and the
-truth of each reported verification result. Run no test or final build unless
+truth of each reported verification result. This includes actual code logic,
+affected call paths and failure behavior, not only delivered documents. Apply
+the shared Correctness, Standards, Spec and Evidence dimensions; report hard
+violations separately from smell heuristics. For docs/config-only work, review
+those actual contracts. Do not invoke code-review or spawn its two-axis agents
+inside this FD review: one independent Reviewer owns the combined FD verdict.
+The shared method grants no extra review rounds. Run no test or final build unless
 the repository authorization rules permit it. An unrun check is not passed.
 Use the FD's latest recorded human decisions when judging required evidence.
 If a check was explicitly waived, assess the remaining behavior using the

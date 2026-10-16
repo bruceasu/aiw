@@ -6,7 +6,9 @@ description: Create or refine a numbered FD, or run its implementation through i
 # Feature Design Workflow
 
 Read `skills/reviewed-skill-contract.md`, `skills/work-management.md`, and the
-repository instructions. Use this
+repository instructions. Declare `skills/workflow-methods.md` for the shared
+splitting, specification and review methods; read only the current stage's
+section. Use this
 Skill when the user wants to create, refine, review, or close a Feature Design.
 New engineering work is FD-first. OpenSpec supplements the FD with stable
 capability requirements when needed; it is not a second work plan. Use the
@@ -43,10 +45,13 @@ Use an explicit FD ID first, then a unique FD linked from the current Issue or
 conversation. Ask when several FDs match. For a new FD, use `aiw fd new
 "<title>" [--issue <id>]`; this allocates an unused `FD-XXX` number, creates
 the file from `docs/templates/TEMPLATE.md`, updates the index, and records a
-`design-requested` event. Do not create an AIW Task as a prerequisite or
-convert the FD into a Task workflow.
+`design-requested` event. The FD owns design and execution; do not create a
+second engineering plan or ticket-mapping stage.
 
 ## Design
+
+Planner owns this stage. Load `references/planning.md` for readiness,
+specification collaboration and conditional independent design review.
 
 Read the FD, approved Issue evidence when present, relevant code, prior FDs,
 and stable specs. Write the problem, credible options, decision and reason,
@@ -365,6 +370,18 @@ because the parent advanced without changing the reviewed FD implementation.
 `aiw fd close <id> Complete` and commits the archive/index separately. If only
 cleanup failed after a verified squash, follow the CLI cleanup recovery path;
 do not create another squash, revert delivery or call an unarchived FD done.
+
+## Local delivery versus release
+
+A current fd-review pass gates local delivery; its shared implementation
+review method includes actual source correctness, Standards, Spec and evidence.
+Do not additionally invoke standalone code-review or add its two reviewers to
+every FD. A planning design review is separate evidence, not that final pass.
+
+Local merge/archive is not release approval. Only when a real release is
+planned, route the release-readiness request and operational evidence to
+`finance-release-gate`. Its GO/GO_WITH_RISK/NO_GO assessment is outside normal
+FD local completion and never grants push, publishing or deployment authority.
 
 ## Close and archive
 

@@ -34,13 +34,13 @@ CLI 负责发现、安装和同步 Skill。Skill 名称不是 CLI 子命令。
 
 ### 实现、规格与审查
 
-- `fd-workflow/references/implementation.md`：由 Worker 阶段按需加载的实现方法，不作为独立 Skill 安装或调用；旧 AIW Task 按其现有记录继续。
+- `fd-workflow/references/implementation.md`：由 Worker 阶段按需加载的实现方法，不作为独立 Skill 安装或调用。
 - `fd-review`：独立审查编号 FD 的实现和证据。
 - `to-spec`：更新 OpenSpec 稳定规格；只有用户明确要求时才创建 change。
-- `to-tickets`：将 Issue 或设计拆为 AIW Task work items，可选 OpenSpec
-  change；新工作默认采用编号 FD 流程。
+- Issue 负责按业务结果拆子 Issue；Planner 负责拆 FD Work Items。
+  共同原则按需读取 `skills/workflow-methods.md`，不再有独立票据映射阶段。
 - `tdd`：在用户要求测试优先时采用 red-green-refactor。
-- `code-review`：按仓库标准和原始规格审查变更。
+- `code-review`：独立审查分支或 PR；与 `fd-review` 共享实现审查方法，普通 FD 不重复启动两套审查。
 - `finance-release-gate`：跨领域评估已实现变更的上线准备情况。
 
 ### 会话、维护与集成
@@ -81,7 +81,7 @@ issue-management（需要澄清或批准时）
   -> PM：local-merge、归档与清理（条件满足时自动继续）
 ```
 
-可以直接为明确请求创建 FD；新 FD 不要求先创建 AIW Task。FD 是
+可以直接为明确请求创建 FD。FD 是
 `docs/features/FD-XXX_SLUG.md` 中的权威计划，包含决策、Work Items、状态
 和 Verification。`docs/features/FEATURE_INDEX.md` 仅作索引；`.ai/fd/<id>/`
 存放 AIW 生成的交接收据和日志。
@@ -92,7 +92,7 @@ issue-management（需要澄清或批准时）
 步骤并保留现场。该默认不授权测试、构建、网络、push 或部署。
 
 OpenSpec 管理稳定能力规格。仅当用户明确要求时创建 OpenSpec change。
-既有 AIW Task 和 Core 状态仍按原记录继续，不要为了迁移改写其历史。
+FD 是唯一工程计划，历史 FD 和审查证据保留；当前技能不再使用旧 Task 流程。
 
 ### 其他入口
 
@@ -100,7 +100,16 @@ OpenSpec 管理稳定能力规格。仅当用户明确要求时创建 OpenSpec c
 - 仅需诊断故障：`diagnosing-bugs`；需要改动时再进入 Issue/FD 流程。
 - 各领域 Issue：使用 `issue-management`，由它按当前缺口选择内部
   references；共享 `grill-with-docs` 和发布评估保持独立。
-- 用户明确要求 OpenSpec change：`to-spec`，再按需要使用 `to-tickets`。
+- 用户明确要求 OpenSpec change：`to-spec`；FD 仍拥有工程执行清单。
+
+Planner 负责设计方案、验收和工程拆分，按能力规则变化加载共享规格方法。
+重要设计或用户要求时，按 `fd-workflow/references/planning.md` 进行独立设计反馈；
+它不替代实现后的 `fd-review`。简单改动不固定增加设计审查轮次。
+
+`fd-review` 检查真实代码/配置、正确性、Standards、Spec 和证据，独立生成
+FD 验收结论。共享方法不自动启动额外 Agent、测试或完整 `code-review`。
+`finance-release-gate` 仅在计划发布时检查运维准备；本地合并和归档不是发布，
+GO 也不授权部署。
 
 Skill 不会因为出现在工作流中就自动获得额外授权。实现、审查、测试、
 发布和工作流状态操作仍受仓库指令及各 Skill 边界约束。

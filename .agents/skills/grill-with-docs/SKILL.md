@@ -41,9 +41,9 @@ Markdown template. Do not treat proposed answers as confirmed conclusions.
 
 ## Engineering mode
 
-When an FD or legacy Task and engineering design already exist, use the same interview to
+When an FD and engineering design already exist, use the same interview to
 sharpen an explicit design decision. With user confirmation, record durable
-engineering terminology or decisions in the FD/legacy Task/OpenSpec-owned location.
+engineering terminology or decisions in the FD/OpenSpec-owned location.
 
 ## Output
 

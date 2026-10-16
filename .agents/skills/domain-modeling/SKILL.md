@@ -7,7 +7,7 @@ description: Build and sharpen a project's domain model. Use when the user wants
 
 Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
 Return agreed vocabulary and decisions; stable file changes require explicit
-scope and must remain attached to the current Task/change when applicable.
+scope and must remain attached to the current FD/change when applicable.
 
 Actively build and sharpen the project's domain model as you design. This is the *active* discipline — challenging terms, inventing edge-case scenarios, and writing the glossary and decisions down the moment they crystallise. (Merely *reading* `CONTEXT.md` for vocabulary is not this skill — that's a one-line habit any skill can do. This skill is for when you're changing the model, not just consuming it.)
 
@@ -19,7 +19,7 @@ and questions; only host-confirmed fragments are confirmed facts. Follow the
 current call's output contract instead of creating a glossary or ADR.
 Do not write CONTEXT.md, ADRs, engineering files, or Session records, and do not
 load linked format files or scan code in this mode. The engineering file rules
-below apply only outside Requirement mode with an explicitly scoped Task.
+below apply only outside Requirement mode with an explicitly scoped FD.
 
 ## File structure
 

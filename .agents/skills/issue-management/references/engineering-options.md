@@ -11,7 +11,7 @@ Produce `Engineering Options` for a requirement: alternatives, constraints, depe
 ## Do not use when
 
 - The request is still feature-centred or lacks a decision flow; route to [intake](intake.md).
-- The user asks for code review, implementation, schema migration, Task creation, final OpenSpec design, or release approval.
+- The user asks for code review, implementation, schema migration, implementation planning, final OpenSpec design, or release approval.
 
 ## Inputs
 

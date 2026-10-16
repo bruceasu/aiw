@@ -1,0 +1,19 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-066",
+  "source_event": "FD-066-000004-implementation-ready",
+  "human_report": "FD-066-review-r1.md",
+  "data": {
+    "session": "fd066-reviewer-20261017-a918",
+    "base": "cf6163f",
+    "reviewed_commit": "99e8ef4ab0f84d1b488d58a8a9a2cb7cd0c52240",
+    "outcome": "passed",
+    "findings": [],
+    "dimensions": {"correctness": "supported statically", "standards": "supported statically", "spec": "supported statically", "evidence": "limits stated truthfully"},
+    "commands": ["Targeted Get-Content and rg reads", "git diff cf6163f 99e8ef4 for canonical implementation, installer, root rules and stable specs", "Read-only Python byte comparison: 26 source/project files and 29/22/5 shared copies", "aiw fd claim FD-066 FD-066-000004-implementation-ready --session fd066-reviewer-20261017-a918", "aiw fd emit FD-066 verification-passed --producer reviewer --artifact docs/features/reviews/FD-066-review-r1.md --source-event FD-066-000004-implementation-ready"],
+    "results": ["No material findings", "Five consumers declare and possess shared resources", "Shared copies match canonical files", "Legacy ticket entry/index removed without CLI/history removal", "Design feedback, implementation verdict and release authority remain distinct"],
+    "skipped": ["compile rerun", "tests", "builds", "formatters", "linters", "validation scripts", "installer execution", "network", "host behavior evaluation"],
+    "residual_risk": "Installation and host stage behavior are statically traced only; user-level installations and legacy CLI remain outside scope. Initial new-resource read used parent path and was corrected to FD worktree."
+  }
+}

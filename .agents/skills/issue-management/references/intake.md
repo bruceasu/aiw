@@ -2,7 +2,7 @@
 
 Internal Issue discussion method. Load this reference only for the current discussion gap. Apply domain-specific rules only when relevant to the supplied evidence.
 
-Turn a raw request into a decision-centred `Problem Brief`. This is a requirement-discussion method, not an AIW Task or OpenSpec workflow.
+Turn a raw request into a decision-centred `Problem Brief`. This is a requirement-discussion method, not an FD implementation or OpenSpec change workflow.
 
 ## Use when
 
@@ -12,7 +12,7 @@ Turn a raw request into a decision-centred `Problem Brief`. This is a requiremen
 ## Do not use when
 
 - A clear Problem Brief already exists; route to [value-assessment](value-assessment.md), [metric-brief](metric-brief.md), or [engineering-options](engineering-options.md) according to the gap.
-- The user asks to create a Task, proposal, design, code, schema, branch, or worktree.
+- The user asks to create an FD implementation plan, proposal, design, code, schema, branch, or worktree.
 
 ## Inputs
 

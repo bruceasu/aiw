@@ -1,0 +1,36 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-066",
+  "source_event": "FD-066-000003-design-ready",
+  "human_report": "FD-066-implementation-r1.md",
+  "data": {
+    "session": "fd066-worker-20261017-b391",
+    "implementation_commit": "699014490aed1a49ea1595d5ee9542586e965a95",
+    "summary": "Unify Issue business splitting, Planner design/spec readiness, shared implementation review and independent release assessment; retire legacy ticket Skill/current Task instructions.",
+    "commands": [
+      "Python compile(source, filename, exec) on installer only, without executing it or emitting artifacts",
+      "One static batch: installer diff, 25 source/project comparisons, 29/22/5 shared copies, five entry declarations, retired files/index and legacy-term scan",
+      "FD new/claim/emit, worktree add and scoped Git commits"
+    ],
+    "results": [
+      "Installer compile-only passed",
+      "25 skill pairs match",
+      "29 work-management, 22 reviewed-contract and 5 workflow-method copies match",
+      "Five consumers declare and possess the shared method",
+      "Ticket Skill/source/project and index entry removed",
+      "No remaining legacy Task operation instructions in current skill scan"
+    ],
+    "skipped": [
+      "tests",
+      "final builds",
+      "formatters",
+      "linters",
+      "validation scripts",
+      "installation sync",
+      "network",
+      "runtime design/review behavior evaluation"
+    ],
+    "residual_risk": "Host workflow and installation not exercised; user-level installations, historical evidence and old CLI implementations remain unchanged by scope."
+  }
+}

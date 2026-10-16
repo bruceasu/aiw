@@ -5,14 +5,12 @@ Write document in Easy English if occure encoding problem with Chinese.
 ## FD Workflow
 
 Before coding, read the selected numbered FD and its Work Items, the approved
-Issue when present, and relevant stable specs under `openspec/specs/`. For a
-legacy AIW Task, also read its Task record and linked FD.
+Issue when present, and relevant stable specs under `openspec/specs/`.
 Read a linked OpenSpec change only when one exists and affects the work:
 
 - `openspec/changes/<id>/`
 
-The numbered FD is the primary plan for new work. A new FD does not require
-An OpenSpec change is optional.
+The numbered FD is the primary plan for new work. An OpenSpec change is optional.
 
 - Work on one FD at a time.
 - Keep changes scoped and reviewable.
@@ -31,8 +29,7 @@ Before implementing any numbered FD, use its dedicated branch and worktree:
 Commit the ready FD plan on the parent branch and ensure the parent workspace
 is clean before using `aiw git wt add <fd-id>`. Keep the parent clean
 while the FD is in flight when possible; a dirty parent blocks merge until it
-is clean again. Do not mix unrelated changes into the FD plan commit. Legacy
-Tasks keep their existing `feature/<task-id>` and `.wt/<task-id>` conventions.
+is clean again. Do not mix unrelated changes into the FD plan commit.
 
 A request to implement a numbered FD includes its normal local lifecycle:
 focused plan/implementation commits, independent review, squash delivery to

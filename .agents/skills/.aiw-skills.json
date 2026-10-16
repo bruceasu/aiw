@@ -229,12 +229,6 @@
       "source_identity": "D:\\green\\aiw\\skills\\to-spec",
       "source_revision": null
     },
-    "to-tickets": {
-      "mode": "copy",
-      "sha256": "b4ef1b8d177e12b4ed84106d37619334adc5665a91567995c7c263f32b766d5d",
-      "source_identity": "D:\\green\\aiw\\skills\\to-tickets",
-      "source_revision": null
-    },
     "triage": {
       "mode": "copy",
       "sha256": "f76a8c7e234b5edff048bec7f494c58ac90a6f7437e32816737e1d60082d062b",

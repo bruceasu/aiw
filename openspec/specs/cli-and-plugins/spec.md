@@ -251,3 +251,14 @@ Plugin help listings MUST use manifest names and descriptions. `aiw help <name>`
 
 - **WHEN** a manifest is malformed, contains duplicate names or an unsupported startup mode, or resolves an entrypoint outside its package
 - **THEN** AIW reports the manifest path and configuration error instead of silently applying legacy scanning
+
+### Requirement: Materialize stage-specific shared Skill methods
+
+Skill installation and synchronization MUST materialize the canonical
+skills/workflow-methods.md beside an installed Skill when that entry SKILL.md
+declares the reference, using the existing shared-resource copy mechanism.
+Independently installed fd-workflow, issue-management, to-spec, fd-review and
+code-review MUST not require a sibling Skill directory to read those methods.
+This resource MUST NOT be discovered as a standalone Skill or imply execution
+of a sibling Skill. Existing scopes, CLI arguments and other resource handling
+remain unchanged.

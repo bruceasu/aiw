@@ -7,8 +7,10 @@ should reference `skills/work-management.md` in its `SKILL.md` and keep its
 own instructions focused on its domain. Do not copy lifecycle rules into each
 Skill. `aiw skills install` and `sync` materialize this file beside the Skill
 when that reference is present; treat the installed copy as generated output.
-The same applies to `skills/reviewed-skill-contract.md`, so user-level
-installations remain usable outside the AIW repository.
+The same applies to `skills/reviewed-skill-contract.md` and the stage-specific
+sections of `skills/workflow-methods.md`, so independently installed Skills
+remain usable outside the AIW repository. Declare every needed shared resource
+in the entry SKILL.md; references alone are not scanned by the installer.
 
 ## New FD workflow
 
@@ -18,7 +20,7 @@ installations remain usable outside the AIW repository.
   for design, Work Items, status, Verification, and unresolved `%%` notes.
 - `docs/features/FEATURE_INDEX.md` is an index. Rebuild it from FD files; do
   not treat it as a second state owner.
-- An Issue may link to an FD. An AIW Task is not required for a new FD.
+- An approved Issue may link to its numbered FD; the FD is the engineering plan.
 - `aiw fd` is the FD command surface. Read `aiw fd --help` before an unfamiliar
   or mutating operation. `aiw fd emit` records an explicit handoff; ordinary
   file saves and Git commits do not dispatch roles.
@@ -73,6 +75,27 @@ installations remain usable outside the AIW repository.
   before deciding how to recover it.
 - OpenSpec owns stable capability specs in `openspec/specs/`. Create an
   OpenSpec change only when the user explicitly asks for one.
+
+## Stage methods and ownership
+
+Issue owns business scope and child approval; Planner owns the sole FD design
+and engineering Work Items. Use only the current stage's section of
+`skills/workflow-methods.md`, not a second checklist or ticket mapping.
+Planner loads fd-workflow's planning reference, collaborates on stable specs
+only when settled capability rules change, and obtains conditional independent
+design feedback for material design decisions. Design evidence does not emit
+implementation verification events. A design-ready gate still requires all
+material decisions resolved. No standalone legacy ticket stage remains.
+
+fd-review owns the current FD's independent implementation verdict, reviewing
+actual code/contracts, Standards, Spec and evidence with the shared method.
+Standalone code-review uses the same method for branches/PRs without invoking
+FD lifecycle operations. Loading methods does not spawn extra agents or add
+review rounds. Do not run both full workflows for every FD.
+
+Local completion is distinct from release readiness. finance-release-gate
+assesses operational evidence only for a planned release; GO is not deployment
+permission and the release assessment is not a gate on ordinary local archive.
 
 ## Roles and handoffs
 
@@ -141,8 +164,7 @@ FD moves to its isolated worktree before implementation starts, so parallel FD
 work does not share writable files. A user may explicitly direct implementation
 in the primary workspace; treat that as an alternate workspace choice for that
 FD, not as an implicit change to the default. A question or design-only
-discussion does not start implementation and does not create a worktree. Legacy
-Tasks keep their existing Task worktree policy.
+discussion does not start implementation and does not create a worktree.
 
 For an explicitly authorized primary-workspace implementation, do not create a
 branch, worktree, or `.ai/fd/<fd-id>/workspace.json`. Do not claim or invent a
@@ -211,8 +233,7 @@ archive the FD; the host must separately close and commit the archive. Before Gi
 removes a worktree `.ai` junction, it verifies that the target is the primary
 workspace `.ai` and removes only the link itself. It preserves FD receipts; if
 a cleanup check or step fails, it reports the state and preserves resources
-not already safely removed. Do not create a Task to satisfy a Task-only
-command. Keep each FD's writing role in one workspace at a time and do not mix
+not already safely removed. Keep each FD's writing role in one workspace at a time and do not mix
 unrelated files into its commits.
 Commit each completed, independently reviewable Work Item before starting the
 next, staging only its files. Commit final FD evidence before handoff to

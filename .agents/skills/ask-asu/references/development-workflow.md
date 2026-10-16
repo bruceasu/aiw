@@ -16,8 +16,8 @@ runner, events remain pending and a Skill in the current host can continue.
 
 One numbered FD owns its authored progress. `.ai/fd/<id>/` holds event receipts
 and runner logs. `aiw fd resume` never starts a second writer for an event
-already marked dispatched or launching. New work does not need AIW Task or
-Workflow Core.
+already marked dispatched or launching. The numbered FD owns engineering
+planning and execution; do not introduce a separate ticket-mapping stage.
 
 OpenSpec stable specs remain relevant; a change directory is created only on
 explicit request.

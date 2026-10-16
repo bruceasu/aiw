@@ -65,8 +65,7 @@ conflicts are recovered in the FD worktree. The host loads
 their merge state. A changed recovered implementation needs current review
 before the host invokes a separate local-merge retry.
 Successful delivery validates the squash source and removes the FD worktree
-and branch while preserving `.ai/fd/` receipts. Never create a Task to satisfy
-a Task-only command. Archive only after delivery succeeds. Commit each completed
+and branch while preserving `.ai/fd/` receipts. Archive only after delivery succeeds. Commit each completed
 Work Item separately before the Reviewer handoff. Do not rebase either branch.
 
 ## Auto

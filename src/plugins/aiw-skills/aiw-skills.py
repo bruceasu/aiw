@@ -28,6 +28,7 @@ NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 SHARED_SKILL_REFERENCES = (
     "skills/reviewed-skill-contract.md",
     "skills/work-management.md",
+    "skills/workflow-methods.md",
 )
 MANAGED_SOURCE_IDENTITY = "<adopted-from-installed>"
 

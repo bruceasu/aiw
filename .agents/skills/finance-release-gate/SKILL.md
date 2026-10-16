@@ -7,7 +7,12 @@ description: Assess whether an implemented change in any domain is ready to rele
 
 Use this method across domains. The `finance-` skill ID is retained for compatibility; it does not restrict activation to finance. Apply domain-specific rules only when relevant to the supplied evidence.
 
-Evaluate release evidence for an implemented FD or legacy AIW Task and return a `Release Review`. This is a post-implementation release gate; it is outside the requirement-discussion chain.
+Evaluate release evidence for an implemented change (linked FD when present) and return a `Release Review`. This is a post-implementation release gate; it is outside the requirement-discussion chain.
+
+Local FD merge/archive is not a release. Do not require this method for every
+FD, call it from ordinary fd-review, or interpret GO as deployment permission.
+Use it only when a real release is planned and its operational evidence is
+available for assessment. Missing evidence is reported, not fabricated.
 
 ## Use when
 
@@ -32,8 +37,8 @@ Return `Release Review` with `GO`, `GO_WITH_RISK`, or `NO_GO`, clearly separatin
 ## Rules
 
 - Missing critical evidence yields `NO_GO`; do not infer procedures or owners.
-- Do not create or modify Task, OpenSpec, deployment, migration, rollback, or monitoring artifacts.
-- Refer missing requirement intent or metric semantics back to the appropriate Requirement Artifact; refer implementation gaps to the managed FD workflow (or legacy Task workflow).
+- Do not create or modify FD, OpenSpec, deployment, migration, rollback, or monitoring artifacts.
+- Refer missing requirement intent or metric semantics back to the appropriate Requirement Artifact; refer implementation gaps to the managed FD workflow.
 - Use `%%` for missing evidence and name the required next action and owner.
 
 ## Output
@@ -42,7 +47,7 @@ Return `Release Review` with `GO`, `GO_WITH_RISK`, or `NO_GO`, clearly separatin
 # Release Review
 
 ## Metadata
-- FD or Legacy Task ID: %% REQUIRED
+- FD ID or implemented change reference: %% REQUIRED
 - Release Window:
 - Decision: GO / GO_WITH_RISK / NO_GO
 

@@ -369,3 +369,18 @@ Session 证据 MUST 保留实际装载的方法、来源版本和缺失清单，
 
 %% 引用有效、JSON 合法和问题排序正确，不证明模型找全了业务缺口；专业质量仍需人工评审。
 
+
+### Requirement: Business splitting keeps one engineering handoff
+
+Issue discussion MUST assess size, difficulty and uncertainty before approval
+or FD handoff. Independently useful business outcomes MAY become child Issues
+with goals, scope/non-goals, acceptance, dependencies and parent lineage. Parent
+approval MUST NOT approve children. Each original outcome MUST belong once to
+child, retained or deferred scope; shared safety/release gates MUST be retained.
+Inseparable outcomes MAY remain one Issue with a stated reason.
+
+Issue Management MUST use only the splitting section of the installed shared
+workflow method. It MUST NOT invoke a legacy ticket mapper or write the FD's
+engineering execution checklist during Issue discovery. Planner owns that
+Work Item breakdown after a confirmed FD handoff. Splitting alone MUST NOT be
+treated as proof of low risk or readiness; missing acceptance remains a gate.

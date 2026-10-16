@@ -11,7 +11,7 @@ hand off one AIW Issue about a bug, feature, or modification. Its work ends at
 an Issue decision or FD handoff. For an existing Requirement, keep its `REQ`
 ID and artifacts; use `requirement-management` for compatibility details.
 Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`
-for authorization and Task lifecycle. Keep this Skill focused on Issue
+for authorization and the FD lifecycle. Keep this Skill focused on Issue
 decisions; the shared file owns lifecycle rules and the installer supplies its
 per-Skill copy from the canonical source.
 
@@ -97,7 +97,7 @@ assumptions, and remaining decisions.
    belongs to each child.
    Link each child to its parent with `aiw issue link-parent <child-id> <parent-id>`
    before child approval, and record the relationship in both
-   plans. Account for each outcome once across Issue, FD, and legacy Task handoffs.
+   plans. Account for each outcome once across parent/child Issues and FD handoffs.
 5. **Prepare a durable action.** Use the supported CLI to prepare a draft or
    action. In chat mode, show its target, summary, and write scope, then use
    the host's confirmation checkpoint for that action. Model output, a draft,
@@ -106,6 +106,11 @@ assumptions, and remaining decisions.
    do not accept it through repeated retries.
 
 ## Issue size and splitting
+
+Read only Splitting principles in `skills/workflow-methods.md` for shared
+outcome/lineage rules. This Issue stage owns child business outcomes; Planner
+owns engineering Work Items. Do not invoke a ticket-mapping Skill or build a
+second engineering checklist here.
 
 Assess scope size, expected difficulty, and uncertainty before seeking approval
 or handing an Issue to an FD. Record the assessment and the reason to keep or
@@ -146,15 +151,15 @@ it prevents a valid decision, report `BLOCKED` or `INCOMPLETE` and the precise
 After an Issue is approved, the new default handoff is a numbered FD. Use
 `aiw issue promote <id>` to create it from the Issue title, or use
 `aiw fd new "<title>" --issue <id>` directly. Both link the approved source
-and request Planner through the FD workflow. Promotion does not create a Task
-or update the legacy `[promotion]` metadata. Do not create an OpenSpec change
+and request Planner through the FD workflow. The FD is the sole engineering
+plan; promotion and approval remain distinct actions. Do not create an OpenSpec change
 unless the user explicitly asks for one; stable spec updates do not imply a
 change directory.
 Discovery alone does not authorize implementation or establish Design
 Readiness.
 
 For a post-handoff repair, preserve approved sources, approval and Session
-records, legacy Task state when present, and authored FD content. Replace only
+records and authored FD content. Replace only
 known generated placeholders. Mark unsupported details `%% NEEDS_INPUT`, and
 ask only about a material conflict or missing decision. Report repaired files
 and remaining blockers without repeating the handoff.

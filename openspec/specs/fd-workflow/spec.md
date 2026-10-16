@@ -757,3 +757,60 @@ Complete, Deferred, and Closed behavior remains unchanged without `--force`.
 - WHEN an operator force-emits a defined event from another defined FD status
 - THEN workflow preconditions are skipped but artifact and role structure remain valid
 - AND the new forced receipt is pending with an audit and no runner is launched
+
+### Requirement: Unified staged methods without legacy ticket planning
+
+Current host Skills MUST use the Issue for business scope/approval and the FD
+for the single engineering design, Work Items and execution plan. A standalone
+legacy ticket-mapping Skill MUST NOT be required or retained in canonical or
+project Skill catalogs. Retiring those instructions MUST NOT delete historical
+FD evidence, mutate user-level installations or claim removal of existing CLI
+implementations. Existing CLI compatibility specifications remain descriptive.
+
+Planner MUST use stage-specific planning guidance, compare credible options,
+map acceptance to small Work Items, resolve material prerequisites and load
+specification-writing methods only when settled capability rules change.
+Stable specs MUST distinguish proposed rules from implemented behavior. New
+OpenSpec changes require explicit requests; tasks.md MUST NOT be a second plan.
+A later material decision change MUST reconcile FD/specs/items before renewed
+implementation review. Discussion or design-only authority MUST NOT implement.
+
+Important interface/compatibility, persistence/migration, permission or
+concurrency design decisions, or an explicit human request, MUST receive
+bounded independent design feedback when progressing through authorized
+design. Unresolved findings MUST prevent design-ready. A missing independent
+agent MUST be reported as a required-design-review gate. Simple internal
+changes MAY omit that extra stage with a reason. Design feedback MUST NOT
+produce implementation verification events or grant runtime/high-risk authority.
+
+fd-review MUST inspect actual implementation and relevant call paths, covering
+Correctness, Standards, Spec and Evidence with the shared method. It MUST own
+the managed FD verdict without invoking standalone code-review or dispatching
+its two-axis agents for every FD. code-review MUST remain usable for independent
+branch/PR scope without changing FD state or implying release approval.
+Methods MUST NOT themselves grant agents, review rounds or runtime checks.
+
+A local FD pass/merge/archive MUST NOT require release gate execution. Only a
+planned release calls for finance-release-gate operational evidence assessment.
+Its GO/GO_WITH_RISK/NO_GO MUST NOT authorize deployment or publishing.
+
+#### Scenario: Large business request versus engineering work
+
+- WHEN an Issue combines independently acceptable business outcomes
+- THEN Issue Management prepares child scopes with lineage and separate approval
+- AND Planner later splits each ready FD into engineering Work Items without
+  a duplicate ticket or OpenSpec execution checklist.
+
+#### Scenario: Design feedback precedes implementation
+
+- WHEN an authorized design introduces material permission or data decisions
+- THEN a separate bounded design Reviewer provides findings and readiness evidence
+- AND Planner resolves material findings before design-ready, without emitting
+  an implementation verification-passed event from that design report.
+
+#### Scenario: Review and release remain separate
+
+- WHEN a complete FD passes independent implementation review
+- THEN the host may continue authorized local delivery/archive without running
+  a second standalone code-review or a release-readiness assessment
+- AND a later planned release is assessed against operational evidence separately.

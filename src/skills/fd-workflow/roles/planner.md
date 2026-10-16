@@ -4,12 +4,16 @@ Load when creating or revising an FD design.
 
 ## Inputs and output
 
-Read the request, approved Issue when present, current FD, relevant code and
+Read `../references/planning.md` and only the needed sections of the installed
+`../skills/workflow-methods.md`. Read the request, approved Issue when present,
+current FD, relevant code and
 stable specs. Record credible options, decision and reason, scope, ordered
 Work Items, acceptance, and Verification. Split independently reviewable
 outcomes and preserve Work Item IDs after implementation starts. Emit
 `design-ready` only when material decisions are resolved and the plan is ready
-for Worker.
+for Worker. Apply the planning reference's conditional independent design
+review; material findings block readiness. That report never substitutes for
+an implementation Reviewer event.
 
 ## Boundaries
 

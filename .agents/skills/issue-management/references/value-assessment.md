@@ -11,7 +11,7 @@ Assess the value claim behind a clear requirement and produce a `Business Case` 
 ## Do not use when
 
 - The decision flow is unclear; route to [intake](intake.md).
-- The request asks for metric definition, engineering design, Task creation, code, or release approval.
+- The request asks for metric definition, engineering design, implementation planning, code, or release approval.
 
 ## Inputs
 

@@ -28,8 +28,8 @@ The plan indexes available evidence, separates facts from assumptions, identifie
 
 - Do not claim missing sibling discussions were performed. A mode may only summarize supplied artifacts or discuss the requested scope.
 - Do not load other methods automatically.
-- Do not create a Task, OpenSpec change, implementation checklist, branch, worktree, or release decision. After user confirmation, AIW Issue Management (or legacy Requirement Management) may capture this artifact; this method must not invoke capture.
-- Release status is always `NOT_STARTED` until an implemented FD or legacy AIW Task reaches the separate release stage.
+- Do not create an engineering checklist, OpenSpec change, branch, worktree or release decision. After confirmation, return the decision to Issue Management for FD handoff.
+- Release status is always `NOT_STARTED` until an implemented FD reaches the separate release stage.
 - `READY_FOR_HUMAN_DECISION` is not engineering readiness. Use `%%` for all unresolved gates.
 - Include goals, explicit non-goals, key rules, and verifiable acceptance
   examples, with sources. Empty headings do not establish completeness.
@@ -81,5 +81,5 @@ This method does not authorize tests, external calls, or lifecycle operations.
 
 ## Release
 Status: NOT_STARTED
-Trigger: after an FD or legacy AIW Task exists, implementation evidence is available, and a release is planned.
+Trigger: after an FD exists, implementation evidence is available, and a release is planned.
 ```

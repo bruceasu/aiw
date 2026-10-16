@@ -15,8 +15,7 @@ design a missing decision during implementation.
 Resolve the FD ID from the user, active session, or unique Issue link. Read
 the FD, approved Issue evidence when present, relevant stable specs, code,
 tests, and workspace rules. Read a linked OpenSpec change only when it exists
-and affects the work. For an existing legacy AIW Task, continue under its
-original Task and Core contract; do not silently convert it.
+and affects the work. Use the FD as the sole engineering plan.
 
 For an explicitly selected primary workspace without a Worker handoff, use the
 managed status/review route in the fd-workflow entry; do not fabricate a claim

@@ -17,7 +17,7 @@ to inspect a repository, use another Skill, create an Issue or FD, or discuss
 workflow conventions.
 
 This Skill configures local project documentation and agent instructions. It
-does not create Issues, Tasks, FDs, OpenSpec changes, external tracker
+does not create Issues, FDs, OpenSpec changes, external tracker
 configuration, branches, worktrees, commits, or run tests. Create an OpenSpec
 change only on a separate, explicit request.
 
@@ -46,7 +46,7 @@ If no `AGENTS.md` exists, include creating it in the proposal. If a legacy
 
 Propose the AIW ownership contract in `.agents/agents/work-management.md`:
 
-- AIW owns Issue and Task lifecycle, branch, worktree, Session, and handoff
+- AIW owns Issue and FD lifecycle, branch, worktree, Session, and handoff
   state.
 - FD owns design decisions and ordered work items.
 - OpenSpec owns stable capability specs; change artifacts are optional.

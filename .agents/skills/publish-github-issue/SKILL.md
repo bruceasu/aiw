@@ -8,15 +8,15 @@ disable-model-invocation: true
 
 External publication is explicit opt-in. Follow
 `skills/reviewed-skill-contract.md` and `skills/work-management.md`; publication
-failure must not mutate Task status, archive, merge, or clean up resources.
+failure must not mutate FD status, archive, merge, or clean up resources.
 
 Use this Skill only when the user explicitly asks to publish or update an
 OpenSpec change on GitHub Issues. Normal planning and implementation remain
 local.
 
-Read `skills/work-management.md` and resolve exactly one AIW Task and matching
-OpenSpec change before writing. If the session/worktree does not resolve one
-uniquely, stop and ask for the Task ID.
+Read `skills/work-management.md` and resolve exactly one explicitly requested
+OpenSpec change and its linked FD when present before writing. If the
+session/worktree does not resolve the change uniquely, ask for the change ID.
 
 ## Process
 
@@ -51,7 +51,7 @@ uniquely, stop and ask for the Task ID.
    body, preserve all content outside the markers, and call
    `aiw github --json update-issue --body-file`.
 7. Report the Issue URL and local mapping path. Do not close the Issue, update
-   local task status, or import remote comments unless the user separately asks.
+   local FD status, or import remote comments unless the user separately asks.
 
 ## Projection rules
 

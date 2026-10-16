@@ -16,8 +16,8 @@ document for another agent or session. Do not create a handoff just because the
 conversation mentions a future agent, transfer, or next step.
 
 The output is a concise, evidence-based continuation brief. It does not
-complete work, approve a plan, close an Issue, complete an Attempt, release a
-lease, advance Task or FD state, commit, or start another Thread. If the user
+complete work, approve a plan, close an Issue, advance FD state, commit, or
+start another Thread. If the user
 explicitly requests operational dispatch, follow the applicable workflow
 contract and report that action separately from preparing the document.
 
@@ -25,7 +25,7 @@ contract and report that action separately from preparing the document.
 
 Treat the skill argument as the next session's focus. Use the current
 conversation for intent, decisions, preferences, authorizations, and completed
-work. Resolve the relevant AIW Task, linked FD, worktree, and Session when they
+work. Resolve the relevant FD, worktree, and Session when they
 exist. Read a linked OpenSpec change only when one exists and affects the work.
 
 Prefer current artifacts and repository evidence over stale conversational
@@ -51,8 +51,7 @@ Include:
 - links or paths to source artifacts instead of copying their contents;
 - a `Suggested skills` section naming only skills relevant to the next action.
 
-For managed work, include Task ID, Work Item, Attempt, relevant Evidence, and
-unresolved Gates when known. For FD work, identify the FD and its current
+For managed work, identify the FD and its current
 status, relevant Work Items, verification evidence, and pending role handoff
 or review when known. Never invent an ID, status, result, or dispatched event.
 

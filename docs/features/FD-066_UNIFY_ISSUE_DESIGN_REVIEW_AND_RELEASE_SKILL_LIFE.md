@@ -1,7 +1,7 @@
 # FD-066: Unify Issue design review and release skill lifecycle
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -27,10 +27,10 @@ fd-review 统一当前 FD 的实现验收、真实代码、证据与状态结论
 
 ## Work items
 
-- [ ] 1.1 统一 Issue/FD 拆分及规格/设计审查方法。规模小、难度中，无依赖；Planner 按需加载，Issue 与 Work Items 无双重归属，重要设计独立反馈且不伪造实现审查事件。
-- [ ] 1.2 统一实现代码审查与发布边界。规模小、难度中，依赖 1.1；fd-review/code-review 共享自包含可安装方法，正常 FD 不重复派双审查 Agent，release gate 不阻塞本地交付。
-- [ ] 1.3 退役旧 Task 技能和当前协议引用。规模小、难度中，依赖 1.1/1.2；删除 to-tickets，清理当前文档并同步安装索引/源项目副本，不动历史和 CLI。
-- [ ] 1.4 编译安装器源并作一次静态一致性核对、双格式证据和独立审查交接。规模小、难度低，依赖 1.3；编译不运行安装器、不落最终产物，检查单一方法所有者、引用与共享物化、范围和副本。
+- [x] 1.1 统一 Issue/FD 拆分及规格/设计审查方法。规模小、难度中，无依赖；Planner 按需加载，Issue 与 Work Items 无双重归属，重要设计独立反馈且不伪造实现审查事件。
+- [x] 1.2 统一实现代码审查与发布边界。规模小、难度中，依赖 1.1；fd-review/code-review 共享自包含可安装方法，正常 FD 不重复派双审查 Agent，release gate 不阻塞本地交付。
+- [x] 1.3 退役旧 Task 技能和当前协议引用。规模小、难度中，依赖 1.1/1.2；删除 to-tickets，清理当前文档并同步安装索引/源项目副本，不动历史和 CLI。
+- [x] 1.4 编译安装器源并作一次静态一致性核对、双格式证据和独立审查交接。规模小、难度低，依赖 1.3；编译不运行安装器、不落最终产物，检查单一方法所有者、引用与共享物化、范围和副本。
 
 ## Acceptance
 
@@ -43,15 +43,18 @@ fd-review 统一当前 FD 的实现验收、真实代码、证据与状态结论
 
 ## TODO
 
-- 按工作项实现，独立审查通过后自动本地交付并归档。
+- 全部实现及编译/静态证据完成，独立实现审查通过；由宿主检查交付 Gate 后自动本地交付并归档。
 
 ## Verification
 
+- 独立 Reviewer fd066-reviewer-20261017-a918 审查 cf6163f..99e8ef4，通过，无实质发现；证据 reviews/FD-066-review-r1.md 与同名 JSON。检查真实契约、安装器调用路径、规范、验收和证据，不重复编译或运行测试/安装。
 - 安装器只新增共享参考常量，窄编译命令：python -c "from pathlib import Path; p=Path('src/plugins/aiw-skills/aiw-skills.py'); compile(p.read_bytes(), str(p), 'exec')"。仅编译不执行、不生成 pyc。
 - 一次静态核对变更 diff、当前 Task 引用、源项目副本、共享参考声明和安装器读取路径、索引单项删除、设计/实现/发布边界。无测试、构建、格式化、安装、验证脚本或网络。
 - 本 FD 不改重要系统设计或公共接口，按需设计审查条件不触发；实现仍交独立 Reviewer。
 
 ## Sources
+
+- 实现证据：reports/FD-066-implementation-r1.md 与同名 JSON；安装器 compile-only 通过，一次静态核对确认 25 组技能副本、29/22/5 份共享副本一致。未运行测试、安装或宿主行为验证。
 
 - Issue: none
 

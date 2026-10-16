@@ -5,7 +5,7 @@ disable-model-invocation: true
 ---
 
 Follow `skills/reviewed-skill-contract.md` and `skills/work-management.md`.
-Return the revised article or explicit proposed edits; do not create Tasks,
+Return the revised article or explicit proposed edits; do not create FDs,
 OpenSpec artifacts, or commits implicitly.
 
 1. First, divide the article into sections based on its headings. Think about the main points you want to make during those sections.
