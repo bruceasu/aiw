@@ -68,8 +68,10 @@ explicitly cancelled item, with its reason on the same line.
 ## TODO
 
 - [x] 完成1.1–1.4并取得独立实现评审。
-- [ ] 本地合并和归档。
+- [x] 本地合并和归档：local-merge成功，专属worktree/分支清理完成，Complete归档成功。见reports/FD-074-delivery.md/.json。
 
 - Issue: none
 
 - 验证：纯Markdown无代码，不编译无关产品、不运行测试/模型/网络/脚本/格式化。一批只读检查源项目副本、链接、真实diff和路由/边界；情景为静态Bug、授权运行、测试预算耗尽、局部设计、超范围架构建议、独立多方案授权。文档内方法澄清无公共接口/持久化等设计，不额外设计评审，正常独立实现评审仍需执行。
+
+**Completed:** 2026-10-16

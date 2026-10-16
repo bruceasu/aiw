@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "delivery-report",
+  "fd_id": "FD-074",
+  "source_event": "FD-074-000005-verification-passed",
+  "human_report": "FD-074-delivery.md",
+  "data": {
+    "parent_branch": "develop",
+    "local_merge": "passed",
+    "cleanup": "CLI confirmed worktree and branch removed; receipts retained",
+    "archive": "Complete",
+    "review_rounds": 1,
+    "unresolved_blockers": [],
+    "compile": "not applicable: documentation and UI metadata only",
+    "tests_run": false,
+    "models_run": false,
+    "network_used": false,
+    "global_install": false,
+    "push_deploy": false,
+    "delivered_commit": "09acab1e20876792569cb07746981f0d490fdce3",
+    "source_commit": "463cd3a15f94ba782a316270e5fb35b50787dc7a"
+  }
+}
