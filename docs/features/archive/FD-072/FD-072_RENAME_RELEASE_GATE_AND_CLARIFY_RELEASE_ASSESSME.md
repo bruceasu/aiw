@@ -55,7 +55,7 @@ explicitly cancelled item, with its reason on the same line.
 ## TODO
 
 - [x] 完成1.1–1.3及独立评审。
-- [ ] 本地交付和归档。
+- [x] 本地交付和归档：独立评审通过后local-merge成功，worktree/分支清理完成，Complete归档成功。见reports/FD-072-delivery.md/.json。
 
 ## Sources
 
@@ -64,3 +64,5 @@ explicitly cancelled item, with its reason on the same line.
 - 用户要求改名并评估三个Skill的本会话。
 - src/skills/fd-release-gate；work-management与fd-workflow/issue-management活跃引用。
 - openspec/specs/fd-workflow/spec.md：本地完成与实际发布区分。
+
+**Completed:** 2026-10-16

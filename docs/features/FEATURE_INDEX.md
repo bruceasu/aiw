@@ -12,7 +12,6 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-072](FD-072_RENAME_RELEASE_GATE_AND_CLARIFY_RELEASE_ASSESSME.md) | Rename release gate and clarify release assessment evidence | Complete | Medium |
 | [FD-001](archive/FD-001/FD-001_EVENT_DRIVEN_FD_WORKFLOW.md) | 事件驱动的 FD 工作流 | Complete | High |
 | [FD-002](archive/FD-002/FD-002_ACTIONABLE_FD_HANDOFF_RECOVERY_HINTS.md) | Actionable FD handoff recovery hints | Complete | Medium |
 | [FD-003](archive/FD-003/FD-003_COMPACT_CZ_RELEASE.md) | 精简 aiw-cz 发布包 | Complete | Medium |
@@ -84,6 +83,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-069](archive/FD-069/FD-069_DOCUMENT_CANONICAL_SKILLS_AND_EXPLAIN_PACKAGING_.md) | Document canonical skills and explain packaging and installation | Complete | Medium |
 | [FD-070](archive/FD-070/FD-070_ADD_CONVERSATIONAL_AUXILIARY_COMMANDS_AND_RESUMA.md) | Add conversational auxiliary commands and resumable teaching courses | Complete | Medium |
 | [FD-071](archive/FD-071/FD-071_IMPROVE_HANDOFF_BRIEFS_AND_SAFE_CROSS_SESSION_CO.md) | Improve handoff briefs and safe cross-session continuation | Complete | Medium |
+| [FD-072](archive/FD-072/FD-072_RENAME_RELEASE_GATE_AND_CLARIFY_RELEASE_ASSESSME.md) | Rename release gate and clarify release assessment evidence | Complete | Medium |
 
 ## Deferred / Closed
 
