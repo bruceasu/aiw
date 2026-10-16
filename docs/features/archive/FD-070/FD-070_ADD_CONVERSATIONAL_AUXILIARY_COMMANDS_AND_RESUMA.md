@@ -96,7 +96,7 @@ explicitly cancelled item, with its reason on the same line.
 - [x] Independent implementation review r1 findings resolved by r2; historical reviews/FD-070-review-r1.md/.json retained. Current pass: reviews/FD-070-review-r2.md/.json; blocker reports/FD-070-blocker-review-r1.md/.json resolved.
 
 - [x] 完成1.1–1.6实现、静态证据与独立实现评审；本地交付与归档见下一项。
-- [ ] 正常本地交付及归档。
+- [x] 正常本地交付及归档：develop 0410662，FD-Source 5f33151；命令已确认删除专属 worktree 与分支，保留 receipts，Complete 归档成功。详见 reports/FD-070-delivery.md/.json。
 
 ## Sources
 
@@ -107,3 +107,5 @@ explicitly cancelled item, with its reason on the same line.
 - src/skills/{research,prototype,edit-article,teach}/SKILL.md及引用；openspec/specs/cli-and-plugins、ai-routing和command-help-consistency。
 
 Worker repair r2: R1 auxiliary Copilot prompt now includes frozen SystemPrompt via cliPrompt, scoped to aux- phases. R2 EOF contract reconciled by Planner as above. Prior findings retained as historical evidence.
+
+**Completed:** 2026-10-16
