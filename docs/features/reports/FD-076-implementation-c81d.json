@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-076",
+  "source_event": "FD-076-000003-design-ready",
+  "human_report": "FD-076-implementation-c81d.md",
+  "data": {
+    "worker_session": "fd076-host-20261017-c81d",
+    "outcome": "implementation-ready",
+    "base_commit": "b2a553f",
+    "changes": [{"path": "src/programs/agent-gateway/appserver.go", "summary": "Accept omitted jsonrpc while decoding and validating every explicitly supplied version as the string 2.0."}],
+    "verification": {
+      "compile_only": {"command": "python src/programs/agent-gateway/scripts/compile.py", "result": "passed", "exit_code": 0, "targets": ["windows/amd64", "linux/amd64"], "network": false, "distributable_retained": false},
+      "static_review": "Inspected the actual diff and all JSONRPC/rpcMessage uses; preserved ID routing, message bounds and existing safety gates.",
+      "prior_runtime_evidence": "One pre-fix initialize response from Codex 0.162.1 omitted jsonrpc; this was not repeated or claimed as post-fix verification."
+    },
+    "not_run": ["tests", "end-to-end requests", "post-fix handshake", "network checks", "formatters", "linters", "vet", "final artifact builds", "deployment"],
+    "residual_risks": ["Subsequent MCP preflight and model execution remain unverified.", "Installed gateway binary has not been replaced."]
+  }
+}

@@ -18,7 +18,7 @@ const maxRPCLine = 1 << 20
 var processStartMu sync.Mutex
 
 type rpcMessage struct {
-	JSONRPC string          `json:"jsonrpc"`
+	JSONRPC json.RawMessage `json:"jsonrpc"`
 	ID      json.RawMessage `json:"id,omitempty"`
 	Method  string          `json:"method,omitempty"`
 	Params  json.RawMessage `json:"params,omitempty"`
@@ -248,7 +248,10 @@ func (rpc *appRPC) readLoop(stdout io.Reader) {
 				line = line[:len(line)-1]
 			}
 			var message rpcMessage
-			if json.Unmarshal(line, &message) != nil || message.JSONRPC != "2.0" {
+			err := json.Unmarshal(line, &message)
+			var version string
+			// Codex may omit jsonrpc; an explicit version must still be 2.0.
+			if err != nil || (len(message.JSONRPC) > 0 && (json.Unmarshal(message.JSONRPC, &version) != nil || version != "2.0")) {
 				rpc.deliver(rpcRead{err: errors.New("invalid app-server JSON-RPC message")})
 				return
 			}

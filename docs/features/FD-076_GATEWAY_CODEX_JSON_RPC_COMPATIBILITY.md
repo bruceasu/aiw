@@ -1,7 +1,7 @@
 # FD-076: Gateway Codex JSON-RPC compatibility
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -30,12 +30,12 @@
 
 ## Work items
 
-- [ ] 1.1 修复可选 `jsonrpc` 字段兼容性，保留显式版本及现有协议防护；完成静态追踪、compile-only，并提交双格式实施报告。规模：小；难度：低；依赖：计划提交且父工作区干净后创建专用 worktree；完成证据：实现 diff、编译结果、独立审查。
+- [x] 1.1 修复可选 `jsonrpc` 字段兼容性，保留显式版本及现有协议防护；完成静态追踪、compile-only，并提交双格式实施报告。规模：小；难度：低；依赖：计划提交且父工作区干净后创建专用 worktree；完成证据：实现 diff、编译结果；独立审查作为下一阶段交付门禁。
 
 ## TODO
 
-- 父分支 `develop` 存在用户已有 README 修改，先解决工作区门禁，再提交计划并使用 `aiw git wt add FD-076`。
-- 专用分支 `feature/FD-076`，工作区 `.wt/FD-076`；完成实现、独立审查、本地 squash 交付、清理与 Complete 归档。
+- retry 时确认父分支 `develop` 已干净；就绪计划已提交，专用 worktree 已创建，记录坐标与实际一致。
+- 实现、compile-only 和独立审查已完成；接下来由 host PM 本地 squash 交付、清理与 Complete 归档。
 
 ## Acceptance
 
@@ -50,7 +50,11 @@
 - 实施后计划运行一次 `python src/programs/agent-gateway/scripts/compile.py`（在专用 worktree 中）。该脚本使用离线 Go 配置，将 Windows/Linux 编译输出写入空设备，不保留分发产物。
 - 静态核对字段缺失/显式值分支及原有消息校验、ID 路由和安全调用路径，最多一次静态验证命令。
 - 不运行测试、端到端调用、联网检查、格式化、lint 或最终产物构建；既有握手授权不扩大为本 FD 的额外运行预算。
-- 尚未实现、编译或独立审查，不宣称问题已修复。部署程序版本及后续 MCP/模型执行仍未验证。
+- 已实现：用 `json.RawMessage` 保留版本字段的缺失状态，显式值单独解码并严格比较 `2.0`；null、空值、错误类型仍拒绝。
+- 实际执行 `python src/programs/agent-gateway/scripts/compile.py`，退出码 0；Windows/Linux compile-only 通过，未保留分发产物。
+- 已执行一次静态验证命令：`git diff -- <本 FD 三个变更文件>` 和 `rg -n '\.JSONRPC|rpcMessage\{' src/programs/agent-gateway`；确认版本字段没有其他使用方，原 ID 路由、安全检查及输出限制保持原逻辑。
+- 独立 Reviewer `fd076-review-20261017-r1` 已对 `b2a553f..e222f85` 完成静态审查，通过，无阻塞发现；来源事件 `FD-076-000004-implementation-ready`。报告：[独立审查](reviews/FD-076-review-r1.md)。未重复编译、运行测试或握手；部署程序版本及后续 MCP/模型执行仍未验证，不将修复前握手计为修复后验证。
+- 实施报告：[FD-076 implementation](reports/FD-076-implementation-c81d.md)。
 
 ## Sources
 
