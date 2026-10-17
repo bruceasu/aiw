@@ -1,7 +1,7 @@
 # FD-076: Gateway Codex JSON-RPC compatibility
 
-**Status:** Design
-**Revision:** 2
+**Status:** Open
+**Revision:** 3
 **Priority:** Medium
 **Evidence policy:** Dual
 
