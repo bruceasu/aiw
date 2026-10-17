@@ -35,7 +35,7 @@
 ## TODO
 
 - retry 时确认父分支 `develop` 已干净；就绪计划已提交，专用 worktree 已创建，记录坐标与实际一致。
-- 实现、compile-only 和独立审查已完成；接下来由 host PM 本地 squash 交付、清理与 Complete 归档。
+- 无剩余本 FD 工作项。实现、compile-only、独立审查、本地 squash 交付、核验清理及 Complete 归档均已完成。
 
 ## Acceptance
 
@@ -55,6 +55,7 @@
 - 已执行一次静态验证命令：`git diff -- <本 FD 三个变更文件>` 和 `rg -n '\.JSONRPC|rpcMessage\{' src/programs/agent-gateway`；确认版本字段没有其他使用方，原 ID 路由、安全检查及输出限制保持原逻辑。
 - 独立 Reviewer `fd076-review-20261017-r1` 已对 `b2a553f..e222f85` 完成静态审查，通过，无阻塞发现；来源事件 `FD-076-000004-implementation-ready`。报告：[独立审查](reviews/FD-076-review-r1.md)。未重复编译、运行测试或握手；部署程序版本及后续 MCP/模型执行仍未验证，不将修复前握手计为修复后验证。
 - 实施报告：[FD-076 implementation](reports/FD-076-implementation-c81d.md)。
+- 本地交付：`aiw git wt local-merge FD-076` 成功，将来源 `054eb4d4ac7d7c977592d3e899475686b58b8113` squash 为 `develop` 上的 `df1dad7`；CLI 已核验并移除专用 worktree 和分支，保留事件记录。`aiw fd close FD-076 Complete` 随后成功归档。此项仅记录交付结果，不改变已审查实现。
 
 ## Sources
 
@@ -65,3 +66,5 @@
 - `src/programs/agent-gateway/app_runner.go`：预检失败映射。
 - `openspec/specs/agent-gateway/spec.md`：Bounded Codex App Server backend。
 - 阻塞记录：[父工作区未清理](reports/FD-076-blocker-parent-dirty-c81d.md)。
+
+**Completed:** 2026-10-17
