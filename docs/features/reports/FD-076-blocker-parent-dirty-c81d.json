@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-076",
+  "source_event": "FD-076-000002-design-requested",
+  "human_report": "FD-076-blocker-parent-dirty-c81d.md",
+  "data": {
+    "stage": "workspace-preparation",
+    "role": "planner",
+    "recorded_at": "2026-10-17",
+    "recorder_session": "fd076-host-20261017-c81d",
+    "observed_blocker": "Parent develop has a pre-existing unrelated README edit; isolated implementation requires a clean parent.",
+    "confirmed_cause": "src/programs/agent-gateway/README.md contains a pre-existing gateway key example comment edit.",
+    "cause_status": "confirmed",
+    "recovery_attempts": [],
+    "status": "unresolved",
+    "human_decision_required": true,
+    "human_decision_detail": "User must handle the existing edit or explicitly authorize a separate README commit; no stash, reset or unrelated staging performed.",
+    "actual_resolution": null,
+    "resolved_at": null,
+    "residual_risk_or_next_step": "Resolve parent cleanliness, commit ready FD plan, create FD-076 worktree, implement and review before delivery.",
+    "reusable_improvement": "none",
+    "improvement_status": "not-needed"
+  }
+}

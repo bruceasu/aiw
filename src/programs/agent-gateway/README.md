@@ -10,7 +10,7 @@
 
 ```powershell
 $env:OPENAI_BASE_URL = "http://127.0.0.1:43127/v1"
-$env:OPENAI_API_KEY = "你的网关Key"
+$env:OPENAI_API_KEY = "你的网关Key" # df11c91346f9836ddd828ce256efd3827068b6e082ce50816ac3745016859128, fbf233cd659a483392663ee9b85c8eeebb03d12490614c9ec47ff4bc9fedb661
 aiw say --model "允许的逻辑模型" "请确认明天会议时间"
 ```
 

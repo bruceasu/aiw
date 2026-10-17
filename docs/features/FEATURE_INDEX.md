@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-076](FD-076_GATEWAY_CODEX_JSON_RPC_COMPATIBILITY.md) | Gateway Codex JSON-RPC compatibility | Design | Medium |
 
 ## Completed
 
