@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-081](FD-081_EXCLUDE_GENERATED_SAY_ASSETS_FROM_PLUGIN_SOURCE_.md) | Exclude generated Say assets from plugin source packaging | Open | Medium |
 
 ## Completed
 
