@@ -1,295 +1,257 @@
-﻿from __future__ import annotations
+"""Offline compile, release staging and installation with explicit stage boundaries."""
+from __future__ import annotations
 
+import argparse
+import json
 import os
+from pathlib import Path
 import shutil
 import subprocess
 import sys
-from pathlib import Path
-from typing import Dict, List, Optional, Set
+import tempfile
+import zipfile
 
 ROOT = Path(__file__).resolve().parent
-SRC = ROOT / "src"
-BIN = ROOT / "bin"
-DIST = ROOT / "dist"
-INSTALL_DIR = Path(os.environ.get("AIW_INSTALL_DIR", r"C:\green\aiw"))
-ACTIONS = ("windows", "linux", "bin", "req", "say", "gateway", "http-openai-proxy", "cz", "plugins", "docs", "skills", "all")
+SRC, BIN, DIST = ROOT / "src", ROOT / "bin", ROOT / "dist"
+sys.path.insert(0, str(SRC / "plugins" / "aiw-pkg"))
+from archive import PackageError, atomic_bytes, identifier, reject_link, safe_path, write_package
+from manager import Manager, default_destination
+
+SYSTEMS = ("windows", "linux")
+GO = {
+    "aiw": (SRC, "./cmd/aiw", "aiw", True),
+    "req": (SRC, "./cmd/aiw-req", "aiw-req", True),
+    "say": (SRC, "./cmd/aiw-say", "aiw-say", True),
+    "gateway": (SRC / "programs/agent-gateway", ".", "agent-gateway", False),
+    "packer": (SRC / "programs/aiw-packer", ".", "aiw-packer", False),
+    "file-convert": (SRC / "programs/md-converter", ".", "md-converter", False),
+}
+BIN_TARGETS = ("aiw", "gateway", "http-openai-proxy")
+TARGETS = (*GO, "http-openai-proxy", "cz", "plugins", "docs", "skills", "bin", "all")
+IGNORE_DIRS = {".git", "__pycache__", "node_modules", ".bin", "tests", ".venv", "dist", "release"}
+IGNORE_FILES = {"aiw.toml", "cz.toml", ".cz.toml", "agent-gateway", "aiw-req", "aiw-say", "aiw-packer", "md-converter"}
 
 
-def go_environment(**overrides: str) -> Dict[str, str]:
-    environment = os.environ.copy()
-    environment.update({"GOPROXY": "off", "GOSUMDB": "off", "GOTOOLCHAIN": "local", "GOFLAGS": ""})
-    environment.update(overrides)
-    return environment
+def run(command: list[str], cwd: Path, environment: dict[str, str]) -> None:
+    result = subprocess.run(command, cwd=cwd, env=environment, check=False)
+    if result.returncode:
+        raise PackageError(f"Command failed ({result.returncode}): {command[0]} in {cwd}")
 
 
-def run(command: List[str], *, cwd: Path, environment: Dict[str, str]) -> bool:
-    try:
-        result = subprocess.run(command, cwd=cwd, env=environment, check=False)
-    except OSError as error:
-        print(f"Error: could not run {command[0]}: {error}", file=sys.stderr)
-        return False
-    return result.returncode == 0
+def tool(name: str) -> str:
+    path = shutil.which(name)
+    if not path:
+        raise PackageError(f"{name} is not available on PATH; dependencies are never downloaded")
+    return path
 
 
-def go_command() -> Optional[str]:
-    command = shutil.which("go")
-    if command is None:
-        print("Error: Go is not available on PATH.", file=sys.stderr)
-    return command
+def binary(component: str, system: str) -> Path:
+    return BIN / f"{system}-amd64" / (GO[component][2] + (".exe" if system == "windows" else ""))
 
 
-def build_go(target: str, output: Path, *, cwd: Path, goos: str, versioned: bool) -> bool:
-    go = go_command()
-    if go is None:
-        return False
-    output.parent.mkdir(parents=True, exist_ok=True)
-    linker = "-s -w"
-    if versioned:
-        linker += f" -X=aiw/internal/version.Version={os.environ.get('AIW_VERSION', 'dev')}"
-    environment = go_environment(GOOS=goos, GOARCH="amd64")
-    command = [go, "build", "-trimpath", "-ldflags=" + linker, "-o", str(output), target]
-    return run(command, cwd=cwd, environment=environment)
+def plugin_targets() -> list[str]:
+    return [directory.name.removeprefix("aiw-") for directory in sorted((SRC / "plugins").iterdir())
+            if directory.is_dir() and (directory / "plugin.toml").is_file()] + ["plugin-tools"]
 
 
-def build_main(goos: str) -> bool:
-    suffix = ".exe" if goos == "windows" else ""
-    output = BIN / f"aiw-{goos}-amd64{suffix}"
-    if not build_go("./cmd/aiw", output, cwd=SRC, goos=goos, versioned=True):
-        print(f"Error: {goos.capitalize()} build failed.", file=sys.stderr)
-        return False
-    destination = INSTALL_DIR / ("aiw.exe" if goos == "windows" else "aiw")
-    shutil.copy2(output, destination)
-    print(f"Installation complete. aiw is now available in {INSTALL_DIR}.")
-    return True
+def skill_targets() -> list[str]:
+    return ["skills-support"] + ["skill-" + directory.name for directory in sorted((SRC / "skills").iterdir())
+                                if directory.is_dir() and (directory / "SKILL.md").is_file()]
 
 
-def build_plugin_binary(name: str, target: str, goos: str) -> bool:
-    suffix = ".exe" if goos == "windows" else ""
-    output = DIST / "plugins" / f"aiw-{name}" / f"aiw-{name}{suffix}"
-    if not build_go(target, output, cwd=SRC, goos=goos, versioned=True):
-        print(f"Error: {goos.capitalize()} {name} build failed.", file=sys.stderr)
-        return False
-    return True
+def expand(target: str) -> list[str]:
+    if target == "bin":
+        return list(BIN_TARGETS)
+    if target == "plugins":
+        return plugin_targets()
+    if target == "skills":
+        return skill_targets()
+    if target == "all":
+        return list(dict.fromkeys([*BIN_TARGETS, *plugin_targets(), "docs", *skill_targets()]))
+    return [target]
 
 
-def build_req() -> bool:
-    if not build_plugin_binary("req", "./cmd/aiw-req", "windows"):
-        return False
-    if not build_plugin_binary("req", "./cmd/aiw-req", "linux"):
-        return False
-    req_stage = DIST / "plugins" / "aiw-req"
-    print(f"Req plugin binaries staged in {req_stage}; use 'python build.py plugins' or 'all' to install them.")
-    return True
+def compile_components(components: list[str], version: str) -> None:
+    for component in components:
+        if component in GO:
+            cwd, target, _name, versioned = GO[component]
+            go = tool("go")
+            for system in SYSTEMS:
+                output = binary(component, system)
+                safe_path(ROOT, output.relative_to(ROOT).as_posix())
+                output.parent.mkdir(parents=True, exist_ok=True)
+                environment = os.environ.copy()
+                environment.update(GOPROXY="off", GOSUMDB="off", GOTOOLCHAIN="local", GOFLAGS="",
+                                   GOWORK="off", CGO_ENABLED="0", GOOS=system, GOARCH="amd64")
+                linker = "-s -w" + (f" -X=aiw/internal/version.Version={version}" if versioned else "")
+                run([go, "build", "-trimpath", "-ldflags=" + linker, "-o", str(output), target], cwd, environment)
+        elif component == "http-openai-proxy":
+            source = SRC / "programs/http-openai-proxy"
+            compiler = source / "node_modules/typescript/bin/tsc"
+            if not compiler.is_file():
+                raise PackageError(f"Local TypeScript compiler missing: {compiler}; install dependencies explicitly")
+            BIN.mkdir(parents=True, exist_ok=True)
+            with tempfile.TemporaryDirectory(prefix=".proxy-", dir=BIN) as temporary:
+                output = Path(temporary)
+                run([tool("node"), str(compiler), "--project", str(source / "tsconfig.json"),
+                     "--outDir", str(output)], source, os.environ.copy())
+                destination = safe_path(ROOT, "bin/http-openai-proxy")
+                if destination.exists():
+                    shutil.rmtree(destination)
+                shutil.copytree(output, destination)
+        print(f"Compiled: {component}" if component in GO or component == "http-openai-proxy" else f"No compile needed: {component}")
 
 
-def build_say() -> bool:
-    if not build_plugin_binary("say", "./cmd/aiw-say", "windows"):
-        return False
-    if not build_plugin_binary("say", "./cmd/aiw-say", "linux"):
-        return False
-    say_source = SRC / "programs" / "aiw-say"
-    say_stage = DIST / "plugins" / "aiw-say"
-    shutil.copy2(say_source / "aiw.toml.example", say_stage / "aiw.toml.example")
-    shutil.copytree(say_source / "profiles", say_stage / "profiles", dirs_exist_ok=True)
-    for name in ("aiw-say-hotkeys.ahk", "aiw-say-hotkeys.ps1"):
-        shutil.copy2(say_source / name, say_stage / name)
-    print(f"Say plugin binaries, samples, and Windows hotkey scripts staged in {say_stage}; use 'python build.py plugins' or 'all' to install them.")
-    return True
+def tree_entries(source: Path, destination: str, *, include_dependencies=False):
+    if not source.is_dir():
+        raise PackageError(f"Resource directory missing: {source}")
+    reject_link(source)
+    entries = []
+    for directory, directories, names in os.walk(source, followlinks=False):
+        directories[:] = sorted(name for name in directories
+                                if name not in (IGNORE_DIRS - {"node_modules"} if include_dependencies else IGNORE_DIRS))
+        for name in directories:
+            reject_link(Path(directory) / name)
+        for name in sorted(names):
+            if name in IGNORE_FILES or name.endswith((".pyc", ".exe")):
+                continue
+            path = Path(directory) / name
+            relative = path.relative_to(source).as_posix()
+            target = destination + "/" + relative if destination else relative
+            entries.append((path, "common/" + target, target, "all", False, os.access(path, os.X_OK)))
+    return entries
 
 
-def build_ai_code_tools_plugin() -> bool:
-    source = SRC / "programs" / "ai-code-tools"
-    stage = DIST / "plugins"
-    stage.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(source / "ai-code-index", stage / "aiw-ai-code-index.py")
-    shutil.copy2(source / "generate-ai-index", stage / "aiw-ai-gen-index.py")
-    print(f"AI Code Tools plugin entry points staged in {stage}.")
-    return True
+def one(source: Path, target: str, *, config=False, executable=False, system="all"):
+    prefix = "common" if system == "all" else system + "-amd64"
+    return (source, prefix + "/" + target, target, system, config, executable)
 
 
-def build_gateway() -> bool:
-    gateway = SRC / "programs" / "agent-gateway"
-    for goos, suffix in (("windows", ".exe"), ("linux", "")):
-        output = BIN / f"agent-gateway{suffix}"
-        go = go_command()
-        if go is None or not run(
-            [go, "build", "-trimpath", "-ldflags=-s -w", "-o", str(output), "."],
-            cwd=gateway,
-            environment=go_environment(GOOS=goos, GOARCH="amd64"),
-        ):
-            print(f"Error: {goos.capitalize()} agent-gateway build failed.", file=sys.stderr)
-            return False
-    print("Agent Gateway standalone binaries built in bin.")
-    shutil.copy2(gateway / "gateway-example.json", INSTALL_DIR / "gateway-new.json")
-    for name in ("agent-gateway.exe", "agent-gateway"):
-        shutil.copy2(BIN / name, INSTALL_DIR / name)
-    print(f"Gateway installed in {INSTALL_DIR}; existing gateway.json preserved.")
-    return True
+def package_component(component: str, version: str) -> Path:
+    entries = []
+    kind, category = "resource", "mist"
+    name = "aiw-" + component
+    if component == "aiw":
+        name, kind = "aiw-main", "program"
+        for system in SYSTEMS:
+            source = binary(component, system)
+            target = "aiw.exe" if system == "windows" else "aiw"
+            entries.append(one(source, target, executable=True, system=system))
+    elif component == "gateway":
+        kind = "program"
+        for system in SYSTEMS:
+            source = binary(component, system)
+            entries.append(one(source, source.name, executable=True, system=system))
+        source = SRC / "programs/agent-gateway"
+        entries.append(one(source / "gateway-example.json", "gateway-new.json"))
+        entries.append(one(source / "gateway-example.json", "gateway.json", config=True))
+    elif component == "http-openai-proxy":
+        kind = "program"
+        source = SRC / "programs/http-openai-proxy"
+        entries += tree_entries(BIN / component, component + "/dist")
+        for filename in ("http-openai-proxy.js", "package.json", "package-lock.json", "README.md", "tsconfig.json"):
+            entries.append(one(source / filename, component + "/" + filename))
+        entries += tree_entries(source / "src", component + "/src")
+        entries += tree_entries(source / "node_modules", component + "/node_modules", include_dependencies=True)
+    elif component == "docs":
+        entries += tree_entries(ROOT / "docs/usage", "docs/usage")
+        entries += tree_entries(SRC / "agent-templates", "agent-templates")
+    elif component == "skills-support":
+        category, kind, name = "skills", "skill", "aiw-skills-support"
+        for source in sorted((SRC / "skills").glob("*.md")):
+            entries.append(one(source, "skills/" + source.name))
+    elif component.startswith("skill-"):
+        category, kind, name = "skills", "skill", "aiw-" + component
+        skill = component.removeprefix("skill-")
+        entries += tree_entries(SRC / "skills" / skill, "skills/" + skill)
+    elif component == "plugin-tools":
+        category, kind, name = "plugins", "plugin", "aiw-plugin-tools"
+        for source in sorted((SRC / "plugins").glob("*")):
+            if source.is_file() and source.suffix in {".py", ".md"}:
+                if source.name in {"aiw-ai-code-index.py", "aiw-ai-gen-index.py"}:
+                    continue
+                entries.append(one(source, "plugins/" + source.name))
+        for source, target in (("ai-code-index", "aiw-ai-code-index.py"), ("generate-ai-index", "aiw-ai-gen-index.py")):
+            entries.append(one(SRC / "programs/ai-code-tools" / source, "plugins/" + target))
+    else:
+        category, kind = "plugins", "plugin"
+        source = SRC / "plugins" / name
+        entries += tree_entries(source, "plugins/" + name)
+        if component in GO:
+            for system in SYSTEMS:
+                compiled = binary(component, system)
+                entries.append(one(compiled, "plugins/" + name + "/" + compiled.name,
+                                   executable=True, system=system))
+        if component == "say":
+            source = SRC / "programs/aiw-say"
+            for filename in ("aiw.toml.example", "aiw-say-hotkeys.ahk", "aiw-say-hotkeys.ps1"):
+                entries.append(one(source / filename, "plugins/aiw-say/" + filename))
+            entries += tree_entries(source / "profiles", "plugins/aiw-say/profiles")
+            entries.append(one(source / "aiw.toml.example", "plugins/aiw-say/aiw.toml", config=True))
+    directory = DIST / category / version if category in {"plugins", "skills"} else DIST / category
+    output = directory / f"{name}-{version}.zip"
+    write_package(output, name, version, kind, entries)
+    if component in {"aiw", "gateway"}:
+        for system in SYSTEMS:
+            source = binary(component, system)
+            destination = DIST / "bin" / (system + "-amd64") / source.name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+    print(f"Built: {output}")
+    return output
 
 
-def build_http_openai_proxy() -> bool:
-    program = SRC / "programs" / "http-openai-proxy"
-    node = shutil.which("node")
-    if node is None:
-        print("Error: Node.js is required to build http-openai-proxy.", file=sys.stderr)
-        return False
-
-    node_modules = program / "node_modules"
-    compiler = node_modules / "typescript" / "bin" / "tsc"
-    if not compiler.is_file():
-        print(
-            "Error: local TypeScript dependencies are missing. Install the package dependencies in "
-            f"{program} before building; build.py will not download packages.",
-            file=sys.stderr,
-        )
-        return False
-
-    stage = DIST / "programs" / "http-openai-proxy"
-    if stage.exists():
-        shutil.rmtree(stage)
-    output = stage / "dist"
-    output.mkdir(parents=True)
-    if not run(
-        [node, str(compiler), "--project", str(program / "tsconfig.json"), "--outDir", str(output)],
-        cwd=program,
-        environment=os.environ.copy(),
-    ):
-        print("Error: http-openai-proxy TypeScript compilation failed.", file=sys.stderr)
-        return False
-
-    for name in ("http-openai-proxy.js", "package.json", "package-lock.json", "README.md", "tsconfig.json"):
-        shutil.copy2(program / name, stage / name)
-    copy_tree(program / "src", stage / "src")
-    shutil.copytree(node_modules, stage / "node_modules")
-
-    destination = INSTALL_DIR / "http-openai-proxy"
-    copy_tree(stage, destination)
-    print(f"HTTP OpenAI Proxy installed in {destination}.")
-    return True
-
-
-def build_cz() -> bool:
-    source = SRC / "plugins" / "aiw-cz"
-    release = DIST / "plugins" / "aiw-cz" / "release"
-    if release.exists():
-        shutil.rmtree(release)
-    release.mkdir(parents=True)
-    for pattern in ("aiw-cz.py", "cz_*.py", "requirements.txt"):
-        for path in source.glob(pattern):
-            shutil.copy2(path, release / path.name)
-    shutil.copytree(source / "locales", release / "locales", dirs_exist_ok=True)
-    print(f"Python cz plugin release staged in {release}; use 'python build.py plugins' or 'all' to install it.")
-    return True
-
-
-def copy_tree(source: Path, destination: Path, *, ignore: Optional[Set[str]] = None) -> None:
-    ignored = ignore or set()
-    shutil.copytree(
-        source,
-        destination,
-        dirs_exist_ok=True,
-        ignore=lambda _directory, names: [name for name in names if name in ignored],
-    )
-
-
-def install_plugins() -> bool:
-    if not build_req() or not build_say() or not build_ai_code_tools_plugin() or not build_cz():
-        return False
-    install_plugins_dir = INSTALL_DIR / "plugins"
-    install_plugins_dir.mkdir(parents=True, exist_ok=True)
-    copy_tree(
-        SRC / "plugins",
-        install_plugins_dir,
-        ignore={"aiw-cz", "aiw-say", "aiw-gw", "_ai_code_tools.py", "aiw-ai-code-index.py", "aiw-ai-gen-index.py"},
-    )
-    copy_tree(DIST / "plugins" / "aiw-req", install_plugins_dir / "aiw-req")
-    copy_tree(DIST / "plugins" / "aiw-say", install_plugins_dir / "aiw-say", ignore={"aiw.toml"})
-    shutil.copy2(DIST / "plugins" / "aiw-ai-code-index.py", install_plugins_dir / "aiw-ai-code-index.py")
-    shutil.copy2(DIST / "plugins" / "aiw-ai-gen-index.py", install_plugins_dir / "aiw-ai-gen-index.py")
-    copy_tree(
-        DIST / "plugins" / "aiw-cz" / "release",
-        install_plugins_dir / "aiw-cz",
-        ignore={"cz.toml", ".cz.toml"},
-    )
-    print(f"Plugins installed in {install_plugins_dir}: repository plugins, req, Say, AI Code Tools, and cz.")
-    return True
-
-
-def install_docs() -> bool:
-    usage_destination = INSTALL_DIR / "docs" / "usage"
-    templates_destination = INSTALL_DIR / "agent-templates"
-    copy_tree(ROOT / "docs" / "usage", usage_destination)
-    copy_tree(SRC / "agent-templates", templates_destination)
-    print(f"Usage documentation installed in {usage_destination}.")
-    print(f"Agent templates installed in {templates_destination}.")
-    return True
-
-
-def install_skills() -> bool:
-    destination = INSTALL_DIR / "skills"
-    copy_tree(SRC / "skills", destination)
-    print(f"Skills installed in {destination}.")
-    return True
-
-
-def run_action(action: str) -> bool:
-    actions = {
-        "windows": lambda: build_main("windows"),
-        "linux": lambda: build_main("linux"),
-        "req": build_req,
-        "say": build_say,
-        "gateway": build_gateway,
-        "http-openai-proxy": build_http_openai_proxy,
-        "cz": build_cz,
-        "plugins": install_plugins,
-        "docs": install_docs,
-        "skills": install_skills,
-        "bin": lambda: build_main("windows") and build_main("linux") and build_gateway() and build_http_openai_proxy(),
-        "all": lambda: build_main("windows") and build_main("linux") and build_gateway() and build_http_openai_proxy() and install_plugins() and install_docs() and install_skills(),
-    }
-    operation = actions.get(action.lower())
-    if operation is None:
-        print(f"Error: Unknown build action: {action}", file=sys.stderr)
-        print("Run build.py --help for available actions.", file=sys.stderr)
-        return False
-    try:
-        return operation()
-    except OSError as error:
-        print(f"Error: action {action} failed: {error}", file=sys.stderr)
-        return False
-
-
-def show_help() -> None:
-    print(f"Usage: build.py [{' '.join(ACTIONS)}]")
-    print("\nActions can be combined and run in the specified order.")
-    print("With no arguments, only the Windows build is performed.\n")
-    print("  windows  Build and install the Windows executable.")
-    print("  linux    Build and install the Linux executable.")
-    print("  bin      Build and install AIW, Gateway, and HTTP OpenAI Proxy; preserve Gateway config.")
-    print("  req      Build Windows and Linux req plugin binaries.")
-    print("  say      Build Windows and Linux say binaries and configuration samples.")
-    print("  gateway  Build and install standalone Windows and Linux Gateway binaries beside AIW.")
-    print("  http-openai-proxy  Compile and install the Node.js HTTP OpenAI Proxy package.")
-    print("  cz       Prepare the Python cz release.")
-    print("  plugins  Build and install plugins, including Say and AI Code Tools; preserve Say aiw.toml.")
-    print("  docs     Copy usage documentation to the install directory.")
-    print("  skills   Install skills individually.")
-    print("  all      Build and install AIW, Gateway, HTTP OpenAI Proxy, plugins, docs, and skills.")
-    print("\nHelp: -h, --help, help, /h, /?")
-
-
-def main(arguments: List[str]) -> int:
-    if arguments and arguments[0].lower() in {"-h", "--help", "help", "/h", "/?"}:
-        show_help()
+def main(arguments: list[str]) -> int:
+    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
+    actions = parser.add_subparsers(dest="action")
+    for action in ("compile", "build", "install"):
+        command = actions.add_parser(action, allow_abbrev=False)
+        command.add_argument("target", choices=TARGETS)
+        if action == "install":
+            command.add_argument("--dest", type=Path, default=default_destination())
+        else:
+            command.add_argument("--version", default=os.environ.get("AIW_VERSION", "dev"))
+    args = parser.parse_args(arguments)
+    if not args.action:
+        parser.print_help()
         return 0
-    BIN.mkdir(exist_ok=True)
-    INSTALL_DIR.mkdir(parents=True, exist_ok=True)
-    actions = arguments or ["windows"]
-    for action in actions:
-        if not run_action(action):
-            return 1
-        print(f"Action completed: {action}.")
-    return 0
+    try:
+        components = expand(args.target)
+        if args.action in {"compile", "build"}:
+            identifier(args.version)
+            compile_components(components, args.version)
+        if args.action == "build":
+            packages = [package_component(component, args.version) for component in components]
+            by_component = dict(zip(components, packages))
+            for component, package in zip(components, packages):
+                write_manifest(component, args.version, [package])
+            write_manifest(args.target, args.version, packages)
+            if args.target == "all":
+                for group in ("bin", "plugins", "skills"):
+                    write_manifest(group, args.version, [by_component[item] for item in expand(group)])
+        elif args.action == "install":
+            manifest = DIST / ".manifests" / (args.target + ".json")
+            if not manifest.is_file():
+                raise PackageError(f"No release manifest for {args.target}; run build explicitly first")
+            content = json.loads(manifest.read_text(encoding="utf-8"))
+            manager = Manager(args.dest)
+            packages = []
+            for value in content["packages"]:
+                package = safe_path(DIST, value)
+                if not package.is_file():
+                    raise PackageError(f"Release package missing: {package}")
+                packages.append(package)
+            for package in packages:
+                print(manager.install(package))
+        return 0
+    except (PackageError, OSError, ValueError, KeyError, TypeError, zipfile.BadZipFile) as error:
+        print(f"build.py: {error}", file=sys.stderr)
+        return 1
+
+
+def write_manifest(target: str, version: str, packages: list[Path]) -> None:
+    content = dict(version=version, packages=[path.relative_to(DIST).as_posix() for path in packages])
+    atomic_bytes(DIST / ".manifests" / (target + ".json"), json.dumps(content, indent=2).encode())
 
 
 if __name__ == "__main__":

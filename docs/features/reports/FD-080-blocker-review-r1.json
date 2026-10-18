@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-080",
+  "source_event": "FD-080-000017-implementation-ready",
+  "human_report": "FD-080-blocker-review-r1.md",
+  "data": {
+    "stage": "implementation-review",
+    "role": "reviewer",
+    "recorded_at": "2026-10-18",
+    "recorder_session": "fd080-reviewer-20261018-6b2e94",
+    "observed_blocker": "R1 backup rotation failure can delete the original previous; R2 common resources conceal unsupported platform.",
+    "confirmed_cause": "manager.failed deletes previous based only on a pre-rename marker; install uses nonempty selected files as platform support check.",
+    "cause_status": "confirmed-static",
+    "recovery_attempts": [],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "No new human decision required; original pending Worker handoff was claimed and repaired.",
+    "actual_resolution": "Worker repair 099483d; independent static recheck of e145b40120c71325e490914caab1b7a63ab04167 from event FD-080-000019-implementation-ready resolves R1/R2. See FD-080-review-r2.md.",
+    "resolved_at": "2026-10-18",
+    "residual_risk_or_next_step": "PM checks delivery gates. Runtime fault behavior and installation remain unrun.",
+    "reusable_improvement": "Distinguish attempted/completed rotation; check platform support separately from common resource selection.",
+    "improvement_status": "implemented-in-scope"
+  }
+}

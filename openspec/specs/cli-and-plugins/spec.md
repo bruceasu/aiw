@@ -6,6 +6,13 @@
 
 ## Requirements
 
+### Requirement: Local package plugin
+
+AIW MUST expose the pkg plugin through the existing manifest/Python mechanism.
+It MUST share the local package engine with build.py install, without changing
+existing skills/plugin discovery or project/user-level Skill installation rules.
+See aiw-packages/spec.md for its local install/remove/purge and package contract.
+
 ### Requirement: Built-in and plugin dispatch
 
 The built-in auxiliary commands research, prototype, edit-article and teach

@@ -3,7 +3,7 @@
   "kind": "design-review",
   "fd_id": "FD-080",
   "source_event": "FD-080-000015-design-requested",
-  "human_report": "docs/features/reviews/FD-080-design-r1.md",
+  "human_report": "FD-080-design-r1.md",
   "data": {
     "revision": 15,
     "session": "/root/fd080_design",

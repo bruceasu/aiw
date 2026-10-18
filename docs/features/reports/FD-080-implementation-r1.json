@@ -1,0 +1,17 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-080",
+  "source_event": "FD-080-000016-design-ready",
+  "human_report": "FD-080-implementation-r1.md",
+  "data": {
+    "worker_session": "fd080-host-20261018-a19d7f",
+    "fd_revision": 16,
+    "base_commit": "fafde4f",
+    "compile": {"language": "Python", "files": 4, "runs": 2, "reason_for_second_run": "Changed aggregate release manifests", "result": "passed", "retained_artifacts": false},
+    "static_review": {"diff_check": "passed", "paths_traced": ["build targets", "platform mapping", "archive validation", "configuration ownership", "before/previous recovery", "remove/purge"]},
+    "not_run": ["tests", "Go/Node compilation", "release build", "installation", "fault injection", "network", "downloads", "formatters", "linters", "vet"],
+    "residual_risks": ["Cross-platform runtime unverified", "Windows running-file replacement may fail", "Crash recovery requires preserved transaction", "Trusted script external side effects cannot roll back", "Unowned legacy installation needs migration", "Proxy runtime dependencies unverified"],
+    "recommendation": "ready-for-independent-review"
+  }
+}

@@ -48,21 +48,23 @@ Windows executable:
 ```
 
 Requirement Management is also distributed as the `aiw-req` plugin.
-Build its Windows and Linux binaries into `dist/plugins/aiw-req` with:
+Build one package containing its Windows and Linux binaries with:
 
 ```bat
-python build.py req
+python build.py build req
 ```
 
 The Conventional Commit wizard uses a Python plugin entrypoint. See
 [the Python runtime guide](cz-python-runtime.md) for runtime requirements. Build its platform-specific release directory with:
 
 ```bat
-python build.py cz
+python build.py build cz
 ```
 
-`python build.py plugins` installs the curated CZ release without its TypeScript
-source or `node_modules`. See [CZ configuration](cz-configuration.md).
+`python build.py build plugins` prepares versioned plugin ZIP packages.
+`python build.py install plugins` installs those existing packages without rebuilding.
+See [build stages and local packages](aiw-pkg.md) for paths, versions, destinations,
+single-backup recovery and `aiw pkg install/remove/purge`.
 
 ## Commands
 
@@ -175,10 +177,10 @@ private session storage, and provider limitations.
 
 ### Translate text with `aiw say`
 
-AIW Say is a text translation plugin. On Windows, `python build.py say` builds
-Windows/Linux amd64 binaries and samples under `dist/plugins/aiw-say/`.
-`python build.py plugins` builds and installs Say with the other plugins;
-`python build.py all` also includes this step. Installation preserves an existing Say `aiw.toml`. For manual installation, build
+AIW Say is a text translation plugin. `python build.py build say` compiles
+Windows/Linux amd64 binaries and packages both with samples in one versioned ZIP.
+`python build.py build plugins` stages Say with the other plugins;
+`python build.py install plugins` installs the existing packages. Installation preserves an existing Say `aiw.toml`. For manual installation, build
 `src/cmd/aiw-say` from `src/` as `aiw-say.exe` on Windows or `aiw-say` on Linux/WSL,
 and place it in a directory searched by AIW plugin discovery, such as `PATH`.
 The configuration sample is

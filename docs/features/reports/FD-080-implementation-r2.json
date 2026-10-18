@@ -1,0 +1,16 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-080",
+  "source_event": "FD-080-000018-changes-requested",
+  "human_report": "FD-080-implementation-r2.md",
+  "data": {
+    "worker_session": "fd080-host-20261018-a19d7f",
+    "fd_revision": 18,
+    "previous_report": "FD-080-implementation-r1.md",
+    "fixed_findings": ["R1", "R2"],
+    "compile": {"language": "Python", "files": 4, "runs_this_repair": 1, "result": "passed", "retained_artifacts": false},
+    "not_run": ["tests", "build", "installation", "fault injection", "network"],
+    "recommendation": "ready-for-independent-recheck"
+  }
+}

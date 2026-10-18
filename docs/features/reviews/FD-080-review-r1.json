@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-080",
+  "source_event": "FD-080-000017-implementation-ready",
+  "human_report": "FD-080-review-r1.md",
+  "data": {
+    "verdict": "changes-requested",
+    "session": "fd080-reviewer-20261018-6b2e94",
+    "reviewed_commit": "76b563d41c2a4daa1e2afc1d98c284729b12d584",
+    "base_commit": "fafde4f",
+    "fd_revision": 17,
+    "findings": [
+      {"id": "R1", "severity": "P1", "blocking": true, "file": "src/plugins/aiw-pkg/manager.py", "line": 214, "summary": "rotating 标记先于移动原 previous；移动失败后恢复分支可能删除原唯一备份。", "correction": "明确记录轮换阶段及旧备份存在性，仅清理本次生成的 previous。"},
+      {"id": "R2", "severity": "P2", "blocking": true, "file": "src/plugins/aiw-pkg/manager.py", "line": 246, "summary": "仅公共资源也使 files 非空，缺少当前平台程序的包被报告安装成功。", "correction": "对含平台限定条目的包预检当前平台支持，同时保持纯公共资源包可安装。"}
+    ],
+    "commands": ["Get-Content (instructions, FD, reports, source, event)", "Get-ChildItem (event names and source layout)", "rg (source symbols and paths)", "git diff --stat fafde4f..76b563d", "git diff fafde4f..76b563d -- build.py", "git status --short", "git rev-parse HEAD", "aiw fd show FD-080", "aiw fd claim FD-080 FD-080-000017-implementation-ready --session fd080-reviewer-20261018-6b2e94"],
+    "limits": {"mode": "static-only", "tests_run": false, "compile_run": false, "build_run": false, "installation_run": false, "network_used": false, "implementation_modified": false, "unverified": ["Windows/Linux execution", "file occupancy failures", "fault and crash recovery", "proxy dependencies"]}
+  }
+}

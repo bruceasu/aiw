@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-080",
+  "source_event": "FD-080-000019-implementation-ready",
+  "human_report": "FD-080-review-r2.md",
+  "data": {
+    "verdict": "verification-passed",
+    "session": "fd080-reviewer-20261018-6b2e94",
+    "reviewed_commit": "e145b40120c71325e490914caab1b7a63ab04167",
+    "base_commit": "fafde4f",
+    "repair_base": "76b563d",
+    "fd_revision": 19,
+    "findings": [],
+    "resolved_findings": [
+      {"id": "R1", "evidence": "had_previous plus actual old-previous existence distinguish failed rename from newly created backup; original previous is preserved."},
+      {"id": "R2", "evidence": "restricted platform check precedes staging, locked state writes and hooks; pure all packages remain supported."}
+    ],
+    "commands": ["Get-Content (current event, complete manager.py, FD, r2 evidence and original blocker)", "git rev-parse HEAD", "git diff 76b563d..e145b40 -- src/plugins/aiw-pkg/manager.py", "git diff --stat 76b563d..e145b40", "aiw fd claim FD-080 FD-080-000019-implementation-ready --session fd080-reviewer-20261018-6b2e94"],
+    "limits": {"mode": "bounded-static-recheck", "tests_run": false, "compile_run": false, "build_run": false, "installation_run": false, "network_used": false, "implementation_modified": false, "unverified": ["Windows/Linux execution", "file occupancy and fault behavior", "crash recovery", "proxy dependencies"]}
+  }
+}

@@ -1,7 +1,7 @@
 # FD-080: Separate compile build install and local package lifecycle
 
-**Status:** Open
-**Revision:** 16
+**Status:** Complete
+**Revision:** 20
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -219,39 +219,40 @@ HTTP/S3、仓库索引、本地仓库管理、publish 和 skills/plugin 管理�
 
 - [x] 1.1 明确安装状态目录；小/中；无依赖；状态目录为 <安装目录>/.aiw/packages/，首次安装失败撤销、升级 postinst 失败自动恢复、本地生命周期 CLI、双平台构建、安装自动选平台、不保留旧入口、Python 脚本和 remove 规则均已有用户确认；仅完成此决策项，不代表设计审查或实现完成。
 - [x] 1.2 完成一次独立设计审查；小/中；依赖 1.1；结论 ready，无阻塞，证据 reviews/FD-080-design-r1.md 及 JSON；实现须先安装 skills 共享资源，remove 后保留配置登记供 purge 使用。
-- [ ] 2.1 拆出 compile 和 bin/ 平台产物映射；小/中；依赖 1.2；统一组件入口一次编译 Windows/Linux 两套产物，不接受平台 target，任一平台失败返回非零，静态证明无安装/组包路径。
-- [ ] 2.2 定义 info 和 ZIP 包读写、工作区规则；小/中；依赖 1.2；读写契约一致且拒绝非法路径。
-- [ ] 2.3 build 自动串联所需 compile，再发布 Go 和其他资源到 dist/bin、dist/mist；小/中；依赖 2.1；编译失败不进入发布组装，不使用旧产物替代。
-- [ ] 2.4 build 分别生成版本化 plugin/skill 包；小/中；依赖 2.2；每个 Go 插件一个 ZIP 包含双平台产物，保留 manifest 和共享资源。
-- [ ] 3.1 实现本地包预检和暂存；小/中；依赖 2.2；在专有临时目录解压并在目标写入前完成路径和平台校验，清理不删除本地输入包或恢复材料。
-- [ ] 3.2 实现安装记录及受管文件归属；小/中；依赖 3.1；记录位于各安装根的 .aiw/packages/，不同 --dest 独立，载荷不能覆盖状态区，冲突明确失败，配置文件受保护。
-- [ ] 3.3 实现 Python 脚本调用及失败报告；小/中；依赖 3.2、1.1；缺解释器提前失败。
-- [ ] 3.4 实现单备份升级和文件恢复；小/中；依赖 3.3；升级成功才替换唯一备份，失败保留原备份；postinst 失败自动恢复旧受管文件及记录，保留配置和诊断；恢复失败保留现场并报告，不虚报安装或恢复成功。
-- [ ] 3.4.1 实现首次安装失败撤销；小/中；依赖 3.3；只撤销本次新增受管非配置文件，保留配置与诊断，不产生成功记录，撤销失败报告剩余状态。
-- [ ] 3.4.2 实现重复安装分流；小/中；依赖 2.2、3.4；同版本同内容跳过脚本及安装且不动备份，同版本不同内容正常重装并在成功后替换唯一备份，remove 能恢复同版本的旧内容。
-- [ ] 3.5 实现 aiw pkg remove/purge 已确认的语义；小/中；依赖 3.4、1.1；remove 恢复后删除唯一备份并保留配置，恢复失败保留备份；purge 清除当前版、备份及登记配置，不触及无归属用户文件，不额外假定独立 rollback 命令已获确认。
-- [ ] 3.6 build.py install --dest <dir> <target> 接入本地安装引擎；小/中；依赖 2.3、2.4、3.5；all 覆盖所有目标，自动选择本机平台产物，缺失匹配产物报错。
-- [ ] 3.7 实现 aiw pkg install 包文件入口及文件/包名分流；小/中；依赖 3.1、3.2、3.3、3.4；本地包离线安装，缺失或损坏文件不回退到仓库；包名入口明确提示仓库能力尚未实现。
+- [x] 2.1 build.py compile_components 统一组件入口生成 Windows/Linux amd64 两套产物；无平台 target、任一失败即异常退出；无安装路径。
+- [x] 2.2 定义 info 和 ZIP 包读写、工作区规则；小/中；依赖 1.2；archive.py 实现 TOML 映射、校验与规范化指纹、双层 ZIP 安全读取及工作区组包；静态读取写入字段一致，待最终 compile-only。
+- [x] 2.3 build 先完成所有选中组件 compile 再 package_component；主程序/Gateway 发布双平台原始程序及映射包，proxy/docs 等发布到 mist；发布清单供 install 使用。
+- [x] 2.4 build 按插件目录及 SKILL.md 目录组包，Go 插件一个 ZIP 包含双平台产物；skills-support 排在 skills 前，保留 manifest 和共享资源。
+- [x] 3.1 archive.read_package 全量预检并在专有临时目录展开；只安装匹配平台，不删除本地输入包。
+- [x] 3.2 Manager 在各安装根 .aiw/packages/ 记录文件归属；全局互斥、拒绝状态覆盖和其他包冲突；配置保留登记。
+- [x] 3.3 Manager.hook 通过当前 Python 显式调用，校验解释器后才写安装根；参数/环境及失败日志已实现。
+- [x] 3.4 Manager 保存 before 快照、成功后轮换唯一 previous；异常自动恢复且保留诊断，恢复失败保留 transaction 并阻止后续写操作。
+- [x] 3.4.1 首次安装失败恢复 before 的缺失文件状态，保留配置登记及诊断；不产生成功安装记录。
+- [x] 3.4.2 版本与规范化指纹均相同则跳过；同版本不同内容正常重装，previous 使用快照和旧记录恢复。
+- [x] 3.5 Manager.remove 统一 remove/purge；恢复成功才消费备份，配置保留或按 purge 清除；无独立 rollback 命令。
+- [x] 3.6 build.py install 消费本次 target 发布清单并调用共享 Manager；不编译或扫描 latest，all 逐包处理。
+- [x] 3.7 aiw-pkg.py 提供本地 install/remove/purge/pack；文件错误不回退仓库，包名入口明确报告仓库能力未实现。
 - [-] 4.1 index 格式和本地仓库定位：用户确认移至后续 FD 候选，未实现。
 - [-] 4.2 HTTP 获取和缓存完整性：用户确认移至后续 FD 候选，未实现。
 - [-] 4.3 仓库适配协议：用户确认移至后续 FD 候选，未实现。
 - [-] 4.4 S3 适配：用户确认移至后续 FD 候选，保留 awscli/tiny client 方案讨论，未实现。
 - [-] 4.5 plugin 管理命令接入共同包引擎：用户确认移至后续 FD 候选，未实现。
 - [-] 4.6 skills 管理命令接入共同包引擎：用户确认移至后续 FD 候选，未实现。
-- [ ] 5.1 更新帮助、使用说明及稳定规范；小/低；依赖已实现项；说明路径、兼容及恢复限制。
-- [ ] 5.2 记录 compile-only 和独立实现审查，完成本地交付归档；小/中；依赖全部未取消工作项及有效 Gate。
+- [x] 5.1 pkg manifest/CLI 帮助、docs/usage/aiw-pkg.md、既有 cli-reference/cz 文档及 aiw-packages/cli-and-plugins 稳定规范已更新，说明命令迁移、路径、单备份及恢复限制。
+- [-] 5.2 原合并项混合实现验证与后续生命周期，取消并拆为 5.2.1；独立审查/交付/归档由 TODO 跟踪，不在实现阶段假报完成。
+- [x] 5.2.1 compile-only 与静态实现证据；小/低；依赖全部实现项；四个 Python 文件内存 compile 通过，git diff --check 通过，见 reports/FD-080-implementation-r1.md 及 JSON。
 
 ## TODO
 
 - 创建时索引阻塞和过期 Planner 交接均已通过受支持 CLI 恢复，原临时文件已清理，详见两份 blocker 的恢复结果。
-- 1.1 所列决策均已确认；独立设计审查 ready，实现尚未开始。
+- 1.1 所列决策均已确认；设计审查、实现及独立实现复查通过，待 PM squash 交付和 Complete 归档。
 - 每包只保留一个上一版本备份已确认；remove 恢复成功后删除备份、不反向备份，purge 清除当前版、备份及登记配置。
 - 重复安装规则已确认：同版本同内容跳过，同版本不同内容重装；内容指纹纳入 2.2 的包契约设计。
 - 解压使用专有临时目录；未来仓库下载包用后清理，正式历史与必要恢复材料单独保留。
 - 范围拆分已确认；后续 FD 候选尚未分配编号，不为其宣称进度或建立实现依赖。
 - build 自动串联 compile 已确认；install 保持只消费已有发布产物。
 - Go 插件每版本一个 ZIP 包含 Windows/Linux 两套产物已确认；2.2 明确包内平台与公共文件映射。
-- 设计已就绪，待发出 design-ready、提交计划并创建 feature/FD-080 与 .wt/FD-080 后实现。
+- Worker 已在 feature/FD-080、.wt/FD-080 完成实现；父分支 develop，独立复查已通过，交付/归档尚未完成。
 
 ## Acceptance
 
@@ -288,6 +289,41 @@ aiw pkg remove/purge 和 build.py install 使用共同本地引擎，行为与�
 HTTP/S3、索引、publish 及现有 skills/plugin 管理命令整合不属于本 FD 验收范围。
 
 ## Verification
+
+### 独立实现复查 r2
+
+Reviewer session=fd080-reviewer-20261018-6b2e94，source_event=FD-080-000019-implementation-ready；
+审查 e145b40120c71325e490914caab1b7a63ab04167，结论 verification-passed。
+报告 reviews/FD-080-review-r2.md 及 JSON；首轮 R1/R2 经有界静态复查已解决，
+原 blocker-review-r1 保留原事实并标记 resolved。未执行测试、编译、构建、安装或网络；
+通过不表示运行风险消失。待 PM 检查交付及归档门槛，不由 Reviewer 执行交付。
+
+### 首轮审查修复（复查前历史）
+
+首轮 Reviewer 发出 FD-080-000018-changes-requested；Worker 已认领并修复 R1/R2。
+R1 区分原备份 rename 未成功与新备份创建，R2 在写状态前独立校验平台支持。
+修复后四文件内存 compile 通过；未运行测试/安装/故障注入。
+见 reports/FD-080-implementation-r2.md 及 JSON，待第二次独立审查。
+
+### 独立实现审查 r1
+
+Reviewer session=fd080-reviewer-20261018-6b2e94，source_event=FD-080-000017-implementation-ready；
+审查 76b563d41c2a4daa1e2afc1d98c284729b12d584，相对 fafde4f，结论 changes-requested。
+报告 reviews/FD-080-review-r1.md 及 JSON。阻塞项：备份轮换首个 rename 失败可能删除
+原唯一备份；公共资源可能掩盖缺少当前平台程序，导致错误安装成功。
+仅静态审查，未运行测试、编译、构建或安装；修复后需当前独立审查结论。
+
+### 首轮 Worker 证据（历史）
+
+source_event=FD-080-000016-design-ready；session=fd080-host-20261018-a19d7f。
+Python 内存 compile 检查 build.py 与 aiw-pkg 的三个 Python 文件通过（4 文件，
+无字节码或程序产物）；更新聚合发布清单后同命令重新执行一次通过。
+`git diff --check fafde4f` 通过；静态追踪目标展开、平台映射、脚本调用、
+配置登记、before/previous 轮换和 remove/purge。见 implementation-r1 报告。
+未运行测试、Go/Node 编译、发布构建、安装、故障注入、网络或依赖下载。
+根 scripts/compile.py 只编译未变更 Go 程序，本次采用更窄的 Python 语言级 compile。
+跨平台运行、Windows 文件占用、崩溃恢复和 proxy 运行时依赖未经运行验证。
+独立实现审查尚未执行，不把 Worker 静态分析表示为通过审查。
 
 本轮 Auto：用户授权 force-emit 后成功认领 FD-080-000015-design-requested；
 独立设计审查 ready，见 reviews/FD-080-design-r1.md，未跳过实现审查。
