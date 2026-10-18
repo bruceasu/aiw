@@ -48,6 +48,8 @@
 
 ## TODO
 
+- 无剩余实现项。`FD-098-000005-verification-passed` 后已交付至 develop：`2a56bbe`，来源 `870c2f7`；CLI 验证交付并移除专用 worktree/分支，`aiw fd close FD-098 Complete` 已归档。下列阶段记录保留为历史。
+
 - 独立设计审查 ready，见 `docs/features/reviews/FD-098-design.md`；Worker 已领取 FD-098-000003-design-ready。
 - 文档、规范、compile-only 和一次最终只读 diff/status 检查已完成；独立实现静态审查通过，无阻断发现，见 `docs/features/reviews/FD-098-review.md`；待 PM 本地交付、清理并归档。
 
@@ -63,6 +65,8 @@
 6. 不迁移旧安装状态，不伪造成员当前版本；dry-run 不写安装文件或记录。
 
 ## Verification
+
+- 本地交付完成：`aiw git wt local-merge FD-098` 生成 develop 单父 squash `2a56bbe`，校验来源 `870c2f7` 后完成 worktree/分支清理；`aiw fd close FD-098 Complete` 成功。未发布、安装或推送。
 
 - 计划：一次 `python scripts/compile.py`，设置 GOPROXY=off、GOSUMDB=off、GOTOOLCHAIN=local，禁止网络和保留发行二进制；Python 改动另以同一 compile-only 命令批次调用内置 compile() 作内存语法编译，无 pyc 产物。
 - 静态检查：图规划 visit/preflight、Manager.install/remove/orphans、保留记录、文档和规范，覆盖上述验收场景；只运行一次实现后只读 diff 检查。
@@ -80,3 +84,5 @@
 - `openspec/specs/aiw-packages/spec.md`
 - `src/plugins/aiw-pkg/operations.py`、`manager.py`
 - `scripts/package_definitions.py`、`docs/usage/aiw-pkg.md`
+
+**Completed:** 2026-10-18
