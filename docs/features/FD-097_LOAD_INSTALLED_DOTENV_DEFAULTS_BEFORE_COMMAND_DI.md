@@ -1,7 +1,7 @@
 # FD-097: Load installed dotenv defaults before command dispatch
 
-**Status:** Open
-**Revision:** 3
+**Status:** Pending Verification
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -25,6 +25,8 @@ mode: existing process variables, including empty values, are retained during
 parse/expansion and export. File-defined variables can reference previously parsed
 file defaults or parent environment. Respect Windows case-insensitive keys for
 new defaults and expansion, while preserving existing Loader behavior by default.
+Handle a first-line UTF-8 BOM and ignore empty pseudo-keys when seeding from the
+Windows process environment; do not alter those actual inherited process entries.
 Replace expansion panics with returned errors so startup fails clearly on cycles.
 No command substitution, shell invocation or new dependency.
 
@@ -48,13 +50,13 @@ No linked Issue or OpenSpec change.
 
 ## Work Items
 
-- [ ] 1.1 Add executable-directory defaults loading and safe error propagation.
+- [x] 1.1 Add executable-directory defaults loading and safe error propagation.
   Size small, difficulty medium, no dependencies. Completion: defaults-only parsing,
   inherited-empty/case/expansion behavior, absent file and returned cycle errors traced.
-- [ ] 1.2 Load defaults before all aiw command paths and document inheritance.
+- [x] 1.2 Load defaults before all aiw command paths and document inheritance.
   Size small, difficulty low, depends on 1.1. Completion: main pre-dispatch hook,
   shared plugin inheritance, direct-plugin boundary and priority docs/spec aligned.
-- [ ] 1.3 Prepare offline Go compile-only and static evidence.
+- [x] 1.3 Prepare offline Go compile-only and static evidence.
   Size small, difficulty low, depends on 1.2. Completion: scripts/compile.py to NUL
   and one static diff check. Independent review remains a completion gate.
 
@@ -70,13 +72,17 @@ No linked Issue or OpenSpec change.
 
 ## TODO
 
-- Obtain design feedback, implement, compile-only and request independent review.
+- Independent design ready; implementation/docs and offline Go compile-only complete.
+- Independent static review required before completion; unrelated git-guide edit preserved.
 
 ## Verification
 
 Static review plus one offline root scripts/compile.py to NUL. No Go tests,
 formatters, runtime commands, final builds, installation or network.
 Preserve unrelated user changes and report installed launcher still needs updating.
+Offline scripts/compile.py returned exit 0 for both entrypoints to NUL. One static
+diff/read batch inspected default parsing/export, main timing, docs and new helper.
+No runtime dotenv or plugin invocation executed. See implementation report.
 
 ## Sources
 

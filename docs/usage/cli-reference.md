@@ -655,6 +655,24 @@ setting. An empty value is treated as unset.
 
 ## Environment Variables
 
+At startup, `aiw` loads `.env` beside the executable before any command dispatch.
+For `C:\green\aiw\aiw.exe`, this is `C:\green\aiw\.env`. Values become process
+environment defaults for built-in features and every plugin launched through aiw.
+Existing process variables win, including explicitly empty values; Windows key
+matching is case-insensitive. File defaults use the existing Go dotenv syntax,
+including quotes, `export` and `${NAME}` expansion against inherited variables or
+previous file defaults. UTF-8 BOM files are supported.
+
+The startup loader does not search project/parent directories or use AIW_ROOT to
+choose the file. A missing file is harmless; load/expansion/export errors stop
+dispatch with an error, without printing values. Plugins launched directly rather
+than through aiw do not run this startup loader. build.py still loads its checkout
+root `.env` separately.
+
+Installed defaults are effective environment variables, so they precede the existing
+Go LLM resolver's project-dotenv fallback. Explicit LLM configuration retains its
+existing priority. Consumer-specific empty-value fallback rules remain unchanged.
+
 Plugin processes inherit the parent environment, including provider settings
 such as `AIW_LLM_*`, `OPENAI_*`, and `AIW_PYTHON`. AIW also injects or
 overrides the following variables:
@@ -668,7 +686,8 @@ overrides the following variables:
 | `AIW_ROOT`              | Directory containing the root `aiw` executable |
 | `AIW_WORKSPACE`         | Working directory from which the plugin was launched |
 
-Configuration files are not copied into the plugin environment. The plugin
+TOML configuration contents are not copied into the plugin environment; installed
+dotenv defaults are inherited as described above. The plugin
 keeps the inherited working directory and resolves project `aiw.toml` or
 `.aiw.toml` there; user and provider environment variables remain inherited.
 

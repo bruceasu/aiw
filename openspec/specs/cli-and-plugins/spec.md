@@ -319,3 +319,27 @@ Snapshot domain-modeling MUST remain usable from its injected entry contract
 without loading supporting files. The source/project wayfinder entry and
 installed index item are retired; no thin alias or CLI argument is introduced.
 Existing external maps, historical evidence and user-level installs are untouched.
+
+### Requirement: Installed dotenv process defaults
+
+Before any aiw command dispatch, including help/version and plugin discovery, aiw
+MUST load only .env in the directory returned for its executable. A missing file
+MUST be harmless; other load/expansion/export failures MUST stop dispatch with a
+contextual error without logging values or file contents. Startup MUST NOT search
+cwd/parent directories, AIW_ROOT overrides or profile files for this file.
+
+Existing process variables, including empty values, MUST take priority during both
+expansion and export. Windows defaults MUST honor case-insensitive environment
+keys. The existing Go Loader quoting/export/expansion syntax and UTF-8 BOM files
+MUST be supported; cycle failures MUST be returned as errors rather than panics.
+Parsing MUST NOT execute shell commands. Other Loader users retain their ordinary
+file-overlay semantics.
+
+Built-ins and plugins launched through aiw MUST receive the effective environment
+before use. Existing engine-owned invocation metadata, working directory, arguments
+and streams MUST remain unchanged. Direct standalone plugin invocation does not run
+this loader. build.py retains its separate checkout .env behavior.
+
+Installed defaults are process environment and therefore precede the existing Go
+LLM dotenv fallback maps; explicit LLM config precedence remains. Existing consumers'
+empty-value fallback rules are not changed by preserving empty process variables.

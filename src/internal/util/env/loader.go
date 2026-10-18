@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 
 	"aiw/internal/util"
@@ -14,18 +15,40 @@ import (
 var varPattern = regexp.MustCompile(`(?s)(\\)?\$\{([^}]+)\}`)
 
 type Loader struct {
-	Env map[string]string
+	Env          map[string]string
+	defaultsOnly bool
 }
 
 func New() *Loader {
 	env := map[string]string{}
 	for _, item := range os.Environ() {
 		parts := strings.SplitN(item, "=", 2)
-		if len(parts) == 2 {
+		if len(parts) == 2 && parts[0] != "" {
 			env[parts[0]] = parts[1]
 		}
 	}
 	return &Loader{Env: env}
+}
+
+func (l *Loader) inherited(key string) bool {
+	if !l.defaultsOnly {
+		return false
+	}
+	_, exists := os.LookupEnv(key)
+	return exists
+}
+
+func (l *Loader) parsedKey(key string) string {
+	if l.defaultsOnly && runtime.GOOS == "windows" {
+		return strings.ToUpper(key)
+	}
+	return key
+}
+
+func (l *Loader) storeParsed(key, value string) {
+	if !l.inherited(key) {
+		l.Env[l.parsedKey(key)] = value
+	}
 }
 
 func (l *Loader) Load(dir string, profile string) error {
@@ -64,6 +87,9 @@ func (l *Loader) ParseFile(path string) error {
 	for scanner.Scan() {
 		lineNo++
 		raw := scanner.Text()
+		if lineNo == 1 {
+			raw = strings.TrimPrefix(raw, "\ufeff")
+		}
 		if multilineKey != "" {
 			multilineBuff.WriteString("\n")
 			multilineBuff.WriteString(raw)
@@ -71,11 +97,13 @@ func (l *Loader) ParseFile(path string) error {
 				value := multilineBuff.String()
 				value = strings.TrimPrefix(value, `"`)
 				value = strings.TrimSuffix(value, `"`)
-				resolved, err := l.expand(value, map[string]bool{})
-				if err != nil {
-					return fmt.Errorf("%s:%d: %w", path, lineNo, err)
+				if !l.inherited(multilineKey) {
+					resolved, err := l.expand(value, map[string]bool{})
+					if err != nil {
+						return fmt.Errorf("%s:%d: %w", path, lineNo, err)
+					}
+					l.storeParsed(multilineKey, resolved)
 				}
-				l.Env[multilineKey] = resolved
 				multilineKey = ""
 				multilineBuff.Reset()
 			}
@@ -103,24 +131,31 @@ func (l *Loader) ParseFile(path string) error {
 		if strings.HasPrefix(value, `'`) && strings.HasSuffix(value, `'`) {
 			value = strings.TrimPrefix(value, `'`)
 			value = strings.TrimSuffix(value, `'`)
-			l.Env[key] = value
+			l.storeParsed(key, value)
 			continue
 		}
 		if strings.HasPrefix(value, `"`) && strings.HasSuffix(value, `"`) {
 			value = strings.TrimPrefix(value, `"`)
 			value = strings.TrimSuffix(value, `"`)
 		}
+		if l.inherited(key) {
+			continue
+		}
 		resolved, err := l.expand(value, map[string]bool{})
 		if err != nil {
 			return fmt.Errorf("%s:%d: %w", path, lineNo, err)
 		}
-		l.Env[key] = resolved
+		l.storeParsed(key, resolved)
 	}
 	return scanner.Err()
 }
 
 func (l *Loader) expand(input string, visiting map[string]bool) (string, error) {
+	var expandErr error
 	result := varPattern.ReplaceAllStringFunc(input, func(match string) string {
+		if expandErr != nil {
+			return ""
+		}
 		sub := varPattern.FindStringSubmatch(match)
 		if sub[1] == `\` {
 			return "${" + sub[2] + "}"
@@ -137,12 +172,19 @@ func (l *Loader) expand(input string, visiting map[string]bool) (string, error) 
 		} else {
 			name = expr
 		}
+		name = l.parsedKey(name)
 		if visiting[name] {
-			panic("cyclic env reference: " + name)
+			expandErr = fmt.Errorf("cyclic env reference: %s", name)
+			return ""
 		}
 		visiting[name] = true
 		defer delete(visiting, name)
 		val, ok := l.Env[name]
+		if l.defaultsOnly {
+			if inherited, exists := os.LookupEnv(name); exists {
+				val, ok = inherited, true
+			}
+		}
 		if !ok {
 			val = os.Getenv(name)
 		}
@@ -151,11 +193,12 @@ func (l *Loader) expand(input string, visiting map[string]bool) (string, error) 
 		}
 		expanded, err := l.expand(val, visiting)
 		if err != nil {
-			panic(err)
+			expandErr = err
+			return ""
 		}
 		return expanded
 	})
-	return result, nil
+	return result, expandErr
 }
 
 func (l *Loader) MustGet(key string) string {

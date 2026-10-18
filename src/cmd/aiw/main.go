@@ -10,6 +10,7 @@ import (
 	completioncmd "aiw/internal/commands/completion"
 	help "aiw/internal/commands/help"
 	initcmd "aiw/internal/commands/initcmd"
+	"aiw/internal/util/env"
 	"aiw/internal/version"
 
 	plug "aiw/internal/plugin"
@@ -28,6 +29,10 @@ const (
 )
 
 func main() {
+	if err := env.LoadExecutableDefaults(); err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		os.Exit(1)
+	}
 	if len(os.Args) < 2 {
 		help.Dispatch([]string{})
 		return
