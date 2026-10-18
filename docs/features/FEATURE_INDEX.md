@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-078](FD-078_AIW_FILE_CONVERT_CONVERT_DOCUMENTS_TO_TEXT_OR_MA.md) | aiw-file-convert: convert documents to text or Markdown | Open | Medium |
 
 ## Completed
 
