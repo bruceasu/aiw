@@ -43,7 +43,7 @@ HOW_TO_DIR: Final[Path] = HERE / "how-to"
 
 CODEX_MODEL: Final[str] = os.environ.get(
     "AIW_GIT_GUIDE_MODEL",
-    "gpt-5.4-mini",
+    "gpt-6-luna",
 )
 
 MAX_DIRECT_MATCHES: Final[int] = 3
