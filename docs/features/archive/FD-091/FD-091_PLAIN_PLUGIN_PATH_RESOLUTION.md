@@ -89,3 +89,5 @@ No additional runtime, compile, tests, build or installation was performed by Re
 %% actual installed binary will remain old until the user rebuilds and installs.
 %% Symlink/irregular path failures remain fail-closed; no promise to fix every reparse setup.
 %% Single-writer filesystem assumptions and path replacement races remain unchanged.
+
+**Completed:** 2026-10-18
