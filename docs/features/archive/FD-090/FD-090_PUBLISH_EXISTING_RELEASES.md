@@ -91,3 +91,5 @@ No retry performed. The directory and files were statically observed to exist.
 %% Publication changes from implicit build to existing-file consumption as requested.
 %% Multi-package publication can partially succeed; immutable identities remain.
 %% aiw pkg runtime failure remains undetermined and outside this FD's acceptance.
+
+**Completed:** 2026-10-18
