@@ -18,4 +18,4 @@
 
 Worker 报告记录离线 `python scripts/compile.py` 对两个 Go 入口输出 NUL、退出码 0；本 Reviewer 未重复编译。未运行测试、格式化、lint、安装程序、启动验证、最终产物构建或网络命令。已安装 launcher 尚未更新；实际 dotenv 导入和子进程继承仍未经运行验证。
 
-按 PM 的当前限制，本次只写审阅双报告，不修改 FD、TODO 或 FEATURE_INDEX，不 emit 验收事件。索引权限故障属于流程阻塞，不构成代码编译失败。无关 `src/plugins/aiw-git/git-guide.py` 未读取、修改或暂存。
+最初按 PM 限制只写双报告并等待索引写入授权。用户随后明确允许继续本地审阅记录和归档，现补记 FD TODO/Verification，并沿用同一 Reviewer 会话和来源事件正常提交 verification-passed。若再次发生权限失败则立即停止，不重试；索引权限故障属于流程阻塞，不构成代码编译失败。无关 `src/plugins/aiw-git/git-guide.py` 未读取、修改或暂存。

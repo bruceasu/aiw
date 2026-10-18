@@ -1,7 +1,7 @@
 # FD-097: Load installed dotenv defaults before command dispatch
 
-**Status:** Pending Verification
-**Revision:** 6
+**Status:** Complete
+**Revision:** 7
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -73,7 +73,7 @@ No linked Issue or OpenSpec change.
 ## TODO
 
 - Independent design ready; implementation/docs and offline Go compile-only complete.
-- Independent static review required before completion; unrelated git-guide edit preserved.
+- Independent static review passed; unrelated git-guide edit preserved.
 
 ## Verification
 
@@ -83,6 +83,11 @@ Preserve unrelated user changes and report installed launcher still needs updati
 Offline scripts/compile.py returned exit 0 for both entrypoints to NUL. One static
 diff/read batch inspected default parsing/export, main timing, docs and new helper.
 No runtime dotenv or plugin invocation executed. See implementation report.
+Independent Reviewer static review passed against baseline 862a1cc and implementation
+be23c82; subsequent commits add evidence only. Report: docs/features/reviews/FD-097-review.md
+and its JSON sidecar. No blocking findings; installed launcher and runtime inheritance
+remain unverified. Reviewer session: codex-fd097-startup-env-review-20261019;
+source event: FD-097-000006-review-requested.
 
 ## Sources
 
