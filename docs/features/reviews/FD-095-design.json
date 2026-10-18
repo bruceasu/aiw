@@ -1,0 +1,17 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-095",
+  "source_event": null,
+  "human_report": "FD-095-design.md",
+  "data": {
+    "source_event_reason": "Bounded delegated design feedback without claiming a workflow event",
+    "fd_revision": 2,
+    "recommendation": "ready",
+    "blocking_findings": [],
+    "reviewed": ["list argument parser", "installed-list early return", "repository latest/all selection and kind filter", "unchanged JSON data and other commands"],
+    "implementation_boundaries": ["Sort display copies only", "Keep installed list independent of repository configuration", "Default missing installed reason to manual without persistence", "Preserve empty JSON arrays and all existing JSON fields and order", "Document explicit JSON compatibility mode"],
+    "checks_not_run": ["tests", "runtime commands", "compile", "build", "install", "network"],
+    "limitations": ["Design-only static feedback; implementation still requires independent review"]
+  }
+}
