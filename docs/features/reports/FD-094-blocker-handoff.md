@@ -7,3 +7,7 @@
 Planner 保留 ID，修正完成标准为文档/编译/报告这些已完成的实现证据；独立 review
 仍是完成 Gate，没有绕过或伪造通过。无用户决策需求。修正后重试同一交接。
 后续计划应把独立 verdict 写进 Verification Gate，而不是 Worker 前置任务。
+
+补充：修正 item 后，第二次交接因 Windows UTF-8 BOM 导致 JSON 解析拒绝。
+已根据 structured_evidence 源码确认原因并仅将当前 FD JSON 写为无 BOM UTF-8。
+没有改变 schema 或跳过证据校验。原诊断与修正运行预算不变。

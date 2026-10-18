@@ -1,4 +1,4 @@
-﻿# FD-094: Resolve Windows junction ancestors in plugin paths
+# FD-094: Resolve Windows junction ancestors in plugin paths
 
 **Status:** In Progress
 **Revision:** 7
