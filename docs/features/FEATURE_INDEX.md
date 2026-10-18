@@ -12,7 +12,6 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-092](FD-092_UNIQUE_OWNERSHIP_FOR_PACKAGE_USAGE_DOCUMENTS.md) | ﻿# FD-092: Unique ownership for package usage documents | Complete | Medium |
 | [FD-001](archive/FD-001/FD-001_EVENT_DRIVEN_FD_WORKFLOW.md) | 事件驱动的 FD 工作流 | Complete | High |
 | [FD-002](archive/FD-002/FD-002_ACTIONABLE_FD_HANDOFF_RECOVERY_HINTS.md) | Actionable FD handoff recovery hints | Complete | Medium |
 | [FD-003](archive/FD-003/FD-003_COMPACT_CZ_RELEASE.md) | 精简 aiw-cz 发布包 | Complete | Medium |
@@ -104,6 +103,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-089](archive/FD-089/FD-089_BUILD_WITHOUT_REPOSITORY_COPY.md) | Build and install without a repository copy | Complete | Medium |
 | [FD-090](archive/FD-090/FD-090_PUBLISH_EXISTING_RELEASES.md) | Publish existing releases without rebuilding | Complete | Medium |
 | [FD-091](archive/FD-091/FD-091_PLAIN_PLUGIN_PATH_RESOLUTION.md) | Resolve ordinary plugin paths without case enumeration | Complete | Medium |
+| [FD-092](archive/FD-092/FD-092_UNIQUE_OWNERSHIP_FOR_PACKAGE_USAGE_DOCUMENTS.md) | ﻿# FD-092: Unique ownership for package usage documents | Complete | Medium |
 
 ## Deferred / Closed
 

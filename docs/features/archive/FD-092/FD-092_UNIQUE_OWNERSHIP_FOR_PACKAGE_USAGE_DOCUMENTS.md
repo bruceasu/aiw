@@ -68,3 +68,5 @@ Existing ZIPs still require explicit rebuild; actual installation was not run.
 - scripts/package_definitions.py
 - D:/green/aiw/.aiw/packages/aiw-file-convert/current.json (read only)
 - dist/plugins/1.0.0/aiw-file-1.0.0.zip info (read only)
+
+**Completed:** 2026-10-18
