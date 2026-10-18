@@ -1,7 +1,7 @@
 # FD-095: Readable package list output with explicit JSON mode
 
-**Status:** Pending Verification
-**Revision:** 5
+**Status:** Complete
+**Revision:** 7
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -49,7 +49,7 @@ No linked Issue or OpenSpec change.
 ## TODO
 
 - Independent design ready; implementation/docs and Python compile-only complete.
-- Independent implementation review remains required before completion.
+- Independent implementation review passed; local delivery/archive remains.
 
 ## Verification
 
@@ -58,6 +58,9 @@ No tests, runtime list invocation, network, final build or installation.
 Python in-memory compile exited 0. One implementation diff inspection traced both
 list branches, display-only sorting, JSON preservation, empty selections and
 short-circuit handling for other subcommands. See implementation report.
+Independent static review passed at d907a9d against b38990a; see
+docs/features/reviews/FD-095-review.md and its JSON sidecar. Runtime output,
+tests, builds and installation remain unperformed.
 
 ## Sources
 
