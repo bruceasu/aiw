@@ -110,3 +110,5 @@ see reviews/FD-096-review.md and its JSON sidecar. Reviewer ran no runtime check
 - src/plugins/aiw-pkg/{operations,manager,repository,archive}.py
 - scripts/local_packages.py and build.py install branch
 - openspec/specs/aiw-packages/spec.md; docs/usage/aiw-pkg.md
+
+**Completed:** 2026-10-18
