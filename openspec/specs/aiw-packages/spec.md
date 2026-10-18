@@ -161,7 +161,8 @@ dist/mist, plugins, skills, resources and collections version directories MAY be
 resolved. No repository, latest-version or network fallback is allowed. Missing,
 mismatched, conflicting duplicate or ambiguous artifacts MUST fail before destination
 writes. Fetch MUST revalidate identity, metadata, size and hash. Shared graph/cycle,
-platform, target ownership, exact-version and transaction protections MUST remain.
+platform, target ownership, exact runtime-dependency/explicit-selection version
+and transaction protections MUST remain.
 
 Before Manager construction, host-selected payload targets MUST be checked against
 all original source ZIPs. A file target equal to a source ZIP or an ancestor of any
@@ -232,21 +233,51 @@ purge MUST 删除本包受管文件、登记配置和相关状态，MUST 保留�
 
 v2 MUST 声明精确 name/version 的 dependencies/members；只有 collection 可含 members，
 collection MUST 无载荷和 hook。集合成员 MUST 不重复携带于集合包。
+members 的精确版本 MUST 用作显式集合安装和 --core/--all 更新的发行选取配方，
+MUST NOT 作为已安装集合对成员的持续版本锁。已安装成员 MUST 可独立升级，
+MUST NOT 因保留集合记录的旧成员版本而失败或要求移除/更新集合。
 安装 MUST 在文件变更前检查全部包身份、路径、平台、缺失、循环、版本与目标冲突，
-并校验最终状态中未更新包的反向依赖。不满足精确版本 MUST 失败，不隐式降级。
-安装状态 MUST 记录真实成员、运行依赖及 manual/auto，已有 manual MUST NOT 降级。
+并校验最终状态中未更新包的反向运行依赖。dependencies 不满足精确版本 MUST 失败，不隐式降级。
+最终状态 MUST 校验集合成员存在，并对 dependencies/members 两类边执行循环检查，
+MUST NOT 校验保留集合 members 的版本与成员当前版本相等。
+安装状态 MUST 记录真实成员名称、配方版本、运行依赖及 manual/auto，已有 manual MUST NOT 降级。
+成员当前版本 MUST 从其自身记录读取；成员独立升级 MUST NOT 要求迁移或重写旧集合记录。
 集合 remove MUST 保留成员并显示孤立包及显式清理/保留提示。
 autoremove MUST 只卸载从所有 manual 根不可达的 auto 包且保留配置；dry-run MUST 不写状态。
 mark manual MUST 不重新部署或下载包。保留包仍依赖的包 MUST 不被单独移除。
+
+#### Scenario: Upgrade a member without updating its collections
+
+- GIVEN installed aiw-all and aiw-core 1.0.0 list member M 1.0.0
+- WHEN M 1.0.1 is installed with compatible runtime dependencies
+- THEN the operation MUST permit M 1.0.1 without updating or removing either collection
+- AND their retained recipe versions MUST NOT be treated as M's current installed version.
+
+#### Scenario: Preserve genuine runtime dependency conflicts
+
+- GIVEN an installed package requires shared resource R at exactly 1.0.0
+- WHEN a member upgrade would replace R with 1.0.1 without updating that dependent
+- THEN preflight MUST reject the operation before installation state changes
+- AND collection membership rules MUST NOT waive the runtime dependency.
 
 ### Requirement: 更新范围与命令整合
 
 aiw update MUST 与 aiw pkg update 一致。默认 MUST 只更新已安装内容，MUST NOT 补装集合新增成员，
 MUST NOT 记录未安装成员；必需运行依赖可补装且 MUST 展示。--core/--all MUST 互斥，
 MUST 更新并补装固定发行集合，MUST NOT 卸载范围外包或遍历第三方仓库作为发行清单。
+默认 update MUST 使用已选成员更新根的版本，MUST NOT 被集合配方的旧版本覆盖或阻挡；
+此规则 MUST NOT 放宽 dependencies 的精确要求或显式发行集合的精确选取。
 所有 dry-run MUST 不写安装文件/状态或执行 hook。
 旧 plugin/skills 命令 MUST 删除；pkg skill MUST 保留原作用域、受管记录及本地修改保护。
 pkg entries MUST 保留可用插件入口元信息，与仓库列表和已安装包列表区分。
+
+#### Scenario: Default update keeps independently selected member versions
+
+- GIVEN the latest available collection still lists M 1.0.0 and M 1.0.1 is available
+- WHEN default update selects installed M at 1.0.1
+- THEN the old collection recipe MUST NOT conflict with or downgrade that selection
+- AND new uninstalled collection members MUST remain excluded
+- AND explicit collection installation and --core/--all updates MUST retain exact recipe selection.
 
 ### Requirement: 统一仓库与不可覆盖发布
 
@@ -306,7 +337,9 @@ supported. The aiw-docs resource continues to use docs/reference paths.
 
 Build-local installation MUST select all requested roots before expanding a single
 deduplicated dependency/member graph. Roots MUST retain manual-install semantics.
-Before mutation the complete graph MUST pass exact-version and cycle checks;
+Before mutation the complete graph MUST pass exact runtime-dependency version,
+explicit collection-selection, member-existence and cycle checks. Installed
+collection membership MUST NOT pin a member's version;
 changed payloads MUST pass integrity, platform, target ownership and size checks.
 The 512 MiB aggregate input-ZIP limit applies to acquired archives in the operation;
 large groups MAY require separate explicit targets. Transactions remain per package.
@@ -339,7 +372,9 @@ Named repository installs and updates MUST compare installed name/version/finger
 with the validated index before acquiring archives. Matching installed nodes MUST
 skip fetch, decompression, per-target filesystem inspection and installed-content
 hashing. Graph planning MUST use the complete index dependencies/members and retain
-existing collection trim, root-reason, exact-version and cycle semantics.
+existing collection trim, root-reason, exact runtime-dependency and cycle semantics.
+Default unscoped updates MUST prefer preselected member roots over collection
+recipe versions; explicit collection selections MUST retain exact recipes.
 Metadata snapshots MUST be checked under the existing installation lock; incomplete
 transactions MUST still block changes. Retained record metadata MAY be updated under
 lock when reason/members change, without touching installed payloads.

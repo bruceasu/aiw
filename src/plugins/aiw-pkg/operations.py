@@ -103,8 +103,13 @@ class Operation:
                     previous = {r["name"] for r in old[package_name].get("members", [])}
                     members = [r for r in members if r["name"] in previous and r["name"] in old]
                 actual_members[package_name] = members
-                for ref in info.get("dependencies", []) + members:
+                for ref in info.get("dependencies", []):
                     visit(ref["name"], ref["version"])
+                for ref in members:
+                    # Default update already selected the latest installed members.
+                    # A collection recipe must not pin those independent roots.
+                    wanted = None if update and scope is None and ref["name"] in roots else ref["version"]
+                    visit(ref["name"], wanted)
                 visiting.remove(package_name)
                 done.add(package_name)
                 order.append(package_name)
@@ -157,10 +162,16 @@ class Operation:
                         return
                     active.add(package_name)
                     record = final[package_name]
-                    for ref in record.get("dependencies", []) + record.get("members", []):
+                    for ref in record.get("dependencies", []):
                         dependency = final.get(ref["name"])
                         if not dependency or dependency["version"] != ref["version"]:
                             raise PackageError(f"Final state violates {package_name}: needs {ref['name']} {ref['version']}")
+                        check(ref["name"])
+                    # Installed membership retains ownership, not a version lock.
+                    # Its version is the collection's recipe, not live member state.
+                    for ref in record.get("members", []):
+                        if ref["name"] not in final:
+                            raise PackageError(f"Final state violates {package_name}: missing member {ref['name']}")
                         check(ref["name"])
                     active.remove(package_name)
                     visited.add(package_name)

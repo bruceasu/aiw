@@ -1,0 +1,18 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-098",
+  "source_event": "FD-098-000003-design-ready",
+  "human_report": "FD-098-implementation.md",
+  "data": {
+    "worker_session_ref": "fd098-host-20261019-b83a1c",
+    "baseline": "3ea5e78",
+    "summary": "Separate collection installation recipes from persistent runtime version constraints",
+    "compile_result": "One offline compile-only batch: Python in-memory compile and scripts/compile.py for two Go entrypoints to NUL; exit 0",
+    "compile_command": "python -c \"from pathlib import Path; import runpy; p = Path('src/plugins/aiw-pkg/operations.py'); compile(p.read_text(encoding='utf-8'), str(p), 'exec'); print('Python syntax compile: OK'); runpy.run_path('scripts/compile.py', run_name='__main__')\"",
+    "compile_environment": {"GOPROXY": "off", "GOSUMDB": "off", "GOTOOLCHAIN": "local"},
+    "static_evidence": ["visit preserves exact dependency and explicit recipe selection", "default update member roots retain preselected versions and existing-member trimming", "final graph checks exact dependencies, member existence and cycles", "Manager remove/orphans retain name-based membership", "docs and stable spec explain historical recipe versions"],
+    "checks_not_run": ["tests", "test creation", "runtime validation", "formatters", "linters", "vet", "verification scripts", "final builds", "publish", "install", "network"],
+    "residual_risks": ["Runtime scenarios not executed", "Exact shared resource dependencies can still block installed main upgrade", "Installed package manager remains unchanged until separately packaged and installed"]
+  }
+}

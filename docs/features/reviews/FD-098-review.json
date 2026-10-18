@@ -1,0 +1,29 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-098",
+  "source_event": "FD-098-000004-implementation-ready",
+  "human_report": "FD-098-review.md",
+  "data": {
+    "reviewer_session_ref": "fd098-review-20261019-7d2c",
+    "baseline": "3ea5e78",
+    "implementation_revision": "9ba924bc0a1959ba9adeca66635383b53d1f9e2f",
+    "fd_revision": 4,
+    "verdict": "passed",
+    "validation": "Independent bounded static implementation review; no runtime validation",
+    "findings": [],
+    "results": [
+      {"acceptance": 1, "result": "supported_by_static_trace", "evidence": "Retained collections check member existence, not historical version; unselected collection records remain untouched"},
+      {"acceptance": 2, "result": "supported_by_static_trace", "evidence": "Default update preselects all installed roots; member edges prefer those roots; old-member intersection and nested traversal remain"},
+      {"acceptance": 3, "result": "supported_by_static_trace", "evidence": "Explicit collection and scoped updates retain exact wanted versions and root conflict checks"},
+      {"acceptance": 4, "result": "supported_by_static_trace", "evidence": "Dependencies retain exact wanted and final reverse dependency checks; both traversals reject cycles"},
+      {"acceptance": 5, "result": "supported_by_static_trace", "evidence": "Final member existence check; Manager remove and orphans follow names"},
+      {"acceptance": 6, "result": "supported_by_static_trace", "evidence": "No record migration; member versions read from member records; dry-run skips installation writes"}
+    ],
+    "commands_run": ["Get-Content, rg, Select-Object, Get-ChildItem targeted reads", "git diff 3ea5e78 9ba924b --stat and scoped source/docs diff", "git status --short and FD/index worktree diff", "git log -1 --format='%H %s'", "aiw fd claim --help", "aiw fd emit --help", "aiw fd claim FD-098 FD-098-000004-implementation-ready --session fd098-review-20261019-7d2c"],
+    "command_limitations": ["Two targeted rg calls included nonexistent guessed paths; no unchanged failed command rerun"],
+    "worker_compile_evidence": "Worker reports offline Python in-memory compile and scripts/compile.py exit 0. Script inspected; Reviewer did not execute or independently observe the compile output.",
+    "checks_not_run": ["tests", "compile", "build", "runtime validation", "verification scripts", "formatters", "linters", "install", "network"],
+    "residual_risks": ["Runtime scenarios remain unexecuted", "Exact shared resource dependencies can still block local main upgrade", "Installed package manager remains unchanged until separately packaged and installed"]
+  }
+}

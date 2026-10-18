@@ -1,7 +1,7 @@
 # FD-098: Allow independent upgrades of collection members
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -43,13 +43,13 @@
 
 ## Work items
 
-- [ ] 1.1 分离集合成员选择和持续约束，允许独立升级及默认 update；规模 small、难度 medium、无前置。完成证据：静态追踪单成员安装、嵌套集合、默认更新、显式发行集合、缺失成员及真实依赖冲突。
-- [ ] 1.2 同步使用文档和稳定规范，解释历史成员版本与运行依赖边界；规模 small、难度 low、依赖 1.1。完成证据：文档、规范、实现一致，Verification/TODO 和双格式报告齐备。
+- [x] 1.1 分离集合成员选择和持续约束，允许独立升级及默认 update；规模 small、难度 medium、无前置。完成证据：visit 区分两类边且仅默认更新成员根不传 wanted；final check 保留真实依赖精确匹配，成员只验存在和循环；Manager.remove/orphans 按名称处理关系，无需状态迁移。
+- [x] 1.2 同步使用文档和稳定规范，解释历史成员版本与运行依赖边界；规模 small、难度 low、依赖 1.1。完成证据：使用文档和稳定规范明确集合配方与运行依赖差异，规范补充独立升级/默认更新/真实依赖失败场景；双格式实现报告记录编译及未执行检查。
 
 ## TODO
 
-- 完成必要的独立设计审查后交付 Worker。
-- 实现后进行一次 compile-only 和独立实现审查，再本地交付、清理并归档。
+- 独立设计审查 ready，见 `docs/features/reviews/FD-098-design.md`；Worker 已领取 FD-098-000003-design-ready。
+- 文档、规范、compile-only 和一次最终只读 diff/status 检查已完成；独立实现静态审查通过，无阻断发现，见 `docs/features/reviews/FD-098-review.md`；待 PM 本地交付、清理并归档。
 
 ## Acceptance
 
@@ -69,6 +69,10 @@
 - 未请求测试支持：测试、新增测试、最终包构建、格式化、lint、验证脚本和安装操作均不运行。
 - 独立设计审查：由于改变安装状态约束兼容性，需要一轮有边界的静态设计审查；报告在 reviews 下，中英文字段 JSON 侧车按仓库约定。
 - 实现审查由独立 Reviewer 完成；未运行的检查不得记录为通过。
+- 实际 compile-only：`GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local python -c "from pathlib import Path; import runpy; p = Path('src/plugins/aiw-pkg/operations.py'); compile(p.read_text(encoding='utf-8'), str(p), 'exec'); print('Python syntax compile: OK'); runpy.run_path('scripts/compile.py', run_name='__main__')"`，退出码 0；Python 内存语法编译通过，脚本编译两个 Go 入口到 NUL，无最终二进制。
+- 独立设计审查：`docs/features/reviews/FD-098-design.md`，ready，无阻断发现；实现报告：`docs/features/reports/FD-098-implementation.md`。
+- 最终静态检查：`git diff 3ea5e78 -- <四个实现/文档/FD路径>`、`git diff --check`、`git status --short` 同一批次完成；无空白错误，无范围外改动。
+- 独立实现审查：Reviewer `fd098-review-20261019-7d2c` 领取 `FD-098-000004-implementation-ready`，对比 `3ea5e78..9ba924b` 并追踪实际图规划、Manager 和文档/规范，全部验收获静态证据支持，无阻断发现。双格式报告：`docs/features/reviews/FD-098-review.md` / `FD-098-review.json`。Reviewer 未运行测试、编译、构建、安装或网络；运行场景仍未验证，真实共享资源依赖限制仍保留。
 
 ## Sources
 

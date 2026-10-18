@@ -61,21 +61,33 @@ precedence with different identifiers is ambiguous and rejected.
 
 ## Collections and updates
 
-Collections contain exact member references and no member payload. Nested
-collections are deduplicated; missing dependencies, cycles, incompatible exact
-versions, platform mismatches and conflicting paths fail before file changes.
+Collections contain exact member references as an installation recipe and no
+member payload. Explicit collection installation and --core/--all updates select
+those exact versions. Once installed, collection membership requires a member
+to exist but does not lock its version: a member can be upgraded independently
+without updating or removing its collections. A collection's recorded member
+version describes its recipe; the member's own record gives its current version.
+Existing collection records need no migration. Nested collections are deduplicated;
+missing members/dependencies, cycles, incompatible runtime dependency versions,
+conflicting explicit selections, platform mismatches and conflicting paths fail before file changes.
 Changes then use per-package transactions; failure reports completed packages
 and stops. There is no collection-wide rollback or hook external-effect recovery.
 
 Default update selects latest versions of installed packages only, including
-installed extensions. New collection members are not installed or recorded as
-installed. Required runtime dependencies are shown and may be installed. Conflicting
-exact requirements, including requirements from unchanged installed packages,
+installed extensions. A collection recipe does not override the member versions
+already selected by default update. New collection members are not installed or
+recorded as installed. Required runtime dependencies are shown and may be installed. Conflicting
+exact runtime requirements, including dependencies from unchanged installed packages,
 fail before mutation; no implicit downgrade or old-release fallback is selected.
 --core fills aiw-core; --all fills the fixed aiw-all release manifest, never every
 package in a third-party repository. Neither option uninstalls out-of-scope
 packages. --core and --all are mutually exclusive. Dry run never writes installation
 files/state or invokes hooks.
+
+Independent upgrades still need compatible runtime dependencies. For example,
+aiw-all 1.0.0 membership alone does not block aiw-main 1.0.1, but an older skill
+that requires a shared resource at exactly 1.0.0 can still block replacing that
+resource with 1.0.1. Collection membership does not waive that dependency check.
 
 Direct installs and explicitly selected root collections are manual. Dependencies
 and members are auto; an existing manual reason is preserved. Removing a collection
