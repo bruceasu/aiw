@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-092",
+  "source_event": "FD-092-000006-review-requested",
+  "human_report": "FD-092-review.md",
+  "data": {
+    "reviewer_session": "codex-reviewer-FD092-usage-owner-20261018",
+    "reviewed_commit": "59abca1",
+    "diff_base": "3070c63",
+    "verdict": "pass",
+    "findings": [],
+    "static_evidence": [
+      "Longest complete or hyphen-delimited prefix selects exactly one component",
+      "file/file-convert overlap and suffixed guides traced",
+      "cz and aiw-issue aliases preserved",
+      "Main explicit documents and docs/reference resource paths unchanged",
+      "Packaging callers and dynamic plugin discovery inspected"
+    ],
+    "worker_evidence": "Reported Python in-memory compile exit 0; not rerun by Reviewer",
+    "commands_run": ["Get-Content", "rg", "Get-ChildItem", "git diff 3070c63 59abca1", "aiw fd help/show/claim/emit"],
+    "checks_not_run": ["tests", "compile", "build", "install", "publish", "network"],
+    "residual_risks": ["Existing ZIPs unchanged and require explicit rebuild", "Actual installation not verified"]
+  }
+}

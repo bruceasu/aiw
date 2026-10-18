@@ -1,7 +1,7 @@
 ﻿# FD-092: Unique ownership for package usage documents
 
-**Status:** Pending Verification
-**Revision:** 5
+**Status:** Complete
+**Revision:** 7
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -47,8 +47,8 @@ later build. No linked Issue or OpenSpec change exists.
 
 ## TODO
 
-- Implementation, documentation and Python compile-only complete; independent
-  static review pending. Item 1.2 evidence prepared for that review.
+- Implementation, documentation, Python compile-only and independent static
+  review complete. No remaining implementation TODO.
 
 ## Verification
 
@@ -58,7 +58,9 @@ language compiler without importing packaging code or producing distributables.
 No tests, runtime validation, final builds, install, publication or network.
 Python in-memory compile returned exit 0. One static diff inspection traced the
 longest-prefix selection, hyphen boundary, aliases and unchanged main exceptions.
-Independent review remains pending; see reports/FD-092-implementation.md.
+Independent static review passed for implementation 59abca1 against 3070c63;
+see reviews/FD-092-review.md and reports/FD-092-implementation.md.
+Existing ZIPs still require explicit rebuild; actual installation was not run.
 
 ## Sources
 
