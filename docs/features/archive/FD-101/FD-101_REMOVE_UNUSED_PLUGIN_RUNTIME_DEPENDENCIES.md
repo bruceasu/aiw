@@ -66,6 +66,8 @@
 
 ## TODO
 
+- 无剩余实现项。审查事件 FD-101-000006-verification-passed 后已交付 develop：f54a58d，来源 1256351；CLI 校验后移除专用 worktree/分支，aiw fd close FD-101 Complete 成功。以下阶段记录作为历史保留。
+
 - 修订 3 目录方案独立设计审查 ready，见 FD-101-design-directory.md；计划 033da91 已提交，worktree/分支已创建，父分支 develop，Worker 领取 FD-101-000004-design-ready。
 - 三项实现已完成，一次离线 compile-only 和最终只读差异检查通过；独立实现审查通过，待 PM 本地交付归档。
 
@@ -83,6 +85,8 @@
 6. 包格式/安装器精确检查不变，旧包不修改，未实装前不声称安装或通知成功。
 
 ## Verification
+
+- 本地交付完成：aiw git wt local-merge FD-101 成功，单父 squash f54a58d，来源 1256351，worktree/分支清理成功；aiw fd close FD-101 Complete 成功归档。未构建最终包、发布、安装或推送。
 
 - 静态证据：现有共享实现、Go 目录发现/manifest 允许字段、entries.py 目录支持、
   tree_entries exclude、Manager 所有权/obsolete 清理、notify 子进程与配置路径。
@@ -112,3 +116,5 @@
 - scripts/package_definitions.py、build.py expand/build_packages。
 - src/plugins/aiw-file.py、aiw-patch.py、aiw-notify.py、aiw-pkg/。
 - docs/usage/aiw-pkg.md、openspec/specs/aiw-packages/spec.md。
+
+**Completed:** 2026-10-18

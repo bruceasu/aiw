@@ -12,7 +12,6 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-101](FD-101_REMOVE_UNUSED_PLUGIN_RUNTIME_DEPENDENCIES.md) | Self-contained directory plugins without runtime coupling | Complete | Medium |
 | [FD-001](archive/FD-001/FD-001_EVENT_DRIVEN_FD_WORKFLOW.md) | 事件驱动的 FD 工作流 | Complete | High |
 | [FD-002](archive/FD-002/FD-002_ACTIONABLE_FD_HANDOFF_RECOVERY_HINTS.md) | Actionable FD handoff recovery hints | Complete | Medium |
 | [FD-003](archive/FD-003/FD-003_COMPACT_CZ_RELEASE.md) | 精简 aiw-cz 发布包 | Complete | Medium |
@@ -113,6 +112,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-098](archive/FD-098/FD-098_ALLOW_INDEPENDENT_UPGRADES_OF_COLLECTION_MEMBERS.md) | Allow independent upgrades of collection members | Complete | Medium |
 | [FD-099](archive/FD-099/FD-099_ADD_OPTIONAL_PUSH_AFTER_MERGE_TO_SUCCEEDS.md) | Add optional push after merge-to succeeds | Complete | Medium |
 | [FD-100](archive/FD-100/FD-100_IMPROVE_PACKAGE_SEARCH_AND_SHOW_OUTPUT.md) | Improve package search and show output | Complete | Medium |
+| [FD-101](archive/FD-101/FD-101_REMOVE_UNUSED_PLUGIN_RUNTIME_DEPENDENCIES.md) | Self-contained directory plugins without runtime coupling | Complete | Medium |
 
 ## Deferred / Closed
 
