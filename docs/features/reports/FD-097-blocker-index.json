@@ -1,0 +1,18 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-097",
+  "source_event": "FD-097-000006-review-requested",
+  "human_report": "FD-097-blocker-index.md",
+  "data": {
+    "state": "unresolved",
+    "gate": "review and archive index mutation",
+    "observed": "WinError 5 replacing FEATURE_INDEX.md during request-review",
+    "cause": "File access failure; lock versus permission cause undetermined",
+    "read_only_evidence": ["real pending review event exists", "revision 6 matches handoff", "temporary and existing index bytes identical"],
+    "attempts": ["one request-review call", "read-only state and index comparison"],
+    "human_decision_needed": true,
+    "requested_scope": "one continuation of normal review/archive index writes; no runtime or installation",
+    "improvement": "reconcile partial atomic-write failure before retrying lifecycle commands"
+  }
+}

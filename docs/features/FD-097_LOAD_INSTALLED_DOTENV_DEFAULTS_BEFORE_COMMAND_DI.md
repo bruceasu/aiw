@@ -1,7 +1,7 @@
 # FD-097: Load installed dotenv defaults before command dispatch
 
 **Status:** Pending Verification
-**Revision:** 5
+**Revision:** 6
 **Priority:** Medium
 **Evidence policy:** Dual
 
