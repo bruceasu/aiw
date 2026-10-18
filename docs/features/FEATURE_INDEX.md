@@ -12,7 +12,6 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-089](FD-089_BUILD_WITHOUT_REPOSITORY_COPY.md) | Build and install without a repository copy | Complete | Medium |
 | [FD-001](archive/FD-001/FD-001_EVENT_DRIVEN_FD_WORKFLOW.md) | 事件驱动的 FD 工作流 | Complete | High |
 | [FD-002](archive/FD-002/FD-002_ACTIONABLE_FD_HANDOFF_RECOVERY_HINTS.md) | Actionable FD handoff recovery hints | Complete | Medium |
 | [FD-003](archive/FD-003/FD-003_COMPACT_CZ_RELEASE.md) | 精简 aiw-cz 发布包 | Complete | Medium |
@@ -101,6 +100,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-086](archive/FD-086/FD-086_REUSE_COMPILE_AND_CLEAN.md) | Reuse compiled output and clean build directories | Complete | Medium |
 | [FD-087](archive/FD-087/FD-087_SEPARATE_COMPILE_PACKAGE_VERSIONS.md) | Separate compile and package versions | Complete | Medium |
 | [FD-088](archive/FD-088/FD-088_FIXED_SNAPSHOT_COMPILE.md) | Fixed snapshot compilation and package-only versions | Complete | Medium |
+| [FD-089](archive/FD-089/FD-089_BUILD_WITHOUT_REPOSITORY_COPY.md) | Build and install without a repository copy | Complete | Medium |
 
 ## Deferred / Closed
 
