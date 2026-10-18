@@ -12,7 +12,6 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-077](FD-077_CLEAN_UP_CAPTURED_ISSUE_SOURCE_DRAFTS_AFTER_SUCC.md) | Clean up captured Issue source drafts after successful capture | Complete | Medium |
 | [FD-001](archive/FD-001/FD-001_EVENT_DRIVEN_FD_WORKFLOW.md) | 事件驱动的 FD 工作流 | Complete | High |
 | [FD-002](archive/FD-002/FD-002_ACTIONABLE_FD_HANDOFF_RECOVERY_HINTS.md) | Actionable FD handoff recovery hints | Complete | Medium |
 | [FD-003](archive/FD-003/FD-003_COMPACT_CZ_RELEASE.md) | 精简 aiw-cz 发布包 | Complete | Medium |
@@ -89,6 +88,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-074](archive/FD-074/FD-074_INTEGRATE_BOUNDED_DIAGNOSIS_AND_ARCHITECTURE_MET.md) | Integrate bounded diagnosis and architecture methods into FD workflows | Complete | Medium |
 | [FD-075](archive/FD-075/FD-075_ADD_BOUNDED_OPTIONAL_CONSULTATION_TO_ASK_ASU_NAV.md) | Add bounded optional consultation to ask-asu navigation | Complete | Medium |
 | [FD-076](archive/FD-076/FD-076_GATEWAY_CODEX_JSON_RPC_COMPATIBILITY.md) | Gateway Codex JSON-RPC compatibility | Complete | Medium |
+| [FD-077](archive/FD-077/FD-077_CLEAN_UP_CAPTURED_ISSUE_SOURCE_DRAFTS_AFTER_SUCC.md) | Clean up captured Issue source drafts after successful capture | Complete | Medium |
 
 ## Deferred / Closed
 

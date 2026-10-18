@@ -78,3 +78,5 @@ Worker 已按 R1 修复：保存预检的 family/root 身份，打开后及删�
 - reports/FD-077-blocker-20261018-parent-dirty.md 及同名 JSON
 - Planner source event: FD-077-000002-design-requested
 - Host session: fd077-host-20261018-53b7ac
+
+**Completed:** 2026-10-18
