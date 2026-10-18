@@ -61,6 +61,8 @@ openspec/specs/aiw-packages/spec.md 的可读输出要求（实现阶段才更�
 
 ## TODO
 
+- 无剩余实现项。审查事件 FD-100-000005-verification-passed 后已 squash 交付 develop：7373ca7，来源 7c1d407；CLI 校验并清理 worktree/分支，aiw fd close FD-100 Complete 成功归档。下列阶段记录作为历史保留。
+
 - 设计及必要独立设计审查已完成，结论 ready、无阻断发现；用户已授权 auto，恢复实施。
 - 已提交计划 f26080e，专用 worktree/分支已创建并核对父分支 develop；Worker 领取 FD-100-000003-design-ready，三个 Work Items 完成。
 - 离线 compile-only 和最终一次静态检查已通过；独立 Reviewer 对实现 369162a 一轮静态审查通过，无阻断发现，待 PM 本地交付清理并归档。
@@ -77,6 +79,8 @@ openspec/specs/aiw-packages/spec.md 的可读输出要求（实现阶段才更�
 7. 既有 list/entries/其他子命令默认和 --json、全部写操作及返回码保持不变。
 
 ## Verification
+
+- 本地交付完成：aiw git wt local-merge FD-100 成功，单父 squash 7373ca7，来源 7c1d407，worktree/分支清理成功；aiw fd close FD-100 Complete 成功。未发布、安装、推送或执行网络请求。
 
 - 本轮静态诊断已读 main 的 search/show/install 分支、repository.select 和现有 list formatter，
   无运行复现、安装、仓库访问或网络。用户日志中的安装失败是已提供证据，不是本轮执行结果。
@@ -101,3 +105,5 @@ openspec/specs/aiw-packages/spec.md 的可读输出要求（实现阶段才更�
 - src/plugins/aiw-pkg/aiw-pkg.py：format_package_list/main
 - src/plugins/aiw-pkg/repository.py：select
 - docs/usage/aiw-pkg.md；openspec/specs/aiw-packages/spec.md
+
+**Completed:** 2026-10-18
