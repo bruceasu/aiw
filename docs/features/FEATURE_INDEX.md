@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-093](FD-093_PLAN_LOCAL_INSTALLATION_ONCE_AND_SKIP_UNCHANGED_.md) | ﻿# FD-093: Plan local installation once and skip unchanged staging | Open | Medium |
+| [FD-093](FD-093_PLAN_LOCAL_INSTALLATION_ONCE_AND_SKIP_UNCHANGED_.md) | ﻿# FD-093: Plan local installation once and skip unchanged staging | Pending Verification | Medium |
 
 ## Completed
 

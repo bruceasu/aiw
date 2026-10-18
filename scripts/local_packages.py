@@ -1,7 +1,7 @@
 """Resolve build-local package graphs from original ZIPs, without a repository copy."""
 from pathlib import Path
 
-from archive import PackageError, identifier, read_package, safe_path
+from archive import PackageError, digest, identifier, read_package, safe_path
 from manager import host_platform
 from repository import entry_for
 
@@ -66,7 +66,8 @@ class LocalPackages:
 
     def _add(self, path: Path) -> dict:
         path = self._source(path)
-        entry = entry_for(path)
+        prepared = read_package(path)
+        entry = entry_for(path, prepared=prepared)
         self._sources.add(path)
         key = (entry["name"], entry["version"])
         if key in self._entries:
@@ -74,7 +75,7 @@ class LocalPackages:
                 raise PackageError(f"Conflicting local packages: {key[0]} {key[1]}")
             return self._entries[key]
         self._entries[key], self._paths[key] = entry, path
-        self._files[key] = read_package(path)[0]["files"]
+        self._files[key] = prepared[0]["files"]
         return entry
 
     def _find(self, name: str, version: str) -> Path:
@@ -104,7 +105,7 @@ class LocalPackages:
         if key not in self._entries or entry != self._entries[key]:
             raise PackageError("Unknown local package entry")
         path = self._source(self._paths[key])
-        if entry_for(path) != entry:
+        if path.stat().st_size != entry["size"] or digest(path.read_bytes()) != entry["sha256"]:
             raise PackageError(f"Local package changed after selection: {path}")
         return path
 

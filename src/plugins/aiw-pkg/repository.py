@@ -43,8 +43,8 @@ def package_path(name, version):
     return f"{name}/{version}/{name}-{version}.zip"
 
 
-def entry_for(package):
-    info, _, _, fingerprint = read_package(package)
+def entry_for(package, *, prepared=None):
+    info, _, _, fingerprint = prepared if prepared is not None else read_package(package)
     return dict(name=info["name"], version=info["version"], kind=info["kind"],
                 path=package_path(info["name"], info["version"]), size=package.stat().st_size,
                 sha256=digest(package.read_bytes()), fingerprint=fingerprint,

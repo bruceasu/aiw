@@ -14,7 +14,9 @@ class Operation:
     def __init__(self, manager, repo=None):
         self.manager, self.repo = manager, repo
 
-    def install(self, package=None, *, name=None, version=None, update=False, scope=None, dry_run=False):
+    def install(self, package=None, *, packages=None, name=None, version=None, update=False, scope=None, dry_run=False):
+        if packages is not None and (package is not None or name is not None or update):
+            raise PackageError("Multiple package roots cannot be combined with another selection")
         # Pin source files, imports and all archive bytes before self-update can replace the engine.
         with tempfile.TemporaryDirectory(prefix="aiw-plan-") as temporary:
             folder = Path(temporary)
@@ -32,11 +34,18 @@ class Operation:
             old = self.manager.records()
             # Root selection is complete before dependency expansion: conflicts never pick an arbitrary winner.
             requests = []
-            if package is not None:
-                prepared = read_package(package)
-                info = prepared[0]
-                selected[info["name"]] = (package, prepared)
-                roots.add(info["name"])
+            if package is not None or packages is not None:
+                root_packages = [package] if package is not None else packages
+                if not root_packages:
+                    raise PackageError("No installation roots selected")
+                for root_package in root_packages:
+                    prepared = read_package(root_package)
+                    info = prepared[0]
+                    previous = selected.get(info["name"])
+                    if previous and previous[1][3] != prepared[3]:
+                        raise PackageError(f"Conflicting installation roots: {info['name']}")
+                    selected[info["name"]] = (root_package, prepared)
+                    roots.add(info["name"])
             elif update:
                 requests = [("aiw-" + scope, None)] if scope else [(n, None) for n in sorted(old)]
             else:

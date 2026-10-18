@@ -308,3 +308,16 @@ The `aiw-docs` resource installs its reference copy under `docs/reference`.
 Existing ZIPs keep their original metadata; rebuild affected packages explicitly
 before installing them again. Updating this source does not modify installed
 ownership records or previously built ZIPs.
+
+### Local install planning
+
+`python build.py install all` plans all selected roots together. Shared dependencies
+and collection members are processed once. All selected roots retain manual-install
+status; dependency-only packages retain the normal dependency reason rules.
+Unchanged fingerprints skip temporary payload materialization, while archive,
+platform, file ownership and final dependency checks still apply.
+
+The existing per-operation 512 MiB aggregate input-ZIP limit applies to the entire
+selection. A larger selection fails before installation; install smaller explicit
+targets separately. Transactions remain per package: a later failure does not roll
+back earlier successful packages. No benchmark result is implied by this change.

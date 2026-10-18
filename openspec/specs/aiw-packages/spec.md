@@ -301,3 +301,21 @@ supported. The aiw-docs resource continues to use docs/reference paths.
 - WHEN packaging aiw-file and aiw-file-convert
 - THEN docs/usage/aiw-file-convert.md belongs only to aiw-file-convert
 - AND docs/usage/aiw-file.md remains with aiw-file.
+
+### Requirement: Shared local installation planning
+
+Build-local installation MUST select all requested roots before expanding a single
+deduplicated dependency/member graph. Roots MUST retain manual-install semantics.
+Before mutation the complete graph MUST pass integrity, platform, target ownership,
+exact-version, cycle and existing per-operation aggregate input size checks.
+The 512 MiB aggregate input-ZIP limit applies to the entire selected operation;
+large groups MAY require separate explicit targets. Transactions remain per package.
+
+Local index generation MAY reuse validated prepared metadata. Local fetch MAY
+avoid repeated decoding only after safe-path, raw size and SHA-256 checks bind
+returned bytes to the originally validated entry. Full package validation and
+in-memory payload pinning before self-update MUST remain in Operation.
+
+An installed matching version/fingerprint MUST skip temporary payload writes after
+the installation lock and incomplete-transaction guard, preserving reason,
+dependency and member record updates. No persistent validation cache is introduced.

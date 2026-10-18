@@ -1,7 +1,7 @@
 ﻿# FD-093: Plan local installation once and skip unchanged staging
 
-**Status:** Open
-**Revision:** 3
+**Status:** Pending Verification
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -37,10 +37,10 @@ aggregate limits, roots/reasons, byte identity and self-update pinning before co
 
 ## Work Items
 
-- [ ] 1.1 Multi-root graph selection in Operation and build.py.
+- [x] 1.1 Multi-root graph selection in Operation and build.py.
   Size small, difficulty medium, dependencies none. Completion: all roots selected
   before expansion, deduplicated visits, manual reasons and final-state checks.
-- [ ] 1.2 Remove redundant local archive decoding and unchanged materialization.
+- [x] 1.2 Remove redundant local archive decoding and unchanged materialization.
   Size small, difficulty medium, depends on 1.1. Completion: raw fetch checks safe
   path/size/hash, prepared metadata reuse and locked unchanged fast path.
 - [ ] 1.3 Update docs/spec, compile-only and independent implementation review.
@@ -58,12 +58,16 @@ aggregate limits, roots/reasons, byte identity and self-update pinning before co
 
 ## TODO
 
-- Obtain bounded independent design feedback, then implement in current workspace.
+- Independent design ready; implementation/docs and Python compile-only complete.
+- Independent implementation review pending; complete 1.3 only after that pass.
 
 ## Verification
 
 Static review and one Python in-memory compile. No tests, benchmarks, final builds,
 installation, publication or network. No measured speedup will be claimed.
+Five changed Python files compiled in memory with exit 0; no packaging imports,
+bytecode files or release artifacts. One implementation diff inspection completed.
+See reports/FD-093-implementation.md and reviews/FD-093-design.md.
 
 ## Sources
 

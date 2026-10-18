@@ -542,8 +542,7 @@ def main(arguments: list[str]) -> int:
                         raise PackageError(f"Expected one manifest root for {target}; rebuild the target")
                 repo.preflight_destination(args.dest)
                 manager = Manager(args.dest)
-                for entry in roots:
-                    print(Operation(manager, repo).install(repo.fetch(entry, None)))
+                print(Operation(manager, repo).install(packages=[repo.fetch(entry, None) for entry in roots]))
         return 0
     except (PackageError, OSError, ValueError, KeyError, TypeError, zipfile.BadZipFile) as error:
         print(f"build.py: {error}", file=sys.stderr)

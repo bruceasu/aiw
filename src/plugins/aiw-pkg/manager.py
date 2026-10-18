@@ -306,24 +306,24 @@ class Manager:
                 raise PackageError(f"Package target overlaps its local input ZIP: {item['target']}")
         if scripts and (sys.version_info < (3, 11) or not Path(sys.executable).is_file()):
             raise PackageError("Python 3.11+ interpreter required before installation")
-        # Temporary materialization is outside the final destination and never owns the input ZIP.
-        with tempfile.TemporaryDirectory(prefix="aiw-pkg-") as temporary:
-            stage = Path(temporary)
-            for source, content in payload.items():
-                target = safe_path(stage / "data", source)
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes(content)
-            with self.locked():
-                name = info["name"]
-                directory = self.package_dir(name)
-                directory.mkdir(exist_ok=True)
-                current = self.record(name)
-                if current and current["status"] == "installed" and current.get("version") == info["version"] and current.get("fingerprint") == fingerprint:
-                    self.save_record(directory, dict(current,
-                        reason="manual" if reason == "manual" or current.get("reason", "manual") == "manual" else "auto",
-                        dependencies=info.get("dependencies", []),
-                        members=info.get("members", []) if members is None else members))
-                    return f"Already installed: {name} {info['version']}"
+        with self.locked():
+            name = info["name"]
+            directory = self.package_dir(name)
+            directory.mkdir(exist_ok=True)
+            current = self.record(name)
+            if current and current["status"] == "installed" and current.get("version") == info["version"] and current.get("fingerprint") == fingerprint:
+                self.save_record(directory, dict(current,
+                    reason="manual" if reason == "manual" or current.get("reason", "manual") == "manual" else "auto",
+                    dependencies=info.get("dependencies", []),
+                    members=info.get("members", []) if members is None else members))
+                return f"Already installed: {name} {info['version']}"
+            # Materialize only changed packages, outside the installation destination.
+            with tempfile.TemporaryDirectory(prefix="aiw-pkg-") as temporary:
+                stage = Path(temporary)
+                for source, content in payload.items():
+                    target = safe_path(stage / "data", source)
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(content)
                 self.preflight(name, files, current, adopt_existing=True)
                 transaction = directory / "transaction"
                 before_files = (current or {}).get("files", []) + files
