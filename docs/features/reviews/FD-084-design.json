@@ -4,25 +4,29 @@
   "fd_id": "FD-084",
   "source_event": null,
   "source_event_reason": "Direct user request; bounded independent design review delegated by the host, without a dispatched design-review event.",
-  "recommendation": "changes-needed",
+  "recommendation": "ready",
+  "reviewed_fd_revision": 2,
   "findings": [
     {
       "id": "D1",
-      "blocking": true,
+      "blocking": false,
+      "status": "resolved-in-fd-revision-2",
       "subject": "AIW_BUILD_SYSTEMS",
       "finding": "Selectable platform subsets violate the existing mandatory Windows/Linux amd64 package contract.",
       "resolution": "Remove AIW_BUILD_SYSTEMS and retain fixed dual-platform SYSTEMS; configure tool paths and local destinations instead."
     },
     {
       "id": "D2",
-      "blocking": true,
+      "blocking": false,
+      "status": "resolved-in-fd-revision-2",
       "subject": "docs payload ownership",
       "finding": "Using docs/usage for aiw-docs conflicts with usage files owned by existing program and plugin packages.",
-      "resolution": "Use docs/manual for standalone manual content and docs/manual/README.md for the root README; prevent duplicate README target entries."
+      "resolution": "Revision 2 maps usage to docs/reference/usage and the root README to docs/reference/README.md, preserving existing program ownership."
     },
     {
       "id": "D3",
-      "blocking": true,
+      "blocking": false,
+      "status": "resolved-in-fd-revision-2",
       "subject": "Work Item readiness",
       "finding": "Work Items lack recorded size, difficulty, dependencies, completion criteria and acceptance evidence mapping.",
       "resolution": "Add the required readiness details and split independent outcomes where needed."
@@ -42,5 +46,5 @@
     "failed": ["Get-Content docs/templates/FD_REVIEW_DATA_TEMPLATE.json: path does not exist; no retry"]
   },
   "not_run": ["tests", "compile", "build", "publish", "install", "network", "git writes", "workflow events"],
-  "limits": "Pre-implementation static design evidence only. Host-proposed resolutions require incorporation into the FD; no runtime correctness is claimed."
+  "limits": "Static design evidence only. The single bounded review included a focused reading of FD Revision 2 to confirm incorporation of all three findings; no implementation or runtime correctness is claimed."
 }
