@@ -77,3 +77,5 @@ against commit 0b238d3, base fb67c60. Runtime checks remain unperformed.
 %% Binary-reported version can intentionally differ from package identity.
 %% Only still-valid current output is available; no historical artifact archive added.
 %% Repackaging uses current source/resources and retains immutable repository rules.
+
+**Completed:** 2026-10-18
