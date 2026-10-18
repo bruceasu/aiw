@@ -112,10 +112,15 @@ python build.py publish-all 1.2.3
 python build.py build docs
 python build.py latest
 python build.py latest aiw-docs
+python build.py compile aiw
+python build.py latest-compile aiw
+python build.py build aiw
+python build.py clean
 ```
 
-Compile writes only bin. Build explicitly compiles selected native components and
-packages them. Install/export consume an existing release manifest and never compile,
+Compile writes only bin, including compile provenance. Build packages selected
+components and reuses compatible recorded compilation when no --version is given;
+otherwise it compiles first. Install/export consume an existing release manifest and never compile,
 assemble or download. Plugins and Skills have individual scripts under
 scripts/packages; shared definitions live in scripts/package_definitions.py.
 plugin-meta.toml and skills-meta.toml define core/extension membership. Main includes
@@ -123,13 +128,40 @@ agent-templates; shared root Skill documents have unique resource package owners
 Individual Skills depend on needed resources rather than an aggregate support ZIP.
 Usage documents belong to their program/plugin; development docs are not installed.
 
-For `compile` and `build`, version priority is `--version`, a nonempty
+For `compile`, version priority is `--version`, a nonempty
 `AIW_VERSION`, then a generated UTC timestamp such as
 `snapshot-20261018-130000123456Z` (year/month/day, hour/minute/second and
 microseconds). The command prints the selected version before starting and uses
 that one value for the entire invocation. Publish commands still require their
 explicit positional version. Independent package scripts still require `--version`
 unless `AIW_VERSION` is configured.
+
+For `build` without `--version`, first reuse the latest successful compile record
+covering the requested target. If `AIW_VERSION` is set, only that version qualifies.
+Both the recorded version and native binaries are reused, without calling the
+compilers again. For example, `compile aiw` then `build aiw` shares one version;
+`compile all` can also serve `build aiw`. If no covering record exists, build selects
+the configured/default snapshot version and compiles as before. An explicit
+`build --version` and publish commands always compile afresh.
+
+Compile records live in `bin/.compile.json`. A new compile invalidates overlapping
+native records before changing any output and records success only after completion.
+Reuse compares the complete native file inventory and SHA-256 values, including
+both Go platforms and added/removed TypeScript files. Missing/changed output fails
+with an error; compile again before packaging. Old output without provenance is not
+reused. `latest-compile [target]` prints the newest validated covering compile
+version; `latest [target]` continues to query successful package builds.
+
+Reuse deliberately packages the recorded binaries with current source/resources;
+it does not detect source changes. Run compile again when updated native code is
+needed. Compilation, build and clean assume a single writer.
+
+`clean` removes only this checkout's `bin/` and `dist/`, including compile/build
+records and `dist/repository`. It preserves the external `AIW_PACKAGE_REPO`, source,
+dependencies, installed files and workflow state. Both output trees are preflighted
+for confinement, regular files and links/junctions before any deletion; unsafe
+trees fail without starting deletion. Missing output directories are harmless.
+An operating-system deletion failure can leave partial cleanup and returns an error.
 
 `python build.py latest` prints only the most recently built version across local
 release manifests. Add a target or full package alias to query that target.
@@ -171,7 +203,7 @@ Use quotes around paths containing ` #`. Local `.env` stays ignored by Git.
 | Variable | Purpose | Default |
 | --- | --- | --- |
 | `AIW_PACKAGE_REPO` | Required local destination for publish commands; relative paths use the checkout root | No default; example: `d:/playground/aiw-packages` |
-| `AIW_VERSION` | Explicit default build/compile version; independent package scripts may omit `--version` when set | UTC `snapshot-YYYYMMDD-HHMMSSffffffZ` for build.py; otherwise independent scripts require `--version` |
+| `AIW_VERSION` | Explicit default version; constrains compile reuse for build | Latest compatible compile for build; otherwise UTC snapshot for build.py. Independent scripts require `--version` when unset |
 | `AIW_GO` | Go executable path or command name | `go` on PATH |
 | `AIW_NODE` | Node executable path or command name | `node` on PATH |
 | `AIW_INSTALL_DIR` | Existing default installation root; `install --dest` wins | Platform default |

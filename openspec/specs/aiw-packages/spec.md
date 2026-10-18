@@ -12,7 +12,7 @@ FD-080 定义基础构建和本地安装；FD-083 扩展统一包仓库、集合
 build.py MUST 提供 compile/build/install，target 为组件，不接受 windows/linux target
 或旧顶层动作。无参数 MUST 显示帮助且不安装。
 compile MUST 只写 bin/，Go 组件 MUST 一次生成 Windows/Linux amd64 两套产物。
-build MUST 先完成所选组件的 compile，再组装 dist；编译失败 MUST 不进入组装。
+build MUST 使用已验证且匹配版本的 compile 结果，或先完成所选组件的 compile，再组装 dist；编译失败 MUST 不进入组装。
 install MUST 只消费显式发布清单，不隐式编译、组包或下载。
 Go 原始程序 MUST 发布到 dist/bin，plugin/skill 包 MUST 位于 dist/plugins 或
 dist/skills 的版本子目录，其他发布文件 MUST 位于 dist/<category>/<version>。
@@ -57,8 +57,10 @@ It MUST NOT own individual programs' docs/usage paths or include development rep
 
 ### Requirement: Timestamp snapshots and latest build lookup
 
-compile/build MUST prefer --version, then nonempty AIW_VERSION, otherwise generate
-one UTC snapshot-YYYYMMDD-HHMMSSffffffZ version per invocation. They MUST print
+compile MUST prefer --version, then nonempty AIW_VERSION, otherwise generate
+one UTC snapshot-YYYYMMDD-HHMMSSffffffZ version per invocation. Build MUST first
+apply the reusable compile rules below, otherwise use the same version fallback.
+They MUST print
 the chosen version before work. Publish commands MUST retain explicit versions.
 Independent package scripts retain their existing explicit/environment version contract.
 
@@ -73,13 +75,54 @@ MUST fail clearly. Compile-only operations MUST NOT update latest build records.
 
 #### Scenario: Unspecified version
 
-- WHEN compile/build receives neither --version nor nonempty AIW_VERSION
+- WHEN compile or a build without reusable compilation receives neither --version nor nonempty AIW_VERSION
 - THEN generate a UTC snapshot version and use it throughout that invocation
 
 #### Scenario: Failed build
 
 - WHEN compilation, packaging or repository staging fails
 - THEN do not replace successful build manifests with that attempt
+
+### Requirement: Validated compile reuse and confined cleanup
+
+Without --version, build MUST reuse the latest successful compile record whose
+expanded components cover the requested target. Nonempty AIW_VERSION MUST constrain
+reuse to that version. If no covering record exists, build MUST compile using the
+existing version fallback. Explicit build --version and publish MUST compile afresh.
+Successful compile invocations, including those from build/publish, MUST record
+version, component coverage, completion time and full native artifact SHA-256 inventory
+under bin/.compile.json. Resource-only invocations MAY have an empty native inventory.
+Overlapping native records and the same target record MUST be invalidated before
+compilation can overwrite output. Failed compilation MUST NOT create a success record.
+Reuse MUST recompute the entire native output inventory and require exact paths and
+hashes, rejecting additions, removals, changes and links. Invalid selected output MUST
+fail clearly, not silently fall back. Source freshness is not implied by binary reuse.
+latest-compile [target] MUST print the latest validated covering compile version;
+latest [target] MUST retain package-build semantics. Build commands assume one writer.
+
+clean MUST delete only checkout bin/ and dist/, including their records and staging
+repository. It MUST preserve external repositories, installed files, source and workflow
+state. Before any recursive deletion it MUST verify both exact resolved targets stay
+inside the checkout and preflight all existing descendants, rejecting links/junctions
+or non-regular files. Missing directories MUST be harmless. Cleanup failures MUST
+report an error without claiming full cleanup; no cross-tree atomicity is promised.
+
+#### Scenario: Separate compile and build
+
+- WHEN compile aiw succeeds and build aiw has no --version or conflicting AIW_VERSION
+- THEN use that recorded version and unchanged native files without recompilation
+
+#### Scenario: Partially overwritten native output
+
+- WHEN a new compilation overlaps a previous record and fails midway
+- THEN the previous overlapping record cannot authorize reuse
+
+#### Scenario: Safe clean
+
+- WHEN clean finds a link/junction anywhere in either output tree
+- THEN fail before starting any deletion
+- WHEN both output trees are absent
+- THEN succeed without touching the external package repository
 
 ### Requirement: 可移植包契约
 

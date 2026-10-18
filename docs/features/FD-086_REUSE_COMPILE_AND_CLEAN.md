@@ -1,7 +1,7 @@
 # FD-086: Reuse compiled output and clean build directories
 
-**Status:** In Progress
-**Revision:** 2
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -44,10 +44,10 @@ No concurrency/locking contract added; existing build commands remain single-wri
 
 ## Work Items
 
-- [ ] 1.1 Add compile provenance, invalidation, default build reuse and compile lookup.
+- [x] 1.1 Add compile provenance, invalidation, default build reuse and compile lookup.
   Size medium, difficulty medium, no dependencies. Completion: safe coverage,
   version selection and exact full-inventory equality traced statically.
-- [ ] 1.2 Add confined clean, update usage/spec and compile-only evidence.
+- [x] 1.2 Add confined clean, update usage/spec and compile-only evidence.
   Size small, difficulty medium, depends on 1.1. Completion: cleanup preflight,
   docs consistency, Python compile-only and independent static review.
 
@@ -64,8 +64,8 @@ No concurrency/locking contract added; existing build commands remain single-wri
 ## TODO
 
 - Design feedback D1 incorporated: exact full output inventory comparison required.
-- Implement in .wt/FD-086 on feature/FD-086.
-- Compile-only, independent implementation review, local delivery and archive.
+- Implementation and Python compile-only complete; independent static review passed.
+- Local delivery and archive after current review and cleanup gates pass.
 
 ## Verification
 
@@ -74,6 +74,17 @@ archive path/link helpers and current version/query contracts. No runtime/build/
 clean, publishing or network execution authorized or performed.
 Independent design report reviews/FD-086-design.md: its single blocking D1 was
 incorporated above before implementation; no repeated design review required.
+Implementation report: reports/FD-086-implementation.md and JSON sidecar.
+Python compile(read_bytes(), path, 'exec') passed for build.py, without imports or
+retained artifacts; the existing scripts/compile.py compiles unrelated Go entrypoints.
+One scoped final git diff against 23caf71 traced version selection, full-inventory
+equality, native overlap invalidation before compilation, successful-only records,
+both-tree cleanup preflight and docs/spec alignment. No runtime, tests, package
+build, cleanup, installation, publication, network or broad verification performed.
+Independent Reviewer session codex-review-FD086-20261018-1324-reuse reviewed
+329de34 against 23caf71 under FD-086-000004-review-requested. Static review passed
+with no blocking findings; see reviews/FD-086-review.md and its JSON sidecar.
+Reviewer did not rerun compilation, tests or product behavior validation.
 
 ## Risks
 

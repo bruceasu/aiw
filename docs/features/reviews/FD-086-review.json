@@ -1,0 +1,37 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-086",
+  "source_event": "FD-086-000004-review-requested",
+  "human_report": "FD-086-review.md",
+  "data": {
+    "reviewer_session": "codex-review-FD086-20261018-1324-reuse",
+    "reviewed_commit": "329de34",
+    "comparison_base": "23caf71",
+    "fd_revision": 4,
+    "result": "verification-passed",
+    "findings": [],
+    "static_results": [
+      "Default build reuses covering successful compilation version and binaries",
+      "Environment version filters candidates; explicit versions and publish compile afresh",
+      "Overlapping records invalidate before output changes; success recorded after complete inventory",
+      "Both Go platforms and complete TypeScript output path/hash dictionaries compared exactly",
+      "Latest compile validates selected covering record; latest build unchanged",
+      "Both absolute cleanup trees and all descendants preflight before deletion; links and Windows reparse points rejected",
+      "External repository is not used as a cleanup target; usage and stable spec align"
+    ],
+    "commands_run": [
+      "Targeted Get-Content and rg reads",
+      "git diff 23caf71 329de34 -- build.py scripts/packages/native.py scripts/packages/common.py",
+      "git diff --stat 23caf71 329de34",
+      "git diff 23caf71 329de34 -- docs/usage/aiw-pkg.md openspec/specs/aiw-packages/spec.md",
+      "aiw fd status FD-086 (unsupported command; corrected to show)",
+      "aiw fd --help; aiw fd claim --help; aiw fd emit --help; aiw fd show FD-086",
+      "aiw fd claim FD-086 FD-086-000004-review-requested --session codex-review-FD086-20261018-1324-reuse"
+    ],
+    "checks_not_run": ["tests", "compile", "package build", "clean", "publish", "installation", "network", "product CLI behavior validation"],
+    "worker_compile_evidence": "Reported successful Python compile-only; reviewer did not rerun",
+    "residual_risks": ["Runtime behavior unverified", "Source freshness not checked", "Single-writer assumption", "Deletion errors can leave partial cleanup"],
+    "next_action": "PM commits review evidence and continues gated local delivery and archive"
+  }
+}
