@@ -84,3 +84,5 @@ inspected statically; no additional compilation, tests or runtime validation run
 %% Compile --version and build --compile-version intentionally removed under the new request.
 %% Reuse checks binaries, not source freshness; explicit compile refreshes source changes.
 %% Same package version with changed content still fails immutable repository publication.
+
+**Completed:** 2026-10-18
