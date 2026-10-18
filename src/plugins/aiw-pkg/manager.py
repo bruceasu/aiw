@@ -86,7 +86,7 @@ class Manager:
             self._lock_held = False
             lock.unlink()
 
-    def record(self, name: str) -> dict | None:
+    def record(self, name: str, *, inspect_targets=True) -> dict | None:
         path = safe_path(self.package_dir(name), "current.json")
         if not path.exists():
             return None
@@ -97,7 +97,11 @@ class Manager:
                 or not isinstance(record.get("files"), list)):
             raise PackageError(f"Invalid installation record: {path}")
         for item in record["files"]:
-            self.target(item["target"])
+            value = relative(item["target"])
+            if value.casefold() == ".aiw" or value.casefold().startswith(".aiw/"):
+                raise PackageError("Payload target overlaps engine state")
+            if inspect_targets:
+                self.target(value)
             if type(item["config"]) is not bool:
                 raise PackageError(f"Invalid configuration record: {path}")
         references(record.get("dependencies", []))
@@ -106,13 +110,13 @@ class Manager:
             raise PackageError(f"Invalid installation reason: {path}")
         return record
 
-    def records(self, *, removed=False):
+    def records(self, *, removed=False, inspect_targets=True):
         result = {}
         if self.state.exists():
             for directory in self.state.iterdir():
                 reject_link(directory)
                 if directory.is_dir():
-                    record = self.record(directory.name)
+                    record = self.record(directory.name, inspect_targets=inspect_targets)
                     if record and (removed or record["status"] == "installed"):
                         result[directory.name] = record
         return result
@@ -149,13 +153,14 @@ class Manager:
             reject_link(directory)
             if not directory.is_dir() or directory.name == name:
                 continue
-            other = self.record(directory.name)
+            other = self.record(directory.name, inspect_targets=False)
             if other:
                 for item in other["files"]:
                     result[item["target"].casefold()] = directory.name
         return result
 
-    def preflight(self, name: str, files: list[dict], current: dict | None, *, adopt_existing=False) -> None:
+    def preflight(self, name: str, files: list[dict], current: dict | None, *, adopt_existing=False,
+                  check_modified=True) -> None:
         owners = self.owners(name)
         old = {item["target"].casefold(): item for item in (current or {}).get("files", [])}
         for item in files:
@@ -177,7 +182,8 @@ class Manager:
                     break
                 if parent.exists() and not parent.is_dir():
                     raise PackageError(f"Target parent is a file: {parent}")
-        self.unchanged(current)
+        if check_modified:
+            self.unchanged(current)
 
     def unchanged(self, record: dict | None) -> None:
         for item in (record or {}).get("files", []):
@@ -324,7 +330,7 @@ class Manager:
                     target = safe_path(stage / "data", source)
                     target.parent.mkdir(parents=True, exist_ok=True)
                     target.write_bytes(content)
-                self.preflight(name, files, current, adopt_existing=True)
+                self.preflight(name, files, current, adopt_existing=True, check_modified=False)
                 transaction = directory / "transaction"
                 before_files = (current or {}).get("files", []) + files
                 try:

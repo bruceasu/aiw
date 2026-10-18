@@ -129,11 +129,12 @@ def main(arguments=None):
             path = Path(args.package).expanduser()
             if path.is_file():
                 from archive import read_package
-                info = read_package(path)[0]
+                prepared = read_package(path)
+                info = prepared[0]
                 if args.version and args.version != info["version"]:
                     raise PackageError("Explicit version does not match local package")
                 repo = configured_repos(args.repo)[0] if args.repo or info.get("dependencies") or info.get("members") else None
-                print(Operation(manager, repo).install(path, dry_run=args.dry_run))
+                print(Operation(manager, repo).install(path, prepared_package=prepared, dry_run=args.dry_run))
             elif path.exists() or "/" in args.package or "\\" in args.package or path.suffix.lower() == ".zip" or ":" in args.package:
                 raise PackageError(f"Local package file not found or not regular: {path}")
             else:

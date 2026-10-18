@@ -1,7 +1,7 @@
 # FD-096: Skip unchanged packages from index before archive acquisition
 
-**Status:** Open
-**Revision:** 3
+**Status:** Pending Verification
+**Revision:** 5
 **Priority:** High
 **Evidence policy:** Dual
 
@@ -31,7 +31,8 @@ Its initial local catalog still reads ZIPs because old build manifests store onl
 paths, not a package index. Its existing before-Manager destination/input-ZIP
 preflight remains; the zero per-target inspection promise applies to repository
 named operations, not build-local catalog/preflight. Explicit ZIP install also
-still decodes the input.
+still decodes the input once; the CLI passes its validated prepared tuple through
+to Operation instead of discarding it and decoding again.
 No new on-disk cache, manifest/record schema, dependency or CLI syntax.
 
 Metadata-only record reads validate record structure, relative target spelling and
@@ -63,16 +64,16 @@ No linked Issue or OpenSpec change.
 
 ## Work Items
 
-- [ ] 1.1 Add index-first retained nodes to install/update planning.
+- [x] 1.1 Add index-first retained nodes to install/update planning.
   Size small, difficulty medium, no dependencies. Completion: exact roots and graph,
   skipped nodes avoid acquisition/file preflight, locked metadata/reason updates.
-- [ ] 1.2 Decode changed archives once through shared prepared adapters.
+- [x] 1.2 Decode changed archives once through shared prepared adapters.
   Size small, difficulty medium, depends on 1.1. Completion: raw integrity and index
   metadata binding retained, fetch API preserved, local original paths stay pinned.
-- [ ] 1.3 Remove local-content rejection from install/update only.
+- [x] 1.3 Remove local-content rejection from install/update only.
   Size small, difficulty low, depends on 1.1. Completion: metadata-only record reads,
   no hash scan for install/update, changed-file snapshots/config preservation intact.
-- [ ] 1.4 Document policy and prepare compile/static evidence.
+- [x] 1.4 Document policy and prepare compile/static evidence.
   Size small, difficulty low, depends on 1.2/1.3. Completion: docs/spec and one
   in-memory Python compile of changed files. Independent review is a completion gate.
 
@@ -90,13 +91,17 @@ No linked Issue or OpenSpec change.
 
 ## TODO
 
-- Obtain bounded independent design feedback before code; then implement and review.
+- Independent design ready; implementation/docs and six-file Python compile-only complete.
+- Independent implementation review required before completion; installed plugin unchanged.
 
 ## Verification
 
 Static review plus one in-memory Python compile of changed files. No tests, runtime
 install/update, benchmarks, network, downloads, final builds or installation.
 Report unmeasured performance and installed-plugin update requirement honestly.
+Six changed Python files compiled in memory with exit 0. One static command batch
+reviewed final source diff and the unchanged removal hash-check call; no runtime or
+benchmark execution. See reports/FD-096-implementation.md.
 
 ## Sources
 

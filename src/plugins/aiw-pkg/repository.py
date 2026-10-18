@@ -44,10 +44,15 @@ def package_path(name, version):
 
 
 def entry_for(package, *, prepared=None):
-    info, _, _, fingerprint = prepared if prepared is not None else read_package(package)
+    return entry_from_prepared(prepared if prepared is not None else read_package(package),
+                               package.stat().st_size, digest(package.read_bytes()))
+
+
+def entry_from_prepared(prepared, size, checksum):
+    info, _, _, fingerprint = prepared
     return dict(name=info["name"], version=info["version"], kind=info["kind"],
-                path=package_path(info["name"], info["version"]), size=package.stat().st_size,
-                sha256=digest(package.read_bytes()), fingerprint=fingerprint,
+                path=package_path(info["name"], info["version"]), size=size,
+                sha256=checksum, fingerprint=fingerprint,
                 dependencies=info.get("dependencies", []), members=info.get("members", []),
                 platforms=sorted({f["platform"] for f in info["files"]} or {"all"}))
 
@@ -172,14 +177,19 @@ class Repo:
         return decode_index(self.read("index.json", INDEX_LIMIT))
 
     def fetch(self, entry, folder):
+        return self.prepare(entry, folder)[0]
+
+    def prepare(self, entry, folder):
         content = self.read(entry["path"], entry["size"])
-        if len(content) != entry["size"] or digest(content) != entry["sha256"]:
+        checksum = digest(content)
+        if len(content) != entry["size"] or checksum != entry["sha256"]:
             raise PackageError(f"Repository size/SHA-256 mismatch: {entry['path']}")
         target = safe_path(folder, entry["path"])
         atomic_bytes(target, content)
-        if entry_for(target) != entry:
+        prepared = read_package(target)
+        if entry_from_prepared(prepared, len(content), checksum) != entry:
             raise PackageError(f"Package identity/metadata mismatch: {entry['path']}")
-        return target
+        return target, prepared
 
     def publish(self, package):
         if self.kind == "local":

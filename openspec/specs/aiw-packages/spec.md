@@ -306,9 +306,9 @@ supported. The aiw-docs resource continues to use docs/reference paths.
 
 Build-local installation MUST select all requested roots before expanding a single
 deduplicated dependency/member graph. Roots MUST retain manual-install semantics.
-Before mutation the complete graph MUST pass integrity, platform, target ownership,
-exact-version, cycle and existing per-operation aggregate input size checks.
-The 512 MiB aggregate input-ZIP limit applies to the entire selected operation;
+Before mutation the complete graph MUST pass exact-version and cycle checks;
+changed payloads MUST pass integrity, platform, target ownership and size checks.
+The 512 MiB aggregate input-ZIP limit applies to acquired archives in the operation;
 large groups MAY require separate explicit targets. Transactions remain per package.
 
 Local index generation MAY reuse validated prepared metadata. Local fetch MAY
@@ -332,3 +332,33 @@ JSON arrays, metadata fields and record order. Existing --all, --kind, latest-ve
 repository and destination selection MUST remain unchanged. Installed listing MUST
 not contact a repository. Other subcommands MUST retain their existing output.
 Scripts relying on the previous default JSON MUST explicitly select --json.
+
+### Requirement: Index-first no-op installation and update
+
+Named repository installs and updates MUST compare installed name/version/fingerprint
+with the validated index before acquiring archives. Matching installed nodes MUST
+skip fetch, decompression, per-target filesystem inspection and installed-content
+hashing. Graph planning MUST use the complete index dependencies/members and retain
+existing collection trim, root-reason, exact-version and cycle semantics.
+Metadata snapshots MUST be checked under the existing installation lock; incomplete
+transactions MUST still block changes. Retained record metadata MAY be updated under
+lock when reason/members change, without touching installed payloads.
+
+Newly acquired archives MUST verify raw size/SHA-256 and their inner integrity and
+identity once, retaining prepared payloads before self-update. fetch MUST remain a
+validated path-returning interface for other callers. The operation size limit MUST
+count acquired archives only. No persistent cache or record schema change is required.
+
+Install/update MUST tolerate modified or missing ordinary managed files, without
+scanning old content hashes to reject them. No-op packages MUST NOT be implicitly
+repaired; actual updates MAY overwrite modified ordinary managed files or remove
+obsolete managed files through existing recoverable transactions. Configuration
+preservation, link/type/path/ownership checks before writes and removal/purge/Skill
+protections MUST remain. Metadata-only reads MUST still validate target spelling
+and forbid reserved state targets, without inspecting payload paths on disk.
+
+Unchanged dry-runs MUST skip archive acquisition. Changed dry-runs MUST retain full
+preparation and payload preflight without installed-state writes or hooks. Explicit
+local ZIP installs MUST validate input. Build-local catalog construction and its
+before-Manager input/destination protection remain; no-op acquisition savings there
+begin after that in-memory index exists.

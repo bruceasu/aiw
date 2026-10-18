@@ -3,7 +3,7 @@ from pathlib import Path
 
 from archive import PackageError, digest, identifier, read_package, safe_path
 from manager import host_platform
-from repository import entry_for
+from repository import entry_for, entry_from_prepared
 
 
 class LocalPackages:
@@ -108,6 +108,13 @@ class LocalPackages:
         if path.stat().st_size != entry["size"] or digest(path.read_bytes()) != entry["sha256"]:
             raise PackageError(f"Local package changed after selection: {path}")
         return path
+
+    def prepare(self, entry: dict, folder):
+        path = self.fetch(entry, folder)
+        prepared = read_package(path)
+        if entry_from_prepared(prepared, entry["size"], entry["sha256"]) != entry:
+            raise PackageError(f"Local package metadata changed after selection: {path}")
+        return path, prepared
 
     def preflight_destination(self, destination: Path) -> None:
         root = destination.expanduser().resolve(strict=False)

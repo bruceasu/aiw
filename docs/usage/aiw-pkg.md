@@ -326,10 +326,26 @@ ownership records or previously built ZIPs.
 `python build.py install all` plans all selected roots together. Shared dependencies
 and collection members are processed once. All selected roots retain manual-install
 status; dependency-only packages retain the normal dependency reason rules.
-Unchanged fingerprints skip temporary payload materialization, while archive,
-platform, file ownership and final dependency checks still apply.
+Repository installs and updates compare index name/version/fingerprint with installed
+records before fetching ZIPs. Matching packages skip downloads, decompression and
+installed-file inspection/hashing. The complete dependency/member graph is still
+checked. Local edits or missing files in skipped packages remain as they are.
 
-The existing per-operation 512 MiB aggregate input-ZIP limit applies to the entire
-selection. A larger selection fails before installation; install smaller explicit
+Changed packages are fetched and decoded once, with raw ZIP size/SHA-256 and internal
+integrity checked. Install/update do not reject changed ordinary managed files:
+they may be overwritten, and obsolete managed files may be removed, after taking
+the existing transaction snapshot. Configuration files remain preserved. Safe paths,
+file types, ownership, platform and final dependency checks still protect writes.
+Removal/purge and project/user Skill local-change rules remain unchanged.
+
+Explicit local ZIP installs validate the input once. Build-local install still
+reads ZIPs to construct its in-memory catalog and performs its input/destination
+preflight; legacy manifests contain paths rather than a cached package index.
+Unchanged dry-runs avoid fetching; changed-package dry-runs still prepare and check
+payloads, without writing installed files/records or running hooks.
+
+The existing per-operation 512 MiB aggregate input-ZIP limit applies to archives
+actually acquired, excluding unchanged packages skipped from the index. A larger
+selection fails before installation; install smaller explicit
 targets separately. Transactions remain per package: a later failure does not roll
 back earlier successful packages. No benchmark result is implied by this change.

@@ -14,9 +14,14 @@ class Operation:
     def __init__(self, manager, repo=None):
         self.manager, self.repo = manager, repo
 
-    def install(self, package=None, *, packages=None, name=None, version=None, update=False, scope=None, dry_run=False):
+    def install(self, package=None, *, packages=None, root_requests=None, prepared_package=None,
+                name=None, version=None, update=False, scope=None, dry_run=False):
         if packages is not None and (package is not None or name is not None or update):
             raise PackageError("Multiple package roots cannot be combined with another selection")
+        if root_requests is not None and (package is not None or packages is not None or name is not None or update):
+            raise PackageError("Index roots cannot be combined with another selection")
+        if prepared_package is not None and package is None:
+            raise PackageError("Prepared input requires a single local package")
         # Pin source files, imports and all archive bytes before self-update can replace the engine.
         with tempfile.TemporaryDirectory(prefix="aiw-plan-") as temporary:
             folder = Path(temporary)
@@ -31,7 +36,22 @@ class Operation:
                 return entries
 
             selected, roots, order, visiting, done = {}, set(), [], set(), set()
-            old = self.manager.records()
+            old = self.manager.records(inspect_targets=False)
+
+            def from_entry(entry):
+                current = old.get(entry["name"])
+                if (current and current["version"] == entry["version"]
+                        and current.get("fingerprint") == entry["fingerprint"]):
+                    # The index supplies the complete graph even if a previous
+                    # collection update retained only some installed members.
+                    info = dict(entry, files=current["files"])
+                    return None, (info, None, None, entry["fingerprint"])
+                prepare = getattr(self.repo, "prepare", None)
+                if prepare is not None:
+                    return prepare(entry, folder)
+                path = self.repo.fetch(entry, folder)
+                return path, read_package(path)
+
             # Root selection is complete before dependency expansion: conflicts never pick an arbitrary winner.
             requests = []
             if package is not None or packages is not None:
@@ -39,21 +59,29 @@ class Operation:
                 if not root_packages:
                     raise PackageError("No installation roots selected")
                 for root_package in root_packages:
-                    prepared = read_package(root_package)
+                    prepared = prepared_package if prepared_package is not None else read_package(root_package)
                     info = prepared[0]
                     previous = selected.get(info["name"])
                     if previous and previous[1][3] != prepared[3]:
                         raise PackageError(f"Conflicting installation roots: {info['name']}")
                     selected[info["name"]] = (root_package, prepared)
                     roots.add(info["name"])
+            elif root_requests is not None:
+                requests = list(root_requests)
+                if not requests:
+                    raise PackageError("No installation roots selected")
             elif update:
                 requests = [("aiw-" + scope, None)] if scope else [(n, None) for n in sorted(old)]
             else:
                 requests = [(name, version)]
             for requested, wanted in requests:
                 entry = select(catalog(), requested, wanted)
-                path = self.repo.fetch(entry, folder)
-                selected[requested] = (path, read_package(path))
+                previous = selected.get(requested)
+                if previous and (previous[1][0]["version"] != entry["version"]
+                                 or previous[1][3] != entry["fingerprint"]):
+                    raise PackageError(f"Conflicting installation roots: {requested}")
+                if previous is None:
+                    selected[requested] = from_entry(entry)
                 roots.add(requested)
 
             actual_members = {}
@@ -61,8 +89,7 @@ class Operation:
             def visit(package_name, wanted=None):
                 if package_name not in selected:
                     entry = select(catalog(), package_name, wanted)
-                    path = self.repo.fetch(entry, folder)
-                    selected[package_name] = (path, read_package(path))
+                    selected[package_name] = from_entry(entry)
                 info = selected[package_name][1][0]
                 if wanted is not None and info["version"] != wanted:
                     raise PackageError(f"Exact version conflict: {package_name} needs {wanted}, selected {info['version']}")
@@ -84,11 +111,11 @@ class Operation:
 
             for root in sorted(roots):
                 visit(root)
-            if sum(path.stat().st_size for path, _ in selected.values()) > MAX_BYTES:
+            if sum(path.stat().st_size for path, _ in selected.values() if path is not None) > MAX_BYTES:
                 raise PackageError("Combined operation exceeds package staging limit")
 
             def preflight():
-                current = self.manager.records()
+                current = self.manager.records(inspect_targets=False)
                 if current != old:
                     raise PackageError("Installation state changed during planning; retry")
                 final = dict(current)
@@ -96,6 +123,14 @@ class Operation:
                 targets = {}
                 for package_name, (path, prepared) in selected.items():
                     info, _, _, fingerprint = prepared
+                    if path is None:
+                        restricted = set(info["platforms"]) - {"all"}
+                        if restricted and system not in restricted:
+                            raise PackageError(f"No {system} payload: {package_name}")
+                        final[package_name] = dict(current[package_name],
+                                                   dependencies=info["dependencies"],
+                                                   members=actual_members[package_name])
+                        continue
                     restricted = {f["platform"] for f in info["files"] if f["platform"] != "all"}
                     if restricted and system not in restricted:
                         raise PackageError(f"No {system} payload: {package_name}")
@@ -109,7 +144,8 @@ class Operation:
                         if any(key == p or key.startswith(p + "/") or p.startswith(key + "/") for p in targets):
                             raise PackageError(f"Packages conflict at target: {item['target']}")
                         targets[key] = package_name
-                    self.manager.preflight(package_name, files, current.get(package_name), adopt_existing=True)
+                    self.manager.preflight(package_name, files, current.get(package_name),
+                                           adopt_existing=True, check_modified=False)
                     final[package_name] = dict(info, fingerprint=fingerprint, files=files,
                                                members=actual_members[package_name], status="installed")
                 visited, active = set(), set()
@@ -146,8 +182,20 @@ class Operation:
                     if dry_run:
                         continue
                     try:
-                        results.append(self.manager.install(path, prepared=prepared, reason=reason,
-                                                            members=actual_members[package_name]))
+                        if path is None:
+                            record = self.manager.record(package_name, inspect_targets=False)
+                            if record != old[package_name]:
+                                raise PackageError(f"Installation record changed during operation: {package_name}")
+                            retained = dict(record,
+                                            reason="manual" if reason == "manual" or record.get("reason", "manual") == "manual" else "auto",
+                                            dependencies=info["dependencies"],
+                                            members=actual_members[package_name])
+                            if retained != record:
+                                self.manager.save_record(self.manager.package_dir(package_name), retained)
+                            results.append(f"Already installed: {package_name} {info['version']}")
+                        else:
+                            results.append(self.manager.install(path, prepared=prepared, reason=reason,
+                                                                members=actual_members[package_name]))
                     except Exception as error:
                         raise PackageError(f"Stopped at {package_name}; completed packages: {', '.join(order[:len(results)]) or 'none'}. {error}") from error
                 return "Dry run: no installation changes" if dry_run else "\n".join(results) or "No installed packages to update"
