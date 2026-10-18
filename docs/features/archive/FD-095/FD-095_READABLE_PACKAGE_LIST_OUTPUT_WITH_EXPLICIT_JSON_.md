@@ -67,3 +67,5 @@ tests, builds and installation remain unperformed.
 - src/plugins/aiw-pkg/aiw-pkg.py
 - docs/usage/aiw-pkg.md
 - openspec/specs/aiw-packages/spec.md
+
+**Completed:** 2026-10-18
