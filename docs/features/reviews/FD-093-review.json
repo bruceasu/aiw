@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-093",
+  "source_event": "FD-093-000006-review-requested",
+  "human_report": "FD-093-review.md",
+  "data": {
+    "reviewer_session": "reviewer-install-once-20261019",
+    "baseline": "5a81b9b",
+    "reviewed_commit": "95e1b2c",
+    "result": "passed",
+    "findings": [],
+    "static_evidence": ["Complete root selection and fingerprint/version conflicts", "Deduplicated graph; manual/auto and collection update filtering", "Safe-path, raw size/hash and prepared payload pinning", "Lock and incomplete-transaction guard before unchanged fast path", "Retained changed-package transactions and recovery", "Explicit whole-selection 512 MiB boundary in FD/design/usage/spec"],
+    "commands_run": ["Get-Content and rg for static reading", "git diff 5a81b9b 95e1b2c", "aiw fd show FD-093", "aiw fd --help", "aiw fd emit --help", "aiw fd claim FD-093 FD-093-000006-review-requested --session reviewer-install-once-20261019", "aiw fd emit FD-093 verification-passed --producer reviewer --artifact docs/features/reviews/FD-093-review.md --source-event FD-093-000006-review-requested"],
+    "read_failures": ["Initial show GBK BOM output failure corrected once using PYTHONIOENCODING=utf-8", "Absent guessed review-template path; no retry"],
+    "worker_compile_evidence": "Worker report records five-file in-memory compile exit 0; not rerun by Reviewer",
+    "checks_not_run": ["tests", "benchmark", "compile", "runtime", "install", "build", "publish", "network"],
+    "residual_risks": ["No runtime or measured performance evidence", "Actual aggregate release ZIP size not measured", "Existing filesystem replacement race assumptions retained"]
+  }
+}

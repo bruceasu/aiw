@@ -1,7 +1,7 @@
 ﻿# FD-093: Plan local installation once and skip unchanged staging
 
-**Status:** Pending Verification
-**Revision:** 5
+**Status:** Complete
+**Revision:** 7
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -43,7 +43,7 @@ aggregate limits, roots/reasons, byte identity and self-update pinning before co
 - [x] 1.2 Remove redundant local archive decoding and unchanged materialization.
   Size small, difficulty medium, depends on 1.1. Completion: raw fetch checks safe
   path/size/hash, prepared metadata reuse and locked unchanged fast path.
-- [ ] 1.3 Update docs/spec, compile-only and independent implementation review.
+- [x] 1.3 Update docs/spec, compile-only and independent implementation review.
   Size small, difficulty low, depends on 1.2. Completion: truthful static evidence,
   one in-memory Python compile of changed files and independent managed pass.
 
@@ -59,7 +59,7 @@ aggregate limits, roots/reasons, byte identity and self-update pinning before co
 ## TODO
 
 - Independent design ready; implementation/docs and Python compile-only complete.
-- Independent implementation review pending; complete 1.3 only after that pass.
+- Independent implementation review passed; host PM delivery/archive remains.
 
 ## Verification
 
@@ -68,6 +68,8 @@ installation, publication or network. No measured speedup will be claimed.
 Five changed Python files compiled in memory with exit 0; no packaging imports,
 bytecode files or release artifacts. One implementation diff inspection completed.
 See reports/FD-093-implementation.md and reviews/FD-093-design.md.
+Independent static review passed for 5a81b9b..95e1b2c; see reviews/FD-093-review.md
+and its JSON sidecar. No Reviewer runtime checks or benchmark were performed.
 
 ## Sources
 
