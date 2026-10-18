@@ -1,0 +1,26 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-093",
+  "source_event": null,
+  "human_report": "FD-093-design.md",
+  "data": {
+    "reviewer_session": "install_plan_design",
+    "fd_revision": 2,
+    "source_event_reason": "Bounded independent design feedback; no design event claimed and no verification emitted.",
+    "result": "ready",
+    "findings": [],
+    "implementation_constraints": [
+      "Complete roots before expansion; reject duplicate-name incompatible versions.",
+      "Preserve manual/auto promotion, existing manual reasons, and update collection filtering.",
+      "Complete graph preflight before any package mutation; preserve per-package transaction semantics.",
+      "Document aggregate 512 MiB operation limit and fail before writes rather than silently batching.",
+      "Revalidate safe source path, raw size and SHA-256; retain full Operation preparation and self-update pinning.",
+      "Keep unchanged fast path under the existing lock and retain transaction, platform, path, interpreter and record checks."
+    ],
+    "commands_run": ["PowerShell Get-Content, rg, Get-ChildItem for bounded local static source and document reading"],
+    "read_failures": ["Absent presumed self_update.py/report path", "PowerShell literal wildcard rg path; corrected with directory and -g filter"],
+    "checks_not_run": ["tests", "compile", "runtime", "installation", "build", "publication", "network", "Git writes"],
+    "residual_risks": ["Actual aggregate release archive size not measured", "Implementation correctness and performance not yet verified", "Existing filesystem replacement race assumptions retained"]
+  }
+}
