@@ -9,6 +9,37 @@ from repository import entry_for
 class LocalPackages:
     CATEGORIES = ("mist", "plugins", "skills", "resources", "collections")
 
+    @classmethod
+    def from_release(cls, root: Path, version: str, name: str | None = None):
+        """Select existing release artifacts independently of current source/manifests."""
+        identifier(version)
+        paths = []
+        if name is not None:
+            paths.append(cls._find_at(root, name, version))
+        else:
+            for category in cls.CATEGORIES:
+                directory = safe_path(root, f"{category}/{version}")
+                try:
+                    directory.stat()
+                except FileNotFoundError:
+                    continue
+                if not directory.is_dir():
+                    raise PackageError(f"Release category is not a directory: {directory}")
+                paths += [safe_path(root, path.relative_to(root).as_posix())
+                          for path in sorted(directory.glob("*.zip"))]
+        if not paths:
+            raise PackageError(f"No built packages for {version}; run build --version {version} all first")
+        seen = set()
+        for path in paths:
+            entry = entry_for(path)
+            key = (entry["name"], entry["version"])
+            if entry["version"] != version or path.name != f"{entry['name']}-{version}.zip":
+                raise PackageError(f"Release filename/version mismatch: {path}")
+            if key in seen:
+                raise PackageError(f"Ambiguous release package: {key[0]} {key[1]}")
+            seen.add(key)
+        return cls(root, paths)
+
     def __init__(self, root: Path, packages: list[Path]):
         self.root = root
         self._entries, self._paths, self._files = {}, {}, {}
@@ -47,10 +78,14 @@ class LocalPackages:
         return entry
 
     def _find(self, name: str, version: str) -> Path:
+        return self._find_at(self.root, name, version)
+
+    @classmethod
+    def _find_at(cls, root: Path, name: str, version: str) -> Path:
         identifier(name)
         identifier(version)
-        candidates = [safe_path(self.root, f"{category}/{version}/{name}-{version}.zip")
-                      for category in self.CATEGORIES]
+        candidates = [safe_path(root, f"{category}/{version}/{name}-{version}.zip")
+                      for category in cls.CATEGORIES]
         candidates = [path for path in candidates if path.is_file()]
         if len(candidates) != 1:
             raise PackageError(f"Expected one local ZIP for {name} {version}, found {len(candidates)}; rebuild the target")

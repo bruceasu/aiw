@@ -484,10 +484,10 @@ def main(arguments: list[str]) -> int:
         command.add_argument("target", nargs="?", choices=choices)
     command = actions.add_parser("clean", help="Remove checkout bin/ and dist/ after path/link preflight", allow_abbrev=False)
     command.set_defaults(target=None)
-    command = actions.add_parser("publish", help="Build and publish one package and its dependencies locally", allow_abbrev=False)
+    command = actions.add_parser("publish", help="Publish an existing package version and its dependencies locally", allow_abbrev=False)
     command.add_argument("target", metavar="package", choices=sorted(packages | set(aliases)))
     command.add_argument("version")
-    command = actions.add_parser("publish-all", help="Build and publish every package locally", allow_abbrev=False)
+    command = actions.add_parser("publish-all", help="Publish all existing packages at a version locally", allow_abbrev=False)
     command.add_argument("version")
     args = parser.parse_args(arguments)
     if not args.action:
@@ -505,8 +505,12 @@ def main(arguments: list[str]) -> int:
         elif args.action == "clean":
             clean_outputs()
         elif args.action in {"publish", "publish-all"}:
+            from scripts.local_packages import LocalPackages
             destination = publish_destination()
-            export_repository(build_packages(target, args.version), destination)
+            name = None if args.action == "publish-all" else next(name for name, component in aliases.items() if component == target)
+            release = LocalPackages.from_release(DIST, args.version, name)
+            packages = [release.fetch(entry, None) for entry in release.index()]
+            export_repository(packages, destination)
         elif args.action == "compile":
             print("Compiling snapshot", flush=True)
             compile_target(target)

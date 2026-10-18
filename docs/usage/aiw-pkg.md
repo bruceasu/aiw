@@ -156,8 +156,8 @@ Explicit package versions never force native recompilation. `compile all` can se
 
 Package version priority is `build --version`, nonempty `AIW_VERSION`, then one UTC
 timestamp such as `snapshot-20261018-130000123456Z`. This timestamp versions the
-packages only. Publish commands still require an explicit positional package version
-and use the same snapshot prerequisite. Independent package scripts still require
+packages only. Publish commands require an explicit positional package version
+and consume existing packages without requiring snapshot output. Independent package scripts still require
 `--version` unless `AIW_VERSION` is configured.
 
 Compile records live in `bin/.compile.json`. New compilation invalidates overlapping
@@ -208,10 +208,23 @@ Compatibility groups `bin`, `plugins`, `skills`, and `all` remain available.
 Full package names such as `aiw-main`, `aiw-git`, `aiw-skill-fd-workflow` and
 `aiw-docs` are aliases for their component targets. Collection names stay unchanged.
 
-`publish <package> <version>` uses snapshot output (compiling when missing), packages that package plus its exact
-dependencies/members, then publishes those newly built ZIPs. Use `publish-all
-<version>` for every package. These commands require an explicit version and a
-local `AIW_PACKAGE_REPO`; they never reuse an older release manifest. Explicit
+`publish <package> <version>` publishes that version's existing root ZIP and exact
+metadata-declared dependencies/members. `publish-all <version>` publishes all ZIPs
+already built under that version's five dist category directories, including packages
+removed from the current source catalog. These commands never compile, package or
+update build manifests; missing release files fail with an instruction to build first.
+They validate the complete selected closure, filenames, identities and hashes before
+the first repository write, rejecting ambiguous duplicate identities even if identical.
+Selection uses the requested version's artifacts, independently of newer latest
+manifests. Both commands require a local `AIW_PACKAGE_REPO`. For example:
+
+```text
+python build.py build --version 1.0.0 all
+python build.py publish-all 1.0.0
+```
+
+The second command prints publication results without `Using snapshot output` or
+`Built` messages and sends the original ZIPs to the configured repository. Explicit
 `export` publishes existing manifest ZIPs to its requested repository. Publication stops on the first error;
 earlier packages may already have been published. Existing versions cannot be
 overwritten with changed contents.

@@ -1,0 +1,41 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-090",
+  "source_event": "FD-090-000004-review-requested",
+  "human_report": "FD-090-review.md",
+  "data": {
+    "reviewer_session": "codex-fd090-reviewer-20261018-1427",
+    "reviewed_commit": "7551f5d",
+    "comparison_base": "1851532",
+    "fd_revision": 4,
+    "result": "verification-passed",
+    "blocking_findings": [],
+    "findings": [],
+    "resolved_within_review": "Two stale argparse help strings corrected by Worker in 7551f5d; incremental diff inspected in the same review",
+    "static_results": [
+      "No compile/build/manifest/snapshot write in publish branch",
+      "Exact version category discovery independent of latest manifests and current source membership",
+      "Canonical named roots and metadata-declared exact closure",
+      "Safe original paths and duplicate/identity/hash rejection",
+      "Entire fetch path list materialized before first Repo publication",
+      "Existing install lookup and immutable partial publication semantics preserved"
+    ],
+    "commands_run": [
+      "Targeted Get-Content/rg source and evidence reads; initial guessed receipt paths absent, corrected to primary events file",
+      "git diff 1851532 b8c90ba -- build.py scripts/local_packages.py docs/usage/aiw-pkg.md openspec/specs/aiw-packages/spec.md and git diff --stat",
+      "git diff b8c90ba 7551f5d -- build.py docs/features/reports/FD-090-implementation.md docs/features/reports/FD-090-implementation.json",
+      "aiw fd --help",
+      "aiw fd show FD-090",
+      "aiw fd claim FD-090 FD-090-000004-review-requested --session codex-fd090-reviewer-20261018-1427",
+      "aiw fd emit --help",
+      "aiw fd emit FD-090 verification-passed --producer reviewer --artifact docs/features/reviews/FD-090-review.md --source-event FD-090-000004-review-requested"
+    ],
+    "checks_not_run": ["tests", "compile", "build", "publish", "install", "clean", "product CLI validation", "network"],
+    "residual_risks": [
+      "Publication runtime unverified in this review",
+      "Existing multi-package partial success",
+      "Separate installed plugin EvalSymlinks failure remains unresolved"
+    ]
+  }
+}

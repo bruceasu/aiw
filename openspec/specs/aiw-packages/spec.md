@@ -21,9 +21,9 @@ dist/skills 的版本子目录，其他发布文件 MUST 位于 dist/<category>/
 ### Requirement: Fresh local publication and build configuration
 
 build.py MUST support `publish <package> <version>` and `publish-all <version>`.
-Publication MUST first ensure valid fixed snapshot output and package the selected dependency/member closure,
-then publish exactly the newly built paths through the existing Repo engine.
-It MUST NOT select an older version from a latest release manifest.
+Publication MUST consume existing ZIPs at the requested version and their exact
+metadata-declared dependency/member closure through the existing Repo engine.
+It MUST NOT compile, package or select a different version through latest manifests.
 AIW_PACKAGE_REPO MUST name a local repository; missing or remote destinations
 MUST fail before compilation or packaging. Relative paths MUST use the checkout root.
 Existing immutable publication rules apply; a batch MUST stop on error and MUST NOT
@@ -39,7 +39,8 @@ MUST be explicit. Go packages MUST retain Windows/Linux amd64 support.
 The target catalog MUST distinguish programs, plugins, Skills, resources,
 collections and compatibility groups. Existing short targets and bin/plugins/skills/all
 MUST remain valid; canonical package names MUST also be accepted.
-all and publish-all MUST include docs and all catalog packages with dependencies deduplicated.
+build all MUST include docs and all catalog packages with dependencies deduplicated.
+publish-all MUST select existing versioned release artifacts, independently of current source membership.
 The docs target and scripts/packages/docs.py MUST produce aiw-docs as a resource
 package, with usage files under docs/reference/usage and README.md under docs/reference.
 It MUST NOT own individual programs' docs/usage paths or include development reports/config.
@@ -47,13 +48,24 @@ It MUST NOT own individual programs' docs/usage paths or include development rep
 #### Scenario: Publish a fresh named package
 
 - WHEN `publish aiw-git 1.2.3` has a configured local repository
-- THEN build aiw-git and its required packages at 1.2.3 and publish those returned ZIPs
+- THEN publish the existing aiw-git 1.2.3 ZIP and its exact declared dependency ZIPs
 - AND do not consume any previous aiw-git manifest
 
 #### Scenario: Missing local publish configuration
 
 - WHEN AIW_PACKAGE_REPO is unset or is a remote URL
 - THEN fail without compiling, packaging or publishing
+
+Publication selection MUST be confined to the version directories under the five
+standard dist categories. Named publication MUST select its canonical root and
+declared closure; publish-all MUST enumerate all existing ZIPs for that version,
+including packages removed from source later. All root filename/version identities,
+duplicates (even identical content), safe paths and closure entry hashes MUST be
+validated and original fetch paths fully materialized before the first repository
+write. Missing/ambiguous/mismatched/unsafe artifacts MUST fail with a build-first
+error and no implicit build or alternate version. Snapshot records, package ZIPs
+and build manifests MUST NOT be changed by publication. Existing Repo immutability
+and partial multi-package publication semantics remain in effect.
 
 ### Requirement: Fixed snapshot compilation and package versions
 
@@ -66,8 +78,8 @@ leave reusable overlapping records.
 build MUST package the current validated snapshot regardless of its package version.
 Without covering snapshot provenance or when ordinary native files are missing,
 build MUST automatically compile snapshot before packaging. It MUST NOT accept
---compile-version. Publish MUST use the same snapshot prerequisite and assemble
-fresh packages before publication. Explicit package versions MUST NOT force native
+--compile-version. Publish MUST consume existing packages independently of snapshot
+availability. Explicit build package versions MUST NOT force native
 recompilation. Legacy non-snapshot compile records remain readable but are not reusable.
 
 Package identity MUST use build --version, then nonempty AIW_VERSION, then one UTC
