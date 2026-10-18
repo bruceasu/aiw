@@ -16,6 +16,9 @@ install accepts a local package file. Package-name repository lookup is reserved
 remove restores and consumes the one previous-version backup, keeping config.
 Without a backup, remove uninstalls managed program files and keeps config.
 purge removes managed files, registered configuration and the backup.
+install automatically backs up and adopts unowned ordinary files declared by the package.
+Conflicting ownership and links inside the resolved installation root remain rejected.
+Destination aliases are resolved to a physical root before locating state and locks.
 Default destination: AIW_INSTALL_DIR, otherwise C:\\green\\aiw on Windows,
 or ~/apps/aiw on Linux. State is stored in DEST/.aiw/packages/.
 """

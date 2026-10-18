@@ -1,0 +1,18 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-082",
+  "source_event": "FD-082-000004-implementation-ready",
+  "human_report": "FD-082-review-r1.md",
+  "data": {
+    "verdict": "verification-passed",
+    "session": "fd082-reviewer-20261018-6b2e94",
+    "reviewed_commit": "fc26fe61246626c7991ffb059233616c6f5eeb8a",
+    "base_commit": "3e31b68",
+    "fd_revision": 4,
+    "findings": [],
+    "evidence": ["Canonical root before strict internal safe_path checks", "Install-only adoption preserves ownership and modified-file rejection", "Real before record remains distinct from synthetic previous", "No old program means no legacy previous", "Legacy restore uses optional package ZIP and snapshot modes", "Failed adoption restores true original record and preserves original backup"],
+    "commands": ["Get-Content (event, FD, complete manager, design and worker evidence)", "git rev-parse HEAD", "git diff 3e31b68..fc26fe6 -- src/plugins/aiw-pkg/manager.py", "git diff 3e31b68..fc26fe6 -- openspec/specs/aiw-packages/spec.md docs/usage/aiw-pkg.md src/plugins/aiw-pkg/plugin.toml", "aiw fd claim FD-082 FD-082-000004-implementation-ready --session fd082-reviewer-20261018-6b2e94"],
+    "limits": {"mode": "bounded-static-only", "tests_run": false, "compile_run": false, "build_run": false, "installation_run": false, "network_used": false, "implementation_modified": false, "unverified": ["Junction execution", "File occupancy failures", "Adoption and recovery fault execution", "Actual installation"], "acl_restore_claimed": false}
+  }
+}

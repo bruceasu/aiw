@@ -1,0 +1,17 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-082",
+  "source_event": "FD-082-000008-changes-requested",
+  "human_report": "FD-082-implementation-r2.md",
+  "data": {
+    "worker_session": "fd082-host-20261018-c821be",
+    "fd_revision": 8,
+    "previous_report": "FD-082-implementation-r1.md",
+    "fixed_findings": ["R1 input ZIP overlap"],
+    "compile": "passed: manager.py in-memory compile after repair; no bytecode",
+    "workflow_recovery": "Managed status/review route; an accidental parent metadata-only change was inspected and restored before correct worktree operation",
+    "not_run": ["tests", "build", "installation", "network", "fault injection"],
+    "recommendation": "ready-for-bounded-independent-recheck"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-082",
+  "source_event": "FD-082-000003-design-ready",
+  "human_report": "FD-082-implementation-r1.md",
+  "data": {
+    "worker_session": "fd082-host-20261018-c821be",
+    "fd_revision": 3,
+    "base_commit": "3e31b68",
+    "changes": ["canonical explicit install root", "automatic install-only adoption", "synthetic legacy previous separate from actual before", "preserve ownership/configuration/inside-root link restrictions"],
+    "compile": "passed: one manager.py in-memory compile; no artifacts",
+    "not_run": ["tests", "build", "installation", "network", "downloads", "ACL/link modifications"],
+    "risks": ["Runtime installation and failure recovery unverified", "No ACL restore promise", "User must rebuild published pkg ZIP to install the updated engine"],
+    "recommendation": "ready-for-independent-review"
+  }
+}

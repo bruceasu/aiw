@@ -26,6 +26,7 @@ info MUST 为 format_version=1 的 UTF-8 TOML，声明文件来源、目标、�
 安装前 MUST 完成完整性、平台、路径、类型及目标冲突预检；MUST 拒绝链接、
 越界路径、重复目标、特殊文件以及覆盖 .aiw 状态区。
 包文件错误 MUST 不回退为仓库查询。本地包输入 MUST 不因使用完成而删除。
+安装选中的任一目标与本地输入 ZIP 真实路径相同时 MUST 在写状态或执行脚本前拒绝。
 未来仓库下载的临时包 MUST 用后清理；正式备份及失败恢复材料不属下载缓存。
 
 ### Requirement: 共同安装状态与单备份
@@ -33,7 +34,13 @@ info MUST 为 format_version=1 的 UTF-8 TOML，声明文件来源、目标、�
 aiw pkg install/remove/purge 与 build.py install MUST 使用相同本地引擎。
 --dest MUST 优先于 AIW_INSTALL_DIR 和平台默认值（Windows C:\green\aiw；Linux ~/apps/aiw）。
 状态 MUST 位于 DEST/.aiw/packages/，不同根独立；MUST 阻止互相冲突的写入及未完成恢复后的新修改。
-未归属非配置文件 MUST 不被覆盖；既有配置 MUST 保留。
+普通 install MUST 在备份后自动接管当前包声明的无归属普通文件；
+MUST 保留既有配置、无关文件，并拒绝其他包归属冲突。
+没有已安装记录时，成功接管 MUST 生成可恢复旧文件的唯一 legacy 备份，
+不能假定旧版 ZIP 存在或篡改事务 before 的真实记录。
+remove 恢复 MUST 不自动覆盖新出现的无归属冲突文件。
+用户指定的安装根 MUST 先解析为真实绝对路径，允许根及其祖先的链接别名；
+根内部的路径及状态目录 MUST 继续拒绝链接/重解析点。
 每包 MUST 只保留一个上一版备份，升级成功才替换；失败 MUST 保留原备份。
 同版本同内容 MUST 跳过，不执行脚本或修改文件/记录/备份；同版本不同内容 MUST 正常重装。
 内容指纹 MUST 忽略 ZIP 容器时间戳，覆盖实际元信息、载荷及脚本。

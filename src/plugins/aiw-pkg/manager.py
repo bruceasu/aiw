@@ -43,8 +43,12 @@ def write_json(path: Path, value) -> None:
 
 class Manager:
     def __init__(self, destination: Path):
-        # abspath preserves symlinks for explicit rejection instead of resolving them away.
-        self.root = Path(os.path.abspath(destination.expanduser()))
+        # The explicit destination may use a user-selected junction/symlink alias.
+        # Pin its physical root once; safe_path still rejects links beneath it.
+        try:
+            self.root = destination.expanduser().resolve(strict=False)
+        except RuntimeError as error:
+            raise PackageError(f"Cannot resolve installation root: {destination}: {error}") from error
         self.state = safe_path(self.root, ".aiw/packages")
 
     def target(self, value: str) -> Path:
@@ -102,7 +106,7 @@ class Manager:
                     result[item["target"].casefold()] = directory.name
         return result
 
-    def preflight(self, name: str, files: list[dict], current: dict | None) -> None:
+    def preflight(self, name: str, files: list[dict], current: dict | None, *, adopt_existing=False) -> None:
         owners = self.owners(name)
         old = {item["target"].casefold(): item for item in (current or {}).get("files", [])}
         for item in files:
@@ -116,8 +120,9 @@ class Manager:
             if path.exists():
                 if not path.is_file():
                     raise PackageError(f"Target is not a regular file: {path}")
-                if key not in old and not item["config"]:
-                    raise PackageError(f"Refusing to overwrite unowned file: {path}")
+                if key not in old and not item["config"] and not adopt_existing:
+                    raise PackageError(f"Refusing to overwrite unowned file during restoration: {path}")
+                # Only installation adopts ordinary files through its transaction snapshot.
             for parent in path.parents:
                 if parent == self.root:
                     break
@@ -193,6 +198,27 @@ class Manager:
     def retained_configs(record: dict | None) -> list[dict]:
         return [item for item in (record or {}).get("files", []) if item["config"]]
 
+    def previous_record(self, before: Path, current: dict | None, files: list[dict], name: str) -> dict | None:
+        """Build a legacy recovery record without changing the real transaction baseline."""
+        if current and current["status"] == "installed":
+            return current
+        snapshot = read_json(before / "snapshot.json")
+        original = {item["target"]: item for item in snapshot["files"] if item["exists"]}
+        legacy_files = []
+        for item in files:
+            if not item["config"] and item["target"] in original:
+                legacy_files.append(dict(item, sha256=original[item["target"]]["sha256"]))
+        if not legacy_files:
+            return None  # A new installation or retained config alone is not a previous program.
+        fingerprint = digest(json.dumps(sorted(legacy_files, key=lambda item: item["target"]),
+                                        sort_keys=True, separators=(",", ":")).encode())
+        record = dict(name=name, version="legacy", legacy_snapshot=True, status="installed",
+                      fingerprint=fingerprint, files=legacy_files)
+        # Configuration is preserved in place, not reconstructed from a legacy package ZIP.
+        configs = self.retained_configs(current) + [item for item in files
+                                                   if item["config"] and self.target(item["target"]).is_file()]
+        return self.merged_configs(record, configs, name)
+
     def merged_configs(self, record: dict | None, candidates: list[dict], name: str) -> dict | None:
         configs = {item["target"].casefold(): item for item in self.retained_configs(record)}
         configs.update({item["target"].casefold(): item for item in candidates
@@ -258,6 +284,10 @@ class Manager:
         files = [dict(item) for item in info["files"] if item["platform"] in {"all", system}]
         if not files:
             raise PackageError(f"No payload for {system}")
+        input_package = package.resolve(strict=True)
+        for item in files:
+            if self.target(item["target"]).resolve(strict=False) == input_package:
+                raise PackageError(f"Package target overlaps its local input ZIP: {item['target']}")
         if scripts and (sys.version_info < (3, 11) or not Path(sys.executable).is_file()):
             raise PackageError("Python 3.11+ interpreter required before installation")
         # Temporary materialization is outside the final destination and never owns the input ZIP.
@@ -274,11 +304,12 @@ class Manager:
                 current = self.record(name)
                 if current and current["status"] == "installed" and current.get("version") == info["version"] and current.get("fingerprint") == fingerprint:
                     return f"Already installed: {name} {info['version']}"
-                self.preflight(name, files, current)
+                self.preflight(name, files, current, adopt_existing=True)
                 transaction = directory / "transaction"
                 before_files = (current or {}).get("files", []) + files
                 try:
                     self.snapshot(transaction / "before", current, before_files)
+                    previous_record = self.previous_record(transaction / "before", current, files, name)
                 except Exception:
                     if transaction.exists():
                         shutil.rmtree(transaction)
@@ -314,8 +345,13 @@ class Manager:
                     if previous.exists():
                         reject_link(previous)
                         os.replace(previous, transaction / "old-previous")
-                    if current and current["status"] == "installed":
+                    if previous_record:
                         shutil.copytree(transaction / "before", previous)
+                        # Preserve the actual before record for failure rollback. Only the
+                        # successfully published backup receives a synthetic legacy record.
+                        backup = read_json(previous / "snapshot.json")
+                        backup["record"] = previous_record
+                        write_json(previous / "snapshot.json", backup)
                     write_json(transaction / "complete.json", {"installed": fingerprint})
                 except Exception as error:
                     self.failed(directory, transaction, error, files)

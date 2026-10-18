@@ -1,9 +1,14 @@
-# FD-082: Support linked install roots and explicit legacy adoption
+# FD-082: Support linked install roots and automatic legacy adoption
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 10
 **Priority:** Medium
 **Evidence policy:** Dual
+
+本轮修复记录：首轮通过后的输入 ZIP 重合补充发现已通过 managed review 路径处理；
+Worker 已认领 FD-082-000008-changes-requested，安装在任何状态写入/脚本前检查真实路径
+重合并拒绝，文档/规范已同步。改后内存 compile 通过；待最终独立复查。
+证据：reports/FD-082-implementation-r2.md/JSON。原通过仅为历史，不用于本次交付。
 
 ## Problem
 
@@ -41,9 +46,9 @@ remove 恢复旧文件、撤销本次新增文件并消费备份，保留配置�
 ## Work items
 
 - [x] 1.1 独立设计审查 ready，无阻塞，见 reviews/FD-082-design-r1.md/JSON；legacy previous 与 before 真记录分开，恢复不依赖旧 ZIP，仅承诺 mode 不承诺 ACL。
-- [ ] 2.1 解析显式安装根并保留内部链接保护；小/低；依赖 1.1；别名路径共享 canonical 状态。
-- [ ] 2.2 实现自动接管与 legacy 单备份；小/中；依赖 2.1；普通文件备份后覆盖，失败恢复，remove 可恢复旧安装。
-- [ ] 3.1 更新帮助/文档/规范和 Worker 证据；小/低；依赖 2.2；一次 Python 内存 compile 与静态 diff，独立实现审查后交付归档。
+- [x] 2.1 Manager 边界 resolve 用户指定安装根，输入别名共享 canonical 路径；safe_path 与根内部链接保护不改，链接循环报告 PackageError。
+- [x] 2.2 普通文件自动由 before 快照保护并接管；previous_record 为无 installed 记录的旧文件生成 legacy 恢复记录，仅成功后的 previous 使用，事务 before 保持真实原记录；既有归属/配置/单备份保护沿用。
+- [x] 3.1 更新帮助/文档/规范与双格式 Worker 证据；manager.py 内存 compile 通过、静态 diff 检查；独立实现审查及交付归档由 TODO 跟踪，不视为已通过。
 
 Keep item numbers stable after implementation starts. Use `- [-]` only for an
 explicitly cancelled item, with its reason on the same line.
@@ -57,13 +62,33 @@ remove 可恢复 legacy 原字节和权限，不依赖缺失的旧 ZIP；其他�
 
 ## Verification
 
+最终独立复查 r3：reviews/FD-082-review-r3.md/JSON，来源 FD-082-000009-implementation-ready，
+session=fd082-reviewer-20261018-6b2e94，审查 2e478d31f726a6ba715f96d1dc3f5f2ef5ff5284，
+结论 verification-passed。R1 输入 ZIP 重叠保护已静态确认在脚本/状态/发布前拒绝，
+包含配置目标及路径别名；blocker-review-r2 已 resolved。当前仅待 PM 交付与归档。
+下列 r2/r1 结论为历史，保留原审查过程；测试、实际安装和故障恢复运行仍未执行。
+
+历史独立审查 r2：reviews/FD-082-review-r2.md/JSON；来源 FD-082-000007-review-requested，
+session=fd082-reviewer-20261018-6b2e94；结论 changes-requested。本地输入 ZIP 与载荷目标
+重合时会被自动接管覆盖，须在脚本/发布前拒绝真实路径重合。000007 已 supersede
+原 000005，通过记录仅保留历史，不作为交付依据。未运行测试、构建或安装。
+
+独立实现审查：reviews/FD-082-review-r1.md/JSON；source_event=FD-082-000004-implementation-ready；
+Reviewer session=fd082-reviewer-20261018-6b2e94，审查 fc26fe61246626c7991ffb059233616c6f5eeb8a，
+结论 verification-passed，无阻塞项。已静态核对根别名、install-only 接管、真实 before 与
+legacy previous 分离、失败恢复及无旧 ZIP 的 remove/再安装路径；未运行安装或故障注入。
+
+实现证据见 reports/FD-082-implementation-r1.md/JSON；单文件内存 compile 通过，无产物。
+静态追踪 initial resolve、preflight install-only 选项、before/previous 不同记录、
+失败原记录恢复与 legacy 无 ZIP 路径。独立实现审查已通过，不宣称运行通过。
+
 用户提供两条真实失败命令，Get-Item 静态检查 junction，源码调用链确认根因。
 本会话只做静态检查及改后 compile，不执行用户目标安装、链接变更或测试/构建。
 设计/实现分别由独立角色审查，不把静态结论表示为运行结果。
 
 ## TODO
 
-等待独立设计审查后 design-ready、计划提交与 worktree；之后实现、独立审查和本地归档。
+独立设计审查 ready，已在 feature/FD-082/.wt/FD-082 实现；输入包保护修复及最终独立 r3 静态复查通过，待 PM 交付归档。
 
 - Compile-only check and static review by default; record unrun tests explicitly.
 - For explicitly requested test support (any wording/language), record suitable

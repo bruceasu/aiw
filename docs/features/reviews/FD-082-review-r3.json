@@ -1,0 +1,19 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-082",
+  "source_event": "FD-082-000009-implementation-ready",
+  "human_report": "FD-082-review-r3.md",
+  "data": {
+    "verdict": "verification-passed",
+    "session": "fd082-reviewer-20261018-6b2e94",
+    "reviewed_commit": "2e478d31f726a6ba715f96d1dc3f5f2ef5ff5284",
+    "repair_base": "fc26fe6",
+    "fd_revision": 9,
+    "outcome_round": 3,
+    "findings": [],
+    "resolved_findings": [{"id": "R1", "evidence": "Selected targets including configs are checked against resolved input ZIP before staging, state, hooks and publication; canonical root aliases are covered."}],
+    "commands": ["Get-Content (event, FD excerpt, repair report and original blocker)", "git rev-parse HEAD", "git diff fc26fe6..2e478d3 -- src/plugins/aiw-pkg/manager.py docs/usage/aiw-pkg.md", "aiw fd claim FD-082 FD-082-000009-implementation-ready --session fd082-reviewer-20261018-6b2e94"],
+    "limits": {"mode": "final-bounded-static-recheck", "tests_run": false, "compile_run": false, "build_run": false, "installation_run": false, "network_used": false, "implementation_modified": false, "unverified": ["Actual installation", "Junction execution", "Windows occupancy and fault recovery"]}
+  }
+}

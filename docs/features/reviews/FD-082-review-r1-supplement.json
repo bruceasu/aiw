@@ -1,0 +1,17 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-082",
+  "source_event": "FD-082-000004-implementation-ready",
+  "human_report": "FD-082-review-r1-supplement.md",
+  "data": {
+    "verdict": "changes-requested-supplement",
+    "session": "fd082-reviewer-20261018-6b2e94",
+    "reviewed_commit": "fc26fe61246626c7991ffb059233616c6f5eeb8a",
+    "issued_after_event": "FD-082-000005-verification-passed",
+    "findings": [{"id": "R1", "severity": "P1", "blocking": true, "file": "src/plugins/aiw-pkg/manager.py", "summary": "Automatic adoption may overwrite the local input package when a payload target resolves to that same file, then saves overwritten bytes as current.zip.", "correction": "Reject selected installation targets that resolve to the input package path before publication; account for root aliases."}],
+    "commands": [],
+    "limits": {"mode": "static-control-flow-followup", "tests_run": false, "compile_run": false, "build_run": false, "installation_run": false, "network_used": false},
+    "workflow_note": "Host notified to stop delivery and use managed recovery/new handoff. Original event and report remain historical."
+  }
+}

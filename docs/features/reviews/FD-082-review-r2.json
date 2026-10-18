@@ -1,0 +1,17 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-082",
+  "source_event": "FD-082-000007-review-requested",
+  "human_report": "FD-082-review-r2.md",
+  "data": {
+    "verdict": "changes-requested",
+    "session": "fd082-reviewer-20261018-6b2e94",
+    "reviewed_commit": "fc26fe61246626c7991ffb059233616c6f5eeb8a",
+    "fd_revision": 7,
+    "findings": [{"id": "R1", "severity": "P1", "blocking": true, "file": "src/plugins/aiw-pkg/manager.py", "summary": "Automatic adoption overwrites the local input ZIP when selected payload target and package path coincide, and stores overwritten bytes as current.zip.", "correction": "Reject overlapping resolved input package and selected target paths before hooks/publication, preserving strict internal link checks."}],
+    "prior_evidence": "FD-082-review-r1-supplement.md",
+    "commands": ["Get-Content (000007 event and FD header)", "git rev-parse HEAD", "aiw fd claim FD-082 FD-082-000007-review-requested --session fd082-reviewer-20261018-6b2e94"],
+    "limits": {"mode": "bounded-static-existing-finding", "tests_run": false, "compile_run": false, "build_run": false, "installation_run": false, "network_used": false, "implementation_modified": false}
+  }
+}

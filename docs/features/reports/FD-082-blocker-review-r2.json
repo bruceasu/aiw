@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-082",
+  "source_event": "FD-082-000007-review-requested",
+  "human_report": "FD-082-blocker-review-r2.md",
+  "data": {
+    "stage": "implementation-review",
+    "role": "reviewer",
+    "recorded_at": "2026-10-18",
+    "recorder_session": "fd082-reviewer-20261018-6b2e94",
+    "observed_blocker": "Automatic adoption may overwrite the local input package.",
+    "confirmed_cause": "Selected targets are not checked against the resolved input package path before publication.",
+    "cause_status": "confirmed-static",
+    "recovery_attempts": [{"action": "Managed request-review supersedes original pass", "result": "Claimed 000007 and emitted 000008 changes-requested"}],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "Existing local input preservation contract determines required correction.",
+    "actual_resolution": "Repair at 2e478d31f726a6ba715f96d1dc3f5f2ef5ff5284 rejects resolved selected target/input overlap before staging or mutation; static recheck from event FD-082-000009-implementation-ready passed in FD-082-review-r3.md.",
+    "resolved_at": "2026-10-18",
+    "residual_risk_or_next_step": "PM checks delivery and archive gates. Runtime installation and fault validation remain unrun.",
+    "reusable_improvement": "Check whether operation inputs enter the write set when expanding automatic adoption.",
+    "improvement_status": "implemented-in-scope"
+  }
+}
