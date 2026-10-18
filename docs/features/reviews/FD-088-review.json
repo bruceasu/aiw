@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-088",
+  "human_report": "FD-088-review.md",
+  "source_event": "FD-088-000004-review-requested",
+  "data": {
+    "reviewer_session": "reviewer-FD088-snapshot-slot-20261018",
+    "reviewed_commit": "10c36d9",
+    "comparison_base": "7893cd6",
+    "result": "verification-passed",
+    "findings": [],
+    "dimensions": {"correctness": "pass-static", "standards": "pass-static", "spec": "pass-static", "evidence": "pass-with-runtime-unverified"},
+    "acceptance_evidence": ["versionless compile and fixed snapshot linker", "package-only version priority", "shared build/publish snapshot reuse", "legacy non-snapshot exclusion", "full remaining inventory checked before missing fallback", "filesystem/link errors preserved", "read-only latest-compile and unchanged clean boundaries", "usage and stable spec reconciled"],
+    "commands_run": ["targeted Get-Content and rg", "git diff 7893cd6 10c36d9 scoped paths and stat", "aiw fd --help and subcommand help", "aiw fd show FD-088", "aiw fd claim FD-088 FD-088-000004-review-requested --session reviewer-FD088-snapshot-slot-20261018"],
+    "failed_reads": ["aiw fd status is not supported; corrected to show", "dispatch.json not found; receipt obtained from show"],
+    "checks_not_run": ["tests", "compilation", "target runtime CLI", "package build", "clean", "installation", "publication", "network", "linters", "verification scripts"],
+    "residual_risks": ["runtime behavior unverified", "snapshot reuse does not detect source edits", "single writer required", "immutable package version contents", "cleanup may partially complete on OS failure"]
+  }
+}

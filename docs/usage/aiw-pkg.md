@@ -101,7 +101,7 @@ removed. Use pkg entries for plugin entry metadata, not the repository inventory
 ## Build and bootstrap
 
 ```text
-python build.py compile aiw --version 1.2.3
+python build.py compile aiw
 python build.py build aiw-core --version 1.2.3
 python build.py install aiw-core --dest NEW_ROOT
 python build.py export aiw-core --repository ./packages
@@ -112,16 +112,14 @@ python build.py publish-all 1.2.3
 python build.py build docs
 python build.py latest
 python build.py latest aiw-docs
-python build.py compile aiw
 python build.py latest-compile aiw
-python build.py build aiw
-python build.py build aiw --compile-version snapshot-20261018-130000123456Z --version 1.0.1
+python build.py build aiw --version 1.0.1
 python build.py clean
 ```
 
-Compile writes only bin, including compile provenance. Build packages selected
-components and reuses compatible recorded compilation when no --version is given;
-otherwise it compiles first. Install/export consume an existing release manifest and never compile,
+Compile writes fixed snapshot output and provenance only to bin. Build packages
+that snapshot, automatically compiling when required output is missing.
+Install/export consume an existing release manifest and never compile,
 assemble or download. Plugins and Skills have individual scripts under
 scripts/packages; shared definitions live in scripts/package_definitions.py.
 plugin-meta.toml and skills-meta.toml define core/extension membership. Main includes
@@ -129,56 +127,41 @@ agent-templates; shared root Skill documents have unique resource package owners
 Individual Skills depend on needed resources rather than an aggregate support ZIP.
 Usage documents belong to their program/plugin; development docs are not installed.
 
-For `compile`, version priority is `--version`, a nonempty
-`AIW_VERSION`, then a generated UTC timestamp such as
-`snapshot-20261018-130000123456Z` (year/month/day, hour/minute/second and
-microseconds). The command prints the selected version before starting and uses
-that one value for the entire invocation. Publish commands still require their
-explicit positional version. Independent package scripts still require `--version`
-unless `AIW_VERSION` is configured.
+`compile <target>` always refreshes one fixed `snapshot` output slot. It takes no
+version parameter and ignores `AIW_VERSION`. Versioned Go executables embed the
+literal `snapshot`; native output paths remain under bin. The old `compile --version`
+and `build --compile-version` options have been removed.
 
-For `build` with neither `--compile-version` nor `--version`, first reuse the latest successful compile record
-covering the requested target. If `AIW_VERSION` is set, only that version qualifies.
-Both the recorded version and native binaries are reused, without calling the
-compilers again. For example, `compile aiw` then `build aiw` shares one version;
-`compile all` can also serve `build aiw`. If no covering record exists, build selects
-the configured/default snapshot version and compiles as before. An explicit
-`build --version` without `--compile-version`, and publish commands, compile afresh.
+`build <target> --version 1.0.1` reuses validated snapshot output and creates package
+1.0.1, with matching dependency/member references. Missing provenance, target coverage
+or ordinary native files causes automatic snapshot compilation before packaging.
+Explicit package versions never force native recompilation. `compile all` can serve
+`build aiw`; no historical compilation selector or artifact archive is needed.
 
-To package a selected compilation under another version, use:
+Package version priority is `build --version`, nonempty `AIW_VERSION`, then one UTC
+timestamp such as `snapshot-20261018-130000123456Z`. This timestamp versions the
+packages only. Publish commands still require an explicit positional package version
+and use the same snapshot prerequisite. Independent package scripts still require
+`--version` unless `AIW_VERSION` is configured.
 
-```text
-python build.py compile aiw --version snapshot-20261018-130000123456Z
-python build.py build aiw --compile-version snapshot-20261018-130000123456Z --version 1.0.1
-```
+Compile records live in `bin/.compile.json`. New compilation invalidates overlapping
+native records before changing output and records success only after completion.
+Reuse validates complete native paths and SHA-256 values, including both Go platforms
+and every TypeScript output file. Missing files trigger automatic compilation only
+after the remaining inventory is checked; modified/extra files, links and filesystem
+errors fail clearly. Run compile again to refresh modified output. Historical records
+whose compile version differs from `snapshot` are readable but not reusable; build
+automatically replaces the requested compilation with snapshot output.
 
-`--compile-version` selects exact validated native output and skips compilation;
-`--version` selects the package name/version and every dependency/member reference.
-Binary contents and their embedded version strings retain the compile version.
-The command prints both identities, and successful build manifests include
-`version` (package) and `compile_version` (native source). Compile records are not
-changed by repackaging. `latest` reports the package version; `latest-compile`
-continues to report the compiled version.
+Successful build manifests record `version` (package) and `compile_version=snapshot`.
+`latest [target]` queries the latest package build. The compatible read-only
+`latest-compile [target]` validates current snapshot output and prints `snapshot`,
+or reports an error if none is usable; it never compiles automatically.
 
-With an explicit `--compile-version`, `AIW_VERSION` applies only to the package
-default. Without `--version` or nonempty `AIW_VERSION`, the package version defaults
-to the selected compile version. If that compilation is unavailable, invalidated,
-does not cover the target, or has changed files, build fails before packaging;
-it does not recompile or silently pick another source. Only current recorded
-output is retained; overwritten historical versions cannot be selected. Current
-source/resources and immutable repository publication rules still apply.
-
-Compile records live in `bin/.compile.json`. A new compile invalidates overlapping
-native records before changing any output and records success only after completion.
-Reuse compares the complete native file inventory and SHA-256 values, including
-both Go platforms and added/removed TypeScript files. Missing/changed output fails
-with an error; compile again before packaging. Old output without provenance is not
-reused. `latest-compile [target]` prints the newest validated covering compile
-version; `latest [target]` continues to query successful package builds.
-
-Reuse deliberately packages the recorded binaries with current source/resources;
-it does not detect source changes. Run compile again when updated native code is
-needed. Compilation, build and clean assume a single writer.
+Snapshot reuse packages the recorded native binaries with current source/resources
+and does not detect source edits. Run `compile <target>` to refresh changed native
+code. Compilation, build and clean assume a single writer. Immutable publication
+rules still require a new package version when packaged contents change.
 
 `clean` removes only this checkout's `bin/` and `dist/`, including compile/build
 records and `dist/repository`. It preserves the external `AIW_PACKAGE_REPO`, source,
@@ -209,7 +192,7 @@ Compatibility groups `bin`, `plugins`, `skills`, and `all` remain available.
 Full package names such as `aiw-main`, `aiw-git`, `aiw-skill-fd-workflow` and
 `aiw-docs` are aliases for their component targets. Collection names stay unchanged.
 
-`publish <package> <version>` compiles and packages that package plus its exact
+`publish <package> <version>` uses snapshot output (compiling when missing), packages that package plus its exact
 dependencies/members, then publishes those newly built ZIPs. Use `publish-all
 <version>` for every package. These commands require an explicit version and a
 local `AIW_PACKAGE_REPO`; they never reuse an older release manifest. They retain
@@ -227,7 +210,7 @@ Use quotes around paths containing ` #`. Local `.env` stays ignored by Git.
 | Variable | Purpose | Default |
 | --- | --- | --- |
 | `AIW_PACKAGE_REPO` | Required local destination for publish commands; relative paths use the checkout root | No default; example: `d:/playground/aiw-packages` |
-| `AIW_VERSION` | Explicit default version; constrains default compile reuse, but only sets package identity when --compile-version is explicit | Latest compatible compile for build; otherwise UTC snapshot for build.py. Independent scripts require `--version` when unset |
+| `AIW_VERSION` | Default package version only; never changes compilation | UTC timestamp package version for build.py; independent scripts require `--version` when unset |
 | `AIW_GO` | Go executable path or command name | `go` on PATH |
 | `AIW_NODE` | Node executable path or command name | `node` on PATH |
 | `AIW_INSTALL_DIR` | Existing default installation root; `install --dest` wins | Platform default |

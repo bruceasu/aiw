@@ -1,7 +1,7 @@
 # FD-088: Fixed snapshot compilation and package-only versions
 
-**Status:** In Progress
-**Revision:** 2
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -38,10 +38,10 @@ the compiler. Rejected because it repeats the original ambiguity and recompiles.
 
 ## Work Items
 
-- [ ] 1.1 Simplify compile/build/publish to the fixed snapshot slot.
+- [x] 1.1 Simplify compile/build/publish to the fixed snapshot slot.
   Size small, difficulty medium, no dependencies. Completion: no compile version
   options, deterministic snapshot linker, coverage reuse and missing-output fallback.
-- [ ] 1.2 Reconcile usage/spec, compile-only and independent review evidence.
+- [x] 1.2 Reconcile usage/spec, compile-only and independent review evidence.
   Size small, difficulty low, depends on 1.1. Completion: one coherent command model,
   accurate old-record handling, syntax compile and one independent implementation review.
 
@@ -57,8 +57,8 @@ the compiler. Rejected because it repeats the original ambiguity and recompiles.
 ## TODO
 
 - Independent design ready; full-inventory scan before missing fallback incorporated.
-- Implement at .wt/FD-088 on feature/FD-088.
-- Independent implementation review, local delivery, cleanup and archive.
+- Implementation and Python compile-only complete; independent implementation review passed.
+- Local delivery, cleanup and archive after current managed pass.
 
 ## Verification
 
@@ -66,6 +66,18 @@ Planning: inspected compile provenance/coverage/hash checks, compiler linker and
 build/publish dispatch, version fallback and stable package/usage requirements.
 No target compile, tests, package builds, cleanup, publication or network run.
 Independent design evidence: reviews/FD-088-design.md and JSON; ready without blockers.
+Implementation: reports/FD-088-implementation.md and JSON. Python compile-only for
+build.py passed without imports or output artifacts; scripts/compile.py is Go-only.
+One final scoped git diff and symbol rg batch against 7893cd6 traced fixed linker,
+removed version selectors, package-only version fallback, missing-only compilation
+after complete inventory checks, legacy eligibility and shared publish/build flow.
+No tests, target compilation, packaging, runtime CLI validation, clean, installation,
+publication, network, linters or verification scripts executed.
+
+Independent implementation review: reviews/FD-088-review.md and JSON; pass for
+7893cd6..10c36d9 under reviewer-FD088-snapshot-slot-20261018, source event
+FD-088-000004-review-requested. Actual source, failure paths and current docs/spec
+inspected statically; no additional compilation, tests or runtime validation run.
 
 ## Risks
 

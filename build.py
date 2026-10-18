@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -138,7 +139,7 @@ def expand(target: str) -> list[str]:
     return list(dict.fromkeys([*(item for dependency in component_dependencies(target) for item in expand(dependency)), target]))
 
 
-def compile_components(components: list[str], version: str) -> None:
+def compile_components(components: list[str]) -> None:
     for component in components:
         if component in GO:
             cwd, target, _name, versioned = GO[component]
@@ -150,7 +151,7 @@ def compile_components(components: list[str], version: str) -> None:
                 environment = os.environ.copy()
                 environment.update(GOPROXY="off", GOSUMDB="off", GOTOOLCHAIN="local", GOFLAGS="",
                                    GOWORK="off", CGO_ENABLED="0", GOOS=system, GOARCH="amd64")
-                linker = "-s -w" + (f" -X=aiw/internal/version.Version={version}" if versioned else "")
+                linker = "-s -w" + (" -X=aiw/internal/version.Version=snapshot" if versioned else "")
                 run([go, "build", "-trimpath", "-ldflags=" + linker, "-o", str(output), target], cwd, environment)
         elif component == "http-openai-proxy":
             source = SRC / "programs/http-openai-proxy"
@@ -189,20 +190,37 @@ def output_files(directory: Path):
             yield path
 
 
-def native_inventory(components: list[str]) -> dict[str, str]:
+def native_inventory(components: list[str], *, missing: list[str] | None = None) -> dict[str, str]:
     files = []
     for component in components:
         if component in GO:
             files += [safe_path(ROOT, binary(component, system).relative_to(ROOT).as_posix()) for system in SYSTEMS]
         elif component == "http-openai-proxy":
-            paths = list(output_files(safe_path(ROOT, "bin/http-openai-proxy")))
+            directory = safe_path(ROOT, "bin/http-openai-proxy")
+            try:
+                directory.stat()
+            except FileNotFoundError:
+                if missing is None:
+                    raise PackageError("Compiled proxy output missing; run compile again")
+                missing.append("http-openai-proxy")
+                continue
+            paths = list(output_files(directory))
             if not paths:
-                raise PackageError("Compiled proxy output is empty; run compile again")
+                if missing is None:
+                    raise PackageError("Compiled proxy output is empty; run compile again")
+                missing.append("http-openai-proxy")
             files += paths
     inventory = {}
     for path in files:
-        if not path.is_file():
-            raise PackageError(f"Compiled output missing or invalid: {path}; run compile again")
+        try:
+            info = path.stat()
+        except FileNotFoundError:
+            if missing is None:
+                raise PackageError(f"Compiled output missing: {path}; run compile again")
+            missing.append(path.relative_to(BIN).as_posix())
+            continue
+        if not stat.S_ISREG(info.st_mode):
+            raise PackageError(f"Compiled output is not a regular file: {path}")
         with path.open("rb") as source:
             inventory[path.relative_to(BIN).as_posix()] = hashlib.file_digest(source, "sha256").hexdigest()
     return inventory
@@ -236,29 +254,39 @@ def save_compile_records(records: dict) -> None:
     atomic_bytes(path, json.dumps(dict(schema=1, records=records), indent=2).encode())
 
 
-def compile_target(target: str, version: str) -> None:
-    identifier(version)
+def compile_target(target: str) -> None:
     components = expand(target)
     native = {item for item in components if item in GO or item == "http-openai-proxy"}
     # Invalidate before the first compiler can overwrite output or fail midway.
     records = {name: record for name, record in compile_records().items()
                if name != target and not native.intersection(record["components"])}
     save_compile_records(records)
-    compile_components(components, version)
-    records[target] = dict(version=version, components=components, outputs=native_inventory(components),
+    compile_components(components)
+    records[target] = dict(version="snapshot", components=components, outputs=native_inventory(components),
                            compiled_at_ns=time.time_ns())
     save_compile_records(records)
 
 
-def latest_compile(target: str | None, version: str | None = None) -> dict | None:
+def latest_compile(target: str | None, *, allow_missing: bool = False) -> dict | None:
     required = set(expand(target)) if target is not None else set()
     candidates = [record for record in compile_records().values()
-                  if required.issubset(record["components"]) and (version is None or record["version"] == version)]
+                  if required.issubset(record["components"]) and record["version"] == "snapshot"]
     if not candidates:
+        if allow_missing:
+            # Even without provenance, unsafe existing output must not be hidden by recompilation.
+            native_inventory(list(required), missing=[])
         return None
     record = max(candidates, key=lambda item: item["compiled_at_ns"])
-    if native_inventory(record["components"]) != record["outputs"]:
-        raise PackageError("Compiled output was added, removed or changed; run compile again")
+    missing = [] if allow_missing else None
+    inventory = native_inventory(record["components"], missing=missing)
+    expected = record["outputs"]
+    if (inventory.keys() - expected.keys()
+            or any(inventory[name] != expected[name] for name in inventory.keys() & expected.keys())):
+        raise PackageError("Snapshot output was added or changed; run compile again")
+    if missing or expected.keys() - inventory.keys():
+        if allow_missing:
+            return None
+        raise PackageError("Snapshot output missing; run compile again")
     return record
 
 
@@ -367,25 +395,25 @@ def export_repository(packages, root):
         print(repo.publish(package))
 
 
-def build_packages(target: str, version: str, *, reuse_compile: bool = False,
-                   compile_version: str | None = None) -> list[Path]:
+def build_packages(target: str, version: str) -> list[Path]:
     identifier(version)
-    source_version = compile_version if reuse_compile and compile_version is not None else version
-    identifier(source_version)
     components = expand(target)
-    if not reuse_compile:
-        compile_target(target, version)
+    if latest_compile(target, allow_missing=True) is None:
+        print("Snapshot output missing; compiling snapshot", flush=True)
+        compile_target(target)
+    else:
+        print("Using snapshot output", flush=True)
     packages = [package_component(component, version) for component in components]
     by_component = dict(zip(components, packages))
     export_repository(packages, DIST / "repository")
     built_at_ns = time.time_ns()
     for component, package in zip(components, packages):
-        write_manifest(component, version, [package], built_at_ns=built_at_ns, compile_version=source_version)
-    write_manifest(target, version, packages, built_at_ns=built_at_ns, compile_version=source_version)
+        write_manifest(component, version, [package], built_at_ns=built_at_ns)
+    write_manifest(target, version, packages, built_at_ns=built_at_ns)
     if target == "all":
         for group in ("bin", "plugins", "skills"):
             write_manifest(group, version, [by_component[item] for item in expand(group)],
-                           built_at_ns=built_at_ns, compile_version=source_version)
+                           built_at_ns=built_at_ns)
     return packages
 
 
@@ -451,12 +479,10 @@ def main(arguments: list[str]) -> int:
             command.add_argument("--dest", type=Path, default=default_destination())
         elif action == "export":
             command.add_argument("--repository", type=Path, required=True)
-        else:
-            command.add_argument("--version", help="Explicit version; build can reuse latest matching compile, otherwise AIW_VERSION or UTC snapshot")
-            if action == "build":
-                command.add_argument("--compile-version", help="Reuse validated output at this compile version; --version selects package identity")
+        elif action == "build":
+            command.add_argument("--version", help="Package version; otherwise AIW_VERSION or UTC timestamp. Compilation always uses snapshot")
     for action in ("latest", "latest-compile"):
-        command = actions.add_parser(action, help="Print the latest build/compile version, optionally for a target", allow_abbrev=False)
+        command = actions.add_parser(action, help="Print latest package version" if action == "latest" else "Validate current compile output and print snapshot", allow_abbrev=False)
         command.add_argument("target", nargs="?", choices=choices)
     command = actions.add_parser("clean", help="Remove checkout bin/ and dist/ after path/link preflight", allow_abbrev=False)
     command.set_defaults(target=None)
@@ -484,25 +510,12 @@ def main(arguments: list[str]) -> int:
             destination = publish_destination()
             export_repository(build_packages(target, args.version), destination)
         elif args.action == "compile":
+            print("Compiling snapshot", flush=True)
+            compile_target(target)
+        elif args.action == "build":
             version = build_version(args.version)
             print(f"Version: {version}", flush=True)
-            compile_target(target, version)
-        elif args.action == "build":
-            configured_version = os.environ.get("AIW_VERSION", "").strip()
-            if args.compile_version is not None:
-                identifier(args.compile_version)
-                record = latest_compile(target, args.compile_version)
-                if record is None:
-                    raise PackageError(f"No reusable compile for {target} at {args.compile_version}; compile that version first")
-                version = build_version(args.version) if args.version is not None or configured_version else record["version"]
-            else:
-                record = latest_compile(target, configured_version or None) if args.version is None else None
-                version = record["version"] if record is not None else build_version(args.version)
-            print(f"Version: {version}", flush=True)
-            if record is not None:
-                print(f"Reusing compiled output: {record['version']}", flush=True)
-            build_packages(target, version, reuse_compile=record is not None,
-                           compile_version=record["version"] if record is not None else None)
+            build_packages(target, version)
         elif args.action in {"install", "export"}:
             manifest = DIST / ".manifests" / (target + ".json")
             if not manifest.is_file():
@@ -530,11 +543,10 @@ def main(arguments: list[str]) -> int:
         return 1
 
 
-def write_manifest(target: str, version: str, packages: list[Path], *, built_at_ns: int | None = None,
-                   compile_version: str | None = None) -> None:
+def write_manifest(target: str, version: str, packages: list[Path], *, built_at_ns: int | None = None) -> None:
     content = dict(version=version, packages=[path.relative_to(DIST).as_posix() for path in packages],
                    built_at_ns=time.time_ns() if built_at_ns is None else built_at_ns,
-                   compile_version=version if compile_version is None else compile_version)
+                   compile_version="snapshot")
     atomic_bytes(DIST / ".manifests" / (target + ".json"), json.dumps(content, indent=2).encode())
 
 

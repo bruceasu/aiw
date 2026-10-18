@@ -12,7 +12,7 @@ FD-080 定义基础构建和本地安装；FD-083 扩展统一包仓库、集合
 build.py MUST 提供 compile/build/install，target 为组件，不接受 windows/linux target
 或旧顶层动作。无参数 MUST 显示帮助且不安装。
 compile MUST 只写 bin/，Go 组件 MUST 一次生成 Windows/Linux amd64 两套产物。
-build MUST 使用按显式来源或默认复用规则选择且已验证的 compile 结果，或先完成所选组件的 compile，再组装 dist；编译失败 MUST 不进入组装。
+build MUST 复用已验证的固定 snapshot 编译产物；缺少所需产物时 MUST 自动 compile snapshot，再组装 dist；编译失败 MUST 不进入组装。
 install MUST 只消费显式发布清单，不隐式编译、组包或下载。
 Go 原始程序 MUST 发布到 dist/bin，plugin/skill 包 MUST 位于 dist/plugins 或
 dist/skills 的版本子目录，其他发布文件 MUST 位于 dist/<category>/<version>。
@@ -21,7 +21,7 @@ dist/skills 的版本子目录，其他发布文件 MUST 位于 dist/<category>/
 ### Requirement: Fresh local publication and build configuration
 
 build.py MUST support `publish <package> <version>` and `publish-all <version>`.
-Publication MUST first compile and package the selected dependency/member closure,
+Publication MUST first ensure valid fixed snapshot output and package the selected dependency/member closure,
 then publish exactly the newly built paths through the existing Repo engine.
 It MUST NOT select an older version from a latest release manifest.
 AIW_PACKAGE_REPO MUST name a local repository; missing or remote destinations
@@ -55,96 +55,79 @@ It MUST NOT own individual programs' docs/usage paths or include development rep
 - WHEN AIW_PACKAGE_REPO is unset or is a remote URL
 - THEN fail without compiling, packaging or publishing
 
-### Requirement: Timestamp snapshots and latest build lookup
+### Requirement: Fixed snapshot compilation and package versions
 
-compile MUST prefer --version, then nonempty AIW_VERSION, otherwise generate
-one UTC snapshot-YYYYMMDD-HHMMSSffffffZ version per invocation. Build MUST first
-apply the reusable compile rules below, otherwise use the same version fallback.
-They MUST print
-the chosen version before work. Publish commands MUST retain explicit versions.
-Independent package scripts retain their existing explicit/environment version contract.
+compile <target> MUST always refresh one fixed snapshot output slot and MUST NOT
+accept --version or use AIW_VERSION. Versioned native executables MUST embed the
+literal snapshot. Compilation MUST retain Windows/Linux amd64 output and write
+only bin, including successful provenance records. Failed compilation MUST NOT
+leave reusable overlapping records.
 
-build.py latest [target] MUST print only the most recently built local version,
-globally or for the selected component/group/canonical alias, in chronological
-completion order rather than SemVer order. It MUST read existing manifests without
-compiling, packaging, publishing or installing. New manifests MUST include completion
-time and MUST be written only after compilation, packaging and dist/repository
-staging succeed. Historical manifests without timestamps MUST remain readable by
-using file modification time. A selected missing/invalid record or missing package
-MUST fail clearly. Compile-only operations MUST NOT update latest build records.
+build MUST package the current validated snapshot regardless of its package version.
+Without covering snapshot provenance or when ordinary native files are missing,
+build MUST automatically compile snapshot before packaging. It MUST NOT accept
+--compile-version. Publish MUST use the same snapshot prerequisite and assemble
+fresh packages before publication. Explicit package versions MUST NOT force native
+recompilation. Legacy non-snapshot compile records remain readable but are not reusable.
 
-#### Scenario: Unspecified version
+Package identity MUST use build --version, then nonempty AIW_VERSION, then one UTC
+snapshot-YYYYMMDD-HHMMSSffffffZ per invocation. Publish keeps its explicit positional
+package version. All ZIP paths, metadata and exact dependencies/members MUST use
+that package version. Native files retain snapshot identity. New component/target/group
+build manifests MUST record compile_version=snapshot while older manifests remain readable.
+Independent package scripts keep their existing package-version argument/env contract.
 
-- WHEN compile or a build without reusable compilation receives neither --version nor nonempty AIW_VERSION
-- THEN generate a UTC snapshot version and use it throughout that invocation
+Reuse MUST compare complete native file sets and SHA-256 values. Missing ordinary
+files MAY trigger automatic compilation only after every remaining artifact has
+been checked for changes, additions, unsafe links and filesystem errors. Modified
+or extra files, malformed records, links and permission failures MUST fail clearly
+rather than be hidden by automatic recompilation. Source freshness is not implied.
+Compilation/build/clean assume one writer. A forced compile refreshes source edits.
+
+latest-compile [target] MUST remain a read-only compatible query, validating the
+current covering snapshot and printing snapshot or failing clearly. It MUST NOT
+compile automatically. latest [target] MUST print only the latest successful local
+package version in chronological completion order rather than repository SemVer order.
+New package manifests MUST be written only after successful packaging and local
+repository staging, with completion time. Historical manifests use file mtime if
+no completion time exists. Selected invalid records or missing packages MUST fail.
+Compile-only operations MUST NOT change package-build records.
+
+clean MUST delete only checkout bin/ and dist/, including their records and staging
+repository. It MUST preserve external repositories, installed files, source and workflow
+state. Before deletion it MUST verify exact resolved targets and preflight both trees,
+rejecting links/junctions and non-regular files. Missing directories are harmless;
+filesystem cleanup failure MUST report actual partial completion without claiming atomicity.
+
+#### Scenario: Snapshot becomes a release package
+
+- WHEN compile aiw succeeds and build aiw --version 1.0.1 follows
+- THEN reuse the unchanged snapshot binaries and package dependencies at 1.0.1
+- AND do not run the compiler again or change its embedded snapshot identity
+
+#### Scenario: Snapshot missing
+
+- WHEN build has no covering snapshot provenance or required native files are absent
+- THEN validate remaining output and automatically compile snapshot before packaging
+- WHEN another remaining artifact is modified, extra, unsafe or unreadable
+- THEN fail clearly without masking the error through recompilation
+
+#### Scenario: Package version omitted
+
+- WHEN build has neither --version nor nonempty AIW_VERSION
+- THEN generate one UTC timestamp package version while native identity stays snapshot
 
 #### Scenario: Failed build
 
 - WHEN compilation, packaging or repository staging fails
-- THEN do not replace successful build manifests with that attempt
-
-### Requirement: Validated compile reuse and confined cleanup
-
-With neither --version nor --compile-version, build MUST reuse the latest successful compile record whose
-expanded components cover the requested target. Nonempty AIW_VERSION MUST constrain
-reuse to that version. If no covering record exists, build MUST compile using the
-existing version fallback. Explicit build --version without --compile-version, and
-publish, MUST compile afresh.
-Successful compile invocations, including those from build/publish, MUST record
-version, component coverage, completion time and full native artifact SHA-256 inventory
-under bin/.compile.json. Resource-only invocations MAY have an empty native inventory.
-Overlapping native records and the same target record MUST be invalidated before
-compilation can overwrite output. Failed compilation MUST NOT create a success record.
-Reuse MUST recompute the entire native output inventory and require exact paths and
-hashes, rejecting additions, removals, changes and links. Invalid selected output MUST
-fail clearly, not silently fall back. Source freshness is not implied by binary reuse.
-latest-compile [target] MUST print the latest validated covering compile version;
-latest [target] MUST retain package-build semantics. Build commands assume one writer.
-
-build MUST accept --compile-version to select an exact validated covering compile
-record independently of package identity. --version MUST select the package version;
-if absent, use nonempty AIW_VERSION, then the selected compile version. Explicit
-source selection MUST NOT be constrained by AIW_VERSION. Missing/uncovered/stale
-source output MUST fail before any packaging/staging/manifest writes without
-recompiling or falling back. Repackaging MUST NOT mutate native files or compile records.
-All ZIP names, package metadata, dependencies/members and manifest version fields MUST
-use the package version; native contents and embedded versions MUST retain the compile
-identity. New build manifests MUST also record compile_version for component, target
-and group records. Older manifests remain readable. Historical overwritten outputs
-are not retained. Publish commands MUST NOT accept this source-selection option.
-
-clean MUST delete only checkout bin/ and dist/, including their records and staging
-repository. It MUST preserve external repositories, installed files, source and workflow
-state. Before any recursive deletion it MUST verify both exact resolved targets stay
-inside the checkout and preflight all existing descendants, rejecting links/junctions
-or non-regular files. Missing directories MUST be harmless. Cleanup failures MUST
-report an error without claiming full cleanup; no cross-tree atomicity is promised.
-
-#### Scenario: Snapshot compilation becomes a release package
-
-- WHEN compile aiw at snapshot-X succeeds
-- AND build aiw --compile-version snapshot-X --version 1.0.1 is requested
-- THEN package the unchanged native output and exact dependencies at package version 1.0.1
-- AND record compile_version snapshot-X without changing latest-compile
-- WHEN the selected snapshot output is no longer available
-- THEN fail before packaging without recompilation
-
-#### Scenario: Separate compile and build
-
-- WHEN compile aiw succeeds and build aiw has no --version or conflicting AIW_VERSION
-- THEN use that recorded version and unchanged native files without recompilation
-
-#### Scenario: Partially overwritten native output
-
-- WHEN a new compilation overlaps a previous record and fails midway
-- THEN the previous overlapping record cannot authorize reuse
+- THEN do not replace successful package-build manifests
 
 #### Scenario: Safe clean
 
-- WHEN clean finds a link/junction anywhere in either output tree
-- THEN fail before starting any deletion
+- WHEN a link/junction exists anywhere in either output tree
+- THEN fail before starting deletion
 - WHEN both output trees are absent
-- THEN succeed without touching the external package repository
+- THEN succeed without touching external repositories
 
 ### Requirement: 可移植包契约
 
