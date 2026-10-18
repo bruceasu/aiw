@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-097](FD-097_LOAD_INSTALLED_DOTENV_DEFAULTS_BEFORE_COMMAND_DI.md) | Load installed dotenv defaults before command dispatch | Open | Medium |
 
 ## Completed
 

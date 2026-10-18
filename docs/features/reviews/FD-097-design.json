@@ -1,0 +1,30 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-097",
+  "source_event": null,
+  "human_report": "FD-097-design.md",
+  "data": {
+    "source_event_reason": "Planner delegated one bounded independent design review; no workflow event was assigned or claimed.",
+    "reviewer_session": "startup_env_design",
+    "reviewed_revision": 2,
+    "recommendation": "ready",
+    "findings": [],
+    "implementation_attention": [
+      "Skip inherited assignments before expansion, including single-quoted and multiline assignments.",
+      "Use Windows canonical keys consistently for inherited/default lookup and cycle detection."
+    ],
+    "scope": [
+      "startup timing",
+      "parent environment precedence including empty values",
+      "Windows key casing",
+      "error propagation without values",
+      "plugin environment inheritance",
+      "LLM dotenv compatibility"
+    ],
+    "validation": "Static source and design inspection only; no implementation verification verdict.",
+    "commands_not_run": ["tests", "runtime diagnostics", "compile", "build", "install", "network"],
+    "workflow_mutations": false,
+    "unrelated_edits_preserved": true
+  }
+}
