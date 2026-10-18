@@ -1,0 +1,58 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-083",
+  "source_event": "FD-083-000002-design-requested",
+  "markdown": "FD-083-design-review-20261018.md",
+  "date": "2026-10-18",
+  "design_revision": 3,
+  "recommendation": "ready",
+  "initial_recommendation": "changes-needed",
+  "resolution": "All three findings were addressed in the FD's same-review boundary supplement and checked by one focused static read.",
+  "findings": [
+    {
+      "id": "D1",
+      "status": "resolved",
+      "severity": "high",
+      "location": "FD-083 Solution: package installation/update; Work Item 1.5",
+      "title": "精确依赖与默认 latest 更新缺少最终安装图冲突规则",
+      "recommendation": "构造包括保留已安装包的最终图，校验所有精确依赖和反向引用；冲突写入前拒绝，不隐式更新范围外包；明确集合实际成员边及版本规则。"
+    },
+    {
+      "id": "D2",
+      "status": "resolved",
+      "severity": "high",
+      "location": "FD-083 Repo S3; Work Item 1.3",
+      "title": "S3 缺少包与索引提交顺序及失败清理契约",
+      "recommendation": "明确锁覆盖范围、先包后索引发布、先索引后对象删除、仅清理未提交新包、持有者释放及遗留锁失败提示；所需条件写入不支持时失败。"
+    },
+    {
+      "id": "D3",
+      "status": "resolved",
+      "severity": "medium",
+      "location": "FD-083 self-update; Work Items 1.5/1.7/1.8",
+      "title": "自更新预加载边界未覆盖动态模块、资源和 hook",
+      "recommendation": "执行图前加载完整引擎依赖及资源，操作中禁止从被替换根动态加载；hook 从独立暂存运行；固定依赖优先顺序和不重启解释器的边界。"
+    }
+  ],
+  "evidence": [
+    "docs/features/FD-083_PACKAGE_REPOSITORY.md",
+    "docs/issues/ISSUE-00011/issue-plan.md",
+    "openspec/specs/aiw-packages/spec.md",
+    "build.py:135",
+    "src/plugins/aiw-pkg/archive.py:104",
+    "src/plugins/aiw-pkg/manager.py:109",
+    "src/plugins/aiw-pkg/manager.py:164",
+    "src/plugins/aiw-pkg/aiw-pkg.py:8"
+  ],
+  "commands_run": [
+    "Three static discovery batches using Get-Content and rg",
+    "Get-Content -Encoding utf8 docs/features/FD-083_PACKAGE_REPOSITORY.md | Select-String -Pattern '独立设计审阅后的边界补充' -Context 0,28",
+    "apply_patch: create and update only this Markdown report and JSON sidecar"
+  ],
+  "checks_not_run": ["tests", "compile", "build", "runtime validation", "network", "publish"],
+  "limitations": [
+    "Design review only; no implementation verdict or workflow status mutation.",
+    "S3/SSH tool capabilities, Windows file locks and release artifacts were not exercised."
+  ]
+}

@@ -1,0 +1,32 @@
+id = "ISSUE-00011"
+title = "统一包管理与 Package Repository"
+parent_id = ""
+status = "APPROVED"
+created = "2026-10-18"
+updated = "2026-10-18"
+revision = 14
+
+[approval]
+status = "APPROVED"
+by = "user"
+at = "2026-10-18T21:21:43+09:00"
+reason = "User confirmed recovery on 2026-10-18; approve current corrected plan and retain existing FD-083. Prior approval preserved in decision log and recovery snapshot."
+source_digest = "9c0d1e53654f132bd19faddb35ec76fde656f819023a015e2b0359c12e77c58e"
+
+[promotion]
+status = "NOT_STARTED"
+task_id = ""
+
+[conversation]
+session_id = ""
+
+[terminal]
+by = ""
+at = ""
+reason = ""
+
+[artifact]
+requirement-plan = "docs/issues/ISSUE-00011/issue-plan.md"
+
+[digest]
+requirement-plan = "18b3d227725f45d881136a87777835c3dd25b14baa0097b3286e763663f65f20"
