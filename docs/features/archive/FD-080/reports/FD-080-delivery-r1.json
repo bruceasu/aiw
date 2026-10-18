@@ -1,0 +1,21 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "delivery-report",
+  "fd_id": "FD-080",
+  "source_event": "FD-080-000020-verification-passed",
+  "human_report": "FD-080-delivery-r1.md",
+  "data": {
+    "date": "2026-10-18",
+    "parent_branch": "develop",
+    "delivery_commit": "f7d95f6",
+    "fd_source": "2832a3cdac38677aa0fef1f0a1fd8409d0695506",
+    "worktree_cleanup": "verified-by-local-merge",
+    "fd_status": "Complete",
+    "review_rounds": 2,
+    "unresolved_blockers": [],
+    "compile_runs": 3,
+    "compile_result": "passed; four Python sources; no retained artifacts",
+    "not_run": ["tests", "Go/Node compilation", "release builds", "installation", "fault injection", "network", "downloads", "push", "deployment"],
+    "deferred_scope": ["repository acquisition", "index", "HTTP/S3", "publish", "skills/plugin management integration"]
+  }
+}

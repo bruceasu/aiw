@@ -245,14 +245,14 @@ HTTP/S3、仓库索引、本地仓库管理、publish 和 skills/plugin 管理�
 ## TODO
 
 - 创建时索引阻塞和过期 Planner 交接均已通过受支持 CLI 恢复，原临时文件已清理，详见两份 blocker 的恢复结果。
-- 1.1 所列决策均已确认；设计审查、实现及独立实现复查通过，待 PM squash 交付和 Complete 归档。
+- 1.1 所列决策均已确认；设计审查、实现及独立实现复查通过，PM 已 squash 交付并 Complete 归档。
 - 每包只保留一个上一版本备份已确认；remove 恢复成功后删除备份、不反向备份，purge 清除当前版、备份及登记配置。
 - 重复安装规则已确认：同版本同内容跳过，同版本不同内容重装；内容指纹纳入 2.2 的包契约设计。
 - 解压使用专有临时目录；未来仓库下载包用后清理，正式历史与必要恢复材料单独保留。
 - 范围拆分已确认；后续 FD 候选尚未分配编号，不为其宣称进度或建立实现依赖。
 - build 自动串联 compile 已确认；install 保持只消费已有发布产物。
 - Go 插件每版本一个 ZIP 包含 Windows/Linux 两套产物已确认；2.2 明确包内平台与公共文件映射。
-- Worker 已在 feature/FD-080、.wt/FD-080 完成实现；父分支 develop，独立复查已通过，交付/归档尚未完成。
+- 已交付至 develop（f7d95f6）；CLI 核验 source 2832a3c 后清理 worktree/分支；Complete 归档成功，无剩余本地生命周期 TODO。
 
 ## Acceptance
 
@@ -289,6 +289,15 @@ aiw pkg remove/purge 和 build.py install 使用共同本地引擎，行为与�
 HTTP/S3、索引、publish 及现有 skills/plugin 管理命令整合不属于本 FD 验收范围。
 
 ## Verification
+
+### 本地交付与归档
+
+第二轮独立复查通过，事件 FD-080-000020-verification-passed；首轮两个问题已修复。
+`aiw git wt local-merge FD-080` 成功产生 develop 上单父 squash f7d95f6，
+核验 source 2832a3c 并自动清理 .wt/FD-080 和 feature/FD-080，保留 receipt。
+`aiw fd close FD-080 Complete` 成功归档；没有执行 push、发布、部署或安装。
+此前三个 blocker 记录均已解决；归档中保留原始事实、修复和独立复查证据。
+后续仓库/HTTP/S3/index/publish/skills-plugin 命令整合仍为未实现的后续范围。
 
 ### 独立实现复查 r2
 
@@ -368,3 +377,5 @@ Go 改动优先采用离线的最小范围编译，不能以 build.py compile �
 - openspec/specs/aiw-packer/spec.md。
 - src/skills/work-management.md。
 - reports/FD-080-blocker-20261018-create.md。
+
+**Completed:** 2026-10-18
