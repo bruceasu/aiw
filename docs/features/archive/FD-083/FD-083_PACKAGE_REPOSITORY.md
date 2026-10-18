@@ -102,7 +102,10 @@ explicitly cancelled item, with its reason on the same line.
 - 当前 TODO：独立设计审阅、design-ready、计划提交、隔离工作树、逐项实施、编译、独立实施审阅、本地交付与归档。
 - 当前进度补充：设计独立审阅 ready；design-ready、计划提交、工作树及 Worker claim 完成；1.1–1.9 实施完成。两次同一离线编译命令通过，第二次覆盖恢复提示补充。一次静态批次检查最终 diff 和调用，无运行时验收。
 - [实施报告](reports/FD-083-implementation-20261018.md)；产品代码版本 9e38f3b，基线 4e5f2ff。
-- 剩余 TODO：独立实施审阅、本地 squash 交付、验证清理、Complete 归档及归档提交；测试/构建/远端/发布未运行。
+- 交付结果（2026-10-18）：独立实施审阅通过，事件 FD-083-000006-verification-passed，本周期一次实施审阅；报告见 reviews/FD-083-implementation-review-20261018.md。
+- develop squash 提交 8153bf1，FD-Source 为 0d53bfb555a609f5aa3f2aaff36cb28491b7b9db；CLI 验证交付后已删除 .wt/FD-083 和 feature/FD-083，保留运行回执。
+- Complete 归档成功；本 FD 范围内 TODO 已完成，归档变更随专门提交保存。测试、最终构建、远端、安装、自更新及发布仍未运行，不视为通过。
+- 非阻塞后续：.agents/agents/work-management.md 的旧辅助命令文字可在后续文档维护中更新；Windows 恢复占用风险按 Issue 已确认范围保留。
 - 编译计划：离线环境执行一次 python scripts/compile.py；同一次命令对 Python 变更用 compile(bytes, path, 'exec')，不导入执行产品、不保留产物。
 - 风险：不运行测试、构建、格式化、lint、vet、网络及发布；远端、Windows 占用、自更新及构建产物仅有静态证据。
 - Compile-only check and static review by default; record unrun tests explicitly.
@@ -118,3 +121,5 @@ explicitly cancelled item, with its reason on the same line.
 - openspec/specs/aiw-packages/spec.md；src/plugins/aiw-pkg/{archive,manager,aiw-pkg}.py；build.py；src/plugins/aiw-skills/aiw-skills.py。
 
 Link relevant specs and evidence used for decisions.
+
+**Completed:** 2026-10-18
