@@ -1,7 +1,7 @@
 # FD-078: aiw-file-convert: convert documents to text or Markdown
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 7
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -35,12 +35,12 @@ Go PDF 用用户指定 AIW_CONVERT_BROWSER 或本机 Edge/Chrome/Chromium，隔�
 
 ## Work items
 
-- [ ] 1.1 插件参数/JSON/不覆盖输出事务与统一帮助（小/中，无依赖；验收 Issue 6-9）。
-- [ ] 1.2 MarkItDown/antiword/Pandoc 惰性适配与 TXT 正文（小/中，依赖1.1；验收 Issue 1-3、11）。
-- [ ] 1.3 Go MD/HTML、固定离线资源与许可证（小/中，依赖1.1；验收 Issue 4）。
-- [ ] 1.4 HTML 资源预处理与 Go CDP PDF 完成/超时（小/中，依赖1.3；验收 Issue 5，离线边界）。
-- [ ] 1.5 依赖指导与清单摘要授权的便携安装（小/中，依赖1.1；验收 Issue 10）。
-- [ ] 1.6 文档/spec、静态证据、编译与独立审查（小/低，依赖全部；不执行转换测试）。
+- [x] 1.1 插件参数/JSON/不覆盖输出事务与统一帮助（小/中，无依赖；验收 Issue 6-9）。
+- [x] 1.2 MarkItDown/antiword/Pandoc 惰性适配与 TXT 正文（小/中，依赖1.1；验收 Issue 1-3、11）。
+- [x] 1.3 Go MD/HTML、固定离线资源与许可证（小/中，依赖1.1；验收 Issue 4）。
+- [x] 1.4 HTML 资源预处理与 Go CDP PDF 完成/超时（小/中，依赖1.3；验收 Issue 5，离线边界）。
+- [x] 1.5 依赖指导与清单摘要授权的便携安装（小/中，依赖1.1；验收 Issue 10）。
+- [x] 1.6 文档/spec、静态证据、编译与独立审查（小/低，依赖全部；不执行转换测试）。
 
 Keep item numbers stable after implementation starts. Use `- [-]` only for an
 explicitly cancelled item, with its reason on the same line.
@@ -49,10 +49,14 @@ explicitly cancelled item, with its reason on the same line.
 
 以 ISSUE-00008 全部 11 项验收及上述矩阵为准。输入/输出含中文空格通过参数数组传递；已有输出、二进制 stdout 在依赖调用前拒绝。转换失败清理临时文件、保留输入和已有输出。缺依赖同时提供人类和 JSON 指导；未批准安装不访问网络。HTML/PDF 不加载远程资源、不读取输入目录以外资源。PDF 必须输出真实文件，依赖缺失/资源失败/超时准确失败。
 
+安装清单 target 必须为绝对路径；在展示、摘要与执行前 resolve 并将规范路径写回同一清单，不接受 cwd/home 相对表达。TXT 转义按 Goldmark 单次处理，代码保持字面值。PDF 等待字体后额外拒绝 error 字体，不将回退视为资源成功。
+
 ## Verification
 
+- 首轮独立实现审查为 changes-requested，历史报告 `docs/features/reviews/FD-078-implementation-review.md` 保留。有界修复复查为 verification-passed，见 `docs/features/reviews/FD-078-implementation-review-r2.md` 及同名 JSON；Reviewer `fd078-reviewer-20261018-d2a7c4` 确认修复提交 `c35181f` 的 R1/R2/R3 已解决；无运行测试。
 - Compile-only check and static review by default; record unrun tests explicitly.
-- 仅一次 scoped compile 脚本：Python 源码 compile()（不导入/运行插件），Go module 离线 go build -o NUL。无测试、格式化、lint、最终构建、网络/依赖下载；不重建已安装 AIW 或 converter。独立设计审查覆盖 CLI、输出、资源、安装授权；独立实现审查负责验证结论。视觉质量、真实第三方集成和跨平台 PDF 均为未验证风险。
+- 首轮审查 R1/R2/R3 已修复，详见 reports/FD-078-review-repair.md；修复后同一离线 compile 命令再次退出0。独立有界复查已通过；不将静态通过表述为运行验收。
+- 初始实现及实质修复后各一次同一 scoped compile 脚本：Python 源码 compile()（不导入/运行插件），Go module 离线 go build -o NUL。无测试、格式化、lint、最终构建、网络/依赖下载；不重建已安装 AIW 或 converter。独立设计审查覆盖 CLI、输出、资源、安装授权；独立实现审查已完成。视觉质量、真实第三方集成和跨平台 PDF 均为未验证风险。
 - For explicitly requested test support (any wording/language), record suitable
   TDD scope, independent fd-test scope, command/revision authorization and finite
   budget here. Otherwise no testing stage is added. On exhausted unexpected-
@@ -65,3 +69,12 @@ explicitly cancelled item, with its reason on the same line.
 - openspec/specs/cli-and-plugins/spec.md；D:/03_projects/mermaid-tools/go 的 renderer/images/browser/document 和 Mermaid 资源；本地 Goldmark 缓存。
 
 Link relevant specs and evidence used for decisions.
+
+## TODO and implementation evidence
+
+- Implementation commit: fd13b2c. All scoped code and documentation are ready for independent review.
+- python src/programs/md-converter/scripts/compile.py: exit 0; Python compile() and offline Go build to NUL, no retained binary.
+- Static review traced CLI validation, output publication, backend/resource boundaries, installation authorization and CDP readiness.
+- Design review: ready. Implementation review: verification-passed after bounded recheck of R1/R2/R3 at c35181f; original changes-requested evidence retained.
+- No tests, real conversions, browser/PDF visual validation, downloads, installation, formatters, lint, vet or final builds were run.
+- Residual risks: third-party integration, cross-platform browser behavior, fonts, old DOC quality and custom CDP compatibility remain untested.

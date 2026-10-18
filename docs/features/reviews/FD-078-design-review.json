@@ -1,50 +1,55 @@
 {
-  "schema": "aiw.fd.evidence.v1",
-  "kind": "design-review",
-  "fd_id": "FD-078",
-  "source_event": "FD-078-000002-design-requested",
-  "fd_revision": 2,
-  "recommendation": "ready",
-  "review_basis": "FD revision 2 plus Planner-accepted supplements communicated during this bounded design review; incorporate them into the FD before implementation.",
-  "findings": [
-    {
-      "id": "R1",
-      "severity": "material",
-      "status": "resolved-in-design",
-      "area": "offline-resource-boundary",
-      "description": "Browser CSP/CDP does not constrain Pandoc resource access for Markdown exports; offline and input-directory requirements need explicit coverage across backends.",
-      "required_change": "Use safe Go-generated self-contained HTML for Markdown exports and fixed Pandoc HTML reader; apply --sandbox, inspect ZIP XML resources and reject unsafe RST directives/remote images. Convert the checked snapshot only."
-    },
-    {
-      "id": "R2",
-      "severity": "material",
-      "status": "resolved-in-design",
-      "area": "installation-authorization",
-      "description": "ZIP versus wheel scope conflicts; authorization snapshot/digest rules and before-request redirect validation are unspecified.",
-      "required_change": "ZIP-only; SHA256 canonical parsed JSON snapshot using sorted compact ASCII JSON UTF8; strict platform and fields, reject redirects or validate every hop before request; reserve new target and copy exclusively, give explicit environment discovery guidance."
-    }
-  ],
-  "required_changes": [],
-  "implementation_constraints": [
-    "Configure CDP network blocking before Page.setDocumentContent; service asynchronous protocol events while awaiting responses.",
-    "Await Mermaid, fonts and all image decoding before print; reject script exceptions, failed resources and invalid PDF output.",
-    "Close Python temporary file handles before invoking Windows subprocesses; publish output without replacement.",
-    "Give HTML preprocessing and CDP transport clear subitem/interface boundaries without expanding approved scope.",
-    "Record accepted R1/R2 supplements in the FD before implementation; preserve ZIP executable permissions and verify entries before claiming installation success.",
-    "Failure during non-atomic directory copy must not report successful installation; clean only owned files or report a recovery path.",
-    "Do not download dependencies or run conversion tests under current authorization."
-  ],
-  "validation": {
-    "method": "bounded-local-static-design-review",
-    "tests_run": false,
-    "compile_run": false,
-    "runtime_run": false,
-    "network_used": false,
-    "workflow_changed": false
-  },
-  "limitations": [
-    "No runtime evidence for rendering quality, third-party integration, hand-written CDP/WebSocket or cross-platform browser behavior.",
-    "No execution of download, archive extraction, file publication or failure recovery paths.",
-    "An old FD-077 report path failed once; actual archive report path was then read successfully."
-  ]
+    "schema":  "aiw.fd.evidence.v1",
+    "kind":  "design-review",
+    "fd_id":  "FD-078",
+    "source_event":  "FD-078-000002-design-requested",
+    "human_report":  "FD-078-design-review.md",
+    "data":  {
+                 "fd_revision":  2,
+                 "recommendation":  "ready",
+                 "review_basis":  "FD revision 2 plus Planner-accepted supplements communicated during this bounded design review; incorporate them into the FD before implementation.",
+                 "findings":  [
+                                  {
+                                      "id":  "R1",
+                                      "severity":  "material",
+                                      "status":  "resolved-in-design",
+                                      "area":  "offline-resource-boundary",
+                                      "description":  "Browser CSP/CDP does not constrain Pandoc resource access for Markdown exports; offline and input-directory requirements need explicit coverage across backends.",
+                                      "required_change":  "Use safe Go-generated self-contained HTML for Markdown exports and fixed Pandoc HTML reader; apply --sandbox, inspect ZIP XML resources and reject unsafe RST directives/remote images. Convert the checked snapshot only."
+                                  },
+                                  {
+                                      "id":  "R2",
+                                      "severity":  "material",
+                                      "status":  "resolved-in-design",
+                                      "area":  "installation-authorization",
+                                      "description":  "ZIP versus wheel scope conflicts; authorization snapshot/digest rules and before-request redirect validation are unspecified.",
+                                      "required_change":  "ZIP-only; SHA256 canonical parsed JSON snapshot using sorted compact ASCII JSON UTF8; strict platform and fields, reject redirects or validate every hop before request; reserve new target and copy exclusively, give explicit environment discovery guidance."
+                                  }
+                              ],
+                 "required_changes":  [
+
+                                      ],
+                 "implementation_constraints":  [
+                                                    "Configure CDP network blocking before Page.setDocumentContent; service asynchronous protocol events while awaiting responses.",
+                                                    "Await Mermaid, fonts and all image decoding before print; reject script exceptions, failed resources and invalid PDF output.",
+                                                    "Close Python temporary file handles before invoking Windows subprocesses; publish output without replacement.",
+                                                    "Give HTML preprocessing and CDP transport clear subitem/interface boundaries without expanding approved scope.",
+                                                    "Record accepted R1/R2 supplements in the FD before implementation; preserve ZIP executable permissions and verify entries before claiming installation success.",
+                                                    "Failure during non-atomic directory copy must not report successful installation; clean only owned files or report a recovery path.",
+                                                    "Do not download dependencies or run conversion tests under current authorization."
+                                                ],
+                 "validation":  {
+                                    "method":  "bounded-local-static-design-review",
+                                    "tests_run":  false,
+                                    "compile_run":  false,
+                                    "runtime_run":  false,
+                                    "network_used":  false,
+                                    "workflow_changed":  false
+                                },
+                 "limitations":  [
+                                     "No runtime evidence for rendering quality, third-party integration, hand-written CDP/WebSocket or cross-platform browser behavior.",
+                                     "No execution of download, archive extraction, file publication or failure recovery paths.",
+                                     "An old FD-077 report path failed once; actual archive report path was then read successfully."
+                                 ]
+             }
 }

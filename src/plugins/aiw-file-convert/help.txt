@@ -1,0 +1,39 @@
+Usage:
+  aiw file-convert -i <file> [-o <file|->] [--format <format>] [--json]
+  aiw file-convert --install-plan <json> [--approve-install <plan-sha256>] [--json]
+  aiw file-convert -h | --help
+
+Options:
+  -h, --help                Print usage and examples. No conversion is run.
+  -i, --input <file>        Input local file.
+  -o, --output <file|->     Output file. Use - for text output to stdout.
+      --ouput <file|->     Alias for --output.
+                           If empty or omitted, append the target extension
+                           to the full input file name. Existing files are kept.
+      --format <format>    Target format. Default: md.
+                           Formats: md, txt, html, pdf, docx, odt, epub, rst.
+                           Only the format pairs in the documentation are supported.
+      --json               Return one JSON response on stdout.
+      --install-plan <json> Show a portable ZIP plan and its approval digest.
+      --approve-install <plan-sha256>
+                           Approve exactly that plan. This mode may use the network.
+
+Binary formats (pdf, docx, odt, epub) always need a file. They reject -o -,
+including JSON mode. Installation is never started by conversion.
+
+Examples:
+  aiw file-convert --help
+  aiw file-convert -i report.docx
+  aiw file-convert -i legacy.doc --format txt
+  aiw file-convert -i "my report.pdf" -o -
+  aiw file-convert -i report.docx -o - --json
+  aiw file-convert -i design.md --format html -o design.html
+  aiw file-convert -i design.md --format pdf -o design.pdf --json
+  aiw file-convert -i page.html --format pdf -o page.pdf
+  aiw file-convert -i design.md --format docx -o design.docx
+  aiw file-convert --install-plan portable.json --json
+
+Requirements: Python 3.11+. Each conversion checks only the backend it needs.
+MarkItDown, antiword and Pandoc are optional. MD rendering and Markdown to TXT
+use md-converter. PDF also needs installed Edge, Chrome or Chromium.
+See docs/usage/aiw-file-convert.md for the matrix and offline resource limits.

@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-078",
+  "source_event": "FD-078-000004-implementation-ready",
+  "human_report": "FD-078-implementation-review.md",
+  "data": {
+    "session": "fd078-reviewer-20261018-d2a7c4",
+    "diff_base": "bc918f8",
+    "implementation_commit": "fd13b2c",
+    "evidence_commit": "1c0e504",
+    "result": "changes-requested",
+    "findings": [
+      {"id":"R1","severity":"P2","status":"open","path":"src/programs/md-converter/internal/markdown/plain.go","requirement":"Issue acceptance 1 and plain text semantics","description":"Normal Markdown text is emitted without resolving backslash escapes or character references.","required_change":"Decode normal text according to Markdown while preserving raw/code literal contents."},
+      {"id":"R2","severity":"P2","status":"open","path":"src/plugins/aiw-file-convert/install.py","requirement":"Concrete destination authorization and design review R2","description":"Approval hashes the original target string but execution expands it relative to cwd/home, so one approval can address different destinations.","required_change":"Require explicit absolute target and bind canonical resolved destination to preview, approval digest and execution."},
+      {"id":"R3","severity":"P2","status":"open","path":"src/programs/md-converter/browser.go","requirement":"FD resource failures must fail accurately","description":"document.fonts.ready does not establish successful font loading; corrupt embedded fonts can fall back and print successfully.","required_change":"Reject failed FontFace states after ready, with loadingerror tracking if needed."}
+    ],
+    "suggestions": ["Remove unused vendored _tools/_benchmark/testutil sources if appropriate for size goals."],
+    "validation": {"static_review":true,"tests_run":false,"compile_run":false,"runtime_run":false,"network_used":false,"final_build_run":false,"worker_compile_reported_exit_code":0},
+    "limitations": ["No real third-party conversions or PDF visual checks","No cross-platform/browser/CDP runtime evidence","No installer/output-publication runtime validation","Initial claim in parent workspace rejected; corrected retry in FD worktree succeeded"]
+  }
+}

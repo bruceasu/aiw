@@ -1,1 +1,16 @@
-{"schema":"aiw.fd.evidence.v1","kind":"blocker-feedback","fd_id":"FD-078","source_event":"FD-078-000002-design-requested","markdown":"FD-078-blocker-parent-archive.md","status":"resolved","session":"fd078-host-20261018-a83f92","observed":"Uncommitted ISSUE-00009 archive blocked a clean parent","resolution":"User authorized separate archive commit 1bcfe33","human_decision_required":false,"tests_run":false,"network_used":false}
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-078",
+  "source_event": "FD-078-000002-design-requested",
+  "human_report": "FD-078-blocker-parent-archive.md",
+  "data": {
+    "status": "resolved",
+    "session": "fd078-host-20261018-a83f92",
+    "observed": "Uncommitted ISSUE-00009 archive blocked a clean parent",
+    "resolution": "User authorized separate archive commit 1bcfe33",
+    "human_decision_required": false,
+    "tests_run": false,
+    "network_used": false
+  }
+}
