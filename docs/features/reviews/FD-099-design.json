@@ -1,0 +1,31 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-099",
+  "source_event": "FD-099-000002-design-requested",
+  "revision": 2,
+  "recommendation": "ready",
+  "findings": [],
+  "review_scope": [
+    "argument parsing and compatibility",
+    "merge and cleanup success boundary",
+    "explicit origin target refspec and push scope",
+    "failure exit and preserved local merge",
+    "CLI documentation and stable specification consistency"
+  ],
+  "implementation_notes": [
+    "Reject duplicate --push and unknown options before mutation.",
+    "A --new target created from one source is eligible for push after cleanup.",
+    "Print local merge success before push so nonzero exits, exceptions and interrupts preserve clear local status."
+  ],
+  "validation": {
+    "mode": "static-only",
+    "tests_run": false,
+    "compile_run": false,
+    "git_commands_run": false,
+    "network_used": false
+  },
+  "residual_risks": [
+    "Remote authentication, availability and non-fast-forward rejection have not been exercised; the planned nonzero exit and preserved local merge cover these failures."
+  ]
+}

@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-099](FD-099_ADD_OPTIONAL_PUSH_AFTER_MERGE_TO_SUCCEEDS.md) | Add optional push after merge-to succeeds | Open | Medium |
 
 ## Completed
 
