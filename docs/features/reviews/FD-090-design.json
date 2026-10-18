@@ -1,0 +1,35 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-090",
+  "human_report": "FD-090-design.md",
+  "source_event": null,
+  "data": {
+    "fd_revision": 1,
+    "result": "ready",
+    "source_event_reason": "Bounded independent design feedback delegated by Planner; no independent design event assigned.",
+    "findings": [],
+    "implementation_constraints": [
+      "Reject duplicate release identity across categories even for identical archives",
+      "Resolve dependency and member versions from metadata with visited identity deduplication",
+      "Validate original paths with safe_path before traversal/read and check directory version",
+      "Materialize and revalidate all original ZIP paths before the first Repo.publish call",
+      "Use aliases only to normalize named root; never source-expand publication closure",
+      "Update existing fresh-publication and source-catalog spec requirements"
+    ],
+    "static_evidence": [
+      "build.py publish currently invokes build_packages",
+      "LocalPackages exact lookup, closure, source confinement and original-path fetch",
+      "repository.entry_for and archive.read_package identity and checksum validation",
+      "Repo local_publish immutable identities and per-package writes",
+      "openspec/specs/aiw-packages/spec.md publication and target requirements"
+    ],
+    "commands_run": ["Four targeted read-only batches of Get-Content, rg, Select-Object and Select-String"],
+    "checks_not_run": ["tests", "compile", "build", "publish", "install", "network", "git writes", "workflow events"],
+    "residual_risks": [
+      "Runtime publication behavior unverified",
+      "Existing multi-package partial success remains",
+      "Installed plugin EvalSymlinks failure is separate and unresolved"
+    ]
+  }
+}
