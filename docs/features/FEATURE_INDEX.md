@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-086](FD-086_REUSE_COMPILE_AND_CLEAN.md) | Reuse compiled output and clean build directories | In Progress | Medium |
 
 ## Completed
 

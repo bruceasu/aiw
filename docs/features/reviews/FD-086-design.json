@@ -1,0 +1,29 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-086",
+  "source_event": null,
+  "human_report": "FD-086-design.md",
+  "data": {
+    "source_event_reason": "Direct user request; bounded design review delegated by Planner before workflow event creation.",
+    "fd_revision": 1,
+    "recommendation": "changes-needed",
+    "method": "bounded-local-static-design-review",
+    "findings": [
+      {
+        "id": "D1",
+        "severity": "medium",
+        "blocking": true,
+        "summary": "Require exact native artifact file-set equality, including rejection of newly added TypeScript files.",
+        "resolution": "Record the complete per-component inventory and compare the full current file set and hashes before reuse; include this in Work Item 1.1 and acceptance."
+      }
+    ],
+    "tests_run": false,
+    "compile_run": false,
+    "build_run": false,
+    "clean_run": false,
+    "network_used": false,
+    "git_writes": false,
+    "workflow_events_emitted": false
+  }
+}
