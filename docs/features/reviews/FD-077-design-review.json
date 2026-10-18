@@ -1,0 +1,31 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-077",
+  "source_event": "FD-077-000002-design-requested",
+  "fd_revision": 2,
+  "recommendation": "ready",
+  "findings": [],
+  "required_changes": [],
+  "implementation_constraints": [
+    "Bind initial FileInfo and captured bytes; never replace the snapshot identity after reopening.",
+    "Use fixed draft-root handles and verify root identity; reject links below the permitted root.",
+    "Preserve mismatched isolated sources; restore without overwriting and report the recovery path.",
+    "Never recursively delete draft or quarantine directories.",
+    "Keep CleanupWarning out of TOML, approval JSON and stdout; print it at both call sites before later errors.",
+    "Update stable capture rules and usage documentation."
+  ],
+  "validation": {
+    "method": "bounded-local-static-design-review",
+    "tests_run": false,
+    "compile_run": false,
+    "runtime_run": false,
+    "network_used": false,
+    "workflow_changed": false
+  },
+  "limitations": [
+    "No runtime proof for Windows sharing, hard-link support or recovery failure paths.",
+    "Design is not a cross-process locking protocol.",
+    "One supplemental worktree-glob search failed because the path did not exist; it was not repeated."
+  ]
+}

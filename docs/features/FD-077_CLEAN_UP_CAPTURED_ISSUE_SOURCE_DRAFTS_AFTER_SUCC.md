@@ -1,7 +1,7 @@
 # FD-077: Clean up captured Issue source drafts after successful capture
 
-**Status:** Design
-**Revision:** 2
+**Status:** Open
+**Revision:** 3
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -50,7 +50,7 @@
 
 ## TODO
 
-- 进行一次必要的独立设计审查，再 emit design-ready。
+- 独立设计审查已完成，结论 ready：reviews/FD-077-design-review.md 和同名 JSON；无阻塞发现。
 - 在 develop 聚焦提交 ready plan；父工作区干净后用 feature/FD-077、.wt/FD-077 实现。
 - 按项提交，独立实现审查通过后 local-merge、确认清理并 Complete 归档。
 - 原父工作区门槛已获授权：ISSUE-00008 单独提交为 a732b98；阻塞反馈保留并更新解除事实。
@@ -59,7 +59,7 @@
 
 仅静态核对和一次 compile-only。预定环境 GOPROXY=off、GOSUMDB=off、GOTOOLCHAIN=local 后执行 python scripts/compile.py；该脚本仅 go build -o NUL 编译 cmd/aiw 与 cmd/aiw-req，不保留发行产物。未授权测试，不创建或运行 Go 测试，不运行 vet/格式化/构建/联网。
 
-设计引入删除和失败恢复边界，因此进行一名独立代理的静态设计审查；它不替代独立 Reviewer 实现审查。当前 compile 和运行行为尚未验证。
+设计引入删除和失败恢复边界，因此进行一名独立代理的静态设计审查；它不替代独立 Reviewer 实现审查。独立设计审查已记录 ready；当前 compile 和运行行为尚未验证。
 
 ## Sources
 
