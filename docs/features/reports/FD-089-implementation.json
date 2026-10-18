@@ -1,0 +1,19 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-089",
+  "source_event": null,
+  "human_report": "FD-089-implementation.md",
+  "data": {
+    "source_event_reason": "Direct user request without Worker handoff; managed independent review follows",
+    "work_items": ["1.1", "1.2", "1.3"],
+    "comparison_base": "7c0b070",
+    "result": "implementation-ready",
+    "compile_result": "Python compile-only passed for build.py and scripts/local_packages.py, exit 0, no imports or artifacts",
+    "static_evidence": ["one scoped git diff/stat and symbol rg batch", "no implicit repository writes", "original-path index/fetch adapter", "exact declared closure and legacy fallback", "component/collection roots distinct from catalog", "cross-source ZIP and ancestor overwrite preflight", "unchanged shared Operation engine", "usage/spec consistency"],
+    "commands_run": ["targeted Get-Content/rg and Git reads", "focused local commits", "aiw fd set-status", "aiw git wt add FD-089", "Python compile(read_bytes(), path, exec) for two files", "git diff 7c0b070 on scoped source and stat plus rg references"],
+    "checks_not_run": ["tests", "target compilation", "package builds", "runtime CLI validation", "installation", "publication", "clean", "network", "linters", "verification scripts"],
+    "residual_risks": ["Runtime installation unverified", "Additional local archive metadata/hash reads", "Missing legacy dependencies require rebuilding", "Single-writer assumptions retained", "Necessary transaction extraction/staging remains"],
+    "next_action": "Independent Reviewer then local delivery and archive after gates pass"
+  }
+}

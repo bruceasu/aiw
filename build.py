@@ -22,7 +22,7 @@ sys.path.insert(0, str(SRC / "plugins" / "aiw-pkg"))
 from archive import PackageError, atomic_bytes, identifier, reject_link, safe_path, write_package
 from manager import Manager, default_destination
 from operations import Operation
-from repository import Repo, entry_for
+from repository import Repo
 
 SYSTEMS = ("windows", "linux")
 GO = {
@@ -405,10 +405,9 @@ def build_packages(target: str, version: str) -> list[Path]:
         print("Using snapshot output", flush=True)
     packages = [package_component(component, version) for component in components]
     by_component = dict(zip(components, packages))
-    export_repository(packages, DIST / "repository")
     built_at_ns = time.time_ns()
-    for component, package in zip(components, packages):
-        write_manifest(component, version, [package], built_at_ns=built_at_ns)
+    for component in components:
+        write_manifest(component, version, [by_component[item] for item in expand(component)], built_at_ns=built_at_ns)
     write_manifest(target, version, packages, built_at_ns=built_at_ns)
     if target == "all":
         for group in ("bin", "plugins", "skills"):
@@ -468,7 +467,6 @@ def main(arguments: list[str]) -> int:
         return 1
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     actions = parser.add_subparsers(dest="action")
-    from scripts.package_definitions import COLLECTIONS
     aliases = package_aliases()
     packages = set(aliases.values())
     choices = sorted(packages | set(TARGETS["groups"]) | set(aliases))
@@ -530,13 +528,18 @@ def main(arguments: list[str]) -> int:
             if args.action == "export":
                 export_repository(packages, args.repository)
             else:
-                from scripts.package_definitions import COLLECTIONS
-                root = DIST / "repository"
-                repo = Repo(str(root))
+                from scripts.local_packages import LocalPackages
+                repo = LocalPackages(DIST, packages)
+                roots = repo.roots
+                if target not in TARGETS["groups"]:
+                    names = {name for name, component in aliases.items() if component == target}
+                    roots = [entry for entry in roots if entry["name"] in names and entry["version"] == content["version"]]
+                    if len(roots) != 1:
+                        raise PackageError(f"Expected one manifest root for {target}; rebuild the target")
+                repo.preflight_destination(args.dest)
                 manager = Manager(args.dest)
-                roots = [p for p in packages if entry_for(p)["name"] == target] if target in COLLECTIONS else packages
-                for package in roots:
-                    print(Operation(manager, repo).install(package))
+                for entry in roots:
+                    print(Operation(manager, repo).install(repo.fetch(entry, None)))
         return 0
     except (PackageError, OSError, ValueError, KeyError, TypeError, zipfile.BadZipFile) as error:
         print(f"build.py: {error}", file=sys.stderr)

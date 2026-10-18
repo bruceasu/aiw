@@ -1,7 +1,7 @@
 # FD-089: Build and install without a repository copy
 
-**Status:** In Progress
-**Revision:** 2
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -46,15 +46,15 @@ Rejected because a local adapter preserves the shared engine boundary.
 
 ## Work Items
 
-- [ ] 1.1 Add direct-source closure adapter and cross-source target preflight.
+- [x] 1.1 Add direct-source closure adapter and cross-source target preflight.
   Size small, difficulty medium, no dependencies. Completion: source confinement,
   exact closure, original-path fetch verification and source-overwrite protection traced.
-- [ ] 1.2 Wire build/install and closed component manifests with separate roots.
+- [x] 1.2 Wire build/install and closed component manifests with separate roots.
   Size small, difficulty medium, depends on 1.1. Completion: no implicit repository,
   declared root identity, dependency auto/manual rules and legacy lookup traced.
-- [ ] 1.3 Update usage/spec, compile-only and independent review evidence.
+- [x] 1.3 Update usage/spec, compile-only and independent review evidence.
   Size small, difficulty low, depends on 1.2. Completion: coherent build/publish/install
-  boundaries, syntax compilation and independent static review.
+  boundaries, syntax compilation and independent static review handoff.
 
 ## Acceptance
 
@@ -69,8 +69,8 @@ Rejected because a local adapter preserves the shared engine boundary.
 ## TODO
 
 - Design D1-D3 incorporated: separate roots, small items and cross-source preflight.
-- Implement at .wt/FD-089 on feature/FD-089.
-- Independent implementation review, local delivery, cleanup and archive.
+- Implementation and Python compile-only complete; independent static review passed.
+- Local delivery, cleanup and archive after current managed pass.
 
 ## Verification
 
@@ -79,6 +79,20 @@ Operation dependency/member selection and Manager preflight. No runtime/install/
 publication, deletion, network or tests performed.
 Independent design evidence reviews/FD-089-design.md and JSON recorded D1-D3;
 all findings incorporated above before implementation, with no repeated design review.
+Implementation report reports/FD-089-implementation.md and JSON. Python compile-only
+passed for build.py and scripts/local_packages.py without imports or retained artifacts;
+the existing scripts/compile.py targets unrelated Go entrypoints. One final scoped
+git diff/stat and symbol rg batch against 7c0b070 traced no implicit publication,
+direct original-path fetch, exact closure/fallback, root selection and source/archive
+cross-target preflight. No tests, runtime CLI validation, build, install, publish,
+clean, network, lint or verification scripts run.
+
+Independent Reviewer session reviewer-FD089-direct-20261018 reviewed implementation
+4ed79d6 against 7c0b070 under FD-089-000004-review-requested. Report
+reviews/FD-089-review.md and JSON: passed, no blocking findings. Traced original-path
+catalog/fetch, legacy exact closure, root selection, all-source overwrite preflight,
+unchanged Operation/Manager transaction paths and explicit publication. No Reviewer
+tests, compilation, builds, install, clean, network or runtime validation performed.
 
 ## Risks
 

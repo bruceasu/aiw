@@ -127,6 +127,22 @@ agent-templates; shared root Skill documents have unique resource package owners
 Individual Skills depend on needed resources rather than an aggregate support ZIP.
 Usage documents belong to their program/plugin; development docs are not installed.
 
+Build writes versioned ZIPs and dependency-closed release manifests only. It does
+not publish, copy ZIPs into `dist/repository`, or print `Published`. Install resolves
+dependencies and collection members directly from original dist ZIPs through an
+in-memory catalog, with no repository index or extra downloaded/archive copies.
+For a single component or collection, only the requested package is an explicit
+installation root; dependencies retain the engine's auto/manual rules. Compatibility
+groups keep their existing explicit-root behavior.
+
+Older incomplete component manifests are supported by exact declared name/version
+lookup in the versioned mist/plugins/skills/resources/collections dist categories.
+Missing, ambiguous or mismatched ZIPs fail before installation; no repository/network
+fallback occurs. All source archives are validated, then rechecked when fetched.
+Before installation, every selected payload target is checked against all original
+ZIPs and their ancestors, preventing one package from overwriting another input.
+Installation still uses the shared dependency graph checks and transaction staging.
+
 `compile <target>` always refreshes one fixed `snapshot` output slot. It takes no
 version parameter and ignores `AIW_VERSION`. Versioned Go executables embed the
 literal `snapshot`; native output paths remain under bin. The old `compile --version`
@@ -174,7 +190,7 @@ An operating-system deletion failure can leave partial cleanup and returns an er
 release manifests. Add a target or full package alias to query that target.
 This is chronological build order, separate from repository SemVer `latest`.
 Compile-only commands do not update the build record. New manifests are written
-after packaging and local repository staging succeed, with a completion timestamp;
+after packaging succeeds, with a completion timestamp;
 old manifests fall back to filesystem modification time. Copying an old manifest
 can therefore affect its order. The command checks the selected manifest's package
 paths and reports an error for missing records/artifacts or invalid selected data.
@@ -195,8 +211,8 @@ Full package names such as `aiw-main`, `aiw-git`, `aiw-skill-fd-workflow` and
 `publish <package> <version>` uses snapshot output (compiling when missing), packages that package plus its exact
 dependencies/members, then publishes those newly built ZIPs. Use `publish-all
 <version>` for every package. These commands require an explicit version and a
-local `AIW_PACKAGE_REPO`; they never reuse an older release manifest. They retain
-the build staging repository as well. Publication stops on the first error;
+local `AIW_PACKAGE_REPO`; they never reuse an older release manifest. Explicit
+`export` publishes existing manifest ZIPs to its requested repository. Publication stops on the first error;
 earlier packages may already have been published. Existing versions cannot be
 overwritten with changed contents.
 
@@ -219,11 +235,12 @@ Go builds continue to produce both Windows/Linux amd64 binaries. Tool paths and
 installation/repository paths can vary by machine without changing that package contract.
 
 Packages live under dist/<category>/<version>/; raw main/program binaries are in
-dist/bin/<platform>-amd64. A build also stages a local dist/repository with index.json.
+dist/bin/<platform>-amd64. Only explicit publish/export actions write repositories.
+An older dist/repository is left untouched and unused; clean removes it with dist.
 Repeated publication of identical normalized content succeeds without rewriting;
 different content under the same name/version is rejected: choose a new version.
 There is no force override. Bootstrap through build.py install or the standalone
-Python package entry point with --repo pointing at the staged repository.
+Python package entry point with --repo pointing at an explicitly published repository.
 
 On Windows, exit programs that lock installation files. To update aiw itself,
 exit aiw and invoke Python directly, for example:

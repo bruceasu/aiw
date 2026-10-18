@@ -1,0 +1,37 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-089",
+  "human_report": "FD-089-review.md",
+  "source_event": "FD-089-000004-review-requested",
+  "data": {
+    "reviewer_session": "reviewer-FD089-direct-20261018",
+    "fd_revision": 4,
+    "reviewed_commit": "4ed79d6",
+    "comparison_base": "7c0b070",
+    "result": "verification-passed",
+    "findings": [],
+    "static_evidence": [
+      "Build has no implicit repository publication; explicit publish/export preserved",
+      "Component manifests carry expand(component) closure",
+      "Exact local catalog and five-category legacy fallback validate original archives",
+      "Fetch revalidates source confinement and complete entry/hash without copying ZIPs",
+      "Single component/collection roots remain separate from closure; group roots preserved",
+      "All host payload targets checked against all source ZIPs and ancestors before Manager",
+      "Shared Operation graph/prepared-byte checks and Manager transactions unchanged",
+      "Usage/spec and Worker evidence consistent with source"
+    ],
+    "commands_run": [
+      "Targeted Get-Content and rg reads",
+      "git diff 7c0b070 4ed79d6 --stat and scoped source/docs/spec diff",
+      "aiw fd --help; aiw fd show FD-089; aiw fd claim --help; aiw fd emit --help",
+      "aiw fd claim FD-089 FD-089-000004-review-requested --session reviewer-FD089-direct-20261018",
+      "Managed reviewer result emitted after report writes"
+    ],
+    "read_errors": ["Worktree .ai/fd path absent; used managed fd show receipt", "PowerShell unexpanded rg file globs; used explicit source reads"],
+    "checks_not_run": ["tests", "compile", "build", "install", "publish", "clean", "runtime CLI validation", "network", "linters", "verification scripts"],
+    "worker_compile_evidence": "Worker report records successful artifact-free Python compile-only for two files; not rerun by Reviewer",
+    "residual_risks": ["Runtime install behavior unverified", "Existing single-writer assumption retained", "Additional archive metadata/hash reads", "Missing exact legacy artifacts require rebuild"],
+    "next_action": "PM commits evidence, checks local delivery gates and continues cleanup/archive"
+  }
+}

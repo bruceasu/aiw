@@ -88,8 +88,8 @@ latest-compile [target] MUST remain a read-only compatible query, validating the
 current covering snapshot and printing snapshot or failing clearly. It MUST NOT
 compile automatically. latest [target] MUST print only the latest successful local
 package version in chronological completion order rather than repository SemVer order.
-New package manifests MUST be written only after successful packaging and local
-repository staging, with completion time. Historical manifests use file mtime if
+New package manifests MUST be written only after successful packaging,
+with completion time. Historical manifests use file mtime if
 no completion time exists. Selected invalid records or missing packages MUST fail.
 Compile-only operations MUST NOT change package-build records.
 
@@ -119,7 +119,7 @@ filesystem cleanup failure MUST report actual partial completion without claimin
 
 #### Scenario: Failed build
 
-- WHEN compilation, packaging or repository staging fails
+- WHEN compilation or packaging fails
 - THEN do not replace successful package-build manifests
 
 #### Scenario: Safe clean
@@ -128,6 +128,48 @@ filesystem cleanup failure MUST report actual partial completion without claimin
 - THEN fail before starting deletion
 - WHEN both output trees are absent
 - THEN succeed without touching external repositories
+
+### Requirement: Build-local installation without duplicate repositories
+
+build MUST only assemble packages and successful release manifests; it MUST NOT
+publish, copy ZIPs to dist/repository, write repository indexes or emit Published.
+Only explicit publish/publish-all/export MUST write a requested repository.
+Existing dist/repository output MUST NOT be deleted automatically or used for install.
+
+build.py install MUST resolve exact dependencies/members directly from original
+dist ZIPs using the shared Operation engine and a read-only in-memory catalog.
+Its fetch MUST return the original validated source path, not copy a ZIP or download.
+New component manifests MUST include the dependency/member closure. Catalog entries
+MUST remain separate from roots: a single component/collection selects only its
+requested canonical root, while compatibility groups retain existing root behavior.
+Dependencies MUST retain the shared engine's auto/manual semantics.
+
+For historical incomplete manifests, only exact declared name/version ZIPs under
+dist/mist, plugins, skills, resources and collections version directories MAY be
+resolved. No repository, latest-version or network fallback is allowed. Missing,
+mismatched, conflicting duplicate or ambiguous artifacts MUST fail before destination
+writes. Fetch MUST revalidate identity, metadata, size and hash. Shared graph/cycle,
+platform, target ownership, exact-version and transaction protections MUST remain.
+
+Before Manager construction, host-selected payload targets MUST be checked against
+all original source ZIPs. A file target equal to a source ZIP or an ancestor of any
+source ZIP MUST be rejected before writes, including across different packages.
+Source links/path escapes MUST fail, and allowed destination root aliases retain
+the existing Manager resolution policy. Necessary extraction/transaction staging
+is distinct from duplicate repository or download archives and MUST remain intact.
+
+#### Scenario: Build then install without publication
+
+- WHEN build all at 1.0.0 succeeds
+- THEN versioned ZIPs and closed manifests exist without dist/repository publication
+- WHEN install aiw-core follows
+- THEN install the collection and exact members from original dist ZIPs
+- AND do not create another repository or ZIP copy
+
+#### Scenario: Original archive protection
+
+- WHEN one package's payload would overwrite another source ZIP or its parent
+- THEN reject installation before any destination writes
 
 ### Requirement: 可移植包契约
 
