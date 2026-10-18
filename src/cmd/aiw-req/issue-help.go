@@ -18,6 +18,8 @@ commands:
 
 IDs are case-insensitive. Ambiguous REQ numbers are rejected.
 Use issue-plan (or requirement-plan) for the Plan artifact.
+Successful capture consumes its unchanged source in the project draft directories.
+External sources and other drafts are kept. Cleanup warnings go to stderr.
 `
 
 func isIssueHelpFlag(arg string) bool { return arg == "--help" || arg == "-h" }
@@ -29,7 +31,7 @@ func issueSubcommandUsage(command string) (string, bool) {
 		"show":        "usage: aiw issue show <id> [--json]\n",
 		"link-parent": "usage: aiw issue link-parent <child-id> <parent-id>\n",
 		"children":    "usage: aiw issue children <parent-id>\n",
-		"capture":     "usage: aiw issue capture <id> <artifact> --file <path>\n",
+		"capture":     "usage: aiw issue capture <id> <artifact> --file <path>\n\nAfter saving the artifact and metadata, remove only this unchanged source in\n.ai/issues/drafts/ or .ai/requirements/drafts/. Keep external sources and other drafts.\nCleanup failure keeps capture successful and reports the retained or recovery path on stderr.\n",
 		"approve":     "usage: aiw issue approve <id> <APPROVED|DEFERRED|REJECTED> [--by <actor>] --reason <reason>\n",
 		"promote":     "usage: aiw issue promote <id>\n",
 		"archive":     "usage: aiw issue archive <id> --by <actor> --reason <reason>\n",

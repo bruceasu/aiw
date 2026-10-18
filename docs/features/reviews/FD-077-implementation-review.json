@@ -1,0 +1,41 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-077",
+  "source_event": "FD-077-000004-implementation-ready",
+  "human_report": "FD-077-implementation-review.md",
+  "data": {
+    "session": "fd077-reviewer-20261018-c9d283",
+    "base_commit": "193f0de",
+    "reviewed_commit": "a6e3db96c134cc9bdf13121c7b2b2e680be87614",
+    "implementation_commits": ["0dfc816", "aa3be06"],
+    "verdict": "changes-requested",
+    "findings": [{
+      "id": "R1",
+      "severity": "P1",
+      "file": "src/internal/issue/capture_draft.go",
+      "lines": [75, 82, 87, 130],
+      "requirement": "FD Solution root replacement protection; Acceptance 3; stable capture cleanup boundary",
+      "title": "Root replacement between Lstat and OpenRoot can authorize deletion outside designated drafts",
+      "evidence": "Initial family/root Lstat identities are discarded. OpenRoot establishes a new trusted identity after replacement; cleanup os.Stat follows the replacement link and matches that identity.",
+      "impact": "A linked external directory can be read, quarantined and cleaned as if it were the original draft root.",
+      "required_change": "Retain initial family/root identities, compare opened root against initial root, and recheck both directories without accepting links or changed identities before cleanup. Preserve source and warn on uncertainty."
+    }],
+    "static_results": {
+      "persistence_before_cleanup": "supported",
+      "file_identity_bytes_quarantine_recovery": "supported subject to root-binding defect",
+      "external_source_retention": "supported for unchanged safe storage topology",
+      "both_warning_callers": "supported",
+      "artifact_json_digest_compatibility": "supported",
+      "documentation_consistency": "intended contract consistent; root protection incomplete"
+    },
+    "worker_compile_result": {"command": "GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local python scripts/compile.py", "reported_exit_code": 0, "rerun_by_reviewer": false},
+    "tests_run": false,
+    "runtime_validation_run": false,
+    "compile_run": false,
+    "network_used": false,
+    "skipped": ["tests", "capture cleanup execution", "compile", "formatters", "linters", "vet", "final builds", "network", "downloads"],
+    "residual_risks": ["Windows file sharing and hard-link recovery remain untested", "Concurrent private-quarantine tampering is outside the documented lock guarantee"],
+    "next_action": "Worker fixes R1, then obtain a focused independent review of the changed implementation"
+  }
+}

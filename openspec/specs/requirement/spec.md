@@ -16,6 +16,27 @@
 - **THEN** 系统写入对应工件、记录路径和内容摘要并递增 revision。
 - **AND** 普通首次捕获将 DRAFT 推进为 DISCOVERED；捕获 issue-plan 或 requirement-plan 可将 DRAFT / DISCOVERED 推进为 DECIDED。新 ISSUE 的 Plan 文件为 issue-plan.md，旧 REQ 保留 requirement-plan.md，内部工件键保留 requirement-plan。
 
+### Requirement: 捕获后消费源草稿
+
+capture MUST 仅在正式工件与元数据全部保存成功后，自动清理本次已消费且身份和内容均未变化的普通源草稿。自动清理 MUST 限于当前项目 `.ai/issues/drafts/` 与兼容 `.ai/requirements/drafts/`，MUST NOT 扫描清理其他版本、历史草稿、外部来源或正式记录。项目受管理的 `.ai` 共享存储可作为指定草稿存储；草稿根以下的符号链接、路径穿越或不安全来源 MUST NOT 扩大删除范围。
+
+系统 MUST 在删除前核对原始身份与实际捕获内容，并在隔离核对失败时无覆盖恢复或保留可定位的恢复文件。清理失败 MUST 保留正式捕获结果，MUST NOT 将其报告为 capture 保存失败或要求盲目重试；直接 CLI、聊天及兼容入口 MUST 保持成功退出语义，并在 stderr 提示警告及残留/恢复路径。清理警告 MUST NOT 进入持久化工件或批准源摘要。
+
+#### Scenario: 成功消费当前源草稿
+
+- **WHEN** 本次源位于允许的项目草稿目录，工件及元数据已保存，源身份和内容未变化
+- **THEN** 系统删除本次源草稿，保留其他草稿与正式结果。
+
+#### Scenario: 保存失败或来源不安全
+
+- **WHEN** 工件/元数据保存失败，或源不在清理范围、为链接、被替换或内容变化
+- **THEN** 系统不删除未成功消费或变化后的内容；其他来源文件仍可按既有 capture 契约保存正式副本。
+
+#### Scenario: 捕获成功但清理失败
+
+- **WHEN** 正式捕获已成功，而删除、隔离或无覆盖恢复失败
+- **THEN** 系统保持成功捕获结果，向 stderr 报告清理警告及可恢复位置，不覆盖新源路径，不递归删除目录。
+
 ### Requirement: Issue 拆分关系
 
 系统 MUST 允许尚未批准的子 Issue 记录一个已存在的父 Issue ID，并从父 Issue 查询直接子项。系统 MUST 拒绝自身关联、循环和覆盖已有父项；旧 REQ 记录缺少 `parent_id` 时仍作为根 Issue 读取。关联变更 MUST 递增子 Issue revision，已批准或关闭的子 Issue 不得改写来源关系。

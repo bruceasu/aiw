@@ -58,6 +58,7 @@ type Artifact struct {
 	Kind   string
 	Path   string
 	Digest string
+	CleanupWarning string `json:"-"`
 }
 
 var artifactFiles = map[string]string{
@@ -276,7 +277,8 @@ func Capture(id, kind, source string) (Meta, Artifact, error) {
 	meta, err := Read(id)
 	if err != nil { return Meta{}, Artifact{}, err }
 	if meta.Status == "ARCHIVED" || meta.Status == "CANCELLED" { return Meta{}, Artifact{}, fmt.Errorf("requirement is %s", meta.Status) }
-	b, err := os.ReadFile(source)
+	b, draft, err := readCaptureSource(source)
+	if draft != nil { defer draft.close() }
 	if err != nil { return Meta{}, Artifact{}, err }
 	location, err := locateRecord(meta.ID)
 	if err != nil { return Meta{}, Artifact{}, err }
@@ -290,6 +292,7 @@ func Capture(id, kind, source string) (Meta, Artifact, error) {
 	artifact := Artifact{Kind: kind, Path: filepath.ToSlash(target), Digest: digest(b)}
 	meta.Artifacts[kind] = artifact
 	if err := Write(meta); err != nil { return Meta{}, Artifact{}, err }
+	if draft != nil { artifact.CleanupWarning = draft.cleanup(b) }
 	return meta, artifact, nil
 }
 

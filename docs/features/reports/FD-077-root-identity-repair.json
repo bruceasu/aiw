@@ -1,0 +1,17 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-077",
+  "source_event": "FD-077-000005-changes-requested",
+  "human_report": "FD-077-root-identity-repair.md",
+  "data": {
+    "session": "fd077-host-20261018-53b7ac",
+    "finding": "R1",
+    "resolution": "Retain pre-open family/root Lstat identities; check both directory identities without following final links and compare the fixed open root after opening and before cleanup.",
+    "static_review": "Reviewed the corrective source diff and FD review tracking.",
+    "compile": {"command": "GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local python scripts/compile.py", "exit_code": 0, "artifact_retained": false},
+    "tests_run": false,
+    "runtime_validation_run": false,
+    "review_status": "pending focused independent recheck"
+  }
+}

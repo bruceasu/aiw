@@ -1,7 +1,7 @@
 # FD-077: Clean up captured Issue source drafts after successful capture
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 7
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -35,9 +35,9 @@
 
 ## Work items
 
-- [ ] 1.1 完成并独立审查清理设计，实施共享草稿生命周期和 Capture 警告载体。规模小到中等、难度中等；无前置实现依赖；完成条件：正确的保存顺序、路径范围、隔离核对与无覆盖恢复。
-- [ ] 1.2 接入直接/聊天警告并同步 requirement 稳定规格和 Issue 帮助。规模小、难度低；依赖 1.1；完成条件：成功退出兼容、stderr 警告、文档边界一致。
-- [ ] 1.3 完成 compile-only 与静态核对、双格式实现报告和独立 Reviewer 交接。规模小、难度低；依赖 1.2；完成条件：实际证据和未运行项如实记录。
+- [x] 1.1 完成并独立审查清理设计，实施共享草稿生命周期和 Capture 警告载体。规模小到中等、难度中等；无前置实现依赖；证据：capture_draft.go、Capture 在 Write(meta) 后清理，CleanupWarning 排除 JSON；隔离核对与无覆盖恢复均已实现，运行效果未验证。
+- [x] 1.2 接入直接/聊天警告并同步 requirement 稳定规格和 Issue 帮助。规模小、难度低；依赖 1.1；证据：warnCapturedDraft 两处调用、capture help、稳定规格及使用文档；成功退出保持兼容。
+- [x] 1.3 完成 compile-only 与静态核对、双格式实现报告并准备独立 Reviewer 交接。规模小、难度低；依赖 1.2；证据：reports/FD-077-implementation.md 和同名 JSON，compile-only 退出 0；独立 Reviewer 结果由后续真实事件记录。
 
 ## Acceptance
 
@@ -51,15 +51,21 @@
 ## TODO
 
 - 独立设计审查已完成，结论 ready：reviews/FD-077-design-review.md 和同名 JSON；无阻塞发现。
-- 在 develop 聚焦提交 ready plan；父工作区干净后用 feature/FD-077、.wt/FD-077 实现。
-- 按项提交，独立实现审查通过后 local-merge、确认清理并 Complete 归档。
+- ready plan 已提交 193f0de；已在 feature/FD-077、.wt/FD-077 完成实现。
+- 按项提交已完成；R1 已修复且通过聚焦独立复核，源修改后的同一离线 compile-only 再执行通过。后续由 PM 执行交付门槛检查、local-merge、确认清理并 Complete 归档。
 - 原父工作区门槛已获授权：ISSUE-00008 单独提交为 a732b98；阻塞反馈保留并更新解除事实。
 
 ## Verification
 
-仅静态核对和一次 compile-only。预定环境 GOPROXY=off、GOSUMDB=off、GOTOOLCHAIN=local 后执行 python scripts/compile.py；该脚本仅 go build -o NUL 编译 cmd/aiw 与 cmd/aiw-req，不保留发行产物。未授权测试，不创建或运行 Go 测试，不运行 vet/格式化/构建/联网。
+已执行一次静态 diff 核对，以及环境 GOPROXY=off、GOSUMDB=off、GOTOOLCHAIN=local 下的 python scripts/compile.py，退出码 0；该脚本仅 go build -o NUL 编译 cmd/aiw 与 cmd/aiw-req，不保留发行产物。未授权测试，未创建或运行 Go 测试，未运行 vet/格式化/最终构建/联网。详见 reports/FD-077-implementation.md 和同名 JSON。
 
-设计引入删除和失败恢复边界，因此进行一名独立代理的静态设计审查；它不替代独立 Reviewer 实现审查。独立设计审查已记录 ready；当前 compile 和运行行为尚未验证。
+设计引入删除和失败恢复边界，因此进行一名独立代理的静态设计审查；它不替代独立 Reviewer 实现审查。独立设计审查已记录 ready，compile-only 已通过；实际删除/恢复运行行为未验证。
+
+独立 Reviewer fd077-reviewer-20261018-c9d283 已审查基线 193f0de 至 a6e3db9 的实际实现，结论 changes-requested。R1：草稿根 Lstat 身份未与 OpenRoot 身份绑定，根在两者之间被替换为链接时可能扩大删除范围，阻塞 Acceptance 3。详见 reviews/FD-077-implementation-review.md 及同名 JSON；未运行测试、编译或运行验证。%% 修复 R1 并取得聚焦独立复核后再继续交付。
+
+Worker 已按 R1 修复：保存预检的 family/root 身份，打开后及删除前均核对非链接目录身份和固定句柄；同一离线 compile-only 在源修改后再执行，退出 0。详见 reports/FD-077-root-identity-repair.md 和同名 JSON；本说明不替代独立复核 verdict。
+
+当前独立 Verdict：verification-passed。Reviewer fd077-reviewer-20261018-c9d283 对 a6e3db9 至 313e100 的 R1 修复完成有界聚焦静态复核，确认原始 family/root 身份与固定根句柄绑定，打开后和清理前拒绝链接或替换目录；R1 已解决。报告为 reviews/FD-077-implementation-review-r2.md 和同名 JSON，来源事件 FD-077-000006-implementation-ready。结合前轮完整静态审查，其余验收结论继续有效；本轮未运行测试、编译或运行验证。前述 R1 待修复说明保留为历史，当前无未解决阻塞发现。
 
 ## Sources
 

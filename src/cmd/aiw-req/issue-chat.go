@@ -463,6 +463,7 @@ func confirmIssueCapture(store *session.Store, sessionID string, action issuePen
 	if err != nil {
 		return err
 	}
+	warnCapturedDraft(artifact)
 	if checkpoint.Action != "" && artifact.Digest != checkpoint.Digest {
 		return errors.New("captured draft changed; facts were not confirmed")
 	}

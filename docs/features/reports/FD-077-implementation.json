@@ -1,0 +1,23 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-077",
+  "source_event": "FD-077-000003-design-ready",
+  "human_report": "FD-077-implementation.md",
+  "data": {
+    "session": "fd077-host-20261018-53b7ac",
+    "implementation_commits": ["0dfc816", "aa3be06"],
+    "base_commit": "193f0de",
+    "result": "implementation-ready",
+    "static_review": "Reviewed scoped develop...HEAD diff, persistence-before-cleanup ordering, rooted source identity/content checks, recovery paths, both CLI callers and documentation consistency.",
+    "compile": {
+      "command": "GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local python scripts/compile.py",
+      "exit_code": 0,
+      "artifact_retained": false
+    },
+    "tests_run": false,
+    "runtime_validation_run": false,
+    "skipped": ["tests", "capture cleanup runtime checks", "formatters", "linters", "vet", "final builds", "network", "downloads"],
+    "risks": ["Windows file locks and hard-link recovery are statically reviewed but untested.", "The implementation does not provide a lock against malicious concurrent same-user edits in private quarantine storage."]
+  }
+}

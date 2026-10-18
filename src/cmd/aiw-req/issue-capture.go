@@ -4,6 +4,7 @@ import (
 	"aiw/internal/issue"
 	"errors"
 	"fmt"
+	"os"
 )
 
 func captureIssue(args []string) error {
@@ -15,6 +16,13 @@ func captureIssue(args []string) error {
 	if err != nil {
 		return err
 	}
+	warnCapturedDraft(artifact)
 	fmt.Printf("captured %s: %s\n", artifact.Kind, artifact.Path)
 	return nil
+}
+
+func warnCapturedDraft(artifact issue.Artifact) {
+	if artifact.CleanupWarning != "" {
+		fmt.Fprintln(os.Stderr, "warning:", artifact.CleanupWarning)
+	}
 }
