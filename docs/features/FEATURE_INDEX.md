@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-079](FD-079_GO_PLUGIN.md) | Go 独立压缩解压工具与 plugin | Open | Medium |
 
 ## Completed
 

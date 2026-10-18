@@ -1,0 +1,32 @@
+id = "ISSUE-00010"
+title = "Go 独立压缩解压工具与 plugin"
+parent_id = ""
+status = "APPROVED"
+created = "2026-10-18"
+updated = "2026-10-18"
+revision = 25
+
+[approval]
+status = "APPROVED"
+by = "user"
+at = "2026-10-18T16:02:26+09:00"
+reason = "用户已逐项确认需求，并明确要求批准、promote 和 fd-workflow auto 实现。"
+source_digest = "bd56073f4e7913f5c55591f8a54fd6d0821172341450c02e8973e86a08205118"
+
+[promotion]
+status = "NOT_STARTED"
+task_id = ""
+
+[conversation]
+session_id = ""
+
+[terminal]
+by = ""
+at = ""
+reason = ""
+
+[artifact]
+requirement-plan = "docs/issues/ISSUE-00010/issue-plan.md"
+
+[digest]
+requirement-plan = "a92c4367b512fd31dc8551f6bc91a1338a469978fd5420e4c1b95b5beca77ff1"

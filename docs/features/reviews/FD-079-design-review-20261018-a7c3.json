@@ -1,0 +1,29 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-079",
+  "source_event": "FD-079-000002-design-requested",
+  "human_report": "docs/features/reviews/FD-079-design-review-20261018-a7c3.md",
+  "date": "2026-10-18",
+  "reviewed_revision": 2,
+  "planner_session": "codex-fd079-planner-20261018-a7c3",
+  "recommendation": "changes-needed",
+  "scope": "Bounded offline static design review. No implementation or workflow state changes.",
+  "findings": [
+    {"id": "G1", "severity": "gate", "blocking": true, "category": "authorization", "summary": "Dependency changes and one fixed-version download await human authorization; BZIP2 writer source and license remain unavailable. This is an external gate, not a design defect.", "work_items": ["1.1"]},
+    {"id": "D1", "severity": "major", "blocking": true, "category": "design", "summary": "Define archive root mapping, colliding input basenames, normalized duplicate entries and ancestor/type conflicts before output.", "work_items": ["1.4", "1.7", "1.8"]},
+    {"id": "D2", "severity": "major", "blocking": true, "category": "feasibility", "summary": "Complete format/encoding matrix, including GZIP Latin-1 header restrictions, plain stream output naming and TAR legacy-byte versus PAX behavior.", "work_items": ["1.1", "1.3", "1.5", "1.6"]},
+    {"id": "D3", "severity": "major", "blocking": true, "category": "resources", "summary": "Finalize staging limits or explicit no-fixed-limit policy, full checksum preflight for stdout, disk-full behavior and ownership-limited cleanup.", "work_items": ["1.7", "1.8"]},
+    {"id": "D4", "severity": "major", "blocking": true, "category": "safety", "summary": "Define pack output inside source-tree handling, overlapping inputs and source identity recheck before delete to avoid self-inclusion or deleting replaced sources.", "work_items": ["1.4", "1.9"]},
+    {"id": "N1", "severity": "minor", "blocking": false, "category": "completeness", "summary": "Clarify mixed/repeated stdin and -c/-o conflict, link-chain ordering and binary lookup failure behavior in the existing Work Items.", "work_items": ["1.2", "1.4", "1.8", "1.10"]}
+  ],
+  "validation": {
+    "method": "Local source and documentation reading only",
+    "runtime_commands": [],
+    "network_calls": 0,
+    "tests_run": 0,
+    "compile_checks_run": 0,
+    "builds_run": 0,
+    "workflow_events_emitted": 0
+  }
+}

@@ -1,0 +1,34 @@
+{
+    "schema":  "aiw.fd.evidence.v1",
+    "kind":  "blocker-feedback",
+    "fd_id":  "FD-079",
+    "source_event":  "FD-079-000002-design-requested",
+    "human_report":  "FD-079-blocker-dependencies-20261018-a7c3.md",
+    "data":  {
+                 "stage":  "design",
+                 "role":  "planner",
+                 "recorded_at":  "2026-10-18T16:04:04+09:00",
+                 "recorder_session":  "codex-fd079-planner-20261018-a7c3",
+                 "observed_blocker":  "新增固定版本依赖及一次 dsnet 源码下载尚未获得明确授权，不能发 design-ready。",
+                 "confirmed_cause":  "仓库 AGENTS.md 要求依赖变更前暂停；网络和下载默认预算为零。标准库 BZIP2 只有解码，目标要求同时编码。",
+                 "cause_status":  "confirmed",
+                 "recovery_attempts":  [
+                                           {
+                                               "action":  "静态检查标准库及本机 Go 模块缓存",
+                                               "outcome":  "x/text v0.24.0 已缓存，未见 dsnet/compress；未尝试网络。"
+                                           },
+                                           {
+                                               "action":  "准备 FD 方案并发出精确依赖授权问题",
+                                               "outcome":  "等待用户答复；未将未答复视为同意。"
+                                           }
+                                       ],
+                 "status":  "resolved",
+                 "human_decision_required":  false,
+                 "human_decision_detail":  "是否允许独立子模块新增 x/text v0.24.0 与 dsnet/compress v0.0.1，并执行一次 go mod download -json github.com/dsnet/compress@v0.0.1。",
+                 "actual_resolution":  "用户明确授权两项固定依赖和一次 dsnet 下载；该精确命令成功，源码和 BSD 许可证已静态读取。Planner Revision 4 处理原设计反馈，继续隔离实现。",
+                 "resolved_at":  "2026-10-18T07:11:20.2178858+00:00",
+                 "residual_risk_or_next_step":  "没有运行测试或构建；实现后执行一次离线 compile-only 和独立实现审查。",
+                 "reusable_improvement":  "在压缩工具 Issue 中显式记录每个格式的读写依赖与离线可用性。",
+                 "improvement_status":  "proposed"
+             }
+}
