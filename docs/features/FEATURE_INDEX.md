@@ -6,12 +6,13 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-096](FD-096_SKIP_UNCHANGED_PACKAGES_FROM_INDEX_BEFORE_ARCHIV.md) | Skip unchanged packages from index before archive acquisition | Pending Verification | High |
+| - | - | - | - |
 
 ## Completed
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
+| [FD-096](FD-096_SKIP_UNCHANGED_PACKAGES_FROM_INDEX_BEFORE_ARCHIV.md) | Skip unchanged packages from index before archive acquisition | Complete | High |
 | [FD-001](archive/FD-001/FD-001_EVENT_DRIVEN_FD_WORKFLOW.md) | 事件驱动的 FD 工作流 | Complete | High |
 | [FD-002](archive/FD-002/FD-002_ACTIONABLE_FD_HANDOFF_RECOVERY_HINTS.md) | Actionable FD handoff recovery hints | Complete | Medium |
 | [FD-003](archive/FD-003/FD-003_COMPACT_CZ_RELEASE.md) | 精简 aiw-cz 发布包 | Complete | Medium |

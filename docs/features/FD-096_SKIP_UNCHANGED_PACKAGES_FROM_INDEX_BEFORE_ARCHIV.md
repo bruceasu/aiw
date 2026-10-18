@@ -1,7 +1,7 @@
 # FD-096: Skip unchanged packages from index before archive acquisition
 
-**Status:** Pending Verification
-**Revision:** 5
+**Status:** Complete
+**Revision:** 7
 **Priority:** High
 **Evidence policy:** Dual
 
@@ -92,7 +92,7 @@ No linked Issue or OpenSpec change.
 ## TODO
 
 - Independent design ready; implementation/docs and six-file Python compile-only complete.
-- Independent implementation review required before completion; installed plugin unchanged.
+- Independent implementation review passed; installed plugin unchanged. PM archive pending.
 
 ## Verification
 
@@ -102,6 +102,8 @@ Report unmeasured performance and installed-plugin update requirement honestly.
 Six changed Python files compiled in memory with exit 0. One static command batch
 reviewed final source diff and the unchanged removal hash-check call; no runtime or
 benchmark execution. See reports/FD-096-implementation.md.
+Independent static implementation review passed at `1cddc45` against `c7c5ebb`;
+see reviews/FD-096-review.md and its JSON sidecar. Reviewer ran no runtime checks.
 
 ## Sources
 
