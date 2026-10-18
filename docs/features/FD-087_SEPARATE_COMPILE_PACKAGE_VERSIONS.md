@@ -1,7 +1,7 @@
 # FD-087: Separate compile and package versions
 
-**Status:** In Progress
-**Revision:** 2
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -36,11 +36,11 @@ reviewable and preserves existing command behavior.
 
 ## Work Items
 
-- [ ] 1.1 Add explicit source selection and record dual version provenance.
+- [x] 1.1 Add explicit source selection and record dual version provenance.
   Size small, difficulty medium, no dependencies. Completion: static trace of
   source failure before writes, unchanged compile cache/binaries and package-version
   propagation through artifacts/dependencies/collections/manifests.
-- [ ] 1.2 Update usage/spec, compile-only and independent review evidence.
+- [x] 1.2 Update usage/spec, compile-only and independent review evidence.
   Size small, difficulty low, depends on 1.1. Completion: consistent examples,
   syntax compilation and final scoped diff; independent Reviewer handoff.
 
@@ -54,8 +54,8 @@ reviewable and preserves existing command behavior.
 
 ## TODO
 
-- Independent design review ready; implement in feature/FD-087, .wt/FD-087.
-- Independent implementation review, local delivery, cleanup and archive.
+- Implementation, Python compile-only and independent static review complete.
+- Local delivery, cleanup and archive after managed review passes.
 
 ## Verification
 
@@ -63,6 +63,14 @@ Planning: inspected current compile provenance/coverage/hash checks, build dispa
 version fallback, package scripts/dependencies and successful-manifest writes.
 No tests, target builds, packaging, publishing, installation or network execution.
 Independent design evidence: reviews/FD-087-design.md and JSON, ready without blockers.
+Implementation: reports/FD-087-implementation.md and JSON. Python compile-only for
+build.py passed without imports or output artifacts; scripts/compile.py is Go-only.
+One final scoped git diff against fb67c60 traced exact source selection before writes,
+package version propagation, manifest compile_version for components/target/groups,
+default/env compatibility and unchanged fresh publish. No test, target compilation,
+packaging, runtime CLI validation, cleanup, installation, publishing or network run.
+Independent implementation review: reviews/FD-087-review.md and JSON; no blockers
+against commit 0b238d3, base fb67c60. Runtime checks remain unperformed.
 
 ## Risks
 

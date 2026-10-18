@@ -1,0 +1,19 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-087",
+  "human_report": "FD-087-review.md",
+  "source_event": "FD-087-000004-review-requested",
+  "data": {
+    "reviewer_session": "codex-fd087-dual-version-review-20261018",
+    "fd_revision": 4,
+    "reviewed_commit": "0b238d3",
+    "comparison_base": "fb67c60",
+    "verdict": "verification-passed",
+    "findings": [],
+    "static_evidence": ["Exact source selection and full hash validation before writes", "Missing source fails without fallback or compilation", "Native files and compile records unchanged during reuse", "Package paths, metadata, dependencies and members use package version", "Component, target and all-group manifests record compile_version", "Environment precedence and default/fresh publish compatibility", "Documentation and stable spec agree with scoped implementation"],
+    "commands_run": ["Targeted Get-Content and rg", "git diff fb67c60 0b238d3 on scoped paths", "git diff --stat fb67c60 0b238d3", "aiw fd --help", "aiw fd show FD-087", "aiw fd claim --help", "aiw fd emit --help", "aiw fd claim FD-087 FD-087-000004-review-requested --session codex-fd087-dual-version-review-20261018", "aiw fd emit FD-087 verification-passed --producer reviewer --artifact docs/features/reviews/FD-087-review.md --source-event FD-087-000004-review-requested"],
+    "checks_not_run": ["tests", "compile-only rerun", "target compilation", "package builds", "runtime CLI validation", "publication", "clean", "network"],
+    "residual_risks": ["Runtime behavior unverified", "Embedded binary version differs intentionally", "Current resources may differ from compiled source point", "Only current valid compile output retained", "Single writer and immutable publication retained"]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-087",
+  "source_event": null,
+  "human_report": "FD-087-implementation.md",
+  "data": {
+    "source_event_reason": "Direct user implementation request; managed independent review follows without a Worker handoff",
+    "work_items": ["1.1", "1.2"],
+    "comparison_base": "fb67c60",
+    "result": "implementation-ready",
+    "compile_result": "Python build.py compile-only passed, exit 0, no imports or retained artifacts",
+    "static_evidence": ["one scoped git diff", "exact source record validation before writes", "package version propagation", "independent script dependency/member versions", "component/target/group compile_version metadata", "source/package env precedence", "unchanged default and publish routes"],
+    "commands_run": ["targeted Get-Content/rg and Git reads", "focused local commits", "aiw fd set-status", "aiw git wt add FD-087", "Python compile(read_bytes(), path, exec)", "git diff fb67c60 -- scoped paths"],
+    "checks_not_run": ["tests", "target compilation", "packaging", "runtime CLI validation", "clean", "installation", "publication", "network"],
+    "residual_risks": ["Runtime behavior unverified", "Embedded binary version intentionally differs from package identity", "No historical artifact archive", "Current resources may differ from compile source time", "Single-writer and immutable publication contracts retained"],
+    "next_action": "Independent Reviewer then automatic local delivery and archive after gates pass"
+  }
+}

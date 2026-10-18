@@ -115,6 +115,7 @@ python build.py latest aiw-docs
 python build.py compile aiw
 python build.py latest-compile aiw
 python build.py build aiw
+python build.py build aiw --compile-version snapshot-20261018-130000123456Z --version 1.0.1
 python build.py clean
 ```
 
@@ -136,13 +137,36 @@ that one value for the entire invocation. Publish commands still require their
 explicit positional version. Independent package scripts still require `--version`
 unless `AIW_VERSION` is configured.
 
-For `build` without `--version`, first reuse the latest successful compile record
+For `build` with neither `--compile-version` nor `--version`, first reuse the latest successful compile record
 covering the requested target. If `AIW_VERSION` is set, only that version qualifies.
 Both the recorded version and native binaries are reused, without calling the
 compilers again. For example, `compile aiw` then `build aiw` shares one version;
 `compile all` can also serve `build aiw`. If no covering record exists, build selects
 the configured/default snapshot version and compiles as before. An explicit
-`build --version` and publish commands always compile afresh.
+`build --version` without `--compile-version`, and publish commands, compile afresh.
+
+To package a selected compilation under another version, use:
+
+```text
+python build.py compile aiw --version snapshot-20261018-130000123456Z
+python build.py build aiw --compile-version snapshot-20261018-130000123456Z --version 1.0.1
+```
+
+`--compile-version` selects exact validated native output and skips compilation;
+`--version` selects the package name/version and every dependency/member reference.
+Binary contents and their embedded version strings retain the compile version.
+The command prints both identities, and successful build manifests include
+`version` (package) and `compile_version` (native source). Compile records are not
+changed by repackaging. `latest` reports the package version; `latest-compile`
+continues to report the compiled version.
+
+With an explicit `--compile-version`, `AIW_VERSION` applies only to the package
+default. Without `--version` or nonempty `AIW_VERSION`, the package version defaults
+to the selected compile version. If that compilation is unavailable, invalidated,
+does not cover the target, or has changed files, build fails before packaging;
+it does not recompile or silently pick another source. Only current recorded
+output is retained; overwritten historical versions cannot be selected. Current
+source/resources and immutable repository publication rules still apply.
 
 Compile records live in `bin/.compile.json`. A new compile invalidates overlapping
 native records before changing any output and records success only after completion.
@@ -203,7 +227,7 @@ Use quotes around paths containing ` #`. Local `.env` stays ignored by Git.
 | Variable | Purpose | Default |
 | --- | --- | --- |
 | `AIW_PACKAGE_REPO` | Required local destination for publish commands; relative paths use the checkout root | No default; example: `d:/playground/aiw-packages` |
-| `AIW_VERSION` | Explicit default version; constrains compile reuse for build | Latest compatible compile for build; otherwise UTC snapshot for build.py. Independent scripts require `--version` when unset |
+| `AIW_VERSION` | Explicit default version; constrains default compile reuse, but only sets package identity when --compile-version is explicit | Latest compatible compile for build; otherwise UTC snapshot for build.py. Independent scripts require `--version` when unset |
 | `AIW_GO` | Go executable path or command name | `go` on PATH |
 | `AIW_NODE` | Node executable path or command name | `node` on PATH |
 | `AIW_INSTALL_DIR` | Existing default installation root; `install --dest` wins | Platform default |

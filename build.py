@@ -367,8 +367,11 @@ def export_repository(packages, root):
         print(repo.publish(package))
 
 
-def build_packages(target: str, version: str, *, reuse_compile: bool = False) -> list[Path]:
+def build_packages(target: str, version: str, *, reuse_compile: bool = False,
+                   compile_version: str | None = None) -> list[Path]:
     identifier(version)
+    source_version = compile_version if reuse_compile and compile_version is not None else version
+    identifier(source_version)
     components = expand(target)
     if not reuse_compile:
         compile_target(target, version)
@@ -377,11 +380,12 @@ def build_packages(target: str, version: str, *, reuse_compile: bool = False) ->
     export_repository(packages, DIST / "repository")
     built_at_ns = time.time_ns()
     for component, package in zip(components, packages):
-        write_manifest(component, version, [package], built_at_ns=built_at_ns)
-    write_manifest(target, version, packages, built_at_ns=built_at_ns)
+        write_manifest(component, version, [package], built_at_ns=built_at_ns, compile_version=source_version)
+    write_manifest(target, version, packages, built_at_ns=built_at_ns, compile_version=source_version)
     if target == "all":
         for group in ("bin", "plugins", "skills"):
-            write_manifest(group, version, [by_component[item] for item in expand(group)], built_at_ns=built_at_ns)
+            write_manifest(group, version, [by_component[item] for item in expand(group)],
+                           built_at_ns=built_at_ns, compile_version=source_version)
     return packages
 
 
@@ -449,6 +453,8 @@ def main(arguments: list[str]) -> int:
             command.add_argument("--repository", type=Path, required=True)
         else:
             command.add_argument("--version", help="Explicit version; build can reuse latest matching compile, otherwise AIW_VERSION or UTC snapshot")
+            if action == "build":
+                command.add_argument("--compile-version", help="Reuse validated output at this compile version; --version selects package identity")
     for action in ("latest", "latest-compile"):
         command = actions.add_parser(action, help="Print the latest build/compile version, optionally for a target", allow_abbrev=False)
         command.add_argument("target", nargs="?", choices=choices)
@@ -482,12 +488,21 @@ def main(arguments: list[str]) -> int:
             print(f"Version: {version}", flush=True)
             compile_target(target, version)
         elif args.action == "build":
-            record = latest_compile(target, os.environ.get("AIW_VERSION", "").strip() or None) if args.version is None else None
-            version = record["version"] if record is not None else build_version(args.version)
+            configured_version = os.environ.get("AIW_VERSION", "").strip()
+            if args.compile_version is not None:
+                identifier(args.compile_version)
+                record = latest_compile(target, args.compile_version)
+                if record is None:
+                    raise PackageError(f"No reusable compile for {target} at {args.compile_version}; compile that version first")
+                version = build_version(args.version) if args.version is not None or configured_version else record["version"]
+            else:
+                record = latest_compile(target, configured_version or None) if args.version is None else None
+                version = record["version"] if record is not None else build_version(args.version)
             print(f"Version: {version}", flush=True)
             if record is not None:
-                print("Reusing compiled output", flush=True)
-            build_packages(target, version, reuse_compile=record is not None)
+                print(f"Reusing compiled output: {record['version']}", flush=True)
+            build_packages(target, version, reuse_compile=record is not None,
+                           compile_version=record["version"] if record is not None else None)
         elif args.action in {"install", "export"}:
             manifest = DIST / ".manifests" / (target + ".json")
             if not manifest.is_file():
@@ -515,9 +530,11 @@ def main(arguments: list[str]) -> int:
         return 1
 
 
-def write_manifest(target: str, version: str, packages: list[Path], *, built_at_ns: int | None = None) -> None:
+def write_manifest(target: str, version: str, packages: list[Path], *, built_at_ns: int | None = None,
+                   compile_version: str | None = None) -> None:
     content = dict(version=version, packages=[path.relative_to(DIST).as_posix() for path in packages],
-                   built_at_ns=time.time_ns() if built_at_ns is None else built_at_ns)
+                   built_at_ns=time.time_ns() if built_at_ns is None else built_at_ns,
+                   compile_version=version if compile_version is None else compile_version)
     atomic_bytes(DIST / ".manifests" / (target + ".json"), json.dumps(content, indent=2).encode())
 
 

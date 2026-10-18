@@ -12,7 +12,7 @@ FD-080 定义基础构建和本地安装；FD-083 扩展统一包仓库、集合
 build.py MUST 提供 compile/build/install，target 为组件，不接受 windows/linux target
 或旧顶层动作。无参数 MUST 显示帮助且不安装。
 compile MUST 只写 bin/，Go 组件 MUST 一次生成 Windows/Linux amd64 两套产物。
-build MUST 使用已验证且匹配版本的 compile 结果，或先完成所选组件的 compile，再组装 dist；编译失败 MUST 不进入组装。
+build MUST 使用按显式来源或默认复用规则选择且已验证的 compile 结果，或先完成所选组件的 compile，再组装 dist；编译失败 MUST 不进入组装。
 install MUST 只消费显式发布清单，不隐式编译、组包或下载。
 Go 原始程序 MUST 发布到 dist/bin，plugin/skill 包 MUST 位于 dist/plugins 或
 dist/skills 的版本子目录，其他发布文件 MUST 位于 dist/<category>/<version>。
@@ -85,10 +85,11 @@ MUST fail clearly. Compile-only operations MUST NOT update latest build records.
 
 ### Requirement: Validated compile reuse and confined cleanup
 
-Without --version, build MUST reuse the latest successful compile record whose
+With neither --version nor --compile-version, build MUST reuse the latest successful compile record whose
 expanded components cover the requested target. Nonempty AIW_VERSION MUST constrain
 reuse to that version. If no covering record exists, build MUST compile using the
-existing version fallback. Explicit build --version and publish MUST compile afresh.
+existing version fallback. Explicit build --version without --compile-version, and
+publish, MUST compile afresh.
 Successful compile invocations, including those from build/publish, MUST record
 version, component coverage, completion time and full native artifact SHA-256 inventory
 under bin/.compile.json. Resource-only invocations MAY have an empty native inventory.
@@ -100,12 +101,33 @@ fail clearly, not silently fall back. Source freshness is not implied by binary 
 latest-compile [target] MUST print the latest validated covering compile version;
 latest [target] MUST retain package-build semantics. Build commands assume one writer.
 
+build MUST accept --compile-version to select an exact validated covering compile
+record independently of package identity. --version MUST select the package version;
+if absent, use nonempty AIW_VERSION, then the selected compile version. Explicit
+source selection MUST NOT be constrained by AIW_VERSION. Missing/uncovered/stale
+source output MUST fail before any packaging/staging/manifest writes without
+recompiling or falling back. Repackaging MUST NOT mutate native files or compile records.
+All ZIP names, package metadata, dependencies/members and manifest version fields MUST
+use the package version; native contents and embedded versions MUST retain the compile
+identity. New build manifests MUST also record compile_version for component, target
+and group records. Older manifests remain readable. Historical overwritten outputs
+are not retained. Publish commands MUST NOT accept this source-selection option.
+
 clean MUST delete only checkout bin/ and dist/, including their records and staging
 repository. It MUST preserve external repositories, installed files, source and workflow
 state. Before any recursive deletion it MUST verify both exact resolved targets stay
 inside the checkout and preflight all existing descendants, rejecting links/junctions
 or non-regular files. Missing directories MUST be harmless. Cleanup failures MUST
 report an error without claiming full cleanup; no cross-tree atomicity is promised.
+
+#### Scenario: Snapshot compilation becomes a release package
+
+- WHEN compile aiw at snapshot-X succeeds
+- AND build aiw --compile-version snapshot-X --version 1.0.1 is requested
+- THEN package the unchanged native output and exact dependencies at package version 1.0.1
+- AND record compile_version snapshot-X without changing latest-compile
+- WHEN the selected snapshot output is no longer available
+- THEN fail before packaging without recompilation
 
 #### Scenario: Separate compile and build
 
