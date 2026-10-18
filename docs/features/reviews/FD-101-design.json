@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-101",
+  "source_event": "FD-101-000002-design-requested",
+  "human_report": "FD-101-design.md",
+  "session": "fd101-design-independent",
+  "fd_revision": 2,
+  "recommendation": "ready",
+  "findings": [],
+  "evidence": [
+    "scripts/package_definitions.py: component_dependencies and build_component currently duplicate unconditional runtime dependencies",
+    "build.py: expand and build_packages share component dependency closure and manifest construction",
+    "src/plugins: file and patch import aiw_codec; notify invokes send_teams_msg.py as a subprocess; pkg has no matching use",
+    "Design preserves exact dependencies for real consumers, existing installed state, old packages and installer validation"
+  ],
+  "limitations": [
+    "Static design review only; implementation is not reviewed",
+    "No tests, compilation, build, planning simulation, network, installation or Git writes",
+    "Existing published packages require a separately authorized new-version delivery before installed behavior changes"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-101",
+  "source_event": "FD-101-000002-design-requested",
+  "human_report": "FD-101-design-directory.md",
+  "session": "fd101-design-independent",
+  "fd_revision": 3,
+  "recommendation": "ready",
+  "findings": [],
+  "evidence": [
+    "Go manifest schema supports existing command names, explicit entrypoint and Python startup without new fields",
+    "Build target discovery and package entry inspection already support directory manifests",
+    "Existing AST literal META loader can preserve Python entry metadata in directory records while manifest fields remain authoritative; Work Item 1.1 and Acceptance 2 cover this compatibility requirement",
+    "tree_entries exclusions permit dev shims to be replaced by canonical helper contents at private package destinations",
+    "Manager ownership and obsolete-file cleanup support migration from plugins/aiw-name.py to plugins/aiw-name/ without root runtime ownership changes",
+    "Source development shims retain one maintained helper implementation; installed packages contain private actual implementations",
+    "Legacy runtime target and exact dependency validation remain compatible with unchanged old packages"
+  ],
+  "limitations": [
+    "Static design review only; no implemented changes verified",
+    "No tests, compilation, planning simulation, builds, network, installation, workflow state changes or Git writes",
+    "A separately authorized package delivery is needed before installed behavior changes"
+  ]
+}
