@@ -460,7 +460,7 @@ Install the canonical repository Skill into the current project's managed Skill
 location when needed:
 
 ```text
-aiw skills install issue-management
+aiw pkg skill install issue-management
 ```
 
 Examples:
@@ -494,29 +494,29 @@ worktree. Resolve and commit there, then rerun `local-merge` to deliver.
 
 ## Managed Skills
 
-Use `aiw skills` to list and safely install canonical Portable Skills or
+Use `aiw pkg skill` to list and safely install canonical Portable Skills or
 path-based Skill bundles into the current project's `.agents/skills`
 directory:
 
 ```text
-aiw skills list
-aiw skills install tdd --dry-run
-aiw skills install ./bundle.zip
-aiw skills install tdd
-aiw skills install --all
-aiw skills discover [--json] [--scope user]
-aiw skills adopt [--json] [--scope user]
-aiw skills sync <skill> [--json] [--scope user]
+aiw pkg skill list
+aiw pkg skill install tdd --dry-run
+aiw pkg skill install ./bundle.zip
+aiw pkg skill install tdd
+aiw pkg skill install --all
+aiw pkg skill discover [--json] [--scope user]
+aiw pkg skill adopt [--json] [--scope user]
+aiw pkg skill sync <skill> [--json] [--scope user]
 ```
 
 The installer protects unmanaged same-name directories and records verified
 AIW-managed copies in `.agents/skills/.aiw-skills.json`. Path-based installs
 use the same managed pipeline as canonical Skill installs. Run
-`aiw skills --help` for constraints and JSON automation options.
+`aiw pkg skill --help` for constraints and JSON automation options.
 
-Use `aiw skills discover` to inspect installed and unmanaged Skills,
-`aiw skills adopt` to record valid existing directories as managed, and
-`aiw skills sync <skill>` to republish an already managed Skill. The default
+Use `aiw pkg skill discover` to inspect installed and unmanaged Skills,
+`aiw pkg skill adopt` to record valid existing directories as managed, and
+`aiw pkg skill sync <skill>` to republish an already managed Skill. The default
 scope is the current project; use `--scope user` for the shared
 `~/.agents/skills` catalog. Project and user scopes keep independent
 `.aiw-skills.json` manifests. `--json` returns one machine-readable result,
@@ -525,13 +525,13 @@ and `--dry-run` previews installation without writing files.
 The installer validates frontmatter and copyable filesystem entries, protects
 unmanaged same-name directories, stages and verifies content, and records
 ownership in `.aiw-skills.json`. Path-based installs use the same managed
-pipeline as canonical Skill installs. Run `aiw skills --help` for complete
+pipeline as canonical Skill installs. Run `aiw pkg skill --help` for complete
 constraints and JSON automation options.
 
 Canonical Skill packages are maintained in the `src/skills/`
 directory. Release layouts keep `skills/` with the executable. Repository sources
 live under `src/`, with reusable implementation packages under `src/internal/`.
-`aiw-install-skill` is deprecated; use `aiw skills install` for both canonical
+`aiw-install-skill` is deprecated; use `aiw pkg skill install` for both canonical
 names and local bundle sources.
 
 When an unknown subcommand is invoked, `aiw` searches for an executable named `aiw-<plugin-name>` and executes it.
@@ -1118,7 +1118,7 @@ aiw --help
 aiw help git
 aiw session --help
 aiw github --help
-aiw skills --help
+aiw pkg skill --help
 ```
 
 For full `aiw cxs` usage, see `docs/usage/aiw-cxs.md`.

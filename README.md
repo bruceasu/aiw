@@ -66,9 +66,9 @@ Linux / macOS 可将输出名改为 `../aiw`，使用 `./aiw` 调用。将可执
 
 ```powershell
 aiw init
-aiw skills list
-aiw skills install fd-workflow --dry-run
-aiw skills install fd-workflow
+aiw pkg skill list
+aiw pkg skill install fd-workflow --dry-run
+aiw pkg skill install fd-workflow
 ```
 
 Skills 需要支持它们的宿主 Agent 加载。可按需要安装 `issue-management`、`implement` 和 `fd-review`；安装 Skill 本身不会启动工程工作。见 [Skills 指南](src/skills/README.md)。

@@ -1,4 +1,4 @@
-"""Local, single-backup package lifecycle shared by build.py and aiw pkg."""
+"""Package transactions shared by build.py and aiw pkg; no historical rollback."""
 from __future__ import annotations
 
 from contextlib import contextmanager
@@ -14,7 +14,7 @@ import tempfile
 import uuid
 
 from archive import (PackageError, atomic_bytes, digest, identifier, read_package,
-                     relative, reject_link, safe_path)
+                     references, relative, reject_link, safe_path)
 
 
 def default_destination() -> Path:
@@ -50,6 +50,7 @@ class Manager:
         except RuntimeError as error:
             raise PackageError(f"Cannot resolve installation root: {destination}: {error}") from error
         self.state = safe_path(self.root, ".aiw/packages")
+        self._lock_held = False
 
     def target(self, value: str) -> Path:
         if value.casefold() == ".aiw" or value.casefold().startswith(".aiw/"):
@@ -61,6 +62,9 @@ class Manager:
 
     @contextmanager
     def locked(self):
+        if self._lock_held:
+            yield
+            return
         safe_path(self.root, ".aiw/packages")
         self.state.mkdir(parents=True, exist_ok=True)
         lock = safe_path(self.state, ".lock")
@@ -76,8 +80,10 @@ class Manager:
                 reject_link(directory)
                 if directory.is_dir() and (directory / "transaction").exists():
                     raise PackageError(f"Incomplete transaction; preserve and inspect {directory / 'transaction'}")
+            self._lock_held = True
             yield
         finally:
+            self._lock_held = False
             lock.unlink()
 
     def record(self, name: str) -> dict | None:
@@ -85,6 +91,8 @@ class Manager:
         if not path.exists():
             return None
         record = read_json(path)
+        if safe_path(self.package_dir(name), "previous").exists():
+            raise PackageError(f"Legacy backup state for {name}; reinstall into a clean destination; no automatic migration")
         if (record.get("name") != name or record.get("status") not in {"installed", "removed"}
                 or not isinstance(record.get("files"), list)):
             raise PackageError(f"Invalid installation record: {path}")
@@ -92,10 +100,51 @@ class Manager:
             self.target(item["target"])
             if type(item["config"]) is not bool:
                 raise PackageError(f"Invalid configuration record: {path}")
+        references(record.get("dependencies", []))
+        references(record.get("members", []))
+        if record.get("reason", "manual") not in {"manual", "auto"}:
+            raise PackageError(f"Invalid installation reason: {path}")
         return record
+
+    def records(self, *, removed=False):
+        result = {}
+        if self.state.exists():
+            for directory in self.state.iterdir():
+                reject_link(directory)
+                if directory.is_dir():
+                    record = self.record(directory.name)
+                    if record and (removed or record["status"] == "installed"):
+                        result[directory.name] = record
+        return result
+
+    def mark_manual(self, name):
+        with self.locked():
+            record = self.record(name)
+            if not record or record["status"] != "installed":
+                raise PackageError(f"Package not installed: {name}")
+            self.save_record(self.package_dir(name), dict(record, reason="manual"))
+        return f"Marked manual: {name}"
+
+    def orphans(self):
+        records = self.records()
+        needed = set()
+
+        def visit(name):
+            if name in needed or name not in records:
+                return
+            needed.add(name)
+            for ref in records[name].get("dependencies", []) + records[name].get("members", []):
+                visit(ref["name"])
+
+        for name, record in records.items():
+            if record.get("reason", "manual") == "manual":
+                visit(name)
+        return sorted(set(records) - needed)
 
     def owners(self, name: str) -> dict[str, str]:
         result = {}
+        if not self.state.exists():
+            return result
         for directory in self.state.iterdir():
             reject_link(directory)
             if not directory.is_dir() or directory.name == name:
@@ -198,27 +247,6 @@ class Manager:
     def retained_configs(record: dict | None) -> list[dict]:
         return [item for item in (record or {}).get("files", []) if item["config"]]
 
-    def previous_record(self, before: Path, current: dict | None, files: list[dict], name: str) -> dict | None:
-        """Build a legacy recovery record without changing the real transaction baseline."""
-        if current and current["status"] == "installed":
-            return current
-        snapshot = read_json(before / "snapshot.json")
-        original = {item["target"]: item for item in snapshot["files"] if item["exists"]}
-        legacy_files = []
-        for item in files:
-            if not item["config"] and item["target"] in original:
-                legacy_files.append(dict(item, sha256=original[item["target"]]["sha256"]))
-        if not legacy_files:
-            return None  # A new installation or retained config alone is not a previous program.
-        fingerprint = digest(json.dumps(sorted(legacy_files, key=lambda item: item["target"]),
-                                        sort_keys=True, separators=(",", ":")).encode())
-        record = dict(name=name, version="legacy", legacy_snapshot=True, status="installed",
-                      fingerprint=fingerprint, files=legacy_files)
-        # Configuration is preserved in place, not reconstructed from a legacy package ZIP.
-        configs = self.retained_configs(current) + [item for item in files
-                                                   if item["config"] and self.target(item["target"]).is_file()]
-        return self.merged_configs(record, configs, name)
-
     def merged_configs(self, record: dict | None, candidates: list[dict], name: str) -> dict | None:
         configs = {item["target"].casefold(): item for item in self.retained_configs(record)}
         configs.update({item["target"].casefold(): item for item in candidates
@@ -235,28 +263,16 @@ class Manager:
             restored = self.restore(transaction / "before")
             restored = self.merged_configs(restored, configs, directory.name)
             self.save_record(directory, restored)
-            # Roll back a partially completed backup rotation too.
-            previous = directory / "previous"
-            rotation = transaction / "rotation.json"
-            if rotation.exists():
-                old_previous = transaction / "old-previous"
-                had_previous = read_json(rotation)["had_previous"]
-                if old_previous.exists():
-                    # The old backup really moved. Any previous at this point is ours.
-                    if previous.exists():
-                        shutil.rmtree(previous)
-                    os.replace(old_previous, previous)
-                elif not had_previous and previous.exists():
-                    # No old backup existed; remove only a newly created backup.
-                    shutil.rmtree(previous)
-                # had_previous + no old-previous means its rename never succeeded:
-                # leave the original previous untouched.
             write_json(transaction / "failure.json", {"error": str(error), "recovered": True})
             diagnostic = directory / ("failed-" + uuid.uuid4().hex)
             os.replace(transaction, diagnostic)
         except Exception as recovery:
-            raise PackageError(f"Operation failed: {error}; recovery incomplete: {recovery}. Preserve {transaction}") from error
-        raise PackageError(f"Operation failed and managed files restored: {error}. Diagnostics: {diagnostic}") from error
+            raise PackageError(f"Operation failed: {error}; recovery incomplete: {recovery}. Preserve {transaction}. "
+                               "Exit related programs before recovery; do not start another installation while recovery is incomplete. "
+                               f'Independent main-program entry: python "{self.root / "plugins/aiw-pkg/aiw-pkg.py"}" install <ZIP> --dest "{self.root}"') from error
+        raise PackageError(f"Operation failed and managed files restored: {error}. Diagnostics: {diagnostic}. "
+                           "If a file is in use, exit related programs. Retry main-program installation with "
+                           f'python "{self.root / "plugins/aiw-pkg/aiw-pkg.py"}" install <ZIP> --dest "{self.root}"') from error
 
     def hook(self, name: str, scripts: dict[str, bytes], stage: Path, info: dict,
              action: str, current: dict | None, transaction: Path) -> None:
@@ -275,14 +291,14 @@ class Manager:
         if result.returncode:
             raise PackageError(f"{name} exited {result.returncode}; see {transaction / (name + '.log')}")
 
-    def install(self, package: Path) -> str:
-        info, payload, scripts, fingerprint = read_package(package)
+    def install(self, package: Path, *, prepared=None, reason="manual", members=None) -> str:
+        info, payload, scripts, fingerprint = prepared or read_package(package)
         system = host_platform()
         restricted = {item["platform"] for item in info["files"] if item["platform"] != "all"}
         if restricted and system not in restricted:
             raise PackageError(f"Package has no platform payload for {system}")
         files = [dict(item) for item in info["files"] if item["platform"] in {"all", system}]
-        if not files:
+        if not files and info["kind"] != "collection":
             raise PackageError(f"No payload for {system}")
         input_package = package.resolve(strict=True)
         for item in files:
@@ -303,13 +319,16 @@ class Manager:
                 directory.mkdir(exist_ok=True)
                 current = self.record(name)
                 if current and current["status"] == "installed" and current.get("version") == info["version"] and current.get("fingerprint") == fingerprint:
+                    self.save_record(directory, dict(current,
+                        reason="manual" if reason == "manual" or current.get("reason", "manual") == "manual" else "auto",
+                        dependencies=info.get("dependencies", []),
+                        members=info.get("members", []) if members is None else members))
                     return f"Already installed: {name} {info['version']}"
                 self.preflight(name, files, current, adopt_existing=True)
                 transaction = directory / "transaction"
                 before_files = (current or {}).get("files", []) + files
                 try:
                     self.snapshot(transaction / "before", current, before_files)
-                    previous_record = self.previous_record(transaction / "before", current, files, name)
                 except Exception:
                     if transaction.exists():
                         shutil.rmtree(transaction)
@@ -335,23 +354,13 @@ class Manager:
                             raise PackageError(f"Managed file missing after hook: {path}")
                         item["sha256"] = digest(path.read_bytes())
                     record = dict(name=name, version=info["version"], status="installed",
-                                  fingerprint=fingerprint, files=files)
+                                  fingerprint=fingerprint, files=files, kind=info["kind"],
+                                  dependencies=info.get("dependencies", []),
+                                  members=info.get("members", []) if members is None else members,
+                                  reason="manual" if reason == "manual" or (current and current.get("reason", "manual") == "manual") else "auto")
                     record = self.merged_configs(record, self.retained_configs(current), name)
-                    atomic_bytes(safe_path(directory, "current.zip"), package.read_bytes())
+                    safe_path(directory, "current.zip").unlink(missing_ok=True)
                     self.save_record(directory, record)
-                    # Record whether the existing backup must survive a failed rename.
-                    previous = safe_path(directory, "previous")
-                    write_json(transaction / "rotation.json", {"had_previous": previous.exists()})
-                    if previous.exists():
-                        reject_link(previous)
-                        os.replace(previous, transaction / "old-previous")
-                    if previous_record:
-                        shutil.copytree(transaction / "before", previous)
-                        # Preserve the actual before record for failure rollback. Only the
-                        # successfully published backup receives a synthetic legacy record.
-                        backup = read_json(previous / "snapshot.json")
-                        backup["record"] = previous_record
-                        write_json(previous / "snapshot.json", backup)
                     write_json(transaction / "complete.json", {"installed": fingerprint})
                 except Exception as error:
                     self.failed(directory, transaction, error, files)
@@ -361,7 +370,7 @@ class Manager:
                     raise PackageError(f"Installed {name}, but transaction cleanup failed: {transaction}: {error}") from error
                 return f"Installed: {name} {info['version']} in {self.root}"
 
-    def remove(self, name: str, *, purge: bool = False) -> str:
+    def remove(self, name: str, *, purge: bool = False, removing=()) -> str:
         identifier(name)
         host_platform()
         with self.locked():
@@ -369,14 +378,13 @@ class Manager:
             current = self.record(name)
             if not current:
                 raise PackageError(f"Package is not recorded: {name}")
-            previous = safe_path(directory, "previous")
-            backup = read_json(previous / "snapshot.json") if previous.exists() and not purge else None
-            restored = backup["record"] if backup else None
-            if restored:
-                self.preflight(name, restored["files"], current)
-            else:
-                self.unchanged(current)
-            affected = current["files"] + (restored or {}).get("files", [])
+            users = [other for other, record in self.records().items() if other != name and other not in removing
+                     and any(ref["name"] == name for ref in record.get("dependencies", []) + record.get("members", []))]
+            if users:
+                raise PackageError(f"Package is required by: {', '.join(users)}")
+            restored = None
+            self.unchanged(current)
+            affected = current["files"]
             # Purge includes configurations in rollback snapshots, but no other action overwrites them.
             snapshot_files = [dict(item, config=False) if purge else item for item in affected]
             transaction = directory / "transaction"
@@ -387,24 +395,15 @@ class Manager:
                     shutil.rmtree(transaction)
                 raise
             try:
-                desired = {item["target"].casefold() for item in (restored or {}).get("files", [])}
                 for item in current["files"]:
-                    if purge or (not item["config"] and item["target"].casefold() not in desired):
+                    if purge or not item["config"]:
                         self.target(item["target"]).unlink(missing_ok=True)
-                if backup:
-                    self.restore(previous)
-                else:
-                    safe_path(directory, "current.zip").unlink(missing_ok=True)
+                safe_path(directory, "current.zip").unlink(missing_ok=True)
                 if not purge:
                     restored = self.merged_configs(restored, self.retained_configs(current), name)
                 self.save_record(directory, restored)
-                if previous.exists():
-                    os.replace(previous, transaction / "old-previous")
                 write_json(transaction / "complete.json", {"removed": name, "purge": purge})
             except Exception as error:
-                # remove never consumes a backup until file restoration and record save succeed.
-                if (transaction / "old-previous").exists() and not previous.exists():
-                    os.replace(transaction / "old-previous", previous)
                 self.failed(directory, transaction, error, [] if purge else self.retained_configs(current))
             try:
                 shutil.rmtree(transaction)
@@ -413,5 +412,4 @@ class Manager:
                     shutil.rmtree(directory)
             except OSError as error:
                 raise PackageError(f"Files removed; state cleanup incomplete at {directory}: {error}") from error
-            return f"{'Purged' if purge else 'Removed'}: {name}" + (
-                f"; restored {restored['version']}" if restored and restored["status"] == "installed" else "")
+            return f"{'Purged' if purge else 'Removed'}: {name}"

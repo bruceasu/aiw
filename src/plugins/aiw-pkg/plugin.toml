@@ -2,23 +2,21 @@ schema = 1
 
 [[plugins]]
 name = "pkg"
-description = "Install local AIW packages, restore the previous version, or purge a package."
+description = "Query repositories, install and update packages, publish releases, and manage Skills."
 entrypoint = "aiw-pkg.py"
 startup = "python"
 help = """
-Usage: aiw pkg install [--dest DIR] FILE.zip
-       aiw pkg remove  [--dest DIR] NAME
-       aiw pkg purge   [--dest DIR] NAME
-       aiw pkg pack WORKSPACE --output NAME-VERSION.zip
-
-Python 3.11+. Windows/Linux amd64. No downloads or implicit builds.
-install accepts a local package file. Package-name repository lookup is reserved.
-remove restores and consumes the one previous-version backup, keeping config.
-Without a backup, remove uninstalls managed program files and keeps config.
-purge removes managed files, registered configuration and the backup.
-install automatically backs up and adopts unowned ordinary files declared by the package.
-Conflicting ownership and links inside the resolved installation root remain rejected.
-Destination aliases are resolved to a physical root before locating state and locks.
-Default destination: AIW_INSTALL_DIR, otherwise C:\\green\\aiw on Windows,
-or ~/apps/aiw on Linux. State is stored in DEST/.aiw/packages/.
+Usage: aiw pkg <command> --help
+Commands: list, search, info, show, entries, install, update, remove, purge,
+          mark manual, autoremove, index, publish, unpublish, pack, skill.
+Skill operations: aiw pkg skill list|discover|adopt|install|sync.
+Repository: [repo].url for reads; publish_url for writes (defaults to url).
+Adapters: local directory, HTTP(S) reads, S3, SSH. No fallback or dependency downloads.
+Install accepts a local ZIP or package name; --version selects an exact version.
+update defaults to installed packages; --core/--all also fill release collections.
+remove uninstalls and retains configuration; purge also removes registered config.
+No historical backups or rollback. Transactions retain only failure recovery data.
+Windows locked files: exit related programs; install the main program through the
+independent Python entry point documented in docs/usage/aiw-pkg.md.
+State: DEST/.aiw/packages/. --dest overrides AIW_INSTALL_DIR and platform default.
 """

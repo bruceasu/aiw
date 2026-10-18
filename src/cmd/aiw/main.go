@@ -58,6 +58,15 @@ func main() {
 		} else if code != 0 {
 			os.Exit(code)
 		}
+	case "update":
+		code, pluginErr := dispatchPlugin("pkg", append([]string{"update"}, os.Args[2:]...))
+		if pluginErr != nil {
+			err = pluginErr
+		} else if code != 0 {
+			os.Exit(code)
+		}
+	case "plugin", "skills":
+		err = fmt.Errorf("command %s was removed; use aiw pkg entries or aiw pkg skill", os.Args[1])
 	default:
 		// try plugin fallback: aiw-<subcommand>
 		pluginName := os.Args[1]

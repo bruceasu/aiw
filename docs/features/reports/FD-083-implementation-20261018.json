@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-083",
+  "source_event": "FD-083-000004-design-ready",
+  "human_report": "FD-083-implementation-20261018.md",
+  "data": {
+    "worker_session": "fd083-worker-20261018-4c82ef",
+    "implementation_revision": "9e38f3b",
+    "comparison_base": "4e5f2ff",
+    "result": "implementation-ready",
+    "work_items": ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9"],
+    "compile_result": "passed: 58 Python files syntax compiled, then offline scripts/compile.py built two Go CLI packages to NUL; repeated only after the recovery-message source change and passed",
+    "static_evidence": "One batch of git diff stat/numstat/check and relevant source/contract excerpts; no whitespace errors reported",
+    "commands_run": ["aiw issue approve", "aiw fd emit design-ready", "aiw git wt add FD-083", "aiw fd claim", "focused git commits", "git diff --stat/--numstat/--check 4e5f2ff", "python -: compile(bytes,path,'exec'), then python scripts/compile.py with network downloads disabled"],
+    "checks_not_run": ["tests", "runtime acceptance", "final build", "packaging", "installation", "remote adapters", "publish", "formatter", "lint", "vet", "codex-auto-review"],
+    "residual_risks": ["Remote adapters, Windows locks and package artifacts are statically reviewed only", "Exact dependency conflicts reject the operation before changes", "Existing tests may still reference removed entrypoints or historical rollback semantics", "No collection-wide rollback or recovery of arbitrary hook external effects"],
+    "next_action": "Independent Reviewer, then automatic local delivery and archive only after a current pass"
+  }
+}

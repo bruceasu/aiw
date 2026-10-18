@@ -1,0 +1,3 @@
+[packages]
+core = ["aiw-git", "aiw-pkg", "aiw-req", "aiw-fd", "aiw-file", "aiw-setup-project", "aiw-patch", "aiw-notify"]
+extension = ["aiw-ai", "aiw-ai-code-index", "aiw-ai-gen-index", "aiw-bcc", "aiw-cxs", "aiw-cz", "aiw-exec-java", "aiw-file-convert", "aiw-github", "aiw-hello", "aiw-packer", "aiw-say", "aiw-tcc", "aiw-vc"]

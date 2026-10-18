@@ -1,6 +1,6 @@
-# aiw skills
+# aiw pkg skill
 
-Use `aiw skills` to list, discover, adopt, and safely install canonical AIW Skills.
+Use `aiw pkg skill` to list, discover, adopt, and safely install canonical AIW Skills.
 
 The installer supports individual Skills and `--all` installation. It uses the standard
 `.agents/skills` target at project scope by default and supports the shared
@@ -10,30 +10,30 @@ adoption, and discovery are supported for both scopes.
 ## Quick start
 
 ```text
-aiw skills list
-aiw skills discover
-aiw skills install tdd --dry-run
-aiw skills install tdd
-aiw skills install tdd --scope user
+aiw pkg skill list
+aiw pkg skill discover
+aiw pkg skill install tdd --dry-run
+aiw pkg skill install tdd
+aiw pkg skill install tdd --scope user
 ```
 
 查看完整命令帮助：
 
 ```text
-aiw skills --help
-aiw skills list --help
-aiw skills discover --help
-aiw skills install --help
+aiw pkg skill --help
+aiw pkg skill list --help
+aiw pkg skill discover --help
+aiw pkg skill install --help
 ```
 
 Use `--json` after the subcommand when a script needs one machine-readable
-result, for example `aiw skills list --json`.
+result, for example `aiw pkg skill list --json`.
 
 ## List Skills
 
 ```text
-aiw skills list
-aiw skills list --json
+aiw pkg skill list
+aiw pkg skill list --json
 ```
 
 `list` reads canonical Skill metadata and does not change the project. Invalid
@@ -42,8 +42,8 @@ candidates are reported but are not listed as installable.
 ## Discover installed Skills
 
 ```text
-aiw skills discover
-aiw skills discover --json
+aiw pkg skill discover
+aiw pkg skill discover --json
 ```
 
 `discover` inspects the project `.agents/skills` catalog by default. Use
@@ -52,8 +52,8 @@ aiw skills discover --json
 ## Adopt existing Skills
 
 ```text
-aiw skills adopt
-aiw skills adopt --scope user
+aiw pkg skill adopt
+aiw pkg skill adopt --scope user
 ```
 
 `adopt` writes a managed manifest for valid existing Skill directories under
@@ -63,9 +63,9 @@ that already exist but are currently unmanaged.
 ## Preview an installation
 
 ```text
-aiw skills install tdd --dry-run
-aiw skills install tdd --scope user --dry-run
-aiw skills install --all --dry-run
+aiw pkg skill install tdd --dry-run
+aiw pkg skill install tdd --scope user --dry-run
+aiw pkg skill install --all --dry-run
 ```
 
 The preview validates the Skill and shows the source and destination. It does
@@ -74,9 +74,9 @@ not create the target root, staging content, or a managed manifest.
 ## Install one Skill
 
 ```text
-aiw skills install tdd
-aiw skills install tdd --scope user
-aiw skills install --all
+aiw pkg skill install tdd
+aiw pkg skill install tdd --scope user
+aiw pkg skill install --all
 ```
 
 Use `--all` to install every valid Skill from the canonical catalog. It can

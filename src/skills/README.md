@@ -90,7 +90,7 @@
 
 ### 顶层 Markdown 是什么
 
-| 文件 | 角色 | `aiw skills install` 的处理 |
+| 文件 | 角色 | `aiw pkg skill install` 的处理 |
 | --- | --- | --- |
 | `README.md` | 人类目录导航与用法 | 不作为 Skill 安装，不默认复制到项目技能根目录。 |
 | `reviewed-skill-contract.md` | 技能输入、输出、授权与证据通用合同 | 入口声明白名单路径时，复制到该技能的 `skills/`。 |
@@ -113,7 +113,7 @@
 例如仅从仓库删除技能后再复制，发行目录仍可能保留旧条目；本页说明这个限制，不提供
 未经核对的自动删除操作。`build.py all` 还会执行其它构建／安装动作，不能用它替代文档检查。
 
-### `aiw skills install`：安装到 Agent 技能目录
+### `aiw pkg skill install`：安装到 Agent 技能目录
 
 canonical source 默认是插件发行树旁的 `skills` 目录；在仓库插件源码布局下对应
 `src/skills`。可通过 `AIW_SKILLS_SOURCE_ROOT` 覆盖。当前目录不会自动决定发行版 CLI
@@ -137,13 +137,13 @@ README 被携带不等于被宿主自动加载。Agent 以 `SKILL.md` 为入口�
 以下为实际 CLI 用法，供需要安装时选择；本次文档更新不会执行这些操作：
 
 ```powershell
-aiw skills list
-aiw skills install fd-workflow --dry-run
-aiw skills install fd-workflow
-aiw skills install --all --dry-run
-aiw skills discover
-aiw skills sync fd-workflow
-aiw skills install research --scope user
+aiw pkg skill list
+aiw pkg skill install fd-workflow --dry-run
+aiw pkg skill install fd-workflow
+aiw pkg skill install --all --dry-run
+aiw pkg skill discover
+aiw pkg skill sync fd-workflow
+aiw pkg skill install research --scope user
 ```
 
 ## 调用与维护
@@ -157,6 +157,6 @@ aiw skills install research --scope user
 安装副本由现有机制分发。用户级旧副本和已退役技能残留不属于当前 canonical 清单。
 
 源码核对位置：仓库 `build.py` 的 `copy_tree`／`install_skills`，以及
-`src/plugins/aiw-skills/aiw-skills.py` 的 `source_root`、`discover_skills`、
+`src/plugins/aiw-pkg/skill_management.py` 的 `source_root`、`discover_skills`、
 `shared_skill_references`、`materialize_skill_source`。这些处理方式由静态阅读确认，
 不表示本页示例中的构建、安装或测试已经执行。

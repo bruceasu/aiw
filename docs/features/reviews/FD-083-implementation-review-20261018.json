@@ -1,0 +1,38 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-083",
+  "source_event": "FD-083-000005-implementation-ready",
+  "human_report": "FD-083-implementation-review-20261018.md",
+  "data": {
+    "reviewer_session": "fd083-reviewer-20261018-92b7ad",
+    "comparison_base": "4e5f2ff",
+    "reviewed_revision": "49a544d",
+    "implementation_revision": "9e38f3b",
+    "result": "verification-passed",
+    "method": "independent static review; no runtime acceptance claimed",
+    "blocking_findings": [],
+    "findings": [
+      {
+        "id": "N1",
+        "severity": "non-blocking",
+        "path": "docs/features/FD-083_PACKAGE_REPOSITORY.md:33",
+        "description": "FD wording mentions read override only; code and usage explicitly override both endpoints. PM clarified the engineering decision during review; Issue does not constrain this new flag precedence.",
+        "recommendation": "Resolved by PM-directed FD wording clarification in the same evidence change, before the passed event; no product change."
+      },
+      {
+        "id": "N2",
+        "severity": "non-blocking",
+        "path": ".agents/agents/work-management.md:8",
+        "description": "One legacy auxiliary document still mentions aiw skills install; canonical contract and changed managed Skill copies use aiw pkg skill install.",
+        "recommendation": "Update during nearby documentation maintenance."
+      }
+    ],
+    "accepted_existing_risks": ["Issue installation-boundary risk 6 explicitly retains locked-file recovery algorithm risk; incomplete recovery reports state/material path and manual action"],
+    "reviewed_areas": ["v1/v2 archive validation", "repository reads and serialized immutable publication", "S3 uncertain index outcomes", "SSH shared remote writer", "Operation complete/final graph and update scope", "Manager transactions/config/removal/manual-auto", "Go CLI and entries metadata", "Skill migration paths", "all independent packaging wrappers and release metadata", "build/install/export contracts", "Issue/FD/spec/Worker evidence consistency"],
+    "commands_run": ["aiw fd --help", "aiw fd claim --help", "aiw fd emit --help", "aiw fd claim FD-083 FD-083-000005-implementation-ready --session fd083-reviewer-20261018-92b7ad", "targeted PowerShell file reads, rg and git diff", "one final static report diff/scope inspection", "aiw fd emit verification-passed with reviewer and source event", "scoped git add and commit of review evidence/FD/index"],
+    "checks_not_run": ["tests", "compile", "build", "packaging", "installation", "runtime acceptance", "network", "remote adapters", "formatter", "lint", "vet", "codex-auto-review"],
+    "residual_risks": ["Remote tools and failure behavior untested", "Windows locks and self-update untested", "Release artifacts not built", "Historical tests may refer to removed entrypoints or old rollback semantics"],
+    "next_action": "PM delivery gates and authorized local squash delivery/archive"
+  }
+}

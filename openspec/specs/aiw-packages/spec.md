@@ -2,8 +2,8 @@
 
 ## Purpose
 
-FD-080 定义源码构建阶段及不依赖 Debian 工具的本地 ZIP 安装生命周期。
-远程仓库、发布、索引及现有 skills/plugin 管理命令整合不属于本能力。
+FD-080 定义基础构建和本地安装；FD-083 扩展统一包仓库、集合、更新和 Skill 管理，
+只支持干净安装，不转换旧聚合包状态。
 
 ## Requirements
 
@@ -15,13 +15,13 @@ compile MUST 只写 bin/，Go 组件 MUST 一次生成 Windows/Linux amd64 两�
 build MUST 先完成所选组件的 compile，再组装 dist；编译失败 MUST 不进入组装。
 install MUST 只消费显式发布清单，不隐式编译、组包或下载。
 Go 原始程序 MUST 发布到 dist/bin，plugin/skill 包 MUST 位于 dist/plugins 或
-dist/skills 的版本子目录，其他发布文件 MUST 位于 dist/mist。
+dist/skills 的版本子目录，其他发布文件 MUST 位于 dist/<category>/<version>。
 一个 Go 插件包 MUST 包含双平台产物，安装 MUST 自动选当前平台。
 
 ### Requirement: 可移植包契约
 
 包 MUST 命名为 name-version.zip，内含 info、data.zip 及可选 Python preinst/postinst。
-info MUST 为 format_version=1 的 UTF-8 TOML，声明文件来源、目标、平台、SHA-256、
+info MUST 为 format_version=1 或 2 的 UTF-8 TOML，声明文件来源、目标、平台、SHA-256、
 配置及可执行标记。解包 MUST 在操作专有临时目录完成；载荷与声明 MUST 完全对应。
 安装前 MUST 完成完整性、平台、路径、类型及目标冲突预检；MUST 拒绝链接、
 越界路径、重复目标、特殊文件以及覆盖 .aiw 状态区。
@@ -29,30 +29,28 @@ info MUST 为 format_version=1 的 UTF-8 TOML，声明文件来源、目标、�
 安装选中的任一目标与本地输入 ZIP 真实路径相同时 MUST 在写状态或执行脚本前拒绝。
 未来仓库下载的临时包 MUST 用后清理；正式备份及失败恢复材料不属下载缓存。
 
-### Requirement: 共同安装状态与单备份
+### Requirement: 共同安装状态与本次事务恢复
 
 aiw pkg install/remove/purge 与 build.py install MUST 使用相同本地引擎。
 --dest MUST 优先于 AIW_INSTALL_DIR 和平台默认值（Windows C:\green\aiw；Linux ~/apps/aiw）。
 状态 MUST 位于 DEST/.aiw/packages/，不同根独立；MUST 阻止互相冲突的写入及未完成恢复后的新修改。
 普通 install MUST 在备份后自动接管当前包声明的无归属普通文件；
 MUST 保留既有配置、无关文件，并拒绝其他包归属冲突。
-没有已安装记录时，成功接管 MUST 生成可恢复旧文件的唯一 legacy 备份，
-不能假定旧版 ZIP 存在或篡改事务 before 的真实记录。
-remove 恢复 MUST 不自动覆盖新出现的无归属冲突文件。
+没有已安装记录时，接管 MUST 保留本次事务真实 before 快照用于失败恢复，成功后清理。
+MUST NOT 将旧聚合包文件自动转移归属；旧安装用户 MUST 获得新目录重装说明。
 用户指定的安装根 MUST 先解析为真实绝对路径，允许根及其祖先的链接别名；
 根内部的路径及状态目录 MUST 继续拒绝链接/重解析点。
-每包 MUST 只保留一个上一版备份，升级成功才替换；失败 MUST 保留原备份。
-同版本同内容 MUST 跳过，不执行脚本或修改文件/记录/备份；同版本不同内容 MUST 正常重装。
+成功安装 MUST NOT 保留上一版备份或提供 rollback；旧 previous 状态 MUST 要求干净重装。
+同版本同内容 MUST 跳过载荷和脚本；显式安装仍 MUST 将原因提升为 manual。
+同版本不同内容的本地安装 MUST 正常重装，仓库发布另遵守不可覆盖规则。
 内容指纹 MUST 忽略 ZIP 容器时间戳，覆盖实际元信息、载荷及脚本。
 
-#### Scenario: 消费唯一备份
+#### Scenario: 卸载而不回退
 
 - WHEN v1 → v2 → v3 均安装成功
-- THEN 当前为 v3，唯一备份为 v2
+- THEN 当前为 v3，没有历史备份
 - WHEN 执行 remove
-- THEN 恢复 v2 并删除备份，保留配置，不备份 v3
-- WHEN 再次 remove
-- THEN 卸载 v2，保留配置及其登记供 purge 使用
+- THEN 卸载程序文件，保留配置及其登记供 purge 使用，不恢复 v2
 
 ### Requirement: 失败恢复与清理
 
@@ -61,6 +59,66 @@ Python 脚本 MUST 显式调用解释器并记录退出码/日志，不依赖 Ba
 首次安装失败 MUST 撤销新增受管非配置文件，不产生成功记录。
 恢复失败 MUST 保留现场并报告未完成，不宣称已恢复或安装成功。
 脚本外部副作用及断电/强杀 MUST 不被宣称可原子回滚。
-purge MUST 删除受管文件、登记配置和备份，MUST 保留无归属用户文件。
+purge MUST 删除本包受管文件、登记配置和相关状态，MUST 保留无归属用户文件及集合成员。
 临时清理失败 MUST 报告实际状态，不把已完成安装伪称为未安装。
 聚合安装 MUST 逐包处理并在失败时停止，不承诺整批原子性。
+
+### Requirement: 集合、依赖和安装原因
+
+v2 MUST 声明精确 name/version 的 dependencies/members；只有 collection 可含 members，
+collection MUST 无载荷和 hook。集合成员 MUST 不重复携带于集合包。
+安装 MUST 在文件变更前检查全部包身份、路径、平台、缺失、循环、版本与目标冲突，
+并校验最终状态中未更新包的反向依赖。不满足精确版本 MUST 失败，不隐式降级。
+安装状态 MUST 记录真实成员、运行依赖及 manual/auto，已有 manual MUST NOT 降级。
+集合 remove MUST 保留成员并显示孤立包及显式清理/保留提示。
+autoremove MUST 只卸载从所有 manual 根不可达的 auto 包且保留配置；dry-run MUST 不写状态。
+mark manual MUST 不重新部署或下载包。保留包仍依赖的包 MUST 不被单独移除。
+
+### Requirement: 更新范围与命令整合
+
+aiw update MUST 与 aiw pkg update 一致。默认 MUST 只更新已安装内容，MUST NOT 补装集合新增成员，
+MUST NOT 记录未安装成员；必需运行依赖可补装且 MUST 展示。--core/--all MUST 互斥，
+MUST 更新并补装固定发行集合，MUST NOT 卸载范围外包或遍历第三方仓库作为发行清单。
+所有 dry-run MUST 不写安装文件/状态或执行 hook。
+旧 plugin/skills 命令 MUST 删除；pkg skill MUST 保留原作用域、受管记录及本地修改保护。
+pkg entries MUST 保留可用插件入口元信息，与仓库列表和已安装包列表区分。
+
+### Requirement: 统一仓库与不可覆盖发布
+
+local、HTTP(S)、S3、SSH MUST 通过统一 Repo 接口自动按地址选择，无类型探测或失败回退。
+盘符和当前平台本地路径 MUST 不被误判为网络协议；未知 scheme MUST 明确失败。
+读取 MUST 用 url，写入 MUST 优先 publish_url；相对配置路径 MUST 相对配置文件目录。
+规范布局 MUST 为 name/version/name-version.zip 和根 index.json（schema=1、packages 数组）。
+索引 MUST 包含 name/version/kind/path/size/sha256/fingerprint/dependencies/members/platforms。
+下载 MUST 验证大小、ZIP SHA-256 及包内身份，并清理操作临时文件。
+latest MUST 使用 SemVer，稳定版高于同版本预发布；dev 最低，非 SemVer 仅显式指定，歧义拒绝。
+发布 MUST 串行协调索引写入；同身份同规范化 fingerprint MUST 成功且不修改已有包/索引，
+不同内容 MUST 拒绝并要求新版本，MUST NOT 提供 force。指纹忽略 ZIP 容器时间戳，包含元信息、载荷及 hook。
+包 MUST 先校验并上传，再发布索引；失败 MUST 不让半成品出现在索引中。
+删除 MUST 先更新索引再清理对象；不确定结果、恢复或清理失败 MUST 如实报告。
+S3 MUST 复用已有 aws 工具和条件锁，不自动接管锁；SSH MUST 复用系统 ssh/scp 与远端共同 filesystem 写入脚本。
+凭据 MUST NOT 写入包或索引；哈希校验 MUST NOT 被描述为发布者认证。
+
+### Requirement: HTTP POST 写入协议（仅规范，未实现）
+
+本期 HTTP adapter MUST 仅读取；写入地址为 HTTP 时 MUST 不发送写请求并明确不支持。
+未来管理接口为 `POST /api/packages`，Content-Type 为 application/json，认证通过
+`Authorization: Bearer <token>` 传递，由服务端验证；MUST NOT 将 token 写入索引。
+publish 请求字段为 operation="publish"、name、version、sha256、fingerprint、archive_base64；
+archive_base64 为完整 ZIP，name/version MUST 与包内身份一致，摘要 MUST 验证。
+unpublish 请求字段为 operation="unpublish"、name、version；MUST NOT 使用 GET 改写仓库。
+成功响应为 JSON：status（published/already_exists/unpublished）、name、version。
+首次发布返回 201；同内容幂等发布及删除成功返回 200；错误 JSON 含 error/code/message。
+400 为非法请求/包，401 为缺少或无效认证，403 为无写权限，404 为包不存在，409 为不同内容同身份或写锁冲突，
+413 为载荷过大，500 为存储/索引失败。并发写入及不可覆盖规则与其他 adapter 相同。
+此规范 MUST NOT 被报告为已交付 HTTP 客户端、服务端、认证系统或部署。
+
+### Requirement: 独立构建与更新入口
+
+每个插件和 Skill MUST 有独立 scripts 处理入口，共享同一包定义与固定 core/extension 清单。
+构建集合 MUST 输出独立成员及集合包，显式本地仓库产物 MUST 可直接读取；普通 build/install MUST 离线。
+agent-templates MUST 随主程序；共享根 Markdown MUST 唯一归属且可按独立 Skill 依赖安装。
+usage MUST 归所属程序/插件，MUST NOT 整体安装仓库开发文档。
+Windows 文件占用失败 MUST 显示文件、退出重试和独立 Python 更新主程序的入口。
+MUST NOT 自动终止程序、启动后台更新器、强制覆盖或安排重启替换。
+pkg 自更新 MUST 在首次修改前准备所需模块、配置、包与恢复数据；官方 pkg MUST 不带 hook。

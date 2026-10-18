@@ -20,6 +20,14 @@
 # TypeScript plugins require Node.js 22.12.0 or newer.
 # node = "C:/tools/node-v22.12.0/node.exe"
 
+[repo]
+# Local paths are relative to this configuration file. No automatic network probes.
+# url = "./packages"
+# url = "https://packages.example.com/aiw"
+# url = "s3://bucket/prefix"
+# Optional separate write endpoint; omitted means use url.
+# publish_url = "ssh://repo-host/srv/packages/aiw"
+
 # Global UI language. CZ resolves: --lang, [i18n].default_language, then
 # terminal locale env in this order: LC_ALL, LANG.
 # Terminal values normalize to a base language by trimming, lowercasing,

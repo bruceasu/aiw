@@ -495,7 +495,7 @@ def load_skill_statuses(root: Path) -> Tuple[List[Dict[str, object]], List[str]]
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="aiw skills",
+        prog="aiw pkg skill",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=(
             "Manage canonical AIW Skills.\n\n"
@@ -503,10 +503,10 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         epilog=(
             "Quick start:\n"
-            "  aiw skills list\n"
-            "  aiw skills install tdd --dry-run\n"
-            "  aiw skills install tdd\n\n"
-            "Run `aiw skills COMMAND --help` for command details."
+            "  aiw pkg skill list\n"
+            "  aiw pkg skill install tdd --dry-run\n"
+            "  aiw pkg skill install tdd\n\n"
+            "Run `aiw pkg skill COMMAND --help` for command details."
         ),
     )
     commands = parser.add_subparsers(dest="command", required=True)
@@ -521,8 +521,8 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         epilog=(
             "Examples:\n"
-            "  aiw skills list\n"
-            "  aiw skills list --json"
+            "  aiw pkg skill list\n"
+            "  aiw pkg skill list --json"
         ),
     )
     list_command.add_argument(
@@ -542,8 +542,8 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         epilog=(
             "Examples:\n"
-            "  aiw skills discover\n"
-            "  aiw skills discover --json"
+            "  aiw pkg skill discover\n"
+            "  aiw pkg skill discover --json"
         ),
     )
     discover.add_argument(
@@ -560,12 +560,12 @@ def build_parser() -> argparse.ArgumentParser:
         description=(
             "Record existing installed Skills as AIW-managed copies.\n\n"
             "Use this when a same-name Skill already exists under ./.agents/skills "
-            "and you want aiw skills install to treat it as managed."
+            "and you want aiw pkg skill install to treat it as managed."
         ),
         epilog=(
             "Examples:\n"
-            "  aiw skills adopt\n"
-            "  aiw skills adopt --json"
+            "  aiw pkg skill adopt\n"
+            "  aiw pkg skill adopt --json"
         ),
     )
     adopt.add_argument(
@@ -586,9 +586,9 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         epilog=(
             "Examples:\n"
-            "  aiw skills sync tdd\n"
-            "  aiw skills sync ./skills/tdd\n"
-            "  aiw skills sync tdd --json"
+            "  aiw pkg skill sync tdd\n"
+            "  aiw pkg skill sync ./skills/tdd\n"
+            "  aiw pkg skill sync tdd --json"
         ),
     )
     sync.add_argument("source", help="Canonical Skill name or local source path.")
@@ -613,12 +613,12 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         epilog=(
             "Examples:\n"
-            "  aiw skills install tdd --dry-run\n"
-            "  aiw skills install --all --dry-run\n"
-            "  aiw skills install --all\n"
-            "  aiw skills install ./bundle.zip\n"
-            "  aiw skills install ./skills\n"
-            "  aiw skills install tdd --json"
+            "  aiw pkg skill install tdd --dry-run\n"
+            "  aiw pkg skill install --all --dry-run\n"
+            "  aiw pkg skill install --all\n"
+            "  aiw pkg skill install ./bundle.zip\n"
+            "  aiw pkg skill install ./skills\n"
+            "  aiw pkg skill install tdd --json"
         ),
     )
     install.add_argument(

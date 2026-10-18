@@ -2,6 +2,7 @@
 import argparse
 import ast
 import json
+import tomllib
 from pathlib import Path
 
 META = {
@@ -17,7 +18,7 @@ META = {
 
 
 def _plugin_dir() -> Path:
-    return Path(__file__).resolve().parent
+    return Path(__file__).resolve().parent.parent
 
 
 def _load_meta(path: Path) -> dict:
@@ -61,11 +62,19 @@ def list_plugins() -> list[dict]:
                 "outputFormat": meta.get("outputFormat", "text"),
             }
         )
+    for directory in sorted(_plugin_dir().iterdir()):
+        manifest = directory / "plugin.toml"
+        if not manifest.is_file():
+            continue
+        for meta in tomllib.loads(manifest.read_text(encoding="utf-8")).get("plugins", []):
+            entry = meta.get("entrypoint")
+            paths = [directory / entry] if entry else sorted(directory.glob("aiw-*"))
+            records.append(dict(meta, path=str(paths[0] if paths else directory)))
     return records
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(prog="aiw plugin")
+    parser = argparse.ArgumentParser(prog="aiw pkg entries")
     sub = parser.add_subparsers(dest="command")
     list_parser = sub.add_parser("list")
     list_parser.add_argument("--json", action="store_true")
@@ -73,7 +82,7 @@ def main() -> int:
     if args.command == "list" and args.json:
         print(json.dumps({"plugins": list_plugins()}, ensure_ascii=False, indent=2))
         return 0
-    parser.error("use: aiw plugin list --json")
+    parser.error("use: aiw pkg entries --json")
     return 2
 
 

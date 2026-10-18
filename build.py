@@ -16,6 +16,8 @@ SRC, BIN, DIST = ROOT / "src", ROOT / "bin", ROOT / "dist"
 sys.path.insert(0, str(SRC / "plugins" / "aiw-pkg"))
 from archive import PackageError, atomic_bytes, identifier, reject_link, safe_path, write_package
 from manager import Manager, default_destination
+from operations import Operation
+from repository import Repo, entry_for
 
 SYSTEMS = ("windows", "linux")
 GO = {
@@ -52,24 +54,36 @@ def binary(component: str, system: str) -> Path:
 
 def plugin_targets() -> list[str]:
     return [directory.name.removeprefix("aiw-") for directory in sorted((SRC / "plugins").iterdir())
-            if directory.is_dir() and (directory / "plugin.toml").is_file()] + ["plugin-tools"]
+            if directory.is_dir() and (directory / "plugin.toml").is_file()] + [
+                path.stem.removeprefix("aiw-") for path in sorted((SRC / "plugins").glob("aiw-*.py"))]
 
 
 def skill_targets() -> list[str]:
-    return ["skills-support"] + ["skill-" + directory.name for directory in sorted((SRC / "skills").iterdir())
+    return ["resource-" + path.stem for path in sorted((SRC / "skills").glob("*.md"))] + ["skill-" + directory.name for directory in sorted((SRC / "skills").iterdir())
                                 if directory.is_dir() and (directory / "SKILL.md").is_file()]
 
 
 def expand(target: str) -> list[str]:
+    from scripts.package_definitions import COLLECTIONS, collection_members, component_dependencies
+    if target in COLLECTIONS:
+        result = []
+        for name in collection_members(target):
+            if name in COLLECTIONS:
+                result += expand(name)
+            elif name == "aiw-main":
+                result += expand("aiw")
+            else:
+                result += expand(name.removeprefix("aiw-"))
+        return list(dict.fromkeys([*result, target]))
     if target == "bin":
-        return list(BIN_TARGETS)
+        return list(dict.fromkeys(item for component in BIN_TARGETS for item in expand(component)))
     if target == "plugins":
-        return plugin_targets()
+        return ["plugin-runtime", *plugin_targets(), "plugins-core", "plugins-all"]
     if target == "skills":
-        return skill_targets()
+        return list(dict.fromkeys([*(item for component in skill_targets() for item in expand(component)), "skills-core", "skills-all"]))
     if target == "all":
-        return list(dict.fromkeys([*BIN_TARGETS, *plugin_targets(), "docs", *skill_targets()]))
-    return [target]
+        return list(dict.fromkeys([*BIN_TARGETS, "plugin-runtime", *plugin_targets(), *skill_targets(), *COLLECTIONS]))
+    return list(dict.fromkeys([*(item for dependency in component_dependencies(target) for item in expand(dependency)), target]))
 
 
 def compile_components(components: list[str], version: str) -> None:
@@ -132,18 +146,9 @@ def one(source: Path, target: str, *, config=False, executable=False, system="al
     return (source, prefix + "/" + target, target, system, config, executable)
 
 
-def package_component(component: str, version: str) -> Path:
+def legacy_package_component(component: str, version: str) -> Path:
     entries = []
-    kind, category = "resource", "mist"
-    name = "aiw-" + component
-    if component == "aiw":
-        name, kind = "aiw-main", "program"
-        for system in SYSTEMS:
-            source = binary(component, system)
-            target = "aiw.exe" if system == "windows" else "aiw"
-            entries.append(one(source, target, executable=True, system=system))
-    elif component == "gateway":
-        kind = "program"
+    if component == "gateway":
         for system in SYSTEMS:
             source = binary(component, system)
             entries.append(one(source, source.name, executable=True, system=system))
@@ -151,53 +156,21 @@ def package_component(component: str, version: str) -> Path:
         entries.append(one(source / "gateway-example.json", "gateway-new.json"))
         entries.append(one(source / "gateway-example.json", "gateway.json", config=True))
     elif component == "http-openai-proxy":
-        kind = "program"
         source = SRC / "programs/http-openai-proxy"
         entries += tree_entries(BIN / component, component + "/dist")
         for filename in ("http-openai-proxy.js", "package.json", "package-lock.json", "README.md", "tsconfig.json"):
             entries.append(one(source / filename, component + "/" + filename))
         entries += tree_entries(source / "src", component + "/src")
         entries += tree_entries(source / "node_modules", component + "/node_modules", include_dependencies=True)
-    elif component == "docs":
-        entries += tree_entries(ROOT / "docs/usage", "docs/usage")
-        entries += tree_entries(SRC / "agent-templates", "agent-templates")
-    elif component == "skills-support":
-        category, kind, name = "skills", "skill", "aiw-skills-support"
-        for source in sorted((SRC / "skills").glob("*.md")):
-            entries.append(one(source, "skills/" + source.name))
-    elif component.startswith("skill-"):
-        category, kind, name = "skills", "skill", "aiw-" + component
-        skill = component.removeprefix("skill-")
-        entries += tree_entries(SRC / "skills" / skill, "skills/" + skill)
-    elif component == "plugin-tools":
-        category, kind, name = "plugins", "plugin", "aiw-plugin-tools"
-        for source in sorted((SRC / "plugins").glob("*")):
-            if source.is_file() and source.suffix in {".py", ".md"}:
-                if source.name in {"aiw-ai-code-index.py", "aiw-ai-gen-index.py"}:
-                    continue
-                entries.append(one(source, "plugins/" + source.name))
-        for source, target in (("ai-code-index", "aiw-ai-code-index.py"), ("generate-ai-index", "aiw-ai-gen-index.py")):
-            entries.append(one(SRC / "programs/ai-code-tools" / source, "plugins/" + target))
     else:
-        category, kind = "plugins", "plugin"
-        source = SRC / "plugins" / name
-        entries += tree_entries(source, "plugins/" + name,
-                                exclude=SAY_PROGRAM_ASSETS if component == "say" else None)
-        if component in GO:
-            for system in SYSTEMS:
-                compiled = binary(component, system)
-                entries.append(one(compiled, "plugins/" + name + "/" + compiled.name,
-                                   executable=True, system=system))
-        if component == "say":
-            source = SRC / "programs/aiw-say"
-            for filename in ("aiw.toml.example", "aiw-say-hotkeys.ahk", "aiw-say-hotkeys.ps1"):
-                entries.append(one(source / filename, "plugins/aiw-say/" + filename))
-            entries += tree_entries(source / "profiles", "plugins/aiw-say/profiles")
-            entries.append(one(source / "aiw.toml.example", "plugins/aiw-say/aiw.toml", config=True))
-    directory = DIST / category / version if category in {"plugins", "skills"} else DIST / category
-    output = directory / f"{name}-{version}.zip"
-    write_package(output, name, version, kind, entries)
-    if component in {"aiw", "gateway"}:
+        raise PackageError(f"Unknown standalone program: {component}")
+    name = "aiw-" + component
+    doc = ROOT / "docs/usage" / (name + ".md")
+    if doc.is_file():
+        entries.append(one(doc, "docs/usage/" + doc.name))
+    output = DIST / "mist" / version / f"{name}-{version}.zip"
+    write_package(output, name, version, "program", entries)
+    if component == "gateway":
         for system in SYSTEMS:
             source = binary(component, system)
             destination = DIST / "bin" / (system + "-amd64") / source.name
@@ -207,14 +180,40 @@ def package_component(component: str, version: str) -> Path:
     return output
 
 
+def package_component(component: str, version: str) -> Path:
+    from scripts.package_definitions import build_component
+    if component in plugin_targets() or component.startswith("skill-"):
+        script = ROOT / "scripts/packages" / (("skill-" + component[6:]) if component.startswith("skill-") else "plugin-aiw-" + component)
+        script = script.with_suffix(".py")
+        if not script.is_file():
+            raise PackageError(f"Independent package script missing: {script}")
+        result = subprocess.run([sys.executable, str(script), "--version", version], cwd=ROOT, capture_output=True, text=True, check=False)
+        if result.returncode:
+            raise PackageError(f"Package script failed: {script}: {result.stderr}")
+        print(result.stdout.strip())
+        name = "aiw-" + component
+        return DIST / ("skills" if component.startswith("skill-") else "plugins") / version / f"{name}-{version}.zip"
+    return build_component(component, version)
+
+
+def export_repository(packages, root):
+    repo = Repo(str(root))
+    for package in packages:
+        print(repo.publish(package))
+
+
 def main(arguments: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     actions = parser.add_subparsers(dest="action")
-    for action in ("compile", "build", "install"):
+    from scripts.package_definitions import COLLECTIONS
+    choices = sorted(set(TARGETS) - {"docs"} | set(plugin_targets()) | set(skill_targets()) | set(COLLECTIONS) | {"plugin-runtime"})
+    for action in ("compile", "build", "install", "export"):
         command = actions.add_parser(action, allow_abbrev=False)
-        command.add_argument("target", choices=TARGETS)
+        command.add_argument("target", choices=choices)
         if action == "install":
             command.add_argument("--dest", type=Path, default=default_destination())
+        elif action == "export":
+            command.add_argument("--repository", type=Path, required=True)
         else:
             command.add_argument("--version", default=os.environ.get("AIW_VERSION", "dev"))
     args = parser.parse_args(arguments)
@@ -232,23 +231,31 @@ def main(arguments: list[str]) -> int:
             for component, package in zip(components, packages):
                 write_manifest(component, args.version, [package])
             write_manifest(args.target, args.version, packages)
+            export_repository(packages, DIST / "repository")
             if args.target == "all":
                 for group in ("bin", "plugins", "skills"):
                     write_manifest(group, args.version, [by_component[item] for item in expand(group)])
-        elif args.action == "install":
+        elif args.action in {"install", "export"}:
             manifest = DIST / ".manifests" / (args.target + ".json")
             if not manifest.is_file():
                 raise PackageError(f"No release manifest for {args.target}; run build explicitly first")
             content = json.loads(manifest.read_text(encoding="utf-8"))
-            manager = Manager(args.dest)
             packages = []
             for value in content["packages"]:
                 package = safe_path(DIST, value)
                 if not package.is_file():
                     raise PackageError(f"Release package missing: {package}")
                 packages.append(package)
-            for package in packages:
-                print(manager.install(package))
+            if args.action == "export":
+                export_repository(packages, args.repository)
+            else:
+                from scripts.package_definitions import COLLECTIONS
+                root = DIST / "repository"
+                repo = Repo(str(root))
+                manager = Manager(args.dest)
+                roots = [p for p in packages if entry_for(p)["name"] == args.target] if args.target in COLLECTIONS else packages
+                for package in roots:
+                    print(Operation(manager, repo).install(package))
         return 0
     except (PackageError, OSError, ValueError, KeyError, TypeError, zipfile.BadZipFile) as error:
         print(f"build.py: {error}", file=sys.stderr)

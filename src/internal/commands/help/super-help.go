@@ -213,7 +213,7 @@ func getPluginShort(path string) string {
 }
 
 func staticBuiltinCommands() []string {
-	return []string{"init", "ask", "research", "prototype", "edit-article", "teach", "completion", "help", "version", "issue"}
+	return []string{"init", "ask", "research", "prototype", "edit-article", "teach", "completion", "help", "version", "issue", "update"}
 }
 
 func listPlugins() ([]plug.PluginInfo, error) {
@@ -227,7 +227,7 @@ func listPlugins() ([]plug.PluginInfo, error) {
 	}
 	out := make([]plug.PluginInfo, 0, len(plugins))
 	for _, plugin := range plugins {
-		if plugin.Name != "wf" {
+		if plugin.Name != "wf" && plugin.Name != "plugin" && plugin.Name != "skills" {
 			out = append(out, plugin)
 		}
 	}

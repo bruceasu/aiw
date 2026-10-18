@@ -101,18 +101,46 @@ def zip_members(source, *, outer: bool = False) -> dict[str, bytes]:
         return result
 
 
+def references(value: list) -> list[dict]:
+    if not isinstance(value, list) or len(value) > MAX_ENTRIES:
+        raise PackageError("Invalid dependency/member list")
+    names = set()
+    for item in value:
+        if not isinstance(item, dict) or set(item) != {"name", "version"}:
+            raise PackageError("Dependencies/members require exact name and version")
+        identifier(item["name"])
+        identifier(item["version"])
+        if item["name"] in names:
+            raise PackageError(f"Duplicate dependency/member: {item['name']}")
+        names.add(item["name"])
+    return value
+
+
 def validate(info: dict, payload: dict[str, bytes], scripts: dict[str, bytes]) -> str:
     allowed = {"format_version", "name", "version", "kind", "data_sha256", "files"}
-    if set(info) != allowed or type(info.get("format_version")) is not int or info["format_version"] != 1:
-        raise PackageError("Unsupported info schema; expected format_version=1")
+    if info.get("format_version") == 2:
+        allowed |= {"dependencies", "members"}
+    if set(info) != allowed or type(info.get("format_version")) is not int or info["format_version"] not in {1, 2}:
+        raise PackageError("Unsupported info schema; expected format_version=1 or 2")
     identifier(info["name"])
     identifier(info["version"])
-    if info["kind"] not in {"program", "plugin", "skill", "resource"}:
+    kinds = {"program", "plugin", "skill", "resource"}
+    if info["format_version"] == 2:
+        kinds.add("collection")
+        references(info["dependencies"])
+        references(info["members"])
+        if info["kind"] != "collection" and info["members"]:
+            raise PackageError("Only collections may declare members")
+        if info["kind"] == "collection" and (payload or scripts or info["files"] or not info["members"]):
+            raise PackageError("Collections require members and cannot contain payload or scripts")
+        if info["name"] == "aiw-pkg" and scripts:
+            raise PackageError("The package engine cannot contain installation hooks")
+    if info["kind"] not in kinds:
         raise PackageError("Invalid package kind")
     if not isinstance(info["data_sha256"], str) or not HASH.fullmatch(info["data_sha256"]):
         raise PackageError("Invalid data_sha256")
     files = info["files"]
-    if not isinstance(files, list) or not files or len(files) > MAX_ENTRIES:
+    if not isinstance(files, list) or (not files and info["kind"] != "collection") or len(files) > MAX_ENTRIES:
         raise PackageError("info must declare a nonempty files array")
     sources, targets = set(), {"windows": {}, "linux": {}}
     for item in files:
@@ -190,7 +218,8 @@ def atomic_bytes(path: Path, content: bytes) -> None:
 
 def write_package(path: Path, name: str, version: str, kind: str,
                   entries: list[tuple[Path, str, str, str, bool, bool]],
-                  scripts: dict[str, bytes] | None = None) -> None:
+                  scripts: dict[str, bytes] | None = None, *,
+                  dependencies: list[dict] | None = None, members: list[dict] | None = None) -> None:
     """entries: input path, archive source, install target, platform, config, executable."""
     payload, files = {}, []
     total = 0
@@ -211,11 +240,18 @@ def write_package(path: Path, name: str, version: str, kind: str,
         for source, data in sorted(payload.items()):
             archive.writestr(source, data)
     data = buffer.getvalue()
-    info = dict(format_version=1, name=name, version=version, kind=kind,
-                data_sha256=digest(data), files=files)
+    info = dict(format_version=2, name=name, version=version, kind=kind,
+                data_sha256=digest(data), files=files, dependencies=dependencies or [], members=members or [])
     scripts = scripts or {}
     validate(info, payload, scripts)
-    lines = [f"{key} = {json.dumps(value)}" for key, value in info.items() if key != "files"]
+    lines = [f"{key} = {json.dumps(value)}" for key, value in info.items()
+             if key not in {"files", "dependencies", "members"}]
+    for key in ("dependencies", "members"):
+        lines.append(f"{key} = [" + ", ".join(
+            "{ name = " + json.dumps(item["name"]) + ", version = " + json.dumps(item["version"]) + " }"
+            for item in info[key]) + "]")
+    if not files:
+        lines.append("files = []")
     for item in files:
         lines.append("\n[[files]]")
         for key, value in item.items():
@@ -240,4 +276,5 @@ def pack_workspace(workspace: Path, output: Path) -> None:
                 item["platform"], item["config"], item["executable"]) for item in raw["files"]]
     scripts = {name: (workspace / name).read_bytes() for name in ("preinst", "postinst")
                if (workspace / name).is_file()}
-    write_package(output, raw["name"], raw["version"], raw["kind"], entries, scripts)
+    write_package(output, raw["name"], raw["version"], raw["kind"], entries, scripts,
+                  dependencies=raw.get("dependencies", []), members=raw.get("members", []))
