@@ -1,0 +1,32 @@
+id = "ISSUE-00008"
+title = "aiw-file-convert: convert documents to text or Markdown"
+parent_id = ""
+status = "APPROVED"
+created = "2026-10-18"
+updated = "2026-10-18"
+revision = 8
+
+[approval]
+status = "APPROVED"
+by = "user"
+at = "2026-10-18T01:24:06+09:00"
+reason = "User confirmed the proposed initial scope: MarkItDown for primary formats and antiword for legacy DOC body text, without MS Office or LibreOffice. Packaging and platform details remain for FD design; no runtime quality verification claimed."
+source_digest = "e6628da48c2eaa9f7cca2046ca94afeadf921f258cb46c1b329f62334f44a517"
+
+[promotion]
+status = "NOT_STARTED"
+task_id = ""
+
+[conversation]
+session_id = ""
+
+[terminal]
+by = ""
+at = ""
+reason = ""
+
+[artifact]
+requirement-plan = "docs/issues/ISSUE-00008/issue-plan.md"
+
+[digest]
+requirement-plan = "935abef8cad547f67ed4fb7e884a6e905491e6df77e55793e67628e8a10d4355"
