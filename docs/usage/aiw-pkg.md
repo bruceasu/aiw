@@ -33,6 +33,8 @@ all 是此工程的组件集合，不是远程仓库所有包；逐包安装，�
 | 程序安装包、proxy、文档等 | dist/mist/<package>-<version>.zip |
 
 每个 Go 插件只有一个 ZIP，内含双平台程序和公共文件；安装只发布当前平台文件。
+Say 的示例配置、profiles 与热键脚本统一从 src/programs/aiw-say 收集；
+源码插件目录内旧流程留下的同名生成资源不参与打包，无需先删除这些文件。
 Skills 保持 canonical skills/ 布局，共享资源 aiw-skills-support 先于各 Skill 安装。
 独立安装 Skill ZIP 不隐式安装其他依赖包；现有 aiw skills 的项目/用户级功能不变。
 

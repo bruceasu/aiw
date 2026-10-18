@@ -30,6 +30,7 @@ BIN_TARGETS = ("aiw", "gateway", "http-openai-proxy")
 TARGETS = (*GO, "http-openai-proxy", "cz", "plugins", "docs", "skills", "bin", "all")
 IGNORE_DIRS = {".git", "__pycache__", "node_modules", ".bin", "tests", ".venv", "dist", "release"}
 IGNORE_FILES = {"aiw.toml", "cz.toml", ".cz.toml", "agent-gateway", "aiw-req", "aiw-say", "aiw-packer", "md-converter"}
+SAY_PROGRAM_ASSETS = {"aiw.toml.example", "profiles", "aiw-say-hotkeys.ahk", "aiw-say-hotkeys.ps1"}
 
 
 def run(command: list[str], cwd: Path, environment: dict[str, str]) -> None:
@@ -102,14 +103,16 @@ def compile_components(components: list[str], version: str) -> None:
         print(f"Compiled: {component}" if component in GO or component == "http-openai-proxy" else f"No compile needed: {component}")
 
 
-def tree_entries(source: Path, destination: str, *, include_dependencies=False):
+def tree_entries(source: Path, destination: str, *, include_dependencies=False, exclude=None):
     if not source.is_dir():
         raise PackageError(f"Resource directory missing: {source}")
     reject_link(source)
+    excluded = set(exclude or ())
     entries = []
     for directory, directories, names in os.walk(source, followlinks=False):
         directories[:] = sorted(name for name in directories
-                                if name not in (IGNORE_DIRS - {"node_modules"} if include_dependencies else IGNORE_DIRS))
+                                if name not in (IGNORE_DIRS - {"node_modules"} if include_dependencies else IGNORE_DIRS)
+                                and (Path(directory) / name).relative_to(source).as_posix() not in excluded)
         for name in directories:
             reject_link(Path(directory) / name)
         for name in sorted(names):
@@ -117,6 +120,8 @@ def tree_entries(source: Path, destination: str, *, include_dependencies=False):
                 continue
             path = Path(directory) / name
             relative = path.relative_to(source).as_posix()
+            if relative in excluded:
+                continue
             target = destination + "/" + relative if destination else relative
             entries.append((path, "common/" + target, target, "all", False, os.access(path, os.X_OK)))
     return entries
@@ -176,7 +181,8 @@ def package_component(component: str, version: str) -> Path:
     else:
         category, kind = "plugins", "plugin"
         source = SRC / "plugins" / name
-        entries += tree_entries(source, "plugins/" + name)
+        entries += tree_entries(source, "plugins/" + name,
+                                exclude=SAY_PROGRAM_ASSETS if component == "say" else None)
         if component in GO:
             for system in SYSTEMS:
                 compiled = binary(component, system)

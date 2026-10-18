@@ -1,0 +1,19 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-081",
+  "source_event": "FD-081-000003-design-ready",
+  "human_report": "FD-081-implementation-r1.md",
+  "data": {
+    "worker_session": "fd081-host-20261018-b73a4c",
+    "fd_revision": 3,
+    "base_commit": "3baed64",
+    "root_cause": "Ignored generated Say assets were collected from plugin directory and again from canonical programs directory",
+    "cause_classification": "product-defect",
+    "compile": "passed: build.py in-memory compile; no artifacts",
+    "static_review": "relative path exclusions prune directories before traversal and skip files; other callers and archive duplicate protection unchanged",
+    "user_observed_failures": ["build all --version 1.0.0: duplicate source", "install all: no release manifest"],
+    "not_run": ["tests", "release build", "installation", "network", "dependency downloads", "linters"],
+    "recommendation": "ready-for-independent-review"
+  }
+}

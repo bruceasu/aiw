@@ -1,7 +1,7 @@
 # FD-081: Exclude generated Say assets from plugin source packaging
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -35,8 +35,8 @@ Say manifest/README/入口继续从插件目录读取；双平台 Go 程序继�
 
 ## Work items
 
-- [ ] 1.1 为 tree_entries 增加精确相对路径排除并接入 Say；小/低；无依赖；目录和文件均排除，canonical 资源只收集一次。
-- [ ] 1.2 更新说明与 Worker 证据；小/低；依赖 1.1；Python 内存 compile 和一次静态 diff 检查，独立审查后本地交付归档。
+- [x] 1.1 tree_entries 增加相对路径 exclude，目录在遍历前剪枝，文件在收集前跳过；仅 Say 调用传入 canonical 资产集。build.py 内存 compile 通过，无产物。
+- [x] 1.2 更新使用说明与双格式 Worker 证据；Python 内存 compile 通过，静态 diff 检查；独立审查及后续交付归档由 TODO 跟踪，不视为已通过。
 
 Keep item numbers stable after implementation starts. Use `- [-]` only for an
 explicitly cancelled item, with its reason on the same line.
@@ -50,6 +50,14 @@ all 清单仍只在完整组包成功后写出；不把当前缺清单误诊为�
 
 ## Verification
 
+独立审查：reviews/FD-081-review-r1.md/.json；source_event=FD-081-000004-implementation-ready；
+Reviewer session=fd081-reviewer-20261018-6b2e94，审查 2ac50d2457dd930dbda95798bcead1cbec667c2b，
+结论 verification-passed。已静态确认目录剪枝、文件排除、canonical 来源、其他调用不变及
+重复保护/清单规则保持，无阻塞项。未重跑编译、构建、测试或安装，不宣称运行成功。
+
+实现证据：reports/FD-081-implementation-r1.md/.json。内存 compile(build.py) 已通过，
+无字节码；运行构建、测试及安装均未执行；独立实现审查已通过。
+
 静态证据：用户两条失败命令日志；源码 Say 目录确有 ignored aiw.toml.example 和 profiles；
 package_component 先全量 tree_entries 后再次显式收集 canonical 资源，确认因果链。
 实现后仅编译 build.py（compile()，不导入或执行）及一次 git diff --check。
@@ -57,7 +65,7 @@ package_component 先全量 tree_entries 后再次显式收集 canonical 资源�
 
 ## TODO
 
-提交就绪计划后在 feature/FD-081、.wt/FD-081 实现；独立审查、交付与归档按默认生命周期推进。
+已提交计划并在 feature/FD-081、.wt/FD-081 实现；独立静态审查已通过，待 PM 交付与归档。
 
 - Compile-only check and static review by default; record unrun tests explicitly.
 - For explicitly requested test support (any wording/language), record suitable

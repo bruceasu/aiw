@@ -1,0 +1,18 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-081",
+  "source_event": "FD-081-000004-implementation-ready",
+  "human_report": "FD-081-review-r1.md",
+  "data": {
+    "verdict": "verification-passed",
+    "session": "fd081-reviewer-20261018-6b2e94",
+    "reviewed_commit": "2ac50d2457dd930dbda95798bcead1cbec667c2b",
+    "base_commit": "3baed64",
+    "fd_revision": 4,
+    "findings": [],
+    "evidence": ["Relative-path directory pruning precedes traversal", "Say generated file exclusion precedes entry creation", "Canonical Say resource collection unchanged", "Other callers retain empty exclusions", "Archive duplicate-source protection unchanged", "Release manifests remain after successful package aggregation"],
+    "commands": ["Get-Content (event, FD, reports, source, relevant stable spec)", "git rev-parse HEAD", "git diff 3baed64..2ac50d2 -- build.py", "git diff 3baed64..2ac50d2 -- docs/usage/aiw-pkg.md", "git diff --stat 3baed64..2ac50d2", "rg (Say exclusions and duplicate source guard)", "aiw fd claim FD-081 FD-081-000004-implementation-ready --session fd081-reviewer-20261018-6b2e94"],
+    "limits": {"mode": "bounded-static-only", "tests_run": false, "compile_run": false, "build_run": false, "installation_run": false, "network_used": false, "implementation_modified": false, "unverified": ["Actual build all and install all execution after the fix"]}
+  }
+}
