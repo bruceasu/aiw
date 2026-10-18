@@ -65,7 +65,10 @@ package_component 先全量 tree_entries 后再次显式收集 canonical 资源�
 
 ## TODO
 
-已提交计划并在 feature/FD-081、.wt/FD-081 实现；独立静态审查已通过，待 PM 交付与归档。
+独立静态审查一轮通过，事件 FD-081-000005-verification-passed。
+已通过 local-merge squash 交付至 develop（42834b3，FD-Source d21b5c2），
+CLI 核验并清理 worktree/分支；fd close Complete 归档成功。无剩余本地生命周期 TODO。
+完整构建、测试及安装未运行；用户可按原命令重新构建，再安装。
 
 - Compile-only check and static review by default; record unrun tests explicitly.
 - For explicitly requested test support (any wording/language), record suitable
@@ -81,3 +84,5 @@ package_component 先全量 tree_entries 后再次显式收集 canonical 资源�
 - build.py；src/plugins/aiw-pkg/archive.py。
 - openspec/specs/aiw-packages/spec.md；归档 FD-080。
 - 用户本轮 build all/install all 失败日志。
+
+**Completed:** 2026-10-18

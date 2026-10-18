@@ -12,7 +12,6 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-081](FD-081_EXCLUDE_GENERATED_SAY_ASSETS_FROM_PLUGIN_SOURCE_.md) | Exclude generated Say assets from plugin source packaging | Complete | Medium |
 | [FD-001](archive/FD-001/FD-001_EVENT_DRIVEN_FD_WORKFLOW.md) | 事件驱动的 FD 工作流 | Complete | High |
 | [FD-002](archive/FD-002/FD-002_ACTIONABLE_FD_HANDOFF_RECOVERY_HINTS.md) | Actionable FD handoff recovery hints | Complete | Medium |
 | [FD-003](archive/FD-003/FD-003_COMPACT_CZ_RELEASE.md) | 精简 aiw-cz 发布包 | Complete | Medium |
@@ -93,6 +92,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-078](archive/FD-078/FD-078_AIW_FILE_CONVERT_CONVERT_DOCUMENTS_TO_TEXT_OR_MA.md) | aiw-file-convert: convert documents to text or Markdown | Complete | Medium |
 | [FD-079](archive/FD-079/FD-079_GO_PLUGIN.md) | Go 独立压缩解压工具与 plugin | Complete | Medium |
 | [FD-080](archive/FD-080/FD-080_SEPARATE_COMPILE_BUILD_INSTALL_AND_UNIFY_PACKAGE.md) | Separate compile build install and local package lifecycle | Complete | Medium |
+| [FD-081](archive/FD-081/FD-081_EXCLUDE_GENERATED_SAY_ASSETS_FROM_PLUGIN_SOURCE_.md) | Exclude generated Say assets from plugin source packaging | Complete | Medium |
 
 ## Deferred / Closed
 
