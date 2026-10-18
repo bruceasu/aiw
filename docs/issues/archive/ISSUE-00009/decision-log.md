@@ -3,3 +3,8 @@
 - Decision: APPROVED
 - By: user
 - Reason: User explicitly requested approval, promotion and fd-workflow auto implementation. Clean only the captured project draft after full persistence; preserve failed sources and unrelated history, and warn on cleanup failure without treating capture as failed.
+
+## 2026-10-18T14:25:49+09:00
+- Decision: ARCHIVED
+- By: LAPTOP-P8VM6T16\suk
+- Reason: Done
