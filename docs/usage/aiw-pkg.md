@@ -105,6 +105,10 @@ python build.py compile aiw --version 1.2.3
 python build.py build aiw-core --version 1.2.3
 python build.py install aiw-core --dest NEW_ROOT
 python build.py export aiw-core --repository ./packages
+python build.py build docs --version 1.2.3
+python scripts/packages/docs.py --version 1.2.3
+python build.py publish aiw-git 1.2.3
+python build.py publish-all 1.2.3
 ```
 
 Compile writes only bin. Build explicitly compiles selected native components and
@@ -115,6 +119,44 @@ plugin-meta.toml and skills-meta.toml define core/extension membership. Main inc
 agent-templates; shared root Skill documents have unique resource package owners.
 Individual Skills depend on needed resources rather than an aggregate support ZIP.
 Usage documents belong to their program/plugin; development docs are not installed.
+
+The independent `aiw-docs` resource package installs usage documents under
+`docs/reference/usage` and the root README under `docs/reference/README.md`.
+It does not take ownership of the usage files installed by individual packages.
+
+Targets come from one catalog: programs (`aiw`, `gateway`, `http-openai-proxy`),
+discovered plugins, Skills, shared resources (including `docs` and `plugin-runtime`),
+and release collections (`plugins-core/all`, `skills-core/all`, `aiw-core/all`).
+Compatibility groups `bin`, `plugins`, `skills`, and `all` remain available.
+`all` includes every package, including docs, and expands dependencies once.
+Full package names such as `aiw-main`, `aiw-git`, `aiw-skill-fd-workflow` and
+`aiw-docs` are aliases for their component targets. Collection names stay unchanged.
+
+`publish <package> <version>` compiles and packages that package plus its exact
+dependencies/members, then publishes those newly built ZIPs. Use `publish-all
+<version>` for every package. These commands require an explicit version and a
+local `AIW_PACKAGE_REPO`; they never reuse an older release manifest. They retain
+the build staging repository as well. Publication stops on the first error;
+earlier packages may already have been published. Existing versions cannot be
+overwritten with changed contents.
+
+Copy `.env.example` to the checkout root `.env` for local settings. `build.py`
+and independent package scripts load that file, regardless of the invoking
+directory. Existing process environment variables win over `.env` values.
+The loader accepts `KEY=value`, optional `export`, quotes, blank lines and
+comments; it does not execute commands, interpolate variables, or decode escapes.
+Use quotes around paths containing ` #`. Local `.env` stays ignored by Git.
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `AIW_PACKAGE_REPO` | Required local destination for publish commands; relative paths use the checkout root | No default; example: `d:/playground/aiw-packages` |
+| `AIW_VERSION` | Default build/compile version; independent package scripts may omit `--version` when set | `dev` for build.py; otherwise independent scripts require `--version` |
+| `AIW_GO` | Go executable path or command name | `go` on PATH |
+| `AIW_NODE` | Node executable path or command name | `node` on PATH |
+| `AIW_INSTALL_DIR` | Existing default installation root; `install --dest` wins | Platform default |
+
+Go builds continue to produce both Windows/Linux amd64 binaries. Tool paths and
+installation/repository paths can vary by machine without changing that package contract.
 
 Packages live under dist/<category>/<version>/; raw main/program binaries are in
 dist/bin/<platform>-amd64. A build also stages a local dist/repository with index.json.

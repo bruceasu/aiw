@@ -1,0 +1,16 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-084",
+  "human_report": "FD-084-implementation.md",
+  "source_event": null,
+  "data": {
+  "source_event_reason": "Direct user implementation request without a Worker handoff; managed review route follows.",
+  "work_items": ["1.1", "1.2", "1.3"],
+  "compile": {"result": "passed", "exit_code": 0, "files": ["build.py", "scripts/package_definitions.py", "scripts/packages/docs.py"], "method": "Python compile(read_bytes(), path, exec), no imports or output artifacts"},
+  "static_review": ["final scoped diff against 16a106d", "environment precedence", "target aliases and dependency closure", "fresh package paths", "docs ownership", "Repo immutability"],
+  "not_run": ["tests", "package builds", "Go compile", "publication", "installation", "network"],
+  "risks": ["Runtime behavior unverified", "Multi-package publication may partially succeed"],
+  "review": "pending"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-084",
+  "source_event": "FD-084-000004-review-requested",
+  "human_report": "FD-084-implementation-review.md",
+  "data": {
+    "reviewer_session": "reviewer-FD084-20261018-implementation-review",
+    "reviewed_commit": "14c73de",
+    "diff_base": "16a106d",
+    "fd_revision": 4,
+    "verdict": "passed",
+    "findings": [],
+    "results": [
+      "Static target/member/dependency closure and canonical aliases support acceptance",
+      "Local destination validation precedes compilation and packaging",
+      "Publication uses freshly returned explicit-version ZIP paths",
+      "Root dotenv preserves process precedence and standalone docs script shares loader",
+      "Docs resource owns isolated docs/reference destinations",
+      "Existing stage syntax and fixed Windows/Linux amd64 contract retained",
+      "Worker compile-only evidence read; not rerun by Reviewer"
+    ],
+    "commands": [
+      "Targeted PowerShell Get-Content, Select-Object, Select-String, Get-ChildItem and rg",
+      "git diff 16a106d -- scoped implementation/config/docs paths",
+      "git diff --stat 16a106d",
+      "git status --short",
+      "git diff -- docs/features/FD-084_BUILD_PUBLISH_AND_TARGETS.md",
+      "aiw fd --help; aiw fd show FD-084; aiw fd claim --help; aiw fd emit --help",
+      "aiw fd claim FD-084 FD-084-000004-review-requested --session reviewer-FD084-20261018-implementation-review",
+      "aiw fd emit FD-084 verification-passed --producer reviewer --artifact docs/features/reviews/FD-084-implementation-review.md --source-event FD-084-000004-review-requested"
+    ],
+    "read_failures": "Some initial shared-resource/template/receipt and package-module paths did not exist; actual discovered paths were read without runtime validation or permission probes",
+    "not_run": ["tests", "compile", "package builds", "publish", "install", "network", "verification scripts", "codex-auto-review"],
+    "residual_risk": "Runtime behavior remains unverified; multi-package publication may partially succeed under the existing Repo contract"
+  }
+}

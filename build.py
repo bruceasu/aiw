@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -29,10 +30,40 @@ GO = {
     "file-convert": (SRC / "programs/md-converter", ".", "md-converter", False),
 }
 BIN_TARGETS = ("aiw", "gateway", "http-openai-proxy")
-TARGETS = (*GO, "http-openai-proxy", "cz", "plugins", "docs", "skills", "bin", "all")
+TARGETS = {
+    "programs": BIN_TARGETS,
+    "resources": ("docs", "plugin-runtime"),
+    "groups": ("bin", "plugins", "skills", "all"),
+}
 IGNORE_DIRS = {".git", "__pycache__", "node_modules", ".bin", "tests", ".venv", "dist", "release"}
 IGNORE_FILES = {"aiw.toml", "cz.toml", ".cz.toml", "agent-gateway", "aiw-req", "aiw-say", "aiw-packer", "md-converter"}
 SAY_PROGRAM_ASSETS = {"aiw.toml.example", "profiles", "aiw-say-hotkeys.ahk", "aiw-say-hotkeys.ps1"}
+
+
+def load_environment() -> None:
+    """Load checkout-local defaults; never execute or expand dotenv values."""
+    path = ROOT / ".env"
+    if not path.is_file():
+        return
+    for number, line in enumerate(path.read_text(encoding="utf-8-sig").splitlines(), 1):
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[7:].lstrip()
+        key, separator, value = line.partition("=")
+        key, value = key.strip(), value.strip()
+        if not separator or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
+            raise PackageError(f"Invalid .env assignment at line {number}")
+        if value.startswith(("'", '"')):
+            quote = value[0]
+            end = value.find(quote, 1)
+            if end < 0 or (value[end + 1:].strip() and not value[end + 1:].lstrip().startswith("#")):
+                raise PackageError(f"Invalid .env quoted value at line {number}")
+            value = value[1:end]
+        else:
+            value = re.split(r"\s+#", value, maxsplit=1)[0].rstrip()
+        os.environ.setdefault(key, value)
 
 
 def run(command: list[str], cwd: Path, environment: dict[str, str]) -> None:
@@ -42,9 +73,10 @@ def run(command: list[str], cwd: Path, environment: dict[str, str]) -> None:
 
 
 def tool(name: str) -> str:
-    path = shutil.which(name)
+    configured = os.environ.get("AIW_" + name.upper(), name)
+    path = shutil.which(configured)
     if not path:
-        raise PackageError(f"{name} is not available on PATH; dependencies are never downloaded")
+        raise PackageError(f"Tool unavailable: {configured}; configure AIW_{name.upper()} or PATH; dependencies are never downloaded")
     return path
 
 
@@ -61,6 +93,22 @@ def plugin_targets() -> list[str]:
 def skill_targets() -> list[str]:
     return ["resource-" + path.stem for path in sorted((SRC / "skills").glob("*.md"))] + ["skill-" + directory.name for directory in sorted((SRC / "skills").iterdir())
                                 if directory.is_dir() and (directory / "SKILL.md").is_file()]
+
+
+def target_catalog() -> dict[str, tuple[str, ...]]:
+    """Separate package kinds from compatibility groups; discover source owners."""
+    from scripts.package_definitions import COLLECTIONS
+    skills = skill_targets()
+    return {**TARGETS, "plugins": tuple(plugin_targets()),
+            "skills": tuple(item for item in skills if item.startswith("skill-")),
+            "resources": (*TARGETS["resources"], *(item for item in skills if item.startswith("resource-"))),
+            "collections": tuple(COLLECTIONS)}
+
+
+def package_aliases() -> dict[str, str]:
+    from scripts.package_definitions import COLLECTIONS
+    return {(name if name in COLLECTIONS else "aiw-main" if name == "aiw" else "aiw-" + name): name
+            for kind, names in target_catalog().items() if kind != "groups" for name in names}
 
 
 def expand(target: str) -> list[str]:
@@ -82,7 +130,8 @@ def expand(target: str) -> list[str]:
     if target == "skills":
         return list(dict.fromkeys([*(item for component in skill_targets() for item in expand(component)), "skills-core", "skills-all"]))
     if target == "all":
-        return list(dict.fromkeys([*BIN_TARGETS, "plugin-runtime", *plugin_targets(), *skill_targets(), *COLLECTIONS]))
+        return list(dict.fromkeys(item for kind, names in target_catalog().items() if kind != "groups"
+                                  for name in names for item in expand(name)))
     return list(dict.fromkeys([*(item for dependency in component_dependencies(target) for item in expand(dependency)), target]))
 
 
@@ -182,8 +231,8 @@ def legacy_package_component(component: str, version: str) -> Path:
 
 def package_component(component: str, version: str) -> Path:
     from scripts.package_definitions import build_component
-    if component in plugin_targets() or component.startswith("skill-"):
-        script = ROOT / "scripts/packages" / (("skill-" + component[6:]) if component.startswith("skill-") else "plugin-aiw-" + component)
+    if component == "docs" or component in plugin_targets() or component.startswith("skill-"):
+        script = ROOT / "scripts/packages" / ("docs" if component == "docs" else ("skill-" + component[6:]) if component.startswith("skill-") else "plugin-aiw-" + component)
         script = script.with_suffix(".py")
         if not script.is_file():
             raise PackageError(f"Independent package script missing: {script}")
@@ -192,7 +241,8 @@ def package_component(component: str, version: str) -> Path:
             raise PackageError(f"Package script failed: {script}: {result.stderr}")
         print(result.stdout.strip())
         name = "aiw-" + component
-        return DIST / ("skills" if component.startswith("skill-") else "plugins") / version / f"{name}-{version}.zip"
+        category = "resources" if component == "docs" else "skills" if component.startswith("skill-") else "plugins"
+        return DIST / category / version / f"{name}-{version}.zip"
     return build_component(component, version)
 
 
@@ -202,11 +252,44 @@ def export_repository(packages, root):
         print(repo.publish(package))
 
 
+def build_packages(target: str, version: str) -> list[Path]:
+    identifier(version)
+    components = expand(target)
+    compile_components(components, version)
+    packages = [package_component(component, version) for component in components]
+    by_component = dict(zip(components, packages))
+    for component, package in zip(components, packages):
+        write_manifest(component, version, [package])
+    write_manifest(target, version, packages)
+    export_repository(packages, DIST / "repository")
+    if target == "all":
+        for group in ("bin", "plugins", "skills"):
+            write_manifest(group, version, [by_component[item] for item in expand(group)])
+    return packages
+
+
+def publish_destination() -> Path:
+    address = os.environ.get("AIW_PACKAGE_REPO", "").strip()
+    if not address:
+        raise PackageError("Set AIW_PACKAGE_REPO in .env or the process environment before publishing")
+    if Repo(address).kind != "local":
+        raise PackageError("AIW_PACKAGE_REPO must be a local repository path")
+    destination = Path(address).expanduser()
+    return (destination if destination.is_absolute() else ROOT / destination).resolve()
+
+
 def main(arguments: list[str]) -> int:
+    try:
+        load_environment()
+    except (PackageError, OSError, ValueError) as error:
+        print(f"build.py: {error}", file=sys.stderr)
+        return 1
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     actions = parser.add_subparsers(dest="action")
     from scripts.package_definitions import COLLECTIONS
-    choices = sorted(set(TARGETS) - {"docs"} | set(plugin_targets()) | set(skill_targets()) | set(COLLECTIONS) | {"plugin-runtime"})
+    aliases = package_aliases()
+    packages = set(aliases.values())
+    choices = sorted(packages | set(TARGETS["groups"]) | set(aliases))
     for action in ("compile", "build", "install", "export"):
         command = actions.add_parser(action, allow_abbrev=False)
         command.add_argument("target", choices=choices)
@@ -216,27 +299,27 @@ def main(arguments: list[str]) -> int:
             command.add_argument("--repository", type=Path, required=True)
         else:
             command.add_argument("--version", default=os.environ.get("AIW_VERSION", "dev"))
+    command = actions.add_parser("publish", help="Build and publish one package and its dependencies locally", allow_abbrev=False)
+    command.add_argument("target", metavar="package", choices=sorted(packages | set(aliases)))
+    command.add_argument("version")
+    command = actions.add_parser("publish-all", help="Build and publish every package locally", allow_abbrev=False)
+    command.add_argument("version")
     args = parser.parse_args(arguments)
     if not args.action:
         parser.print_help()
         return 0
     try:
-        components = expand(args.target)
-        if args.action in {"compile", "build"}:
+        target = "all" if args.action == "publish-all" else aliases.get(args.target, args.target)
+        if args.action in {"publish", "publish-all"}:
+            destination = publish_destination()
+            export_repository(build_packages(target, args.version), destination)
+        elif args.action == "compile":
             identifier(args.version)
-            compile_components(components, args.version)
-        if args.action == "build":
-            packages = [package_component(component, args.version) for component in components]
-            by_component = dict(zip(components, packages))
-            for component, package in zip(components, packages):
-                write_manifest(component, args.version, [package])
-            write_manifest(args.target, args.version, packages)
-            export_repository(packages, DIST / "repository")
-            if args.target == "all":
-                for group in ("bin", "plugins", "skills"):
-                    write_manifest(group, args.version, [by_component[item] for item in expand(group)])
+            compile_components(expand(target), args.version)
+        elif args.action == "build":
+            build_packages(target, args.version)
         elif args.action in {"install", "export"}:
-            manifest = DIST / ".manifests" / (args.target + ".json")
+            manifest = DIST / ".manifests" / (target + ".json")
             if not manifest.is_file():
                 raise PackageError(f"No release manifest for {args.target}; run build explicitly first")
             content = json.loads(manifest.read_text(encoding="utf-8"))
@@ -253,7 +336,7 @@ def main(arguments: list[str]) -> int:
                 root = DIST / "repository"
                 repo = Repo(str(root))
                 manager = Manager(args.dest)
-                roots = [p for p in packages if entry_for(p)["name"] == args.target] if args.target in COLLECTIONS else packages
+                roots = [p for p in packages if entry_for(p)["name"] == target] if target in COLLECTIONS else packages
                 for package in roots:
                     print(Operation(manager, repo).install(package))
         return 0

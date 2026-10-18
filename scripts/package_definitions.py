@@ -70,6 +70,12 @@ def build_component(component, version):
     elif component == "plugin-runtime":
         name, kind, category = "aiw-plugin-runtime", "resource", "resources"
         entries = [c.one(p, "plugins/" + p.name) for p in sorted((c.SRC / "plugins").glob("*.py")) if not p.name.startswith("aiw-")]
+    elif component == "docs":
+        name, kind, category = "aiw-docs", "resource", "resources"
+        entries = c.tree_entries(c.ROOT / "docs/usage", "docs/reference/usage")
+        readme = c.ROOT / "README.md"
+        if readme.is_file():
+            entries.append(c.one(readme, "docs/reference/README.md"))
     elif component.startswith("skill-"):
         skill = component[len("skill-"):]
         name, kind, category = "aiw-skill-" + skill, "skill", "skills"
@@ -135,9 +141,12 @@ def build_component(component, version):
 
 def run(component):
     parser = argparse.ArgumentParser(description="Build exactly one package")
-    parser.add_argument("--version", required=True)
-    args = parser.parse_args()
     try:
+        context.load_environment()
+        default_version = context.os.environ.get("AIW_VERSION")
+        parser.add_argument("--version", default=default_version, required=default_version is None)
+        args = parser.parse_args()
+        context.identifier(args.version)
         build_component(component, args.version)
     except (PackageError, OSError, ValueError) as error:
         parser.exit(1, f"package: {error}\n")

@@ -1,8 +1,8 @@
 # FD-084: Build publishing and target catalog
 
-**Status:** In Progress
+**Status:** Complete
 **Priority:** Medium
-**Revision:** 2
+**Revision:** 5
 **Evidence policy:** Dual
 
 ## Problem
@@ -53,13 +53,13 @@ publish-all is not a repository transaction. No automatic overwrite or rollback.
 
 ## Work Items
 
-- [ ] 1.1 Add environment loading, local settings and coherent target catalog.
+- [x] 1.1 Add environment loading, local settings and coherent target catalog.
   Size: small; difficulty: medium; dependencies: none. Completion: env precedence,
   tool overrides and categorized targets implemented. Evidence: static call trace.
-- [ ] 1.2 Add fresh-build publish commands and independent docs packaging.
+- [x] 1.2 Add fresh-build publish commands and independent docs packaging.
   Size: small; difficulty: medium; dependencies: 1.1. Completion: exact-version
   paths published and docs script exists. Evidence: static dependency/path trace.
-- [ ] 1.3 Update usage/stable spec, compile source, record static evidence and hand off review.
+- [x] 1.3 Update usage/stable spec, compile source, record static evidence and hand off review.
   Size: small; difficulty: low; dependencies: 1.2. Completion: consistent docs,
   compile-only result and authored report. Evidence: compile result and final diff.
 
@@ -73,8 +73,8 @@ publish-all is not a repository transaction. No automatic overwrite or rollback.
 
 ## TODO
 
-- Implement 1.1-1.3 in the dedicated FD worktree after plan readiness.
-- Independent review, local delivery and archive after gates pass.
+- Independent static review passed: reviews/FD-084-implementation-review.md.
+- Local delivery and archive after gates pass.
 
 ## Verification
 
@@ -83,6 +83,23 @@ script pattern, existing compile helper, ignore rules and FD-083 package contrac
 Independent design review: reviews/FD-084-design.md. Incorporated platform,
 documentation ownership and Work Item metadata findings before implementation.
 Tests, builds, publish/install and network commands have not run.
+
+Implementation: reports/FD-084-implementation.md and JSON sidecar.
+Python compile-only passed for build.py, scripts/package_definitions.py and
+scripts/packages/docs.py using compile(read_bytes(), path, 'exec'); no imports,
+bytecode files or distributable artifacts were produced. The existing
+scripts/compile.py compiles unrelated Go entrypoints, so the narrow Python
+compiler was selected for this Python-only change.
+One static final diff inspected against parent plan commit 16a106d. Traced env
+precedence and tool resolution, aliases and collection recursion, returned ZIP
+paths versus manifests, docs destination ownership and existing Repo semantics.
+No test, package build, Go compile, publish/install or network execution performed.
+
+Independent Reviewer: reviews/FD-084-implementation-review.md and JSON sidecar.
+Reviewed implementation 14c73de against 16a106d under claimed source event
+FD-084-000004-review-requested; no blocking findings. Traced target closure,
+canonical aliases, root environment/tool resolution, fresh publication paths,
+docs ownership and compatibility. No runtime validation or compile rerun.
 
 ## Risks
 

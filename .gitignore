@@ -4,6 +4,7 @@
 bin
 .env
 .env.*
+!.env.example
 .wt/
 __pycache__/
 /test/

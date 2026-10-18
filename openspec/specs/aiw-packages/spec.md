@@ -18,6 +18,43 @@ Go 原始程序 MUST 发布到 dist/bin，plugin/skill 包 MUST 位于 dist/plug
 dist/skills 的版本子目录，其他发布文件 MUST 位于 dist/<category>/<version>。
 一个 Go 插件包 MUST 包含双平台产物，安装 MUST 自动选当前平台。
 
+### Requirement: Fresh local publication and build configuration
+
+build.py MUST support `publish <package> <version>` and `publish-all <version>`.
+Publication MUST first compile and package the selected dependency/member closure,
+then publish exactly the newly built paths through the existing Repo engine.
+It MUST NOT select an older version from a latest release manifest.
+AIW_PACKAGE_REPO MUST name a local repository; missing or remote destinations
+MUST fail before compilation or packaging. Relative paths MUST use the checkout root.
+Existing immutable publication rules apply; a batch MUST stop on error and MUST NOT
+claim atomicity across packages. Existing compile/build/install/export syntax remains valid.
+
+The root .env MUST load for build.py and independent package scripts without
+overriding process environment variables, executing commands or interpolating values.
+AIW_PACKAGE_REPO, AIW_VERSION, AIW_GO, AIW_NODE and AIW_INSTALL_DIR MUST provide
+local defaults for their respective repository, version, tools and installation settings.
+Explicit command arguments MUST take precedence over defaults. Publication version
+MUST be explicit. Go packages MUST retain Windows/Linux amd64 support.
+
+The target catalog MUST distinguish programs, plugins, Skills, resources,
+collections and compatibility groups. Existing short targets and bin/plugins/skills/all
+MUST remain valid; canonical package names MUST also be accepted.
+all and publish-all MUST include docs and all catalog packages with dependencies deduplicated.
+The docs target and scripts/packages/docs.py MUST produce aiw-docs as a resource
+package, with usage files under docs/reference/usage and README.md under docs/reference.
+It MUST NOT own individual programs' docs/usage paths or include development reports/config.
+
+#### Scenario: Publish a fresh named package
+
+- WHEN `publish aiw-git 1.2.3` has a configured local repository
+- THEN build aiw-git and its required packages at 1.2.3 and publish those returned ZIPs
+- AND do not consume any previous aiw-git manifest
+
+#### Scenario: Missing local publish configuration
+
+- WHEN AIW_PACKAGE_REPO is unset or is a remote URL
+- THEN fail without compiling, packaging or publishing
+
 ### Requirement: 可移植包契约
 
 包 MUST 命名为 name-version.zip，内含 info、data.zip 及可选 Python preinst/postinst。
