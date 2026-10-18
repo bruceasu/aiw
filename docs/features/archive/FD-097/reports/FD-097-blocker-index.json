@@ -5,7 +5,7 @@
   "source_event": "FD-097-000006-review-requested",
   "human_report": "FD-097-blocker-index.md",
   "data": {
-    "state": "authorized-continuation-pending",
+    "state": "resolved",
     "gate": "review and archive index mutation",
     "observed": "WinError 5 replacing FEATURE_INDEX.md during request-review",
     "cause": "File access failure; lock versus permission cause undetermined",
@@ -13,6 +13,7 @@
     "attempts": ["one request-review call", "read-only state and index comparison"],
     "human_decision_needed": false,
     "human_authorization": "允许继续本地审阅记录和归档; stop if access is denied again",
+    "resolution": "Authorized verification emit and Complete archive exited 0; identical orphan temporary index removed",
     "requested_scope": "one continuation of normal review/archive index writes; no runtime or installation",
     "improvement": "reconcile partial atomic-write failure before retrying lifecycle commands"
   }

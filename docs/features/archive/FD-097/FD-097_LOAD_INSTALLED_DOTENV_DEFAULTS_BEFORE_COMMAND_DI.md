@@ -95,3 +95,5 @@ source event: FD-097-000006-review-requested.
 - src/internal/util/env/loader.go and src/internal/ai/llm.go
 - src/internal/plugin/{environment,exec}.go
 - openspec/specs/cli-and-plugins/spec.md; docs/usage/cli-reference.md
+
+**Completed:** 2026-10-18
