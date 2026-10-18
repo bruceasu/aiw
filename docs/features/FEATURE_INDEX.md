@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-100](FD-100_IMPROVE_PACKAGE_SEARCH_AND_SHOW_OUTPUT.md) | Improve package search and show output | Open | Medium |
 
 ## Completed
 

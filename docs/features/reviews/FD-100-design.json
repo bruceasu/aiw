@@ -1,0 +1,24 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-100",
+  "source_event": "FD-100-000002-design-requested",
+  "human_report": "FD-100-design.md",
+  "fd_revision": 2,
+  "recommendation": "ready",
+  "findings": [],
+  "scope": "One bounded static-only independent design review; no implementation or workflow-state changes.",
+  "evidence": [
+    "search uses case-insensitive substring matching; repository.select uses exact names",
+    "display sorting can reuse format_package_list without mutating original JSON result order",
+    "show retains Manager.record validation, local-only lookup and complete JSON record serialization",
+    "recipe member versions remain distinct from current installed member versions",
+    "Work Item 1.3 covers documentation and stable-spec compatibility wording",
+    "show/search-only argument registration preserves info and other command routing"
+  ],
+  "not_run": ["tests", "compile", "runtime validation", "network", "build", "install", "git writes"],
+  "remaining_risks": [
+    "Implementation and runtime behavior are not verified by this design review.",
+    "Parent workspace must be cleaned by the user before isolated implementation."
+  ]
+}
