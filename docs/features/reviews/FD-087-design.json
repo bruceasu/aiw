@@ -1,0 +1,28 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-087",
+  "human_report": "docs/features/reviews/FD-087-design.md",
+  "source_event": null,
+  "source_event_reason": "Direct user request; no implementation or workflow event exists for this design review.",
+  "data": {
+    "revision": 1,
+    "recommendation": "ready",
+    "findings": [],
+    "reviewed_paths": [
+      "docs/features/FD-087_SEPARATE_COMPILE_PACKAGE_VERSIONS.md",
+      "build.py",
+      "scripts/package_definitions.py"
+    ],
+    "review_scope": [
+      "Explicit compile version selection and failure before writes",
+      "Unchanged native outputs and embedded versions",
+      "Package identity propagation into dependencies and collections",
+      "Environment precedence and backward compatibility",
+      "Dual version manifest provenance",
+      "No historical artifact availability guarantee"
+    ],
+    "execution": "Static local reads only; no tests, builds, compilation, network, Git writes or workflow events.",
+    "implementation_verification": false
+  }
+}

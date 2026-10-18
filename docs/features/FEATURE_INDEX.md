@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-087](FD-087_SEPARATE_COMPILE_PACKAGE_VERSIONS.md) | Separate compile and package versions | In Progress | Medium |
 
 ## Completed
 
