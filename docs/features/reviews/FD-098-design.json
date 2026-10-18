@@ -1,0 +1,39 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-098",
+  "human_report": "FD-098-design.md",
+  "source_event": "FD-098-000002-design-requested",
+  "data": {
+    "reviewed_revision": 2,
+    "recommendation": "ready",
+    "findings": [],
+    "implementation_notes": [
+      "Only default unscoped update member edges to preselected roots may omit wanted; dependency edges always retain exact wanted versions.",
+      "Explicit collection installs and scoped release updates retain exact member selection and conflicting-root failures.",
+      "Final graph validation checks dependency existence/version, member existence, and cycles across both edge types, including unselected installed records.",
+      "Preserve default-update member trimming, manual/auto reasons, lock snapshots, dry-run behavior and per-package transaction boundaries.",
+      "Do not migrate or rewrite old collection records during a standalone member update; historical member versions are not current installed versions.",
+      "Normal collection metadata updates remain permitted; clarify stable spec references to exact graph checks and retained/no-op semantics.",
+      "Shared resource runtime dependency incompatibilities remain out of scope and may still block the user's installed upgrade."
+    ],
+    "static_evidence": [
+      "FD-098 revision 2",
+      "Operation.install root selection, visit, preflight final validation and retained-record writes",
+      "Manager.record, install, remove and orphans",
+      "openspec/specs/aiw-packages/spec.md collection, update, shared planning and no-op requirements"
+    ],
+    "commands_run": [
+      "Get-Content targeted local source, plan, spec and report reads",
+      "rg targeted symbol and evidence searches",
+      "Select-Object bounded excerpts",
+      "apply_patch wrote only the design-review Markdown and JSON reports"
+    ],
+    "checks_not_run": ["tests", "runtime validation", "compile", "build", "install", "network", "verification scripts"],
+    "validation": "Bounded independent static design review only. No implementation, workflow state, installed state or Git mutations.",
+    "residual_risks": [
+      "Implementation has not yet been reviewed.",
+      "Exact runtime dependencies may still prevent the local aiw-main upgrade."
+    ]
+  }
+}
