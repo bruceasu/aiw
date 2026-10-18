@@ -55,6 +55,32 @@ It MUST NOT own individual programs' docs/usage paths or include development rep
 - WHEN AIW_PACKAGE_REPO is unset or is a remote URL
 - THEN fail without compiling, packaging or publishing
 
+### Requirement: Timestamp snapshots and latest build lookup
+
+compile/build MUST prefer --version, then nonempty AIW_VERSION, otherwise generate
+one UTC snapshot-YYYYMMDD-HHMMSSffffffZ version per invocation. They MUST print
+the chosen version before work. Publish commands MUST retain explicit versions.
+Independent package scripts retain their existing explicit/environment version contract.
+
+build.py latest [target] MUST print only the most recently built local version,
+globally or for the selected component/group/canonical alias, in chronological
+completion order rather than SemVer order. It MUST read existing manifests without
+compiling, packaging, publishing or installing. New manifests MUST include completion
+time and MUST be written only after compilation, packaging and dist/repository
+staging succeed. Historical manifests without timestamps MUST remain readable by
+using file modification time. A selected missing/invalid record or missing package
+MUST fail clearly. Compile-only operations MUST NOT update latest build records.
+
+#### Scenario: Unspecified version
+
+- WHEN compile/build receives neither --version nor nonempty AIW_VERSION
+- THEN generate a UTC snapshot version and use it throughout that invocation
+
+#### Scenario: Failed build
+
+- WHEN compilation, packaging or repository staging fails
+- THEN do not replace successful build manifests with that attempt
+
 ### Requirement: 可移植包契约
 
 包 MUST 命名为 name-version.zip，内含 info、data.zip 及可选 Python preinst/postinst。

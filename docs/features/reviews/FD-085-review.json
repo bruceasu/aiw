@@ -1,0 +1,36 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-085",
+  "source_event": "FD-085-000004-review-requested",
+  "human_report": "FD-085-review.md",
+  "data": {
+    "reviewer_session": "snapshot-review-20261018-root-snapshot-review",
+    "reviewed_commit": "b144e33",
+    "comparison_base": "460fa7e",
+    "fd_revision_at_claim": 4,
+    "result": "verification-passed",
+    "findings": [],
+    "acceptance_results": {
+      "single_utc_snapshot_and_precedence": "supported by static call tracing",
+      "explicit_publish_versions": "unchanged",
+      "global_target_alias_latest": "supported by static manifest selection and alias tracing",
+      "historical_invalid_missing_records": "supported by timestamp fallback and error paths",
+      "failed_compile_package_stage_preserves_manifests": "supported by write ordering after repository staging",
+      "docs_contract": "consistent"
+    },
+    "commands_run": [
+      "targeted Get-Content and rg reads",
+      "git diff 460fa7e b144e33 -- build.py .env.example docs openspec",
+      "aiw fd --help",
+      "aiw fd show FD-085",
+      "aiw fd claim --help",
+      "aiw fd emit --help",
+      "aiw fd claim FD-085 FD-085-000004-review-requested --session snapshot-review-20261018-root-snapshot-review"
+    ],
+    "discovery_limits": "Missing local .ai path and unmatched rg returned failure; actual handoff inspected and claimed through aiw fd",
+    "worker_compile_evidence": "Worker report records successful Python compile-only; not rerun by Reviewer",
+    "checks_not_run": ["tests", "compile", "build.py runtime validation", "package builds", "publish", "install", "network", "lint", "verification scripts"],
+    "residual_risks": ["Runtime behavior unverified", "Historical manifest copied mtime affects ordering", "Individual manifest writes do not form a multi-file transaction"]
+  }
+}

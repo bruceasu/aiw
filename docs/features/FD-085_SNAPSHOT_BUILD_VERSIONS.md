@@ -1,7 +1,7 @@
 # FD-085: Snapshot versions and latest build lookup
 
-**Status:** In Progress
-**Revision:** 2
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -34,10 +34,10 @@ adds a read-only CLI and optional metadata, preserving all explicit version synt
 
 ## Work Items
 
-- [ ] 1.1 Implement snapshot fallback, version output and latest lookup.
+- [x] 1.1 Implement snapshot fallback, version output and latest lookup.
   Size small, difficulty medium, no dependencies. Completion: aliases, historical
   manifests, failure paths and successful-build ordering covered statically.
-- [ ] 1.2 Update example, usage and stable spec; compile and record evidence.
+- [x] 1.2 Update example, usage and stable spec; compile and record evidence.
   Size small, difficulty low, depends on 1.1. Completion: compile-only success,
   consistent docs and final diff; independent Reviewer handoff.
 
@@ -51,7 +51,7 @@ adds a read-only CLI and optional metadata, preserving all explicit version synt
 
 ## TODO
 
-- Implement in feature/FD-085 at .wt/FD-085, then independent static review.
+- Implementation and compile-only complete; independent static review passed.
 - Deliver and archive when managed review and cleanup gates pass.
 
 ## Verification
@@ -59,6 +59,19 @@ adds a read-only CLI and optional metadata, preserving all explicit version synt
 Planning: inspected build.py compile/build dispatch, manifest ordering, package
 scripts' env version behavior, .env.example, stable package spec and usage docs.
 No tests, package builds, publication, installation or network commands authorized.
+
+Implementation evidence: reports/FD-085-implementation.md and same-name JSON.
+Python compile-only passed for build.py with compile(read_bytes(), path, 'exec'),
+without imports or retained artifacts. The Go-specific scripts/compile.py is
+unrelated to this Python-only change. One final scoped git diff against 460fa7e
+reviewed version precedence, optional latest target/aliases, timestamp ordering,
+historical fallback, missing-package errors and successful-stage manifest writes.
+Tests, runtime CLI execution, builds, publishing and installation were not run.
+
+Independent Reviewer: reviews/FD-085-review.md and same-name JSON; reviewed
+460fa7e..b144e33 under source event FD-085-000004-review-requested in independent
+session snapshot-review-20261018-root-snapshot-review. Static review passed with
+no blocking findings. Reviewer did not run tests, compile or runtime validation.
 
 ## Risks
 

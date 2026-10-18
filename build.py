@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
@@ -10,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import zipfile
 
 ROOT = Path(__file__).resolve().parent
@@ -258,14 +260,48 @@ def build_packages(target: str, version: str) -> list[Path]:
     compile_components(components, version)
     packages = [package_component(component, version) for component in components]
     by_component = dict(zip(components, packages))
-    for component, package in zip(components, packages):
-        write_manifest(component, version, [package])
-    write_manifest(target, version, packages)
     export_repository(packages, DIST / "repository")
+    built_at_ns = time.time_ns()
+    for component, package in zip(components, packages):
+        write_manifest(component, version, [package], built_at_ns=built_at_ns)
+    write_manifest(target, version, packages, built_at_ns=built_at_ns)
     if target == "all":
         for group in ("bin", "plugins", "skills"):
-            write_manifest(group, version, [by_component[item] for item in expand(group)])
+            write_manifest(group, version, [by_component[item] for item in expand(group)], built_at_ns=built_at_ns)
     return packages
+
+
+def build_version(explicit: str | None) -> str:
+    version = explicit if explicit is not None else os.environ.get("AIW_VERSION", "").strip()
+    if explicit is None and not version:
+        version = "snapshot-" + datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S%fZ")
+    identifier(version)
+    return version
+
+
+def latest_version(target: str | None) -> str:
+    directory = DIST / ".manifests"
+    paths = [directory / (target + ".json")] if target is not None else sorted(directory.glob("*.json"))
+    if not paths or any(not path.is_file() for path in paths):
+        raise PackageError(f"No build recorded for {target or 'any target'}; run build first")
+    candidates = []
+    for path in paths:
+        content = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(content, dict):
+            raise PackageError(f"Invalid build manifest: {path}")
+        completed = content.get("built_at_ns", path.stat().st_mtime_ns)
+        if not isinstance(completed, int) or isinstance(completed, bool) or completed <= 0:
+            raise PackageError(f"Invalid build timestamp: {path}")
+        candidates.append((completed, path.name, content))
+    content = max(candidates, key=lambda candidate: candidate[:2])[2]
+    version, packages = content.get("version"), content.get("packages")
+    if not isinstance(version, str) or not isinstance(packages, list) or not packages:
+        raise PackageError("Invalid latest build manifest: version and packages are required")
+    identifier(version)
+    for package in packages:
+        if not isinstance(package, str) or not safe_path(DIST, package).is_file():
+            raise PackageError(f"Latest build package missing or invalid: {package}")
+    return version
 
 
 def publish_destination() -> Path:
@@ -298,7 +334,9 @@ def main(arguments: list[str]) -> int:
         elif action == "export":
             command.add_argument("--repository", type=Path, required=True)
         else:
-            command.add_argument("--version", default=os.environ.get("AIW_VERSION", "dev"))
+            command.add_argument("--version", help="Explicit version; otherwise AIW_VERSION or a UTC snapshot timestamp")
+    command = actions.add_parser("latest", help="Print the most recent build version, optionally for a target", allow_abbrev=False)
+    command.add_argument("target", nargs="?", choices=choices)
     command = actions.add_parser("publish", help="Build and publish one package and its dependencies locally", allow_abbrev=False)
     command.add_argument("target", metavar="package", choices=sorted(packages | set(aliases)))
     command.add_argument("version")
@@ -310,14 +348,19 @@ def main(arguments: list[str]) -> int:
         return 0
     try:
         target = "all" if args.action == "publish-all" else aliases.get(args.target, args.target)
-        if args.action in {"publish", "publish-all"}:
+        if args.action == "latest":
+            print(latest_version(target))
+        elif args.action in {"publish", "publish-all"}:
             destination = publish_destination()
             export_repository(build_packages(target, args.version), destination)
         elif args.action == "compile":
-            identifier(args.version)
-            compile_components(expand(target), args.version)
+            version = build_version(args.version)
+            print(f"Version: {version}", flush=True)
+            compile_components(expand(target), version)
         elif args.action == "build":
-            build_packages(target, args.version)
+            version = build_version(args.version)
+            print(f"Version: {version}", flush=True)
+            build_packages(target, version)
         elif args.action in {"install", "export"}:
             manifest = DIST / ".manifests" / (target + ".json")
             if not manifest.is_file():
@@ -345,8 +388,9 @@ def main(arguments: list[str]) -> int:
         return 1
 
 
-def write_manifest(target: str, version: str, packages: list[Path]) -> None:
-    content = dict(version=version, packages=[path.relative_to(DIST).as_posix() for path in packages])
+def write_manifest(target: str, version: str, packages: list[Path], *, built_at_ns: int | None = None) -> None:
+    content = dict(version=version, packages=[path.relative_to(DIST).as_posix() for path in packages],
+                   built_at_ns=time.time_ns() if built_at_ns is None else built_at_ns)
     atomic_bytes(DIST / ".manifests" / (target + ".json"), json.dumps(content, indent=2).encode())
 
 

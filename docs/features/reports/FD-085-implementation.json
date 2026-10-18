@@ -1,0 +1,19 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-085",
+  "source_event": null,
+  "human_report": "FD-085-implementation.md",
+  "data": {
+    "source_event_reason": "Direct user implementation request; managed request-review follows without a Worker handoff",
+    "work_items": ["1.1", "1.2"],
+    "comparison_base": "460fa7e",
+    "result": "implementation-ready",
+    "compile_result": "Python build.py compile-only passed, exit 0, no imports or artifacts",
+    "static_evidence": ["one scoped git diff", "version precedence", "aliases and optional target", "timestamp and legacy ordering", "selected package checks", "manifest writes after staging"],
+    "commands_run": ["targeted Get-Content/rg and Git reads", "focused Git commits", "aiw fd set-status", "aiw git wt add FD-085", "Python compile(read_bytes(), path, exec)", "git diff 460fa7e -- scoped paths"],
+    "checks_not_run": ["tests", "CLI execution", "package build", "publish", "install", "network", "linters", "verification scripts"],
+    "residual_risks": ["Runtime behavior unverified", "Historical copied manifests use modified mtime", "Manifest writes are individually atomic, not a multi-file transaction"],
+    "next_action": "Independent Reviewer, then local delivery and archive after gates pass"
+  }
+}

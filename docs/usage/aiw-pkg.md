@@ -109,6 +109,9 @@ python build.py build docs --version 1.2.3
 python scripts/packages/docs.py --version 1.2.3
 python build.py publish aiw-git 1.2.3
 python build.py publish-all 1.2.3
+python build.py build docs
+python build.py latest
+python build.py latest aiw-docs
 ```
 
 Compile writes only bin. Build explicitly compiles selected native components and
@@ -119,6 +122,24 @@ plugin-meta.toml and skills-meta.toml define core/extension membership. Main inc
 agent-templates; shared root Skill documents have unique resource package owners.
 Individual Skills depend on needed resources rather than an aggregate support ZIP.
 Usage documents belong to their program/plugin; development docs are not installed.
+
+For `compile` and `build`, version priority is `--version`, a nonempty
+`AIW_VERSION`, then a generated UTC timestamp such as
+`snapshot-20261018-130000123456Z` (year/month/day, hour/minute/second and
+microseconds). The command prints the selected version before starting and uses
+that one value for the entire invocation. Publish commands still require their
+explicit positional version. Independent package scripts still require `--version`
+unless `AIW_VERSION` is configured.
+
+`python build.py latest` prints only the most recently built version across local
+release manifests. Add a target or full package alias to query that target.
+This is chronological build order, separate from repository SemVer `latest`.
+Compile-only commands do not update the build record. New manifests are written
+after packaging and local repository staging succeed, with a completion timestamp;
+old manifests fall back to filesystem modification time. Copying an old manifest
+can therefore affect its order. The command checks the selected manifest's package
+paths and reports an error for missing records/artifacts or invalid selected data.
+It does not compile, package, publish or install anything.
 
 The independent `aiw-docs` resource package installs usage documents under
 `docs/reference/usage` and the root README under `docs/reference/README.md`.
@@ -150,7 +171,7 @@ Use quotes around paths containing ` #`. Local `.env` stays ignored by Git.
 | Variable | Purpose | Default |
 | --- | --- | --- |
 | `AIW_PACKAGE_REPO` | Required local destination for publish commands; relative paths use the checkout root | No default; example: `d:/playground/aiw-packages` |
-| `AIW_VERSION` | Default build/compile version; independent package scripts may omit `--version` when set | `dev` for build.py; otherwise independent scripts require `--version` |
+| `AIW_VERSION` | Explicit default build/compile version; independent package scripts may omit `--version` when set | UTC `snapshot-YYYYMMDD-HHMMSSffffffZ` for build.py; otherwise independent scripts require `--version` |
 | `AIW_GO` | Go executable path or command name | `go` on PATH |
 | `AIW_NODE` | Node executable path or command name | `node` on PATH |
 | `AIW_INSTALL_DIR` | Existing default installation root; `install --dest` wins | Platform default |
