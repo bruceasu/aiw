@@ -69,14 +69,14 @@ record operations require the exact full package name; search does not create
 short-name aliases. For example:
 
 ```text
-aiw pkg search skill-fd-package
-aiw pkg install aiw-skill-fd-package --version 1.0.2
-aiw pkg show aiw-skill-fd-package
-aiw pkg show aiw-skill-fd-package --json
+aiw pkg search skills
+aiw pkg install aiw-skills --version 1.0.2
+aiw pkg show aiw-skills
+aiw pkg show aiw-skills --json
 ```
 
 Copy the full NAME from search results when installing. Specifying --version
-does not expand `skill-fd-package` to `aiw-skill-fd-package`. Scripts that parsed
+does not expand `skills` to `aiw-skills`. Scripts that parsed
 the former search/show JSON defaults must now pass `--json` explicitly.
 
 Destination: --dest, then AIW_INSTALL_DIR, then C:/green/aiw on Windows or
@@ -114,9 +114,8 @@ packages. --core and --all are mutually exclusive. Dry run never writes installa
 files/state or invokes hooks.
 
 Independent upgrades still need compatible runtime dependencies. For example,
-aiw-all 1.0.0 membership alone does not block aiw-main 1.0.1, but an older skill
-that requires a shared resource at exactly 1.0.0 can still block replacing that
-resource with 1.0.1. Collection membership does not waive that dependency check.
+aiw-all 1.0.0 membership alone does not block aiw-main 1.0.1, but an external package
+with a genuine exact runtime dependency can still block replacing that dependency. Collection membership does not waive that dependency check.
 
 Direct installs and explicitly selected root collections are manual. Dependencies
 and members are auto; an existing manual reason is preserved. Removing a collection
@@ -150,13 +149,18 @@ removed. Use pkg entries for plugin entry metadata, not the repository inventory
 ## Build and bootstrap
 
 ```text
+python build.py compile plugins
+python build.py build plugins --version 1.2.3
+python build.py build skills --version 1.2.3
+python build.py install plugins --dest NEW_ROOT
+python build.py install skills --dest NEW_ROOT
 python build.py compile aiw
 python build.py build aiw-core --version 1.2.3
 python build.py install aiw-core --dest NEW_ROOT
 python build.py export aiw-core --repository ./packages
 python build.py build docs --version 1.2.3
 python scripts/packages/docs.py --version 1.2.3
-python build.py publish aiw-git 1.2.3
+python build.py publish aiw-plugins 1.2.3
 python build.py publish-all 1.2.3
 python build.py build docs
 python build.py latest
@@ -169,38 +173,33 @@ python build.py clean
 Compile writes fixed snapshot output and provenance only to bin. Build packages
 that snapshot, automatically compiling when required output is missing.
 Install/export consume an existing release manifest and never compile,
-assemble or download. Plugins and Skills have individual scripts under
-scripts/packages; shared definitions live in scripts/package_definitions.py.
-plugin-meta.toml and skills-meta.toml define core/extension membership. Main includes
-agent-templates; shared root Skill documents have unique resource package owners.
-Individual Skills depend on needed resources rather than an aggregate support ZIP.
-Plugins do not automatically depend on a same-version aiw-plugin-runtime package.
-In particular, updating aiw-pkg does not require replacing runtime or upgrading
-unrelated plugins. Existing published ZIPs keep their original dependency metadata;
-build a fresh package version to use the corrected rules.
+assemble or download. scripts/packages/plugins.py and skills.py build one real
+payload package each: aiw-plugins (kind plugin) and aiw-skills (kind skill).
+Shared definitions live in scripts/package_definitions.py; docs.py remains separate.
 
-File, patch and notify are directory plugins with a plugin.toml and an explicit
-Python entrypoint. Their command names stay `aiw file`, `aiw patch` and `aiw notify`.
-Direct source invocations now use `src/plugins/aiw-file/aiw-file.py`,
-`src/plugins/aiw-patch/aiw-patch.py` and `src/plugins/aiw-notify/aiw-notify.py`.
-Their release packages carry private helper implementations: file and patch each
-contain aiw_codec.py, while notify contains send_teams_msg.py beside its entrypoint.
-They do not import helpers from another installed plugin or the legacy runtime.
-Notify locates its sender beside its own file, independently of the caller's directory.
+aiw-plugins contains every discovered plugin, including native Windows/Linux
+executables, manifests, resources, configuration and plugin usage documents.
+Compile selection expands the bundle into source components, while build/install
+keep one package identity and one explicit manual root. No per-plugin ZIPs are made.
+File, patch and notify keep directory manifests and entrypoints. Their private
+aiw_codec.py / send_teams_msg.py files contain complete implementations; packaging
+replaces source-only development shims. Notify resolves its sender beside itself.
+Directory META is read statically and manifest identity/startup fields take precedence.
 
-The source tree keeps one canonical implementation of each helper at the plugins
-root. Directory-local source shims use that implementation during development;
-packaging excludes those shims and copies the complete real files into each
-release directory. Plugin META remains readable through AST-based entries listing;
-manifest fields supply the directory command name, entrypoint and startup mode.
+aiw-skills contains the complete canonical src/skills tree, support files and root
+Markdown. Shared skill documents have one owner: aiw-skills. Main includes
+agent-templates but does not duplicate those documents. Installing aiw-skills updates
+the canonical source; use aiw pkg skill install <name> / --all separately to materialize
+agent copies. Individual skill names and plugin commands stay unchanged.
 
-The legacy plugin-runtime target and root helper payloads remain available for
-older installed plugins; they are not automatically removed. Explicit `plugins`
-and `all` compatibility groups may still include that resource. Individual plugin
-builds and new plugin collection dependency closures no longer pull it in.
-Normal package upgrades remove their own obsolete top-level script and install
-the directory entrypoint, preserving other packages' legacy shared files.
-Usage documents belong to their program/plugin; development docs are not installed.
+aiw-main, aiw-plugins and aiw-skills have no same-version cross dependencies and
+can be updated separately. aiw-core explicitly selects all three; aiw-all adds
+gateway and http-openai-proxy. There is no core/extension split within the bundles.
+Old individual plugin/skill/resource and plugin-runtime build targets, aliases and
+wrapper scripts are removed. This layout requires a clean NEW_ROOT; migration of
+old package records is not provided. Existing ownership checks reject collisions.
+Build does not rewrite published ZIPs or installed state. Usage documents belong
+to their program or the plugins bundle; development docs are not installed.
 
 Build writes versioned ZIPs and dependency-closed release manifests only. It does
 not publish, copy ZIPs into `dist/repository`, or print `Published`. Install resolves
@@ -275,13 +274,12 @@ The independent `aiw-docs` resource package installs usage documents under
 `docs/reference/usage` and the root README under `docs/reference/README.md`.
 It does not take ownership of the usage files installed by individual packages.
 
-Targets come from one catalog: programs (`aiw`, `gateway`, `http-openai-proxy`),
-discovered plugins, Skills, shared resources (including `docs` and `plugin-runtime`),
-and release collections (`plugins-core/all`, `skills-core/all`, `aiw-core/all`).
-Compatibility groups `bin`, `plugins`, `skills`, and `all` remain available.
-`all` includes every package, including docs, and expands dependencies once.
-Full package names such as `aiw-main`, `aiw-git`, `aiw-skill-fd-workflow` and
-`aiw-docs` are aliases for their component targets. Collection names stay unchanged.
+Targets come from one catalog: programs (aiw, gateway, http-openai-proxy),
+the plugins and skills payload bundles, docs, and aiw-core / aiw-all collections.
+Only bin and all are combination groups. all includes docs and every catalog package,
+with dependencies deduplicated. Full aliases aiw-main, aiw-plugins, aiw-skills and
+aiw-docs select the corresponding entity. Source plugin and skill names are not
+release-package targets.
 
 `publish <package> <version>` publishes that version's existing root ZIP and exact
 metadata-declared dependencies/members. `publish-all <version>` publishes all ZIPs

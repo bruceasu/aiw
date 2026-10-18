@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-102",
+  "source_event": "FD-102-000004-implementation-ready",
+  "human_report": "FD-102-review.md",
+  "data": {
+    "session_id": "fd102-review-20261019-c4a92",
+    "baseline": "89e538f",
+    "reviewed_commit": "21417f4",
+    "verdict": "pass",
+    "findings": [],
+    "results": [
+      "Release bundle identity and native compilation expansion are separate and consistent",
+      "Native/config/private helper/usage payload rules retained",
+      "Single explicit manual root and no exact cross-bundle dependency",
+      "Complete canonical skills tree and unique shared Markdown ownership",
+      "Removed old producers and documented clean-root installation",
+      "Archive, ownership, transaction and size protections retained"
+    ],
+    "commands_run": ["Get-Content", "Get-ChildItem", "rg", "git diff 89e538f 21417f4", "git diff --stat 89e538f 21417f4", "git diff --name-only 89e538f 21417f4", "aiw fd --help", "aiw fd claim --help", "aiw fd emit --help", "aiw fd claim FD-102 FD-102-000004-implementation-ready --session fd102-review-20261019-c4a92"],
+    "unrun": ["tests", "compile", "build", "runtime simulation", "network", "publish", "install"],
+    "risks": ["Final ZIP size and real dual-platform packaging/install remain unverified", "No migration of old standalone package ownership"]
+  }
+}

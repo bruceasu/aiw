@@ -36,9 +36,11 @@ local defaults for their respective repository, version, tools and installation 
 Explicit command arguments MUST take precedence over defaults. Publication version
 MUST be explicit. Go packages MUST retain Windows/Linux amd64 support.
 
-The target catalog MUST distinguish programs, plugins, Skills, resources,
-collections and compatibility groups. Existing short targets and bin/plugins/skills/all
-MUST remain valid; canonical package names MUST also be accepted.
+The target catalog MUST distinguish programs, plugins/skills payload bundles,
+docs, aiw-core/aiw-all collections, and bin/all combination groups.
+plugins and skills MUST be entity targets with aliases aiw-plugins and aiw-skills.
+Old individual plugin/skill/resource/runtime targets and old collection aliases
+MUST NOT be generated. Canonical program aliases remain supported.
 build all MUST include docs and all catalog packages with dependencies deduplicated.
 publish-all MUST select existing versioned release artifacts, independently of current source membership.
 The docs target and scripts/packages/docs.py MUST produce aiw-docs as a resource
@@ -47,9 +49,9 @@ It MUST NOT own individual programs' docs/usage paths or include development rep
 
 #### Scenario: Publish a fresh named package
 
-- WHEN `publish aiw-git 1.2.3` has a configured local repository
-- THEN publish the existing aiw-git 1.2.3 ZIP and its exact declared dependency ZIPs
-- AND do not consume any previous aiw-git manifest
+- WHEN `publish aiw-plugins 1.2.3` has a configured local repository
+- THEN publish the existing aiw-plugins 1.2.3 ZIP and its exact declared dependency ZIPs
+- AND do not consume any previous aiw-plugins manifest
 
 #### Scenario: Missing local publish configuration
 
@@ -311,68 +313,67 @@ unpublish 请求字段为 operation="unpublish"、name、version；MUST NOT 使�
 
 ### Requirement: 独立构建与更新入口
 
-每个插件和 Skill MUST 有独立 scripts 处理入口，共享同一包定义与固定 core/extension 清单。
-构建集合 MUST 输出独立成员及集合包，显式本地仓库产物 MUST 可直接读取；普通 build/install MUST 离线。
-agent-templates MUST 随主程序；共享根 Markdown MUST 唯一归属且可按独立 Skill 依赖安装。
-usage MUST 归所属程序/插件，MUST NOT 整体安装仓库开发文档。
+scripts/packages/plugins.py 和 skills.py MUST 各生成一个包含真实载荷的实体包，
+docs.py MUST 保留独立入口。插件包 MUST 覆盖全部发现的插件，技能包 MUST 包含完整 canonical 树。
+MUST NOT 生成单插件/单技能/共享文档/runtime 子包，也不保留 core/extension 分类。
+agent-templates MUST 随主程序；根共享 Markdown MUST 唯一归属 aiw-skills。
+main/plugins/skills MUST NOT 互加同版本依赖；aiw-core MUST 显式选择三者，
+aiw-all MUST 另含 gateway/http-openai-proxy。文档 MUST 要求干净安装根，不提供旧记录迁移。
+普通 build/install MUST 离线；usage MUST 归所属程序或 plugins 包，MUST NOT 安装开发报告。
 Windows 文件占用失败 MUST 显示文件、退出重试和独立 Python 更新主程序的入口。
 MUST NOT 自动终止程序、启动后台更新器、强制覆盖或安排重启替换。
 pkg 自更新 MUST 在首次修改前准备所需模块、配置、包与恢复数据；官方 pkg MUST 不带 hook。
 
-### Requirement: Self-contained plugin packages
+### Requirement: Complete plugin and skill payload bundles
 
-Plugin build planning and package metadata MUST NOT add an unconditional,
-same-version aiw-plugin-runtime dependency. A self-contained aiw-pkg update MUST
-NOT require runtime replacement solely because its own package version changed.
-Existing exact runtime-dependency validation MUST NOT be weakened.
+aiw-plugins MUST contain all discovered source plugins, native Windows/Linux
+executables, manifests, configuration, resources and plugin usage documents.
+compile and latest-compile MUST expand plugins into the same native component
+inventory, preserving provenance coverage, hashes and invalidation.
+Build MUST collect payload entries directly without intermediate plugin ZIPs.
+Build/install MUST retain one bundle identity and explicit manual root.
+aiw-skills MUST contain the complete canonical tree and root shared documents.
+Agent skill materialization MUST remain a separate operation with existing names.
 
-File, patch and notify MUST use directory packages with schema-1 plugin manifests
-and explicit Python entrypoints for the existing file, patch and notify commands.
-Each package MUST include its private complete helper implementation: aiw_codec.py
-for file/patch and send_teams_msg.py for notify. Private targets MUST be owned only
-by their plugin, without claiming another package's legacy root helper paths.
-Notify MUST locate its sender beside its own entrypoint and retain its existing
-configuration, console/Teams protocol, environment filtering and subprocess behavior.
+File, patch and notify MUST retain directory manifests and explicit entrypoints.
+The bundle MUST carry complete private aiw_codec.py files for file/patch and
+send_teams_msg.py for notify, replacing source-only shims without duplicate targets.
+Notify MUST resolve its sender beside itself and retain existing runtime behavior.
+Directory metadata MUST be read statically within its directory, with manifest
+identity and startup fields taking precedence.
 
-Canonical helper source MAY be shared in the repository. Development-only shims
-MUST be excluded from release payloads and replaced by the complete canonical
-implementation at the private target, without duplicate target entries. Directory
-entries listing MUST retain statically readable META behavior/confirmation fields;
-manifest command identity and startup fields MUST take precedence. Listing MUST
-NOT execute a plugin to obtain metadata or read Python metadata outside its directory.
+New builds MUST NOT rewrite old ZIPs or installed records. No migration of old
+standalone package ownership is provided. Generic exact dependency checks,
+ownership protections, ZIP integrity, the 512 MiB input limit, platform/config
+handling and per-package transactions MUST remain enforced.
 
-The legacy runtime target/payload MUST remain available for older releases.
-New builds MUST NOT rewrite old ZIPs or installation records. Normal upgrades
-MUST remove only their own obsolete entrypoint files using existing package
-transactions; new private helpers MUST coexist with older runtime-owned root files.
+#### Scenario: Independently update the plugins bundle
 
-#### Scenario: Upgrade pkg without touching shared runtime
+- GIVEN main, plugins and skills are installed in the new layout
+- WHEN a new aiw-plugins version is selected
+- THEN the closure MUST NOT force main, skills or runtime replacement
+- AND retained collection recipes MUST NOT pin its installed version.
 
-- GIVEN older installed plugins require aiw-plugin-runtime at exactly 1.0.1
-- WHEN a newly built self-contained aiw-pkg is selected for upgrade
-- THEN its dependency closure MUST NOT select a replacement runtime
-- AND the other plugins' genuine exact dependencies MUST remain satisfied.
+#### Scenario: Complete private helpers and skills
 
-#### Scenario: Directory plugins contain real helpers
-
-- WHEN file, patch or notify is packaged
-- THEN its directory contains a manifest, entrypoint and the real private helper
-- AND it MUST NOT ship a development shim that loads another source/plugin directory
-- AND the old top-level entrypoint MUST NOT remain in that new package.
+- WHEN plugins and skills are packaged
+- THEN file/patch/notify contain real private helpers rather than development shims
+- AND every canonical skill and root shared document is in aiw-skills
+- AND no individual plugin/skill/resource package is produced.
 
 ### Requirement: Unique program usage document ownership
 
-Program packages MUST select docs/usage documents using the longest matching
-package-name prefix, matching either the complete stem or a hyphen-delimited
+Program and source-plugin payload selection MUST use the longest matching
+command-name prefix, matching either the complete stem or a hyphen-delimited
 suffix. A shorter package prefix MUST NOT claim a more specific package's guide.
 The existing cz and aiw-issue aliases and explicit main-program documents remain
 supported. The aiw-docs resource continues to use docs/reference paths.
 
 #### Scenario: Nested plugin names
 
-- WHEN packaging aiw-file and aiw-file-convert
-- THEN docs/usage/aiw-file-convert.md belongs only to aiw-file-convert
-- AND docs/usage/aiw-file.md remains with aiw-file.
+- WHEN collecting aiw-file and aiw-file-convert into aiw-plugins
+- THEN each source selects only its own longest-prefix usage guide
+- AND both guides occur exactly once in the bundle.
 
 ### Requirement: Shared local installation planning
 
@@ -430,11 +431,11 @@ short-name aliases; selecting a version MUST NOT expand a partial name.
 
 #### Scenario: Search results provide the full installable name
 
-- GIVEN aiw-skill-fd-package exists at versions 1.0.1 and 1.0.2
-- WHEN search skill-fd-package runs
+- GIVEN aiw-skills exists at versions 1.0.1 and 1.0.2
+- WHEN search skills runs
 - THEN the default table shows the complete name and each matching version
 - AND search --json retains complete records in repository order
-- AND install skill-fd-package MUST NOT silently resolve to aiw-skill-fd-package.
+- AND install skills MUST NOT silently resolve to aiw-skills.
 
 #### Scenario: Show preserves the machine record while summarizing for people
 

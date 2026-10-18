@@ -1,7 +1,7 @@
 # FD-102: Bundle all plugins and skills into two packages
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -51,15 +51,15 @@
 
 ## Work items
 
-- [ ] 1.1 新发行目录/展开与编译组件分离；规模 small、难度 medium、无前置。完成证据：聚合 aliases、ordinary/all/core 闭包、compile provenance/native inventory、单根安装静态路径。
-- [ ] 1.2 两实体载荷与新脚本，删除旧产物生产入口；规模 small、难度 medium、依赖 1.1。完成证据：全插件/技能覆盖、helper/配置/native 文件、无重复目标或依赖环、旧脚本/清单移除。
-- [ ] 1.3 文档和稳定规范对齐新体系；规模 small、难度 low、依赖 1.1/1.2。完成证据：新命令/干净根/技能materialize/版本独立和旧语义清理。
-- [ ] 1.4 compile-only、最终静态证据及独立审查交接；规模 small、难度 medium、依赖 1.1/1.2/1.3。完成证据：一次离线 compile、一次最终只读 diff/status、双格式报告与真实未运行限制。
+- [x] 1.1 新发行目录/展开与编译组件分离；规模 small、难度 medium、无前置。完成证据：plugins/skills 为独立实体目标，compilation_components 从包展开到源码插件；compile_target/latest_compile 共用同一展开，plugins/skills 不再按 group 多根安装。
+- [x] 1.2 两实体载荷与新脚本，删除旧产物生产入口；规模 small、难度 medium、依赖 1.1。完成证据：plugin_entries 合并全部源组件的私有 helper/native/config/usage 载荷，skills 整树及根文档一次归属；移除旧 metadata/包装脚本，仅保留 plugins/skills/docs 入口，main/两包无精确交叉依赖。
+- [x] 1.3 文档和稳定规范对齐新体系；规模 small、难度 low、依赖 1.1/1.2。完成证据：668e364，同步新命令/干净根/技能materialize/版本独立和旧语义清理。
+- [x] 1.4 compile-only、最终静态证据及独立审查交接；规模 small、难度 medium、依赖 1.1/1.2/1.3。完成证据：离线 compile 退出 0，最终 diff/check/status 已核对，reports/FD-102-implementation.md/.json 记录未运行限制。
 
 ## TODO
 
-- 独立设计审查通过后提交 ready 计划并创建 feature/FD-102、.wt/FD-102。
-- 完成全部项后独立实现审查、本地 squash 交付、worktree 清理、Complete 归档。
+- 独立设计审查 ready，计划 89e538f 已提交；feature/FD-102/.wt/FD-102 已创建，父分支 develop，Worker 领取 FD-102-000003-design-ready。
+- 全部 Work Items 完成；独立实现静态审查通过（21417f4 对 89e538f），待本地 squash 交付、worktree 清理、Complete 归档。
 
 ## Acceptance
 
@@ -74,6 +74,9 @@
 
 ## Verification
 
+- 独立 Reviewer fd102-review-20261019-c4a92 审查通过：reviews/FD-102-review.md/.json，来源 FD-102-000004-implementation-ready；无阻断发现，未执行测试或发行构建。
+- 实际 Python 四文件内存语法编译通过；scripts/compile.py 退出 0，Go 输出 NUL。
+- 实际最终静态 diff/check/status 完成；报告：reports/FD-102-implementation.md/.json。未执行测试、最终构建、网络、发布和安装。
 - 用户明确允许不兼容；新布局/公共构建命令/包归属需要一轮必要独立静态设计审查。
 - 静态追踪 package catalog/expand、source inventory、native compile/provenance、载荷collector、
   LocalPackages/source ZIP 保护、Operation graph/单根原因、skills source_root 与共享文档。

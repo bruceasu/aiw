@@ -36,8 +36,8 @@ GO = {
 BIN_TARGETS = ("aiw", "gateway", "http-openai-proxy")
 TARGETS = {
     "programs": BIN_TARGETS,
-    "resources": ("docs", "plugin-runtime"),
-    "groups": ("bin", "plugins", "skills", "all"),
+    "resources": ("docs",),
+    "groups": ("bin", "all"),
 }
 IGNORE_DIRS = {".git", "__pycache__", "node_modules", ".bin", "tests", ".venv", "dist", "release"}
 IGNORE_FILES = {"aiw.toml", "cz.toml", ".cz.toml", "agent-gateway", "aiw-req", "aiw-say", "aiw-packer", "md-converter"}
@@ -94,18 +94,10 @@ def plugin_targets() -> list[str]:
                 path.stem.removeprefix("aiw-") for path in sorted((SRC / "plugins").glob("aiw-*.py"))]
 
 
-def skill_targets() -> list[str]:
-    return ["resource-" + path.stem for path in sorted((SRC / "skills").glob("*.md"))] + ["skill-" + directory.name for directory in sorted((SRC / "skills").iterdir())
-                                if directory.is_dir() and (directory / "SKILL.md").is_file()]
-
-
 def target_catalog() -> dict[str, tuple[str, ...]]:
-    """Separate package kinds from compatibility groups; discover source owners."""
+    """Expose release packages separately from source plugin components."""
     from scripts.package_definitions import COLLECTIONS
-    skills = skill_targets()
-    return {**TARGETS, "plugins": tuple(plugin_targets()),
-            "skills": tuple(item for item in skills if item.startswith("skill-")),
-            "resources": (*TARGETS["resources"], *(item for item in skills if item.startswith("resource-"))),
+    return {**TARGETS, "plugins": ("plugins",), "skills": ("skills",),
             "collections": tuple(COLLECTIONS)}
 
 
@@ -116,7 +108,7 @@ def package_aliases() -> dict[str, str]:
 
 
 def expand(target: str) -> list[str]:
-    from scripts.package_definitions import COLLECTIONS, collection_members, component_dependencies
+    from scripts.package_definitions import COLLECTIONS, collection_members
     if target in COLLECTIONS:
         result = []
         for name in collection_members(target):
@@ -129,14 +121,16 @@ def expand(target: str) -> list[str]:
         return list(dict.fromkeys([*result, target]))
     if target == "bin":
         return list(dict.fromkeys(item for component in BIN_TARGETS for item in expand(component)))
-    if target == "plugins":
-        return ["plugin-runtime", *plugin_targets(), "plugins-core", "plugins-all"]
-    if target == "skills":
-        return list(dict.fromkeys([*(item for component in skill_targets() for item in expand(component)), "skills-core", "skills-all"]))
     if target == "all":
         return list(dict.fromkeys(item for kind, names in target_catalog().items() if kind != "groups"
                                   for name in names for item in expand(name)))
-    return list(dict.fromkeys([*(item for dependency in component_dependencies(target) for item in expand(dependency)), target]))
+    return [target]
+
+
+def compilation_components(target: str) -> list[str]:
+    """Expand bundle contents for native provenance, without creating subpackages."""
+    return list(dict.fromkeys(component for package in expand(target)
+                              for component in (plugin_targets() if package == "plugins" else [package])))
 
 
 def compile_components(components: list[str]) -> None:
@@ -255,7 +249,7 @@ def save_compile_records(records: dict) -> None:
 
 
 def compile_target(target: str) -> None:
-    components = expand(target)
+    components = compilation_components(target)
     native = {item for item in components if item in GO or item == "http-openai-proxy"}
     # Invalidate before the first compiler can overwrite output or fail midway.
     records = {name: record for name, record in compile_records().items()
@@ -268,7 +262,7 @@ def compile_target(target: str) -> None:
 
 
 def latest_compile(target: str | None, *, allow_missing: bool = False) -> dict | None:
-    required = set(expand(target)) if target is not None else set()
+    required = set(compilation_components(target)) if target is not None else set()
     candidates = [record for record in compile_records().values()
                   if required.issubset(record["components"]) and record["version"] == "snapshot"]
     if not candidates:
@@ -374,9 +368,8 @@ def legacy_package_component(component: str, version: str) -> Path:
 
 def package_component(component: str, version: str) -> Path:
     from scripts.package_definitions import build_component
-    if component == "docs" or component in plugin_targets() or component.startswith("skill-"):
-        script = ROOT / "scripts/packages" / ("docs" if component == "docs" else ("skill-" + component[6:]) if component.startswith("skill-") else "plugin-aiw-" + component)
-        script = script.with_suffix(".py")
+    if component in {"plugins", "skills", "docs"}:
+        script = ROOT / "scripts/packages" / (component + ".py")
         if not script.is_file():
             raise PackageError(f"Independent package script missing: {script}")
         result = subprocess.run([sys.executable, str(script), "--version", version], cwd=ROOT, capture_output=True, text=True, check=False)
@@ -384,7 +377,7 @@ def package_component(component: str, version: str) -> Path:
             raise PackageError(f"Package script failed: {script}: {result.stderr}")
         print(result.stdout.strip())
         name = "aiw-" + component
-        category = "resources" if component == "docs" else "skills" if component.startswith("skill-") else "plugins"
+        category = {"docs": "resources", "skills": "skills", "plugins": "plugins"}[component]
         return DIST / category / version / f"{name}-{version}.zip"
     return build_component(component, version)
 
@@ -410,7 +403,7 @@ def build_packages(target: str, version: str) -> list[Path]:
         write_manifest(component, version, [by_component[item] for item in expand(component)], built_at_ns=built_at_ns)
     write_manifest(target, version, packages, built_at_ns=built_at_ns)
     if target == "all":
-        for group in ("bin", "plugins", "skills"):
+        for group in (name for name in TARGETS["groups"] if name != "all"):
             write_manifest(group, version, [by_component[item] for item in expand(group)],
                            built_at_ns=built_at_ns)
     return packages

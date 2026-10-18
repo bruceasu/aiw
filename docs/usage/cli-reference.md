@@ -51,18 +51,19 @@ Requirement Management is also distributed as the `aiw-req` plugin.
 Build one package containing its Windows and Linux binaries with:
 
 ```bat
-python build.py build req
+python build.py build plugins
 ```
 
 The Conventional Commit wizard uses a Python plugin entrypoint. See
 [the Python runtime guide](cz-python-runtime.md) for runtime requirements. Build its platform-specific release directory with:
 
 ```bat
-python build.py build cz
+python build.py build plugins
 ```
 
-`python build.py build plugins` prepares versioned plugin ZIP packages.
-`python build.py install plugins` installs those existing packages without rebuilding.
+`python build.py build plugins` prepares one aiw-plugins ZIP containing all plugins.
+`python build.py install plugins --dest NEW_ROOT` installs the existing bundle.
+Use a clean installation root; old individual-package migration is not provided.
 See [build stages and local packages](aiw-pkg.md) for paths, versions, destinations,
 single-backup recovery and `aiw pkg install/remove/purge`.
 
@@ -177,10 +178,10 @@ private session storage, and provider limitations.
 
 ### Translate text with `aiw say`
 
-AIW Say is a text translation plugin. `python build.py build say` compiles
-Windows/Linux amd64 binaries and packages both with samples in one versioned ZIP.
+AIW Say is a text translation plugin. `python build.py build plugins` prepares
+Windows/Linux amd64 binaries and includes both with samples in aiw-plugins.
 `python build.py build plugins` stages Say with the other plugins;
-`python build.py install plugins` installs the existing packages. Installation preserves an existing Say `aiw.toml`. For manual installation, build
+`python build.py install plugins` installs the existing bundle. Installation preserves an existing Say `aiw.toml`. For manual installation, build
 `src/cmd/aiw-say` from `src/` as `aiw-say.exe` on Windows or `aiw-say` on Linux/WSL,
 and place it in a directory searched by AIW plugin discovery, such as `PATH`.
 The configuration sample is

@@ -102,16 +102,14 @@
 声明形式如 `skills/work-management.md`，必须出现在入口 `SKILL.md` 中。安装器做
 字面路径匹配，不递归扫描 README 或 references 来发现额外共享依赖。
 
-### `build.py skills`：复制发行源
+### 构建与安装 aiw-skills 发行包
 
-在仓库根目录运行 `python build.py skills`，会把整个 `src/skills` 合并复制到
-`AIW_INSTALL_DIR/skills`，包含顶层 Markdown、每个技能的 README、入口及支持资源。
-`AIW_INSTALL_DIR` 默认是 `C:\green\aiw`，可用同名环境变量覆盖。
-
-它不是向当前项目 `.agents/skills` 安装技能，也不自动加载文件到 Agent。复制采用
-`dirs_exist_ok=True`，会覆盖同名文件，**不会清理源中已删除的旧文件或退役技能目录**。
-例如仅从仓库删除技能后再复制，发行目录仍可能保留旧条目；本页说明这个限制，不提供
-未经核对的自动删除操作。`build.py all` 还会执行其它构建／安装动作，不能用它替代文档检查。
+运行 `python build.py build skills --version 1.2.3` 生成一个 aiw-skills ZIP，
+包含完整 src/skills 树、顶层 Markdown、入口与支持资源。
+运行 `python build.py install skills --dest NEW_ROOT` 事务式安装现有包到干净目录。
+不再生成单技能或共享文档子包；不提供旧包记录迁移，原有文件归属保护继续生效。
+该步骤更新 canonical 发行源，Agent 技能副本仍由下一步单独安装。
+aiw-main、aiw-plugins 与 aiw-skills 不互加同版本依赖，可独立更新。
 
 ### `aiw pkg skill install`：安装到 Agent 技能目录
 
@@ -156,7 +154,7 @@ aiw pkg skill install research --scope user
 相应行为合同，再同步用户说明；不要通过 README 暗改授权。共享方法只维护规范源，
 安装副本由现有机制分发。用户级旧副本和已退役技能残留不属于当前 canonical 清单。
 
-源码核对位置：仓库 `build.py` 的 `copy_tree`／`install_skills`，以及
+源码核对位置：`scripts/package_definitions.py` 的 skills 整树载荷分支，以及
 `src/plugins/aiw-pkg/skill_management.py` 的 `source_root`、`discover_skills`、
 `shared_skill_references`、`materialize_skill_source`。这些处理方式由静态阅读确认，
 不表示本页示例中的构建、安装或测试已经执行。
