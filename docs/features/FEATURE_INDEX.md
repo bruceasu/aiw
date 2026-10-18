@@ -12,7 +12,6 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-086](FD-086_REUSE_COMPILE_AND_CLEAN.md) | Reuse compiled output and clean build directories | Complete | Medium |
 | [FD-001](archive/FD-001/FD-001_EVENT_DRIVEN_FD_WORKFLOW.md) | 事件驱动的 FD 工作流 | Complete | High |
 | [FD-002](archive/FD-002/FD-002_ACTIONABLE_FD_HANDOFF_RECOVERY_HINTS.md) | Actionable FD handoff recovery hints | Complete | Medium |
 | [FD-003](archive/FD-003/FD-003_COMPACT_CZ_RELEASE.md) | 精简 aiw-cz 发布包 | Complete | Medium |
@@ -98,6 +97,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 | [FD-083](archive/FD-083/FD-083_PACKAGE_REPOSITORY.md) | 统一包管理与 Package Repository | Complete | Medium |
 | [FD-084](archive/FD-084/FD-084_BUILD_PUBLISH_AND_TARGETS.md) | Build publishing and target catalog | Complete | Medium |
 | [FD-085](archive/FD-085/FD-085_SNAPSHOT_BUILD_VERSIONS.md) | Snapshot versions and latest build lookup | Complete | Medium |
+| [FD-086](archive/FD-086/FD-086_REUSE_COMPILE_AND_CLEAN.md) | Reuse compiled output and clean build directories | Complete | Medium |
 
 ## Deferred / Closed
 
