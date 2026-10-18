@@ -1,5 +1,7 @@
 # FD-099 独立设计审查
 
+<!-- aiw-data: FD-099-design.json -->
+
 - 结论：ready
 - 设计版本：Revision 2
 - 来源事件：FD-099-000002-design-requested

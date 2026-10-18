@@ -201,8 +201,11 @@ git export MUST 璋冪敤 `git archive --format=zip` 瀵煎嚭鎸囧畾 Git ref�
 
 The Git plugin MUST provide `merge-to <target_branch> [source_branch]` and
 `merge-to --new <new_branch> <source_branch1> [source_branch2 ...]`.
+Both modes MUST accept one optional `--push` before or after branch arguments.
+Duplicate --push and unknown options MUST be rejected before Git state changes.
 The invoking checkout, working files, and index MUST remain unchanged.
-Sources MUST be validated before mutation; the command MUST NOT fetch or push.
+Sources MUST be validated before mutation; the command MUST NOT fetch and MUST
+NOT push unless --push is present.
 
 #### Scenario: Merge into an existing target
 
@@ -230,6 +233,23 @@ Sources MUST be validated before mutation; the command MUST NOT fetch or push.
 - **AND** earlier successful merges and any newly created target remain; no automatic reset or abort occurs.
 - **WHEN** worktree cleanup fails
 - **THEN** the command returns failure and reports the remaining recovery path.
+
+#### Scenario: Push the target after successful local completion
+
+- **WHEN** --push is present and all source merges, temporary worktree removal and temporary directory cleanup succeed
+- **THEN** the command pushes once to origin with the explicit `refs/heads/<target>:refs/heads/<target>` refspec.
+- **AND** it MUST NOT force-push, follow tags, push submodules or set upstream configuration.
+- **AND** --new with a single source is eligible after the same cleanup boundary.
+- **WHEN** a merge, checkout or cleanup fails
+- **THEN** the command MUST NOT push.
+
+#### Scenario: Push failure preserves successful local merges
+
+- **WHEN** the push returns a nonzero exit code
+- **THEN** the command returns that exit code and reports that the local merges are retained.
+- **AND** it MUST NOT retry, reset the target, repeat merges or recreate the cleaned worktree.
+- **WHEN** push is interrupted or cannot start
+- **THEN** the command returns failure and the already-reported successful local merges remain.
 
 
 ## 瀹炵幇渚濇嵁

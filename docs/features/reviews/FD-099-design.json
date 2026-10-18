@@ -3,6 +3,7 @@
   "kind": "design-review",
   "fd_id": "FD-099",
   "source_event": "FD-099-000002-design-requested",
+  "human_report": "FD-099-design.md",
   "revision": 2,
   "recommendation": "ready",
   "findings": [],

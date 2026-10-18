@@ -22,25 +22,31 @@ META = {
         "Use a temporary worktree to merge the current or selected branch into "
         "an existing local target. With --new, create the target from the first "
         "source and merge the other sources in order. Sources may be local or "
-        "existing remote-tracking branches. No fetch or push is performed. "
+        "existing remote-tracking branches. No fetch is performed. With --push, "
+        "push the target to the same branch on origin after successful merges "
+        "and cleanup; otherwise no push is performed. A failed push preserves "
+        "the local merges and returns failure without retrying. "
         "A target checked out in any worktree is rejected. Your checkout, files, "
-        "and index stay unchanged. Success removes the temporary worktree; "
-        "failure retains it and prints recovery commands. Earlier successful "
+        "and index stay unchanged. Local success removes the temporary worktree; "
+        "merge failure retains it and prints recovery commands. Earlier successful "
         "merges and a newly created target are retained on failure."
     ),
     "usage": (
-        "aiw git merge-to <target_branch> [source_branch]\n"
-        "  aiw git merge-to --new <new_branch> <source_branch1> [source_branch2 ...]"
+        "aiw git merge-to <target_branch> [source_branch] [--push]\n"
+        "  aiw git merge-to --new <new_branch> <source_branch1> [source_branch2 ...] [--push]"
     ),
     "args": [
         {"flag": "<target_branch>", "description": "Existing local target branch."},
         {"flag": "[source_branch]", "description": "Source branch; default: current branch."},
         {"flag": "--new", "description": "Create a new target from the first source."},
+        {"flag": "--push", "description": "After successful merges and cleanup, push the target to origin."},
     ],
     "examples": [
         "aiw git merge-to main",
         "aiw git merge-to main feature/login",
+        "aiw git merge-to main feature/login --push",
         "aiw git merge-to --new integration feature/login feature/search",
+        "aiw git merge-to --new integration feature/login feature/search --push",
     ],
 }
 HELP_FLAGS = {"-h", "--help", "-help", "-?"}
@@ -95,15 +101,19 @@ def resolve_source(name, cwd):
 
 
 def parse_args(argv):
-    new = bool(argv and argv[0] == "--new")
-    values = argv[1:] if new else argv
+    if argv.count("--push") > 1:
+        raise ValueError("Pass --push only once.")
+    push = "--push" in argv
+    values = [value for value in argv if value != "--push"]
+    new = bool(values and values[0] == "--new")
+    values = values[1:] if new else values
     if (
         any(value.startswith("-") for value in values)
         or (new and len(values) < 2)
         or (not new and len(values) not in (1, 2))
     ):
         raise ValueError("Use a target and optional source, or --new with a target and sources.")
-    return new, values[0], values[1:]
+    return new, values[0], values[1:], push
 
 
 def preflight(new, target, sources, cwd):
@@ -179,7 +189,7 @@ def main(argv):
         core.print_help_meta(META)
         return 0
     try:
-        new, target, sources = parse_args(argv)
+        new, target, sources, push = parse_args(argv)
         cwd = Path.cwd()
         resolved = preflight(new, target, sources, cwd)
     except ValueError as exc:
@@ -229,7 +239,20 @@ def main(argv):
             recovery(path, target, [])
             return result.returncode
         parent.rmdir()
-        print(f"Merged into {target!r}. Your workspace was not switched.")
+        print(f"Merged into {target!r}. Your workspace was not switched.", flush=True)
+        if push:
+            target_ref = "refs/heads/" + target
+            result = git([
+                "push", "--no-follow-tags", "--recurse-submodules=no", "--",
+                "origin", f"{target_ref}:{target_ref}",
+            ], cwd)
+            if result.returncode:
+                print(
+                    f"error: push of {target!r} to origin failed; local merges are retained.",
+                    file=sys.stderr,
+                )
+                return result.returncode
+            print(f"Pushed {target!r} to origin.")
         return 0
     except (OSError, KeyboardInterrupt) as exc:
         print(f"error: {exc or 'merge-to interrupted'}", file=sys.stderr)

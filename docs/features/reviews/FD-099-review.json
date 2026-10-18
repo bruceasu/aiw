@@ -1,0 +1,19 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-099",
+  "source_event": "FD-099-000004-implementation-ready",
+  "human_report": "FD-099-review.md",
+  "data": {
+    "reviewer_session_ref": "fd099-review-20261019-b7319d",
+    "baseline": "01606f6",
+    "reviewed_commit": "0ad456e",
+    "verdict": "passed",
+    "findings": [],
+    "static_results": ["Default never pushes", "Optional flag positions and invalid arguments covered", "One explicit origin target push after all merges and cleanup", "No force, follow-tags, submodule push or upstream", "Push failure and exceptions preserve local completion and return failure", "Final META, CLI docs, stable spec and evidence consistent"],
+    "commands_run": ["Get-Content/Get-ChildItem/rg targeted reads", "git diff 01606f6..0ad456e", "aiw fd --help", "aiw fd show FD-099", "aiw fd claim --help", "aiw fd emit --help", "aiw fd claim FD-099 FD-099-000004-implementation-ready --session fd099-review-20261019-b7319d"],
+    "worker_compile_evidence": "Reported offline compile-only exit 0 before final META text clarification; final strings inspected statically, no repeat compile claimed",
+    "checks_not_run": ["tests", "compile", "script runtime", "merge-to", "push", "network", "final build", "formatters", "linters", "install"],
+    "residual_risks": ["Remote authentication, availability and non-fast-forward behavior not exercised"]
+  }
+}

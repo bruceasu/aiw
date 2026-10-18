@@ -1,0 +1,18 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-099",
+  "source_event": "FD-099-000003-design-ready",
+  "human_report": "FD-099-implementation.md",
+  "data": {
+    "worker_session_ref": "fd099-host-20261019-c142f0",
+    "baseline": "01606f6",
+    "summary": "Optional --push after complete merge-to success and cleanup, using explicit origin target refspec",
+    "compile_result": "One offline compile-only batch: in-memory Python syntax and scripts/compile.py to NUL; exit 0",
+    "compile_command": "python -c \"from pathlib import Path; import runpy; p = Path('src/plugins/aiw-git/git-merge-to.py'); compile(p.read_text(encoding='utf-8'), str(p), 'exec'); print('Python syntax compile: OK'); runpy.run_path('scripts/compile.py', run_name='__main__')\"",
+    "compile_environment": {"GOPROXY": "off", "GOSUMDB": "off", "GOTOOLCHAIN": "local"},
+    "static_scope": ["parse_args default/new modes, flag positions and duplicate/unknown rejection", "all early checkout/merge/cleanup failures skip push", "single-source new target follows success path", "explicit target refspec, no tags/submodule/force/upstream", "push exit propagation and preserved local merge", "help, docs and stable spec"],
+    "checks_not_run": ["tests", "test creation", "merge-to runtime", "push", "fetch", "network", "final builds", "publish", "install", "formatters", "linters", "vet", "verification scripts"],
+    "residual_risks": ["Remote availability/authentication/non-fast-forward behavior not exercised", "Installed plugin unchanged"]
+  }
+}

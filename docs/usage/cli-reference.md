@@ -915,14 +915,20 @@ aiw git merge-to target_branch
 # Merge a selected source into an existing local target.
 aiw git merge-to target_branch source_branch
 
+# Merge, then push the target to its same-named branch on origin.
+aiw git merge-to target_branch source_branch --push
+
 # Create a target from the first source, then merge the others in order.
 aiw git merge-to --new new_branch source_branch1 source_branch2
+
+# Create, merge, and push a new target.
+aiw git merge-to --new new_branch source_branch1 source_branch2 --push
 ```
 
 The target must be a local branch. Existing targets checked out in any worktree
 are rejected, including the current branch. Sources may be local branches or
 already available remote-tracking branches such as `origin/feature/login`; the
-command does not fetch or push. All sources are checked before creating the
+command does not fetch, and only pushes when --push is present. All sources are checked before creating the
 worktree. Detached HEAD requires an explicit source. With `--new`, the target
 must not exist; a single source is enough to create it.
 
@@ -934,6 +940,18 @@ its cause. Merge any listed remaining sources in order, then remove the clean
 worktree with `git worktree remove <path>`. To abort an unfinished merge, use
 `git -C <path> merge --abort`. Earlier successful merges and any newly created
 target remain on failure or abort. Cleanup failure returns a nonzero exit code.
+
+`--push` may appear before or after the branch arguments in either mode. It
+pushes only after all merges and temporary worktree/directory cleanup succeed,
+including a --new target created from a single source. It runs a normal,
+non-forced push to `origin`, using `refs/heads/<target>:refs/heads/<target>`;
+it does not push the invoking branch, follow tags, push submodules, or set
+upstream configuration. A duplicate --push is rejected.
+
+Merge or cleanup failure never triggers push. A missing origin, authentication
+error or remote rejection returns a nonzero exit code from push while preserving
+the successful local merges. Push is not retried and local merges are not reset;
+fix the reported cause before retrying the push separately.
 
 ## `aiw git cz` (Conventional Commit Wizard)
 
