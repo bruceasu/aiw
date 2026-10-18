@@ -319,3 +319,16 @@ in-memory payload pinning before self-update MUST remain in Operation.
 An installed matching version/fingerprint MUST skip temporary payload writes after
 the installation lock and incomplete-transaction guard, preserving reason,
 dependency and member record updates. No persistent validation cache is introduced.
+
+### Requirement: Readable package lists with explicit JSON
+
+`aiw pkg list` MUST default to an aligned table showing NAME, VERSION and KIND.
+`list --installed` MUST additionally show REASON, displaying legacy missing reasons
+as manual without changing stored records. Empty selections MUST have readable
+messages. Only table rows MAY be sorted for display.
+
+`list --json`, including `--installed --json`, MUST retain the previous complete
+JSON arrays, metadata fields and record order. Existing --all, --kind, latest-version,
+repository and destination selection MUST remain unchanged. Installed listing MUST
+not contact a repository. Other subcommands MUST retain their existing output.
+Scripts relying on the previous default JSON MUST explicitly select --json.

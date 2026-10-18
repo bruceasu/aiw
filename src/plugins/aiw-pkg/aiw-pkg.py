@@ -14,6 +14,23 @@ import entries
 import skill_management
 
 
+def format_package_list(records, *, installed=False):
+    if not records:
+        return "No installed packages." if installed else "No packages found."
+    columns = [("NAME", "name"), ("VERSION", "version"), ("KIND", "kind")]
+    if installed:
+        columns.append(("REASON", "reason"))
+    rows = [[str(record.get(key, "manual" if key == "reason" else "-"))
+             for _, key in columns]
+            for record in sorted(records, key=lambda record: (record["name"], record["version"]))]
+    headers = [label for label, _ in columns]
+    widths = [max(len(headers[index]), *(len(row[index]) for row in rows))
+              for index in range(len(columns))]
+    lines = [headers, ["-" * width for width in widths], *rows]
+    return "\n".join("  ".join(value.ljust(width) for value, width in zip(row, widths)).rstrip()
+                     for row in lines)
+
+
 def main(arguments=None):
     skill_management.configure_utf8_stdio()
     arguments = list(sys.argv[1:] if arguments is None else arguments)
@@ -42,6 +59,7 @@ def main(arguments=None):
     listing = commands.add_parser("list")
     listing.add_argument("--all", action="store_true")
     listing.add_argument("--installed", action="store_true")
+    listing.add_argument("--json", action="store_true", help="Print complete JSON records instead of a table")
     listing.add_argument("--dest", type=Path, default=default_destination())
     listing.add_argument("--kind", choices=("program", "plugin", "skill", "resource", "collection"))
     listing.add_argument("--repo", default=argparse.SUPPRESS)
@@ -103,8 +121,9 @@ def main(arguments=None):
             print("Use aiw pkg autoremove, or aiw pkg mark manual <package> to retain a member.")
             return 0
         if args.action == "list" and args.installed:
-            records = manager.records()
-            print(json.dumps([r for r in records.values() if not args.kind or r.get("kind") == args.kind], ensure_ascii=False, indent=2))
+            records = [r for r in manager.records().values() if not args.kind or r.get("kind") == args.kind]
+            print(json.dumps(records, ensure_ascii=False, indent=2) if args.json else
+                  format_package_list(records, installed=True))
             return 0
         if args.action == "install":
             path = Path(args.package).expanduser()
@@ -142,7 +161,10 @@ def main(arguments=None):
             else:
                 result = catalog if args.all else [select(catalog, n) for n in sorted({r["name"] for r in catalog})]
                 result = [r for r in result if not args.kind or r["kind"] == args.kind]
-            print(json.dumps(result, ensure_ascii=False, indent=2))
+            if args.action == "list" and not args.json:
+                print(format_package_list(result))
+            else:
+                print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
     except (PackageError, OSError, ValueError, KeyError, TypeError, zipfile.BadZipFile) as error:
         print(f"pkg: {error}", file=sys.stderr)

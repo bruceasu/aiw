@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-095](FD-095_READABLE_PACKAGE_LIST_OUTPUT_WITH_EXPLICIT_JSON_.md) | Readable package list output with explicit JSON mode | Open | Medium |
+| [FD-095](FD-095_READABLE_PACKAGE_LIST_OUTPUT_WITH_EXPLICIT_JSON_.md) | Readable package list output with explicit JSON mode | Pending Verification | Medium |
 
 ## Completed
 

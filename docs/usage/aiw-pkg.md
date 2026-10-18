@@ -22,10 +22,10 @@ type flag, network probe or fallback is used. The nearest project aiw.toml or
 .aiw.toml wins; AIW_ROOT/aiw.toml is the fallback. Expand ~ for local paths.
 
 ```text
-aiw pkg list [--all] [--repo URL]
+aiw pkg list [--all] [--repo URL] [--json]
 aiw pkg search QUERY
 aiw pkg info NAME [--version VERSION]
-aiw pkg list --installed [--kind plugin] [--dest ROOT]
+aiw pkg list --installed [--kind plugin] [--dest ROOT] [--json]
 aiw pkg show NAME [--dest ROOT]
 aiw pkg entries --json
 aiw pkg install NAME [--version VERSION] [--dest ROOT] [--dry-run]
@@ -41,6 +41,14 @@ aiw pkg unpublish NAME VERSION [--repo URL]
 aiw pkg index ./packages
 aiw pkg pack WORKSPACE --output NAME-VERSION.zip
 ```
+
+Package lists default to an aligned NAME / VERSION / KIND table. Installed lists
+also show REASON (manual or auto). Empty selections show a short message.
+Use `aiw pkg list --json` or `aiw pkg list --installed --json` for the previous
+complete JSON arrays, including all metadata fields. Scripts that parsed the old
+default output must add `--json`. Table sorting does not change JSON record order.
+The `--all`, `--kind`, latest-version selection and source behavior stay unchanged;
+`--installed` reads installation records without contacting a repository.
 
 Destination: --dest, then AIW_INSTALL_DIR, then C:/green/aiw on Windows or
 ~/apps/aiw on Linux. Each root has separate .aiw/packages state and a write lock.

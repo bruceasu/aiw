@@ -1,7 +1,7 @@
 # FD-095: Readable package list output with explicit JSON mode
 
-**Status:** Open
-**Revision:** 3
+**Status:** Pending Verification
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -32,10 +32,10 @@ No linked Issue or OpenSpec change.
 
 ## Work Items
 
-- [ ] 1.1 Render package list tables and add explicit JSON mode in both list paths.
+- [x] 1.1 Render package list tables and add explicit JSON mode in both list paths.
   Size small, difficulty low, no dependencies. Completion: filters and array data
   preserved, installed reason defaults and empty output handled, other commands unchanged.
-- [ ] 1.2 Document output contract and prepare narrow compile/static evidence.
+- [x] 1.2 Document output contract and prepare narrow compile/static evidence.
   Size small, difficulty low, depends on 1.1. Completion: docs/spec and Python
   in-memory compile result recorded. Independent review is the lifecycle gate.
 
@@ -48,12 +48,16 @@ No linked Issue or OpenSpec change.
 
 ## TODO
 
-- Obtain design feedback, implement and request independent static review.
+- Independent design ready; implementation/docs and Python compile-only complete.
+- Independent implementation review remains required before completion.
 
 ## Verification
 
 One in-memory Python compile of aiw-pkg.py plus one static diff inspection.
 No tests, runtime list invocation, network, final build or installation.
+Python in-memory compile exited 0. One implementation diff inspection traced both
+list branches, display-only sorting, JSON preservation, empty selections and
+short-circuit handling for other subcommands. See implementation report.
 
 ## Sources
 
