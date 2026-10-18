@@ -1,0 +1,33 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd": "FD-096",
+  "human_report": "FD-096-design.md",
+  "source_event": null,
+  "data": {
+    "source_event_reason": "Planner requested one bounded independent static design feedback; no role event was claimed or emitted.",
+    "reviewed_revision": 2,
+    "recommendation": "ready",
+    "findings": [
+      {
+        "id": "D1",
+        "severity": "medium",
+        "summary": "Clarify whether changed-package dry-run retains payload preflight or becomes metadata-only preview.",
+        "reason": "Index entries omit files, so zero-fetch dry-run cannot preserve existing payload path/ownership/platform checks.",
+        "suggestion": "Prefer zero fetch only for unchanged dry-run; otherwise document metadata-only preview limits explicitly.",
+        "resolution": "Planner accepted unchanged/no-op dry-run zero-fetch only; changed dry-run preserves prepare/preflight without installed-state writes or hooks.",
+        "status": "resolved-by-planner-decision"
+      }
+    ],
+    "implementation_notes": [
+      "Retained graph nodes use complete index dependencies/members before collection update trimming.",
+      "Keep final validation against unselected installed nodes and preserve manual installation reasons.",
+      "Do not invoke Manager.install on retained nodes; zero-target-inspection acceptance applies to named repository install/update, excluding initial build-local catalog/input-protection checks.",
+      "Changed writes must not overwrite any source archive or its ancestor, including archives of retained nodes.",
+      "Bind once-decoded archive metadata and raw-byte integrity to its validated index entry before self-update.",
+      "Do not add compensating local-content checks; user accepts local edits."
+    ],
+    "validation": "Static source review only; no runtime, compile, tests, build, installation, network, Git or workflow-state mutations.",
+    "performance_measurement": "Not run"
+  }
+}

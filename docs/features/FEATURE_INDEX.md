@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-096](FD-096_SKIP_UNCHANGED_PACKAGES_FROM_INDEX_BEFORE_ARCHIV.md) | Skip unchanged packages from index before archive acquisition | Open | High |
 
 ## Completed
 
