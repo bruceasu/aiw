@@ -20,4 +20,6 @@ R1 示例静态追踪：根内 sub junction 到 E:/outside/sub，再遇 run.py -
 安装、联网或修正后运行验证。已安装程序不变。
 
 提交新受管 implementation-ready 后，请 Reviewer 对修正及完整 resolver 做聚焦复审；
-Work Item 1.2 待真实 pass 后完成。
+首次 handoff 因 Work Item 1.2 错把独立 pass 写成 Worker 前置条件而被 CLI 拒绝。
+Planner 保留 item ID，把它的实现完成标准修正为文档和编译证据；独立通过仍是
+整个 FD 完成的必需 Gate，没有跳过 review。修正后重新交接。

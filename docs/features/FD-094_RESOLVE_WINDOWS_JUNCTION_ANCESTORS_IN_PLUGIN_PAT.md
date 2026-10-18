@@ -49,9 +49,10 @@ No linked Issue/OpenSpec change. Existing builds must be recompiled explicitly.
 - [x] 1.1 Follow link/junction ancestors with bounded traversal and error context.
   Size small, difficulty medium, dependencies none. Completion: static trace covers
   C:/green to D:/green, links in suffix/target, cycles, containment and unknown types.
-- [ ] 1.2 Update docs/spec, offline Go compile-only and independent static review.
+- [x] 1.2 Update docs/spec and prepare offline compile-only evidence for review.
   Size small, difficulty low, depends on 1.1. Completion: truthful diagnosis ledger,
-  root compile-only to NUL and independent managed pass.
+  root compile-only to NUL and current repair report. Independent managed review
+  remains the mandatory lifecycle completion gate, not a Worker prerequisite.
 
 ## Acceptance
 
@@ -83,6 +84,10 @@ an ancestor is a junction. Work Item 1.2 remains incomplete; no runtime check re
 R1 repair now uses root-to-leaf traversal and raw target queues. A fresh offline
 compile-only after this source change returned exit 0; one focused diff inspection
 completed. Fresh independent review is required; the earlier finding remains history.
+The first repair handoff was rejected because item 1.2 circularly required a review
+pass before requesting review. Planner corrected only that item's completion
+criterion to authored implementation evidence; its ID and required independent
+review gate remain. No review or behavior requirement was waived.
 
 ## Sources
 
