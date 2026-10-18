@@ -1,10 +1,10 @@
 id = "ISSUE-00008"
 title = "aiw-file-convert: convert documents to text or Markdown"
 parent_id = ""
-status = "APPROVED"
+status = "ARCHIVED"
 created = "2026-10-18"
 updated = "2026-10-18"
-revision = 8
+revision = 9
 
 [approval]
 status = "APPROVED"
@@ -21,9 +21,9 @@ task_id = ""
 session_id = ""
 
 [terminal]
-by = ""
-at = ""
-reason = ""
+by = "LAPTOP-P8VM6T16\\suk"
+at = "2026-10-18T14:46:33+09:00"
+reason = "Done"
 
 [artifact]
 requirement-plan = "docs/issues/ISSUE-00008/issue-plan.md"

@@ -78,3 +78,5 @@ Link relevant specs and evidence used for decisions.
 - Design review: ready. Implementation review: verification-passed after bounded recheck of R1/R2/R3 at c35181f; original changes-requested evidence retained.
 - No tests, real conversions, browser/PDF visual validation, downloads, installation, formatters, lint, vet or final builds were run.
 - Residual risks: third-party integration, cross-platform browser behavior, fonts, old DOC quality and custom CDP compatibility remain untested.
+
+**Completed:** 2026-10-18
