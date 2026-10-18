@@ -1,0 +1,35 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-082",
+  "source_event": "FD-082-000002-design-requested",
+  "human_report": "FD-082-design-r1.md",
+  "data": {
+    "revision": 2,
+    "session": "/root/fd080_design",
+    "verdict": "ready",
+    "recommendation": "ready",
+    "findings": [
+      {
+        "id": "D1",
+        "severity": "low",
+        "blocking": false,
+        "summary": "synthetic previous 不得改写事务 before 的真实原记录；legacy 只登记被覆盖旧非配置文件，remove 撤销新增文件且保留配置登记。"
+      },
+      {
+        "id": "D2",
+        "severity": "low",
+        "blocking": false,
+        "summary": "legacy 有恢复记录但没有旧 ZIP，后续升级及 remove/purge 应继续接受；mode 恢复不等同于 Windows ACL 恢复。"
+      }
+    ],
+    "validation": {
+      "mode": "local-static-only",
+      "tests_run": false,
+      "compile_run": false,
+      "build_run": false,
+      "network_used": false,
+      "workflow_events_emitted": false
+    }
+  }
+}
