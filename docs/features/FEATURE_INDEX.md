@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-094](FD-094_RESOLVE_WINDOWS_JUNCTION_ANCESTORS_IN_PLUGIN_PAT.md) | ﻿# FD-094: Resolve Windows junction ancestors in plugin paths | Pending Verification | High |
+| [FD-094](FD-094_RESOLVE_WINDOWS_JUNCTION_ANCESTORS_IN_PLUGIN_PAT.md) | ﻿# FD-094: Resolve Windows junction ancestors in plugin paths | In Progress | High |
 
 ## Completed
 

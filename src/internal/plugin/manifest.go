@@ -90,47 +90,65 @@ func readPluginManifest(directory string) ([]pluginManifestEntry, error) {
 // resolveManifestPath avoids case enumeration for ordinary Windows paths and
 // follows junctions, which recent Go versions expose as irregular reparse types.
 func resolveManifestPath(value string) (string, error) {
-	return resolveManifestPathLinks(value, 0)
-}
-
-func resolveManifestPathLinks(value string, links int) (string, error) {
-	if links > 255 {
-		return "", errors.New("resolve plugin path: too many links")
-	}
 	absolute, err := filepath.Abs(value)
 	if err != nil {
 		return "", err
 	}
-	for current := absolute; ; current = filepath.Dir(current) {
-		if filepath.Dir(current) == current {
-			return absolute, nil
+	volume := filepath.VolumeName(absolute)
+	resolved := volume + string(filepath.Separator)
+	pending := strings.Split(filepath.ToSlash(absolute[len(volume):]), "/")
+	links := 0
+	for len(pending) > 0 {
+		part := pending[0]
+		pending = pending[1:]
+		if part == "" || part == "." {
+			continue
 		}
+		if part == ".." {
+			resolved = filepath.Dir(resolved)
+			continue
+		}
+		current := filepath.Join(resolved, part)
 		info, err := os.Lstat(current)
 		if err != nil {
 			return "", fmt.Errorf("inspect path %q: %w", current, err)
 		}
 		kind := info.Mode() & os.ModeType
 		if kind&(os.ModeSymlink|os.ModeIrregular) != 0 {
+			links++
+			if links > 255 {
+				return "", errors.New("resolve plugin path: too many links")
+			}
 			target, err := os.Readlink(current)
 			if err != nil {
 				return "", fmt.Errorf("read link target %q: %w", current, err)
 			}
-			if !filepath.IsAbs(target) {
-				if filepath.VolumeName(target) != "" {
+			if target == "" {
+				return "", fmt.Errorf("link %q has an empty target", current)
+			}
+			if filepath.IsAbs(target) {
+				volume = filepath.VolumeName(target)
+				resolved = volume + string(filepath.Separator)
+				target = target[len(volume):]
+			} else {
+				if filepath.VolumeName(target) != "" || os.IsPathSeparator(target[0]) {
 					return "", fmt.Errorf("link %q has a volume-relative target", current)
 				}
-				target = filepath.Join(filepath.Dir(current), target)
 			}
-			suffix, err := filepath.Rel(current, absolute)
-			if err != nil {
-				return "", fmt.Errorf("resolve link suffix %q: %w", current, err)
-			}
-			return resolveManifestPathLinks(filepath.Join(target, suffix), links+1)
+			// Keep raw target components: cleaning link/.. before following link
+			// would choose the wrong parent across a symlink or junction.
+			pending = append(strings.Split(filepath.ToSlash(target), "/"), pending...)
+			continue
 		}
 		if kind != 0 && kind != os.ModeDir {
 			return filepath.EvalSymlinks(absolute)
 		}
+		if len(pending) > 0 && !info.IsDir() {
+			return "", fmt.Errorf("path component %q is not a directory", current)
+		}
+		resolved = current
 	}
+	return resolved, nil
 }
 
 func resolveManifestEntrypoint(directory, entrypoint string) (string, error) {

@@ -1,7 +1,7 @@
 ﻿# FD-094: Resolve Windows junction ancestors in plugin paths
 
-**Status:** Pending Verification
-**Revision:** 5
+**Status:** In Progress
+**Revision:** 7
 **Priority:** High
 **Evidence policy:** Dual
 
@@ -23,11 +23,12 @@ The one diagnostic authorization is consumed; no rerun or installed mutation imp
 
 ## Decision
 
-During ancestor inspection explicitly follow both ModeSymlink and ModeIrregular
-components using os.Readlink, which the local Windows standard library implements
-for symlink and mount-point tags. Join the link target with the inspected suffix,
-then restart the complete ancestor inspection, bounded to 255 link traversals.
-Resolve relative targets against the link parent; reject volume-relative targets.
+Inspect components from the volume root and explicitly follow both ModeSymlink and
+ModeIrregular using os.Readlink, which the Windows standard library implements for
+symlink and mount-point tags. Queue raw link target components before the remaining
+suffix, bounded to 255 traversals across the entire path. Resolve `..` only against
+the already resolved physical parent; never Join/Clean an unresolved link target.
+Absolute targets reset the volume root; reject volume-relative targets.
 Unknown irregular types with unreadable link targets fail closed with path context.
 Other unusual filesystem types retain existing physical resolution behavior.
 
@@ -62,8 +63,9 @@ No linked Issue/OpenSpec change. Existing builds must be recompiled explicitly.
 
 ## TODO
 
-- Implementation/docs and offline Go compile-only complete; independent review pending.
-- Complete 1.2 after current independent pass; installed executable remains unchanged.
+- Independent review R1 corrected with root-to-leaf raw-component processing;
+  fresh focused review required before completing 1.2.
+- Installed executable remains unchanged; do not claim runtime recovery.
 
 ## Verification
 
@@ -75,6 +77,12 @@ No tests, final builds, installation, publication, network or fixed-runtime chec
 Offline scripts/compile.py returned exit 0, compiling both Go entrypoints to NUL.
 One implementation diff inspection traced target substitution, recursion bounds,
 mixed mode bits and unchanged final entrypoint guards. See implementation report.
+Independent review requests changes: docs/features/reviews/FD-094-review.md and JSON.
+The leaf-first relative-link expansion can select the wrong physical target when
+an ancestor is a junction. Work Item 1.2 remains incomplete; no runtime check rerun.
+R1 repair now uses root-to-leaf traversal and raw target queues. A fresh offline
+compile-only after this source change returned exit 0; one focused diff inspection
+completed. Fresh independent review is required; the earlier finding remains history.
 
 ## Sources
 

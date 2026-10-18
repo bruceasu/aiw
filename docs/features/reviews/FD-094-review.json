@@ -1,0 +1,40 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-094",
+  "source_event": "FD-094-000006-review-requested",
+  "human_report": "FD-094-review.md",
+  "data": {
+    "reviewer_session": "codex-fd094-junction-review-20261019",
+    "baseline": "7a3c2d8",
+    "reviewed_commit": "8f4b7c9",
+    "result": "changes-requested",
+    "findings": [
+      {
+        "id": "R1",
+        "severity": "blocking",
+        "file": "src/internal/plugin/manifest.go",
+        "symbol": "resolveManifestPathLinks",
+        "requirement": "Physical target resolution and rejection of entrypoint links outside the physical plugin root",
+        "defect": "Leaf-first relative symlink expansion lexically collapses .. before resolving ancestor junctions",
+        "consequence": "May return a different in-root payload instead of rejecting the actual outside-root target; may also reject valid paths",
+        "correction": "Resolve components root-first or resolve the physical parent before joining relative targets, with a shared link traversal bound",
+        "evidence": "Static trace in Markdown; no runtime reproduction or filesystem writes"
+      }
+    ],
+    "commands_run": [
+      "Get-Content and rg for scoped source, FD, report and local Go SDK reading",
+      "git diff 7a3c2d8 8f4b7c9 --stat",
+      "git diff 7a3c2d8 8f4b7c9 -- src/internal/plugin/manifest.go docs/usage/aiw-pkg.md openspec/specs/cli-and-plugins/spec.md",
+      "aiw fd show FD-094 (failed GBK BOM output)",
+      "aiw fd claim --help",
+      "aiw fd emit --help",
+      "aiw fd claim FD-094 FD-094-000006-review-requested --session codex-fd094-junction-review-20261019",
+      "aiw fd emit FD-094 changes-requested --producer reviewer --artifact docs/features/reviews/FD-094-review.md --source-event FD-094-000006-review-requested"
+    ],
+    "read_failures": ["Guessed FD filename absent, located actual file using rg", "FD show failed GBK BOM output; not treated as successful evidence"],
+    "worker_compile_evidence": "Worker report records offline scripts/compile.py exit 0; Reviewer did not rerun",
+    "checks_not_run": ["tests", "compile", "runtime", "build", "install", "publish", "formatter", "network"],
+    "residual_risks": ["R1 unresolved", "Fixed launcher runtime unverified", "Existing filesystem replacement race assumptions retained"]
+  }
+}
