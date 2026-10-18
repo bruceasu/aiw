@@ -1,0 +1,21 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-091",
+  "source_event": null,
+  "human_report": "FD-091-implementation.md",
+  "data": {
+    "source_event_reason": "Direct user bug report; managed independent review without Worker handoff",
+    "work_items": ["1.1", "1.2"],
+    "comparison_base": "b4aba07",
+    "result": "implementation-ready",
+    "diagnosis_classification": "Installed failure reproduced; supported Windows normalization mechanism inference, exact failed segment unmeasured",
+    "runtime_ledger": {"command": "& 'C:\\green\\aiw\\aiw.exe' pkg --help", "authority": "Explicit one-command user approval", "exit_code": 1, "result": "Same plugin directory resolution failure", "rerun": false, "installed_files_changed": false},
+    "compile_result": "Offline python scripts/compile.py exited 0; cmd/aiw and cmd/aiw-req to NUL, no retained binary",
+    "static_evidence": ["one scoped git diff", "full non-volume ancestor Lstat walk", "exact ModeType no-link proof", "physical fallback for nonordinary paths", "unchanged containment/Stat/context errors", "local Go standard-library and installed filesystem observations"],
+    "commands_run": ["targeted Get-Content/rg and installed metadata reads", "one approved installed pkg --help (carried from FD-090)", "focused commits", "aiw fd set-status", "aiw git wt add FD-091", "offline python scripts/compile.py", "git diff b4aba07 -- scoped paths"],
+    "checks_not_run": ["tests", "gofmt", "vet", "linters", "final build", "installation", "publication", "network", "fixed-launcher runtime validation"],
+    "residual_risks": ["Installed launcher remains unchanged until rebuild/install", "Fixed runtime not yet observed", "Exact failed normalization segment unknown", "Link failures remain fail-closed", "Existing filesystem race assumptions retained"],
+    "next_action": "Independent Reviewer, then local delivery/archive; installed update requires separate build/install authorization"
+  }
+}

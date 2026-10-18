@@ -249,6 +249,13 @@ When a package directory has no manifest, discovery MUST preserve the existing f
 
 Plugin help listings MUST use manifest names and descriptions. `aiw help <name>` MUST display non-empty manifest help; otherwise it MUST retain the existing plugin `-h` behavior. PATH plugin lookup, directory search order, argument forwarding, environment, standard streams, and exit status MUST remain compatible.
 
+Ordinary explicit-entrypoint paths MUST NOT require Windows directory case enumeration
+after a complete no-link ancestor inspection. Directory and entrypoint resolution
+MUST use consistent absolute paths. Any symlink, junction-like irregular type or
+other nonordinary component MUST retain physical resolution or fail closed;
+resolution errors MUST NOT fall back to unchecked lexical paths. Existing physical
+containment, missing/unreadable path and directory-entrypoint rejection remain mandatory.
+
 #### Scenario: Discover multiple commands from one package
 
 - **WHEN** one package manifest declares multiple plugin entries
@@ -263,6 +270,14 @@ Plugin help listings MUST use manifest names and descriptions. `aiw help <name>`
 
 - **WHEN** a manifest is malformed, contains duplicate names or an unsupported startup mode, or resolves an entrypoint outside its package
 - **THEN** AIW reports the manifest path and configuration error instead of silently applying legacy scanning
+
+#### Scenario: Discover an ordinary Windows plugin directory
+
+- **WHEN** the plugin directory and explicit entrypoint have only ordinary file/directory ancestors
+- **THEN** resolve their absolute paths without Windows case-enumeration dependency
+- **AND** retain entrypoint containment and file checks
+- **WHEN** any component is a link or nonordinary filesystem object
+- **THEN** require physical resolution and retain rejection of escaping or unresolved targets
 
 ### Requirement: Materialize stage-specific shared Skill methods
 

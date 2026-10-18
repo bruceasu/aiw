@@ -87,6 +87,29 @@ func readPluginManifest(directory string) ([]pluginManifestEntry, error) {
 	return manifest.Plugins, nil
 }
 
+// resolveManifestPath avoids case-enumerating ordinary paths on Windows. Only a
+// complete no-link ancestor walk permits the lexical absolute path; all other
+// filesystem types retain the existing physical resolution and failure behavior.
+func resolveManifestPath(value string) (string, error) {
+	absolute, err := filepath.Abs(value)
+	if err != nil {
+		return "", err
+	}
+	for current := absolute; ; current = filepath.Dir(current) {
+		if filepath.Dir(current) == current {
+			return absolute, nil
+		}
+		info, err := os.Lstat(current)
+		if err != nil {
+			return "", err
+		}
+		kind := info.Mode() & os.ModeType
+		if kind != 0 && kind != os.ModeDir {
+			return filepath.EvalSymlinks(absolute)
+		}
+	}
+}
+
 func resolveManifestEntrypoint(directory, entrypoint string) (string, error) {
 	if strings.Contains(entrypoint, "\\") || path.IsAbs(entrypoint) || filepath.VolumeName(filepath.FromSlash(entrypoint)) != "" {
 		return "", errors.New("entrypoint must be relative to the plugin directory")
@@ -96,12 +119,12 @@ func resolveManifestEntrypoint(directory, entrypoint string) (string, error) {
 		return "", errors.New("entrypoint must stay inside the plugin directory")
 	}
 
-	root, err := filepath.EvalSymlinks(directory)
+	root, err := resolveManifestPath(directory)
 	if err != nil {
 		return "", fmt.Errorf("resolve plugin directory: %w", err)
 	}
 	fullPath := filepath.Join(directory, filepath.FromSlash(clean))
-	resolved, err := filepath.EvalSymlinks(fullPath)
+	resolved, err := resolveManifestPath(fullPath)
 	if err != nil {
 		return "", fmt.Errorf("resolve entrypoint %q: %w", entrypoint, err)
 	}

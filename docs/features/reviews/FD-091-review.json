@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-091",
+  "source_event": "FD-091-000004-review-requested",
+  "human_report": "FD-091-review.md",
+  "data": {
+    "reviewer_session": "fd091-independent-reviewer-plugin-path-review",
+    "reviewed_commit": "286faae",
+    "comparison_base": "b4aba07",
+    "fd_revision": 4,
+    "result": "verification-passed",
+    "findings": [],
+    "static_results": ["Complete non-volume-root Lstat ancestor proof", "Exact ModeType accepts only regular files and ordinary directories", "Links and irregular types preserve physical resolution and error propagation", "Root and entrypoint share absolute-path resolver", "Relative guards, physical containment, Stat, directory rejection and manifest context retained", "Stable contract and documentation match scoped change", "Worker offline compile evidence reviewed without rerunning"],
+    "commands_run": ["Get-Content and Select-String for FD, report, specs, rules, changed source and local Go Windows sources", "git diff b4aba07 286faae --", "aiw fd show FD-091", "aiw fd --help", "aiw fd claim --help", "aiw fd emit --help", "aiw fd claim FD-091 FD-091-000004-review-requested --session fd091-independent-reviewer-plugin-path-review", "Get-ChildItem managed FD directory", "Get-Command go", "managed verification-passed emission after report creation"],
+    "read_failures": ["Nonexistent receipt.json; used managed show instead", "Default C:/Program Files/Go source path absent; located actual C:/green/go toolchain"],
+    "checks_not_run": ["tests", "compile", "gofmt", "vet", "linters", "final build", "installation", "publication", "network", "pkg runtime"],
+    "residual_risks": ["Installed launcher unchanged", "Exact failing path segment unmeasured", "Fixed target runtime not observed", "Existing path-replacement race assumptions retained", "Nonordinary physical resolution may still fail closed"]
+  }
+}

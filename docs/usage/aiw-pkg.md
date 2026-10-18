@@ -255,6 +255,14 @@ different content under the same name/version is rejected: choose a new version.
 There is no force override. Bootstrap through build.py install or the standalone
 Python package entry point with --repo pointing at an explicitly published repository.
 
+If plugin discovery reports `resolve plugin directory` although plugin.toml and
+its entrypoint exist, the ordinary-path resolver avoids an additional Windows case
+enumeration step after proving the entire path has no links. Links and irregular
+objects still require physical resolution and must stay inside the plugin directory.
+This correction is in the native launcher, so updating only the Python pkg files
+does not update it: recompile the main snapshot, build/install the main package,
+then verify the newly installed launcher separately. Keep the original failure output.
+
 On Windows, exit programs that lock installation files. To update aiw itself,
 exit aiw and invoke Python directly, for example:
 

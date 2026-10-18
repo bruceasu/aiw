@@ -1,7 +1,7 @@
 # FD-091: Resolve ordinary plugin paths without case enumeration
 
-**Status:** In Progress
-**Revision:** 2
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -43,10 +43,10 @@ Do not change installed manifests, rebuild final binaries or install automatical
 
 ## Work Items
 
-- [ ] 1.1 Add the ordinary-path resolver and preserve link/error containment behavior.
+- [x] 1.1 Add the ordinary-path resolver and preserve link/error containment behavior.
   Size small, difficulty medium, no dependencies. Completion: all ancestor checks,
   exact modes, fallback and both call sites statically traced.
-- [ ] 1.2 Document diagnosis/semantics, compile-only and independent review handoff.
+- [x] 1.2 Document diagnosis/semantics, compile-only and independent review handoff.
   Size small, difficulty low, depends on 1.1. Completion: current offline Go compile,
   truthful runtime ledger and independent static review evidence.
 
@@ -60,8 +60,8 @@ Do not change installed manifests, rebuild final binaries or install automatical
 
 ## TODO
 
-- Implement in feature/FD-091 at .wt/FD-091.
-- Offline compile-only, independent static review, local delivery and archive.
+- Implementation and offline Go compile-only complete; independent static review passed.
+- Local delivery and archive after current managed pass.
 
 ## Verification and authorization ledger
 
@@ -72,6 +72,16 @@ GOTOOLCHAIN local, GOWORK off, CGO disabled; outputs go to NUL, no final binary.
 No tests, builds, installs, publication, network or permission probes authorized.
 Read relevant manifest discovery source, stable CLI plugin contract, local Go
 Windows symlink/mode implementation and installed filesystem metadata.
+Implementation report reports/FD-091-implementation.md and JSON. The offline
+scripts/compile.py command exited 0 for cmd/aiw and cmd/aiw-req, output NUL,
+with worktree-local cache and no retained distributable. One scoped git diff
+against b4aba07 traced no-link proof, exact ModeType checks, original physical
+fallback, containment/error flow and documentation. No runtime success is claimed
+for the unchanged installed launcher; approved help failure remains the only run.
+Independent Reviewer: reviews/FD-091-review.md and JSON, session
+fd091-independent-reviewer-plugin-path-review, source FD-091-000004-review-requested.
+Static review of implementation 286faae against b4aba07 found no blocking issue.
+No additional runtime, compile, tests, build or installation was performed by Reviewer.
 
 ## Risks
 
