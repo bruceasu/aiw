@@ -69,7 +69,12 @@ def list_plugins() -> list[dict]:
         for meta in tomllib.loads(manifest.read_text(encoding="utf-8")).get("plugins", []):
             entry = meta.get("entrypoint")
             paths = [directory / entry] if entry else sorted(directory.glob("aiw-*"))
-            records.append(dict(meta, path=str(paths[0] if paths else directory)))
+            path = paths[0] if paths else directory
+            source_meta = {}
+            if (path.suffix == ".py" and path.is_file()
+                    and path.resolve().is_relative_to(directory.resolve())):
+                source_meta = _load_meta(path)
+            records.append(dict(source_meta, **meta, path=str(path)))
     return records
 
 

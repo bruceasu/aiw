@@ -1,0 +1,8 @@
+schema = 1
+
+[[plugins]]
+name = "notify"
+description = "Attempt console or configured HTTPS Teams text notifications."
+entrypoint = "aiw-notify.py"
+startup = "python"
+help = "Usage: aiw notify <preflight|dispatch> --json."

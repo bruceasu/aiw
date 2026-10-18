@@ -1,0 +1,36 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-101",
+  "source_event": "FD-101-000005-implementation-ready",
+  "human_report": "FD-101-review.md",
+  "data": {
+    "reviewer_session_ref": "fd101-review-independent-20261019",
+    "baseline": "033da91",
+    "implementation_revision": "5889483",
+    "fd_revision": 5,
+    "verdict": "passed",
+    "findings": [],
+    "results": [
+      "Removed unconditional runtime dependencies from planning and package metadata without weakening exact dependency validation",
+      "Directory manifests match existing Go discovery and preserve entrypoint behavior and command identity",
+      "Private canonical helpers replace excluded source shims at distinct owned package paths",
+      "Existing obsolete cleanup removes only each plugin's former entrypoint and preserves legacy runtime root files",
+      "Notify adjacent helper, isolated subprocess, argv, managed protocol and console short circuit are consistent",
+      "Directory-confined AST META loading retains behavior fields with manifest precedence",
+      "Usage documentation and stable package specification match implementation"
+    ],
+    "commands_run": [
+      "Targeted Get-Content -Encoding utf8, rg -n and Get-ChildItem reads",
+      "git diff --stat 033da91 5889483",
+      "git diff --find-renames 033da91 5889483 -- scripts/package_definitions.py src/plugins",
+      "git diff 033da91 5889483 -- docs/usage/aiw-pkg.md openspec/specs/aiw-packages/spec.md",
+      "aiw fd --help",
+      "aiw fd emit --help",
+      "aiw fd claim FD-101 FD-101-000005-implementation-ready --session fd101-review-independent-20261019"
+    ],
+    "worker_compile_evidence": "Worker reports one offline in-memory Python compile of 8 files plus two Go entrypoints to NUL, exit 0; not rerun by Reviewer",
+    "checks_not_run": ["tests", "compilation", "CLI functionality", "planning simulation", "final builds", "linters", "formatters", "vet", "verification scripts", "network", "Teams sending", "publishing", "installation"],
+    "residual_risks": ["Real package contents and upgrade transactions not executed", "Old published ZIP dependencies are unchanged", "Installed state and notification delivery are unchanged"]
+  }
+}

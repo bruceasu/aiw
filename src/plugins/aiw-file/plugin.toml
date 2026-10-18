@@ -1,0 +1,8 @@
+schema = 1
+
+[[plugins]]
+name = "file"
+description = "Read and write text files while preserving encoding and newline style."
+entrypoint = "aiw-file.py"
+startup = "python"
+help = "Usage: aiw file <read|info|write> [options]."

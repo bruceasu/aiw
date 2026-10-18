@@ -174,6 +174,32 @@ scripts/packages; shared definitions live in scripts/package_definitions.py.
 plugin-meta.toml and skills-meta.toml define core/extension membership. Main includes
 agent-templates; shared root Skill documents have unique resource package owners.
 Individual Skills depend on needed resources rather than an aggregate support ZIP.
+Plugins do not automatically depend on a same-version aiw-plugin-runtime package.
+In particular, updating aiw-pkg does not require replacing runtime or upgrading
+unrelated plugins. Existing published ZIPs keep their original dependency metadata;
+build a fresh package version to use the corrected rules.
+
+File, patch and notify are directory plugins with a plugin.toml and an explicit
+Python entrypoint. Their command names stay `aiw file`, `aiw patch` and `aiw notify`.
+Direct source invocations now use `src/plugins/aiw-file/aiw-file.py`,
+`src/plugins/aiw-patch/aiw-patch.py` and `src/plugins/aiw-notify/aiw-notify.py`.
+Their release packages carry private helper implementations: file and patch each
+contain aiw_codec.py, while notify contains send_teams_msg.py beside its entrypoint.
+They do not import helpers from another installed plugin or the legacy runtime.
+Notify locates its sender beside its own file, independently of the caller's directory.
+
+The source tree keeps one canonical implementation of each helper at the plugins
+root. Directory-local source shims use that implementation during development;
+packaging excludes those shims and copies the complete real files into each
+release directory. Plugin META remains readable through AST-based entries listing;
+manifest fields supply the directory command name, entrypoint and startup mode.
+
+The legacy plugin-runtime target and root helper payloads remain available for
+older installed plugins; they are not automatically removed. Explicit `plugins`
+and `all` compatibility groups may still include that resource. Individual plugin
+builds and new plugin collection dependency closures no longer pull it in.
+Normal package upgrades remove their own obsolete top-level script and install
+the directory entrypoint, preserving other packages' legacy shared files.
 Usage documents belong to their program/plugin; development docs are not installed.
 
 Build writes versioned ZIPs and dependency-closed release manifests only. It does

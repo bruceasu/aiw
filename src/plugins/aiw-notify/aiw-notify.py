@@ -127,7 +127,7 @@ def managed_dispatch(request):
     allowed = {"SYSTEMROOT", "WINDIR", "PATH", "TEMP", "TMP", "LANG", "LC_ALL"}
     environment = {key: value for key, value in os.environ.items() if key.upper() in allowed}
     environment[config["credential_env"]] = os.environ[config["credential_env"]]
-    script = Path.cwd().resolve() / "plugins" / "send_teams_msg.py"
+    script = Path(__file__).resolve().with_name("send_teams_msg.py")
     try:
         response = subprocess.run([sys.executable, "-I", str(script), "--managed-json"], input=json.dumps(child, ensure_ascii=False).encode("utf-8"), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, cwd=Path.cwd(), env=environment, timeout=35, check=False)
         data = decode(response.stdout)

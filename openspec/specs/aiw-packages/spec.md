@@ -319,6 +319,47 @@ Windows 文件占用失败 MUST 显示文件、退出重试和独立 Python 更�
 MUST NOT 自动终止程序、启动后台更新器、强制覆盖或安排重启替换。
 pkg 自更新 MUST 在首次修改前准备所需模块、配置、包与恢复数据；官方 pkg MUST 不带 hook。
 
+### Requirement: Self-contained plugin packages
+
+Plugin build planning and package metadata MUST NOT add an unconditional,
+same-version aiw-plugin-runtime dependency. A self-contained aiw-pkg update MUST
+NOT require runtime replacement solely because its own package version changed.
+Existing exact runtime-dependency validation MUST NOT be weakened.
+
+File, patch and notify MUST use directory packages with schema-1 plugin manifests
+and explicit Python entrypoints for the existing file, patch and notify commands.
+Each package MUST include its private complete helper implementation: aiw_codec.py
+for file/patch and send_teams_msg.py for notify. Private targets MUST be owned only
+by their plugin, without claiming another package's legacy root helper paths.
+Notify MUST locate its sender beside its own entrypoint and retain its existing
+configuration, console/Teams protocol, environment filtering and subprocess behavior.
+
+Canonical helper source MAY be shared in the repository. Development-only shims
+MUST be excluded from release payloads and replaced by the complete canonical
+implementation at the private target, without duplicate target entries. Directory
+entries listing MUST retain statically readable META behavior/confirmation fields;
+manifest command identity and startup fields MUST take precedence. Listing MUST
+NOT execute a plugin to obtain metadata or read Python metadata outside its directory.
+
+The legacy runtime target/payload MUST remain available for older releases.
+New builds MUST NOT rewrite old ZIPs or installation records. Normal upgrades
+MUST remove only their own obsolete entrypoint files using existing package
+transactions; new private helpers MUST coexist with older runtime-owned root files.
+
+#### Scenario: Upgrade pkg without touching shared runtime
+
+- GIVEN older installed plugins require aiw-plugin-runtime at exactly 1.0.1
+- WHEN a newly built self-contained aiw-pkg is selected for upgrade
+- THEN its dependency closure MUST NOT select a replacement runtime
+- AND the other plugins' genuine exact dependencies MUST remain satisfied.
+
+#### Scenario: Directory plugins contain real helpers
+
+- WHEN file, patch or notify is packaged
+- THEN its directory contains a manifest, entrypoint and the real private helper
+- AND it MUST NOT ship a development shim that loads another source/plugin directory
+- AND the old top-level entrypoint MUST NOT remain in that new package.
+
 ### Requirement: Unique program usage document ownership
 
 Program packages MUST select docs/usage documents using the longest matching

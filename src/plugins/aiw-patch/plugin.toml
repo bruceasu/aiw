@@ -1,0 +1,8 @@
+schema = 1
+
+[[plugins]]
+name = "patch"
+description = "Check, apply and reverse patches with Git and patch-format conversion."
+entrypoint = "aiw-patch.py"
+startup = "python"
+help = "Usage: aiw patch <check|apply|reverse> [options]."

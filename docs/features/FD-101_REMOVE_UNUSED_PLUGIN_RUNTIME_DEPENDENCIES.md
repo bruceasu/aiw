@@ -1,7 +1,7 @@
 # FD-101: Self-contained directory plugins without runtime coupling
 
-**Status:** Open
-**Revision:** 4
+**Status:** Complete
+**Revision:** 6
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -57,17 +57,17 @@
 
 ## Work items
 
-- [ ] 1.1 三个插件迁为目录式，保留入口行为与源码开发路径；规模 small、难度 medium、无前置。完成证据：manifest 字段/命令发现、codec 导出、Teams 相邻入口/argv 与不变协议、entries 静态保留命令/权限提示元数据。
-- [ ] 1.2 私有辅助文件打包及移除 runtime 依赖；规模 small、难度 medium、依赖 1.1。完成证据：排除开发 shim 后实际文件唯一归属，pkg 与三插件闭包/元数据、新旧混装和旧文件清理静态路径。
-- [ ] 1.3 文档规范及双格式证据；规模 small、难度 low、依赖 1.1/1.2。完成证据：目录入口、独立升级、旧 runtime 兼容边界及 TODO/Verification 完整。
+- [x] 1.1 三个插件迁为目录式，保留入口行为与源码开发路径；规模 small、难度 medium、无前置。完成证据：旧顶层入口迁入各自目录，三份严格 manifest、开发 shim、notify 相邻脚本路径及 entries 的目录内 Python AST META 合并已完成；未执行功能或网络。
+- [x] 1.2 私有辅助文件打包及移除 runtime 依赖；规模 small、难度 medium、依赖 1.1。完成证据：PLUGIN_PRIVATE_FILES 同时驱动 shim 排除和真实模块私有目标写入，三个辅助目标互异且不归旧 runtime；删除规划和元数据的统一 runtime 依赖，普通单目标闭包不再拉入 runtime。
+- [x] 1.3 文档规范及双格式证据；规模 small、难度 low、依赖 1.1/1.2。完成证据：使用文档和稳定规范明确目录/私有实现/无 runtime 默认依赖、旧发行兼容边界；离线 compile-only 通过，双格式实现报告齐备。
 
-实施尚未开始。原 1.1 的依赖规则映射至新 1.2，原 1.2 文档映射至新 1.3；新增 1.1
+计划修订时，原 1.1 的依赖规则映射至新 1.2，原 1.2 文档映射至新 1.3；新增 1.1
 承接用户明确追加的目录/自包含需求，没有已完成项或历史完成证据被重写。
 
 ## TODO
 
-- 必要独立设计审查通过后提交 ready 计划，创建 feature/FD-101、.wt/FD-101。
-- 实现后一次离线 compile-only、一次最终只读差异检查和独立实现审查，再本地交付归档。
+- 修订 3 目录方案独立设计审查 ready，见 FD-101-design-directory.md；计划 033da91 已提交，worktree/分支已创建，父分支 develop，Worker 领取 FD-101-000004-design-ready。
+- 三项实现已完成，一次离线 compile-only 和最终只读差异检查通过；独立实现审查通过，待 PM 本地交付归档。
 
 ## Acceptance
 
@@ -91,6 +91,20 @@
   scripts/compile.py；GOPROXY=off/GOSUMDB=off/GOTOOLCHAIN=local，Go 输出 NUL，不留发行二进制。
 - 一次最终只读 diff/status；不新增/运行测试，不执行 build.py 规划模拟或功能验证、
   最终包构建、lint/format/vet、验证脚本、网络、发布或安装。
+- 当前设计证据：docs/features/reviews/FD-101-design-directory.md / .json，修订 3，ready。
+  FD-101-design.md / .json 只保留用户追加范围前修订 2 的历史判断。
+- 实际 compile-only：GOPROXY=off、GOSUMDB=off、GOTOOLCHAIN=local，Python 内存 compile()
+  检查打包定义、entries 和三个目录的入口/开发 shim 共 8 个文件，再 runpy 执行
+  scripts/compile.py（两个 Go 入口输出 NUL），退出码 0；无最终二进制或 pyc。
+- 双格式实现证据：docs/features/reports/FD-101-implementation.md / .json。未执行安装或通知。
+- 一次最终静态批次：git diff --find-renames 033da91 -- <打包/源码/文档/规范路径>、
+  git diff --check、git status --short，无空白错误/无范围外改动；三处入口 rename、
+  严格 manifest、codec 导出、Teams argv、私有排除/复制路径和精确依赖保留已静态核对。
+
+- 独立实现审查通过：docs/features/reviews/FD-101-review.md / .json；Reviewer
+  fd101-review-independent-20261019，来源 FD-101-000005-implementation-ready，
+  基线 033da91、实现 5889483。静态核对目录发现、真实私有载荷替换、所有权/obsolete、
+  notify 隔离协议和 AST 元数据；未执行测试、包构建、安装或通知，运行限制保持明确。
 
 ## Sources
 

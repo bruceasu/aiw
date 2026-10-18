@@ -43,12 +43,17 @@ def collection_members(name):
 
 COLLECTIONS = ("plugins-core", "plugins-all", "skills-core", "skills-all", "aiw-core", "aiw-all")
 
+# Source shims keep one implementation; release packages carry private real files.
+PLUGIN_PRIVATE_FILES = {
+    "file": ("aiw_codec.py",),
+    "patch": ("aiw_codec.py",),
+    "notify": ("send_teams_msg.py",),
+}
+
 
 def component_dependencies(component):
     if component == "aiw":
         return ["resource-" + p.stem for p in sorted((ROOT / "src/skills").glob("*.md"))]
-    if component in context.plugin_targets():
-        return ["plugin-runtime"]
     if component.startswith("skill-"):
         text = (ROOT / "src/skills" / component[6:] / "SKILL.md").read_text(encoding="utf-8")
         result = ["resource-" + p.stem for p in sorted((ROOT / "src/skills").glob("*.md")) if "skills/" + p.name in text]
@@ -114,11 +119,14 @@ def build_component(component, version):
     elif component in {"gateway", "http-openai-proxy"}:
         return c.legacy_package_component(component, version)
     else:
-        dependencies = [ref("aiw-plugin-runtime", version)]
         directory = c.SRC / "plugins" / name
         if directory.is_dir():
+            private_files = PLUGIN_PRIVATE_FILES.get(component, ())
+            excluded = set(private_files) | (set(c.SAY_PROGRAM_ASSETS) if component == "say" else set())
             entries = c.tree_entries(directory, "plugins/" + name,
-                                     exclude=c.SAY_PROGRAM_ASSETS if component == "say" else None)
+                                     exclude=excluded)
+            entries += [c.one(c.SRC / "plugins" / filename, f"plugins/{name}/{filename}")
+                        for filename in private_files]
             if component in c.GO:
                 for system in c.SYSTEMS:
                     binary = c.binary(component, system)

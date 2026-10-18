@@ -1,0 +1,19 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-101",
+  "source_event": "FD-101-000004-design-ready",
+  "human_report": "FD-101-implementation.md",
+  "data": {
+    "worker_session_ref": "fd101-host-20261019-58dca1",
+    "baseline": "033da91",
+    "summary": "Directory plugins with privately bundled real helpers and no unconditional runtime dependency",
+    "compile_command": "python -c \"from pathlib import Path; import runpy; paths = ['scripts/package_definitions.py', 'src/plugins/aiw-pkg/entries.py', 'src/plugins/aiw-file/aiw-file.py', 'src/plugins/aiw-file/aiw_codec.py', 'src/plugins/aiw-patch/aiw-patch.py', 'src/plugins/aiw-patch/aiw_codec.py', 'src/plugins/aiw-notify/aiw-notify.py', 'src/plugins/aiw-notify/send_teams_msg.py']; [compile(Path(p).read_text(encoding='utf-8'), p, 'exec') for p in paths]; print('Python syntax compile: OK (8 files)'); runpy.run_path('scripts/compile.py', run_name='__main__')\"",
+    "compile_environment": {"GOPROXY": "off", "GOSUMDB": "off", "GOTOOLCHAIN": "local"},
+    "compile_result": "exit 0; eight Python files compiled in memory, two Go entrypoints to NUL; no distributable artifacts",
+    "static_result": "One final diff --find-renames / diff --check / status batch; no whitespace errors or unrelated changes",
+    "static_scope": ["directory discovery and strict manifests", "private real helpers replace excluded development shims exactly once", "standalone source shims preserve codec symbols and Teams argv", "unconditional runtime planning and metadata removed", "legacy runtime targets and root files retained", "ownership and obsolete entrypoint cleanup", "directory-confined AST META preserves behavior fields and manifest priority"],
+    "checks_not_run": ["tests", "test creation", "CLI/notification runtime", "planning simulation", "final builds", "formatters", "linters", "vet", "verification scripts", "network", "push", "publish", "install"],
+    "residual_risks": ["Runtime imports, manifest discovery and real upgrades not executed", "No Teams request sent", "Installed plugins unchanged", "Old published packages retain previous dependencies"]
+  }
+}
