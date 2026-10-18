@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-089](FD-089_BUILD_WITHOUT_REPOSITORY_COPY.md) | Build and install without a repository copy | In Progress | Medium |
 
 ## Completed
 

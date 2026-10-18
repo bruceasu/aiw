@@ -1,0 +1,43 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-089",
+  "human_report": "FD-089-design.md",
+  "source_event": null,
+  "data": {
+    "source_event_reason": "Direct delegated design review; no independent workflow source event exists.",
+    "fd_revision": 1,
+    "recommendation": "changes-needed",
+    "findings": [
+      {
+        "id": "D1",
+        "severity": "medium",
+        "blocking": true,
+        "summary": "Separate install roots from manifest dependency/member closure to preserve manual/auto semantics.",
+        "evidence": ["build.py main install branch", "build.py expand", "src/plugins/aiw-pkg/operations.py Operation.install"],
+        "resolution": "Single component root is itself; collection root is itself; preserve group explicit roots. Dependency closure is catalog only."
+      },
+      {
+        "id": "D2",
+        "severity": "low",
+        "blocking": true,
+        "summary": "Split medium Work Item 1.1 into small source-adapter and build/install-wiring items.",
+        "evidence": ["FD-089 Work Item 1.1", "fd-workflow planning small-item rule"]
+      },
+      {
+        "id": "D3",
+        "severity": "medium",
+        "blocking": true,
+        "summary": "Before Manager construction compare every selected payload destination against every original source ZIP, preventing cross-package source overwrite.",
+        "evidence": ["src/plugins/aiw-pkg/operations.py preflight checks only each package's own path"],
+        "resolution": "Build-local preflight uses destination physical root and confined source paths; reject equal or conflicting ancestor targets across the full closure."
+      }
+    ],
+    "static_review": ["repository index/fetch and entry_for", "exact dependency/member closure", "source confinement and ambiguity", "Manager constructor versus locked writes", "Operation root/manual and prepared byte pinning", "legacy incomplete manifests"],
+    "runtime_checks": [],
+    "commands": ["Four read-only PowerShell batches using Get-Content, Select-Object and rg"],
+    "not_run": ["tests", "build", "install", "compile", "network", "git writes", "workflow events"],
+    "planner_response": "Planner confirms canonical single-component/collection roots, existing group roots, three small items, and full source ZIP overwrite preflight; incorporate into FD before ready.",
+    "limitations": ["Design review only; no implementation or runtime verdict", "Historical FD-088-design.json path missing; not retried"]
+  }
+}
