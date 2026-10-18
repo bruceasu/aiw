@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-102](FD-102_BUNDLE_ALL_PLUGINS_AND_SKILLS_INTO_TWO_PACKAGES.md) | Bundle all plugins and skills into two packages | Open | Medium |
 
 ## Completed
 

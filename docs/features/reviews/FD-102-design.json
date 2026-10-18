@@ -1,0 +1,29 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-102",
+  "source_event": "FD-102-000002-design-requested",
+  "human_report": "FD-102-design.md",
+  "data": {
+    "fd_revision": 2,
+    "reviewer": "independent-fd102-design-agent",
+    "recommendation": "ready",
+    "findings": [],
+    "reviewed_paths": [
+      "build.py",
+      "scripts/package_definitions.py",
+      "scripts/local_packages.py",
+      "src/plugins/aiw-pkg/skill_management.py",
+      "docs/features/FD-102_BUNDLE_ALL_PLUGINS_AND_SKILLS_INTO_TWO_PACKAGES.md"
+    ],
+    "implementation_review_points": [
+      "Use the same source-component expansion for compile, provenance reuse, native inventory and invalidation",
+      "Preserve private helpers, platform binaries, configuration flags and say resources",
+      "Remove plugins and skills from groups and select one manual package root",
+      "Keep shared Markdown exclusively in aiw-skills and preserve canonical skill paths",
+      "Keep ZIP and destination ownership protections and the 512MiB input limit"
+    ],
+    "unrun": ["tests", "compile", "build", "runtime simulation", "network", "git writes", "workflow state operations"],
+    "limits": ["Design review only; implementation and final package size have not been validated"]
+  }
+}
