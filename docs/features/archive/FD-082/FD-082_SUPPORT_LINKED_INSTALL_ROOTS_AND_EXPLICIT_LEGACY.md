@@ -88,7 +88,13 @@ legacy previous 分离、失败恢复及无旧 ZIP 的 remove/再安装路径；
 
 ## TODO
 
-独立设计审查 ready，已在 feature/FD-082/.wt/FD-082 实现；输入包保护修复及最终独立 r3 静态复查通过，待 PM 交付归档。
+独立设计审查 ready，输入包保护修复及最终独立 r3 静态复查通过。
+已通过 local-merge squash 交付至 develop（5a0f2d4，FD-Source 43767d8），
+CLI 核验并清理 worktree/分支；fd close Complete 成功，无剩余本地生命周期 TODO。
+独立实现结果累计三次（首轮通过后补查撤回交付依据、第二轮要求修复、第三轮通过），
+以 FD-082-000010-verification-passed 为最终交付依据，保留全部历史。
+manager.py 内存 compile 初次及修复后各一次通过；未运行实际安装、构建或测试。
+用户需重新生成发布包，确保安装后的 pkg 插件包含本次更新。
 
 - Compile-only check and static review by default; record unrun tests explicitly.
 - For explicitly requested test support (any wording/language), record suitable
@@ -104,3 +110,5 @@ legacy previous 分离、失败恢复及无旧 ZIP 的 remove/再安装路径；
 - 用户本轮两条失败日志，以及“普通 install 自动备份并接管”的明确选择。
 - src/plugins/aiw-pkg/manager.py；archive.py；openspec/specs/aiw-packages/spec.md。
 - 归档 FD-080：原来拒绝无归属文件的规则由本次确认明确替代，其他安全规则不变。
+
+**Completed:** 2026-10-18
