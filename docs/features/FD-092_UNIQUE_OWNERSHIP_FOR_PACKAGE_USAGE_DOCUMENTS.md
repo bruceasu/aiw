@@ -1,7 +1,7 @@
 ﻿# FD-092: Unique ownership for package usage documents
 
-**Status:** Open
-**Revision:** 3
+**Status:** Pending Verification
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -30,10 +30,10 @@ later build. No linked Issue or OpenSpec change exists.
 
 ## Work Items
 
-- [ ] 1.1 Resolve usage document ownership by most specific package prefix.
+- [x] 1.1 Resolve usage document ownership by most specific package prefix.
   Size small, difficulty low, dependencies none. Completion: file/file-convert,
   exact matches, aliases and existing explicit main documents statically traced.
-- [ ] 1.2 Document the rule and compile-only evidence; independent static review.
+- [x] 1.2 Document the rule and compile-only evidence; independent static review.
   Size small, difficulty low, depends on 1.1. Completion: stable spec and nearby
   docs agree, Python source compiles without importing or building, review recorded.
 
@@ -47,7 +47,8 @@ later build. No linked Issue or OpenSpec change exists.
 
 ## TODO
 
-- Implement 1.1, then record compile-only evidence and request independent review.
+- Implementation, documentation and Python compile-only complete; independent
+  static review pending. Item 1.2 evidence prepared for that review.
 
 ## Verification
 
@@ -55,6 +56,9 @@ Static review plus one Python in-memory compile of scripts/package_definitions.p
 The root scripts/compile.py targets unrelated Go launchers; use the narrow Python
 language compiler without importing packaging code or producing distributables.
 No tests, runtime validation, final builds, install, publication or network.
+Python in-memory compile returned exit 0. One static diff inspection traced the
+longest-prefix selection, hyphen boundary, aliases and unchanged main exceptions.
+Independent review remains pending; see reports/FD-092-implementation.md.
 
 ## Sources
 

@@ -1,0 +1,15 @@
+﻿{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-092",
+  "source_event": null,
+  "human_report": "FD-092-implementation.md",
+  "data": {
+    "workspace": "primary workspace explicitly selected by user",
+    "source_event_reason": "Direct implementation without a Worker handoff",
+    "compile_result": "Python in-memory compile exit 0; no imports or artifacts",
+    "static_review": "One final implementation diff; longest prefix, boundary, aliases and main explicit files",
+    "checks_not_run": ["tests", "final build", "install", "publish", "network"],
+    "residual_risks": ["Existing ZIPs unchanged; rebuild aiw-file explicitly", "No installed runtime validation"]
+  }
+}

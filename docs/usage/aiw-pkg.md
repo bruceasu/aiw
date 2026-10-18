@@ -298,3 +298,13 @@ AIW does not infer or verify that mapping. HTTP write is unsupported in this rel
 the future POST contract is defined in openspec/specs/aiw-packages/spec.md.
 
 No tests, builds, downloads or publish operations are implied by reading this guide.
+
+### Package usage document ownership
+
+Program packages include their own guides under `docs/usage`. If package names
+share a prefix, the longest matching name owns the guide: for example,
+`aiw-file-convert.md` belongs to `aiw-file-convert`, not `aiw-file`.
+The `aiw-docs` resource installs its reference copy under `docs/reference`.
+Existing ZIPs keep their original metadata; rebuild affected packages explicitly
+before installing them again. Updating this source does not modify installed
+ownership records or previously built ZIPs.

@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| [FD-092](FD-092_UNIQUE_OWNERSHIP_FOR_PACKAGE_USAGE_DOCUMENTS.md) | ﻿# FD-092: Unique ownership for package usage documents | Open | Medium |
+| [FD-092](FD-092_UNIQUE_OWNERSHIP_FOR_PACKAGE_USAGE_DOCUMENTS.md) | ﻿# FD-092: Unique ownership for package usage documents | Pending Verification | Medium |
 
 ## Completed
 

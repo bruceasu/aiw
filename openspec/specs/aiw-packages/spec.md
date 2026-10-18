@@ -287,3 +287,17 @@ usage MUST 归所属程序/插件，MUST NOT 整体安装仓库开发文档。
 Windows 文件占用失败 MUST 显示文件、退出重试和独立 Python 更新主程序的入口。
 MUST NOT 自动终止程序、启动后台更新器、强制覆盖或安排重启替换。
 pkg 自更新 MUST 在首次修改前准备所需模块、配置、包与恢复数据；官方 pkg MUST 不带 hook。
+
+### Requirement: Unique program usage document ownership
+
+Program packages MUST select docs/usage documents using the longest matching
+package-name prefix, matching either the complete stem or a hyphen-delimited
+suffix. A shorter package prefix MUST NOT claim a more specific package's guide.
+The existing cz and aiw-issue aliases and explicit main-program documents remain
+supported. The aiw-docs resource continues to use docs/reference paths.
+
+#### Scenario: Nested plugin names
+
+- WHEN packaging aiw-file and aiw-file-convert
+- THEN docs/usage/aiw-file-convert.md belongs only to aiw-file-convert
+- AND docs/usage/aiw-file.md remains with aiw-file.

@@ -57,6 +57,22 @@ def component_dependencies(component):
     return []
 
 
+def usage_document_owner(stem):
+    """Give nested package names priority over their shorter document prefixes."""
+    matches = []
+    for component in ["aiw", *context.plugin_targets()]:
+        name = "aiw-main" if component == "aiw" else "aiw-" + component
+        prefixes = [name]
+        if component == "cz":
+            prefixes.append("cz")
+        elif component == "req":
+            prefixes.append("aiw-issue")
+        for prefix in prefixes:
+            if stem == prefix or stem.startswith(prefix + "-"):
+                matches.append((len(prefix), component))
+    return max(matches)[1] if matches else None
+
+
 def build_component(component, version):
     c = context
     name, kind, category, entries, dependencies, members = "aiw-" + component, "plugin", "plugins", [], [], []
@@ -119,10 +135,9 @@ def build_component(component, version):
                 source = c.SRC / "programs/ai-code-tools" / ("ai-code-index" if component == "ai-code-index" else "generate-ai-index")
             entries = [c.one(source, "plugins/" + name + ".py")]
     usage = c.ROOT / "docs/usage"
-    prefixes = (name, "cz-" if component == "cz" else name + "-", "aiw-issue" if component == "req" else name)
     if kind not in {"collection", "skill", "resource"}:
         for doc in sorted(usage.glob("*.md")):
-            if doc.stem == name or any(doc.stem.startswith(p + "-" if not p.endswith("-") else p) for p in prefixes):
+            if usage_document_owner(doc.stem) == component:
                 entries.append(c.one(doc, "docs/usage/" + doc.name))
         if component == "aiw":
             for filename in ("cli-reference.md", "aiw-ask.md", "aiw-auxiliary.md", "requirement-discovery-review.md"):
