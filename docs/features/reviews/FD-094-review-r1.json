@@ -1,0 +1,28 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-094",
+  "source_event": "FD-094-000008-implementation-ready",
+  "human_report": "FD-094-review-r1.md",
+  "data": {
+    "reviewer_session": "codex-fd094-junction-review-r1-20261019",
+    "baseline": "8f4b7c9",
+    "repair_commit": "beda789",
+    "reviewed_commit": "cb211a1",
+    "result": "passed",
+    "findings": [],
+    "resolved_findings": ["R1: relative targets now preserve raw components and operate on the resolved physical parent"],
+    "static_evidence": ["Original junction plus relative ../ target now resolves outside root and is rejected", "Nested target link/../file processed in physical order", "Shared 255 traversal count and cycle termination", "Empty, volume-relative, root-relative and unsupported irregular targets fail closed", "Retained entrypoint relative guard, physical Rel, final Stat and directory rejection", "Worker item correction retains mandatory independent review"],
+    "commands_run": [
+      "Get-Content and rg for scoped FD, report, source and spec reading",
+      "git diff 8f4b7c9 cb211a1 -- src/internal/plugin/manifest.go",
+      "git diff 8f4b7c9 cb211a1 --stat",
+      "git diff beda789 cb211a1 -- src/internal/plugin/manifest.go docs/usage/aiw-pkg.md openspec/specs/cli-and-plugins/spec.md",
+      "aiw fd claim FD-094 FD-094-000008-implementation-ready --session codex-fd094-junction-review-r1-20261019",
+      "aiw fd emit FD-094 verification-passed --producer reviewer --artifact docs/features/reviews/FD-094-review-r1.md --source-event FD-094-000008-implementation-ready"
+    ],
+    "worker_compile_evidence": "Repair Worker report records offline scripts/compile.py exit 0 after source repair; not rerun by Reviewer",
+    "checks_not_run": ["tests", "compile", "runtime", "build", "install", "publish", "formatter", "network"],
+    "residual_risks": ["Installed launcher unchanged", "Post-fix launcher runtime unverified", "Existing filesystem replacement race assumptions retained"]
+  }
+}

@@ -1,7 +1,7 @@
 # FD-094: Resolve Windows junction ancestors in plugin paths
 
-**Status:** In Progress
-**Revision:** 7
+**Status:** Complete
+**Revision:** 9
 **Priority:** High
 **Evidence policy:** Dual
 
@@ -64,8 +64,8 @@ No linked Issue/OpenSpec change. Existing builds must be recompiled explicitly.
 
 ## TODO
 
-- Independent review R1 corrected with root-to-leaf raw-component processing;
-  fresh focused review required before completing 1.2.
+- Independent focused review passed; R1 resolved by root-to-leaf raw-component
+  processing. Implementation Work Items and review gate are complete.
 - Installed executable remains unchanged; do not claim runtime recovery.
 
 ## Verification
@@ -79,8 +79,8 @@ Offline scripts/compile.py returned exit 0, compiling both Go entrypoints to NUL
 One implementation diff inspection traced target substitution, recursion bounds,
 mixed mode bits and unchanged final entrypoint guards. See implementation report.
 Independent review requests changes: docs/features/reviews/FD-094-review.md and JSON.
-The leaf-first relative-link expansion can select the wrong physical target when
-an ancestor is a junction. Work Item 1.2 remains incomplete; no runtime check rerun.
+At that first review, leaf-first relative-link expansion could select the wrong
+physical target across a junction; item 1.2 was incomplete. No runtime check rerun.
 R1 repair now uses root-to-leaf traversal and raw target queues. A fresh offline
 compile-only after this source change returned exit 0; one focused diff inspection
 completed. Fresh independent review is required; the earlier finding remains history.
@@ -88,6 +88,11 @@ The first repair handoff was rejected because item 1.2 circularly required a rev
 pass before requesting review. Planner corrected only that item's completion
 criterion to authored implementation evidence; its ID and required independent
 review gate remain. No review or behavior requirement was waived.
+Fresh independent static review passed at cb211a1, source event
+FD-094-000008-implementation-ready; R1 is resolved. See
+docs/features/reviews/FD-094-review-r1.md and its JSON sidecar. The Reviewer traced
+physical parent ordering, raw target components, shared traversal bounds and
+retained containment guards; no test or fixed-runtime execution was performed.
 
 ## Sources
 
