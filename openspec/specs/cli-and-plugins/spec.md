@@ -255,6 +255,12 @@ MUST use consistent absolute paths. Any symlink, junction-like irregular type or
 other nonordinary component MUST retain physical resolution or fail closed;
 resolution errors MUST NOT fall back to unchecked lexical paths. Existing physical
 containment, missing/unreadable path and directory-entrypoint rejection remain mandatory.
+The resolver MUST explicitly follow readable symlink and junction targets, including
+Windows junction ancestors reported as ModeIrregular. After substituting a link
+target it MUST restart ancestor inspection, bound link traversal to 255 and reject
+volume-relative targets. Unreadable or unsupported irregular links MUST fail closed
+with path context. A junction installation alias and its physical target MUST yield
+the same contained entrypoint; an entrypoint link escaping that root MUST be rejected.
 
 #### Scenario: Discover multiple commands from one package
 

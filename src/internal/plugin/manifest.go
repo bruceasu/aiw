@@ -87,10 +87,16 @@ func readPluginManifest(directory string) ([]pluginManifestEntry, error) {
 	return manifest.Plugins, nil
 }
 
-// resolveManifestPath avoids case-enumerating ordinary paths on Windows. Only a
-// complete no-link ancestor walk permits the lexical absolute path; all other
-// filesystem types retain the existing physical resolution and failure behavior.
+// resolveManifestPath avoids case enumeration for ordinary Windows paths and
+// follows junctions, which recent Go versions expose as irregular reparse types.
 func resolveManifestPath(value string) (string, error) {
+	return resolveManifestPathLinks(value, 0)
+}
+
+func resolveManifestPathLinks(value string, links int) (string, error) {
+	if links > 255 {
+		return "", errors.New("resolve plugin path: too many links")
+	}
 	absolute, err := filepath.Abs(value)
 	if err != nil {
 		return "", err
@@ -101,9 +107,26 @@ func resolveManifestPath(value string) (string, error) {
 		}
 		info, err := os.Lstat(current)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("inspect path %q: %w", current, err)
 		}
 		kind := info.Mode() & os.ModeType
+		if kind&(os.ModeSymlink|os.ModeIrregular) != 0 {
+			target, err := os.Readlink(current)
+			if err != nil {
+				return "", fmt.Errorf("read link target %q: %w", current, err)
+			}
+			if !filepath.IsAbs(target) {
+				if filepath.VolumeName(target) != "" {
+					return "", fmt.Errorf("link %q has a volume-relative target", current)
+				}
+				target = filepath.Join(filepath.Dir(current), target)
+			}
+			suffix, err := filepath.Rel(current, absolute)
+			if err != nil {
+				return "", fmt.Errorf("resolve link suffix %q: %w", current, err)
+			}
+			return resolveManifestPathLinks(filepath.Join(target, suffix), links+1)
+		}
 		if kind != 0 && kind != os.ModeDir {
 			return filepath.EvalSymlinks(absolute)
 		}

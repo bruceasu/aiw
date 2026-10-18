@@ -259,6 +259,10 @@ If plugin discovery reports `resolve plugin directory` although plugin.toml and
 its entrypoint exist, the ordinary-path resolver avoids an additional Windows case
 enumeration step after proving the entire path has no links. Links and irregular
 objects still require physical resolution and must stay inside the plugin directory.
+Windows junctions such as `C:\green` pointing to `D:\green` may appear as
+`ModeIrregular` in Go. The resolver explicitly reads symlink/junction targets and
+rechecks the resulting path, with a bounded link count. Unknown irregular objects
+that do not provide a readable link target fail with the affected path in the error.
 This correction is in the native launcher, so updating only the Python pkg files
 does not update it: recompile the main snapshot, build/install the main package,
 then verify the newly installed launcher separately. Keep the original failure output.

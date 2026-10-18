@@ -1,7 +1,7 @@
 ﻿# FD-094: Resolve Windows junction ancestors in plugin paths
 
-**Status:** Open
-**Revision:** 3
+**Status:** Pending Verification
+**Revision:** 5
 **Priority:** High
 **Evidence policy:** Dual
 
@@ -45,7 +45,7 @@ No linked Issue/OpenSpec change. Existing builds must be recompiled explicitly.
 
 ## Work Items
 
-- [ ] 1.1 Follow link/junction ancestors with bounded traversal and error context.
+- [x] 1.1 Follow link/junction ancestors with bounded traversal and error context.
   Size small, difficulty medium, dependencies none. Completion: static trace covers
   C:/green to D:/green, links in suffix/target, cycles, containment and unknown types.
 - [ ] 1.2 Update docs/spec, offline Go compile-only and independent static review.
@@ -62,7 +62,8 @@ No linked Issue/OpenSpec change. Existing builds must be recompiled explicitly.
 
 ## TODO
 
-- Implement, document, compile-only and obtain independent implementation review.
+- Implementation/docs and offline Go compile-only complete; independent review pending.
+- Complete 1.2 after current independent pass; installed executable remains unchanged.
 
 ## Verification
 
@@ -71,6 +72,9 @@ The approved one-shot diagnostic ran: GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local
 writes, no install or network. Do not repeat it. After implementation run one
 root scripts/compile.py with offline Go settings, then one static diff inspection.
 No tests, final builds, installation, publication, network or fixed-runtime check.
+Offline scripts/compile.py returned exit 0, compiling both Go entrypoints to NUL.
+One implementation diff inspection traced target substitution, recursion bounds,
+mixed mode bits and unchanged final entrypoint guards. See implementation report.
 
 ## Sources
 
