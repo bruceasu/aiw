@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-091](FD-091_PLAIN_PLUGIN_PATH_RESOLUTION.md) | Resolve ordinary plugin paths without case enumeration | In Progress | Medium |
 
 ## Completed
 
