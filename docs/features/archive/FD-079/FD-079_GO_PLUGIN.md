@@ -90,7 +90,7 @@
 - [x] 完成必要的独立设计静态审阅，Planner 据 D1–D4 修订定稿；原始 changes-needed 报告保留，不伪称第二轮通过。
 - [x] 提交范围内 Issue/FD 计划，确保 develop 干净，再用 `aiw git wt add FD-079` 建立 `feature/FD-079` / `.wt/FD-079`。
 - [x] 实现并按可审阅 Work Item 提交，完成当前源码离线 compile-only 和真实 Worker 双报告。
-- [ ] 独立审查通过后自动 squash 交付、验证清理、Complete 归档及归档提交。
+- [x] 独立审查通过，CLI squash 交付至 develop 并验证清理，FD 已 Complete 归档；本次归档提交保存最终记录。
 
 ## Acceptance
 
@@ -137,3 +137,18 @@
 ## 一次聚焦复查授权
 
 用户明确回复“允许一次聚焦静态复查并继续交付”。授权对象为源码 c3d2c27 的 R1/R2 修复及直接影响调用路径，由独立 Reviewer 执行一次静态复查；不新增测试、程序运行、编译、最终构建或网络权限。本授权解除重复审阅预算 Gate，不表示复查已通过。真实通过后继续原已授权本地交付、清理、Complete 归档。
+
+**Completed:** 2026-10-18
+
+## PM 本地完成记录
+
+本节只补记实际交付/归档结果，不改变已审阅源码或能力决策。获用户授权的第二轮聚焦独立复查已真实通过，事件 FD-079-000011-verification-passed，R1/R2 已解决；报告位于本归档 reviews/FD-079-implementation-review-20261018-r2.md 及同名 JSON。首次失败和原始报告保留，复查次数合计2（第二次有明确预算例外授权）。
+
+- 已交付源码编译证据：c3d2c27 的离线 compile-only 成功，没有本轮额外运行检查。
+- 审查及证据最终 FD HEAD：18787856ae5f691918eca3162b9194ff1f00bed3，审查后源码无变化。
+- develop 上单父提交：d5698e8458d0013c84e7347b174c5ba5f4a01fe5；FD-Source 与上述 FD HEAD 完全一致。
+- aiw git wt local-merge FD-079 成功，并确认已移除 .wt/FD-079 和 feature/FD-079，保留 FD receipts。
+- aiw fd close FD-079 Complete 成功；本文件及证据已位于 docs/features/archive/FD-079/。
+- 两个授权 Gate 均已解决；复查后的当前验证状态为通过，不以此前等待授权记录代替当前状态。
+- PM 通知不是可由 agent claim 的角色：一次 PM claim 被 CLI 拒绝后未重试、未改 receipt，按正常 host PM 交付入口继续成功；未使用 force、跳过审查或重写历史事件。
+- 没有测试、运行程序、最终构建、打包分发、推送、发布或部署；授权网络仍仅为早先一次固定版本 BZIP2 源码下载。跨平台/旧工具互操作未运行验证，详见原报告和 README。

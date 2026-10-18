@@ -1,0 +1,29 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "delivery-report",
+  "fd_id": "FD-079",
+  "source_event": "FD-079-000011-verification-passed",
+  "human_report": "FD-079-local-completion-20261018.md",
+  "data": {
+    "status": "Complete",
+    "parent_branch": "develop",
+    "delivery_commit": "d5698e8458d0013c84e7347b174c5ba5f4a01fe5",
+    "fd_source": "18787856ae5f691918eca3162b9194ff1f00bed3",
+    "implementation_compile_revision": "c3d2c27",
+    "archive": "docs/features/archive/FD-079",
+    "review_outcomes": ["changes-requested", "verification-passed after explicit focused re-review authorization"],
+    "commands": [
+      {"command": "aiw git wt local-merge FD-079", "result": "success; CLI verified single-parent squash and cleanup"},
+      {"command": "aiw fd close FD-079 Complete", "result": "success"},
+      {"command": "aiw fd claim FD-079 FD-079-000011-verification-passed --session codex-fd079-pm-20261018-a7c3", "result": "rejected: PM handoffs cannot be agent-claimed; no retry or receipt edit"}
+    ],
+    "worktree_removed": true,
+    "branch_removed": true,
+    "receipts_retained": true,
+    "tests_run": 0,
+    "final_builds_run": 0,
+    "runtime_validation_run": false,
+    "published": false,
+    "residual_risk": "无跨平台/旧工具运行互操作证据；历史编码和链接限制、资源边界及非事务失败语义均已披露。"
+  }
+}
