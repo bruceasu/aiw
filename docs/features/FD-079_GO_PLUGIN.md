@@ -1,7 +1,7 @@
 # FD-079: Go 独立压缩解压工具与 plugin
 
-**Status:** Open
-**Revision:** 5
+**Status:** Complete
+**Revision:** 11
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -66,26 +66,31 @@
 
 ## Work items
 
-- [ ] 1.1 固定依赖及格式/编码决策。小，中等；依赖：人工依赖授权；完成：取得并静态审阅候选源码、许可证与完整格式编码矩阵，清除设计 Gate；不以依赖获取冒充运行验证。
-- [ ] 1.2 独立入口和 CLI 解析。小，中等；依赖 1.1；完成：选项混排、位置输入后备、重复输入、默认路径和参数冲突符合契约；静态审阅调用路径。
-- [ ] 1.3 编码适配。小，中等；依赖 1.1；完成：UTF-8 与已确定历史编码双向转换、严格失败、格式适用帮助及内容不变；审阅编码映射与错误传播。
-- [ ] 1.4 源清单与链接策略。小，中等；依赖 1.2；完成：普通文件/目录遍历、-l/-L、循环/悬空/越界和输入输出重叠检查；审阅身份和范围判断。
-- [ ] 1.5 ZIP/TAR 打包。小，中等；依赖 1.3/1.4；完成：清单按名称编码写入对应容器并传播读写/关闭错误，ZIP 默认与 TAR 显式格式均满足范围。
-- [ ] 1.6 压缩流适配。小，中等；依赖 1.1/1.5；完成：TAR.GZ/TGZ、TAR.BZ2、纯 GZ/BZ2 编解码与输入限制一致；审阅 writer finalize 与错误路径。
-- [ ] 1.7 解包解析与暂存。小，中等；依赖 1.3/1.6；完成：内容检测、输入暂存、全条目清单、损坏输入及不支持类型报错；不提前发布 stdout。
-- [ ] 1.8 目标发布与覆盖。小，中等；依赖 1.7；完成：受约束写入、排他创建/-O 普通文件覆盖、目录合并、安全链接恢复、stdout 完整预检；审阅路径和关闭错误。
-- [ ] 1.9 源删除与错误报告。小，中等；依赖 1.4/1.8；完成：整体成功后才删、stdin/stdout/-L 限制、残留路径与非零退出；禁止误删输出。
-- [ ] 1.10 plugin、用户文档与稳定 spec。小，中等；依赖 1.2–1.9；完成：可独立运行与现有 plugin 发现兼容、帮助完整、不隐式下载/编译，编译脚本无最终产物。
-- [ ] 1.11 编译与独立审查证据。小，中等；依赖全部实现项；完成：一次窄范围离线 compile-only、一次静态核对、真实 Worker 双报告及独立 Reviewer 交接；未运行检查明确记录。
+- [x] 1.1 固定依赖及格式/编码决策。小，中等；依赖：人工依赖授权；完成：取得并静态审阅候选源码、许可证与完整格式编码矩阵，清除设计 Gate；不以依赖获取冒充运行验证。
+- [x] 1.2 独立入口和 CLI 解析。小，中等；依赖 1.1；完成：选项混排、位置输入后备、重复输入、默认路径和参数冲突符合契约；静态审阅调用路径。
+- [x] 1.3 编码适配。小，中等；依赖 1.1；完成：UTF-8 与已确定历史编码双向转换、严格失败、格式适用帮助及内容不变；审阅编码映射与错误传播。
+- [x] 1.4 源清单与链接策略。小，中等；依赖 1.2；完成：普通文件/目录遍历、-l/-L、循环/悬空/越界和输入输出重叠检查；审阅身份和范围判断。
+- [x] 1.5 ZIP/TAR 打包。小，中等；依赖 1.3/1.4；完成：清单按名称编码写入对应容器并传播读写/关闭错误，ZIP 默认与 TAR 显式格式均满足范围。
+- [x] 1.6 压缩流适配。小，中等；依赖 1.1/1.5；完成：TAR.GZ/TGZ、TAR.BZ2、纯 GZ/BZ2 编解码与输入限制一致；审阅 writer finalize 与错误路径。
+- [x] 1.7 解包解析与暂存。小，中等；依赖 1.3/1.6；完成：内容检测、输入暂存、全条目清单、损坏输入及不支持类型报错；不提前发布 stdout。
+- [x] 1.8 目标发布与覆盖。小，中等；依赖 1.7；完成：受约束写入、排他创建/-O 普通文件覆盖、目录合并、安全链接恢复、stdout 完整预检；审阅路径和关闭错误。
+- [x] 1.9 源删除与错误报告。小，中等；依赖 1.4/1.8；完成：整体成功后才删、stdin/stdout/-L 限制、残留路径与非零退出；禁止误删输出。
+- [x] 1.10 plugin、用户文档与稳定 spec。小，中等；依赖 1.2–1.9；完成：可独立运行与现有 plugin 发现兼容、帮助完整、不隐式下载/编译，编译脚本无最终产物。
+- [x] 1.11 编译与独立审查证据。小，中等；依赖全部实现项；完成：一次窄范围离线 compile-only、一次静态核对、真实 Worker 双报告及独立 Reviewer 交接材料；未运行检查明确记录。
 
 各项不超过半日是拆分目标而非工期承诺。设计 Gate 已解除，可按依赖顺序实现。实现开始后保持编号不变。
+
+- [x] 1.12 修复 R1：符号链接目标按文件系统逐组件展开后处理 ..，拒绝真实越界与非目录穿越；小，中等，依赖首轮 R1；源码 c3d2c27，静态追踪原反例。
+- [x] 1.13 修复 R2：ZIP 目录精确衔接 EOCD/ZIP64，匹配尾部选择与兼容分支，防止未受限记录继续分配；小，中等，依赖首轮 R2；源码 c3d2c27，静态对照标准库。
+- [x] 1.14 修复后编译及补充 Worker 双报告；源码 c3d2c27 的同一离线 compile.py 成功，独立复查尚未授权。
 
 ## TODO
 
 - [x] 取得依赖变更及一次固定版本下载授权，静态核实候选 API/许可证后定稿。
 - [x] 完成必要的独立设计静态审阅，Planner 据 D1–D4 修订定稿；原始 changes-needed 报告保留，不伪称第二轮通过。
-- [ ] 提交范围内 Issue/FD 计划，确保 develop 干净，再用 `aiw git wt add FD-079` 建立 `feature/FD-079` / `.wt/FD-079`。
-- [ ] 实现并按可审阅 Work Item 提交；独立审查通过后自动 squash 交付、验证清理、Complete 归档及归档提交。
+- [x] 提交范围内 Issue/FD 计划，确保 develop 干净，再用 `aiw git wt add FD-079` 建立 `feature/FD-079` / `.wt/FD-079`。
+- [x] 实现并按可审阅 Work Item 提交，完成当前源码离线 compile-only 和真实 Worker 双报告。
+- [ ] 独立审查通过后自动 squash 交付、验证清理、Complete 归档及归档提交。
 
 ## Acceptance
 
@@ -100,11 +105,13 @@
 
 ## Verification
 
-- 当前仅完成 Issue 审批/转交和设计草案；源实现未开始，没有编译、测试或运行结果。
-- 实现后拟执行一次 `python src/programs/aiw-packer/scripts/compile.py`：检查脚本源码后运行，离线 `go build -o os.devnull .`，禁用下载，不保留可分发二进制；如 wrapper 为 Python，可在同命令中内存 compile，不写 pyc。
+- 用户授权的一次聚焦复查已由独立 Reviewer `codex-fd079-reviewer-20261018-r2` 完成，真实来源事件 `FD-079-000010-implementation-ready`，审阅源码 `c3d2c27`（相对 `bd63c3d`）：**verification-passed**。R1/R2 已解决，直接影响路径无新增阻塞；未改变范围沿用首轮静态证据。报告 `docs/features/reviews/FD-079-implementation-review-20261018-r2.md` 及同名 JSON。未重跑整个实现审阅，未运行测试、编译、packer、恶意包、构建或网络；跨平台运行证据限制保留。
+- 首轮独立 Reviewer `codex-fd079-reviewer-20261018-r1` 已领取 `FD-079-000006-implementation-ready` 并完成静态审阅：**changes-requested**。报告 `docs/features/reviews/FD-079-implementation-review-20261018-r1.md` 及同名 JSON。R1 链接逐组件解析与 `..` 清理顺序可产生越界/悬空目标；R2 ZIP 预扫描声明范围与标准库实际目录读取范围不一致，可绕过预分配资源保护。两项随后由 Worker 在 c3d2c27 修复并完成离线编译；本条保留首轮失败事实，当前结论见上一条。Reviewer 未运行测试、编译或程序。
+- Worker 已完成实现；原始源码提交 bd63c3d 的窄范围离线 compile-only 成功，未运行测试或 packer 程序。原始 Worker 报告：docs/features/reports/FD-079-implementation-20261018-a7c3.md 及同名 JSON。修复源码及聚焦复查结论见上述记录。
+- 已执行 `python src/programs/aiw-packer/scripts/compile.py`：已检查脚本源码并运行，离线 `go build -o os.devnull .`，禁用下载，不保留可分发二进制；如 wrapper 为 Python，可在同命令中内存 compile，不写 pyc。
 - 默认测试、最终构建、格式化、lint、vet、验证脚本及网络预算均为零。固定版本依赖源码下载是待决的单独授权，不扩展验证权限。
 - post-edit 静态核对最多一条命令；不重复未变失败命令。compile-only 若源错误修复后可按仓库规则重跑一次。
-- 必要设计审阅与最终独立实现审阅分开。独立设计 Reviewer 对 Revision 2 的 changes-needed 报告保留；Planner 在 Revision 3/4 据源码证据处理 D1–D4，没有伪称重复独立审阅。依赖 Gate 已解决；最终独立实现审阅尚未执行。完整本地交付只在实际 Gate 通过后继续。
+- 必要设计审阅与最终独立实现审阅分开。独立设计 Reviewer 对 Revision 2 的 changes-needed 报告保留；Planner 在 Revision 3/4 据源码证据处理 D1–D4，没有伪称重复独立审阅。依赖 Gate 已解决；首轮实现审阅要求修改，修复后获授权的一次聚焦复查已通过。完整本地交付仍须满足其他实际 Gate。
 - 原始独立设计报告：`docs/features/reviews/FD-079-design-review-20261018-a7c3.md` 及同名 JSON；Planner 修订决定以本 FD 为准。阻塞报告 `docs/features/reports/FD-079-blocker-dependencies-20261018-a7c3.md` 已记录授权和实际下载，不擦除未授权时的历史事实。
 
 ## Sources
@@ -116,4 +123,17 @@
 - 独立 Go 子模块先例：`src/programs/md-converter/go.mod`、`src/programs/md-converter/scripts/compile.py`。
 - 插件包装先例：`src/plugins/aiw-file-convert/plugin.toml`。
 - 主模块边界：`src/go.mod`；本机 Go `compress/bzip2` 只有 NewReader；本机缓存 `golang.org/x/text@v0.24.0/encoding` 的相关编码入口。
-- Planner 会话：`codex-fd079-planner-20261018-a7c3`；已 claim `FD-079-000002-design-requested`，尚未发 design-ready。
+- Planner 会话：`codex-fd079-planner-20261018-a7c3`；design-ready 已发。Worker 会话 `codex-fd079-worker-20261018-a7c3` 已 claim `FD-079-000005-design-ready`。
+
+## Worker 完成记录
+
+源码 bd63c3d 已编译通过。首次 9f97746 编译也成功，之后静态核对发现 ZIP 根条目校验/预分配资源边界并修复，当前源码重新编译成功；两次均不保留最终产物。未运行测试、运行验证、最终打包或其他网络。ZIP 中央目录另限 64 MiB，预扫描实际条目；该边界与帮助/spec 一致。实现报告和独立审查报告分离，尚未宣称审查通过或已交付。
+
+## 首轮实现审查与修复 Gate
+
+独立 Reviewer 会话 codex-fd079-reviewer-20261018-r1 已真实审查并发出 FD-079-000007-changes-requested；原报告 docs/features/reviews/FD-079-implementation-review-20261018-r1.md 保留，不能描述为通过。Worker 已领取该真实事件，修复 R1/R2 并提交 c3d2c27；源码修复后一次离线 compile-only 退出0，未测试或运行程序。
+
+当前修复证据：docs/features/reports/FD-079-repair-20261018-r1.md 及同名 JSON。预算 Gate：docs/features/reports/FD-079-blocker-review-budget-20261018-r1.md 及同名 JSON。按仓库 repeated review passes 默认0，未再 dispatch Reviewer，未本地合并、清理或归档；等待一次聚焦独立静态复查的明确授权。原自动交付授权仍保留，真实复查通过后继续，无需另一次 auto/merge 请求。
+## 一次聚焦复查授权
+
+用户明确回复“允许一次聚焦静态复查并继续交付”。授权对象为源码 c3d2c27 的 R1/R2 修复及直接影响调用路径，由独立 Reviewer 执行一次静态复查；不新增测试、程序运行、编译、最终构建或网络权限。本授权解除重复审阅预算 Gate，不表示复查已通过。真实通过后继续原已授权本地交付、清理、Complete 归档。

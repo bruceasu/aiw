@@ -1,0 +1,22 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-079",
+  "source_event": "FD-079-000007-changes-requested",
+  "human_report": "FD-079-repair-20261018-r1.md",
+  "data": {
+    "session": "codex-fd079-worker-20261018-a7c3",
+    "base_implementation_commit": "bd63c3d",
+    "implementation_commit": "c3d2c27",
+    "summary": "修复 R1 链接目标解析顺序和 R2 ZIP 目录范围不一致。独立修复复查未授权、未运行。",
+    "changed_paths": ["src/programs/aiw-packer/safety.go", "src/programs/aiw-packer/zip_limits.go"],
+    "findings_addressed_by_worker": ["R1", "R2"],
+    "commands": [{"command": "python src/programs/aiw-packer/scripts/compile.py", "revision": "c3d2c27", "exit_code": 0, "final_artifact_retained": false}],
+    "results": ["source corrections committed", "current offline compile successful", "independent follow-up review not performed"],
+    "tests_run": 0,
+    "runtime_validation_run": false,
+    "review_passed": false,
+    "human_decision_required": "one focused independent static re-review of R1/R2 and directly affected paths",
+    "residual_risk": "修复只有 Worker 静态追踪与编译证据，缺少新的独立通过结论；未运行跨平台或恶意包验证。"
+  }
+}

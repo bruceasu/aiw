@@ -1,0 +1,28 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-079",
+  "source_event": "FD-079-000006-implementation-ready",
+  "human_report": "FD-079-implementation-review-20261018-r1.md",
+  "data": {
+    "session": "codex-fd079-reviewer-20261018-r1",
+    "fd_revision": 6,
+    "base_commit": "28dd3bf",
+    "implementation_commit": "bd63c3d",
+    "reviewed_head": "125dd19d91f61fe78c3a30423da50a5826def35f",
+    "verdict": "changes-requested",
+    "findings": [
+      {"id":"R1","severity":"P1","blocking":true,"dimension":"correctness/spec","file":"src/programs/aiw-packer/safety.go","line":143,"summary":"Cleaning dot-dot before resolving intermediate symlinks can validate a different path from the raw target restored by Root.Symlink, allowing an out-of-root or dangling link.","correction":"Resolve components and symlinks in filesystem order before checking boundary/existence, or reject unsupported complex targets."},
+      {"id":"R2","severity":"P1","blocking":true,"dimension":"correctness/spec","file":"src/programs/aiw-packer/zip_limits.go","line":51,"summary":"Preflight only scans declared central-directory length, while archive/zip may consume further contiguous headers and allocate them before the post-read entry limit.","correction":"Validate the complete region actually consumed by archive/zip and reject inconsistent declared layout before standard-library allocation."}
+    ],
+    "results": ["independent static review completed", "two concrete blocking defects", "verification not passed"],
+    "commands": ["Get-Content -Encoding utf8 (targeted repository and local Go source reads)", "rg / rg --files (targeted searches)", "Get-ChildItem / Get-Command (path discovery)", "git status --short", "git diff --stat 28dd3bf HEAD", "git rev-parse HEAD", "aiw fd --help", "aiw fd claim --help", "aiw fd emit --help", "aiw fd claim FD-079 FD-079-000006-implementation-ready --session codex-fd079-reviewer-20261018-r1"],
+    "tests_run": 0,
+    "compile_checks_run": 0,
+    "final_builds_run": 0,
+    "network_calls": 0,
+    "runtime_validation_run": false,
+    "skipped": ["tests", "compile", "packer execution", "final build", "formatter", "lint", "vet", "verification scripts", "network"],
+    "residual_risk": "No runtime cross-platform, encoding interoperability or failure-path evidence; concurrent source mutation and nontransactional multi-file publication/deletion remain documented limits."
+  }
+}

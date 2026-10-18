@@ -1,0 +1,32 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-079",
+  "source_event": "FD-079-000010-implementation-ready",
+  "human_report": "FD-079-implementation-review-20261018-r2.md",
+  "data": {
+    "session": "codex-fd079-reviewer-20261018-r2",
+    "fd_revision": 10,
+    "base_commit": "bd63c3d",
+    "implementation_commit": "c3d2c27",
+    "reviewed_head": "48a7b47d8e1d47c025147dd9c4643414a1874128",
+    "authorization": "Explicit user approval for one focused static re-review of R1/R2 and directly affected paths",
+    "scope": ["R1 link component resolution and restoration", "R2 ZIP preflight and archive/zip consumption boundaries"],
+    "verdict": "verification-passed",
+    "findings": [],
+    "resolved_findings": [
+      {"id":"R1","file":"src/programs/aiw-packer/safety.go","result":"resolved","evidence":"Intermediate links expand before following dot components; root escape and file traversal rejected; dependency publication preserves raw-target semantics."},
+      {"id":"R2","file":"src/programs/aiw-packer/zip_limits.go","result":"resolved","evidence":"Complete central-directory region ends exactly at the same EOCD/ZIP64 end used by the standard reader; real count and metadata bounded before allocation."}
+    ],
+    "results": ["authorized focused static re-review completed", "R1/R2 resolved without directly introduced blockers", "current Verification passed using first-round evidence for unchanged scope"],
+    "commands": ["Get-Content -Encoding utf8 (targeted FD, reports, receipt, affected sources and local Go sources)", "git diff bd63c3d c3d2c27 -- src/programs/aiw-packer", "git diff --name-only bd63c3d c3d2c27 -- src/programs/aiw-packer src/plugins/aiw-packer openspec/specs/aiw-packer", "git rev-parse HEAD", "git status --short", "rg -n (local rootSymlink definitions)", "aiw fd claim FD-079 FD-079-000010-implementation-ready --session codex-fd079-reviewer-20261018-r2"],
+    "tests_run": 0,
+    "compile_checks_run": 0,
+    "final_builds_run": 0,
+    "network_calls": 0,
+    "runtime_validation_run": false,
+    "skipped": ["tests", "compile", "packer execution", "malicious archive execution", "final build", "formatter", "lint", "vet", "runtime validation", "network"],
+    "prior_evidence": ["FD-079-implementation-review-20261018-r1.md", "FD-079-repair-20261018-r1.md", "FD-079-focused-review-request-20261018-r2.md"],
+    "residual_risk": "No cross-platform/legacy interoperability or Windows link runtime evidence; nontransactional publication/deletion and concurrent mutation limits remain. ZIP boundary reasoning is tied to inspected Go 1.25.1 implementation."
+  }
+}

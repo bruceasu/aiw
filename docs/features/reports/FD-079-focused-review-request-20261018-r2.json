@@ -1,0 +1,21 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-079",
+  "source_event": "FD-079-000009-decision-recorded",
+  "human_report": "FD-079-focused-review-request-20261018-r2.md",
+  "data": {
+    "session": "codex-fd079-worker-20261018-a7c3",
+    "implementation_commit": "c3d2c27",
+    "repair_base": "bd63c3d",
+    "summary": "用户明确授权一次 R1/R2 聚焦独立静态复查；代码不变，引用原修复与当前源码编译证据。",
+    "changed_paths": ["docs/features/FD-079_GO_PLUGIN.md", "docs/features/reports"],
+    "commands": [{"command": "aiw fd emit FD-079 decision-recorded --producer human --artifact docs/features/FD-079_GO_PLUGIN.md --source-event FD-079-000008-needs-decision", "result": "new real Worker event claimed"}],
+    "results": ["one focused re-review explicitly authorized", "no implementation change", "current source compile evidence retained"],
+    "review_scope": ["R1", "R2", "directly affected call paths"],
+    "additional_reviews_authorized": 1,
+    "runtime_commands_this_turn": [],
+    "tests_run": 0,
+    "residual_risk": "尚无修复后的独立通过结果；原始失败结论与未运行跨平台/运行验证的限制保留。"
+  }
+}

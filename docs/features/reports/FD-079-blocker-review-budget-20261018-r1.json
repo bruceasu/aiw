@@ -1,0 +1,38 @@
+{
+    "schema":  "aiw.fd.evidence.v1",
+    "kind":  "blocker-feedback",
+    "fd_id":  "FD-079",
+    "source_event":  "FD-079-000007-changes-requested",
+    "human_report":  "FD-079-blocker-review-budget-20261018-r1.md",
+    "data":  {
+                 "stage":  "post-review-repair",
+                 "role":  "worker",
+                 "recorded_at":  "2026-10-18T16:25:01+09:00",
+                 "recorder_session":  "codex-fd079-worker-20261018-a7c3",
+                 "observed_blocker":  "首轮独立实现审查失败，修复已提交并编译；当前没有修复后独立通过事件，默认重复审阅预算为零。",
+                 "confirmed_cause":  "更具体仓库资源预算禁止默认重复审阅，不能以 fd-workflow auto 自动扩展。",
+                 "cause_status":  "confirmed",
+                 "recovery_attempts":  [
+                                           {
+                                               "action":  "首轮独立静态审查",
+                                               "outcome":  "真实 changes-requested，R1/R2 两项缺陷。"
+                                           },
+                                           {
+                                               "action":  "Worker 领取修复事件并修复",
+                                               "outcome":  "源码 c3d2c27，链接逐组件解析与 ZIP 精确目录范围。"
+                                           },
+                                           {
+                                               "action":  "修复后一次离线 compile-only",
+                                               "outcome":  "退出0，不保留最终产物。"
+                                           }
+                                       ],
+                 "status":  "resolved",
+                 "human_decision_required":  false,
+                 "human_decision_detail":  "是否允许一次独立 Reviewer 聚焦 R1/R2 修复及直接影响路径的静态复查；无测试/运行/构建/网络授权。",
+                 "actual_resolution":  "用户明确授权一次聚焦 R1/R2 和直接影响路径的独立静态复查，通过后继续交付。授权 Gate 已解决；真实复查结果尚待，不等同于 Verification 通过。",
+                 "resolved_at":  "2026-10-18T07:35:17.5982594+00:00",
+                 "residual_risk_or_next_step":  "仅安排这一次获授权复查；不扩展运行/测试/构建/网络权限，真实通过后继续正常本地交付。",
+                 "reusable_improvement":  "对归档链接使用逐组件语义；要求安全预扫描与实际解析器消费范围一致。",
+                 "improvement_status":  "proposed"
+             }
+}

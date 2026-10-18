@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-079",
+  "source_event": "FD-079-000005-design-ready",
+  "human_report": "FD-079-implementation-20261018-a7c3.md",
+  "data": {
+    "session": "codex-fd079-worker-20261018-a7c3",
+    "base_commit": "28dd3bf",
+    "implementation_commit": "bd63c3d",
+    "summary": "独立 Go packer 与 plugin、六类格式、严格历史文件名编码、安全链接/覆盖/删除和离线依赖闭包。",
+    "changed_paths": ["src/programs/aiw-packer", "src/plugins/aiw-packer", "openspec/specs/aiw-packer/spec.md", "docs/features/FD-079_GO_PLUGIN.md"],
+    "commands": [
+      {"command": "go mod download -json github.com/dsnet/compress@v0.0.1", "result": "success", "authority": "explicit user approval", "network": true},
+      {"command": "python src/programs/aiw-packer/scripts/compile.py", "revision": "9f97746", "result": "success", "final_artifact_retained": false},
+      {"command": "python src/programs/aiw-packer/scripts/compile.py", "revision": "bd63c3d", "result": "success after relevant ZIP source correction", "final_artifact_retained": false},
+      {"command": "git diff --stat 28dd3bf HEAD and targeted source reads", "result": "static review completed; direct worktree receipt path corrected to parent workspace"}
+    ],
+    "results": ["implementation complete", "offline compile-only successful", "independent implementation review pending"],
+    "tests_run": 0,
+    "final_builds_run": 0,
+    "runtime_validation_run": false,
+    "residual_risk": "跨平台及历史包互操作未运行验证；源并发修改不保证原子防护；发布/删除不具备多文件回滚；资源边界和 ZIP 布局限制已披露。"
+  }
+}

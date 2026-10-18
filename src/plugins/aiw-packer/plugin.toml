@@ -1,0 +1,27 @@
+schema = 1
+
+[[plugins]]
+name = "packer"
+description = "Pack and unpack local files with explicit filename encoding and link policies."
+entrypoint = "aiw-packer.py"
+startup = "python"
+help = """
+Usage: aiw packer [options] [pack|unpack] [inputs...]
+  -h, --help                 Full standalone help.
+  -f, --format FORMAT        zip, tar, tar.gz/tgz, tar.bz2, gz, bz2.
+  -e, --encoding ENCODING    utf-8 (default), gb18030, gbk, cp437, shift_jis, big5.
+  -i, --input PATH           Repeat for pack; one input for unpack. - is stdin.
+  -o, --output PATH          Output file/directory; - is stdout.
+  -O, --overwrite            Overwrite ordinary files only.
+  -c                        Force stdout; unpack requires one file and no links.
+  -d, --delete              Delete sources after success; not with stdin/stdout/-L.
+  -l                        Preserve safe relative symbolic links.
+  -L                        Pack link target content; not with -l/-d.
+
+Named inputs take precedence. Stdin requires explicit output. Default pack
+format is ZIP; unpack detects contents. GZ/BZ2 require a single ordinary file.
+The plugin needs its prepared platform binary; it never builds or downloads
+on invocation. Prepare explicitly with:
+  python src/programs/aiw-packer/scripts/package.py
+Full documentation: src/programs/aiw-packer/README.md
+"""
