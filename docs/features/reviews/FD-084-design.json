@@ -1,0 +1,46 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-084",
+  "source_event": null,
+  "source_event_reason": "Direct user request; bounded independent design review delegated by the host, without a dispatched design-review event.",
+  "recommendation": "changes-needed",
+  "findings": [
+    {
+      "id": "D1",
+      "blocking": true,
+      "subject": "AIW_BUILD_SYSTEMS",
+      "finding": "Selectable platform subsets violate the existing mandatory Windows/Linux amd64 package contract.",
+      "resolution": "Remove AIW_BUILD_SYSTEMS and retain fixed dual-platform SYSTEMS; configure tool paths and local destinations instead."
+    },
+    {
+      "id": "D2",
+      "blocking": true,
+      "subject": "docs payload ownership",
+      "finding": "Using docs/usage for aiw-docs conflicts with usage files owned by existing program and plugin packages.",
+      "resolution": "Use docs/manual for standalone manual content and docs/manual/README.md for the root README; prevent duplicate README target entries."
+    },
+    {
+      "id": "D3",
+      "blocking": true,
+      "subject": "Work Item readiness",
+      "finding": "Work Items lack recorded size, difficulty, dependencies, completion criteria and acceptance evidence mapping.",
+      "resolution": "Add the required readiness details and split independent outcomes where needed."
+    }
+  ],
+  "evidence": [
+    "docs/features/FD-084_BUILD_PUBLISH_AND_TARGETS.md",
+    "build.py",
+    "scripts/package_definitions.py",
+    "openspec/specs/aiw-packages/spec.md",
+    "src/plugins/aiw-pkg/operations.py",
+    "src/plugins/aiw-pkg/manager.py"
+  ],
+  "commands": {
+    "read_only": ["PowerShell Get-Content", "PowerShell Get-ChildItem", "rg", "PowerShell Select-Object"],
+    "writes": ["apply_patch: design-review Markdown and JSON only"],
+    "failed": ["Get-Content docs/templates/FD_REVIEW_DATA_TEMPLATE.json: path does not exist; no retry"]
+  },
+  "not_run": ["tests", "compile", "build", "publish", "install", "network", "git writes", "workflow events"],
+  "limits": "Pre-implementation static design evidence only. Host-proposed resolutions require incorporation into the FD; no runtime correctness is claimed."
+}
