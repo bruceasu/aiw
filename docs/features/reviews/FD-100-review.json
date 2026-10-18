@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-100",
+  "source_event": "FD-100-000004-implementation-ready",
+  "human_report": "FD-100-review.md",
+  "data": {
+    "reviewer_session_ref": "fd100-reviewer-20261019-93ce70",
+    "fd_revision": 4,
+    "baseline": "f26080e",
+    "reviewed_commit": "369162a",
+    "verdict": "passed",
+    "findings": [],
+    "results": {
+      "correctness": "Static pass: table copies, complete JSON, validated local records and isolated parser routes",
+      "standards": "Pass: scoped source/docs/spec changes; no extra runtime or test execution",
+      "spec": "All seven FD acceptance items supported by inspected implementation and documented contracts",
+      "evidence": "Independent static review; worker offline compile exit 0 recorded, not rerun"
+    },
+    "commands_run": ["Targeted Get-Content, rg and rg --files", "git diff f26080e 369162a --stat and scoped source/docs/spec diff", "aiw fd claim FD-100 FD-100-000004-implementation-ready --session fd100-reviewer-20261019-93ce70"],
+    "claim_note": "Initial parent-workspace claim rejected stale FD digest; corrected cwd to FD worktree and claimed successfully without modifying receipts",
+    "checks_not_run": ["tests", "compile", "package CLI runtime", "build", "formatters", "linters", "vet", "network", "publish", "install", "Git writes"],
+    "residual_risks": ["Terminal rendering and real-data runtime unverified", "Existing JSON consumers must add --json", "Installed plugin unchanged"]
+  }
+}

@@ -23,10 +23,10 @@ type flag, network probe or fallback is used. The nearest project aiw.toml or
 
 ```text
 aiw pkg list [--all] [--repo URL] [--json]
-aiw pkg search QUERY
+aiw pkg search QUERY [--json]
 aiw pkg info NAME [--version VERSION]
 aiw pkg list --installed [--kind plugin] [--dest ROOT] [--json]
-aiw pkg show NAME [--dest ROOT]
+aiw pkg show NAME [--dest ROOT] [--json]
 aiw pkg entries --json
 aiw pkg install NAME [--version VERSION] [--dest ROOT] [--dry-run]
 aiw pkg install ./NAME-VERSION.zip --repo ./packages --dest ROOT
@@ -49,6 +49,35 @@ complete JSON arrays, including all metadata fields. Scripts that parsed the old
 default output must add `--json`. Table sorting does not change JSON record order.
 The `--all`, `--kind`, latest-version selection and source behavior stay unchanged;
 `--installed` reads installation records without contacting a repository.
+
+`search` also defaults to the NAME / VERSION / KIND table, with one row per
+matching version. `search --json` preserves the complete result array and its
+original repository order. Empty searches print a short message.
+
+`show` reads a local installation record and defaults to aligned detail labels:
+name, version, kind, status, reason, dependencies, collection member recipes,
+file/config-file counts and fingerprint. Empty references display `none`; missing
+optional values display `-`, and a legacy missing reason displays `manual`.
+Member recipe versions describe the recorded collection recipe, not the current
+installed member versions. `show --json` preserves the complete record, including
+all file metadata and extra fields. Neither format changes installation records.
+Use `info` for repository metadata about a package that is not installed; `show`
+does not contact the repository, and `info` retains its existing JSON output.
+
+Search uses a case-insensitive name substring. Named install, info and local
+record operations require the exact full package name; search does not create
+short-name aliases. For example:
+
+```text
+aiw pkg search skill-fd-package
+aiw pkg install aiw-skill-fd-package --version 1.0.2
+aiw pkg show aiw-skill-fd-package
+aiw pkg show aiw-skill-fd-package --json
+```
+
+Copy the full NAME from search results when installing. Specifying --version
+does not expand `skill-fd-package` to `aiw-skill-fd-package`. Scripts that parsed
+the former search/show JSON defaults must now pass `--json` explicitly.
 
 Destination: --dest, then AIW_INSTALL_DIR, then C:/green/aiw on Windows or
 ~/apps/aiw on Linux. Each root has separate .aiw/packages state and a write lock.

@@ -31,6 +31,35 @@ def format_package_list(records, *, installed=False):
                      for row in lines)
 
 
+def format_package_detail(record):
+    fields = [
+        (label, str(record.get(key) or default))
+        for label, key, default in (
+            ("Name", "name", "-"),
+            ("Version", "version", "-"),
+            ("Kind", "kind", "-"),
+            ("Status", "status", "-"),
+            ("Reason", "reason", "manual"),
+        )
+    ]
+    for label, key in (("Dependencies", "dependencies"), ("Members (recipe)", "members")):
+        values = [f"{ref['name']} {ref['version']}" for ref in record.get(key, [])]
+        fields.append((label, "\n".join(values) or "none"))
+    files = record.get("files", [])
+    fields.extend((
+        ("Files", str(len(files))),
+        ("Config files", str(sum(item.get("config", False) for item in files))),
+        ("Fingerprint", str(record.get("fingerprint") or "-")),
+    ))
+    width = max(len(label) for label, _ in fields)
+    lines = []
+    for label, value in fields:
+        parts = value.splitlines() or ["-"]
+        lines.append(f"{label.ljust(width)} : {parts[0]}")
+        lines.extend(" " * (width + 3) + part for part in parts[1:])
+    return "\n".join(lines)
+
+
 def main(arguments=None):
     skill_management.configure_utf8_stdio()
     arguments = list(sys.argv[1:] if arguments is None else arguments)
@@ -49,6 +78,8 @@ def main(arguments=None):
         if name == "install":
             command.add_argument("--version")
             command.add_argument("--dry-run", action="store_true")
+        elif name == "show":
+            command.add_argument("--json", action="store_true", help="Print the complete JSON installation record")
     update = commands.add_parser("update")
     update.add_argument("--dest", type=Path, default=default_destination())
     update.add_argument("--repo", default=argparse.SUPPRESS)
@@ -69,6 +100,8 @@ def main(arguments=None):
         query.add_argument("--repo", default=argparse.SUPPRESS)
         if name == "info":
             query.add_argument("--version")
+        else:
+            query.add_argument("--json", action="store_true", help="Print complete JSON records instead of a table")
     entry = commands.add_parser("entries", help="List installed plugin entry points and metadata")
     entry.add_argument("--json", action="store_true")
     commands.add_parser("skill", help="Managed project/user Skill operations; use skill --help")
@@ -107,7 +140,8 @@ def main(arguments=None):
             record = manager.record(args.package)
             if record is None:
                 raise PackageError(f"Package not recorded: {args.package}")
-            print(json.dumps(record, ensure_ascii=False, indent=2))
+            print(json.dumps(record, ensure_ascii=False, indent=2) if args.json else
+                  format_package_detail(record))
             return 0
         if args.action == "mark":
             print(manager.mark_manual(args.package))
@@ -162,7 +196,7 @@ def main(arguments=None):
             else:
                 result = catalog if args.all else [select(catalog, n) for n in sorted({r["name"] for r in catalog})]
                 result = [r for r in result if not args.kind or r["kind"] == args.kind]
-            if args.action == "list" and not args.json:
+            if args.action in {"list", "search"} and not args.json:
                 print(format_package_list(result))
             else:
                 print(json.dumps(result, ensure_ascii=False, indent=2))

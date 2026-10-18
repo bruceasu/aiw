@@ -1,7 +1,7 @@
 # FD-100: Improve package search and show output
 
-**Status:** Open
-**Revision:** 3
+**Status:** Complete
+**Revision:** 5
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -55,15 +55,15 @@ openspec/specs/aiw-packages/spec.md 的可读输出要求（实现阶段才更�
 
 ## Work items
 
-- [ ] 1.1 search 默认表格和 --json 兼容入口；规模 small、难度 low、无前置。完成证据：同名多版本、空结果、表格排序与 JSON 原顺序、完整字段保留的静态调用链。
-- [ ] 1.2 show 对齐详情和 --json 兼容入口；规模 small、难度 low、无前置。完成证据：完整/空依赖成员、legacy 缺字段、removed 状态、文件计数和无仓库访问的静态调用链。
-- [ ] 1.3 同步文档/稳定规范，记录命名诊断及编译/静态证据；规模 small、难度 low、依赖 1.1/1.2。完成证据：说明完整名称和 --json 迁移，更新 TODO/Verification 和双格式报告。
+- [x] 1.1 search 默认表格和 --json 兼容入口；规模 small、难度 low、无前置。完成证据：search 专属 --json 与现有 format_package_list 相连；默认每个版本一行、无结果短消息，JSON 直接序列化原结果不排序或裁剪。
+- [x] 1.2 show 对齐详情和 --json 兼容入口；规模 small、难度 low、无前置。完成证据：独立 formatter 对齐标量、依赖/配方成员多行、none/缺字段/legacy manual、文件及配置计数；仍先调用 manager.record，JSON 序列化完整原记录，未新增仓库访问。
+- [x] 1.3 同步文档/稳定规范，记录命名诊断及编译/静态证据；规模 small、难度 low、依赖 1.1/1.2。完成证据：文档/规范同步完整包名与 --json 迁移、摘要和原记录边界，离线 compile-only 通过，实现双格式报告齐备。
 
 ## TODO
 
 - 设计及必要独立设计审查已完成，结论 ready、无阻断发现；用户已授权 auto，恢复实施。
-- 提交仅本 FD 计划并创建 feature/FD-100、.wt/FD-100，完成三个 Work Items。
-- 一次离线 compile-only、最终静态检查与独立实现审查通过后，本地交付清理并归档。
+- 已提交计划 f26080e，专用 worktree/分支已创建并核对父分支 develop；Worker 领取 FD-100-000003-design-ready，三个 Work Items 完成。
+- 离线 compile-only 和最终一次静态检查已通过；独立 Reviewer 对实现 369162a 一轮静态审查通过，无阻断发现，待 PM 本地交付清理并归档。
 
 ## Acceptance
 
@@ -89,6 +89,11 @@ openspec/specs/aiw-packages/spec.md 的可读输出要求（实现阶段才更�
 - 独立设计证据：`docs/features/reviews/FD-100-design.md` / `FD-100-design.json`，
   source_event=`FD-100-000002-design-requested`，审查 Revision 2，ready。
   未运行测试、编译、功能脚本、仓库访问或网络；设计完成不等同实现审查通过。
+- 本次实际编译：GOPROXY=off、GOSUMDB=off、GOTOOLCHAIN=local，执行 `python -c "from pathlib import Path; import runpy; p = Path('src/plugins/aiw-pkg/aiw-pkg.py'); compile(p.read_text(encoding='utf-8'), str(p), 'exec'); print('Python syntax compile: OK'); runpy.run_path('scripts/compile.py', run_name='__main__')"`，退出码 0；Python 内存语法编译和两个 Go 入口输出 NUL，无最终二进制。
+- 实现证据：docs/features/reports/FD-100-implementation.md / .json。测试、功能执行、格式化/lint/vet、最终构建、网络、发布安装均未运行。
+- 最终只读批次：`git diff f26080e -- <源码/文档/规范/FD路径>`、`git diff --check`、`git status --short`；无空白错误，无范围外改动，Python 逻辑与文档静态一致。
+
+- 独立实现审查：`docs/features/reviews/FD-100-review.md` / `.json`；Reviewer 会话 `fd100-reviewer-20261019-93ce70`，来源 `FD-100-000004-implementation-ready`，基线 f26080e、实现 369162a。全部验收项经一轮静态审查支持，无阻断发现；本轮未重跑编译、测试或功能命令，终端渲染及真实数据运行仍未验证。
 
 ## Sources
 

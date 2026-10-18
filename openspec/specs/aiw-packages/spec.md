@@ -363,8 +363,46 @@ messages. Only table rows MAY be sorted for display.
 `list --json`, including `--installed --json`, MUST retain the previous complete
 JSON arrays, metadata fields and record order. Existing --all, --kind, latest-version,
 repository and destination selection MUST remain unchanged. Installed listing MUST
-not contact a repository. Other subcommands MUST retain their existing output.
+not contact a repository. Commands other than list, search and show MUST retain
+their existing output, including info JSON and entries formats.
 Scripts relying on the previous default JSON MUST explicitly select --json.
+
+`search` MUST default to the same aligned NAME / VERSION / KIND table, with a
+row for every matching version and a readable empty-result message. Display
+sorting MUST NOT change the source result array. `search --json` MUST preserve
+the previous complete JSON array, all metadata fields and repository order.
+
+`show` MUST default to aligned detail labels for name, version, kind, status,
+reason, dependencies, members (recipe), file/config-file counts and fingerprint.
+Reference lists MUST display complete names/versions on separate aligned lines,
+or none when empty. Missing optional values MUST display -, and a legacy missing
+reason MUST display manual without rewriting records. Member recipe versions
+MUST NOT be represented as current installed member versions.
+`show --json` MUST preserve the complete original record, including files and
+extra fields. Both formats MUST retain local record validation, missing-record
+errors and installed/removed status semantics, and MUST NOT query a repository
+or mutate installation records.
+
+Search MUST retain case-insensitive substring matching. Named install/info and
+local record operations MUST retain exact full-name matching, without adding
+short-name aliases; selecting a version MUST NOT expand a partial name.
+
+#### Scenario: Search results provide the full installable name
+
+- GIVEN aiw-skill-fd-package exists at versions 1.0.1 and 1.0.2
+- WHEN search skill-fd-package runs
+- THEN the default table shows the complete name and each matching version
+- AND search --json retains complete records in repository order
+- AND install skill-fd-package MUST NOT silently resolve to aiw-skill-fd-package.
+
+#### Scenario: Show preserves the machine record while summarizing for people
+
+- GIVEN a valid local record with empty references, file metadata and additional fields
+- WHEN show runs without --json
+- THEN aligned details summarize the record and display none for empty references
+- WHEN show --json runs
+- THEN all original fields and file metadata remain in the JSON object
+- AND neither invocation contacts a repository or writes installation state.
 
 ### Requirement: Index-first no-op installation and update
 

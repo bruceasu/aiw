@@ -1,0 +1,18 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-100",
+  "source_event": "FD-100-000003-design-ready",
+  "human_report": "FD-100-implementation.md",
+  "data": {
+    "worker_session_ref": "fd100-worker-20261019-f72a9e",
+    "baseline": "f26080e",
+    "summary": "Readable search tables and local show details with explicit complete JSON compatibility",
+    "compile_result": "One offline compile-only batch: Python in-memory syntax and scripts/compile.py two Go entrypoints to NUL; exit 0",
+    "compile_command": "python -c \"from pathlib import Path; import runpy; p = Path('src/plugins/aiw-pkg/aiw-pkg.py'); compile(p.read_text(encoding='utf-8'), str(p), 'exec'); print('Python syntax compile: OK'); runpy.run_path('scripts/compile.py', run_name='__main__')\"",
+    "compile_environment": {"GOPROXY": "off", "GOSUMDB": "off", "GOTOOLCHAIN": "local"},
+    "static_scope": ["search display sort leaves JSON order unchanged", "show local record validation and full JSON remain intact", "legacy defaults, empty references, removed status and file/config counts", "historical member recipe versions are not current versions", "parser and action short circuit preserve info and other commands", "docs/spec exact names and JSON migration"],
+    "checks_not_run": ["tests", "test creation", "CLI runtime", "formatters", "linters", "vet", "verification scripts", "final builds", "push", "network", "publish", "install"],
+    "residual_risks": ["Terminal rendering and runtime paths not exercised", "Installed plugin unchanged", "Scripts using previous search/show JSON defaults must add --json"]
+  }
+}
