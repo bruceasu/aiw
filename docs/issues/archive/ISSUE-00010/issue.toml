@@ -1,10 +1,10 @@
 id = "ISSUE-00010"
 title = "Go 独立压缩解压工具与 plugin"
 parent_id = ""
-status = "APPROVED"
+status = "ARCHIVED"
 created = "2026-10-18"
 updated = "2026-10-18"
-revision = 25
+revision = 26
 
 [approval]
 status = "APPROVED"
@@ -21,9 +21,9 @@ task_id = ""
 session_id = ""
 
 [terminal]
-by = ""
-at = ""
-reason = ""
+by = "LAPTOP-P8VM6T16\\suk"
+at = "2026-10-18T18:17:11+09:00"
+reason = "done"
 
 [artifact]
 requirement-plan = "docs/issues/ISSUE-00010/issue-plan.md"
