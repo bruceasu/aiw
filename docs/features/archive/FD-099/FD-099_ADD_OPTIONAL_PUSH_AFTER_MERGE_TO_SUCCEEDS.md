@@ -43,6 +43,8 @@
 
 ## TODO
 
+- 无剩余实现项。审查事件 `FD-099-000005-verification-passed` 后已交付 develop：`149f123`，来源 `bbe61fe`；CLI 已校验并清理 worktree/分支，`aiw fd close FD-099 Complete` 已归档。以下阶段说明作为历史记录保留。
+
 - 必要独立设计审查 ready，见 `docs/features/reviews/FD-099-design.md`；Worker 领取 `FD-099-000003-design-ready`，专用 worktree/分支已创建并核对 parent=develop。
 - 离线 compile-only 和一次最终只读 diff 检查已完成；待独立实现审查、本地交付清理和归档。
 
@@ -59,6 +61,8 @@
 6. 重复 --push、未知开关、错误分支个数在变更 Git 前拒绝；帮助明确开关及 origin 约定。
 
 ## Verification
+
+- 本地交付：`aiw git wt local-merge FD-099` 成功，生成单父 squash `149f123`，验证来源 `bbe61fe` 后移除专用 worktree/分支；`aiw fd close FD-099 Complete` 成功。未执行实际 push、网络、最终构建、发布或安装。
 
 - 一次 compile-only 批次：Python 内置 compile() 对变更脚本内存语法编译，随后
   `scripts/compile.py`，环境 GOPROXY=off/GOSUMDB=off/GOTOOLCHAIN=local；不保留最终二进制。
@@ -77,3 +81,5 @@
 - `src/plugins/aiw-git/git-merge-to.py`
 - `openspec/specs/cli-and-plugins/spec.md` 的 Git merge-to requirement
 - `docs/usage/cli-reference.md` 的 aiw git merge-to 小节
+
+**Completed:** 2026-10-18
