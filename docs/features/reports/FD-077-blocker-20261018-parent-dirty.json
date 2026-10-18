@@ -1,0 +1,27 @@
+{
+    "schema":  "aiw.fd.evidence.v1",
+    "kind":  "blocker-feedback",
+    "fd_id":  "FD-077",
+    "source_event":  "FD-077-000002-design-requested",
+    "human_report":  "FD-077-blocker-20261018-parent-dirty.md",
+    "data":  {
+                 "stage":  "preflight",
+                 "role":  "pm",
+                 "recorded_at":  "2026-10-18",
+                 "recorder_session":  "fd077-host-20261018-53b7ac",
+                 "observed_blocker":  "develop contains untracked docs/issues/ISSUE-00008/ outside FD-077 scope; parent must be clean before worktree creation.",
+                 "confirmed_cause":  "Earlier captured Issue documents have not been committed; current authorization is scoped to ISSUE-00009 and FD-077.",
+                 "cause_status":  "confirmed",
+                 "recovery_attempts":  [
+                                           "Requested asynchronous authorization for a separate ISSUE-00008 documentation commit; no reply received yet."
+                                       ],
+                 "status":  "resolved",
+                 "human_decision_required":  false,
+                 "human_decision_detail":  "User explicitly authorized a separate ISSUE-00008 documentation commit and continuation.",
+                 "actual_resolution":  "Committed only docs/issues/ISSUE-00008/ on develop as a732b98; remaining edits are scoped to ISSUE-00009 and FD-077.",
+                 "resolved_at":  "2026-10-18T04:42:31.9665044+00:00",
+                 "residual_risk_or_next_step":  "Continue Planner design and independent design review; commit the ready FD plan before creating the worktree.",
+                 "reusable_improvement":  "Distinguish capture authorization from Git commit authorization when switching between Issues.",
+                 "improvement_status":  "proposed"
+             }
+}

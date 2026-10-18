@@ -1,0 +1,32 @@
+id = "ISSUE-00009"
+title = "Clean up captured Issue source drafts after successful capture"
+parent_id = ""
+status = "APPROVED"
+created = "2026-10-18"
+updated = "2026-10-18"
+revision = 4
+
+[approval]
+status = "APPROVED"
+by = "user"
+at = "2026-10-18T10:51:30+09:00"
+reason = "User explicitly requested approval, promotion and fd-workflow auto implementation. Clean only the captured project draft after full persistence; preserve failed sources and unrelated history, and warn on cleanup failure without treating capture as failed."
+source_digest = "e03689fffbd33d1c8d0bbdb9882f10eb02b6a262973ebf148281b956745fe718"
+
+[promotion]
+status = "NOT_STARTED"
+task_id = ""
+
+[conversation]
+session_id = ""
+
+[terminal]
+by = ""
+at = ""
+reason = ""
+
+[artifact]
+requirement-plan = "docs/issues/ISSUE-00009/issue-plan.md"
+
+[digest]
+requirement-plan = "8ac2ba96c3a6488541a208c104f2a5d12fe5e0008991b09424a26fd924302c6a"

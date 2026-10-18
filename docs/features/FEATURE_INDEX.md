@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-077](FD-077_CLEAN_UP_CAPTURED_ISSUE_SOURCE_DRAFTS_AFTER_SUCC.md) | Clean up captured Issue source drafts after successful capture | Design | Medium |
 
 ## Completed
 
