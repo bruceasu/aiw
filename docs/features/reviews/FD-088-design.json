@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-088",
+  "human_report": "docs/features/reviews/FD-088-design.md",
+  "source_event": null,
+  "source_event_reason": "Direct user request and bounded Planner delegation; no workflow event assigned.",
+  "data": {
+    "revision": 1,
+    "recommendation": "ready",
+    "blocking_findings": [],
+    "findings": [
+      {"severity": "note", "summary": "Only ordinary missing artifacts may trigger automatic snapshot compilation; never swallow unsafe-path, malformed-record, permission, changed-output or extra-output errors."},
+      {"severity": "note", "summary": "Check remaining inventory before missing-output fallback so missing files cannot mask modified, extra or unsafe output."},
+      {"severity": "note", "summary": "Keep latest-compile read-only and reconcile superseded stable requirements and scenarios."}
+    ],
+    "scope": ["docs/features/FD-088_FIXED_SNAPSHOT_COMPILE.md", "build.py", "openspec/specs/aiw-packages/spec.md"],
+    "validation": "Static design inspection only; no tests, compile, package build, publish, cleanup, network, Git writes or workflow events."
+  }
+}
