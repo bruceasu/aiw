@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-080",
+  "source_event": null,
+  "human_report": "FD-080-blocker-20261018-create.md",
+  "data": {
+    "stage": "Design",
+    "role": "Planner",
+    "recorded_at": "2026-10-18",
+    "recorder_session": "fd080-planner-20261018-create",
+    "observed_blocker": "fd new returned 1 with WinError 5 replacing FEATURE_INDEX.md; FD file and index temporary file exist. No event was inspected or claimed.",
+    "confirmed_cause": null,
+    "cause_status": "unknown",
+    "recovery_attempts": ["Read generated FD and directory listings only; no retry or escalation."],
+    "status": "resolved",
+    "human_decision_required": true,
+    "human_decision_detail": "Required design decisions and managed Planner recovery were explicitly confirmed by user.",
+    "actual_resolution": "Managed force-emit wrote current FD/index/audit successfully and current Planner event was claimed. No duplicate FD created. Original WinError 5 cause remains unknown.",
+    "resolved_at": "2026-10-18",
+    "residual_risk_or_next_step": "Continue independent design review; stop if an access failure recurs. See auto-preflight blocker for handoff recovery audit.",
+    "reusable_improvement": "Make FD creation atomic or report partial creation and recovery instructions explicitly.",
+    "improvement_status": "proposed"
+  }
+}

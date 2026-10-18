@@ -1,0 +1,25 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-080",
+  "source_event": "FD-080-000002-design-requested",
+  "human_report": "FD-080-blocker-20261018-auto-preflight.md",
+  "data": {
+    "stage": "Preflight",
+    "role": "PM",
+    "recorded_at": "2026-10-18",
+    "recorder_session": "fd080-auto-preflight-20261018-r14",
+    "observed_blocker": "Current FD revision 14 differs from latest pending Planner event revision 2. No claim attempted; static inspection confirms claim requires matching revision and digest.",
+    "confirmed_cause": "Design discussion updated the FD without refreshing its pending Planner handoff; no refresh-planner command exists in the inspected CLI.",
+    "cause_status": "confirmed",
+    "recovery_attempts": ["Read current FD, pending event, parent workspace status, prior blocker and claim/emit recovery implementation; no failed command retried and no event mutated."],
+    "status": "resolved",
+    "human_decision_required": true,
+    "human_decision_detail": "Authorize a managed PM force-emit design-requested for the current FD, preserving audit and historical events. No design or implementation review gate is waived.",
+    "actual_resolution": "User authorized managed force-emit; created FD-080-000015-design-requested and claimed it as fd080-host-20261018-a19d7f. Audit operations/eddb757d36514c1fa6dc8db20f5f5f11.json. No review waived.",
+    "resolved_at": "2026-10-18",
+    "residual_risk_or_next_step": "After explicit recovery authorization, create and claim current Planner handoff, then continue design review and isolated implementation. Prior index access failure remains unconfirmed; stop if encountered again.",
+    "reusable_improvement": "Provide a bounded refresh-planner command for stale unclaimed Planner handoffs.",
+    "improvement_status": "proposed"
+  }
+}
