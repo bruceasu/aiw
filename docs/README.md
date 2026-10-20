@@ -13,6 +13,7 @@ AIW = **AI Worker**。这里按一次工作的需要组织文档：明确目标�
 | 选择和安装 Agent 工作方法 | [Skills 指南](../src/skills/README.md) |
 | 查看命令、初始化、插件和历史 Task | [CLI 详细参考](usage/cli-reference.md) |
 | 查询源码所支持的稳定行为 | [OpenSpec 能力索引](../openspec/specs/README.md) |
+| 配置部署环境、查询环境变量含义和默认值 | [环境变量运维手册](usage/environment-variables.md) |
 
 Issue 用于需要讨论与批准的目标；明确的工程请求可直接进入 FD。FD 保存工作计划和状态，Skills 提供工作方法，交接回执记录角色之间的传递。默认流程由 Planner、Worker、独立 Reviewer 接力，自动派发取决于宿主和 runner 配置。
 
