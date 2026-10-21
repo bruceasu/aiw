@@ -1,0 +1,40 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-103",
+  "source_event": "FD-103-000004-implementation-ready",
+  "human_report": "FD-103-review-r1.md",
+  "data": {
+    "session_ref": "fd103-reviewer-20261021-r1",
+    "verdict": "changes-requested",
+    "base_commit": "08f8fe5",
+    "reviewed_commit": "c3766b6",
+    "implementation_commit": "3e0d89c",
+    "findings": [
+      {
+        "id": "R1",
+        "severity": "P2",
+        "file": "src/plugins/aiw-fd.py",
+        "lines": [1230, 857, 930],
+        "title": "历史 receipt 的旧设计路径仍被直接使用",
+        "impact": "迁移后 runner 接到不存在的设计路径；legacy Independent 证据验证读取旧路径失败。",
+        "correction": "保持 receipt 原文；使用已验证的 resolve_fd 或 safe_artifact 结果解引用设计路径，保留安全、歧义和摘要门禁。"
+      }
+    ],
+    "results": {
+      "static_review": "completed; one confirmed compatibility defect",
+      "worker_compile_evidence": "reported passed; not rerun by reviewer",
+      "tests": "not-run",
+      "network": "not-used",
+      "runner_execution": "not-run"
+    },
+    "commands": [
+      "Get-Content / Select-String / rg targeted static reads",
+      "git diff --stat 08f8fe5..c3766b6",
+      "git diff 08f8fe5..c3766b6 -- selected changed source, specs and docs",
+      "Get-ChildItem for instruction and receipt locations",
+      "python src/plugins/aiw-fd.py claim FD-103 FD-103-000004-implementation-ready --session fd103-reviewer-20261021-r1"
+    ],
+    "remaining_risks": ["concurrent execution not exercised", "archive failure injection not exercised", "interactive completion not exercised"]
+  }
+}

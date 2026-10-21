@@ -87,7 +87,7 @@ local evidence only, does not implement, execute tests or change workflow
 state. Write a Chinese Markdown design-review report with a same-name JSON
 sidecar using schema aiw.fd.evidence.v1, kind design-review, FD ID, actual
 source event (or null with a reason), findings and a ready/changes-needed
-recommendation. Store distinct filenames under docs/features/reviews/.
+recommendation. Store distinct filenames under docs/features/<FD-ID>/reviews/.
 
 Planner incorporates findings and updates the FD; material unresolved findings
 block design-ready. If no independent agent is available, report that gate for

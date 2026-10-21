@@ -1,0 +1,30 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-103",
+  "source_event": "FD-103-000006-implementation-ready",
+  "human_report": "FD-103-review-r2.md",
+  "data": {
+    "session_ref": "fd103-reviewer-20261021-r1",
+    "verdict": "verification-passed",
+    "base_commit": "08f8fe5",
+    "reviewed_commit": "adf284d",
+    "implementation_commit": "9f3f122",
+    "repair_diff_base": "c3766b6",
+    "prior_review": "FD-103-review-r1.md",
+    "findings": [],
+    "resolved_findings": ["R1: runner uses verified resolve_fd path; both legacy Independent reads resolve safe_artifact before reading"],
+    "results": {
+      "static_review": "passed; full review evidence reused with bounded repair review",
+      "worker_compile_evidence": "reported passed; not rerun by reviewer",
+      "tests": "not-run",
+      "network": "not-used"
+    },
+    "commands": [
+      "Get-Content -Encoding utf8 for latest receipt, worker repair report and FD",
+      "git diff c3766b6..adf284d -- src/plugins/aiw-fd.py",
+      "python src/plugins/aiw-fd.py claim FD-103 FD-103-000006-implementation-ready --session fd103-reviewer-20261021-r1"
+    ],
+    "remaining_risks": ["concurrent execution not exercised", "archive failure injection not exercised", "interactive completion not exercised", "runner execution not exercised"]
+  }
+}

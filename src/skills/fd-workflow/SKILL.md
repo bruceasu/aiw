@@ -48,7 +48,8 @@ Dispatched roles never expand their assignment into the host PM lifecycle.
 Use an explicit FD ID first, then a unique FD linked from the current Issue or
 conversation. Ask when several FDs match. For a new FD, use `aiw fd new
 "<title>" [--issue <id>]`; this allocates an unused `FD-XXX` number, creates
-the file from `docs/templates/TEMPLATE.md`, updates the index, and records a
+the design in `docs/features/FD-XXX/` from `docs/templates/TEMPLATE.md`, writes
+the local `index.md` navigation, and records a
 `design-requested` event. The FD owns design and execution; do not create a
 second engineering plan or ticket-mapping stage.
 
@@ -174,7 +175,7 @@ or relaxing runtime authority. Standalone fd-test remains available.
 
 Whenever the default lifecycle or explicit Auto cannot continue at preflight, design, Worker, PM, Reviewer,
 delivery, archive, or cleanup Gate, write one factual feedback pair
-under `docs/features/reports/FD-XXX-blocker-<unique-suffix>.md` and `.json`
+under `docs/features/FD-XXX/reports/FD-XXX-blocker-<unique-suffix>.md` and `.json`
 before reporting the stop. Use
 `docs/templates/BLOCKER_FEEDBACK_TEMPLATE.md` and
 `docs/templates/BLOCKER_FEEDBACK_DATA_TEMPLATE.json`; the Markdown must be Chinese and

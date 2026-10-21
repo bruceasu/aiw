@@ -36,7 +36,7 @@ Issue 用于需要讨论与批准的目标；明确的工程请求可直接进�
 ## 阅读工作产物
 
 - [FD 索引](features/FEATURE_INDEX.md)：查看设计与进展；状态以 FD 本身为准。
-- `features/reports/` 与 `features/reviews/`：活跃 FD 的实施报告和独立审查记录。
+- `features/<FD-ID>/reports/` 与 `features/<FD-ID>/reviews/`：活跃 FD 的实施报告和独立审查记录。
 - `features/archive/<FD-ID>/`：已归档的设计与证据，保留其历史语义。
 - [报告模板](templates/)：按报告类型选择模板；新 FD 报告使用中文 Markdown 和同名 JSON。
 - [改进反馈](feedback.md)：已记录的操作问题与后续改进建议。

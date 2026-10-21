@@ -81,9 +81,18 @@ def registered_worktrees(root: Path) -> list[dict[str, str]]:
     return entries
 
 
+def active_designs(root: Path, fd_id: str) -> list[Path]:
+    features = root / "docs" / "features"
+    candidates = [*features.glob(fd_id + "_*.md"),
+                  *(features / fd_id).glob(fd_id + "_*.md")]
+    return sorted(path for path in candidates
+                  if path.is_file() and not path.is_symlink()
+                  and path.resolve().is_relative_to(root))
+
+
 def workspace(root: Path, raw_id: str) -> tuple[str, dict[str, str], Path, Path]:
     fd_id = normalize_fd_id(raw_id)
-    fd_files = list((root / "docs" / "features").glob(fd_id + "_*.md"))
+    fd_files = active_designs(root, fd_id)
     if len(fd_files) != 1 or fd_files[0].is_symlink():
         raise WorktreeError(f"expected one active FD design for {fd_id}")
     metadata_path = root / ".ai" / "fd" / fd_id / "workspace.json"
@@ -138,7 +147,7 @@ def command_output(result: subprocess.CompletedProcess[str]) -> None:
 def worktree_add(raw_id: str) -> int:
     fd_id = normalize_fd_id(raw_id)
     root = repository_root()
-    fd_files = list((root / "docs" / "features").glob(fd_id + "_*.md"))
+    fd_files = active_designs(root, fd_id)
     if len(fd_files) != 1 or fd_files[0].is_symlink():
         raise WorktreeError(f"expected one active FD design for {fd_id}")
     fd_file = fd_files[0].relative_to(root).as_posix()

@@ -39,7 +39,7 @@ reference. Check the latest receipt before claiming and do not take over an
 event owned by another session. Include this Reviewer's reference in the report.
 
 Write a concise review report to a project-relative file under
-`docs/features/reviews/`. Include FD ID, source event ID, reviewed commit or
+`docs/features/<FD-ID>/reviews/`. Include FD ID, source event ID, reviewed commit or
 diff base, findings with file paths, commands actually run, skipped checks,
 and residual risk. Keep the report separate from the Worker's report.
 For delivery recovery, inspect the recovery commit and diff together with the

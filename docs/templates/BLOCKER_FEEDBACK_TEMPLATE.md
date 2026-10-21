@@ -2,7 +2,7 @@
 
 <!-- aiw-data: FD-XXX-blocker-YYYYMMDDTHHMMSS-unique.json -->
 
-> 将本模板复制到 `docs/features/reports/FD-XXX-blocker-<唯一后缀>.md`，
+> 将本模板复制到 `docs/features/FD-XXX/reports/FD-XXX-blocker-<唯一后缀>.md`，
 > 并将同名 JSON 模板复制到相同目录。两份文件的事实和状态必须一致。
 
 ## 定位

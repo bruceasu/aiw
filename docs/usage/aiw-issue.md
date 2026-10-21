@@ -1,7 +1,7 @@
 # AIW Issue 使用手册
 
 Issue 可以记录 Bug、功能或修改。新流程是 **Issue → 编号 FD → 角色交接**。
-`docs/features/FD-XXX_SLUG.md` 保存工程决策、工作项与验证；
+`docs/features/FD-XXX/FD-XXX_SLUG.md` 保存工程决策、工作项与验证；
 `.ai/fd/<fd-id>/` 保存交接回执。旧 Task 及 Core 数据继续可读。OpenSpec 负责
 `openspec/specs/` 中的稳定规格，change 是可选关联。
 

@@ -5,7 +5,7 @@
   "source_event": "FD-XXX-000000-test-report-ready",
   "human_report": "FD-XXX-test-risk-assessment-rN-a.md",
   "data": {
-    "tester_report": "docs/features/reports/FD-XXX-test-report-rN.md",
+    "tester_report": "docs/features/FD-XXX/reports/FD-XXX-test-report-rN.md",
     "fd_revision": 0,
     "fd_digest": "replace-with-test-report-ready-receipt-digest",
     "assessor_session": "replace-with-independent-session",

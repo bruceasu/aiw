@@ -1,0 +1,8 @@
+# FD-048
+
+<!-- aiw: feature-folder-index -->
+
+- [Design: FD-048_AGENT_GATEWAY_OPENAI_API_CODEX.md](FD-048_AGENT_GATEWAY_OPENAI_API_CODEX.md)
+- [Reports](reports/)
+
+Run `aiw fd show FD-048` for current status and handoff.

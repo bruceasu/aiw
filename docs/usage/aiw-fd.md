@@ -5,15 +5,59 @@ stable Work Item IDs, progress, acceptance, and Verification. The FD file is
 the source of truth; `FEATURE_INDEX.md` is a lookup index. An approved Issue
 can be linked with `--issue`; a Task is optional.
 
+## Feature folders
+
+New active records use `docs/features/FD-XXX/`:
+
+```text
+docs/features/FD-XXX/
+  index.md
+  FD-XXX_SLUG.md
+  reports/                  # Chinese Markdown and same-name JSON
+  reviews/                  # independent evidence
+```
+
+`index.md` links to this feature's design and existing evidence directories.
+`FEATURE_INDEX.md` is fixed navigation. Use `aiw fd list` for the current
+status table. State changes never rewrite a shared tracked status table, so
+independent FDs do not conflict merely because their statuses changed.
+Actual overlapping source changes still use normal Git conflict detection and
+FD recovery; no merge driver or automatic side selection is installed.
+Concurrent execution uses separate FD worktrees; local delivery still requires
+a clean parent and must be performed one FD at a time.
+
+Close archives the design, matching reports/reviews, and navigation under
+`docs/features/archive/FD-XXX/`. Reopen and re-review create the active folder;
+prior evidence remains archived. Existing non-generated index.md files and
+colliding evidence are never overwritten. Navigation rollback covers both
+active and archived folders. Empty untracked directories may remain after a
+failed operation.
+
+Compatibility: flat `docs/features/FD-XXX_SLUG.md`, flat archived designs,
+and shared `docs/features/reports/` and `reviews/` remain readable. Evidence
+inspection searches both layouts, including recorded Git branches. For a
+missing legacy artifact path, CLI handoffs resolve an exact filename in its
+unique migrated location; ambiguous matches fail. Historical evidence and
+issued event digests are not rewritten.
+
+Intentional format change: FEATURE_INDEX.md no longer contains status rows.
+Consumers parsing its tables must use FD files or `aiw fd list`. Physical
+paths moved by this repository migration require updated Markdown links and
+browser bookmarks; CLI artifact compatibility is not a browser redirect.
+Existing archived documents and evidence remain at their original locations.
+Other projects' legacy layouts are not silently migrated by listing or emits.
+Use matching FD and Git worktree plugin versions for folder records; older
+installed plugins that only scan the flat layout need updating before use.
+
 ```text
 aiw fd new "Improve report export" --issue ISSUE-001
 aiw fd list
 aiw fd show FD-002
 aiw fd claim FD-002 FD-002-000002-design-requested --session <host-session-id>
-aiw fd emit FD-002 design-ready --producer planner --artifact docs/features/FD-002_IMPROVE_REPORT_EXPORT.md
+aiw fd emit FD-002 design-ready --producer planner --artifact docs/features/FD-002/FD-002_IMPROVE_REPORT_EXPORT.md
 aiw fd resume FD-002
-aiw fd emit FD-002 implementation-ready --producer worker --artifact docs/features/reports/FD-002-implementation.md --source-event FD-002-000003-design-ready
-aiw fd emit FD-002 verification-passed --producer reviewer --artifact docs/features/reviews/FD-002-review.md --source-event FD-002-000004-implementation-ready
+aiw fd emit FD-002 implementation-ready --producer worker --artifact docs/features/FD-002/reports/FD-002-implementation.md --source-event FD-002-000003-design-ready
+aiw fd emit FD-002 verification-passed --producer reviewer --artifact docs/features/FD-002/reviews/FD-002-review.md --source-event FD-002-000004-implementation-ready
 aiw fd request-review FD-001 --reason "文档在验收后更新"
 aiw fd reopen FD-004 --reason "继续未完成的验证"
 ```
@@ -63,7 +107,7 @@ same-basename JSON sidecar for CLI/AI. Put one
 `--artifact`, and write JSON with schema `aiw.fd.evidence.v1`, FD ID, kind,
 source event, Markdown filename, and `data`. Use the JSON templates under
 `docs/templates/`. Reviewer reports use kind `reviewer-report` and live under
-`docs/features/reviews/`. The CLI checks the JSON before handoff, and close
+`docs/features/<FD-ID>/reviews/`. The CLI checks the JSON before handoff, and close
 archives both files. Older Markdown-only evidence is preserved. Relative
 filename references remain valid after archive. An independent Reviewer emits
 `changes-requested` with findings or
@@ -204,7 +248,7 @@ does not authorize push, release, or deployment.
 After a passed review, run `aiw fd close FD-002 Complete` once any requested
 isolated merge has succeeded. Use `--reason "..."` for `Deferred` and `Closed`
 outcomes. Manual close requests still require their own explicit decision.
-This archives the FD file and rebuilds the index; it does not change Git
+This archives the FD file and updates only its local navigation; it does not change Git
 delivery state.
 
 Native archived FDs live at
@@ -290,7 +334,7 @@ decision after reconciling its outstanding work.
 ```text
 aiw fd cancel-event FD-001 --expected-event FD-001-000004-implementation-ready --reason "Operator recovery" --operator maintainer
 aiw fd set-status FD-001 "In Progress" --reason "Resume implementation" --operator maintainer
-aiw fd force-emit FD-001 design-ready --producer planner --artifact docs/features/FD-001_EXAMPLE.md --reason "Restart Worker handoff" --operator maintainer
+aiw fd force-emit FD-001 design-ready --producer planner --artifact docs/features/FD-001/FD-001_EXAMPLE.md --reason "Restart Worker handoff" --operator maintainer
 aiw fd close FD-044 Complete --force --reason "Operator accepts completion without Reviewer evidence"
 ```
 

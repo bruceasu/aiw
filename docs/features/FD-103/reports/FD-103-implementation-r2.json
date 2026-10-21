@@ -1,0 +1,19 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-103",
+  "source_event": "FD-103-000005-changes-requested",
+  "human_report": "FD-103-implementation-r2.md",
+  "data": {
+    "session_ref": "fd103-host-20261021-b873",
+    "implementation_commit": "9f3f122",
+    "base_commit": "08f8fe5",
+    "repaired_findings": ["R1: historical receipt design paths at runner and two evidence readers"],
+    "compile": {"command": "python compile() src/plugins/aiw-fd.py; no pyc", "exit_code": 0},
+    "go_compile": "not-repeated; unchanged since successful compile",
+    "tests": "not-run",
+    "runtime_runner": "not-run",
+    "network": "not-used",
+    "previous_report": "FD-103-implementation.md"
+  }
+}

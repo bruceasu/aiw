@@ -26,7 +26,7 @@ repo/
 Notes:
 
 * `AGENTS.md` and `.github/copilot-instructions.md` are created only if they do not already exist.
-* New work uses `docs/features/FD-XXX_SLUG.md` and `.ai/fd/<fd-id>/` role
+* New work uses `docs/features/FD-XXX/FD-XXX_SLUG.md` and `.ai/fd/<fd-id>/` role
   receipts. Legacy Task metadata and runtime state live under
   `.ai/tasks/<task-id>/`; legacy FDs at `docs/features/<task-id>.md` and older
   `tasks.md` plans remain readable. Stable specs live under `openspec/specs/`.

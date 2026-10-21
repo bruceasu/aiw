@@ -1,0 +1,20 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-103",
+  "source_event": "FD-103-000003-design-ready",
+  "human_report": "FD-103-implementation.md",
+  "data": {
+    "session_ref": "fd103-host-20261021-b873",
+    "implementation_commit": "3e0d89c",
+    "base_commit": "08f8fe5",
+    "compile": [
+      {"command": "python compile() for src/plugins/aiw-fd.py and src/plugins/aiw-git/git-wt.py; no pyc", "exit_code": 0},
+      {"command": "go -C src build ./internal/commands/completion", "environment": {"GOPROXY": "off", "GOSUMDB": "off", "GOTOOLCHAIN": "local"}, "exit_code": 0}
+    ],
+    "static_review": "git diff and targeted rg plus git diff --check against 08f8fe5",
+    "tests": "not-run",
+    "network": "not-used",
+    "remaining_risks": ["concurrent execution not exercised", "archive failure injection not exercised", "interactive shell completion not exercised", "installed plugin versions unchanged", "status-table consumers must migrate"]
+  }
+}

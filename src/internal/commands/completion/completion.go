@@ -74,8 +74,11 @@ func printPowerShell() {
     $fdIds = @()
     foreach ($folder in @("docs/features", "docs/features/archive")) {
         if (Test-Path -LiteralPath $folder) {
-            $fdIds += Get-ChildItem -LiteralPath $folder -Filter "FD-*.md" -File |
-                ForEach-Object { if ($_.BaseName -match "^(FD-\d+)") { $Matches[1] } }
+            $fdFolders = @($folder) + @(Get-ChildItem -LiteralPath $folder -Directory -Filter "FD-*" | ForEach-Object { $_.FullName })
+            foreach ($fdFolder in $fdFolders) {
+                $fdIds += Get-ChildItem -LiteralPath $fdFolder -Filter "FD-*.md" -File |
+                    ForEach-Object { if ($_.BaseName -match "^(FD-\d+)_[A-Z0-9_]+$") { $Matches[1] } }
+            }
         }
     }
     $fdIds = @($fdIds | Sort-Object -Unique)
@@ -110,7 +113,7 @@ func printPowerShell() {
 func printBash() {
 	const script = `_aiw_fd_ids() {
     local path base id
-    for path in docs/features/FD-*.md docs/features/archive/FD-*.md; do
+    for path in docs/features/FD-*.md docs/features/FD-*/FD-*.md docs/features/archive/FD-*.md docs/features/archive/FD-*/FD-*.md; do
         [[ -f "$path" ]] || continue
         base=${path##*/}
         base=${base%.md}
@@ -157,7 +160,7 @@ func printZsh() {
 	const script = `#compdef aiw
 _aiw_fd_ids() {
     local path base
-    for path in docs/features/FD-*.md(N) docs/features/archive/FD-*.md(N); do
+    for path in docs/features/FD-*.md(N) docs/features/FD-*/FD-*.md(N) docs/features/archive/FD-*.md(N) docs/features/archive/FD-*/FD-*.md(N); do
         base=${path:t:r}
         print -r -- ${base%%_*}
     done
@@ -191,7 +194,7 @@ compdef _aiw_complete aiw
 
 func printFish() {
 	const script = `function __aiw_fd_ids
-    for file in docs/features/FD-*.md docs/features/archive/FD-*.md
+    for file in docs/features/FD-*.md docs/features/FD-*/FD-*.md docs/features/archive/FD-*.md docs/features/archive/FD-*/FD-*.md
         if test -f "$file"
             set base (basename "$file" .md)
             string match -r -g '^FD-[0-9]+' "$base"

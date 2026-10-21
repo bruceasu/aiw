@@ -16,17 +16,19 @@ in the entry SKILL.md; references alone are not scanned by the installer.
 
 - FD-first is the normal path for new engineering work. OpenSpec supplements
   it with stable capability requirements; it does not replace the FD plan.
-- A numbered file under `docs/features/FD-XXX_SLUG.md` is the source of truth
+- A numbered file under `docs/features/FD-XXX/FD-XXX_SLUG.md` is the source of truth
   for design, Work Items, status, Verification, and unresolved `%%` notes.
-- `docs/features/FEATURE_INDEX.md` is an index. Rebuild it from FD files; do
-  not treat it as a second state owner.
+- Each FD owns `docs/features/FD-XXX/index.md` and its local design/evidence.
+  `docs/features/FEATURE_INDEX.md` is fixed folder navigation; use `aiw fd list`
+  for live status. Never regenerate a shared tracked status table during FD
+  execution. Flat legacy layouts remain readable; new records use folders.
 - An approved Issue may link to its numbered FD; the FD is the engineering plan.
 - `aiw fd` is the FD command surface. Read `aiw fd --help` before an unfamiliar
   or mutating operation. `aiw fd emit` records an explicit handoff; ordinary
   file saves and Git commits do not dispatch roles.
 - `.ai/fd/<fd-id>/` contains dispatch receipts and logs. It does not own FD
   status or replace the Markdown plan. Never write a fake event or review.
-- `docs/features/reports/` and `docs/features/reviews/` contain authored
+- `docs/features/<FD-ID>/reports/` and `docs/features/<FD-ID>/reviews/` contain authored
   evidence while an FD is active. `aiw fd close` archives its design at
   `docs/features/archive/<FD-ID>/` and the FD's evidence in that directory's
   `reports/` and `reviews/` subdirectories.
@@ -38,7 +40,7 @@ in the entry SKILL.md; references alone are not scanned by the installer.
   evidence remains historical.
   Prior evidence stays archived if a completed FD is reopened for review.
 - An automatic FD workflow Gate has a separate FD-prefixed blocker feedback
-  Markdown report and same-basename JSON sidecar under `docs/features/reports/`.
+  Markdown report and same-basename JSON sidecar under `docs/features/<FD-ID>/reports/`.
   Use `docs/templates/BLOCKER_FEEDBACK_TEMPLATE.md` and its JSON template.
   Record observed facts, unknowns, attempts, unresolved or resolved state,
   human decision needs, and reusable improvements. Review existing feedback

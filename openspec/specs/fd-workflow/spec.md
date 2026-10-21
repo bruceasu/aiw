@@ -11,14 +11,15 @@ for a new numbered FD.
 ### Requirement: FD owns authored progress
 
 The system MUST allocate a stable `FD-XXX` ID and store the design, numbered
-Work Items, status, and Verification in `docs/features/FD-XXX_SLUG.md`. The
-index MUST be a projection of FD files. A new FD MUST NOT require a Task or
+Work Items, status, and Verification in `docs/features/FD-XXX/FD-XXX_SLUG.md`. Each FD folder MUST own an index.md navigation page.
+FEATURE_INDEX.md MUST be fixed navigation without a shared mutable status
+table; aiw fd list MUST derive live status from FD files. A new FD MUST NOT require a Task or
 OpenSpec change.
 
 #### Scenario: Create a new FD
 
 - **WHEN** a title is supplied to `aiw fd new`
-- **THEN** a non-reused ID, FD file, index row, and Planner handoff are created.
+- **THEN** a non-reused ID, FD folder, design, local index, and Planner handoff are created.
 
 ### Requirement: Navigation with optional bounded consultation
 
@@ -289,7 +290,7 @@ remain unchanged. Task-owned FD archive layouts MUST remain unchanged.
 
 When an automatic FD lifecycle stops at a Gate, its operator MUST record the
 observed blocker in a separate FD-prefixed Markdown report and same-basename
-JSON sidecar under `docs/features/reports/`. The pair MUST identify FD,
+JSON sidecar under `docs/features/<FD-ID>/reports/`. The pair MUST identify FD,
 stage, role, source event when one exists, observed facts, confirmed cause or
 unknown, actual recovery attempts, resolved or unresolved state, human
 decision need, and a reusable improvement suggestion or none. An unresolved
@@ -480,7 +481,7 @@ An operator MUST be able to request an explicit review of an archived Complete
 FD with a one-line reason. The operation MUST require an acknowledged latest
 Reviewer `verification-passed` receipt, create a new `review-requested` event
 for the current FD content, increment its revision, return it to the active
-feature directory as `Pending Verification`, and rebuild the index. It MUST
+feature directory as `Pending Verification`, and update its local navigation. It MUST
 preserve the prior completion date and MUST NOT modify Work Item checkboxes.
 The Reviewer MUST use the normal claim/source-event protocol and report through
 the existing `verification-passed` or `changes-requested` event.
@@ -506,7 +507,7 @@ the existing `verification-passed` or `changes-requested` event.
 An operator MUST be able to reopen an archived `Closed` or `Deferred` FD with
 a one-line reason. The operation MUST preserve its ID, prior disposition
 record, Work Item checkboxes, and archived evidence; increment its revision;
-return the FD to the active directory as `In Progress`; rebuild the index;
+return the FD to the active directory as `In Progress`; update its local navigation;
 and create a `reopen-requested` Worker handoff for the current FD digest.
 The Worker MUST claim that exact event before editing and cite it when
 emitting `implementation-ready`. An archived `Complete` FD MUST continue
@@ -733,7 +734,7 @@ FDs, undefined statuses/events, invalid producer/target-role pairings, and unsaf
 or missing artifacts. Declared identity MUST NOT be presented as authentication.
 
 Cancellation MUST preserve session/pid/history and state that it does not stop
-the Agent. Status override MUST increment revision and update the index without
+the Agent. Status override MUST increment revision and update its local navigation without
 fabricating review evidence, changing Work Items, moving files, or changing
 receipts. Force emit MUST preserve defined event routing, including legacy
 Independent implementation routing, advance beyond existing receipt revisions,
@@ -755,7 +756,7 @@ or archived request-review evidence requirements.
 An operator MAY invoke `close <id> Complete --force` (`-f`) with a non-empty,
 single-line `--reason` of at most 500 characters to archive an active FD from
 any defined status. Forced close MUST set status to Complete, increment the FD
-revision, update the index, and move the plan and matching evidence through the
+revision, update its local navigation, and move the plan and matching evidence through the
 existing rollback-capable archive transaction. Its audit MUST record the prior
 status/event, resulting revision, skipped status and Reviewer checks, and
 `review_verified: false`; it MUST NOT create or alter a Reviewer verification
@@ -781,7 +782,7 @@ Complete, Deferred, and Closed behavior remains unchanged without `--force`.
 - WHEN an operator closes an active FD of any defined status as Complete with
   `--force` and a valid reason
 - THEN the archive transaction sets Complete, increments revision, moves only
-  matching evidence, updates the index, and records the skipped status and
+  matching evidence, updates its local navigation, and records the skipped status and
   Reviewer checks in an operation audit
 - AND the archive contains no fabricated Reviewer verification result
 - AND a latest pending non-`verification-passed` receipt is cancelled in the
@@ -1026,3 +1027,42 @@ is introduced; historical maps and user-global installs are not auto-migrated.
   from settled evidence and preserves the sole Work Item plan
 - AND resolving one question neither limits the whole session to one ticket
   nor grants implementation authority for unresolved decisions
+
+### Requirement: Independent feature folders and compatibility
+
+New active FDs MUST use docs/features/FD-ID/ with their original numbered
+design filename, index.md, reports/ and reviews/. Archived folders MUST remain
+docs/features/archive/FD-ID/. Existing flat designs and evidence directories
+MUST remain readable by FD and worktree tooling. Evidence inspection and shell
+completion MUST recognize both layouts. Historical documents, JSON and issued
+event digests MUST NOT be rewritten during this structural migration.
+
+Status transitions MUST NOT update a shared tracked status table or another
+FD's navigation. New/reopened/re-reviewed records MUST use the folder layout.
+Local navigation MUST link all historical designs when a duplicate historical
+FD ID exists, without collapsing or overwriting them. ID selection MUST retain
+existing ambiguity errors and active-first precedence.
+
+Missing legacy artifact paths MAY resolve to a unique exact filename in the
+FD's canonical active/archive locations. Ambiguous candidates MUST fail. This
+CLI compatibility MUST NOT be represented as a browser redirect. Consumers
+of the former FEATURE_INDEX.md status tables MUST migrate to FD files or list.
+
+Archive MUST move evidence from both active layouts, reject duplicate target
+filenames before moving any evidence, and restore both local indexes on failure.
+Only AIW-generated local navigation MAY be replaced. Reopening and requesting
+archived review MUST preserve prior evidence and update both local indexes with
+rollback on failure.
+
+#### Scenario: Independent concurrent FD state changes
+
+- WHEN two worktrees advance different FDs
+- THEN their status/navigation writes affect only their respective FD folders
+- AND no shared generated status table is changed
+- AND genuine overlapping source changes retain normal Git conflict reporting.
+
+#### Scenario: Legacy and folder evidence collide
+
+- WHEN two evidence sources would archive to the same filename
+- THEN archive fails clearly before moving evidence
+- AND neither source is silently selected or overwritten.

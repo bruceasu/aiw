@@ -139,7 +139,28 @@ def slug(title: str) -> str:
 
 def active_files(base: Path) -> list[Path]:
     directory = feature_dir(base)
-    return sorted(path for path in directory.glob("FD-*.md") if FD_FILE_RE.fullmatch(path.name))
+    candidates = [*directory.glob("FD-*.md"), *directory.glob("FD-*/FD-*.md")]
+    return sorted(path for path in candidates if FD_FILE_RE.fullmatch(path.name)
+                  and (path.parent == directory
+                       or path.parent.name == path.name.split("_", 1)[0]))
+
+
+def active_destination(base: Path, name: str, filename: str) -> Path:
+    directory = feature_dir(base) / name
+    ensure_feature_directory(base, directory)
+    return directory / filename
+
+
+def ensure_feature_directory(base: Path, directory: Path) -> None:
+    """Reject redirected or non-directory parents before writing feature files."""
+    if not directory.resolve().is_relative_to(base):
+        raise FDError(f"feature directory is outside the repository: {directory}")
+    for parent in (directory, *directory.parents):
+        if parent == base:
+            break
+        if parent.is_symlink() or (parent.exists() and not parent.is_dir()):
+            raise FDError(f"unsafe feature directory: {parent}")
+    directory.mkdir(parents=True, exist_ok=True)
 
 
 def archived_files(base: Path) -> list[Path]:
@@ -471,11 +492,11 @@ def evidence_source_locations(base: Path, name: str) -> tuple[list[dict[str, str
     return sources, warnings
 
 
-def evidence_directories(name: str, kind: str) -> tuple[str, str]:
+def evidence_directories(name: str, kind: str) -> tuple[str, ...]:
     folder = {"report": "reports", "review": "reviews"}.get(kind)
     if not folder:
         raise FDError(f"unsupported evidence kind: {kind}")
-    return (f"docs/features/{folder}",
+    return (f"docs/features/{name}/{folder}", f"docs/features/{folder}",
             f"docs/features/archive/{name}/{folder}")
 
 
@@ -715,7 +736,31 @@ def safe_artifact(base: Path, raw: str) -> str:
     if (candidate.is_absolute() or ".." in candidate.parts or not raw.strip()
             or normalized.startswith(".git/") or normalized.startswith(".ai/credentials/")):
         raise FDError("artifact must be a project-relative path")
-    resolved = (base / candidate).resolve()
+    source = base / candidate
+    # Receipts and historical reports retain their original paths and digests.
+    # Only missing legacy feature paths receive an unambiguous compatibility lookup.
+    if not source.exists() and not source.is_symlink():
+        parts = Path(normalized).parts
+        matches = []
+        if parts[:2] == ("docs", "features"):
+            filename = parts[-1]
+            match = re.match(r"^(FD-\d{3,})(?:[_-]|\.md$)", filename, re.IGNORECASE)
+            if match:
+                name = match.group(1).upper()
+                if len(parts) == 3 and FD_FILE_RE.fullmatch(filename):
+                    matches = [path for path in all_files(base) if path.name == filename]
+                elif ((len(parts) == 4 and parts[2] in {"reports", "reviews"})
+                      or (len(parts) == 5 and parts[2] == name
+                          and parts[3] in {"reports", "reviews"})):
+                    folder = parts[-2]
+                    matches = [feature_dir(base) / name / folder / filename,
+                               feature_dir(base) / "archive" / name / folder / filename]
+                matches = [path for path in matches if path.is_file()]
+        if len(matches) > 1:
+            raise FDError(f"ambiguous migrated artifact: {raw}")
+        if matches:
+            source = matches[0]
+    resolved = source.resolve()
     if not resolved.is_relative_to(base) or not resolved.is_file():
         raise FDError(f"artifact does not exist inside the repository: {raw}")
     return resolved.relative_to(base).as_posix()
@@ -809,7 +854,7 @@ def coverage_value(raw: str) -> float | None:
 def validate_test_authorization(base: Path, raw_ref: str, command: str,
                                 previous: dict) -> None:
     ref = safe_artifact(base, raw_ref)
-    if dual_evidence((base / previous["fd_path"]).read_text(encoding="utf-8")):
+    if dual_evidence((base / safe_artifact(base, previous["fd_path"])).read_text(encoding="utf-8")):
         structured_evidence(base, ref, "planner-authorization",
                             previous["fd_id"], previous["event_id"])
     fields = labelled_fields(base, ref)
@@ -882,7 +927,7 @@ def validate_test_report(base: Path, artifact_ref: str, previous: dict) -> dict:
             raise FDError("requirements coverage differs from scenario counts")
     elif requirements != "not applicable" or not required_field(fields, "Not applicable reason"):
         raise FDError("zero applicable scenarios require a not applicable reason")
-    if dual_evidence((base / previous["fd_path"]).read_text(encoding="utf-8")):
+    if dual_evidence((base / safe_artifact(base, previous["fd_path"])).read_text(encoding="utf-8")):
         data = structured_evidence(base, artifact_ref, "tester-report",
                                    previous["fd_id"], previous["event_id"])["data"]
         scenarios = data.get("scenarios")
@@ -942,7 +987,7 @@ def validate_test_risk_assessment(base: Path, raw_ref: str, previous: dict,
                                   expected_focus: str = "") -> tuple[str, str]:
     ref = safe_artifact(base, raw_ref)
     path = Path(ref)
-    if (path.parent.as_posix() != "docs/features/reports"
+    if (path.parent.as_posix() not in evidence_directories(previous["fd_id"], "report")[:2]
             or not path.name.startswith(previous["fd_id"] + "-")):
         raise FDError("risk assessment must be an FD-prefixed report")
     structured_evidence(base, ref, "test-risk-assessment",
@@ -1056,34 +1101,85 @@ def validate_test_decision(base: Path, artifact_ref: str, previous: dict,
     return sessions
 
 
-def update_index(base: Path) -> None:
-    with fd_lock(base, "_index"):
-        write_index(base)
+INDEX_MARKER = "<!-- aiw: feature-folder-index -->"
+FEATURE_NAVIGATION = """# Feature Design Index
+
+Each feature owns a folder and an `index.md` navigation page.
+
+- [Active feature folders](./)
+- [Archived feature folders](archive/)
+- [Layout and compatibility](../usage/aiw-fd.md#feature-folders)
+
+Run `aiw fd list` for current status, priority, and titles.
+FD documents own status; this navigation page has no shared status table.
+"""
 
 
-def write_index(base: Path) -> None:
-    active, completed, parked = [], [], []
-    for path in all_files(base):
-        content = path.read_text(encoding="utf-8")
-        state = status(content)
-        priority = PRIORITY_RE.search(content)
-        rank = priority.group(1).strip() if priority else "-"
-        link = path.relative_to(feature_dir(base)).as_posix()
-        display_title = title(content).replace("|", "\\|")
-        row = f"| [{path.name.split('_', 1)[0]}]({link}) | {display_title} | {state} | {rank} |"
-        if state == "Complete":
-            completed.append(row)
-        elif state in {"Deferred", "Closed"}:
-            parked.append(row)
-        else:
-            active.append(row)
-    def section(name: str, rows: list[str]) -> str:
-        return f"## {name}\n\n| FD | Title | Status | Priority |\n| --- | --- | --- | --- |\n" + "\n".join(rows or ["| - | - | - | - |"])
-    content = ("# Feature Design Index\n\nFD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。\n\n"
-               + section("Active Features", active) + "\n\n"
-               + section("Completed", completed) + "\n\n"
-               + section("Deferred / Closed", parked) + "\n")
-    atomic_text(feature_dir(base) / "FEATURE_INDEX.md", content)
+def index_paths(base: Path, name: str) -> list[Path]:
+    return [feature_dir(base) / name / "index.md",
+            feature_dir(base) / "archive" / name / "index.md"]
+
+
+def index_snapshot(base: Path, name: str) -> dict[Path, bytes | None]:
+    originals = {}
+    for path in index_paths(base, name):
+        ensure_feature_directory(base, path.parent)
+        if path.is_symlink() or (path.exists() and not path.is_file()):
+            raise FDError(f"unsafe feature index: {path}")
+        value = path.read_bytes() if path.exists() else None
+        if value is not None and INDEX_MARKER.encode() not in value:
+            raise FDError(f"feature index is not AIW-generated; preserve it: {path}")
+        originals[path] = value
+    return originals
+
+
+def restore_indexes(originals: dict[Path, bytes | None]) -> None:
+    errors = []
+    for path, value in originals.items():
+        try:
+            if value is None:
+                path.unlink(missing_ok=True)
+            else:
+                atomic_bytes(path, value)
+        except OSError as exc:
+            errors.append(f"{path}: {exc}")
+    if errors:
+        raise FDError("index rollback incomplete: " + "; ".join(errors))
+
+
+def update_index(base: Path, name: str) -> None:
+    # Never project branch-local status into a tracked repository-wide table.
+    # Each FD only writes its own two navigation pages, under its own lock.
+    with fd_lock(base, "_index-" + name):
+        originals = index_snapshot(base, name)
+        try:
+            write_index(base, name)
+        except (OSError, FDError):
+            restore_indexes(originals)
+            raise
+
+
+def write_index(base: Path, name: str) -> None:
+    for index in index_paths(base, name):
+        directory = index.parent
+        designs = sorted(path for path in directory.glob(name + "_*.md")
+                         if FD_FILE_RE.fullmatch(path.name))
+        folders = []
+        for folder in ("reports", "reviews"):
+            evidence = directory / folder
+            if evidence.exists():
+                ensure_feature_directory(base, evidence)
+                if any(evidence.iterdir()):
+                    folders.append(folder)
+        if not designs and not folders:
+            index.unlink(missing_ok=True)
+            continue
+        content = f"# {name}\n\n{INDEX_MARKER}\n\n"
+        content += "".join(f"- [Design: {path.name}]({path.name})\n" for path in designs)
+        content += "".join(f"- [{folder.title()}]({folder}/)\n" for folder in folders)
+        content += "\nRun `aiw fd show " + name + "` for current status and handoff.\n"
+        if not index.exists() or index.read_text(encoding="utf-8") != content:
+            atomic_text(index, content)
 
 
 def ensure_ready(content: str, event_type: str) -> None:
@@ -1131,7 +1227,7 @@ def dispatch(base: Path, path: Path, event: dict) -> None:
     log_path = path.with_suffix(".log")
     try:
         with log_path.open("ab") as log:
-            process = subprocess.Popen([str(executable), role, event["fd_path"], str(path)],
+            process = subprocess.Popen([str(executable), role, fd_path.relative_to(base).as_posix(), str(path)],
                                        cwd=base, stdin=subprocess.DEVNULL, stdout=log,
                                        stderr=subprocess.STDOUT, shell=False)
     except OSError as exc:
@@ -1198,7 +1294,7 @@ def request_review(base: Path, name: str, reason: str) -> None:
                 previous_event["dispatch_state"] = "cancelled"
                 previous_event["superseded_by"] = event_id
                 atomic_json(previous_path, previous_event)
-            update_index(base)
+            update_index(base, name)
         else:
             if status(content) != "Complete":
                 raise FDError("request-review requires an archived Complete FD")
@@ -1209,7 +1305,7 @@ def request_review(base: Path, name: str, reason: str) -> None:
                     or latest[1].get("dispatch_state") != "acknowledged"):
                 raise FDError("request-review requires an acknowledged Reviewer verification-passed event")
 
-            active_path = feature_dir(base) / fd_path.name
+            active_path = active_destination(base, name, fd_path.name)
             if active_path.exists() or active_path.is_symlink():
                 raise FDError(f"active FD path already exists: {active_path}")
             new_revision = revision(content) + 1
@@ -1227,14 +1323,29 @@ def request_review(base: Path, name: str, reason: str) -> None:
                      "artifact_ref": active_ref, "fd_path": active_ref,
                      "target_role": "reviewer", "dispatch_state": "pending",
                      "reason": reason.strip(), "created_at": datetime.now(timezone.utc).isoformat()}
-            # Move first so a failed receipt write leaves one unambiguous Complete FD.
-            fd_path.replace(active_path)
-            atomic_json(target, event)
-            atomic_text(active_path, updated)
             latest_path, previous_event = latest
-            previous_event["review_requested_by"] = event_id
-            atomic_json(latest_path, previous_event)
-            update_index(base)
+            original_indexes = index_snapshot(base, name)
+            fd_path.replace(active_path)
+            try:
+                atomic_json(target, event)
+                atomic_text(active_path, updated)
+                atomic_json(latest_path, {**previous_event, "review_requested_by": event_id})
+                update_index(base, name)
+            except (OSError, FDError) as exc:
+                rollback_errors = []
+                for restore in (lambda: atomic_text(active_path, content),
+                                lambda: active_path.replace(fd_path),
+                                lambda: atomic_json(latest_path, previous_event),
+                                lambda: target.unlink(missing_ok=True),
+                                lambda: restore_indexes(original_indexes)):
+                    try:
+                        restore()
+                    except (OSError, FDError) as rollback_error:
+                        rollback_errors.append(str(rollback_error))
+                if rollback_errors:
+                    raise FDError("request-review rollback incomplete: "
+                                  + "; ".join(rollback_errors)) from exc
+                raise
     dispatch(base, target, event)
 
 
@@ -1243,7 +1354,7 @@ def refresh_worker(base: Path, name: str, reason: str) -> None:
         raise FDError("refresh-worker requires a one-line --reason of at most 500 characters")
     with fd_lock(base, name):
         fd_path = resolve_fd(base, name)
-        if fd_path.parent != feature_dir(base):
+        if is_archived_fd(base, fd_path):
             raise FDError("refresh-worker requires an active FD")
         original = fd_path.read_text(encoding="utf-8")
         if status(original) not in {"Open", "In Progress"}:
@@ -1253,7 +1364,7 @@ def refresh_worker(base: Path, name: str, reason: str) -> None:
             raise FDError("refresh-worker requires a pending Worker handoff")
         old_path, old_event = item
         fd_ref = fd_path.relative_to(base).as_posix()
-        if (old_event.get("fd_id") != name or old_event.get("fd_path") != fd_ref
+        if (old_event.get("fd_id") != name or safe_artifact(base, old_event.get("fd_path", "")) != fd_ref
                 or old_event.get("target_role") != "worker"
                 or old_event.get("dispatch_state") != "pending"):
             raise FDError("refresh-worker requires the latest pending Worker handoff")
@@ -1283,7 +1394,7 @@ def refresh_worker(base: Path, name: str, reason: str) -> None:
             atomic_json(target, {**event, "dispatch_state": "preparing"})
             atomic_text(fd_path, updated)
             atomic_json(old_path, cancelled)
-            update_index(base)
+            update_index(base, name)
             atomic_json(target, event)
         except (OSError, FDError) as exc:
             rollback_errors = []
@@ -1307,7 +1418,7 @@ def recover_worker(base: Path, name: str, expected_event: str,
         raise FDError("recover-worker requires a one-line --reason of at most 500 characters")
     with fd_lock(base, name):
         fd_path = resolve_fd(base, name)
-        if fd_path.parent != feature_dir(base):
+        if is_archived_fd(base, fd_path):
             raise FDError("recover-worker requires an active FD")
         original = fd_path.read_text(encoding="utf-8")
         if status(original) not in {"Open", "In Progress"}:
@@ -1317,7 +1428,7 @@ def recover_worker(base: Path, name: str, expected_event: str,
             raise FDError("recover-worker requires a dispatched Worker handoff")
         old_path, old_event = item
         fd_ref = fd_path.relative_to(base).as_posix()
-        if (old_event.get("fd_id") != name or old_event.get("fd_path") != fd_ref
+        if (old_event.get("fd_id") != name or safe_artifact(base, old_event.get("fd_path", "")) != fd_ref
                 or old_event.get("event_id") != expected_event
                 or old_event.get("target_role") != "worker"
                 or old_event.get("dispatch_state") != "dispatched"
@@ -1335,8 +1446,7 @@ def recover_worker(base: Path, name: str, expected_event: str,
         target = runtime_dir(base, name) / "events" / f"{new_revision:06d}-work-requested.json"
         if target.exists() or target.is_symlink():
             raise FDError(f"event already exists: {event_id}")
-        index_path = feature_dir(base) / "FEATURE_INDEX.md"
-        original_index = index_path.read_bytes() if index_path.exists() else None
+        original_indexes = index_snapshot(base, name)
         now = datetime.now(timezone.utc).isoformat()
         event = {"event_id": event_id, "fd_id": name,
                  "event_type": "work-requested", "fd_revision": new_revision,
@@ -1352,15 +1462,14 @@ def recover_worker(base: Path, name: str, expected_event: str,
             atomic_json(target, {**event, "dispatch_state": "preparing"})
             atomic_text(fd_path, updated)
             atomic_json(old_path, cancelled)
-            update_index(base)
+            update_index(base, name)
             atomic_json(target, event)
         except Exception as exc:
             rollback_errors = []
             for label, restore in (("new event", lambda: target.unlink(missing_ok=True)),
                                    ("FD", lambda: atomic_text(fd_path, original)),
                                    ("old receipt", lambda: atomic_json(old_path, old_event)),
-                                   ("index", lambda: atomic_bytes(index_path, original_index)
-                                    if original_index is not None else index_path.unlink(missing_ok=True))):
+                                   ("indexes", lambda: restore_indexes(original_indexes))):
                 try:
                     restore()
                 except Exception as rollback_error:
@@ -1402,12 +1511,11 @@ def force_context(base: Path, name: str, action: str, reason: str,
 
 
 def force_transaction(base: Path, changes: dict[Path, bytes],
-                      refresh_index: bool = False) -> None:
+                      name: str = "") -> None:
     """Commit one locked recovery operation; restore every attempted write on failure."""
-    index_path = feature_dir(base) / "FEATURE_INDEX.md"
     paths = list(changes)
-    if refresh_index:
-        paths.append(index_path)
+    if name:
+        paths.extend(index_snapshot(base, name))
     originals = {}
     for path in paths:
         if path.is_symlink() or (path.exists() and not path.is_file()):
@@ -1418,9 +1526,9 @@ def force_transaction(base: Path, changes: dict[Path, bytes],
         for path, value in changes.items():
             attempted.append(path)
             atomic_bytes(path, value)
-        if refresh_index:
-            attempted.append(index_path)
-            update_index(base)
+        if name:
+            attempted.extend(index_paths(base, name))
+            update_index(base, name)
     except Exception as exc:
         errors = []
         for path in reversed(attempted):
@@ -1475,7 +1583,7 @@ def set_status(base: Path, name: str, outcome: str, reason: str, operator: str) 
                       "skipped_checks": ["status-transition", "terminal-evidence"],
                       "review_verified": False})
         force_transaction(base, {audit_path: json_bytes(audit), fd_path: updated.encode("utf-8")},
-                          refresh_index=True)
+                          name=name)
     print(f"forced status {audit['previous_status']} -> {outcome}; transition/evidence checks skipped; "
           f"no review evidence created, receipts unchanged and may be stale; audit: {audit_path}")
 
@@ -1538,10 +1646,10 @@ def force_emit(base: Path, name: str, kind: str, producer: str, artifact: str,
             changes[old_path] = json_bytes(cancelled)
         # A preparing receipt is never eligible for claim/dispatch.
         changes[target] = json_bytes({**event, "dispatch_state": "preparing"})
-        index_path = feature_dir(base) / "FEATURE_INDEX.md"
         originals = {path: path.read_bytes() if path.exists() else None
-                     for path in [*changes, index_path]}
-        force_transaction(base, changes, refresh_index=True)
+                     for path in changes}
+        originals.update(index_snapshot(base, name))
+        force_transaction(base, changes, name=name)
         try:
             atomic_json(target, event)
         except Exception as exc:
@@ -1567,7 +1675,7 @@ def refresh_tester(base: Path, name: str, reason: str, artifact: str) -> None:
         raise FDError("refresh-tester requires a one-line --reason of at most 500 characters")
     with fd_lock(base, name):
         fd_path = resolve_fd(base, name)
-        if fd_path.parent != feature_dir(base):
+        if is_archived_fd(base, fd_path):
             raise FDError("refresh-tester requires an active FD")
         original = fd_path.read_text(encoding="utf-8")
         if status(original) != "Pending Test" or not independent_testing(original):
@@ -1577,7 +1685,7 @@ def refresh_tester(base: Path, name: str, reason: str, artifact: str) -> None:
             raise FDError("refresh-tester requires a pending Tester handoff")
         old_path, old_event = item
         fd_ref = fd_path.relative_to(base).as_posix()
-        if (old_event.get("fd_id") != name or old_event.get("fd_path") != fd_ref
+        if (old_event.get("fd_id") != name or safe_artifact(base, old_event.get("fd_path", "")) != fd_ref
                 or old_event.get("target_role") != "tester"
                 or old_event.get("dispatch_state") != "pending"
                 or old_event.get("event_type") not in {"implementation-ready", "test-requested"}
@@ -1617,14 +1725,14 @@ def refresh_tester(base: Path, name: str, reason: str, artifact: str) -> None:
             atomic_json(target, {**event, "dispatch_state": "preparing"})
             atomic_text(fd_path, updated)
             atomic_json(old_path, cancelled)
-            update_index(base)
+            update_index(base, name)
             atomic_json(target, event)
         except (OSError, FDError) as exc:
             rollback_errors = []
             restores = [lambda: target.unlink(missing_ok=True),
                         lambda: atomic_text(fd_path, original),
                         lambda: atomic_json(old_path, old_event),
-                        lambda: update_index(base)]
+                        lambda: update_index(base, name)]
             for restore in restores:
                 try:
                     restore()
@@ -1653,7 +1761,7 @@ def reopen(base: Path, name: str, reason: str) -> None:
             raise FDError("cannot reopen while a role execution has an unknown result")
         if latest and latest[1]["dispatch_state"] == "pending":
             raise FDError("cannot reopen while a prior handoff is pending")
-        active_path = feature_dir(base) / fd_path.name
+        active_path = active_destination(base, name, fd_path.name)
         if active_path.exists() or active_path.is_symlink():
             raise FDError(f"active FD path already exists: {active_path}")
         new_revision = revision(content) + 1
@@ -1675,16 +1783,24 @@ def reopen(base: Path, name: str, reason: str) -> None:
                  "created_at": datetime.now(timezone.utc).isoformat()}
         if latest:
             event["previous_event"] = latest[1]["event_id"]
+        original_indexes = index_snapshot(base, name)
         fd_path.replace(active_path)
         try:
             atomic_json(target, event)
             atomic_text(active_path, updated)
-            update_index(base)
-        except (OSError, FDError):
-            atomic_text(active_path, content)
-            active_path.replace(fd_path)
-            if target.exists():
-                target.unlink()
+            update_index(base, name)
+        except (OSError, FDError) as exc:
+            rollback_errors = []
+            for restore in (lambda: atomic_text(active_path, content),
+                            lambda: active_path.replace(fd_path),
+                            lambda: target.unlink(missing_ok=True),
+                            lambda: restore_indexes(original_indexes)):
+                try:
+                    restore()
+                except (OSError, FDError) as rollback_error:
+                    rollback_errors.append(str(rollback_error))
+            if rollback_errors:
+                raise FDError("reopen rollback incomplete: " + "; ".join(rollback_errors)) from exc
             raise
     dispatch(base, target, event)
 
@@ -1694,7 +1810,7 @@ def correct_reopen_reason(base: Path, name: str, reason: str) -> None:
         raise FDError("reopen requires a one-line --reason of at most 500 characters")
     with fd_lock(base, name):
         fd_path = resolve_fd(base, name)
-        if fd_path.parent != feature_dir(base):
+        if is_archived_fd(base, fd_path):
             raise FDError("reason correction requires an active FD")
         item = latest_event(base, name)
         if not item:
@@ -1841,7 +1957,7 @@ def prepare_event(base: Path, name: str, kind: str, producer: str, artifact: str
     # event; resume refuses to dispatch it until the FD revision matches.
     atomic_json(target, event)
     atomic_text(fd_path, updated)
-    update_index(base)
+    update_index(base, name)
     if previous:
         old_path, old_event = previous
         old_event["dispatch_state"] = "acknowledged"
@@ -1893,7 +2009,7 @@ def new_fd(base: Path, name: str, issue: str) -> None:
         numbers = [int(FD_FILE_RE.fullmatch(path.name).group(1)) for path in all_files(base)]
         number = max(numbers, default=0) + 1
         ident = f"FD-{number:03d}"
-        target = feature_dir(base) / f"{ident}_{slug(name)}.md"
+        target = active_destination(base, ident, f"{ident}_{slug(name)}.md")
         if target.exists():
             raise FDError(f"FD already exists: {target}")
         template = base / "docs" / "templates" / "TEMPLATE.md"
@@ -1905,7 +2021,9 @@ def new_fd(base: Path, name: str, issue: str) -> None:
                    .replace("{{FD_ID}}", ident).replace("{{TITLE}}", name)
                    .replace("{{ISSUE}}", source))
         atomic_text(target, content)
-        update_index(base)
+        if not (feature_dir(base) / "FEATURE_INDEX.md").exists():
+            atomic_text(feature_dir(base) / "FEATURE_INDEX.md", FEATURE_NAVIGATION)
+        update_index(base, ident)
     emit(base, ident, "design-requested", "pm", target.relative_to(base).as_posix())
     print(f"created {ident}: {target}")
 
@@ -1983,17 +2101,22 @@ def evidence_moves(base: Path, name: str) -> list[tuple[Path, Path]]:
     features = feature_dir(base)
     moves = []
     for folder in ("reports", "reviews"):
-        source_dir = features / folder
-        for source in sorted(source_dir.glob(f"{name}*")):
+        source_dirs = [features / name / folder, features / folder]
+        for source in sorted(path for directory in source_dirs
+                             for path in directory.glob(f"{name}*")):
             if source.suffix not in {".md", ".json"}:
                 continue
             if source.name != f"{name}.md" and not source.name.startswith(f"{name}-"):
                 continue
             if not source.is_file() or source.is_symlink():
                 raise FDError(f"FD evidence must be a regular file: {source}")
+            if not source.resolve().is_relative_to(base):
+                raise FDError(f"FD evidence is outside the repository: {source}")
             target = features / "archive" / name / folder / source.name
             if target.exists() or target.is_symlink():
                 raise FDError(f"archived FD evidence already exists: {target}")
+            if any(destination == target for _, destination in moves):
+                raise FDError(f"multiple active evidence files target the same archive: {target}")
             parent = target.parent
             archive_root = features / "archive"
             while parent != archive_root.parent:
@@ -2080,8 +2203,7 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
     moved = []
     event_path = latest[0] if latest else None
     original_event = dict(latest[1]) if latest else None
-    index_path = feature_dir(base) / "FEATURE_INDEX.md"
-    original_index = index_path.read_text(encoding="utf-8") if index_path.exists() else None
+    original_indexes = index_snapshot(base, name)
     receipt_attempted = False
     try:
         for source, target in moves:
@@ -2109,7 +2231,7 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
                 event["dispatch_state"] = "cancelled" if outcome != "Complete" else "acknowledged"
             receipt_attempted = True
             atomic_json(event_path, event)
-        update_index(base)
+        update_index(base, name)
         if force:
             atomic_json(force_audit_path, force_audit)
     except (OSError, FDError) as exc:
@@ -2142,11 +2264,8 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
             except OSError as rollback_error:
                 rollback_errors.append(str(rollback_error))
         try:
-            if original_index is None:
-                index_path.unlink(missing_ok=True)
-            else:
-                atomic_text(index_path, original_index)
-        except OSError as rollback_error:
+            restore_indexes(original_indexes)
+        except (OSError, FDError) as rollback_error:
             rollback_errors.append(str(rollback_error))
         if rollback_errors:
             raise FDError("close rollback incomplete: " + "; ".join(rollback_errors)) from exc

@@ -5,35 +5,8 @@
 ```markdown
 # Feature Design Index
 
-Planned features and improvements for {project_name}.
-
-See `AGENTS.md` for FD lifecycle stages and management guidelines.
-
-## Active Features
-
-| FD | Title | Status | Effort | Priority |
-|----|-------|--------|--------|----------|
-| - | - | - | - | No active features yet |
-
-## Completed
-
-| FD | Title | Completed | Notes |
-|----|-------|-----------|-------|
-| - | - | - | No completed features yet |
-
-## Deferred / Closed
-
-| FD | Title | Status | Notes |
-|----|-------|--------|-------|
-| - | - | - | No deferred features yet |
-
-## Backlog
-
-Low-priority or blocked items. Promote to Active when ready to design.
-
-| FD | Title | Notes |
-|----|-------|-------|
-| - | - | No backlog items yet |
+Each feature owns a folder with index.md, its FD design, reports/ and reviews/.
+Browse docs/features/ and docs/features/archive/; run aiw fd list for status.
 ```
 
 ## FD file template
@@ -92,7 +65,7 @@ Append or merge this section into the repository's `AGENTS.md`:
 
 ## Feature Design (FD) Management
 
-Features are tracked in `docs/features/`. Each FD has a dedicated file (`FD-XXX_TITLE.md`) and is indexed in `docs/features/FEATURE_INDEX.md`.
+Features are tracked in `docs/features/`. Each FD owns `docs/features/FD-XXX/`, with `index.md`, its design, and evidence. `docs/features/FEATURE_INDEX.md` is fixed navigation; use `aiw fd list` for status.
 
 ### FD Lifecycle
 
@@ -121,18 +94,16 @@ Use the `fd-workflow` skill for:
 
 ### Conventions
 
-- FD files: `docs/features/FD-XXX_TITLE.md`
+- FD files: `docs/features/FD-XXX/FD-XXX_TITLE.md`
 - Default commit format: `FD-XXX: Brief description` unless repository history shows another convention
 - Numbering: highest known FD number + 1
-- Source of truth: FD file status over index status
+- Source of truth: FD file status; indexes contain navigation only
 - Archive: Complete, Closed, and Deferred FDs move to `docs/features/archive/`
 
-### Index sections
+### Folder indexes
 
-1. Active Features — all non-complete active work
-2. Completed — completed FDs, newest first
-3. Deferred / Closed — postponed or rejected work
-4. Backlog — low-priority or blocked candidates
+Each FD owns its navigation page. Keep status in the FD design and read it
+through `aiw fd list`; never maintain a shared status table during execution.
 
 ### Inline annotations (`%%`)
 

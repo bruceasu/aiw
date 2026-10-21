@@ -1,10 +1,10 @@
 # Numbered FD operations
 
 The portable layout is `docs/templates/TEMPLATE.md`,
-`docs/features/FEATURE_INDEX.md`, `docs/features/FD-XXX_SLUG.md`, and
+`docs/features/FEATURE_INDEX.md`, `docs/features/FD-XXX/FD-XXX_SLUG.md`, and
 `docs/features/archive/<FD-ID>/<FD-ID>_SLUG.md`. The FD file owns status and
 numbered Work Items. Active reports and reviews live under
-`docs/features/reports/` and `docs/features/reviews/`; close moves the FD's
+`docs/features/<FD-ID>/reports/` and `docs/features/<FD-ID>/reviews/`; close moves the FD's
 evidence into `archive/<FD-ID>/reports/` and `archive/<FD-ID>/reviews/`.
 The index is rebuilt by `aiw fd` after stage changes. Do not create a second
 status store or require a vendor-specific agent command.
@@ -89,3 +89,11 @@ mode, a successful merge to the recorded parent. Deferred and
 Closed require `--reason "..."`. Close archives the file and updates the
 index. It does not clean a worktree or deliver code. Update a project changelog
 only when the repository uses one.
+
+## Folder navigation
+
+Each active FD owns docs/features/FD-XXX/index.md, its design, reports/ and
+reviews/. FEATURE_INDEX.md is fixed navigation; use aiw fd list for status.
+Do not rebuild or commit a shared status table during execution. Read legacy
+flat layouts as compatibility input; new and reopened records use folders.
+Preserve normal Git conflict reporting for genuine overlapping changes.
