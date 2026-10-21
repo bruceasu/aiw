@@ -1,0 +1,50 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "design-review",
+  "fd_id": "FD-104",
+  "source_event": "FD-104-000002-design-requested",
+  "reviewer_session": "/root/fd104_design_review",
+  "reviewed_revision": 6,
+  "reviewed_design_revision": 5,
+  "revision_6_change": "Workflow emission changed only status/revision metadata; design content reviewed at revision 5 is unchanged.",
+  "recorded_at": "2026-10-22T15:53:38+00:00",
+  "findings": [
+    {
+      "id": "DR-1",
+      "status": "resolved",
+      "finding": "`title` 的节点范围、字符串类型、未知关键字拒绝和验收边界需明确。",
+      "resolution": "FD revision 5 明确仅接受受支持节点上的字符串 title，并增加非法值和未知关键字的负向验收。"
+    },
+    {
+      "id": "DR-2",
+      "status": "resolved",
+      "finding": "并行配置需要完整部署契约、非法值处理和说明位置。",
+      "resolution": "FD revision 5 指定 AIW_OPENAI_PARALLEL_TOOL_CALLS，缺省 true、只接受 true/false、非法值 fail-fast，并更新 process-python README。"
+    },
+    {
+      "id": "DR-3",
+      "status": "resolved",
+      "finding": "覆盖目标与尚未授权的端到端执行范围需具体区分。",
+      "resolution": "FD revision 5 指定 worker 配置覆盖、Agents SDK 往返 demo，并区分静态/compile-only 与需单独授权的端到端演示。"
+    },
+    {
+      "id": "DR-4",
+      "status": "accepted_risk",
+      "finding": "通用 invalid_request 日志无法确定实际请求首先触发的拒绝分支。",
+      "resolution": "两项有证据的不兼容均列入范围；FD 保留其他未观测请求字段的残余风险。"
+    },
+    {
+      "id": "DR-5",
+      "status": "implementation_gate",
+      "finding": "aiw-de worker 源码在当前可写工作区之外。",
+      "resolution": "FD 将其记录为实施前置条件；design-ready 不表示该仓库已可写或 worktree 已创建。"
+    }
+  ],
+  "recommendation": "ready",
+  "unverified_risks": [
+    "没有原始 HTTP 响应体，无法确认原始 400 的具体触发字段。",
+    "还可能存在日志未显示的其他不支持请求字段。",
+    "aiw-de 的具体测试文件需遵循其本地规则并在实现时确认。"
+  ],
+  "commands_run": []
+}

@@ -1,0 +1,32 @@
+id = "ISSUE-00012"
+title = "Python function calls through agent-gateway"
+parent_id = ""
+status = "APPROVED"
+created = "2026-10-23"
+updated = "2026-10-23"
+revision = 5
+
+[approval]
+status = "APPROVED"
+by = "user"
+at = "2026-10-23T00:41:05+09:00"
+reason = "User explicitly approved and requested FD promotion and automatic implementation; retain the unresolved 400 response diagnostic Gate for FD planning."
+source_digest = "ef751bc53cdca120336000b1eb0f569286cd3e3a8cb70343d2a1a508a90a6425"
+
+[promotion]
+status = "NOT_STARTED"
+task_id = ""
+
+[conversation]
+session_id = ""
+
+[terminal]
+by = ""
+at = ""
+reason = ""
+
+[artifact]
+requirement-plan = "docs/issues/ISSUE-00012/issue-plan.md"
+
+[digest]
+requirement-plan = "404306495de5b3734bf86d26464a12f25e0b6b14e000f2e9a162b08da61f0bb8"

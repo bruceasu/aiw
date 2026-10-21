@@ -1,0 +1,34 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-104",
+  "source_event": "FD-104-000006-design-ready",
+  "human_report": "FD-104-blocker-20261022T155514Z.md",
+  "data": {
+    "stage": "implementation-worktree-preflight",
+    "role": "host",
+    "recorded_at": "2026-10-22T15:55:14+00:00",
+    "recorder_session": "fd104-planner-20261023-a",
+    "observed_blocker": "Git add of the scoped FD/Issue files failed because .git/index.lock could not be created (Permission denied); .git is read-only in the environment. The parent workspace also contains unrelated dirty changes, and the aiw-de worker repository is outside the writable roots. No source implementation has started and no worker event was claimed.",
+    "confirmed_cause": "The current permission profile grants read-only access to this repository's .git metadata and does not grant write access to D:\\03_projects\\AI-tools\\aiw-de; the parent workspace is not clean.",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      {
+        "action": "Stage only docs/features/FD-104 and docs/issues/ISSUE-00012 for the focused ready-plan commit.",
+        "result": "Git failed before staging with Permission denied while creating .git/index.lock. No alternate shell, escalation, cleanup, or retry was attempted."
+      },
+      {
+        "action": "Emit the Planner design-ready handoff through the AIW workflow CLI.",
+        "result": "Succeeded; FD-104-000006-design-ready is pending Worker. Worker was not claimed because the required committed plan/worktree cannot be prepared."
+      }
+    ],
+    "status": "unresolved",
+    "human_decision_required": true,
+    "human_decision_detail": "Restore Git write access for the AIW repository, make the parent workspace clean without discarding unrelated work, and include D:\\03_projects\\AI-tools\\aiw-de as a writable isolated workspace for the approved Python worker scope.",
+    "actual_resolution": null,
+    "resolved_at": null,
+    "residual_risk_or_next_step": "After access and clean-state recovery, commit only the related FD/Issue plan artifacts, create feature/FD-104 in .wt/FD-104, inspect aiw-de root instructions, and continue the approved Work Items. The original 400 cause remains unknown because only generic invalid_request logs were available; both verified incompatibilities are covered in the FD.",
+    "reusable_improvement": "Add a read-only FD preflight for .git writability, parent clean status, and cross-repository writable roots before handing off to Worker.",
+    "improvement_status": "proposed"
+  }
+}
