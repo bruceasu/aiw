@@ -6,7 +6,7 @@ FD 文件是设计与进度的主记录；本索引可由 `aiw fd` 重建。
 
 | FD | Title | Status | Priority |
 | --- | --- | --- | --- |
-| - | - | - | - |
+| [FD-103](FD-103_FOLDER_BASED_FEATURE_RECORDS_AND_CONFLICT_FREE_C.md) | Folder based feature records and conflict free concurrent FD delivery | Open | High |
 
 ## Completed
 
