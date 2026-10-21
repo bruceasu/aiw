@@ -46,7 +46,8 @@ FD CLI、shell 补全、功能目录局部索引迁移及其当前文档契约�
 
 ## TODO
 
-- 实现及独立审阅完成，待 PM 本地 squash 交付、清理与 Complete 归档。
+- Implementation and independent review completed. Squash delivery to develop,
+  verified worktree/branch cleanup, and Complete archive completed on 2026-10-21.
 
 ## Verification
 
@@ -74,3 +75,5 @@ FD CLI、shell 补全、功能目录局部索引迁移及其当前文档契约�
 - openspec/specs/fd-workflow/spec.md
 - src/plugins/aiw-fd.py
 - src/plugins/aiw-git/git-wt.py
+
+**Completed:** 2026-10-21
