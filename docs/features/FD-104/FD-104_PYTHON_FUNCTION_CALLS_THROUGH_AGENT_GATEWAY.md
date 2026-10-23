@@ -1,7 +1,7 @@
 # FD-104：Python 经 agent-gateway 调用函数
 
-**Status:** Open
-**Revision:** 6
+**Status:** In Progress
+**Revision:** 9
 **Priority:** Medium  
 **Evidence policy:** Dual
 
@@ -34,10 +34,10 @@ OpenAI Agents SDK 为函数参数生成的 strict JSON Schema 含有 `title` 注
 
 ## Work items
 
-- [ ] 1.1 仅接受 `title` 字符串注解，并保持 gateway 对函数参数的 strict 校验。
-- [ ] 1.2 在 `workers/process-python/openai_api_runtime.py` 增加 `AIW_OPENAI_PARALLEL_TOOL_CALLS`（缺省 `true`，只接受 `true`/`false`，无效值 fail-fast）；更新 `workers/process-python/README.md`，说明连接此 gateway 时必须设为 `false`。
-- [ ] 1.3 在 worker 配置测试中覆盖默认值、显式 `false` 和非法值；将 `workers/demo-python-with-openai-agents/test_tool_call.py` 的 Agents SDK 顺序往返作为集成覆盖，校验带 `title` 的 schema、工具只执行一次和最终输出。
-- [ ] 1.4 更新 agent-gateway 稳定规格，记录允许的字符串 `title` 注解、拒绝非法/未知关键字，以及顺序调用边界。
+- [x] 1.1 仅接受 `title` 字符串注解，并保持 gateway 对函数参数的 strict 校验。
+- [x] 1.2 在 `workers/process-python/openai_api_runtime.py` 增加 `AIW_OPENAI_PARALLEL_TOOL_CALLS`（缺省 `true`，只接受 `true`/`false`，无效值 fail-fast）；更新 `workers/process-python/README.md`，说明连接此 gateway 时必须设为 `false`。
+- [x] 1.3 在 worker 配置测试中覆盖默认值、显式 `false` 和非法值；新增 `workers/demo-python-with-openai-agents/fd104_test_tool_call.py` 顺序往返验收脚本，校验带 `title` 的 schema、工具只执行一次和最终输出。原 `test_tool_call.py` 位于仓库本地忽略目录，未覆盖或修改。
+- [x] 1.4 更新 agent-gateway 稳定规格，记录允许的字符串 `title` 注解、拒绝非法/未知关键字，以及顺序调用边界。
 
 工作项编号在实现开始后保持不变。
 
@@ -50,15 +50,21 @@ OpenAI Agents SDK 为函数参数生成的 strict JSON Schema 含有 `title` 注
 
 ## Verification
 
-- Issue 请求聚焦兼容覆盖：在 worker 配置测试中覆盖默认/显式/非法值；Agents SDK demo 覆盖带 `title` schema 与一次顺序工具往返。Go 子树规则禁止新增或运行 Go 测试，因此不创建 Go 测试。实现后执行窄范围 compile-only 检查和静态调用链审查。
-- 独立验收范围为一次 Agents SDK 到 gateway 的顺序工具往返。端到端命令需要访问本地 gateway 并触发 Codex backend；Tester 命令及其 revision 必须经代码/副作用检查后另行授权，当前不执行。配置单元测试如需执行，也先确认 worker repo 的局部规则和具体命令。有限预算：每个获授权命令先运行一次；只有相关代码/环境修正后才允许一次重跑。任何未运行的检查都不得报告为通过。
-- 用户日志只提供通用 `error_code=invalid_request`，没有 HTTP 响应体。静态校验顺序先检查 `parallel_tool_calls=true`，再校验 strict schema。两项确定的不兼容都纳入方案，但无法断言该请求首先触发哪一项；该根因不确定性不改变修复范围，仍保留“还可能有其他不支持字段”的风险。
+- Static review covered the Python worker setting, gateway schema parser, stable spec, and the acceptance script. The focused Go compile-only check and Python syntax compilation passed earlier in this FD cycle.
+- The installed gateway binary used for the first configured run was revision `4ddd993`, older than this FD. It returned HTTP 400 `invalid_request` before execution; that result does not validate the FD source.
+- The gateway was then started from this FD worktree using `C:\green\aiw\gateway.json`, and stopped gracefully after the attempt. The existing demo virtualenv ran `fd104_test_tool_call.py` against `gpt-6-luna`.
+- Agents SDK raised `MaxTurnsExceeded` (exit code 1). No `TOOL_CALL_OK:42` result was observed. Gateway audit recorded three `/v1/responses` requests, all HTTP 200 with `execution_started=true` (request IDs: `resp_59a031771c0154bb55e67e8c5c3649e8`, `resp_8645f0db9614a1f57ff927167d4f4316`, and `resp_965122a7e2b50b5d4012fc13a06c6ad6`).
+- Cause remains undetermined because audit records omit SDK turn output and tool-call payload. Do not mark this acceptance as passed. At that point, the runtime attempt budget was exhausted pending new user direction.
+- After a new explicit user request, one more run used the same source gateway and config. It again ended with `MaxTurnsExceeded`; audit recorded three HTTP 200 backend executions (`resp_91af732deb4cf13637b3c0fc971f0b22`, `resp_f322da52ce89824edffaaf31b19d62fd`, `resp_a673ffdd5ca5b3b0c99762d89e2177e0`). Gateway shutdown completed. The repeated result still does not establish whether the SDK repeated tool calls or the round trip failed to terminate.
+- Any further runtime attempt needs new explicit direction and a diagnostic change that captures the missing turn/tool evidence.
+- No Go tests, Python unit tests, or other test suites were run. No dependency was installed or downloaded.
+- Reviewer report `reviews/FD-104-review-r1.md` remains changes-requested because the required acceptance result is absent.
 
 ## Sources
 
-- 已批准 Issue：`ISSUE-00012`。
-- 稳定规格：[`agent-gateway`](../../../openspec/specs/agent-gateway/spec.md)。
-- Gateway 源码基线：`4ddd9931935084f69d561b889c6207dff2624322`；`protocol.go` 先拒绝并行调用，再校验 strict schema；`schema.go` 拒绝未识别关键字。
-- Worker 源码基线：`D:\03_projects\AI-tools\aiw-de` revision `31abb1b8b560eab5cc35e1c0675ec114461b7946`；`process-python/openai_api_runtime.py` 通过 `OPENAI_BASE_URL` 选择 endpoint，并固定设置 `parallel_tool_calls=True`。
-- 用户提供的日志：gateway 在 `127.0.0.1:43127` 以 `mode=development backend_mode=codex` 运行；普通请求 `resp_f8350ab048cf0457de9ce782dabb2e6b` 返回 200；工具请求 `resp_40dc8c16d1a1cbfeefbffec10474370c` 返回 400、`error_code=invalid_request`、`execution_started=false`。
-- Issue Plan 是批准前的捕获快照；批准与提升由 ISSUE 元数据及 FD-104 handoff 记录，新增日志证据和根因限制记录于本 FD。
+- Approved Issue: `ISSUE-00012`.
+- Stable capability spec: `openspec/specs/agent-gateway/spec.md`.
+- Gateway implementation: `src/programs/agent-gateway/schema.go` and `protocol.go` in the FD-104 worktree.
+- Python worker implementation: `workers/process-python/openai_api_runtime.py` in the aiw-de FD-104 worktree, commit `405744d`.
+- Acceptance script: `workers/demo-python-with-openai-agents/fd104_test_tool_call.py` in the aiw-de FD-104 worktree.
+- Runtime evidence: blocker report `reports/FD-104-blocker-20261022T161320Z.md` and its JSON sidecar.

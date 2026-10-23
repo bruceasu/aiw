@@ -1,0 +1,28 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-104",
+  "source_event": "FD-104-000006-design-ready",
+  "human_report": "FD-104-implementation-r1.md",
+  "data": {
+    "summary": "Implemented bounded string-title schema compatibility and configurable sequential tool calls for process-python; recorded compile-only and static evidence.",
+    "changed_paths": [
+      "src/programs/agent-gateway/schema.go",
+      "openspec/specs/agent-gateway/spec.md",
+      "workers/process-python/openai_api_runtime.py",
+      "workers/process-python/README.md",
+      "workers/process-python/test_parallel_tool_call_setting.py",
+      "workers/demo-python-with-openai-agents/fd104_test_tool_call.py"
+    ],
+    "commands": [
+      "python src/programs/agent-gateway/scripts/compile.py",
+      "Python compile() syntax check for openai_api_runtime.py, test_parallel_tool_call_setting.py, and fd104_test_tool_call.py"
+    ],
+    "results": [
+      "Go Windows and Linux compile-only targets completed with exit code 0.",
+      "Python syntax compilation completed for all three changed Python files.",
+      "Tests and network-backed integration were not run."
+    ],
+    "residual_risk": "The supplied gateway log lacks the HTTP response body, so the first rejected incompatibility remains unknown; other unsupported fields may also remain."
+  }
+}
