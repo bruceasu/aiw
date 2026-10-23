@@ -1,0 +1,34 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-104",
+  "source_event": "FD-104-000006-design-ready",
+  "human_report": "FD-104-blocker-20261022T155514Z.md",
+  "data": {
+    "stage": "implementation-worktree-preflight",
+    "role": "host",
+    "recorded_at": "2026-10-22T15:55:14+00:00",
+    "recorder_session": "fd104-planner-20261023-a",
+    "observed_blocker": "Git add of the scoped FD/Issue files failed because .git/index.lock could not be created (Permission denied); .git is read-only in the environment. The parent workspace also contains unrelated dirty changes, and the aiw-de worker repository is outside the writable roots. No source implementation has started and no worker event was claimed.",
+    "confirmed_cause": "The user confirmed the three requested resolutions. The parent became clean, authorized git worktree creation succeeded, and aiw-de was added as a separate FD-104 worktree.",
+    "cause_status": "confirmed",
+    "recovery_attempts": [
+      {
+        "action": "Stage only docs/features/FD-104 and docs/issues/ISSUE-00012 for the focused ready-plan commit.",
+        "result": "Git failed before staging with Permission denied while creating .git/index.lock. No alternate shell, escalation, cleanup, or retry was attempted."
+      },
+      {
+        "action": "Emit the Planner design-ready handoff through the AIW workflow CLI.",
+        "result": "Succeeded; FD-104-000006-design-ready is pending Worker. Worker was not claimed because the required committed plan/worktree cannot be prepared."
+      }
+    ],
+    "status": "resolved",
+    "human_decision_required": false,
+    "human_decision_detail": "The user confirmed all three requested options.",
+    "actual_resolution": "Committed the FD plan and Issue artifacts, created AIW .wt/FD-104 on feature/FD-104 and a separate aiw-de .wt/FD-104 on feature/FD-104, then completed implementation and compile-only checks.",
+    "resolved_at": "2026-10-22T16:13:20+00:00",
+    "residual_risk_or_next_step": "A separate runtime-evidence Gate is recorded in FD-104-blocker-20261022T161320Z.md; the original workspace preflight issue is resolved. The original 400 cause remains unknown because only generic invalid_request logs were available.",
+    "reusable_improvement": "Add a read-only FD preflight for .git writability, parent clean status, and cross-repository writable roots before handing off to Worker.",
+    "improvement_status": "proposed"
+  }
+}

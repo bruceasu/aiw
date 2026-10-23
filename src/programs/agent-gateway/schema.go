@@ -51,6 +51,10 @@ func parseSchema(raw any, depth int, count *int) (*schemaNode, error) {
 	seenNumberBounds, seenStringBounds, seenArrayBounds := false, false, false
 	for key, value := range object {
 		switch key {
+		case "title":
+			if _, valid := value.(string); !valid {
+				return nil, errors.New("invalid schema title")
+			}
 		case "type":
 			node.typeName, ok = value.(string); if !ok { return nil, errors.New("invalid schema type") }
 			if node.typeName != "object" && node.typeName != "array" && node.typeName != "string" && node.typeName != "number" && node.typeName != "integer" && node.typeName != "boolean" && node.typeName != "null" { return nil, errors.New("unsupported schema type") }
@@ -143,5 +147,5 @@ func validateToolArguments(tool FunctionTool, arguments string) bool {
 func validateValueFromBytes(schema, value []byte) bool { return validateSchemaValue(schema, value) }
 
 func supportedSchemaKeyword(key string) bool {
-	return strings.Contains(" type properties required additionalProperties items enum const minimum maximum minLength maxLength minItems maxItems ", " "+key+" ")
+	return strings.Contains(" title type properties required additionalProperties items enum const minimum maximum minLength maxLength minItems maxItems ", " "+key+" ")
 }

@@ -1,0 +1,44 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-104",
+  "source_event": "FD-104-000007-implementation-ready",
+  "human_report": "FD-104-review-r1.md",
+  "data": {
+    "outcome": "changes-requested",
+    "reviewer_session": "fd104-reviewer-20261023-c",
+    "reviewed_base": "AIW feature/FD-104 commits 395283341729b3a565059f7dca3ceb037f0094c6 and f27c537afbece16ee8ef2b2d95049d4d26dfcded; aiw-de feature/FD-104 commit 405744ddabf0e3422900d42ac77cd76b6e1f05f3; compare each with its first parent",
+    "findings": [
+      {
+        "severity": "acceptance-evidence",
+        "file": "workers/demo-python-with-openai-agents/fd104_test_tool_call.py",
+        "requirement": "FD-104 Acceptance: one sequential function_call round trip, exactly one local tool execution, and final output TOOL_CALL_OK:42",
+        "finding": "The script encodes these assertions but the Worker report says it was not run. Static inspection cannot establish the external SDK-to-gateway behavior, so this acceptance remains unverified.",
+        "minimal_action": "After separate authorization for the exact runtime command, run the script against the configured gateway and record tested revisions and outcome. Reviewer did not run it."
+      }
+    ],
+    "results": [
+      "String title is accepted recursively on supported schema nodes; non-string title and unknown keywords remain rejected by the existing parser path.",
+      "Python parallel-tool setting defaults true, accepts case-insensitive true/false, fails fast otherwise, and is passed into ModelSettings; README documents false for gateway use.",
+      "Worker configuration use cases and a sequential SDK acceptance script cover the intended values and result assertions at source level; neither was executed during this review.",
+      "OpenSpec bounded-subset and non-execution wording matches the reviewed implementation.",
+      "The ignored local test_tool_call.py was not changed; the feature worktree adds fd104_test_tool_call.py."
+    ],
+    "commands": [
+      "aiw fd show FD-104",
+      "aiw fd claim FD-104 FD-104-000007-implementation-ready --session fd104-reviewer-20261023-c",
+      "aiw fd --help",
+      "Get-Content, rg, git show, git log, git status, git rev-parse, git diff --name-status, git worktree list (read-only inspection)"
+    ],
+    "checks_not_run": [
+      "Python configuration tests",
+      "Go tests",
+      "compile checks",
+      "formatters and static analyzers",
+      "Agents SDK model call",
+      "gateway end-to-end/network check",
+      "final build"
+    ],
+    "residual_risk": "Original HTTP 400 cause remains unknown from the supplied generic invalid_request log; other unsupported request fields may exist. The required SDK-to-gateway sequential round trip has not been observed."
+  }
+}

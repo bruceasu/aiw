@@ -1,0 +1,34 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "blocker-feedback",
+  "fd_id": "FD-104",
+  "source_event": "FD-104-000009-work-requested",
+  "human_report": "FD-104-blocker-20261022T161320Z.md",
+  "data": {
+    "stage": "independent review acceptance-evidence gate",
+    "role": "host/PM",
+    "recorded_at": "2026-10-22T16:13:20+00:00",
+    "recorder_session": "fd104-worker-20261023-b",
+    "observed_blocker": "Reviewer found no runtime evidence for the required SDK-to-gateway sequential function-call round trip ending in TOOL_CALL_OK:42.",
+    "confirmed_cause": "Undetermined. With the FD-104 source gateway, the SDK exhausted max_turns after three successful HTTP 200 Responses requests. Existing audit evidence does not include tool-call payloads or SDK turn outputs, so it cannot distinguish repeated model tool calls from an SDK/gateway round-trip completion issue.",
+    "cause_status": "unconfirmed",
+    "recovery_attempts": [
+      "The initial invocation stopped before Python because OPENAI_API_KEY was absent. After the user supplied the credential, the approved retry started Python but failed importing agents in the selected interpreter, before constructing the API client; no gateway request or model call occurred.",
+      "Read-only path checks confirmed an existing aiw-de demo virtualenv Python executable and agents/openai package directories; the virtualenv was not run and dependencies were not installed.",
+      "After renewed explicit authorization, invoked the existing virtualenv interpreter once. The acceptance script stopped at its OPENAI_API_KEY precondition; no API client, gateway request, or model call occurred. No further retry is authorized by the current budget.",
+      "Started the installed C:\\green\\aiw\\agent-gateway.exe with C:\\green\\aiw\\gateway.json after the user explicitly requested startup and testing. Its build revision was 4ddd993, older than FD-104; the acceptance request was rejected with HTTP 400 invalid_request before backend execution. Stopped this gateway gracefully.",
+      "Started the FD-104 source gateway from its worktree with the same config and existing demo virtualenv. The acceptance script returned MaxTurnsExceeded (exit code 1). Gateway audit recorded three POST /v1/responses requests, each HTTP 200 with execution_started=true, followed by a graceful shutdown. The expected TOOL_CALL_OK:42 result was not observed.",
+      "Read-only audit inspection showed metadata only and no tool-call payloads or SDK turn outputs; the attempt budget was exhausted pending new user direction.",
+      "After the user explicitly requested one more attempt, restarted the FD-104 source gateway with the same config and reran the existing acceptance script once. It again returned MaxTurnsExceeded (exit code 1). Audit again recorded three successful HTTP 200 /v1/responses executions (request IDs resp_91af732deb4cf13637b3c0fc971f0b22, resp_f322da52ce89824edffaaf31b19d62fd, and resp_a673ffdd5ca5b3b0c99762d89e2177e0). The gateway stopped gracefully. No further retry is authorized by this attempt.",
+      "Restored the UTF-8 FD plan after reviewer metadata corruption and refreshed the pending Worker event to bind the current revision."
+    ],
+    "status": "unresolved",
+    "human_decision_required": true,
+    "human_decision_detail": "The repeated failure cause remains undetermined because existing logs omit decisive turn and tool-call content. Any further runtime attempt requires new explicit direction and a diagnostic change that captures the missing evidence. Do not install or download dependencies.",
+    "actual_resolution": null,
+    "resolved_at": null,
+    "residual_risk_or_next_step": "The required SDK-to-gateway sequential function-call round trip remains unverified. Two source-gateway attempts each served three successful backend requests before Agents SDK raised MaxTurnsExceeded. A future authorized diagnostic would need to capture SDK turn outputs and tool invocation count while avoiding credential and prompt leakage; it may incur model usage.",
+    "reusable_improvement": "Record exact command, destination, usage/cost and authorization need for any model-backed acceptance in FD Verification.",
+    "improvement_status": "proposed"
+  }
+}
