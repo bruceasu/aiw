@@ -36,6 +36,7 @@ STATUS_RE = re.compile(r"(?m)^\*\*Status:\*\*[ \t]*(.+?)[ \t]*$")
 REVISION_RE = re.compile(r"(?m)^\*\*Revision:\*\*[ \t]*(\d+)[ \t\r]*$")
 PRIORITY_RE = re.compile(r"(?m)^\*\*Priority:\*\*[ \t]*(.+?)[ \t]*$")
 TEST_POLICY_RE = re.compile(r"(?m)^\*\*Test policy:\*\*[ \t]*(.+?)[ \t]*$")
+REVIEW_POLICY_RE = re.compile(r"(?m)^\*\*Review policy:\*\*[ \t]*(.+?)[ \t]*$")
 EVIDENCE_POLICY_RE = re.compile(r"(?m)^\*\*Evidence policy:\*\*[ \t]*(.+?)[ \t]*$")
 DATA_REF_RE = re.compile(r"(?m)^<!-- aiw-data: ([^\r\n]+\.json) -->[ \t]*\r?$")
 ITEM_RE = re.compile(r"(?m)^\s*- \[([ xX-])\] (\d+(?:\.\d+)*)\s+(.+)$")
@@ -68,15 +69,12 @@ DEFAULT_TEMPLATE = """# {{FD_ID}}: {{TITLE}}
 **Status:** Planned
 **Revision:** 1
 **Priority:** Medium
-**Evidence policy:** Dual
+**Review policy:** Self
+**Evidence policy:** Markdown
 
 ## Problem
 
 %% NEEDS_INPUT: Describe the problem and affected people.
-
-## Options and decision
-
-%% NEEDS_INPUT: Compare options and record the chosen approach.
 
 ## Solution
 
@@ -96,12 +94,13 @@ DEFAULT_TEMPLATE = """# {{FD_ID}}: {{TITLE}}
 
 ## Verification
 
-- Compile-only check and static review by default; record unrun tests explicitly.
-- For explicitly requested test support (any wording/language), record suitable
-  TDD scope, independent fd-test scope, command/revision authorization and finite
-  budget here. Otherwise no testing stage is added. On exhausted unexpected-
-  failure budget, stop affected test repair/execution, diagnose statically and
-  continue independent work; unresolved acceptance defects still block delivery.
+- Plan static/compile checks, then record actual results, skipped checks and risks.
+Use Independent review for material interface, permission, persistence,
+concurrency or cross-module effects, uncertain impact, or an explicit review request.
+
+## TODO
+
+Record remaining work or none.
 
 ## Sources
 
@@ -326,6 +325,33 @@ def independent_testing(content: str) -> bool:
 def dual_evidence(content: str) -> bool:
     match = EVIDENCE_POLICY_RE.search(content)
     return bool(match and match.group(1).strip() == "Dual")
+
+
+def independent_review(content: str) -> bool:
+    """Only an explicit Self policy opts out of historical review requirements."""
+    policies = REVIEW_POLICY_RE.findall(content)
+    if len(policies) > 1 or (policies and policies[0].strip().lower() not in {"self", "independent"}):
+        raise FDError("Review policy must be Self or Independent, declared once")
+    return independent_testing(content) or not policies or policies[0].strip().lower() == "independent"
+
+
+def independent_review_required(base: Path, name: str, content: str) -> bool:
+    """Refreshing/recovering a Worker must not erase an existing review gate."""
+    if independent_review(content):
+        return True
+    for path in event_paths(base, name):
+        event = json.loads(path.read_text(encoding="utf-8"))
+        if (event.get("target_role") == "reviewer"
+                or event.get("event_type") in {"review-requested", "changes-requested", "verification-passed"}):
+            return True
+    return False
+
+
+def require_independent_review(content: str) -> str:
+    independent_review(content)
+    if REVIEW_POLICY_RE.search(content):
+        return REVIEW_POLICY_RE.sub("**Review policy:** Independent", content, count=1)
+    return content.rstrip() + "\n\n**Review policy:** Independent\n"
 
 
 def atomic_text(path: Path, content: str) -> None:
@@ -1261,8 +1287,9 @@ def request_review(base: Path, name: str, reason: str) -> None:
         fd_path = resolve_fd(base, name)
         content = fd_path.read_text(encoding="utf-8")
         if not is_archived_fd(base, fd_path):
-            if status(content) != "Pending Verification":
-                raise FDError("active request-review requires a Pending Verification FD")
+            if status(content) not in {"Open", "In Progress", "Pending Verification", "Complete"}:
+                raise FDError("active request-review requires a ready implementation")
+            ensure_ready(content, "implementation-ready")
             latest = latest_event(base, name)
             if latest and latest[1]["dispatch_state"] in {"launching", "dispatched"}:
                 raise FDError(f"{latest[1]['event_id']} is in flight; reconcile its session before requesting review")
@@ -1273,7 +1300,9 @@ def request_review(base: Path, name: str, reason: str) -> None:
                     and latest[1]["fd_sha256"] == digest):
                 raise FDError(f"Reviewer handoff {latest[1]['event_id']} is already pending; claim or resume it")
             new_revision = revision(content) + 1
-            updated = REVISION_RE.sub(f"**Revision:** {new_revision}", content, count=1)
+            updated = require_independent_review(content)
+            updated = STATUS_RE.sub("**Status:** Pending Verification", updated, count=1)
+            updated = REVISION_RE.sub(f"**Revision:** {new_revision}", updated, count=1)
             active_ref = fd_path.relative_to(base).as_posix()
             event_id = f"{name}-{new_revision:06d}-review-requested"
             target = runtime_dir(base, name) / "events" / f"{new_revision:06d}-review-requested.json"
@@ -1299,7 +1328,7 @@ def request_review(base: Path, name: str, reason: str) -> None:
             if status(content) != "Complete":
                 raise FDError("request-review requires an archived Complete FD")
             latest = latest_event(base, name)
-            if (not latest or latest[1].get("event_type") != "verification-passed"
+            if independent_review_required(base, name, content) and (not latest or latest[1].get("event_type") != "verification-passed"
                     or latest[1].get("producer") != "reviewer"
                     or latest[1].get("forced")
                     or latest[1].get("dispatch_state") != "acknowledged"):
@@ -1309,7 +1338,7 @@ def request_review(base: Path, name: str, reason: str) -> None:
             if active_path.exists() or active_path.is_symlink():
                 raise FDError(f"active FD path already exists: {active_path}")
             new_revision = revision(content) + 1
-            updated = STATUS_RE.sub("**Status:** Pending Verification", content, count=1)
+            updated = STATUS_RE.sub("**Status:** Pending Verification", require_independent_review(content), count=1)
             updated = REVISION_RE.sub(f"**Revision:** {new_revision}", updated, count=1)
             updated = re.sub(r"(?m)^\*\*Completed:\*\*", "**Previously completed:**", updated, count=1)
             active_ref = active_path.relative_to(base).as_posix()
@@ -1323,19 +1352,20 @@ def request_review(base: Path, name: str, reason: str) -> None:
                      "artifact_ref": active_ref, "fd_path": active_ref,
                      "target_role": "reviewer", "dispatch_state": "pending",
                      "reason": reason.strip(), "created_at": datetime.now(timezone.utc).isoformat()}
-            latest_path, previous_event = latest
+            latest_path, previous_event = latest if latest else (None, None)
             original_indexes = index_snapshot(base, name)
             fd_path.replace(active_path)
             try:
                 atomic_json(target, event)
                 atomic_text(active_path, updated)
-                atomic_json(latest_path, {**previous_event, "review_requested_by": event_id})
+                if latest_path:
+                    atomic_json(latest_path, {**previous_event, "review_requested_by": event_id})
                 update_index(base, name)
             except (OSError, FDError) as exc:
                 rollback_errors = []
                 for restore in (lambda: atomic_text(active_path, content),
                                 lambda: active_path.replace(fd_path),
-                                lambda: atomic_json(latest_path, previous_event),
+                                lambda: atomic_json(latest_path, previous_event) if latest_path else None,
                                 lambda: target.unlink(missing_ok=True),
                                 lambda: restore_indexes(original_indexes)):
                     try:
@@ -1859,6 +1889,8 @@ def prepare_event(base: Path, name: str, kind: str, producer: str, artifact: str
     allowed, new_status, target_role = ALLOWED[kind]
     if kind == "implementation-ready" and independent_testing(content):
         new_status, target_role = "Pending Test", "tester"
+    elif kind == "implementation-ready" and not independent_review_required(base, name, content):
+        new_status, target_role = "Complete", "pm"
     if old_status not in allowed:
         raise FDError(f"{kind} is not valid from {old_status}")
     expected_producer = ROLE_PRODUCERS.get(kind)
@@ -1873,6 +1905,9 @@ def prepare_event(base: Path, name: str, kind: str, producer: str, artifact: str
     ensure_ready(content, kind)
     artifact_ref = safe_artifact(base, artifact)
     previous = latest_event(base, name)
+    if (kind == "implementation-ready" and not independent_review(content)
+            and independent_review_required(base, name, content)):
+        raise FDError("recorded independent review cannot be downgraded to Self; restore Independent policy")
     evidence_kinds = {
         "implementation-ready": "worker-report",
         "test-report-ready": "tester-report",
@@ -1994,7 +2029,7 @@ def approved_issue_id(base: Path, requested: str) -> str:
     return canonical
 
 
-def new_fd(base: Path, name: str, issue: str) -> None:
+def new_fd(base: Path, name: str, issue: str, handoff: bool = False) -> None:
     if not name.strip() or any(char in name for char in "\r\n") or len(name) > 120:
         raise FDError("title must be one non-empty line of at most 120 characters")
     if issue and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}", issue):
@@ -2020,11 +2055,17 @@ def new_fd(base: Path, name: str, issue: str) -> None:
         content = (template.read_text(encoding="utf-8")
                    .replace("{{FD_ID}}", ident).replace("{{TITLE}}", name)
                    .replace("{{ISSUE}}", source))
+        if not REVIEW_POLICY_RE.search(content):
+            content = REVISION_RE.sub(lambda match: match.group(0) + "\n**Review policy:** Self", content, count=1)
+        managed = handoff or bool(os.environ.get("AIW_FD_ROLE_RUNNER", "").strip())
+        if not managed:
+            content = STATUS_RE.sub("**Status:** Design", content, count=1)
         atomic_text(target, content)
         if not (feature_dir(base) / "FEATURE_INDEX.md").exists():
             atomic_text(feature_dir(base) / "FEATURE_INDEX.md", FEATURE_NAVIGATION)
         update_index(base, ident)
-    emit(base, ident, "design-requested", "pm", target.relative_to(base).as_posix())
+    if managed:
+        emit(base, ident, "design-requested", "pm", target.relative_to(base).as_posix())
     print(f"created {ident}: {target}")
 
 
@@ -2034,7 +2075,8 @@ def resume(base: Path, name: str) -> None:
         raise FDError("archived FD cannot resume dispatch")
     item = latest_event(base, name)
     if not item:
-        raise FDError("FD has no event; use emit for a deliberate handoff")
+        print(f"{name}: {status(fd_path.read_text(encoding='utf-8'))}; no role handoff; continue from the FD")
+        return
     event_path, event = item
     current_revision = revision(fd_path.read_text(encoding="utf-8"))
     if current_revision != event["fd_revision"]:
@@ -2150,13 +2192,27 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
         latest = latest_event(base, name)
     original_content = content
     current = status(content)
-    if outcome == "Complete" and not force and current != "Complete":
+    needs_review = independent_review_required(base, name, content) if outcome == "Complete" and not force else True
+    if outcome == "Complete" and not force:
+        ensure_ready(content, "implementation-ready")
+    if outcome == "Complete" and not force and needs_review and current != "Complete":
         raise FDError("Complete requires a verification-passed event")
+    if outcome == "Complete" and not force and not needs_review:
+        if current not in {"Open", "In Progress", "Complete"}:
+            raise FDError("Self completion requires an Open, In Progress or Complete FD")
+        verification = re.search(r"(?ms)^## Verification[ \t]*\r?\n(.*?)(?=^## |\Z)", content)
+        if not verification or not verification.group(1).strip():
+            raise FDError("Self completion requires recorded Verification evidence")
+        if latest and (latest[1].get("target_role") == "reviewer"
+                       or latest[1].get("event_type") == "changes-requested"):
+            raise FDError("resolve the existing independent review before Self completion")
+        if latest and latest[1].get("dispatch_state") == "pending" and latest[1].get("target_role") != "pm":
+            raise FDError("complete or reconcile the pending role handoff before Self completion")
     if not force and outcome != "Complete" and current in {"Closed", "Deferred"}:
         raise FDError("FD is already closed or deferred")
     if not force and outcome != "Complete" and (not reason.strip() or any(char in reason for char in "\r\n")):
         raise FDError("Deferred and Closed require a one-line --reason")
-    if outcome == "Complete" and not force and (not latest or latest[1]["event_type"] != "verification-passed"
+    if outcome == "Complete" and not force and needs_review and (not latest or latest[1]["event_type"] != "verification-passed"
                                   or latest[1]["producer"] != "reviewer"
                                   or latest[1].get("forced")
                                   or latest[1]["fd_revision"] != revision(content)
@@ -2174,7 +2230,7 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
             raise FDError(f"archive destination parent is unsafe: {parent}")
         parent = parent.parent
     moves = evidence_moves(base, name)
-    if outcome != "Complete" or force:
+    if outcome != "Complete" or force or not needs_review:
         content = STATUS_RE.sub(f"**Status:** {outcome}", content, count=1)
         content = REVISION_RE.sub(f"**Revision:** {revision(content) + 1}", content, count=1)
     date_label = "Completed" if outcome == "Complete" else "Closed"
@@ -2228,7 +2284,8 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
                 })
                 force_audit["result_event"] = event
             else:
-                event["dispatch_state"] = "cancelled" if outcome != "Complete" else "acknowledged"
+                event["dispatch_state"] = ("acknowledged" if outcome == "Complete"
+                                           and latest[1].get("target_role") == "pm" else "cancelled")
             receipt_attempted = True
             atomic_json(event_path, event)
         update_index(base, name)
@@ -2279,9 +2336,10 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
 def main() -> int:
     parser = argparse.ArgumentParser(prog="aiw fd", description="FD-first role handoffs")
     commands = parser.add_subparsers(dest="command", required=True)
-    created = commands.add_parser("new", help="create a numbered FD and request Planner")
+    created = commands.add_parser("new", help="create a numbered FD; role handoffs are optional")
     created.add_argument("title")
     created.add_argument("--issue", default="")
+    created.add_argument("--handoff", action="store_true", help="create a Planner handoff even without a role runner")
     commands.add_parser("list", help="show the terminal FD table")
     shown = commands.add_parser("show", help="show an FD and its last handoff")
     shown.add_argument("fd_id")
@@ -2302,7 +2360,7 @@ def main() -> int:
     claimed.add_argument("--session", required=True)
     resumed = commands.add_parser("resume", help="resume a pending handoff safely")
     resumed.add_argument("fd_id")
-    review = commands.add_parser("request-review", help="request Reviewer for Pending Verification or archived Complete FD")
+    review = commands.add_parser("request-review", help="request independent review for a ready implementation or archived Complete FD")
     review.add_argument("fd_id")
     review.add_argument("--reason", required=True)
     refreshed = commands.add_parser("refresh-worker", help="replace a stale pending Worker handoff")
@@ -2350,7 +2408,7 @@ def main() -> int:
     try:
         base = root()
         if args.command == "new":
-            new_fd(base, args.title, args.issue)
+            new_fd(base, args.title, args.issue, args.handoff)
         elif args.command == "list":
             print(render_fd_list(base, color=supports_ansi_color()))
         elif args.command == "show":

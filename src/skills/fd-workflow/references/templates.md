@@ -1,111 +1,36 @@
-# FD templates and lifecycle
+# FD templates
 
-## FEATURE_INDEX.md
+Use the repository's docs/templates/TEMPLATE.md; the CLI fallback follows the
+same minimum structure. Keep the template short. New FDs start as Design in
+single-host use; managed dispatch uses the real design-requested transition.
 
-```markdown
-# Feature Design Index
+A routine FD needs:
 
-Each feature owns a folder with index.md, its FD design, reports/ and reviews/.
-Browse docs/features/ and docs/features/archive/; run aiw fd list for status.
-```
+- Status, Revision, Review policy: Self, Evidence policy: Markdown.
+- Problem, Solution, Scope and observable Acceptance.
+- Necessary numbered Work items, TODO and Verification.
 
-## FD file template
+Add options, interface details, compatibility analysis or a file inventory
+when they clarify a material decision. Keep Work Item IDs stable after work
+starts; explicitly cancel superseded items with reasons.
 
-```markdown
-# FD-XXX: Title
+Verification records planned checks first, then actual commands/results,
+skipped checks, risks and the short review-policy reason. Use Independent for
+the shared risk criteria or an explicit review request. Old FDs without that
+field retain their historical independent-review requirement. Do not remove
+existing Dual policy or rewrite old reports to fit the new defaults.
 
-**Status:** Open
-**Priority:** Low | Medium | High
-**Effort:** Low (< 1 hour) | Medium (1-4 hours) | High (> 4 hours)
-**Impact:** Brief description of what this enables
+## Navigation and completion
 
-## Problem
+Each FD owns its folder and index.md. FEATURE_INDEX.md is fixed navigation;
+aiw fd list supplies current status. Status stays in the design rather than
+a shared mutable status table.
 
-What we're solving and why it matters.
+Design is planning, Open is ready, In Progress is implementation, Pending
+Verification means independent review is requested, and Complete means the
+selected verification route is satisfied. Self completion does not claim an
+independent verdict. Complete, Closed and Deferred archives live under
+docs/features/archive/<FD-ID>/ with their matching evidence.
 
-## Solution
-
-How to implement it. Be specific about approach.
-
-## Files to Create/Modify
-
-| File | Action | Purpose |
-|------|--------|---------|
-| `path/to/file` | CREATE / MODIFY | What and why |
-
-## Verification
-
-How to test that it works. Concrete steps.
-
-## Related
-
-- Links to related FDs, docs, or issues
-```
-
-## CHANGELOG.md skeleton
-
-```markdown
-# Changelog
-
-All notable changes to this project will be documented in this file.
-
-The format is based on Keep a Changelog, and this project uses Semantic Versioning unless existing project conventions say otherwise.
-
-## [Unreleased]
-```
-
-When closing a Complete FD, add one concise entry under Added, Changed, Fixed, or Removed. End the entry with `(FD-XXX)`.
-
-## AGENTS.md section
-
-Append or merge this section into the repository's `AGENTS.md`:
-
-```markdown
----
-
-## Feature Design (FD) Management
-
-Features are tracked in `docs/features/`. Each FD owns `docs/features/FD-XXX/`, with `index.md`, its design, and evidence. `docs/features/FEATURE_INDEX.md` is fixed navigation; use `aiw fd list` for status.
-
-### FD Lifecycle
-
-| Stage | Description |
-|-------|-------------|
-| **Planned** | Identified but not yet designed |
-| **Design** | Actively designing |
-| **Open** | Designed and ready for implementation |
-| **In Progress** | Currently being implemented |
-| **Pending Verification** | Code complete, awaiting verification |
-| **Complete** | Verified working and ready to archive |
-| **Deferred** | Postponed or blocked |
-| **Closed** | Will not be implemented |
-
-### FD Operations
-
-Use the `fd-workflow` skill for:
-
-- `init` — initialize or repair FD tracking
-- `new` — create a feature design
-- `explore` — inspect project, FD history, and recent activity
-- `deep` — four-angle deep analysis with claim verification
-- `status` — reconcile and report FD status
-- `verify` — review and verify implementation
-- `close` — complete/close/defer and archive an FD
-
-### Conventions
-
-- FD files: `docs/features/FD-XXX/FD-XXX_TITLE.md`
-- Default commit format: `FD-XXX: Brief description` unless repository history shows another convention
-- Numbering: highest known FD number + 1
-- Source of truth: FD file status; indexes contain navigation only
-- Archive: Complete, Closed, and Deferred FDs move to `docs/features/archive/`
-
-### Folder indexes
-
-Each FD owns its navigation page. Keep status in the FD design and read it
-through `aiw fd list`; never maintain a shared status table during execution.
-
-### Inline annotations (`%%`)
-
-Lines beginning with `%%` in FD/design documents are direct user annotations. Address every annotation; remove it after it is resolved. Preserve and report annotations that require an unresolved decision rather than guessing.
-```
+Update a changelog only when the repository uses one. Preserve explicit Git
+and stage limits. Local completion does not grant push, publication or deployment.

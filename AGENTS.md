@@ -21,7 +21,8 @@ The numbered FD is the primary plan for new work. An OpenSpec change is optional
 - Update stable specs or design notes only when their requirements or decisions
   changed.
 
-Before implementing any numbered FD, use its dedicated branch and worktree:
+By default, implement each numbered FD in its dedicated branch and worktree.
+An explicit primary-workspace instruction skips their creation:
 
 - branch: `feature/<fd-id>`
 - worktree: `.wt/<fd-id>`
@@ -32,7 +33,7 @@ while the FD is in flight when possible; a dirty parent blocks merge until it
 is clean again. Do not mix unrelated changes into the FD plan commit.
 
 A request to implement a numbered FD includes its normal local lifecycle:
-focused plan/implementation commits, independent review, squash delivery to
+focused plan/implementation commits, self-checks or required independent review, squash delivery to
 the recorded parent, verified worktree cleanup, and Complete archive plus
 archive commit. Continue automatically when the current review and delivery
 gates pass; no second `auto` request is needed. Explicit planning-only,
@@ -45,6 +46,13 @@ resolutions. If any conflict remains uncertain or unsafe, preserve the merge
 state without abort/reset or partial commit. Follow the shared recovery and
 fresh-review requirements before retrying delivery.
 This scope excludes push, release, deployment, tests, builds, and network.
+
+New FDs use `**Review policy:** Self`. Require `Independent` for material public
+interface, permission/auth, persistence/migration, concurrency or cross-module
+effects, uncertain impact, or an explicit review request. A handoff does not
+trigger review. Unmarked historical FDs and legacy Independent Tester FDs
+retain independent review. Record routine progress, self-checks and blockers
+in the FD; commit coherent changes rather than every Work Item separately.
 
 ## Resource Budget
 
@@ -69,8 +77,9 @@ command after inspecting its invoked code and recording the exact scope and
 revision-bound decision. This is an explicit exception to the zero-test
 default, not permission for broader validation.
 Place repository test code under the root `tests/` directory.
-For new FD reports, write human-readable Markdown in Chinese and a same-name
-JSON sidecar for machine/AI fields. Keep historical reports unchanged.
+New routine FDs use Markdown evidence. Write authored reports in Chinese; add
+a same-name JSON sidecar when Dual policy or a machine consumer requires it.
+Keep historical reports unchanged.
 
 Before the first edit, use no more than three targeted discovery batches unless
 the task is genuinely blocked. Batch related reads and searches. Read relevant
@@ -283,7 +292,8 @@ prefer `scripts/compile*` or root `compile*`, otherwise run the narrowest
 applicable `go build` command without retaining a final artifact. Do not run
 `scripts/verify.sh`, tests, vet, `build*` scripts, or final-artifact builds.
 
-For Go work, use the current compile result and an independent static review.
+For Go work, use the current compile result and static review; use a separate
+Reviewer when the FD's risk or an explicit request requires independence.
 Do not create or run Go tests. Runtime validation still requires the shared
 resource budget's explicit authorization.
 

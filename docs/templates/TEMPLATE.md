@@ -3,19 +3,16 @@
 **Status:** Planned  
 **Revision:** 1  
 **Priority:** Medium
-**Evidence policy:** Dual
+**Review policy:** Self
+**Evidence policy:** Markdown
 
 ## Problem
 
 %% NEEDS_INPUT: Describe the problem and affected people.
 
-## Options and decision
-
-%% NEEDS_INPUT: Compare options and record the chosen approach.
-
 ## Solution
 
-%% NEEDS_INPUT: Describe boundaries, compatibility, data and permission effects, and the chosen approach.
+%% NEEDS_INPUT: Describe the approach; add interface or compatibility details only when needed.
 
 ## Scope
 
@@ -25,21 +22,20 @@
 
 - [ ] 1.1 Define the first independently reviewable outcome and its acceptance evidence.
 
-Keep item numbers stable after implementation starts. Use `- [-]` only for an
-explicitly cancelled item, with its reason on the same line.
-
 ## Acceptance
 
 %% NEEDS_INPUT: List observable success, failure and recovery behavior.
 
 ## Verification
 
-- Compile-only check and static review by default; record unrun tests explicitly.
-- For explicitly requested test support (any wording/language), record suitable
-  TDD scope, independent fd-test scope, command/revision authorization and finite
-  budget here. Otherwise no testing stage is added. On exhausted unexpected-
-  failure budget, stop affected test repair/execution, diagnose statically and
-  continue independent work; unresolved acceptance defects still block delivery.
+- Plan static/compile checks, then record actual results, skipped checks and risks.
+- Use Independent for material interface, permission, persistence, concurrency
+  or cross-module effects, uncertain impact, or an explicit review request.
+- Test support needs an explicit request and its command/revision authorization.
+
+## TODO
+
+Record remaining work and blockers, or none. Keep Work Item IDs stable.
 
 ## Sources
 

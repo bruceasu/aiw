@@ -19,7 +19,8 @@ OpenSpec change.
 #### Scenario: Create a new FD
 
 - **WHEN** a title is supplied to `aiw fd new`
-- **THEN** a non-reused ID, FD folder, design, local index, and Planner handoff are created.
+- **THEN** a non-reused ID, FD folder, Design record and local index are created.
+- **AND** a Planner handoff is added only for --handoff or a configured role runner.
 
 ### Requirement: Navigation with optional bounded consultation
 
@@ -93,99 +94,111 @@ handoff MUST cite the claimed event ID.
 
 ### Requirement: Evidence-based completion
 
-Worker MUST resolve all scoped Work Items before handing off implementation.
-An independent Reviewer MUST record a report for either changes-requested or
-verification-passed. Completion MUST NOT imply an unrun check passed.
+Worker MUST resolve all scoped Work Items and record actual Verification
+evidence before whole-FD completion. Skipped checks MUST NOT be labelled passed.
+The FD SHOULD hold routine progress, self-checks, risks and blockers; a separate
+Worker report is required only for a real delegated/machine handoff or an
+explicit report request. Small FDs MAY use one implementation commit.
 
-New FDs MUST declare Evidence policy: Dual and MUST NOT declare
-Test policy: Independent. For a new/default FD, implementation-ready MUST
-route directly to Pending Verification and an independent Reviewer. Before
-handoff, Worker MUST perform the repository-authorized compile-only check and
-static review. The default workflow MUST NOT require test execution, coverage
-metrics, a Tester report, a PM test-report decision, or risk-assessor reports
-as acceptance evidence.
+New FDs MUST declare Review policy: Self and default to Evidence policy:
+Markdown. Independent review MUST be selected for material public-interface,
+permission/auth, persistence/migration, concurrency or cross-module effects,
+uncertain impact, or an explicit user review request. The selection needs only
+a short reason in Verification. Role handoffs and Work Items MUST NOT each
+trigger review. Independent review occurs once before delivery; rechecks focus
+on findings, fixes and affected behavior. Historical FDs without a review
+policy and legacy Independent Tester FDs MUST retain independent review.
 
-Users MAY invoke standalone fd-test or request FD test support using any
-equivalent natural-language wording, including with test or 带测试. Selected
-support MUST use suitable core-rule TDD during implementation and an independent
-fd-test round before implementation-ready, respecting narrower user limits.
-Assigned test code belongs under root tests/. Execution MUST retain repository
-command, revision, language and side-effect authorization. Reports MAY contain
-scenario counts and coverage, but MUST NOT emit FD events, change status, add
-automatic acceptance thresholds or introduce risk voting. Worker/PM/Reviewer
-MAY inspect relevant facts and MUST NOT ignore confirmed acceptance defects
-merely because testing is optional. No default test stage is added.
+A Self FD with resolved numbered Work Items, no blocking NEEDS_INPUT notes,
+actual Verification evidence and no unresolved role execution MAY close
+Complete from Open, In Progress or Complete without a Reviewer event or force.
+Self-check completion MUST NOT generate a Reviewer verification-passed event.
+For managed Self work, implementation-ready MUST route to PM/Complete.
+For Independent work it MUST route to Reviewer/Pending Verification, whose
+current unforced verification-passed event MUST match FD revision and content
+before normal Complete archive. Existing review requests/findings MUST NOT
+be silently downgraded or represented as self-checked acceptance.
 
-For a Dual-evidence FD, each new Worker and Reviewer report MUST have a Chinese
-Markdown file and a same-basename JSON sidecar. Markdown MUST contain one
-aiw-data reference. JSON MUST use schema aiw.fd.evidence.v1, name the FD,
-evidence kind, exact source event, and Markdown filename, and place machine
-fields under data. Both sides MUST use same-directory filenames so their
-links remain valid after archive. The CLI MUST reject missing, invalid, or
-mismatched JSON before a role handoff. Historical Markdown-only evidence
-remains intact.
+Reviewer request/outcome history MUST preserve that FD's independent-review
+requirement across Worker refresh/recover chains. Editing the Review policy
+to Self MUST NOT erase the recorded gate. Explicit force recovery remains
+separately audited and MUST NOT become normal Self completion.
 
-Existing FDs that already declare Test policy: Independent MAY continue using
-their recorded legacy CLI Tester events and validation behavior, including
-refresh-tester. Those compatibility paths MUST NOT become the default for new
-FDs, and their test reports are not Reviewer inputs. Archiving as Complete
-without an explicit force override MUST require the current Reviewer's
-verification-passed event with the same FD revision and content digest, not
-only editable FD status text.
+Without a runner, new MUST create a Design FD without a role handoff by default.
+An explicit --handoff or configured runner MUST retain managed Planner/Worker
+dispatch and receipt ownership. Single-host work MAY continue directly from
+the FD without stage claims or a separate Worker report. Request-review MUST
+accept a ready active Open/In Progress/Complete FD, select Independent and
+create the Reviewer handoff without requiring a forced status operation.
+Self-completed archives MUST remain available for later explicit review.
 
-Closing an FD MUST store its design at
-docs/features/archive/<FD-ID>/<FD-ID>_SLUG.md and move its matching Markdown
-and JSON implementation and review evidence into that directory's reports/
-and reviews/ subdirectories. It MUST reject a destination collision before
-moving any file and MUST leave other FDs' files in place. Re-review of an
-archived FD MUST retain earlier archived evidence; a later close moves any
-newly written evidence into the same FD directory.
+New FDs MUST NOT declare Test policy: Independent by default. Tests, coverage,
+Tester reports, PM test votes and risk assessors MUST NOT become default
+acceptance gates. Explicit test support selects suitable core-rule TDD and
+independent fd-test support before readiness, under exact command/revision,
+language and side-effect authorization and finite budgets. Assigned tests
+belong under root tests/. Reports supply facts without status changes,
+automatic thresholds or acceptance voting. Confirmed defects and material
+unknowns MUST NOT be ignored. Existing Independent Tester FDs retain their
+legacy event/refresh-tester validation and independent-review route.
 
-#### Scenario: Default implementation handoff goes to review
+Existing or explicitly selected Dual evidence MUST retain Chinese Markdown
+plus same-basename JSON with one aiw-data reference, schema aiw.fd.evidence.v1,
+matching FD, kind, source event and Markdown filename, and machine fields under
+data. CLI handoffs MUST reject invalid/missing/mismatched required sidecars.
+Routine blockers belong in the FD; separate feedback reports are needed only
+when requested, required by a consumer/repository rule, or necessary for
+substantial delivery-recovery evidence. Historical evidence stays unchanged.
 
-- WHEN Worker completes a new/default FD and emits implementation-ready
-  after compile-only and static checks
-- THEN the CLI routes directly to an independent Reviewer
-- AND the workflow requires no Tester report, coverage threshold, PM
-  test-report decision, or assessor report
+Closing MUST archive the design under
+docs/features/archive/<FD-ID>/<FD-ID>_SLUG.md and move matching reports/reviews
+and sidecars into that FD directory. Reject collisions before moving files,
+preserve other FDs and historical evidence, and keep both sides of dual reports
+together. Local archive MUST NOT imply release or deployment approval.
 
-#### Scenario: Optional fd-test supplies facts without owning acceptance
+#### Scenario: Routine completion uses self-checks
 
-- WHEN a user invokes fd-test for an FD
-- THEN it records requested scenarios and any authorized test results in
-  an optional factual report
-- AND it does not change the FD status or create an acceptance handoff
-- AND relevant facts and defects may be read by Worker/PM/Reviewer without
-  adding automatic coverage thresholds or a separate test acceptance vote
+- WHEN a new Self FD resolves all Work Items and records actual Verification
+- THEN normal Complete archive requires no independent Reviewer or force
+- AND no independent pass is invented; incomplete scope and unknowns still block
 
-#### Scenario: Legacy Tester CLI remains compatible
+#### Scenario: Risk or explicit request requires independent review
 
-- WHEN an existing FD already carries Test policy: Independent
-- THEN its existing Tester events and refresh-tester command remain
-  available under the legacy CLI contract
-- AND newly created FDs do not receive that policy by default
+- WHEN a ready FD requires Independent review or the user requests it
+- THEN one separate Reviewer inspects the combined implementation and evidence
+- AND current matching independent evidence gates normal completion
+- AND a role handoff or completed Work Item alone does not request another review
 
-#### Scenario: Review fails
+#### Scenario: Optional managed handoffs retain ownership
 
-- WHEN Reviewer emits changes-requested with a report
-- THEN the FD returns to In Progress and Worker receives the report.
+- WHEN new is invoked without a runner or --handoff
+- THEN only a Design record and local navigation are created
+- WHEN managed handoffs are selected
+- THEN explicit events, exact claims and in-flight ownership remain enforced
 
-#### Scenario: Dual evidence handoff and archive
+#### Scenario: Historical policies remain compatible
 
-- WHEN a Dual evidence role emits a report with matching Chinese Markdown
-  and structured JSON
-- THEN the CLI validates their references and event binding, records the
-  Markdown artifact, and a later close archives both files together
-- AND missing or mismatched JSON blocks the handoff without changing FD
-  state; historical Markdown-only reports remain intact
+- WHEN an existing FD has no Review policy or uses legacy Independent testing
+- THEN independent review remains required
+- AND existing Dual evidence and legacy Tester validation remain available
 
-#### Scenario: Close archives its evidence
+#### Scenario: Refresh cannot discard required review
 
-- WHEN an FD is closed with the required lifecycle evidence
-- THEN its available implementation and review reports are archived with
-  the FD, while reports for other FDs stay in the active directories
-- AND an existing archive destination prevents the close from overwriting
-evidence.
+- WHEN a failed review is followed by policy edits and Worker refresh/recovery
+- THEN the historical Reviewer request/outcome still requires independent review
+- AND Self implementation-ready or close cannot bypass that requirement
+
+#### Scenario: Optional test support supplies facts
+
+- WHEN test support is explicitly requested
+- THEN its scoped evidence and authorized results inform acceptance
+- AND no automatic coverage threshold, test vote or default execution is added
+
+#### Scenario: Archive preserves evidence
+
+- WHEN a Self or Independent FD satisfies its applicable completion gate
+- THEN matching evidence is archived together and destination collisions block
+- AND a later review of a Self-completed archive retains its historical evidence
 
 ### Requirement: Read-only FD status and evidence inspection
 
@@ -288,31 +301,29 @@ remain unchanged. Task-owned FD archive layouts MUST remain unchanged.
 
 ### Requirement: Persistent automatic workflow blocker feedback
 
-When an automatic FD lifecycle stops at a Gate, its operator MUST record the
-observed blocker in a separate FD-prefixed Markdown report and same-basename
-JSON sidecar under `docs/features/<FD-ID>/reports/`. The pair MUST identify FD,
-stage, role, source event when one exists, observed facts, confirmed cause or
-unknown, actual recovery attempts, resolved or unresolved state, human
-decision need, and a reusable improvement suggestion or none. An unresolved
-blocker MUST remain explicitly unresolved until its actual resolution is
-recorded. A later automatic resume and pre-archive check MUST inspect the FD's
-feedback and identify reusable improvements. Feedback MUST NOT require editing
-the FD body or receipt while a handoff is active, nor authorize a Gate bypass,
-test execution, or rule change. FD-prefixed feedback files MUST follow the
-existing per-FD evidence archive path; historical evidence remains valid.
+Routine blockers MUST be recorded in the FD's TODO or Verification with facts,
+actual attempts, unresolved questions and next actions. Blocking unknowns MUST
+use NEEDS_INPUT and stay unresolved until evidence supports resolution. Separate
+feedback reports are required only when requested, required by a repository
+rule or machine consumer, or needed for substantial delivery-recovery evidence.
+Selected Dual policy retains matching Chinese Markdown/JSON sidecars.
 
-#### Scenario: Stop, resume, and archive
+Resume and pre-archive checks MUST inspect existing notes/reports and preserve
+relevant failure history. Feedback MUST NOT edit a foreign/in-flight role's FD
+or receipts, authorize retries, tests, rule changes or gate bypasses, or falsely
+claim a resolution. Existing feedback follows its normal per-FD archive layout.
 
-- **WHEN** automatic processing stops at a Gate and later resumes
-- **THEN** the operator records known facts and unresolved status, then
-  checks the feedback on resume and adds any evidenced resolution.
-- **AND** closing the FD moves its Markdown and JSON feedback with its other
-  `reports/` evidence, without changing an earlier handoff digest.
+#### Scenario: Ordinary blocked work
+
+- WHEN a routine single-host FD cannot continue
+- THEN the host records the blocker and next step in that FD
+- AND no standalone feedback pair is added without a concrete consumer need
+- AND resolution updates preserve useful observed failure history
 
 ### Requirement: Diagnose failed delivery before parent synchronization
 
-The normal isolated FD lifecycle MUST preserve independent implementation and
-review, attempt `local-merge` directly, and MUST NOT proactively sync the parent
+The normal isolated FD lifecycle MUST preserve implementation and applicable
+self-check/independent verification, attempt `local-merge` directly, and MUST NOT proactively sync the parent
 into every FD. A clean parent advancing alone MUST NOT invalidate unchanged
 reviewed FD work or force the parent to become an ancestor of the FD branch.
 After a delivery failure the host MUST preserve full output and diagnose the
@@ -328,10 +339,10 @@ feedback. The host MUST NOT abort, reset, force a side, commit a partial merge,
 or bypass stage limits and runtime budgets. Staging or committing MUST NOT be
 represented as semantic conflict resolution.
 
-If recovery changes implementation outside the current passed review, the
-host MUST record the recovery commit/diff and obtain a fresh independent
-review through existing managed status/request-review operations before retrying
-delivery. It MUST preserve historical reports, stage limits, exact role
+After recovery, the host MUST record the recovery commit/diff and refresh Self
+verification evidence. If Independent work changed outside its current pass,
+it MUST obtain fresh focused independent review through request-review before
+retrying delivery. It MUST preserve historical reports, stage limits, exact role
 ownership and the cumulative active-cycle review limit. A dirty workspace or
 failed cleanup MUST NOT be treated as a reason to blindly sync or create a
 second squash. Successful local-merge cleans Git resources; the host MUST
@@ -339,7 +350,7 @@ separately close and commit the FD archive.
 
 #### Scenario: Clean direct delivery
 
-- **WHEN** an independently reviewed FD and its recorded parent are clean
+- **WHEN** an FD has its applicable self-check/independent evidence and its recorded parent is clean
 - **THEN** the host attempts local-merge without a mandatory parent sync
 - **AND** successful verified delivery/cleanup is followed by close and archive commit.
 
@@ -349,14 +360,14 @@ separately close and commit the FD archive.
 - **THEN** the host loads resolving-merge-conflicts for one bounded resolution attempt
 - **AND** uncertain or unsafe conflicts preserve the merge state and stop recovery
 - **AND** it inspects and resolves each conflict before staging or committing
-- **AND** recovered implementation outside the prior pass needs fresh independent review
+- **AND** recovery refreshes Self evidence or obtains fresh required Independent review
   before retry; a no-op sync or successful commit is not proof of a correct resolution.
 
 ### Requirement: One FD skill entry owns implementation routing
 
 The host MUST use `fd-workflow` for numbered FD design and implementation.
-Its Worker stage MUST load `references/implementation.md` and its Worker role
-as needed. The implementation method MUST NOT be a separately discoverable
+Its Worker stage MUST load `references/implementation.md`; a separate Worker
+role prompt is needed only for a real delegated or managed handoff. The implementation method MUST NOT be a separately discoverable
 Skill or call back into a duplicate implementation entry. The retired standalone
 entry MUST NOT retain a compatibility alias in canonical or project skills.
 Current routing, installation examples and the project installed-skills index
@@ -366,8 +377,8 @@ installations MUST NOT be rewritten as part of this repository consolidation.
 Natural-language implementation-only, partial-item, review-only and no-merge
 requests MUST preserve their existing stage/scope boundaries before any
 next-role dispatch. No new CLI flags are implied. Normal full-FD implementation
-MUST retain independent review, automatic local completion and bounded conflict
-recovery under the shared contract; design discussion alone MUST NOT implement.
+MUST retain self-checks or required independent review, automatic local completion
+and bounded conflict recovery; design discussion alone MUST NOT implement.
 
 #### Scenario: Implement only through the unified entry
 
@@ -383,103 +394,70 @@ recovery under the shared contract; design discussion alone MUST NOT implement.
 
 ### Requirement: Bounded host-operated automatic FD lifecycle
 
-A human request to implement one numbered FD MUST default to its normal local
-lifecycle without a second `$fd-workflow auto` or merge confirmation. The host
-agent prepares or resumes that FD, commits its ready plan, implements its scope,
-requests independent review, and continues delivery/archive when gates pass.
-Explicit auto/full-lifecycle requests remain supported. Planning-only,
-implementation-only, review-only, selected-item, and no-merge limits MUST take
-priority; a partial FD MUST NOT be delivered or archived as complete.
-It MUST commit each completed, independently reviewable Work Item with only
-that item's changes and MUST NOT rebase either branch as part of the workflow.
-After review, local delivery MUST squash the FD result into one single-parent
-commit on the recorded parent branch, with the delivered FD HEAD recorded as
-`FD-Source`. The parent MUST NOT inherit the FD's individual Work Item commits.
-Before automatic delivery, all FD scope MUST be complete with no unresolved
-blocker, current independent review MUST cover the implementation, the event
-MUST match FD revision/digest, and recorded coordinates and clean FD/parent
-workspaces MUST be verified. After delivery, `local-merge` MUST verify the
-single-parent squash and matching FD-Source before its worktree/branch cleanup;
-the host MUST then close Complete and commit only archive/index changes.
-For explicitly selected primary-workspace implementation, the host MUST use
-focused commits and the managed independent review/archive route without
-creating a worktree, inventing Worker receipts, or merging unrelated changes.
-The operation MUST use the existing role receipt, exact claim, source-event,
-revision, and digest gates. The Reviewer MUST run in a separate subagent; the
-PM/Planner/Worker host MUST NOT emit the review result. Without an explicit
-test-support selection the default lifecycle MUST NOT dispatch testing. Selected
-support MAY delegate one bounded independent fd-test assignment before the
-normal Worker handoff, without a Tester event or test-report assessor. Legacy Tester CLI events
-remain available only for FDs that already use that compatibility path. No more than three
-Reviewer outcome events MAY occur in one active implementation cycle, even if
-the auto operation is resumed. After a third `changes-requested`, the FD MUST
-remain active with its findings. The operation MUST stop for missing human
-decisions, authorization, subagent capability, or an in-flight/foreign-claimed
-handoff. Dispatched roles MUST remain within their assignments; host PM owns
-continuation. Dirty workspaces, stale evidence, unresolved blockers, merge
-conflicts left unresolved after the bounded Skill attempt, failed
-delivery/cleanup, or archive rejection MUST stop the affected stage, preserve
-state, and produce blocker feedback. Clearly supported conflict resolution
-MAY proceed under the full FD lifecycle authorization, but delivery MUST NOT
-retry until recovery and the required current independent review are complete.
-The implementation request authorizes only the FD's focused local commits,
-reviewed squash delivery, verified cleanup, and successful-delivery archive.
-It MUST NOT authorize restricted validation, network/downloads, push, release,
-deployment, privilege changes, or bypassing evidence gates.
+A full numbered-FD implementation request MUST include its authorized normal
+local lifecycle without another auto or merge confirmation. The host plans,
+implements, self-checks, obtains independent review when required, and continues
+delivery/cleanup/archive when the applicable gates pass. Explicit planning-only,
+implementation-only, review-only, partial-item, no-commit and no-merge limits MUST
+take priority. Incomplete scope MUST NOT be delivered or archived as complete.
 
-#### Scenario: Ordinary implementation completes without another auto request
+Commits MUST contain coherent scoped changes; a small FD MAY use one
+implementation commit. Neither branch is rebased. Isolated delivery MUST
+squash to the recorded parent as a single-parent commit with FD-Source equal
+to the clean FD HEAD, verify coordinates and clean workspaces, and safely
+clean up only verified resources. The host then closes and commits the archive
+when authorized. Direct-workspace execution skips worktree creation/delivery.
 
-- **WHEN** a normal full FD implementation has a current independent pass,
-  complete scope, no unresolved blocker, clean workspaces and verified coordinates
-- **THEN** host PM automatically delivers, allows verified CLI cleanup, archives
-  Complete and commits the archive/index without another human confirmation
+Before delivery, require complete scope, no unresolved blocker, actual self-check
+evidence or a current matching independent pass, and applicable workspace gates.
+Existing managed handoffs MUST retain exact claims, source events and matching
+revisions/digests. Single-host work without handoffs MUST NOT invent them.
+Required Reviewer uses a separate session; its host MUST NOT fabricate that
+verdict. Missing independent capability blocks only work that needs it.
 
-#### Scenario: Explicit stage limit or failed delivery gate
+Tests remain explicitly selected and separately authorized. Preserve optional
+TDD/fd-test budgets and legacy Tester compatibility. Independent review history
+and the maximum of three failed review outcomes MUST survive resumes; repairs
+and rechecks focus on findings and affected behavior. A third failed review or
+no safe actionable repair stops further automatic repair.
 
-- **WHEN** the user limits the stage, or a required delivery condition fails
-- **THEN** the host honors that boundary, preserves state and reports remaining
-  work rather than automatically widening scope, overriding the gate or retrying
-- **AND** stage limits MUST be checked before emitting a next-role event,
-  invoking a runner or requesting managed review; implementation-only/no-review
-  and partial-item scopes without review authorization stop after scoped evidence,
-  while no-merge can permit review but MUST stop delivery
-- **AND** implementation-ready MUST require the whole FD implementation scope
-  to be complete; separately authorized partial review MUST NOT mark an unfinished
-  FD ready or emit its full-FD completion/review handoff
+Missing decisions/authority, foreign or unknown in-flight ownership, stale
+required evidence, dirty delivery workspaces, unresolved conflicts or failed
+delivery/cleanup/archive stop the affected stage. Record blockers proportionately.
+For actual conflicts, the authorized bounded recovery may proceed; refresh Self
+evidence or obtain fresh required independent review before retry. A successful
+delivery with failed cleanup MUST NOT cause a second squash or rollback.
 
-#### Scenario: Review findings are repaired and the next review passes
+This scope excludes restricted runtime checks, network/downloads, push, release,
+deployment, privilege changes and evidence-gate overrides.
 
-- **WHEN** the first independent Reviewer subagent requests changes and the
-  Worker repairs the findings under the next claimed handoff
-- **THEN** a new implementation-ready event requests another independent
-  review, and a current verification-passed event permits Complete archive
+#### Scenario: Ordinary implementation completes automatically
 
-#### Scenario: Three reviews request changes
+- WHEN a full FD has complete scope, applicable self-check/independent evidence,
+  no blocker and verified clean delivery coordinates
+- THEN host continues delivery, cleanup and archive without another confirmation
+- AND explicit Git/stage limits still take priority
 
-- **WHEN** the third Reviewer outcome for an active implementation cycle is
-  changes-requested
-- **THEN** automatic repair/review stops, preserves all reports, and does not
-  claim the new Worker handoff, archive, or synthesize a passing event
+#### Scenario: Independent findings require a focused recheck
 
-#### Scenario: Auto resumes after the third failed review
+- WHEN Reviewer requests changes and Worker repairs them
+- THEN recheck covers those findings, fixes and affected behavior
+- AND refresh/recover or policy edits do not erase the recorded review requirement
+- AND the third failed outcome stops automatic repair without a fabricated pass
 
-- **WHEN** a later auto invocation finds an In Progress FD whose latest
-  changes-requested handoff was left pending after the review limit
-- **THEN** it checks the prior Reviewer outcomes and report before claim,
-  leaves the Worker handoff pending, and reports the human-directed Gate
+#### Scenario: Required independent capability is unavailable
 
-#### Scenario: Reviewer subagent cannot start
-
-- **WHEN** the host lacks a separate subagent capability or the Reviewer
-  handoff is already owned by another session
-- **THEN** auto stops at the recorded handoff without self-review or a
-  duplicate writer
+- WHEN an Independent FD cannot obtain a separate Reviewer session
+- THEN its review stops with preserved state
+- AND unrelated Self work may continue under its own authorization
 
 ### Requirement: Re-review a completed FD
 
 An operator MUST be able to request an explicit review of an archived Complete
-FD with a one-line reason. The operation MUST require an acknowledged latest
-Reviewer `verification-passed` receipt, create a new `review-requested` event
+FD with a one-line reason. For Independent or unmarked historical work, the operation MUST require an
+acknowledged latest Reviewer `verification-passed` receipt. A Self-completed
+archive does not need prior Reviewer evidence. Both routes MUST select
+Independent, create a new `review-requested` event
 for the current FD content, increment its revision, return it to the active
 feature directory as `Pending Verification`, and update its local navigation. It MUST
 preserve the prior completion date and MUST NOT modify Work Item checkboxes.
@@ -499,7 +477,7 @@ the existing `verification-passed` or `changes-requested` event.
 #### Scenario: Reject re-review without completion evidence
 
 - **WHEN** an archived FD is not Complete, the reason is invalid, or the
-  latest acknowledged Reviewer pass is missing
+  required latest acknowledged Reviewer pass is missing
 - **THEN** the request fails without creating an event or changing the FD
 
 ### Requirement: Reopen a closed or deferred FD
@@ -773,7 +751,7 @@ Complete, Deferred, and Closed behavior remains unchanged without `--force`.
 
 #### Scenario: Override terminal state truthfully
 
-- WHEN an operator forces Complete without normal review evidence
+- WHEN an operator forces an Independent FD Complete without normal review evidence
 - THEN status/revision/index and audit change, without review evidence or archive
 - AND normal Complete close still rejects absent or forced review evidence
 
@@ -805,21 +783,20 @@ project Skill catalogs. Retiring those instructions MUST NOT delete historical
 FD evidence, mutate user-level installations or claim removal of existing CLI
 implementations. Existing CLI compatibility specifications remain descriptive.
 
-Planner MUST use stage-specific planning guidance, compare credible options,
-map acceptance to small Work Items, resolve material prerequisites and load
+Planner MUST use proportionate planning guidance, compare options when a real
+decision needs them, keep acceptance and Work Items clear, resolve prerequisites and load
 specification-writing methods only when settled capability rules change.
 Stable specs MUST distinguish proposed rules from implemented behavior. New
 OpenSpec changes require explicit requests; tasks.md MUST NOT be a second plan.
 A later material decision change MUST reconcile FD/specs/items before renewed
 implementation review. Discussion or design-only authority MUST NOT implement.
 
-Important interface/compatibility, persistence/migration, permission or
-concurrency design decisions, or an explicit human request, MUST receive
-bounded independent design feedback when progressing through authorized
-design. Unresolved findings MUST prevent design-ready. A missing independent
-agent MUST be reported as a required-design-review gate. Simple internal
-changes MAY omit that extra stage with a reason. Design feedback MUST NOT
-produce implementation verification events or grant runtime/high-risk authority.
+Independent design feedback MAY be selected for an explicit human request
+or a concrete unresolved design question. Risk alone MUST NOT add a second
+mandatory review before the final implementation review. Material decisions
+and findings MUST be resolved before design-ready. Missing requested capability
+MUST remain explicit. Design feedback MUST NOT produce implementation
+verification events or grant runtime/high-risk authority.
 
 fd-review MUST inspect actual implementation and relevant call paths, covering
 Correctness, Standards, Spec and Evidence with the shared method. It MUST own
@@ -855,8 +832,8 @@ An FD reference is optional for assessment of other implemented changes.
 
 #### Scenario: Design feedback precedes implementation
 
-- WHEN an authorized design introduces material permission or data decisions
-- THEN a separate bounded design Reviewer provides findings and readiness evidence
+- WHEN an explicit request or unresolved design question selects design review
+- THEN one bounded independent Reviewer supplies focused design feedback
 - AND Planner resolves material findings before design-ready, without emitting
   an implementation verification-passed event from that design report.
 
