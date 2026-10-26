@@ -149,48 +149,69 @@ distinct report names. Read fd-workflow handoff guidance for these rare paths.
 
 ## Workspace, delivery and archive
 
-Plan in the primary workspace. Default implementation uses feature/<fd-id>
-and .wt/<fd-id>; an explicit primary-workspace instruction skips worktree
-creation and workspace metadata. Workspace selection grants no implementation
-or runtime authority. Preserve unrelated edits and all user Git/stage limits.
+Select the workspace before writing an FD plan:
 
-Before aiw git wt add, commit the ready scoped plan and require a clean parent.
-Do not commit unrelated changes without separate authority. Ensure .wt/ and
-.ai/ are ignored. Verify fd_id, parent_branch, branch and worktree in the
-recorded workspace.json. Keep each writing role in one workspace at a time.
+- Outside Git, stay in the current workspace. Do not initialize Git, create a
+  worktree or run commit/merge/cleanup operations. Keep FD/runtime evidence local.
+- Inside Git, stay in the current workspace by default. A worktree requires
+  explicit user intent to use one or an explicit auto request.
+- Explicit auto inside Git runs the entire authorized FD process in its
+  worktree: planning, implementation, required review, evidence and archive.
+  Ordinary automatic continuation of a full implementation request is not
+  itself an auto workspace selection.
 
-A full FD implementation request authorizes scoped plan/implementation commits,
-the selected review route, local squash delivery to the recorded parent,
-verified cleanup, and archive/index commit. Planning-only, implementation-only,
-review-only, partial-item, no-commit and no-merge limits take priority. Check
-them before dispatching any next role, not just before merge.
+Reuse valid existing FD workspace coordinates when resuming; never abandon an
+in-flight worktree or silently switch auto back to the parent. A workspace
+choice grants no extra runtime/stage authority. More specific no-commit,
+no-merge and stage limits prevail.
 
-Before isolated delivery, require all scope complete, no unresolved blocker,
-current self-check evidence or required independent pass, matching workspace
-coordinates and clean FD/parent workspaces. Use aiw git wt local-merge directly;
-do not proactively sync every FD. A clean advancing parent alone does not
-invalidate unchanged reviewed work. The CLI verifies the single-parent squash,
-FD-Source against clean FD HEAD and recorded coordinates before safe cleanup.
-Keep receipts; remove only a verified .ai junction link, never its target.
+Resolve recorded worktree coordinates before looking for the FD only on the
+parent. An archived Complete FD with retained workspace metadata still needs
+delivery/cleanup or reconciliation; it is not fully complete. Resume reports
+that management step without redispatching completed roles. Stale or unsafe
+metadata blocks the affected recovery rather than silently selecting the parent.
 
-Diagnose delivery errors before retry. For an actual conflict, load
-resolving-merge-conflicts for one bounded resolution supported by the FD and
-both histories. Preserve uncertain merges; do not abort/reset, choose sides
-blindly or commit partial resolutions. If CLI already started the parent merge,
-do not sync again. Any separately needed sync names the recorded parent.
-Do not rebase. Refresh self-check evidence after recovery; if Independent work
-changed beyond its pass, obtain a fresh focused independent review.
+For a new isolated FD, aiw fd new "title" --worktree allocates its ID, prepares
+feature/<fd-id> at .wt/<fd-id> through aiw git wt add <id> --prepare, and writes
+the FD there. No authored plan is written or committed on the parent first.
+Existing committed FDs use the ordinary add command. Require a clean parent
+before creation and delivery; do not commit unrelated edits. Both .wt/ and
+.ai/ must be ignored. Verify fd_id, parent_branch, branch and worktree in the
+recorded workspace.json. Shared coordination receipts may remain in .ai,
+but authored FD artifacts and all roles stay in the selected worktree.
 
-Successful delivery with failed cleanup/archive is partial completion. Preserve
-the delivered commit and remaining resources; do not repeat the squash or
-roll it back. Use a supported cleanup route and archive only after required
-cleanup is verified. Direct-workspace execution skips worktree delivery.
+A full FD request authorizes its scoped local lifecycle within the selected
+workspace, applicable Git/stage limits and review policy. Commit coherent scoped
+changes only. Before isolated completion, require resolved scope, no blocker,
+and actual self-check evidence or a current matching independent pass.
+Close/archive the FD and commit its archive/index/evidence in the same worktree.
+Archive-only bookkeeping does not claim another implementation review.
+Then use aiw git wt local-merge for one final squash to the recorded parent;
+the parent receives the implementation and archive together. The tool checks
+clean workspaces, recorded coordinates, a single-parent squash and FD-Source
+matching clean FD HEAD before cleanup. Keep receipts and detach only a verified
+.ai link, never its target. Ordinary direct Git execution commits/archives in
+the current workspace without a worktree or squash step.
 
-aiw fd close archives the FD to docs/features/archive/<FD-ID>/ with matching
-reports/reviews and their sidecars. Preserve historical evidence and reject
-collisions. Archive/index changes get a scoped commit when authorized. An
-unarchived FD is not fully complete. Local completion does not grant release
-approval; fd-release-gate is used only for an actual planned release.
+Diagnose delivery errors before retry. For actual conflicts, load
+resolving-merge-conflicts for one bounded supported resolution. Preserve uncertain
+merges; do not abort/reset, choose sides blindly or commit partial resolutions.
+Do not sync again if CLI recovery already started the parent merge. Any separately
+needed sync names the recorded parent; do not rebase. Refresh self-checks after
+recovery. Changed Independent work needs focused fresh independent review,
+followed by re-archive in that worktree before retry.
+
+Successful delivery with failed cleanup is partial completion: preserve the
+delivered commit and remaining resources, and use supported verified cleanup
+recovery. Do not repeat the squash or roll it back. A close/archive failure before
+delivery preserves the worktree and stops delivery; never move archival work
+into the parent to bypass it.
+
+aiw fd close archives under docs/features/archive/<FD-ID>/ with matching
+reports/reviews and sidecars. Preserve historical evidence and reject collisions.
+An unarchived FD or an undelivered required squash is not full local completion.
+Local completion grants no release approval; use fd-release-gate only for an
+actual planned release.
 
 ## Authorization and reporting
 

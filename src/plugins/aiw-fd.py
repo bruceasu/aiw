@@ -112,12 +112,24 @@ class FDError(Exception):
     pass
 
 
-def root() -> Path:
-    result = subprocess.run(["git", "rev-parse", "--show-toplevel"], text=True,
-                            capture_output=True, check=False)
+def git_workspace(base: Path) -> Path | None:
+    try:
+        result = subprocess.run(["git", "-C", str(base), "rev-parse", "--show-toplevel"],
+                                text=True, capture_output=True, check=False)
+    except FileNotFoundError:
+        if any((location / ".git").exists() for location in (base, *base.parents)):
+            raise FDError("Git is required to manage this Git workspace but is not installed")
+        return None
     if result.returncode:
-        raise FDError("run this command inside a Git worktree")
+        if "not a git repository" in result.stderr.lower():
+            return None
+        raise FDError(result.stderr.strip() or "cannot determine the Git workspace")
     return Path(result.stdout.strip()).resolve()
+
+
+def root() -> Path:
+    current = Path.cwd().resolve()
+    return git_workspace(current) or current
 
 
 def feature_dir(base: Path) -> Path:
@@ -373,6 +385,8 @@ def atomic_json(path: Path, value: dict) -> None:
 
 
 def runtime_dir(base: Path, name: str) -> Path:
+    if git_workspace(base) is None:
+        return base.resolve() / ".ai" / "fd" / name
     result = subprocess.run(["git", "-C", str(base), "worktree", "list", "--porcelain"],
                             text=True, capture_output=True, check=False)
     if result.returncode:
@@ -418,6 +432,8 @@ def git_result(base: Path, *args: str) -> subprocess.CompletedProcess[str]:
 
 
 def registered_worktrees(base: Path) -> list[dict[str, str]]:
+    if git_workspace(base) is None:
+        return []
     result = git_result(base, "worktree", "list", "--porcelain")
     if result.returncode:
         raise FDError(result.stderr.strip() or "could not list Git worktrees")
@@ -496,6 +512,8 @@ def workspace_info(base: Path, name: str) -> tuple[dict | None, list[str]]:
 
 
 def evidence_source_locations(base: Path, name: str) -> tuple[list[dict[str, str]], list[str]]:
+    if git_workspace(base) is None:
+        return [{"kind": "worktree", "path": str(base.resolve()), "label": "local workspace"}], []
     branch_result = git_result(base, "symbolic-ref", "--quiet", "--short", "HEAD")
     current_branch = branch_result.stdout.strip() if branch_result.returncode == 0 else ""
     current_label = current_branch or "detached HEAD"
@@ -2029,7 +2047,27 @@ def approved_issue_id(base: Path, requested: str) -> str:
     return canonical
 
 
-def new_fd(base: Path, name: str, issue: str, handoff: bool = False) -> None:
+def prepare_fd_worktree(base: Path, name: str) -> Path:
+    executable = "aiw.exe" if os.name == "nt" else "aiw"
+    configured = os.environ.get("AIW_ROOT", "")
+    candidate = Path(configured) / executable if configured else None
+    cli = str(candidate) if candidate and candidate.is_file() else shutil.which("aiw")
+    if not cli:
+        raise FDError("cannot find AIW CLI for isolated FD creation")
+    result = subprocess.run([cli, "git", "wt", "add", name, "--prepare"],
+                            cwd=base, text=True, encoding="utf-8",
+                            capture_output=True, check=False)
+    if result.returncode:
+        raise FDError("could not prepare FD worktree; preserve any created resources: "
+                      + result.stdout.strip() + " " + result.stderr.strip())
+    data, warnings = workspace_info(base, name)
+    if not data:
+        raise FDError("prepared worktree could not be verified: " + "; ".join(warnings))
+    return Path(data["worktree"])
+
+
+def new_fd(base: Path, name: str, issue: str, handoff: bool = False,
+           worktree: bool = False) -> None:
     if not name.strip() or any(char in name for char in "\r\n") or len(name) > 120:
         raise FDError("title must be one non-empty line of at most 120 characters")
     if issue and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}", issue):
@@ -2037,13 +2075,24 @@ def new_fd(base: Path, name: str, issue: str, handoff: bool = False) -> None:
     if issue:
         issue = approved_issue_id(base, issue)
     with fd_lock(base, "_allocation"):
+        roots = {base.resolve(), *(Path(entry["path"]).resolve()
+                                   for entry in registered_worktrees(base))}
+        known_files = [path for location in roots for path in all_files(location)]
         if issue:
-            for linked in all_files(base):
+            for linked in known_files:
                 if f"- Issue: {issue}\n" in linked.read_text(encoding="utf-8"):
                     raise FDError(f"Issue {issue} already links to {linked.name}")
-        numbers = [int(FD_FILE_RE.fullmatch(path.name).group(1)) for path in all_files(base)]
+        numbers = [int(FD_FILE_RE.fullmatch(path.name).group(1)) for path in known_files]
+        for directory in runtime_dir(base, "_allocation").parent.glob("FD-*"):
+            match = FD_RE.fullmatch(directory.name)
+            if match and (directory / "workspace.json").exists():
+                numbers.append(int(match.group(1)))
         number = max(numbers, default=0) + 1
         ident = f"FD-{number:03d}"
+        if worktree and git_workspace(base) is not None:
+            base = prepare_fd_worktree(base, ident)
+        elif worktree:
+            print("No Git repository; creating the FD in the current workspace without a worktree.")
         target = active_destination(base, ident, f"{ident}_{slug(name)}.md")
         if target.exists():
             raise FDError(f"FD already exists: {target}")
@@ -2070,8 +2119,19 @@ def new_fd(base: Path, name: str, issue: str, handoff: bool = False) -> None:
 
 
 def resume(base: Path, name: str) -> None:
+    metadata = runtime_dir(base, name) / "workspace.json"
+    if metadata.exists() or metadata.is_symlink():
+        data, warnings = workspace_info(base, name)
+        if not data:
+            raise FDError("FD workspace needs reconciliation before resume: " + "; ".join(warnings))
+        base = Path(data["worktree"])
     fd_path = resolve_fd(base, name)
     if is_archived_fd(base, fd_path):
+        if metadata.exists() and status(fd_path.read_text(encoding="utf-8")) == "Complete":
+            print(f"{name}: archived in {base}; recorded worktree remains. "
+                  f"Continue verified delivery/cleanup with aiw git wt local-merge {name}; "
+                  "do not redispatch completed roles or repeat a verified squash.")
+            return
         raise FDError("archived FD cannot resume dispatch")
     item = latest_event(base, name)
     if not item:
@@ -2340,6 +2400,7 @@ def main() -> int:
     created.add_argument("title")
     created.add_argument("--issue", default="")
     created.add_argument("--handoff", action="store_true", help="create a Planner handoff even without a role runner")
+    created.add_argument("--worktree", action="store_true", help="create the Git worktree before writing the FD; use for explicit auto or worktree requests")
     commands.add_parser("list", help="show the terminal FD table")
     shown = commands.add_parser("show", help="show an FD and its last handoff")
     shown.add_argument("fd_id")
@@ -2408,7 +2469,7 @@ def main() -> int:
     try:
         base = root()
         if args.command == "new":
-            new_fd(base, args.title, args.issue, args.handoff)
+            new_fd(base, args.title, args.issue, args.handoff, args.worktree)
         elif args.command == "list":
             print(render_fd_list(base, color=supports_ansi_color()))
         elif args.command == "show":

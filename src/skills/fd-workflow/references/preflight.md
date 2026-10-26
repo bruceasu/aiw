@@ -4,18 +4,36 @@ Read before starting or resuming implementation. Resolve shared resources via
 [dependencies](dependencies.md). Read the current FD, relevant approved Issue
 and stable specs, and repository limits. Inspect a receipt only when one exists.
 
+For an existing FD, inspect recorded workspace coordinates before assuming its
+design exists on the parent. New isolated plans may exist only in that worktree.
+After archive, a retained worktree record means delivery/cleanup is still pending
+or needs reconciliation. aiw fd resume locates that worktree and reports this
+management step instead of redispatching a completed role. Invalid/stale metadata
+is a recovery gate, not proof that completion is finished.
+
 ## Workspace
 
-Use the recorded isolated workspace by default. Before creating it, commit the
-ready FD plan on the parent branch and require a clean parent. Do not include
-unrelated edits. Use aiw git wt add <id>, then verify fd_id, parent_branch,
-branch and worktree in .ai/fd/<id>/workspace.json. Keep Worker writes there.
-The recorded parent is the only delivery target.
+Select before writing the plan. Outside Git, use the current workspace and skip
+all worktree/Git lifecycle operations. Do not initialize a repository. Inside
+Git, the current workspace is the default; use a worktree only for an explicit
+user worktree request or explicit auto intent. A full request continuing
+automatically does not itself count as auto.
 
-An explicit primary-workspace instruction skips worktree creation and its
-workspace record. Preserve unrelated edits and the user's Git limits. A
-workspace choice does not itself authorize implementation. Do not invent
-Worker receipts. Keep Work Items, TODO and Verification in the FD current.
+For auto in Git, all planning, implementation, review, evidence and archive
+run in feature/<fd-id> at .wt/<fd-id>. For a new FD, use
+aiw fd new "title" --worktree; it prepares the worktree before writing the plan.
+For an existing committed FD, use aiw git wt add <id> before further authored
+changes. Do not create a second worktree when valid coordinates already exist.
+
+Creation needs a clean parent and ignored .wt/ and .ai/ paths. Verify fd_id,
+parent_branch, branch and worktree in the recorded workspace.json. The recorded
+parent is the sole final delivery target. Do not write the new plan, Worker
+reports or archive on that parent. A dirty parent or unsupported CLI stops
+isolated setup; never silently execute auto in the current/parent workspace.
+
+Direct execution creates no worktree or workspace metadata. Preserve unrelated
+edits and user Git limits. Workspace selection alone does not authorize
+implementation or runtime checks. Keep Work Items, TODO and Verification current.
 
 ## Single host and managed handoffs
 

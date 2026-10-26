@@ -9,8 +9,9 @@ risk criteria or an explicit review request. Handoffs and Work Items do not
 trigger review. Required independent review uses one separate Reviewer;
 self-checks never count as that independent pass.
 
-Proceed automatically through authorized local delivery, verified cleanup and
-archive when scope, evidence, workspace and review conditions pass. Honor
+Proceed automatically when scope, evidence, workspace and review conditions pass.
+In an isolated flow, archive and commit inside that worktree before final
+squash delivery and verified cleanup; outside Git, skip Git operations. Honor
 stage limits and no-commit/no-merge instructions. Ordinary Self completion
 uses normal close, not a forced override. Never describe skipped checks as passed.
 

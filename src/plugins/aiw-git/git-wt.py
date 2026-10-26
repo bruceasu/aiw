@@ -92,9 +92,6 @@ def active_designs(root: Path, fd_id: str) -> list[Path]:
 
 def workspace(root: Path, raw_id: str) -> tuple[str, dict[str, str], Path, Path]:
     fd_id = normalize_fd_id(raw_id)
-    fd_files = active_designs(root, fd_id)
-    if len(fd_files) != 1 or fd_files[0].is_symlink():
-        raise WorktreeError(f"expected one active FD design for {fd_id}")
     metadata_path = root / ".ai" / "fd" / fd_id / "workspace.json"
     for path in (root / ".ai", root / ".ai" / "fd", metadata_path.parent, metadata_path):
         if path.is_symlink():
@@ -125,6 +122,16 @@ def workspace(root: Path, raw_id: str) -> tuple[str, dict[str, str], Path, Path]
     if ((root / ".wt").is_symlink() or not expected_path.is_relative_to(root)
             or expected_path.is_symlink() or not expected_path.is_dir()):
         raise WorktreeError(f"FD worktree path is missing or unsafe: {expected_path}")
+    fd_files = active_designs(expected_path, fd_id)
+    if not fd_files:
+        archive = expected_path / "docs" / "features" / "archive" / fd_id
+        legacy_archive = expected_path / "docs" / "features" / "archive"
+        fd_files = [path for path in (*archive.glob(fd_id + "_*.md"),
+                                     *legacy_archive.glob(fd_id + "_*.md"))
+                    if path.is_file() and not path.is_symlink()
+                    and path.resolve().is_relative_to(expected_path)]
+    if len(fd_files) != 1:
+        raise WorktreeError(f"expected one active or archived FD design in {expected_path}")
     entries = registered_worktrees(root)
     fd_entries = [entry for entry in entries
                   if Path(entry.get("path", "")).resolve() == expected_path]
@@ -144,17 +151,23 @@ def command_output(result: subprocess.CompletedProcess[str]) -> None:
         print(result.stderr, end="", file=sys.stderr)
 
 
-def worktree_add(raw_id: str) -> int:
+def worktree_add(raw_id: str, prepare: bool = False) -> int:
     fd_id = normalize_fd_id(raw_id)
     root = repository_root()
     fd_files = active_designs(root, fd_id)
-    if len(fd_files) != 1 or fd_files[0].is_symlink():
-        raise WorktreeError(f"expected one active FD design for {fd_id}")
-    fd_file = fd_files[0].relative_to(root).as_posix()
-    tracked = git(root, "ls-files", "--error-unmatch", "--", fd_file)
-    committed = git(root, "diff", "--quiet", "HEAD", "--", fd_file)
-    if tracked.returncode or committed.returncode:
-        raise WorktreeError("commit the FD plan before creating its worktree")
+    if prepare:
+        archived = root / "docs" / "features" / "archive" / fd_id
+        legacy_archive = root / "docs" / "features" / "archive"
+        if fd_files or list(archived.glob(fd_id + "_*.md")) or list(legacy_archive.glob(fd_id + "_*.md")):
+            raise WorktreeError("--prepare requires a new FD ID with no existing design")
+    else:
+        if len(fd_files) != 1 or fd_files[0].is_symlink():
+            raise WorktreeError(f"expected one active FD design for {fd_id}")
+        fd_file = fd_files[0].relative_to(root).as_posix()
+        tracked = git(root, "ls-files", "--error-unmatch", "--", fd_file)
+        committed = git(root, "diff", "--quiet", "HEAD", "--", fd_file)
+        if tracked.returncode or committed.returncode:
+            raise WorktreeError("commit the existing FD plan before creating its worktree")
     status = git(root, "status", "--porcelain")
     if status.returncode or status.stdout.strip():
         raise WorktreeError("parent worktree must be clean before creating an FD worktree")
@@ -609,7 +622,7 @@ def list_worktrees() -> int:
 def usage() -> None:
     print("Usage: aiw git wt <command> [args...]")
     print("Commands:")
-    print("  add <fd-id>                         Create the managed FD worktree.")
+    print("  add <fd-id> [--prepare]             Create an FD worktree; prepare allows planning a new FD inside it.")
     print("  status <fd-id>                      Show parent and FD worktree status.")
     print('  commit <fd-id> "message"             Commit changes in the FD worktree.')
     print("  sync <fd-id> [branch]               Merge a primary-worktree branch into the FD worktree.")
@@ -628,6 +641,8 @@ def main(args: list[str] | None = None) -> int:
     try:
         if command == "add" and len(rest) == 1:
             return worktree_add(rest[0])
+        if command == "add" and len(rest) == 2 and rest[1] == "--prepare":
+            return worktree_add(rest[0], prepare=True)
         if command == "status" and len(rest) == 1:
             return worktree_status(rest[0])
         if command == "commit" and len(rest) == 2:

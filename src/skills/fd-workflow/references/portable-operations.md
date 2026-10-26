@@ -18,7 +18,7 @@ compatibility and required authority before use; do not invent flags.
 
 | Operation | Command/event | Required procedure |
 |---|---|---|
-| New | `aiw fd new "title" [--issue ID] [--handoff]` | [planning](planning.md); an attached Issue must be approved; handoffs are optional without a runner |
+| New | `aiw fd new "title" [--issue ID] [--handoff] [--worktree]` | Current workspace by default; use --worktree for explicit auto/worktree requests in Git, before planning |
 | Inspect | `aiw fd list`, `aiw fd show FD-001`, `aiw fd resume` | [handoffs](handoffs.md) |
 | Claim | `aiw fd claim <id> <event-id> --session <session-id>` | [handoffs](handoffs.md) |
 | Design handoff | `design-ready --producer planner --artifact <fd-path> --source-event <event-id>` | [planning](planning.md) |
@@ -35,10 +35,13 @@ compatibility and required authority before use; do not invent flags.
 
 ## Git lookup
 
-- `aiw git wt add FD-001`: default isolated path; explicit primary-workspace path
-  skips this. Read [preflight](preflight.md), verify recorded coordinates.
+- `aiw git wt add FD-001`: use only for an explicit isolated existing-FD request;
+  its plan must already be committed. New isolated FDs use new --worktree,
+  which calls add --prepare before the plan exists. Outside Git, skip both.
+  Read [preflight](preflight.md) and verify recorded coordinates.
 - `aiw git wt status FD-001`: inspect workspaces.
-- `aiw git wt local-merge FD-001`: reviewed squash delivery; read [delivery](delivery.md).
+- `aiw git wt local-merge FD-001`: after archive/commit inside the FD worktree,
+  squash-deliver implementation and archive together; read [delivery](delivery.md).
 - `aiw git wt sync FD-001 develop`: only if diagnosis requires a separate sync
   and `develop` is the recorded parent. Never proactively sync every FD.
 - `wt commit` stages all changes; it is not conflict resolution. Use only after

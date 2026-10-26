@@ -17,9 +17,19 @@ skills/reviewed-skill-contract.md and skills/work-management.md. Declare
 skills/workflow-methods.md; load only a relevant method. Declare
 skills/testing-methods.md; load it only for requested test support.
 
-Resolve the explicit FD ID or a unique linked FD. For new work, use
-aiw fd new "title" [--issue ID]. Read the FD and relevant Issue, code and
-stable specs. Continue from the current stage; an archived Complete FD is done.
+Resolve the explicit FD ID or a unique linked FD. Before writing a plan, read
+[preflight](references/preflight.md) and select the workspace: outside Git,
+stay in the current workspace; inside Git, stay there unless the user requests
+a worktree or explicitly selects auto. Explicit auto in Git runs planning,
+implementation, review, evidence and archive in the worktree. Ordinary automatic
+continuation does not itself select auto. For new isolated work use
+aiw fd new "title" --worktree [--issue ID]; otherwise omit --worktree.
+Read the FD and relevant Issue, code and
+stable specs. For an existing isolated FD, use its verified workspace.json to
+locate the design before looking only on the parent; run FD commands there.
+An archived Complete FD is done only when no recorded delivery/cleanup remains.
+If its worktree record remains, continue that final management step; do not
+restart implementation or redispatch completed roles.
 
 ## Default flow
 
@@ -37,8 +47,9 @@ stable specs. Continue from the current stage; an archived Complete FD is done.
    required, read [review](references/review.md) and obtain one separate
    Reviewer verdict. Handoffs and individual Work Items do not trigger review.
 4. **Deliver and archive.** Read [delivery](references/delivery.md). Within a
-   full implementation request, continue local delivery, verified cleanup and
-   Complete archive automatically when applicable gates pass. Preserve explicit
+   full implementation request, continue completion automatically when applicable
+   gates pass. In a selected worktree, archive and commit there before final
+   squash delivery and verified cleanup. Outside Git, skip Git operations. Preserve explicit
    planning-only, implementation-only, partial-item, no-commit and no-merge limits.
 
 The host normally combines planning, implementation and workflow management.

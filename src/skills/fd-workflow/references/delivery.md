@@ -7,40 +7,33 @@ action. Load [blockers.md](blockers.md) at a Gate and before archive; use
 
 ## Deliver a ready FD
 
-   Apply skills/work-management.md's review policy. Self work needs resolved
-   Work Items and actual Verification evidence; Independent and unmarked legacy
-   work needs its current matching Reviewer pass. Do not use force for ordinary
-   Self completion. Honor no-commit/no-merge and other explicit stage limits.
+Apply skills/work-management.md's review policy. Self needs resolved Work Items
+and actual Verification; Independent and unmarked historical work need the
+current matching Reviewer pass. Honor no-commit/no-merge and stage limits.
 
-   In direct-workspace mode, the reviewed changes are
-   already in the primary workspace; skip worktree delivery and proceed to
-   archive. In isolated mode, read `.ai/fd/<id>/workspace.json` and take its
-   `parent_branch`, `branch`, and `worktree` as the merge coordinates. Confirm
-   the parent branch is clean and still matches the recorded parent. Run
-   `aiw git wt local-merge <id>` directly for one squash commit on the parent
-   branch. Do not proactively `sync` every FD before review or delivery; a
-   clean parent advancing alone does not invalidate unchanged reviewed FD work. On a
-   parent-side content conflict, the command resets the failed squash, verifies
-   the parent is clean, and merges the parent into the FD worktree for resolution.
-   Pause delivery and load `resolving-merge-conflicts` for the bounded
-   recovery below. If any conflict cannot be safely resolved, preserve the
-   state and report the unresolved gate without aborting or retrying. Do
-   not blindly run commit/sync/retry for every error. If recovery fails, leave the FD active and preserve
-   the worktree and branch. On success,
-   `local-merge` verifies the clean FD HEAD, exact recorded coordinates, the
-   single-parent squash, and its `FD-Source` before removing the worktree and
-   branch. It safely detaches only a verified `.ai` junction to the primary
-   workspace and preserves `.ai/fd/<id>` receipts. If cleanup partly fails,
-   report the delivered commit and remaining resources; do not roll back the
-   delivery or repeat the squash. Recover only through a known, authorized
-   CLI cleanup path; if no safe supported path is known, stop and report the
-   cleanup Gate rather than inventing a command. Defer close until required
-   cleanup is verified. Then close with `aiw fd close <id> Complete` from the
-   parent workspace and commit only the archive/index changes. A close rejection is a
-   Gate, never a reason to edit a receipt or archive manually.
-   Report the merge result, archive path, review count, commands actually run,
-   unrun checks, and residual risks.
+Outside Git, close/archive in the current workspace and skip Git operations.
+For direct Git work, make only authorized scoped commits and archive there;
+there is no worktree delivery or cleanup step.
 
+For selected worktrees, keep authored completion work there:
+
+1. Confirm full scope and applicable verification. Run aiw fd close <id>
+   Complete from the FD worktree, then commit its archive/index/evidence there.
+   A close rejection stops delivery; do not hand-edit receipts or archive manually.
+2. Read workspace.json and verify the recorded parent, branch and worktree.
+   Require clean FD and parent workspaces, then invoke aiw git wt local-merge
+   <id> for one final squash that includes implementation and archive together.
+   Only this tool-managed delivery writes to the parent.
+3. The tool verifies the single-parent squash, clean FD HEAD, FD-Source and
+   coordinates before removing the worktree/branch. Preserve receipts. A cleanup
+   failure preserves the delivered commit and remaining resources; do not repeat
+   delivery or move archive work back to the parent.
+
+Do not proactively sync every FD. A clean parent advancing alone does not
+invalidate unchanged reviewed work. On actual conflicts, use the recovery
+section below and resolving-merge-conflicts for one bounded supported attempt.
+Preserve uncertain state and stop. Report actual archive, delivery and cleanup
+results; archive alone is not full delivery of an isolated FD.
 
 ## Recover a failed local delivery
 
@@ -82,10 +75,10 @@ independent pass, covers the recovered implementation and all delivery gates pas
 Do not require a new review merely
 because the parent advanced without changing the reviewed FD implementation.
 
-`local-merge` verifies delivery and cleans Git resources. The host then runs
-`aiw fd close <id> Complete` and commits the archive/index separately. If only
-cleanup failed after a verified squash, follow the CLI cleanup recovery path;
-do not create another squash, revert delivery or call an unarchived FD done.
+After recovery, restore any required review and archive again in the same
+worktree before retry. Existing archived evidence stays intact; new reports
+need distinct names. Once local-merge has delivered the archive-inclusive squash,
+only verified cleanup remains. Do not repeat the squash or roll back delivery.
 
 ## Local delivery versus release
 

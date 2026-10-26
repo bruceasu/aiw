@@ -7,6 +7,10 @@ splitting, specification or decision guidance.
 
 ## Write a proportionate plan
 
+Select the workspace via preflight.md before authoring the plan. Explicit auto
+inside Git starts the new FD in a worktree; ordinary requests use the current
+workspace. Outside Git, skip worktree creation even for auto.
+
 State the problem, scope, observable acceptance, necessary numbered Work Items,
 planned verification and unresolved questions. Include the solution in the
 repository template. Small changes need a short plan. Add alternatives,

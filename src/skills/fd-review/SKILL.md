@@ -13,6 +13,10 @@ Skill when an FD is Pending Verification or the user explicitly requests an
 independent review. The Reviewer must use a separate session from the Worker
 that wrote the code. Do not implement new scope during review.
 
+Inspect and write evidence from the FD's selected workspace. For explicit auto
+inside Git, claims, FD updates and reports all run in that FD worktree; do not
+write review artifacts into the parent workspace.
+
 Read the FD, Issue evidence when present, relevant stable specs, FD Verification
 and any separate Worker report, and the exact diff or commits under review. Check
 correctness, acceptance coverage, compatibility, unexpected files, and the

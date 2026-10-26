@@ -21,5 +21,11 @@ request-review 可直接接收就绪的 Open/In Progress/Complete FD。
 Self 归档不产生 Reviewer 通过事件；Independent 仍需当前有效独立通过。
 
 本地交付、归档与发布是不同操作。用户阶段、Git 与运行授权限制继续生效。
+
+工作区默认改为当前目录。非 Git 不创建 worktree，也不初始化 Git；Git 只有
+明确要求隔离或显式 auto 时使用 worktree。auto 的计划、实现、审查与归档都
+写在 worktree 内。new --worktree 与 git wt add --prepare 支持先建 worktree
+再写新 FD；最终交付支持定位 worktree 内已归档的 FD，不要求父分支有活动 FD。
+归档提交随实现一起交付，验证后再删除 worktree。需同步 FD 和 Git 插件版本。
 未执行的测试、检查和平台行为不得写成通过。[RULE-MAP](RULE-MAP.md)
 仅保留此前文档拆分的映射背景，当前规则以 SKILL 和共享合同为准。

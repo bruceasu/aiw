@@ -21,21 +21,33 @@ The numbered FD is the primary plan for new work. An OpenSpec change is optional
 - Update stable specs or design notes only when their requirements or decisions
   changed.
 
-By default, implement each numbered FD in its dedicated branch and worktree.
-An explicit primary-workspace instruction skips their creation:
+Select the workspace before writing the FD plan:
+
+- Outside Git, use the current workspace; do not initialize Git or create a worktree.
+- Inside Git, use the current workspace by default. Use a worktree only when
+  the user explicitly requests one or explicitly selects auto.
+- For explicit auto inside Git, planning, implementation, any required review,
+  evidence and archive all run in the FD worktree. Ordinary automatic
+  continuation of a full FD request does not itself select auto.
+
+When a worktree is selected, use:
 
 - branch: `feature/<fd-id>`
 - worktree: `.wt/<fd-id>`
 
-Commit the ready FD plan on the parent branch and ensure the parent workspace
-is clean before using `aiw git wt add <fd-id>`. Keep the parent clean
-while the FD is in flight when possible; a dirty parent blocks merge until it
-is clean again. Do not mix unrelated changes into the FD plan commit.
+For a new FD, `aiw fd new "title" --worktree` prepares the worktree before
+writing the plan. An existing FD uses `aiw git wt add <fd-id>` with its existing
+plan committed. Worktree creation requires a clean parent. Keep all subsequent
+FD artifacts and scoped commits, including archive, in that worktree; only
+final tool-managed squash delivery writes to the recorded parent. Verify
+delivery before cleanup. Preserve explicit no-commit/no-merge limits and never
+silently run auto in the parent after a worktree error.
 
 A request to implement a numbered FD includes its normal local lifecycle:
-focused plan/implementation commits, self-checks or required independent review, squash delivery to
-the recorded parent, verified worktree cleanup, and Complete archive plus
-archive commit. Continue automatically when the current review and delivery
+scoped commits when Git applies, self-checks or required independent review,
+and Complete archive. For selected worktrees, archive and commit inside the
+worktree before final squash delivery and verified cleanup. Non-Git work skips
+Git operations. Continue automatically when the current review and delivery
 gates pass; no second `auto` request is needed. Explicit planning-only,
 implementation-only, review-only, partial-item, or no-merge limits take priority.
 Stop for unresolved blockers, stale review, dirty workspaces, unresolved merge

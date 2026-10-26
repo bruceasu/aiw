@@ -345,14 +345,14 @@ it MUST obtain fresh focused independent review through request-review before
 retrying delivery. It MUST preserve historical reports, stage limits, exact role
 ownership and the cumulative active-cycle review limit. A dirty workspace or
 failed cleanup MUST NOT be treated as a reason to blindly sync or create a
-second squash. Successful local-merge cleans Git resources; the host MUST
-separately close and commit the FD archive.
+second squash. Isolated archive/commit MUST be completed in the FD worktree
+before local-merge; successful delivery then performs verified Git cleanup.
 
 #### Scenario: Clean direct delivery
 
 - **WHEN** an FD has its applicable self-check/independent evidence and its recorded parent is clean
 - **THEN** the host attempts local-merge without a mandatory parent sync
-- **AND** successful verified delivery/cleanup is followed by close and archive commit.
+- **AND** archive/commit in the FD worktree precedes the final verified delivery/cleanup.
 
 #### Scenario: Conflict recovery changes the implementation
 
@@ -405,8 +405,9 @@ Commits MUST contain coherent scoped changes; a small FD MAY use one
 implementation commit. Neither branch is rebased. Isolated delivery MUST
 squash to the recorded parent as a single-parent commit with FD-Source equal
 to the clean FD HEAD, verify coordinates and clean workspaces, and safely
-clean up only verified resources. The host then closes and commits the archive
-when authorized. Direct-workspace execution skips worktree creation/delivery.
+clean up only verified resources. Before final delivery, the host MUST close and
+commit the archive inside the FD worktree. Direct-workspace execution skips
+worktree creation/delivery, and non-Git work skips all Git lifecycle operations.
 
 Before delivery, require complete scope, no unresolved blocker, actual self-check
 evidence or a current matching independent pass, and applicable workspace gates.
@@ -646,7 +647,62 @@ unresolved `%% NEEDS_INPUT` notes MUST still prevent `verification-passed`.
 
 ### Requirement: Git and workspace boundary
 
-An FD MAY have an isolated worktree once its plan is committed. A normal full
+Workspace selection MUST happen before authoring an FD plan. Outside Git,
+execution MUST remain in the current workspace without Git initialization or
+worktree creation, including auto. Inside Git, ordinary requests MUST default
+to the current workspace; only an explicit worktree request or explicit auto
+intent selects isolation. Automatic continuation of a normal full-FD request
+MUST NOT itself select auto.
+
+Explicit auto inside Git MUST author its plan, implementation, required review,
+evidence and archive in its worktree. For a new FD, new --worktree MUST allocate
+a non-reused ID and prepare feature/<FD-ID> at .wt/<FD-ID> before writing the
+FD. Its managed add --prepare route MUST require a new ID, clean parent,
+ignored management paths, valid coordinates and branch/path safety; it MUST
+NOT require a prior parent-plan commit. Existing committed FDs MAY use ordinary
+add. Reuse valid recorded workspaces; failed setup MUST NOT silently fall back
+to executing auto in the parent.
+
+FD numbering MUST consider registered worktree designs and existing workspace
+reservations so concurrent isolated plans do not reuse IDs. Non-Git runtime
+evidence MUST stay local. Missing Git for a known Git workspace and ambiguous
+Git failures MUST be reported rather than silently treated as a non-Git folder.
+
+In isolated completion, close/archive and commit in the FD worktree before
+final squash delivery. The parent MUST receive implementation and archive
+together; only tool-managed delivery/cleanup changes the parent. Worktree
+operations MUST resolve the active or archived design inside the recorded
+worktree, including legacy flat archive paths, without requiring an active FD
+design on the parent. Actual archive,
+delivery and cleanup results MUST remain separate evidence.
+
+An archived Complete FD with retained workspace metadata MUST NOT be treated
+as finished: delivery/cleanup or metadata reconciliation remains. Resume MUST
+locate the verified recorded worktree before resolving a design absent from the
+parent, report the pending management step without redispatching finished roles,
+and preserve a gate for invalid/stale workspace records. Closed/Deferred archives
+retain their explicit reopen path rather than being delivered as Complete.
+
+#### Scenario: Ordinary Git and non-Git work
+
+- WHEN a request has no explicit auto or worktree intent
+- THEN it stays in the current workspace
+- AND a non-Git workspace is not initialized as Git
+
+#### Scenario: Auto authors the entire FD in its worktree
+
+- WHEN explicit auto runs in a Git workspace
+- THEN isolated setup precedes plan authoring
+- AND plan, implementation, review, evidence and archive are written there
+- AND the archive-inclusive final squash precedes verified cleanup
+
+#### Scenario: Resume after archive but before delivery
+
+- WHEN a Complete archive exists only in its recorded worktree
+- THEN resume locates it through verified metadata and reports remaining delivery/cleanup
+- AND it does not end early, redispatch completed roles, or silently use the parent
+
+A normal full
 numbered FD implementation request authorizes the focused local lifecycle
 above unless explicitly limited. A standalone commit or review MUST NOT imply
 delivery or archive, and no local request implies push, release or deployment.
@@ -662,7 +718,7 @@ evidence. New engineering work MUST use numbered FDs. The removed `aiw wf`
 command MUST NOT be presented as an available path. The `aiw git wt` command
 provided by `aiw-git` MUST be the sole FD worktree interface. A standalone
 `aiw wt` command MUST NOT be provided. `wt add` directly creates the recorded
-worktree and workspace metadata. After review,
+worktree and workspace metadata. After applicable verification and in-worktree archive,
 `wt local-merge` MUST squash the FD result into one single-parent commit on its
 recorded parent, including `FD-Source: <FD-HEAD>` in the commit message. On a
 parent-side squash content conflict, it MUST reset the failed squash, verify
