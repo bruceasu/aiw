@@ -1167,7 +1167,13 @@ def index_paths(base: Path, name: str) -> list[Path]:
 def index_snapshot(base: Path, name: str) -> dict[Path, bytes | None]:
     originals = {}
     for path in index_paths(base, name):
-        ensure_feature_directory(base, path.parent)
+        if not path.parent.resolve().is_relative_to(base.resolve()):
+            raise FDError(f"feature index is outside the repository: {path}")
+        for parent in (path.parent, *path.parent.parents):
+            if parent == base:
+                break
+            if parent.is_symlink() or (parent.exists() and not parent.is_dir()):
+                raise FDError(f"unsafe feature index directory: {parent}")
         if path.is_symlink() or (path.exists() and not path.is_file()):
             raise FDError(f"unsafe feature index: {path}")
         value = path.read_bytes() if path.exists() else None
@@ -2203,7 +2209,8 @@ def evidence_moves(base: Path, name: str) -> list[tuple[Path, Path]]:
     features = feature_dir(base)
     moves = []
     for folder in ("reports", "reviews"):
-        source_dirs = [features / name / folder, features / folder]
+        # FD-local evidence travels with its complete feature directory.
+        source_dirs = [features / folder]
         for source in sorted(path for directory in source_dirs
                              for path in directory.glob(f"{name}*")):
             if source.suffix not in {".md", ".json"}:
@@ -2217,6 +2224,9 @@ def evidence_moves(base: Path, name: str) -> list[tuple[Path, Path]]:
             target = features / "archive" / name / folder / source.name
             if target.exists() or target.is_symlink():
                 raise FDError(f"archived FD evidence already exists: {target}")
+            local_target = features / name / folder / source.name
+            if local_target.exists() or local_target.is_symlink():
+                raise FDError(f"FD-local evidence collides with shared evidence: {local_target}")
             if any(destination == target for _, destination in moves):
                 raise FDError(f"multiple active evidence files target the same archive: {target}")
             parent = target.parent
@@ -2280,10 +2290,13 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
         raise FDError("Complete requires the current Reviewer's verification-passed event")
     if latest and latest[1]["dispatch_state"] in {"launching", "dispatched"}:
         raise FDError("cannot archive while a role execution has an unknown result")
-    archive = feature_dir(base) / "archive" / name / fd_path.name
-    if archive.exists() or archive.is_symlink():
-        raise FDError(f"archived FD already exists: {archive}")
-    parent = archive.parent
+    archive_dir = feature_dir(base) / "archive" / name
+    archive = archive_dir / fd_path.name
+    if archive_dir.is_symlink() or (archive_dir.exists() and not archive_dir.is_dir()):
+        raise FDError(f"unsafe FD archive directory: {archive_dir}")
+    if archive_dir.exists() and any(archive_dir.iterdir()):
+        raise FDError(f"archived FD directory already exists and is not empty: {archive_dir}")
+    parent = archive_dir.parent
     archive_root = feature_dir(base) / "archive"
     while parent != archive_root.parent:
         if parent.is_symlink() or (parent.exists() and not parent.is_dir()):
@@ -2317,18 +2330,22 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
                                     "no-pending-receipt"),
         })
     moved = []
+    archive_tree_moved = False
     event_path = latest[0] if latest else None
     original_event = dict(latest[1]) if latest else None
     original_indexes = index_snapshot(base, name)
     receipt_attempted = False
     try:
+        atomic_text(fd_path, content)
+        archive_dir.parent.mkdir(parents=True, exist_ok=True)
+        if archive_dir.exists():
+            archive_dir.rmdir()
+        fd_path.parent.replace(archive_dir)
+        archive_tree_moved = True
         for source, target in moves:
             target.parent.mkdir(parents=True, exist_ok=True)
             source.replace(target)
             moved.append((source, target))
-        atomic_text(fd_path, content)
-        archive.parent.mkdir(parents=True, exist_ok=True)
-        fd_path.replace(archive)
         update_receipt = bool(
             latest
             and latest[1]["dispatch_state"] == "pending"
@@ -2358,9 +2375,23 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
                 force_audit_path.unlink()
             except OSError as rollback_error:
                 rollback_errors.append(str(rollback_error))
-        if archive.exists():
+        for source, target in reversed(moved):
+            if target.exists():
+                try:
+                    source.parent.mkdir(parents=True, exist_ok=True)
+                    target.replace(source)
+                    parent = target.parent
+                    while parent != archive_dir and parent.is_relative_to(archive_dir):
+                        try:
+                            parent.rmdir()
+                        except OSError:
+                            break
+                        parent = parent.parent
+                except (OSError, FDError) as rollback_error:
+                    rollback_errors.append(str(rollback_error))
+        if archive_tree_moved and archive_dir.exists():
             try:
-                archive.replace(fd_path)
+                archive_dir.replace(fd_path.parent)
             except OSError as rollback_error:
                 rollback_errors.append(str(rollback_error))
         if fd_path.exists():
@@ -2368,13 +2399,6 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
                 atomic_text(fd_path, original_content)
             except OSError as rollback_error:
                 rollback_errors.append(str(rollback_error))
-        for source, target in reversed(moved):
-            if target.exists():
-                try:
-                    source.parent.mkdir(parents=True, exist_ok=True)
-                    target.replace(source)
-                except (OSError, FDError) as rollback_error:
-                    rollback_errors.append(str(rollback_error))
         if receipt_attempted and event_path and original_event:
             try:
                 atomic_json(event_path, original_event)

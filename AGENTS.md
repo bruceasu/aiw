@@ -37,7 +37,9 @@ When a worktree is selected, use:
 
 For a new FD, `aiw fd new "title" --worktree` prepares the worktree before
 writing the plan. An existing FD uses `aiw git wt add <fd-id>` with its existing
-plan committed. Worktree creation requires a clean parent. Keep all subsequent
+plan present in HEAD. Unrelated parent edits do not block creation. Related
+FD edits require a user choice: scoped commit first or explicit --from-head
+creation without carrying them. Inspect related code as well as FD documents. Keep all subsequent
 FD artifacts and scoped commits, including archive, in that worktree; only
 final tool-managed squash delivery writes to the recorded parent. Verify
 delivery before cleanup. Preserve explicit no-commit/no-merge limits and never
@@ -50,8 +52,11 @@ worktree before final squash delivery and verified cleanup. Non-Git work skips
 Git operations. Continue automatically when the current review and delivery
 gates pass; no second `auto` request is needed. Explicit planning-only,
 implementation-only, review-only, partial-item, or no-merge limits take priority.
-Stop for unresolved blockers, stale review, dirty workspaces, unresolved merge
+Stop for unresolved blockers, stale review, a dirty FD worktree, unresolved merge
 conflicts, or failed delivery/cleanup/archive; preserve state and report the gate.
+Parent edits are allowed during conflict-free delivery when their content and
+staging are preserved and excluded from the squash. Branch conflicts with a
+dirty parent require it to be clean before recovery; never auto-stash/reset.
 For a delivery conflict in the full FD lifecycle, first load
 `resolving-merge-conflicts` for one bounded attempt at clearly supported
 resolutions. If any conflict remains uncertain or unsafe, preserve the merge

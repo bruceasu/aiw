@@ -1,0 +1,1199 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 94b3a44721fdee049e36f9f57703165e8ab66238..313c4ceeb41b1ae79d7e52423e36444fa3279c22 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -37,7 +37,9 @@ ## FD Workflow
+ 
+ For a new FD, `aiw fd new "title" --worktree` prepares the worktree before
+ writing the plan. An existing FD uses `aiw git wt add <fd-id>` with its existing
+-plan committed. Worktree creation requires a clean parent. Keep all subsequent
++plan present in HEAD. Unrelated parent edits do not block creation. Related
++FD edits require a user choice: scoped commit first or explicit --from-head
++creation without carrying them. Inspect related code as well as FD documents. Keep all subsequent
+ FD artifacts and scoped commits, including archive, in that worktree; only
+ final tool-managed squash delivery writes to the recorded parent. Verify
+ delivery before cleanup. Preserve explicit no-commit/no-merge limits and never
+@@ -50,8 +52,11 @@ ## FD Workflow
+ Git operations. Continue automatically when the current review and delivery
+ gates pass; no second `auto` request is needed. Explicit planning-only,
+ implementation-only, review-only, partial-item, or no-merge limits take priority.
+-Stop for unresolved blockers, stale review, dirty workspaces, unresolved merge
++Stop for unresolved blockers, stale review, a dirty FD worktree, unresolved merge
+ conflicts, or failed delivery/cleanup/archive; preserve state and report the gate.
++Parent edits are allowed during conflict-free delivery when their content and
++staging are preserved and excluded from the squash. Branch conflicts with a
++dirty parent require it to be clean before recovery; never auto-stash/reset.
+ For a delivery conflict in the full FD lifecycle, first load
+ `resolving-merge-conflicts` for one bounded attempt at clearly supported
+ resolutions. If any conflict remains uncertain or unsafe, preserve the merge
+diff --git a/build b/build
+new file mode 100644
+index 0000000000000000000000000000000000000000..5724f96ce8ac63ae6196de8a979960dd9aea28ef
+--- /dev/null
++++ b/build
+@@ -0,0 +1 @@
++python build.py build all
+diff --git a/docs/features/archive/FD-107/FD-107_ALLOW_UNRELATED_PARENT_EDITS_DURING_FD_WORKTREE_.md b/docs/features/archive/FD-107/FD-107_ALLOW_UNRELATED_PARENT_EDITS_DURING_FD_WORKTREE_.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..020038fcbf7eb9e4b6973d13fbb68c5b8d822269
+--- /dev/null
++++ b/docs/features/archive/FD-107/FD-107_ALLOW_UNRELATED_PARENT_EDITS_DURING_FD_WORKTREE_.md
+@@ -0,0 +1,68 @@
++# FD-107: Allow unrelated parent edits in FD worktree operations
++
++**Status:** Complete
++**Revision:** 5
++**Priority:** Medium
++**Review policy:** Independent
++**Evidence policy:** Markdown
++
++## Problem
++
++用户要求完整工作均留在 FD worktree 后，不应再因主工作区其他 FD 的未提交修改阻止创建或无冲突交付。现有技能规则和 git-wt.py 都要求整个 parent 干净。
++
++## Solution
++
++创建仅检查当前 FD 文档及宿主根据实际 diff 确定的相关路径；发现相关修改时要求选择先提交，或明确从 HEAD 创建并保留、不携带 parent 修改。无关修改保留。交付时保持 FD worktree 干净；允许不与交付路径冲突的 parent 已暂存/未暂存/未跟踪修改。使用独立 index 形成仅含 FD 的 squash，绝不混入用户原有 index。分支内容冲突且 parent 不干净时，在修改 parent 前停止，要求先整理干净再恢复冲突。Git 判定会覆盖本地修改的路径也先要求整理，不自动 stash/reset。
++
++## Scope
++
++aiw git wt add/local-merge/cleanup、共享工作合同、fd-workflow preflight/delivery、相关 AGENTS 和使用文档。保留既有 FD-Source/单父提交、归档、审查和坐标校验。不涉及 customer-profile FD-027 内容、FD-011 实现、发布安装或测试执行。
++
++## Work items
++
++- [x] 1.1 创建按 FD 相关路径判定；明确 from-head 选择，不遗漏或擅自提交其他修改。
++- [x] 1.2 允许无冲突 dirty-parent squash，隔离原 index；冲突与失败保留用户修改，清理仍验证交付。
++- [x] 1.3 同步 canonical 技能/仓库规则及使用说明，编写未执行的定点回归用例并记录静态/编译证据。
++
++## Acceptance
++
++- 无关 parent 修改不阻止 add；相关修改无显式选择即拒绝；from-head 不携带修改且主工作区原状保留。
++- 无冲突交付不混入原 staged 内容，原修改和 staging 保持；有分支冲突且 dirty 时未修改 parent 即停止。
++- FD worktree 仍须干净；FD-Source、单父 squash 与坐标检查保留，cleanup 不再仅因无关 parent 修改失败。
++
++## Verification
++
++已静态阅读创建、交付、清理、独立 index 和冲突恢复路径；一次 scoped git diff --check 通过。
++已运行 GOPROXY=off GOSUMDB=off python scripts/compile.py（已结束且无错误输出，独立退出码未捕获，不声称 Go 编译已通过）；其后同一编译命令块对修改的 Python plugin/新增测试内存 compile()，不 import、不留产物。
++新增 tests/test_fd107_parent_edits.py 覆盖无关修改创建、当前 FD 显式选择、staged 排除/保留、分支冲突拒绝；同步旧用例的预期。测试未执行。
++测试、实际 Git 临时仓库回归、技能校验器、安装、打包、发布、联网均未运行。源码改变尚未同步到 /home/victor/apps/aiw 分发安装或 customer-profile 已安装技能，不能声称生效。
++Independent 原因：Git index/工作区持久状态及CLI契约改变，交付前需要独立审查。
++
++## TODO
++
++实现、静态检查和独立复核已完成。现有无关 .agents 修改不提交。customer-profile FD-011 待规则实现后的可用工具恢复。
++
++## Sources
++
++用户本轮要求；src/plugins/aiw-git/git-wt.py；src/skills/work-management.md。
++
++### 独立审查 r1
++
++Reviewer fd107-reviewer-20261027-73a9c4 实际认领 FD-107-000002-review-requested，
++对 HEAD 61a9040008b47763b1513069bb5dbfcf75ffe300 的限定未提交 diff 完成静态审查。
++结论 changes-requested，见 [review r1](reviews/FD-107-review-r1.md)：R1/P2 稳定 FD workflow spec 仍要求 clean parent/workspaces，需与本次规则同步。
++累计失败 1/3；未测试、未执行业务/Git 场景、未提交。Host 的 Python 内存编译通过与 Go 脚本独立退出码未捕获分别记录，不混称通过。
++
++### Worker repair r2
++
++实际 claim FD-107-000003-changes-requested，session fd107-worker-20261027-621f08。
++R1 修复：同步 openspec/specs/fd-workflow/spec.md 的创建、交付、dirty-parent冲突恢复和清理边界，新增相关/无关修改及暂存保留的可观察场景。没有创建 OpenSpec change。
++保留独立审查失败 1/3 和 r1 原报告。本轮仅规格/证据修订，未重复执行编译或测试。
++
++### 独立聚焦复核 r2
++
++Reviewer fd107-reviewer-20261027-73a9c4 实际认领 FD-107-000004-implementation-ready；
++R1 稳定规格已解决，结论 pass，见 [review r2](reviews/FD-107-review-r2.md)。
++共 2 轮，历史失败累计 1/3 保留。修复仅涉及规格/证据，本轮没有实现漂移；未执行测试或 Git 场景、未提交/安装/发布。
++
++**Completed:** 2026-10-27
+diff --git a/docs/features/archive/FD-107/index.md b/docs/features/archive/FD-107/index.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..dbeb2d0e42dae3c9a52300e699eca9d9045a85cc
+--- /dev/null
++++ b/docs/features/archive/FD-107/index.md
+@@ -0,0 +1,8 @@
++# FD-107
++
++<!-- aiw: feature-folder-index -->
++
++- [Design: FD-107_ALLOW_UNRELATED_PARENT_EDITS_DURING_FD_WORKTREE_.md](FD-107_ALLOW_UNRELATED_PARENT_EDITS_DURING_FD_WORKTREE_.md)
++- [Reviews](reviews/)
++
++Run `aiw fd show FD-107` for current status and handoff.
+diff --git a/docs/features/archive/FD-107/reports/FD-107-local-application.md b/docs/features/archive/FD-107/reports/FD-107-local-application.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..a3b3d8b329103e1aa25613a576309ef7dfb7e70c
+--- /dev/null
++++ b/docs/features/archive/FD-107/reports/FD-107-local-application.md
+@@ -0,0 +1,8 @@
++# FD-107 本机生效记录
++
++独立复核 r2 通过后定点同步 git-wt.py、共享 work-management.md 和 fd-workflow 的三份操作引用；同步前均匹配源码 HEAD 原版。备份：/mnt/temp/tmp/fd107-local-sync-e5cba0nz。
++在 customer-profile 执行 aiw pkg skill sync fd-workflow --json，ok=true。未打包/发布，未同步其他项目的技能副本。
++随后带有未提交 README 修改的 customer-profile 已成功创建 FD-011 worktree，原修改留在主工作区。
++源码尚未提交；aiw 仓库原有 .agents 修改/删除及 build/install 均保留。
++未执行测试或冲突/暂存恢复场景。Python 内存编译通过；Go编译脚本无错误输出但独立退出码未捕获。
++首次写本报告因 archive 下尚无 reports 目录失败；已创建目录后保存。归档 close 本身已成功，无重复归档。
+diff --git a/docs/features/archive/FD-107/reviews/FD-107-review-r1.md b/docs/features/archive/FD-107/reviews/FD-107-review-r1.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..c3796fc39bc9d9b412874c10ce2abb3e7eeee2a8
+--- /dev/null
++++ b/docs/features/archive/FD-107/reviews/FD-107-review-r1.md
+@@ -0,0 +1,43 @@
++# FD-107 独立静态审查 r1
++
++结论：**changes-requested**。本周期第 1 次失败，累计 1/3。
++Reviewer：`fd107-reviewer-20261027-73a9c4`；实际认领 `FD-107-000002-review-requested`。
++审查基准：HEAD `61a9040008b47763b1513069bb5dbfcf75ffe300` 与当前明确限定的未提交 diff；本轮未生成提交。
++
++## Findings
++
++- **R1 / P2 — 稳定规格仍强制整个 parent 干净，与本次用户规则及实现冲突。**
++  `openspec/specs/fd-workflow/spec.md:407` 的正常生命周期仍要求 `clean workspaces`；
++  `:660` 的 `new --worktree` / `add --prepare` 路径明确写 `require ... clean parent`。
++  `:353` 的交付场景以 parent clean 为前提，`:724` 的内容冲突路径仍未区分 dirty-parent 必须先停。
++  但本次 `worktree_add` 已允许无关修改，`local_merge` 为不碰交付路径的 parent 修改提供独立 index 交付，
++  canonical `work-management.md` 与 `preflight.md` 也已放宽。稳定规格是后续 FD 的能力契约，
++  保留相互冲突的硬要求会继续触发旧门槛，违背用户本次明确要求和仓库“决策改变时同步稳定规格”的规则。
++  最小修复：在该稳定规格中同步“仅相关修改要求选择”“不冲突 parent 修改保留内容与 staging”
++  以及“dirty parent 遇分支内容冲突时，在 parent mutation 前停止；clean 后才用既有恢复流程”，
++  并补充对应场景。无须新建 OpenSpec change，也不改历史归档 FD/报告。
++
++## 静态检查范围与判断
++
++- 实际阅读 `git-wt.py` 的创建、相关路径识别、`--from-head`、状态解析、独立 index 的 read-tree/commit、
++  真实 index 定点刷新、已有交付检测、FD-Source/单父提交检查和 cleanup 路径；对照规范、技能、使用文档和根回归用例。
++- 现有代码将同一交付路径上的本地修改也先拦截；文档已明确，且保持 Git 不覆盖本地文件的边界。
++  本轮不将其理解为必须新增 stash 式同文件不同 hunk 自动重放，也不追加该范围。
++- 对 ignored 目录替换仅存在未证实疑问；`read-tree -m -u` 自身有工作区保护，未在授权内运行场景，
++  因而不把该猜测写成确定代码缺陷。实际保留行为仍属于运行未验证项。
++- `.agents/**` 的预存修改/删除以及预存 `build`、`install` 未跟踪内容均不属于本次 diff，未改动、未纳入结论。
++
++## 实际命令和证据限制
++
++实际执行：`aiw fd resume FD-107`、本 Reviewer 的真实 claim；分批 `cat`/`sed`/`rg`/`nl`/
++`git diff`/`git rev-parse HEAD` 静态读取；读取本机 `git-read-tree` man 文档。
++首次读取 aiw 仓库 `.agents/prompts/core` 发现目录已不存在，随后读取已知 customer-profile core 合同作为资源约束参考。
++一次 `/usr/share/doc/git*` glob 在本机无匹配；没有据此更换 shell 或运行验证，也未重复同一失败命令。
++
++Host 说明 Python 内存 compile 已明确通过；Go compile 脚本已执行且无错误输出，
++但两段命令的最后 exit0 不等于 Go 脚本独立退出码，不能将该部分报告为已确认通过。
++本 Reviewer 未执行业务 import、compile、测试、Git 临时仓库场景、网络、安装、发布、lint/format/typecheck/build。
++新增和修改的用例只静态读取，未执行。
++
++残余风险：Git 版本与平台、混合 staged/unstaged、ignored 路径、hook/故障恢复行为尚未实际运行验证；
++source 修改尚未同步已安装分发与 customer-profile 技能。修复 R1 后可由本 Reviewer 聚焦复核稳定契约与邻近边界。
+diff --git a/docs/features/archive/FD-107/reviews/FD-107-review-r2.md b/docs/features/archive/FD-107/reviews/FD-107-review-r2.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..4ba964eed9ccabf390ff3ab107e6a4d0b83af109
+--- /dev/null
++++ b/docs/features/archive/FD-107/reviews/FD-107-review-r2.md
+@@ -0,0 +1,23 @@
++# FD-107 独立聚焦复核 r2
++
++结论：**pass**。R1 已解决，未发现新的阻塞问题。
++共 2 轮审查，历史失败累计 1/3，未重置。
++Reviewer：`fd107-reviewer-20261027-73a9c4`；实际认领 `FD-107-000004-implementation-ready`。
++基准仍为 HEAD `61a9040008b47763b1513069bb5dbfcf75ffe300` 的限定未提交修改；本轮聚焦修复的稳定规格及 FD 证据，未提交。
++
++- **R1 resolved**：稳定 `fd-workflow/spec.md` 的创建边界不再要求整个 parent 干净，
++  明确当前 FD 相关修改须选择 scoped commit 或 `--from-head`，无关修改保留且不阻塞。
++  正常交付要求干净 FD worktree，允许不碰交付路径的 parent 内容/staging 保留，并禁止混入 squash。
++  dirty parent 先计算分支冲突且不修改其文件/index；存在冲突时先要求 clean，再进入原 clean-parent 冲突恢复流程。
++  清理和失败约束继续要求 FD-Source/单父提交/坐标验证、保留未完成恢复现场且不重复已提交 squash。
++- 新场景明确覆盖无关 parent 修改创建、当前 FD 显式选择、原 staged 内容隔离和 dirty-parent 分支冲突前停止。
++- 相关条款与本次 canonical 技能、CLI 文档及初轮已审的代码路径一致；没有新增 OpenSpec change 或扩展到自动 stash/hunk 重放。
++
++实际命令：`aiw fd resume FD-107`、真实 Reviewer claim、`cat`/`git diff`/`rg` 定点读取，
++`git rev-parse HEAD`、限定 plugin 的 diff numstat、`git diff --check -- openspec/specs/fd-workflow/spec.md`（无输出，通过）。
++本 Reviewer 未执行业务 import、compile、测试、Git 临时仓库场景、网络、安装、发布、lint/format/typecheck/build。
++Host 的 Python 内存 compile 通过为已记录语法证据；Go 脚本无错误输出但独立退出码未捕获，不当作确认通过。
++
++残余风险保持：实际 Git 版本/平台与 staged/unstaged、ignored 路径、hook、故障/恢复场景尚未实测；
++源码修改尚未同步安装分发与 customer-profile 已安装技能，不因本静态 pass 宣称已生效。
++本结论仅允许宿主在既有授权内继续本地收尾，不授予提交、安装、发布或测试执行的额外授权。
+diff --git a/docs/features/archive/FD-108/FD-108_MAKE_FD_DIRECTORY_CREATION_AND_ARCHIVE_COMPLETE.md b/docs/features/archive/FD-108/FD-108_MAKE_FD_DIRECTORY_CREATION_AND_ARCHIVE_COMPLETE.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..941ee026a4047663b555b3dd1d091c1a663ca652
+--- /dev/null
++++ b/docs/features/archive/FD-108/FD-108_MAKE_FD_DIRECTORY_CREATION_AND_ARCHIVE_COMPLETE.md
+@@ -0,0 +1,68 @@
++# FD-108: Make FD directory creation and archive complete
++
++**Status:** Complete
++**Revision:** 6
++**Priority:** Medium
++**Review policy:** Independent
++**Evidence policy:** Markdown
++
++## Problem
++
++`aiw fd new` creates both an active FD folder and an empty archive folder. The
++archive process moves the design and selected evidence files but can leave
++active directory trees behind and omit other FD-owned content.
++
++## Solution
++
++Create only the active index directory when a new FD needs it. On close, move
++the complete FD-owned directory into the archive as one directory operation,
++and retain rollback behavior if evidence/index updates fail. Remove empty
++active folder trees after successful archival.
++
++## Scope
++
++Scope is limited to FD directory/index creation and `aiw fd close` archival in
++`src/plugins/aiw-fd.py`. Existing CLI syntax and archive layout remain stable.
++
++## Work items
++
++- [x] 1.1 Avoid creating empty active/archive index directories during FD creation.
++- [x] 1.2 Archive the complete FD-owned directory and clean up the active tree,
++  with rollback on a failed close transaction.
++
++## Acceptance
++
++New FDs create an active folder without an empty archive counterpart. Closing
++an FD preserves every item in its active folder under `archive/<FD-ID>/` and
++leaves no empty active folder tree. Existing collision checks and rollback
++restore the active tree if a close transaction fails.
++
++## Verification
++
++- Static review traced `new_fd` → `update_index` → `index_snapshot` and
++  `close_locked` → evidence moves/index update/rollback. The active FD directory
++  now moves as one unit; shared evidence rollback precedes restoration of it.
++  Shared evidence that collides with FD-local evidence is rejected before moves.
++- Compile-only check passed twice after the implementation and collision-guard
++  edits: `python -c 'from pathlib import Path; p=Path("src/plugins/aiw-fd.py"); compile(p.read_text(encoding="utf-8"), str(p), "exec")'`.
++- Tests are not authorized and were not run.
++- Independent review is required because this changes filesystem persistence
++  and archive rollback behavior.
++- Independent review passed; report: `docs/features/FD-108/reviews/FD-108-000003-review.md`.
++- The review report noted a policy wording inconsistency in its reviewed
++  snapshot. This FD consistently requires Independent review; the historical
++  report is retained unchanged.
++- Focused re-review confirmed the wording reconciliation introduced no
++  implementation drift; report: `docs/features/FD-108/reviews/FD-108-000005-review.md`.
++
++## TODO
++
++Archive FD-108 after this refreshed review pass.
++
++## Sources
++
++- Issue: none
++
++Link relevant specs and evidence used for decisions.
++
++**Completed:** 2026-10-27
+diff --git a/docs/features/archive/FD-108/index.md b/docs/features/archive/FD-108/index.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..59acb25677668cb7004f4caf1cb402fd7f0e4bcb
+--- /dev/null
++++ b/docs/features/archive/FD-108/index.md
+@@ -0,0 +1,8 @@
++# FD-108
++
++<!-- aiw: feature-folder-index -->
++
++- [Design: FD-108_MAKE_FD_DIRECTORY_CREATION_AND_ARCHIVE_COMPLETE.md](FD-108_MAKE_FD_DIRECTORY_CREATION_AND_ARCHIVE_COMPLETE.md)
++- [Reviews](reviews/)
++
++Run `aiw fd show FD-108` for current status and handoff.
+diff --git a/docs/features/archive/FD-108/reviews/FD-108-000003-review.md b/docs/features/archive/FD-108/reviews/FD-108-000003-review.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..cd86d7933a800dbc341edca3d6f22abb638fd760
+--- /dev/null
++++ b/docs/features/archive/FD-108/reviews/FD-108-000003-review.md
+@@ -0,0 +1,26 @@
++# FD-108 独立审查
++
++- FD：FD-108（Revision 3）
++- Source event：`FD-108-000003-review-requested`
++- Reviewer session：`reviewer-20261027-fd108-review-01`
++- Reviewed snapshot：工作区相对 `HEAD` `84d4d18d` 的未提交差异；审查时 `src/plugins/aiw-fd.py`、`docs/usage/aiw-fd.md` 有修改，FD 文档目录为新增文件。
++- 结论：`verification-passed`
++
++## 结果
++
++未发现阻塞问题。`new_fd` 通过 `active_destination` 创建活动目录，`update_index` 的快照检查不再创建目录；`write_index` 在没有设计/证据时仅删除缺失索引，因此创建过程不会产生空归档 FD 目录。
++
++`close_locked` 先检查归档目标安全性、目标目录是否非空及共享证据冲突，再将完整活动 FD 目录通过 `Path.replace` 移入 `archive/<FD-ID>/`。活动目录内的设计、索引和任意其他内容随目录整体保留。共享 reports/reviews 证据单独移入归档；若与 FD 本地同名文件冲突则在移动前拒绝。
++
++失败回滚先恢复已移动的共享证据，再将归档目录整体还原到活动路径，恢复设计原文、收据和两个导航索引。移动归档树前记录标志，因此失败发生在目录移动之前时不会误移目录。该顺序与 FD 要求的完整归档、冲突拒绝及失败恢复一致。
++
++## 检查记录
++
++- 查看了 FD-108、其索引、对应 `fd-workflow` 归档/碰撞要求、`new_fd`、索引快照与写入、`evidence_moves`、`close_locked` 的成功及回滚路径，以及用户文档差异。
++- 比较基准：`HEAD` `84d4d18d`；审查对象是该基准上的当前工作区差异，而非已提交实现。
++- 执行命令：`aiw fd claim FD-108 FD-108-000003-review-requested --session reviewer-20261027-fd108-review-01`；只读审查使用 `cat`、`sed`、`rg`、`git status --short`、`git diff --stat`、`git diff -- ...`、`git log -5 --oneline --decorate`、`git diff --check`、`aiw fd --help`。
++- 未运行测试、构建或编译命令；依仓库预算，测试未获授权。实现方 Verification 所述 compile-only 结果未在本次独立审查中重跑。
++
++## 剩余风险
++
++本结论基于静态追踪，没有运行故障注入来观察文件系统在中途异常时的实际恢复。FD 的 Review policy 元数据有一处不一致：文档头写 `Independent`，Verification 后文写 `Self`；本次独立审查由当前 review-requested 事件和文档头的 Independent 要求触发，不将后文误读为免审。
+diff --git a/docs/features/archive/FD-108/reviews/FD-108-000005-review.md b/docs/features/archive/FD-108/reviews/FD-108-000005-review.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..5fc1f5728fb7f66b35f0e016c4554a631d357cb6
+--- /dev/null
++++ b/docs/features/archive/FD-108/reviews/FD-108-000005-review.md
+@@ -0,0 +1,24 @@
++# FD-108 独立复审
++
++- FD：FD-108（Revision 5）
++- Source event：`FD-108-000005-review-requested`
++- Reviewer session：`reviewer-20261027-fd108-review-02`
++- Reviewed snapshot：相对 `HEAD` `84d4d18d` 的当前工作区差异。
++- 结论：`verification-passed`
++
++## 复审结果
++
++本次请求限定为复核 Verification/TODO 的文字修订是否引入实现漂移。对照当前源码及文档差异，`src/plugins/aiw-fd.py` 和 `docs/usage/aiw-fd.md` 与上一轮审查所见一致；FD 文档变更仅记录 Independent 策略、前一份报告指出的历史文字不一致已协调，以及归档前置步骤。没有实现变更或新的阻塞发现。
++
++因此维持上一份报告对完整目录移动、共享证据冲突预检及失败回滚静态路径的结论。当前 FD 头部、Verification 和 TODO 的策略表述一致，仍要求 Independent 审查；上一份报告按要求保留不变。
++
++## 检查记录
++
++- 查看了本次 review-requested 收据、FD-108 Revision 5、FD 文档差异、源码和用户文档相对基准的差异、报告目录。
++- 基准：`HEAD` `84d4d18d`；工作区实现仍未提交。本次没有重新展开实现审查，只核对实现差异未变化，并复查 FD 文本调整。
++- 实际命令：`aiw fd claim FD-108 FD-108-000005-review-requested --session reviewer-20261027-fd108-review-02`；`cat`、`git status --short`、`git diff -- src/plugins/aiw-fd.py docs/usage/aiw-fd.md`、`git diff -- docs/features/FD-108/FD-108_MAKE_FD_DIRECTORY_CREATION_AND_ARCHIVE_COMPLETE.md`、`sed`、`ls`。
++- 未运行测试、构建或编译命令；本次仅为复审记录文字修订及确认实现无漂移。
++
++## 剩余风险
++
++实现行为仍仅有静态审查证据；没有故障注入或运行时测试来验证文件系统异常下的回滚。完整实现逻辑及其剩余风险详见保留的 `FD-108-000003-review.md`。
+diff --git a/docs/usage/aiw-fd.md b/docs/usage/aiw-fd.md
+index dd61ac20dbc344a0533402bf168ad428627b171c..8e9c706e1bacc96101523afe80db305e18ca34c2 100644
+--- a/docs/usage/aiw-fd.md
++++ b/docs/usage/aiw-fd.md
+@@ -23,15 +23,19 @@ ## Feature folders
+ independent FDs do not conflict merely because their statuses changed.
+ Actual overlapping source changes still use normal Git conflict detection and
+ FD recovery; no merge driver or automatic side selection is installed.
+-Concurrent execution uses separate FD worktrees; local delivery still requires
+-a clean parent and must be performed one FD at a time.
+-
+-Close archives the design, matching reports/reviews, and navigation under
+-`docs/features/archive/FD-XXX/`. Reopen and re-review create the active folder;
+-prior evidence remains archived. Existing non-generated index.md files and
+-colliding evidence are never overwritten. Navigation rollback covers both
+-active and archived folders. Empty untracked directories may remain after a
+-failed operation.
++Concurrent execution uses separate FD worktrees; deliver one FD at a time.
++Unrelated parent edits are allowed at creation and conflict-free delivery and
++must retain their content/staging. Related FD edits at creation require a user
++choice to commit them first or explicitly create from HEAD without them. Branch
++conflicts require a clean parent before recovery; never auto-stash/reset edits.
++
++Close moves the complete active FD folder, including its design, local evidence,
++navigation, and other contents, to `docs/features/archive/FD-XXX/`. Shared
++reports/reviews are moved into that archive folder. Reopen and re-review create
++the active folder; prior evidence remains archived. Existing non-generated
++index.md files and colliding evidence are never overwritten. Navigation
++rollback covers both active and archived folders. Empty untracked parent
++directories may remain after a failed operation.
+ 
+ Compatibility: flat `docs/features/FD-XXX_SLUG.md`, flat archived designs,
+ and shared `docs/features/reports/` and `reviews/` remain readable. Evidence
+diff --git a/docs/usage/cli-reference.md b/docs/usage/cli-reference.md
+index dd928bffc17f9b5ef27074d177f50ff7d43fd96a..19eb9debba6dd57b66106c278643528be29ef31a 100644
+--- a/docs/usage/cli-reference.md
++++ b/docs/usage/cli-reference.md
+@@ -272,7 +272,12 @@ ### Continue a legacy Task
+ 
+ ### Work in an isolated FD worktree
+ 
+-Commit the ready FD plan on a clean parent. Ensure `.wt/` and `.ai/` are
++The existing FD plan must exist in HEAD. Unrelated parent edits are allowed.
++When this FD has parent edits, choose to commit only those edits first or use
++`wt add FD-027 --from-head` to create from HEAD without carrying them. Pass known
++related code paths with repeatable `--related-path PATH`; FD document paths are
++recognized automatically. Nothing is automatically stashed or committed.
++Ensure `.wt/` and `.ai/` are
+ ignored by Git, then create the dedicated worktree. `wt add` checks both
+ paths before changing Git state and explains which ignore rule is missing.
+ 
+@@ -295,7 +300,11 @@ ### Work in an isolated FD worktree
+ aiw git wt local-merge FD-027
+ ```
+ 
+-If delivery conflicts in the parent, `local-merge` confirms the conflict,
++Unrelated staged, unstaged and untracked parent edits may remain during
++conflict-free delivery; an isolated index keeps them out of the squash. Changes
++on paths that Git would replace must be handled first. If the branches conflict
++and the parent is dirty, the command stops before changing parent files and
++requires a clean parent for recovery. With a clean parent, `local-merge` confirms the conflict,
+ resets that squash, verifies that the parent is clean, and merges the parent
+ branch into the FD worktree. Resolve and commit conflicts there, then rerun
+ `local-merge` explicitly. If the reset or recovery checks fail, the command
+@@ -310,7 +319,7 @@ ### Advance a numbered FD
+ Optional tests use the standalone `$fd-test` Skill when requested and do not
+ gate the default FD lifecycle.
+ Create the isolated worktree with `aiw git wt add` after committing the ready FD
+-plan and cleaning the parent workspace. After review, deliver with
++plan, with any related parent edits handled by the explicit choice above. After review, deliver with
+ `aiw git wt local-merge`; it creates one parent commit without retaining individual
+ FD commits. Parent-side content conflicts are recovered in the FD worktree and
+ require an explicit retry after resolution. The workflow does not rebase.
+diff --git a/install b/install
+new file mode 100644
+index 0000000000000000000000000000000000000000..be858e726455f8c9190929907b8bdef40c27c662
+--- /dev/null
++++ b/install
+@@ -0,0 +1 @@
++python build.py install all
+diff --git a/openspec/specs/fd-workflow/spec.md b/openspec/specs/fd-workflow/spec.md
+index 5127c3169213e84b7b827ec8cb4013ae3c4a9f58..b2af4440f65cf8dc37502be3594a4dee7d6a434f 100644
+--- a/openspec/specs/fd-workflow/spec.md
++++ b/openspec/specs/fd-workflow/spec.md
+@@ -348,9 +348,9 @@ ### Requirement: Diagnose failed delivery before parent synchronization
+ second squash. Isolated archive/commit MUST be completed in the FD worktree
+ before local-merge; successful delivery then performs verified Git cleanup.
+ 
+-#### Scenario: Clean direct delivery
++#### Scenario: Conflict-free local delivery
+ 
+-- **WHEN** an FD has its applicable self-check/independent evidence and its recorded parent is clean
++- **WHEN** an FD has its applicable self-check/independent evidence and its recorded parent has no local edits that delivery would overwrite
+ - **THEN** the host attempts local-merge without a mandatory parent sync
+ - **AND** archive/commit in the FD worktree precedes the final verified delivery/cleanup.
+ 
+@@ -404,8 +404,13 @@ ### Requirement: Bounded host-operated automatic FD lifecycle
+ Commits MUST contain coherent scoped changes; a small FD MAY use one
+ implementation commit. Neither branch is rebased. Isolated delivery MUST
+ squash to the recorded parent as a single-parent commit with FD-Source equal
+-to the clean FD HEAD, verify coordinates and clean workspaces, and safely
+-clean up only verified resources. Before final delivery, the host MUST close and
++to the clean FD HEAD, verify coordinates and a clean FD worktree, and safely
++clean up only verified resources. Unrelated parent edits MUST NOT block a
++conflict-free delivery or verified cleanup. The tool MUST preserve their content
++and staging and MUST NOT include them in the squash. Local edits on paths Git
++would overwrite MUST be handled before delivery. A dirty parent with branch
++content conflicts MUST stop before parent mutation and become clean before
++conflict recovery. The tool MUST NOT automatically stash/reset user edits. Before final delivery, the host MUST close and
+ commit the archive inside the FD worktree. Direct-workspace execution skips
+ worktree creation/delivery, and non-Git work skips all Git lifecycle operations.
+ 
+@@ -657,10 +662,18 @@ ### Requirement: Git and workspace boundary
+ Explicit auto inside Git MUST author its plan, implementation, required review,
+ evidence and archive in its worktree. For a new FD, new --worktree MUST allocate
+ a non-reused ID and prepare feature/<FD-ID> at .wt/<FD-ID> before writing the
+-FD. Its managed add --prepare route MUST require a new ID, clean parent,
++FD. Its managed add --prepare route MUST require a new ID,
+ ignored management paths, valid coordinates and branch/path safety; it MUST
+ NOT require a prior parent-plan commit. Existing committed FDs MAY use ordinary
+-add. Reuse valid recorded workspaces; failed setup MUST NOT silently fall back
++add. Parent edits unrelated to the selected FD MUST NOT block creation.
++The host MUST inspect the FD's documents/evidence and actual related code paths.
++For relevant parent edits it MUST ask whether to commit only those edits first,
++or explicitly create from committed HEAD without carrying them. The latter MUST
++leave parent edits intact and explain their exclusion; it MUST NOT silently
++omit relevant work. `wt add --from-head` records the explicit choice, and
++repeatable `--related-path PATH` supplies known related code paths. Ordinary add
++still requires the FD plan to exist in HEAD; a new isolated plan uses new
++--worktree. Reuse valid recorded workspaces; failed setup MUST NOT silently fall back
+ to executing auto in the parent.
+ 
+ FD numbering MUST consider registered worktree designs and existing workspace
+@@ -721,8 +734,15 @@ ### Requirement: Legacy records remain readable
+ worktree and workspace metadata. After applicable verification and in-worktree archive,
+ `wt local-merge` MUST squash the FD result into one single-parent commit on its
+ recorded parent, including `FD-Source: <FD-HEAD>` in the commit message. On a
+-parent-side squash content conflict, it MUST reset the failed squash, verify
+-parent recovery, and merge the parent into the FD worktree for resolution.
++parent-side squash content conflict from an initially clean parent, it MUST
++reset the failed squash, verify parent recovery, and merge the parent into the
++FD worktree for resolution. If the parent initially has local edits, the tool
++MUST first compute branch conflict status without changing parent files or its
++index; branch conflicts MUST require a clean parent before this recovery route.
++For conflict-free, disjoint parent edits it MUST isolate the delivery index so
++pre-existing staged content never enters the squash. A failed delivery/index
++refresh MUST retain the FD worktree and report recovery state; it MUST NOT repeat
++a committed squash or claim complete cleanup.
+ Delivery MUST require a second explicit `local-merge` invocation after that
+ resolution is committed. After a successful squash and validation of the
+ single-parent commit, recorded coordinates, clean FD worktree, and matching
+@@ -1099,3 +1119,29 @@ #### Scenario: Legacy and folder evidence collide
+ - WHEN two evidence sources would archive to the same filename
+ - THEN archive fails clearly before moving evidence
+ - AND neither source is silently selected or overwritten.
++
++
++#### Scenario: Create with unrelated parent work
++
++- **WHEN** the parent has edits belonging to a different FD
++- **THEN** add creates the selected FD worktree from HEAD and leaves those edits and their staging unchanged
++- **AND** no unrelated commit or stash is required.
++
++#### Scenario: Current FD has parent edits
++
++- **WHEN** the parent contains uncommitted design, evidence or known related code for the selected FD
++- **THEN** the host asks for a scoped commit first or explicit creation from HEAD without carrying those edits
++- **AND** add without that explicit choice rejects relevant dirty paths
++- **AND** --from-head retains those edits in the parent rather than silently copying or discarding them.
++
++#### Scenario: Preserve staged parent work during delivery
++
++- **WHEN** the branches merge without conflict and parent edits do not overlap delivery paths
++- **THEN** local-merge commits only the FD merge result using an isolated index
++- **AND** staged, unstaged and untracked parent work stays intact after delivery and cleanup.
++
++#### Scenario: Dirty parent and conflicting branches
++
++- **WHEN** parent and FD commits conflict and the parent has local edits
++- **THEN** local-merge stops before changing parent files or its index
++- **AND** asks for a clean parent before conflict recovery without automatically stashing or resetting edits.
+diff --git a/src/go.mod b/src/go.mod
+index 2361901205f00a76b3337453534a42bb3143c9b8..f5878a97a485dbab393290f89654796b98eccc5f 100644
+--- a/src/go.mod
++++ b/src/go.mod
+@@ -6,13 +6,15 @@ require github.com/openai/openai-go v1.12.0
+ 
+ require github.com/manifoldco/promptui v0.9.0
+ 
+-require github.com/BurntSushi/toml v1.6.0
++require (
++	github.com/BurntSushi/toml v1.6.0
++	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
++	golang.org/x/sys v0.29.0
++)
+ 
+ require (
+-	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
+ 	github.com/tidwall/gjson v1.14.4 // indirect
+ 	github.com/tidwall/match v1.1.1 // indirect
+ 	github.com/tidwall/pretty v1.2.1 // indirect
+ 	github.com/tidwall/sjson v1.2.5 // indirect
+-	golang.org/x/sys v0.29.0 // indirect
+ )
+diff --git a/src/plugins/aiw-fd.py b/src/plugins/aiw-fd.py
+index 4d5f98a60e3103be9894881bc40ee5ea7fbfe683..830428b787182ac4761951fafc43b92e6407f09a 100644
+--- a/src/plugins/aiw-fd.py
++++ b/src/plugins/aiw-fd.py
+@@ -1167,7 +1167,13 @@ def index_paths(base: Path, name: str) -> list[Path]:
+ def index_snapshot(base: Path, name: str) -> dict[Path, bytes | None]:
+     originals = {}
+     for path in index_paths(base, name):
+-        ensure_feature_directory(base, path.parent)
++        if not path.parent.resolve().is_relative_to(base.resolve()):
++            raise FDError(f"feature index is outside the repository: {path}")
++        for parent in (path.parent, *path.parent.parents):
++            if parent == base:
++                break
++            if parent.is_symlink() or (parent.exists() and not parent.is_dir()):
++                raise FDError(f"unsafe feature index directory: {parent}")
+         if path.is_symlink() or (path.exists() and not path.is_file()):
+             raise FDError(f"unsafe feature index: {path}")
+         value = path.read_bytes() if path.exists() else None
+@@ -2203,7 +2209,8 @@ def evidence_moves(base: Path, name: str) -> list[tuple[Path, Path]]:
+     features = feature_dir(base)
+     moves = []
+     for folder in ("reports", "reviews"):
+-        source_dirs = [features / name / folder, features / folder]
++        # FD-local evidence travels with its complete feature directory.
++        source_dirs = [features / folder]
+         for source in sorted(path for directory in source_dirs
+                              for path in directory.glob(f"{name}*")):
+             if source.suffix not in {".md", ".json"}:
+@@ -2217,6 +2224,9 @@ def evidence_moves(base: Path, name: str) -> list[tuple[Path, Path]]:
+             target = features / "archive" / name / folder / source.name
+             if target.exists() or target.is_symlink():
+                 raise FDError(f"archived FD evidence already exists: {target}")
++            local_target = features / name / folder / source.name
++            if local_target.exists() or local_target.is_symlink():
++                raise FDError(f"FD-local evidence collides with shared evidence: {local_target}")
+             if any(destination == target for _, destination in moves):
+                 raise FDError(f"multiple active evidence files target the same archive: {target}")
+             parent = target.parent
+@@ -2280,10 +2290,13 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
+         raise FDError("Complete requires the current Reviewer's verification-passed event")
+     if latest and latest[1]["dispatch_state"] in {"launching", "dispatched"}:
+         raise FDError("cannot archive while a role execution has an unknown result")
+-    archive = feature_dir(base) / "archive" / name / fd_path.name
+-    if archive.exists() or archive.is_symlink():
+-        raise FDError(f"archived FD already exists: {archive}")
+-    parent = archive.parent
++    archive_dir = feature_dir(base) / "archive" / name
++    archive = archive_dir / fd_path.name
++    if archive_dir.is_symlink() or (archive_dir.exists() and not archive_dir.is_dir()):
++        raise FDError(f"unsafe FD archive directory: {archive_dir}")
++    if archive_dir.exists() and any(archive_dir.iterdir()):
++        raise FDError(f"archived FD directory already exists and is not empty: {archive_dir}")
++    parent = archive_dir.parent
+     archive_root = feature_dir(base) / "archive"
+     while parent != archive_root.parent:
+         if parent.is_symlink() or (parent.exists() and not parent.is_dir()):
+@@ -2317,18 +2330,22 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
+                                     "no-pending-receipt"),
+         })
+     moved = []
++    archive_tree_moved = False
+     event_path = latest[0] if latest else None
+     original_event = dict(latest[1]) if latest else None
+     original_indexes = index_snapshot(base, name)
+     receipt_attempted = False
+     try:
++        atomic_text(fd_path, content)
++        archive_dir.parent.mkdir(parents=True, exist_ok=True)
++        if archive_dir.exists():
++            archive_dir.rmdir()
++        fd_path.parent.replace(archive_dir)
++        archive_tree_moved = True
+         for source, target in moves:
+             target.parent.mkdir(parents=True, exist_ok=True)
+             source.replace(target)
+             moved.append((source, target))
+-        atomic_text(fd_path, content)
+-        archive.parent.mkdir(parents=True, exist_ok=True)
+-        fd_path.replace(archive)
+         update_receipt = bool(
+             latest
+             and latest[1]["dispatch_state"] == "pending"
+@@ -2358,9 +2375,23 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
+                 force_audit_path.unlink()
+             except OSError as rollback_error:
+                 rollback_errors.append(str(rollback_error))
+-        if archive.exists():
++        for source, target in reversed(moved):
++            if target.exists():
++                try:
++                    source.parent.mkdir(parents=True, exist_ok=True)
++                    target.replace(source)
++                    parent = target.parent
++                    while parent != archive_dir and parent.is_relative_to(archive_dir):
++                        try:
++                            parent.rmdir()
++                        except OSError:
++                            break
++                        parent = parent.parent
++                except (OSError, FDError) as rollback_error:
++                    rollback_errors.append(str(rollback_error))
++        if archive_tree_moved and archive_dir.exists():
+             try:
+-                archive.replace(fd_path)
++                archive_dir.replace(fd_path.parent)
+             except OSError as rollback_error:
+                 rollback_errors.append(str(rollback_error))
+         if fd_path.exists():
+@@ -2368,13 +2399,6 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
+                 atomic_text(fd_path, original_content)
+             except OSError as rollback_error:
+                 rollback_errors.append(str(rollback_error))
+-        for source, target in reversed(moved):
+-            if target.exists():
+-                try:
+-                    source.parent.mkdir(parents=True, exist_ok=True)
+-                    target.replace(source)
+-                except (OSError, FDError) as rollback_error:
+-                    rollback_errors.append(str(rollback_error))
+         if receipt_attempted and event_path and original_event:
+             try:
+                 atomic_json(event_path, original_event)
+diff --git a/src/plugins/aiw-git/git-wt.py b/src/plugins/aiw-git/git-wt.py
+index f9dd9a7200588e765a314877bb3c6add8338c5e3..d77c8493c51d7f74d4d43870da761f4cb68d8069 100644
+--- a/src/plugins/aiw-git/git-wt.py
++++ b/src/plugins/aiw-git/git-wt.py
+@@ -9,6 +9,7 @@
+ import stat
+ import subprocess
+ import sys
++import tempfile
+ import uuid
+ from pathlib import Path
+ 
+@@ -151,7 +152,8 @@ def command_output(result: subprocess.CompletedProcess[str]) -> None:
+         print(result.stderr, end="", file=sys.stderr)
+ 
+ 
+-def worktree_add(raw_id: str, prepare: bool = False) -> int:
++def worktree_add(raw_id: str, prepare: bool = False, from_head: bool = False,
++                 related_paths: tuple[str, ...] = ()) -> int:
+     fd_id = normalize_fd_id(raw_id)
+     root = repository_root()
+     fd_files = active_designs(root, fd_id)
+@@ -165,12 +167,26 @@ def worktree_add(raw_id: str, prepare: bool = False) -> int:
+             raise WorktreeError(f"expected one active FD design for {fd_id}")
+         fd_file = fd_files[0].relative_to(root).as_posix()
+         tracked = git(root, "ls-files", "--error-unmatch", "--", fd_file)
+-        committed = git(root, "diff", "--quiet", "HEAD", "--", fd_file)
+-        if tracked.returncode or committed.returncode:
+-            raise WorktreeError("commit the existing FD plan before creating its worktree")
+-    status = git(root, "status", "--porcelain")
+-    if status.returncode or status.stdout.strip():
+-        raise WorktreeError("parent worktree must be clean before creating an FD worktree")
++        exists_at_head = git(root, "cat-file", "-e", f"HEAD:{fd_file}")
++        if tracked.returncode or exists_at_head.returncode:
++            raise WorktreeError("existing FD plan must exist in HEAD; commit the new plan before add")
++    no_operation(root, "parent worktree")
++    dirty = changed_paths(root)
++    scopes = [f"docs/features/{fd_id}", f"docs/features/archive/{fd_id}"]
++    for value in related_paths:
++        path = Path(value)
++        if path.is_absolute() or ".." in path.parts or value in ("", "."):
++            raise WorktreeError("--related-path must be a repository-relative file or directory")
++        scopes.append(path.as_posix().rstrip("/"))
++    relevant = sorted(path for path in dirty if
++                      any(overlapping(path, scope) for scope in scopes)
++                      or path.startswith(f"docs/features/{fd_id}_"))
++    if relevant and not from_head:
++        raise WorktreeError("current FD has parent edits: " + ", ".join(relevant) +
++                            "; choose to commit those edits first, or add --from-head to "
++                            "create from committed HEAD without carrying them")
++    if relevant:
++        print("Creating from HEAD; current-FD parent edits remain in the parent and are not included.")
+     parent = git(root, "symbolic-ref", "--quiet", "--short", "HEAD")
+     if parent.returncode or not parent.stdout.strip():
+         raise WorktreeError("cannot create an FD worktree from a detached HEAD")
+@@ -385,16 +401,106 @@ def worktree_delete(raw_id: str) -> int:
+     return 0
+ 
+ 
+-def clean_worktree(path: Path, label: str) -> None:
+-    result = git(path, "status", "--porcelain")
++def changed_paths(path: Path) -> set[str]:
++    result = git(path, "status", "--porcelain=v1", "-z", "--untracked-files=all")
+     if result.returncode:
+-        raise WorktreeError(result.stderr.strip() or f"cannot inspect {label}")
+-    if result.stdout.strip():
+-        raise WorktreeError(f"{label} has uncommitted changes; no operation was started")
++        raise WorktreeError(result.stderr.strip() or "cannot inspect worktree changes")
++    records = iter(result.stdout.split("\0"))
++    paths: set[str] = set()
++    for record in records:
++        if not record:
++            continue
++        paths.add(record[3:])
++        if "R" in record[:2] or "C" in record[:2]:
++            paths.add(next(records))
++    return paths
++
++
++def overlapping(left: str, right: str) -> bool:
++    return left == right or left.startswith(right + "/") or right.startswith(left + "/")
++
++
++def no_operation(path: Path, label: str) -> None:
++    unresolved = git(path, "ls-files", "--unmerged")
++    if unresolved.returncode or unresolved.stdout:
++        raise WorktreeError(f"{label} has unresolved index entries or cannot be inspected")
+     for marker, operation in (("MERGE_HEAD", "merge"), ("CHERRY_PICK_HEAD", "cherry-pick"),
+                               ("REVERT_HEAD", "revert"), ("REBASE_HEAD", "rebase")):
+         if git(path, "rev-parse", "--verify", "-q", marker).returncode == 0:
+             raise WorktreeError(f"{label} already has a {operation} in progress")
++    for name in ("rebase-merge", "rebase-apply", "sequencer"):
++        result = git(path, "rev-parse", "--git-path", name)
++        if result.returncode:
++            raise WorktreeError(f"cannot inspect {label} operation metadata")
++        location = Path(result.stdout.strip())
++        if (location if location.is_absolute() else path / location).exists():
++            raise WorktreeError(f"{label} has an operation in progress")
++
++
++def clean_worktree(path: Path, label: str) -> None:
++    no_operation(path, label)
++    if changed_paths(path):
++        raise WorktreeError(f"{label} has uncommitted changes; no operation was started")
++
++
++def deliver_with_parent_edits(parent: Path, source_oid: str, parent_oid: str,
++                              fd_id: str, branch: str) -> tuple[int, str | None]:
++    """Keep the real index out of the squash, and preserve disjoint local edits."""
++    merged = git(parent, "merge-tree", "--write-tree", parent_oid, source_oid)
++    if merged.returncode:
++        raise WorktreeError("parent has local edits and the branch merge conflicts or could not be "
++                            "computed; make the parent clean before conflict recovery. No parent files changed")
++    tree_oid = merged.stdout.splitlines()[0]
++    changes = git(parent, "diff", "--name-only", "--no-renames", "-z", parent_oid, tree_oid)
++    if changes.returncode:
++        raise WorktreeError("cannot determine squash paths; parent preserved")
++    paths = [value for value in changes.stdout.split("\0") if value]
++    collisions = sorted(local for local in changed_paths(parent)
++                        if any(overlapping(local, delivered) for delivered in paths))
++    if collisions:
++        raise WorktreeError("delivery would touch parent edits: " + ", ".join(collisions) +
++                            "; commit or move those edits before merging; no parent files changed")
++    for value in paths:
++        existed = git(parent, "cat-file", "-e", f"{parent_oid}:{value}")
++        target = parent / value
++        if existed.returncode and (target.exists() or target.is_symlink()):
++            raise WorktreeError(f"delivery would replace an existing untracked/ignored path: {value}")
++    if not paths:
++        raise WorktreeError("FD has no new changes to deliver; parent preserved")
++    # An alternate index prevents a pre-existing staged change entering this commit.
++    descriptor, filename = tempfile.mkstemp(prefix="aiw-wt-index-")
++    os.close(descriptor)
++    Path(filename).unlink()
++    environment = os.environ.copy()
++    environment["GIT_INDEX_FILE"] = filename
++
++    def isolated(*args: str) -> subprocess.CompletedProcess[str]:
++        return subprocess.run(["git", *args], cwd=parent, env=environment,
++                              text=True, capture_output=True, check=False)
++
++    for arguments in (("read-tree", parent_oid), ("read-tree", "-m", "-u", parent_oid, tree_oid),
++                      ("commit", "-m", f"Squash {fd_id} from {branch}", "-m", f"FD-Source: {source_oid}")):
++        result = isolated(*arguments)
++        command_output(result)
++        if result.returncode:
++            print(f"Delivery stopped; original parent index retained. Alternate index: {filename}. "
++                  "Inspect before recovery; no automatic reset/stash.", file=sys.stderr)
++            return result.returncode, None
++    delivered = git(parent, "rev-parse", "--verify", "HEAD")
++    if delivered.returncode:
++        print(f"Commit may exist; preserve alternate index {filename} and inspect HEAD.", file=sys.stderr)
++        return 2, None
++    # Only paths clean at entry are updated in the real index. All user staging stays intact.
++    refreshed = subprocess.run(["git", "--literal-pathspecs", "reset", "-q", "HEAD",
++                                "--pathspec-from-file=-", "--pathspec-file-nul"], cwd=parent,
++                               input="\0".join(paths) + "\0", text=True, capture_output=True, check=False)
++    command_output(refreshed)
++    if refreshed.returncode:
++        print(f"Delivery committed, but index refresh failed. Preserve {filename}; do not repeat squash.",
++              file=sys.stderr)
++        return refreshed.returncode, None
++    Path(filename).unlink(missing_ok=True)
++    return 0, delivered.stdout.strip()
+ 
+ 
+ def content_conflict(path: Path) -> bool:
+@@ -449,8 +555,16 @@ def cleanup_delivered_worktree(
+         expected_parent_before_oid: str | None) -> int:
+     """Remove the exact FD worktree and branch only after validating its squash delivery."""
+     try:
+-        clean_worktree(parent_path, "parent worktree after squash delivery")
++        no_operation(parent_path, "parent worktree after squash delivery")
+         clean_worktree(worktree_path, "FD worktree before cleanup")
++        delivered_paths = git(parent_path, "diff-tree", "--no-commit-id", "--name-only",
++                              "--no-renames", "-r", "-z", delivered_oid)
++        if delivered_paths.returncode:
++            raise WorktreeError("cannot inspect delivered paths before cleanup")
++        touched = {value for value in delivered_paths.stdout.split("\0") if value}
++        if any(overlapping(local, value) for local in changed_paths(parent_path) for value in touched):
++            raise WorktreeError("parent index/worktree still has edits on delivered paths; "
++                                "verify index refresh before cleanup; do not repeat squash")
+         current_source = git(worktree_path, "rev-parse", "--verify", "HEAD")
+         if current_source.returncode or current_source.stdout.strip() != source_oid:
+             raise WorktreeError("FD HEAD changed after squash delivery; worktree and branch were preserved")
+@@ -527,7 +641,7 @@ def local_merge(raw_id: str) -> int:
+         raise WorktreeError(f"parent worktree is not on recorded branch {expected_parent}")
+     if fd_branch.returncode or fd_branch.stdout.strip() != data["branch"]:
+         raise WorktreeError(f"FD worktree is not on recorded branch {data['branch']}")
+-    clean_worktree(parent_path, "parent worktree")
++    no_operation(parent_path, "parent worktree")
+     clean_worktree(worktree_path, "FD worktree")
+ 
+     source = git(worktree_path, "rev-parse", "--verify", "HEAD")
+@@ -548,6 +662,15 @@ def local_merge(raw_id: str) -> int:
+                                           parent_path, source_oid,
+                                           prior_delivery_oid, None)
+ 
++    if changed_paths(parent_path):
++        code, delivered_oid = deliver_with_parent_edits(parent_path, source_oid, parent_before.stdout.strip(),
++                                                       fd_id, data["branch"])
++        if code or delivered_oid is None:
++            return code or 2
++        print(f"delivery: squashed {data['branch']} into {expected_parent}; unrelated parent edits retained")
++        return cleanup_delivered_worktree(root, fd_id, data, worktree_path, parent_path,
++                                          source_oid, delivered_oid, parent_before.stdout.strip())
++
+     print(f"Squashing {data['branch']} into {expected_parent}.")
+     delivery = git(parent_path, "merge", "--squash", data["branch"])
+     command_output(delivery)
+@@ -622,7 +745,7 @@ def list_worktrees() -> int:
+ def usage() -> None:
+     print("Usage: aiw git wt <command> [args...]")
+     print("Commands:")
+-    print("  add <fd-id> [--prepare]             Create an FD worktree; prepare allows planning a new FD inside it.")
++    print("  add <fd-id> [--prepare] [--from-head] [--related-path PATH]  Create from HEAD; preserve parent edits.")
+     print("  status <fd-id>                      Show parent and FD worktree status.")
+     print('  commit <fd-id> "message"             Commit changes in the FD worktree.')
+     print("  sync <fd-id> [branch]               Merge a primary-worktree branch into the FD worktree.")
+@@ -639,10 +762,15 @@ def main(args: list[str] | None = None) -> int:
+         return 0
+     command, rest = values[0], values[1:]
+     try:
+-        if command == "add" and len(rest) == 1:
+-            return worktree_add(rest[0])
+-        if command == "add" and len(rest) == 2 and rest[1] == "--prepare":
+-            return worktree_add(rest[0], prepare=True)
++        if command == "add" and rest:
++            import argparse
++            parser = argparse.ArgumentParser(prog="aiw git wt add")
++            parser.add_argument("fd_id")
++            parser.add_argument("--prepare", action="store_true")
++            parser.add_argument("--from-head", action="store_true")
++            parser.add_argument("--related-path", action="append", default=[])
++            options = parser.parse_args(rest)
++            return worktree_add(options.fd_id, options.prepare, options.from_head, tuple(options.related_path))
+         if command == "status" and len(rest) == 1:
+             return worktree_status(rest[0])
+         if command == "commit" and len(rest) == 2:
+diff --git a/src/skills/fd-workflow/references/delivery.md b/src/skills/fd-workflow/references/delivery.md
+index efa93714d6c017a4b14c26937da93efc0bd2fbcc..a243a75e976814d3230a8c9185b32df6559763d2 100644
+--- a/src/skills/fd-workflow/references/delivery.md
++++ b/src/skills/fd-workflow/references/delivery.md
+@@ -21,8 +21,10 @@ ## Deliver a ready FD
+    Complete from the FD worktree, then commit its archive/index/evidence there.
+    A close rejection stops delivery; do not hand-edit receipts or archive manually.
+ 2. Read workspace.json and verify the recorded parent, branch and worktree.
+-   Require clean FD and parent workspaces, then invoke aiw git wt local-merge
+-   <id> for one final squash that includes implementation and archive together.
++   Require a clean FD worktree. Parent edits are allowed when they do not collide
++   with delivery; `local-merge` must preserve both their content and staging and
++   exclude them from the squash. Invoke aiw git wt local-merge <id> for one final
++   squash that includes implementation and archive together.
+    Only this tool-managed delivery writes to the parent.
+ 3. The tool verifies the single-parent squash, clean FD HEAD, FD-Source and
+    coordinates before removing the worktree/branch. Preserve receipts. A cleanup
+@@ -35,6 +37,12 @@ ## Deliver a ready FD
+ Preserve uncertain state and stop. Report actual archive, delivery and cleanup
+ results; archive alone is not full delivery of an isolated FD.
+ 
++A dirty parent with branch content conflicts must be made clean before conflict
++recovery; the tool stops before modifying it. Local edits on paths Git would
++replace must be handled first as well. Never automatically stash or reset user
++edits. Cleanup accepts unrelated parent edits after verifying the delivered
++commit and index; an incomplete index refresh retains the FD worktree for recovery.
++
+ ## Recover a failed local delivery
+ 
+ Keep full failure output and inspect both workspaces, the delivered commit if
+diff --git a/src/skills/fd-workflow/references/portable-operations.md b/src/skills/fd-workflow/references/portable-operations.md
+index cdd84c17a0fb632fd298ff2b35b71c6e805716bd..6c3bd6afd556702dc1cb36e14d40b3ede8d6bccc 100644
+--- a/src/skills/fd-workflow/references/portable-operations.md
++++ b/src/skills/fd-workflow/references/portable-operations.md
+@@ -39,6 +39,8 @@ ## Git lookup
+   its plan must already be committed. New isolated FDs use new --worktree,
+   which calls add --prepare before the plan exists. Outside Git, skip both.
+   Read [preflight](preflight.md) and verify recorded coordinates.
++- `aiw git wt add FD-001 --from-head`: explicit user choice to leave related
++  parent edits behind; use `--related-path PATH` for known related code paths.
+ - `aiw git wt status FD-001`: inspect workspaces.
+ - `aiw git wt local-merge FD-001`: after archive/commit inside the FD worktree,
+   squash-deliver implementation and archive together; read [delivery](delivery.md).
+diff --git a/src/skills/fd-workflow/references/preflight.md b/src/skills/fd-workflow/references/preflight.md
+index 20ca7d185d981a1e4e44f20014b6f9cb533582bd..bea8ce87ec28b48651bd9db2d7c8c396e0996e6d 100644
+--- a/src/skills/fd-workflow/references/preflight.md
++++ b/src/skills/fd-workflow/references/preflight.md
+@@ -25,11 +25,19 @@ ## Workspace
+ For an existing committed FD, use aiw git wt add <id> before further authored
+ changes. Do not create a second worktree when valid coordinates already exist.
+ 
+-Creation needs a clean parent and ignored .wt/ and .ai/ paths. Verify fd_id,
+-parent_branch, branch and worktree in the recorded workspace.json. The recorded
++Creation needs ignored .wt/ and .ai/ paths, not a globally clean parent. Inspect
++whether parent edits belong to this FD (design/evidence and relevant code from
++the plan and diff). Unrelated edits stay untouched and do not block creation.
++For related edits, ask the user to choose a scoped commit before creation or
++explicit creation from committed HEAD without carrying the edits. Explain the
++latter choice and use `wt add --from-head`; never silently leave FD work behind.
++Pass additional known related dirty paths with `--related-path PATH`; the CLI
++recognizes FD document paths automatically. Existing ordinary add still needs
++a plan in HEAD; new isolated plans use new --worktree.
++Verify fd_id, parent_branch, branch and worktree in workspace.json. The recorded
+ parent is the sole final delivery target. Do not write the new plan, Worker
+-reports or archive on that parent. A dirty parent or unsupported CLI stops
+-isolated setup; never silently execute auto in the current/parent workspace.
++reports or archive on that parent. An unsupported CLI or unresolved relevant-edit
++decision stops setup; never silently run auto in the parent.
+ 
+ Direct execution creates no worktree or workspace metadata. Preserve unrelated
+ edits and user Git limits. Workspace selection alone does not authorize
+diff --git a/src/skills/work-management.md b/src/skills/work-management.md
+index 764f5b75d572c20895e7e4d7ffe0ac900b41c2f2..d8d523f590b808596244c0e34f7a089d4e41ccf3 100644
+--- a/src/skills/work-management.md
++++ b/src/skills/work-management.md
+@@ -174,9 +174,16 @@ ## Workspace, delivery and archive
+ For a new isolated FD, aiw fd new "title" --worktree allocates its ID, prepares
+ feature/<fd-id> at .wt/<fd-id> through aiw git wt add <id> --prepare, and writes
+ the FD there. No authored plan is written or committed on the parent first.
+-Existing committed FDs use the ordinary add command. Require a clean parent
+-before creation and delivery; do not commit unrelated edits. Both .wt/ and
+-.ai/ must be ignored. Verify fd_id, parent_branch, branch and worktree in the
++Existing committed FDs use the ordinary add command. Inspect parent edits only
++for relevance to this FD, including its design/evidence and implementation paths.
++Unrelated edits do not block creation and remain in the parent. If relevant edits
++exist, ask whether to commit only those edits first or explicitly create from HEAD
++without carrying them (`wt add --from-head`). Explain that the latter leaves them
++in the parent; never silently omit them. Pass known related dirty paths with
++`--related-path PATH`; CLI automatically checks this FD's document directory and
++legacy filename. A new uncommitted FD plan still needs a committed base before
++ordinary add; new isolated plans use new --worktree. Never commit/stash/reset
++unrelated edits. Both .wt/ and .ai/ must be ignored. Verify fd_id, parent_branch, branch and worktree in the
+ recorded workspace.json. Shared coordination receipts may remain in .ai,
+ but authored FD artifacts and all roles stay in the selected worktree.
+ 
+@@ -188,8 +195,13 @@ ## Workspace, delivery and archive
+ Archive-only bookkeeping does not claim another implementation review.
+ Then use aiw git wt local-merge for one final squash to the recorded parent;
+ the parent receives the implementation and archive together. The tool checks
+-clean workspaces, recorded coordinates, a single-parent squash and FD-Source
+-matching clean FD HEAD before cleanup. Keep receipts and detach only a verified
++a clean FD workspace, recorded coordinates, a single-parent squash and FD-Source
++matching FD HEAD before cleanup. Parent edits may remain if they do not collide
++with delivered paths; preserve their content and staging and never include them
++in the squash. Use the tool's isolated-index delivery. Branch content conflicts
++with a dirty parent stop before parent mutation: require a clean parent before
++conflict recovery. Local edits that Git would overwrite must also be resolved
++first. Unrelated dirty parent state alone does not block verified cleanup. Keep receipts and detach only a verified
+ .ai link, never its target. Ordinary direct Git execution commits/archives in
+ the current workspace without a worktree or squash step.
+ 
+diff --git a/tests/test_fd027_wt_blackbox.py b/tests/test_fd027_wt_blackbox.py
+index 916d5d93365b3873ed41fe67dd89fb8bed9178a0..605460f02090b4b412d7539ce36a96bec1cc95f0 100644
+--- a/tests/test_fd027_wt_blackbox.py
++++ b/tests/test_fd027_wt_blackbox.py
+@@ -101,10 +101,11 @@ def test_rejects_task_and_unknown_fd_without_creating_tree(self):
+         self.assert_wt_error("add", "FD-999")
+         self.assertFalse((self.root / ".wt" / "FD-027").exists())
+ 
+-    def test_add_rejects_dirty_parent(self):
++    def test_add_preserves_unrelated_dirty_parent(self):
+         (self.root / "unrelated.txt").write_text("uncommitted\n", encoding="utf-8")
+-        self.assert_wt_error("add", "FD-027")
+-        self.assertFalse((self.root / ".wt" / "FD-027").exists())
++        self.assert_wt_ok("add", "FD-027")
++        self.assertTrue((self.root / ".wt" / "FD-027").exists())
++        self.assertEqual((self.root / "unrelated.txt").read_text(), "uncommitted\n")
+ 
+     def assert_missing_ignore_blocks_add(self, rules, missing_rules):
+         (self.root / ".gitignore").write_text(rules, encoding="utf-8")
+diff --git a/tests/test_fd029_wt_squash.py b/tests/test_fd029_wt_squash.py
+index 9ff2143a06e998992dbb303a5d18f29722bab255..72fa621a54daee45393f596c0c4df79f7eacb2b8 100644
+--- a/tests/test_fd029_wt_squash.py
++++ b/tests/test_fd029_wt_squash.py
+@@ -130,14 +130,14 @@ def test_successful_delivery_is_terminal_after_worktree_cleanup(self):
+         self.assertEqual(self.git("status", "--porcelain"), "")
+         self.assertIn(f"FD-Source: {source}", self.git("log", "-1", "--format=%B"))
+ 
+-    def test_dirty_parent_or_fd_tree_is_rejected_before_delivery(self):
++    def test_overlapping_parent_or_dirty_fd_tree_is_rejected_before_delivery(self):
+         tree = self.add()
+         source = self.commit_file("feature.txt", "feature\n", "Work Item", cwd=tree)
+         parent_before = self.git("rev-parse", "HEAD")
+-        (self.root / "uncommitted.txt").write_text("parent dirty\n", encoding="utf-8")
++        (self.root / "feature.txt").write_text("parent dirty\n", encoding="utf-8")
+         self.wt_error("local-merge", FD_ID)
+         self.assertEqual(self.git("rev-parse", "HEAD"), parent_before)
+-        (self.root / "uncommitted.txt").unlink()
++        (self.root / "feature.txt").unlink()
+         (tree / "uncommitted.txt").write_text("FD dirty\n", encoding="utf-8")
+         self.wt_error("local-merge", FD_ID, cwd=tree)
+         self.assertEqual(self.git("rev-parse", "HEAD"), parent_before)
+diff --git a/tests/test_fd107_parent_edits.py b/tests/test_fd107_parent_edits.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..2171f5fe55ce90c8046f9ae11dc0d923462a04e6
+--- /dev/null
++++ b/tests/test_fd107_parent_edits.py
+@@ -0,0 +1,110 @@
++"""Offline regression cases for preserving parent edits; execution needs authorization."""
++from pathlib import Path
++import os
++import subprocess
++import sys
++import tempfile
++import unittest
++
++PLUGIN = Path(__file__).resolve().parents[1] / 'src/plugins/aiw-git/git-wt.py'
++FD = 'FD-107'
++PLAN = 'docs/features/FD-107/FD-107_TEST.md'
++
++
++class ParentEditTests(unittest.TestCase):
++    def setUp(self):
++        self.scratch = tempfile.TemporaryDirectory(prefix='fd107-parent-')
++        self.addCleanup(self.scratch.cleanup)
++        self.root = Path(self.scratch.name) / 'repo'
++        self.root.mkdir()
++        hooks = Path(self.scratch.name) / 'hooks'
++        hooks.mkdir()
++        self.env = os.environ.copy()
++        self.env.update(GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL=os.devnull,
++                        GIT_CONFIG_COUNT='1', GIT_CONFIG_KEY_0='core.hooksPath',
++                        GIT_CONFIG_VALUE_0=str(hooks), GIT_TERMINAL_PROMPT='0')
++        self.env.pop('GIT_INDEX_FILE', None)
++        self.git('init', '-b', 'main')
++        self.git('config', 'user.name', 'FD Test')
++        self.git('config', 'user.email', 'fd@example.invalid')
++        (self.root / PLAN).parent.mkdir(parents=True)
++        (self.root / PLAN).write_text('# FD-107\n**Status:** Open\n')
++        (self.root / '.gitignore').write_text('.ai/\n.wt/\n')
++        for name in ('staged.txt', 'unstaged.txt', 'shared.txt'):
++            (self.root / name).write_text('base\n')
++        self.git('add', '.')
++        self.git('commit', '-m', 'base')
++
++    def command(self, *args, cwd=None):
++        return subprocess.run(args, cwd=cwd or self.root, env=self.env, text=True,
++                              capture_output=True, check=False, timeout=30)
++
++    def git(self, *args, cwd=None):
++        result = self.command('git', *args, cwd=cwd)
++        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
++        return result.stdout
++
++    def wt(self, *args):
++        return self.command(sys.executable, str(PLUGIN), *args)
++
++    def add(self):
++        result = self.wt('add', FD)
++        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
++        return self.root / '.wt' / FD
++
++    def test_creation_keeps_unrelated_parent_edits(self):
++        (self.root / 'unstaged.txt').write_text('local\n')
++        tree = self.add()
++        self.assertEqual((tree / 'unstaged.txt').read_text(), 'base\n')
++        self.assertEqual((self.root / 'unstaged.txt').read_text(), 'local\n')
++
++    def test_related_edit_requires_explicit_head_choice(self):
++        (self.root / PLAN).write_text('changed FD plan\n')
++        self.assertNotEqual(self.wt('add', FD).returncode, 0)
++        result = self.wt('add', FD, '--from-head')
++        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
++        self.assertEqual((self.root / '.wt' / FD / PLAN).read_text(), '# FD-107\n**Status:** Open\n')
++        self.assertEqual((self.root / PLAN).read_text(), 'changed FD plan\n')
++
++    def test_delivery_excludes_staged_parent_content_and_preserves_staging(self):
++        tree = self.add()
++        (tree / 'feature.txt').write_text('feature\n')
++        self.git('add', 'feature.txt', cwd=tree)
++        self.git('commit', '-m', 'feature', cwd=tree)
++        source = self.git('rev-parse', 'HEAD', cwd=tree).strip()
++        (self.root / 'staged.txt').write_text('staged local\n')
++        self.git('add', 'staged.txt')
++        (self.root / 'unstaged.txt').write_text('unstaged local\n')
++        (self.root / 'untracked.txt').write_text('untracked local\n')
++        status = self.git('status', '--porcelain')
++        staged = self.git('diff', '--cached', '--binary')
++        result = self.wt('local-merge', FD)
++        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
++        self.assertEqual(self.git('show', 'HEAD:staged.txt'), 'base\n')
++        self.assertEqual(self.git('show', 'HEAD:feature.txt'), 'feature\n')
++        self.assertEqual(self.git('status', '--porcelain'), status)
++        self.assertEqual(self.git('diff', '--cached', '--binary'), staged)
++        self.assertEqual((self.root / 'unstaged.txt').read_text(), 'unstaged local\n')
++        self.assertEqual((self.root / 'untracked.txt').read_text(), 'untracked local\n')
++        self.assertIn('FD-Source: ' + source, self.git('show', '-s', '--format=%B'))
++        self.assertEqual(len(self.git('rev-list', '--parents', '-n', '1', 'HEAD').split()), 2)
++        self.assertFalse(tree.exists())
++
++    def test_branch_conflict_with_dirty_parent_stops_without_mutation(self):
++        tree = self.add()
++        (tree / 'shared.txt').write_text('feature\n')
++        self.git('add', 'shared.txt', cwd=tree)
++        self.git('commit', '-m', 'feature', cwd=tree)
++        (self.root / 'shared.txt').write_text('parent\n')
++        self.git('add', 'shared.txt')
++        self.git('commit', '-m', 'parent')
++        (self.root / 'untracked.txt').write_text('local\n')
++        head = self.git('rev-parse', 'HEAD')
++        status = self.git('status', '--porcelain')
++        result = self.wt('local-merge', FD)
++        self.assertNotEqual(result.returncode, 0)
++        self.assertIn('make the parent clean', result.stderr)
++        self.assertEqual(self.git('rev-parse', 'HEAD'), head)
++        self.assertEqual(self.git('status', '--porcelain'), status)
++        self.assertEqual((self.root / 'shared.txt').read_text(), 'parent\n')
++        self.assertTrue(tree.exists())

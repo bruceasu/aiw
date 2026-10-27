@@ -348,9 +348,9 @@ failed cleanup MUST NOT be treated as a reason to blindly sync or create a
 second squash. Isolated archive/commit MUST be completed in the FD worktree
 before local-merge; successful delivery then performs verified Git cleanup.
 
-#### Scenario: Clean direct delivery
+#### Scenario: Conflict-free local delivery
 
-- **WHEN** an FD has its applicable self-check/independent evidence and its recorded parent is clean
+- **WHEN** an FD has its applicable self-check/independent evidence and its recorded parent has no local edits that delivery would overwrite
 - **THEN** the host attempts local-merge without a mandatory parent sync
 - **AND** archive/commit in the FD worktree precedes the final verified delivery/cleanup.
 
@@ -404,8 +404,13 @@ take priority. Incomplete scope MUST NOT be delivered or archived as complete.
 Commits MUST contain coherent scoped changes; a small FD MAY use one
 implementation commit. Neither branch is rebased. Isolated delivery MUST
 squash to the recorded parent as a single-parent commit with FD-Source equal
-to the clean FD HEAD, verify coordinates and clean workspaces, and safely
-clean up only verified resources. Before final delivery, the host MUST close and
+to the clean FD HEAD, verify coordinates and a clean FD worktree, and safely
+clean up only verified resources. Unrelated parent edits MUST NOT block a
+conflict-free delivery or verified cleanup. The tool MUST preserve their content
+and staging and MUST NOT include them in the squash. Local edits on paths Git
+would overwrite MUST be handled before delivery. A dirty parent with branch
+content conflicts MUST stop before parent mutation and become clean before
+conflict recovery. The tool MUST NOT automatically stash/reset user edits. Before final delivery, the host MUST close and
 commit the archive inside the FD worktree. Direct-workspace execution skips
 worktree creation/delivery, and non-Git work skips all Git lifecycle operations.
 
@@ -657,10 +662,18 @@ MUST NOT itself select auto.
 Explicit auto inside Git MUST author its plan, implementation, required review,
 evidence and archive in its worktree. For a new FD, new --worktree MUST allocate
 a non-reused ID and prepare feature/<FD-ID> at .wt/<FD-ID> before writing the
-FD. Its managed add --prepare route MUST require a new ID, clean parent,
+FD. Its managed add --prepare route MUST require a new ID,
 ignored management paths, valid coordinates and branch/path safety; it MUST
 NOT require a prior parent-plan commit. Existing committed FDs MAY use ordinary
-add. Reuse valid recorded workspaces; failed setup MUST NOT silently fall back
+add. Parent edits unrelated to the selected FD MUST NOT block creation.
+The host MUST inspect the FD's documents/evidence and actual related code paths.
+For relevant parent edits it MUST ask whether to commit only those edits first,
+or explicitly create from committed HEAD without carrying them. The latter MUST
+leave parent edits intact and explain their exclusion; it MUST NOT silently
+omit relevant work. `wt add --from-head` records the explicit choice, and
+repeatable `--related-path PATH` supplies known related code paths. Ordinary add
+still requires the FD plan to exist in HEAD; a new isolated plan uses new
+--worktree. Reuse valid recorded workspaces; failed setup MUST NOT silently fall back
 to executing auto in the parent.
 
 FD numbering MUST consider registered worktree designs and existing workspace
@@ -721,8 +734,15 @@ provided by `aiw-git` MUST be the sole FD worktree interface. A standalone
 worktree and workspace metadata. After applicable verification and in-worktree archive,
 `wt local-merge` MUST squash the FD result into one single-parent commit on its
 recorded parent, including `FD-Source: <FD-HEAD>` in the commit message. On a
-parent-side squash content conflict, it MUST reset the failed squash, verify
-parent recovery, and merge the parent into the FD worktree for resolution.
+parent-side squash content conflict from an initially clean parent, it MUST
+reset the failed squash, verify parent recovery, and merge the parent into the
+FD worktree for resolution. If the parent initially has local edits, the tool
+MUST first compute branch conflict status without changing parent files or its
+index; branch conflicts MUST require a clean parent before this recovery route.
+For conflict-free, disjoint parent edits it MUST isolate the delivery index so
+pre-existing staged content never enters the squash. A failed delivery/index
+refresh MUST retain the FD worktree and report recovery state; it MUST NOT repeat
+a committed squash or claim complete cleanup.
 Delivery MUST require a second explicit `local-merge` invocation after that
 resolution is committed. After a successful squash and validation of the
 single-parent commit, recorded coordinates, clean FD worktree, and matching
@@ -1099,3 +1119,29 @@ rollback on failure.
 - WHEN two evidence sources would archive to the same filename
 - THEN archive fails clearly before moving evidence
 - AND neither source is silently selected or overwritten.
+
+
+#### Scenario: Create with unrelated parent work
+
+- **WHEN** the parent has edits belonging to a different FD
+- **THEN** add creates the selected FD worktree from HEAD and leaves those edits and their staging unchanged
+- **AND** no unrelated commit or stash is required.
+
+#### Scenario: Current FD has parent edits
+
+- **WHEN** the parent contains uncommitted design, evidence or known related code for the selected FD
+- **THEN** the host asks for a scoped commit first or explicit creation from HEAD without carrying those edits
+- **AND** add without that explicit choice rejects relevant dirty paths
+- **AND** --from-head retains those edits in the parent rather than silently copying or discarding them.
+
+#### Scenario: Preserve staged parent work during delivery
+
+- **WHEN** the branches merge without conflict and parent edits do not overlap delivery paths
+- **THEN** local-merge commits only the FD merge result using an isolated index
+- **AND** staged, unstaged and untracked parent work stays intact after delivery and cleanup.
+
+#### Scenario: Dirty parent and conflicting branches
+
+- **WHEN** parent and FD commits conflict and the parent has local edits
+- **THEN** local-merge stops before changing parent files or its index
+- **AND** asks for a clean parent before conflict recovery without automatically stashing or resetting edits.

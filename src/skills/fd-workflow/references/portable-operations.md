@@ -39,6 +39,8 @@ compatibility and required authority before use; do not invent flags.
   its plan must already be committed. New isolated FDs use new --worktree,
   which calls add --prepare before the plan exists. Outside Git, skip both.
   Read [preflight](preflight.md) and verify recorded coordinates.
+- `aiw git wt add FD-001 --from-head`: explicit user choice to leave related
+  parent edits behind; use `--related-path PATH` for known related code paths.
 - `aiw git wt status FD-001`: inspect workspaces.
 - `aiw git wt local-merge FD-001`: after archive/commit inside the FD worktree,
   squash-deliver implementation and archive together; read [delivery](delivery.md).

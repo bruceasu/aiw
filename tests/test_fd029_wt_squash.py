@@ -130,14 +130,14 @@ class SquashDeliveryBlackBox(unittest.TestCase):
         self.assertEqual(self.git("status", "--porcelain"), "")
         self.assertIn(f"FD-Source: {source}", self.git("log", "-1", "--format=%B"))
 
-    def test_dirty_parent_or_fd_tree_is_rejected_before_delivery(self):
+    def test_overlapping_parent_or_dirty_fd_tree_is_rejected_before_delivery(self):
         tree = self.add()
         source = self.commit_file("feature.txt", "feature\n", "Work Item", cwd=tree)
         parent_before = self.git("rev-parse", "HEAD")
-        (self.root / "uncommitted.txt").write_text("parent dirty\n", encoding="utf-8")
+        (self.root / "feature.txt").write_text("parent dirty\n", encoding="utf-8")
         self.wt_error("local-merge", FD_ID)
         self.assertEqual(self.git("rev-parse", "HEAD"), parent_before)
-        (self.root / "uncommitted.txt").unlink()
+        (self.root / "feature.txt").unlink()
         (tree / "uncommitted.txt").write_text("FD dirty\n", encoding="utf-8")
         self.wt_error("local-merge", FD_ID, cwd=tree)
         self.assertEqual(self.git("rev-parse", "HEAD"), parent_before)

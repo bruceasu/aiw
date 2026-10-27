@@ -101,10 +101,11 @@ class FDWorktreeBlackBox(unittest.TestCase):
         self.assert_wt_error("add", "FD-999")
         self.assertFalse((self.root / ".wt" / "FD-027").exists())
 
-    def test_add_rejects_dirty_parent(self):
+    def test_add_preserves_unrelated_dirty_parent(self):
         (self.root / "unrelated.txt").write_text("uncommitted\n", encoding="utf-8")
-        self.assert_wt_error("add", "FD-027")
-        self.assertFalse((self.root / ".wt" / "FD-027").exists())
+        self.assert_wt_ok("add", "FD-027")
+        self.assertTrue((self.root / ".wt" / "FD-027").exists())
+        self.assertEqual((self.root / "unrelated.txt").read_text(), "uncommitted\n")
 
     def assert_missing_ignore_blocks_add(self, rules, missing_rules):
         (self.root / ".gitignore").write_text(rules, encoding="utf-8")

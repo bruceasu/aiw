@@ -9,6 +9,7 @@ import re
 import stat
 import subprocess
 import sys
+import tempfile
 import uuid
 from pathlib import Path
 
@@ -151,7 +152,8 @@ def command_output(result: subprocess.CompletedProcess[str]) -> None:
         print(result.stderr, end="", file=sys.stderr)
 
 
-def worktree_add(raw_id: str, prepare: bool = False) -> int:
+def worktree_add(raw_id: str, prepare: bool = False, from_head: bool = False,
+                 related_paths: tuple[str, ...] = ()) -> int:
     fd_id = normalize_fd_id(raw_id)
     root = repository_root()
     fd_files = active_designs(root, fd_id)
@@ -165,12 +167,26 @@ def worktree_add(raw_id: str, prepare: bool = False) -> int:
             raise WorktreeError(f"expected one active FD design for {fd_id}")
         fd_file = fd_files[0].relative_to(root).as_posix()
         tracked = git(root, "ls-files", "--error-unmatch", "--", fd_file)
-        committed = git(root, "diff", "--quiet", "HEAD", "--", fd_file)
-        if tracked.returncode or committed.returncode:
-            raise WorktreeError("commit the existing FD plan before creating its worktree")
-    status = git(root, "status", "--porcelain")
-    if status.returncode or status.stdout.strip():
-        raise WorktreeError("parent worktree must be clean before creating an FD worktree")
+        exists_at_head = git(root, "cat-file", "-e", f"HEAD:{fd_file}")
+        if tracked.returncode or exists_at_head.returncode:
+            raise WorktreeError("existing FD plan must exist in HEAD; commit the new plan before add")
+    no_operation(root, "parent worktree")
+    dirty = changed_paths(root)
+    scopes = [f"docs/features/{fd_id}", f"docs/features/archive/{fd_id}"]
+    for value in related_paths:
+        path = Path(value)
+        if path.is_absolute() or ".." in path.parts or value in ("", "."):
+            raise WorktreeError("--related-path must be a repository-relative file or directory")
+        scopes.append(path.as_posix().rstrip("/"))
+    relevant = sorted(path for path in dirty if
+                      any(overlapping(path, scope) for scope in scopes)
+                      or path.startswith(f"docs/features/{fd_id}_"))
+    if relevant and not from_head:
+        raise WorktreeError("current FD has parent edits: " + ", ".join(relevant) +
+                            "; choose to commit those edits first, or add --from-head to "
+                            "create from committed HEAD without carrying them")
+    if relevant:
+        print("Creating from HEAD; current-FD parent edits remain in the parent and are not included.")
     parent = git(root, "symbolic-ref", "--quiet", "--short", "HEAD")
     if parent.returncode or not parent.stdout.strip():
         raise WorktreeError("cannot create an FD worktree from a detached HEAD")
@@ -385,16 +401,106 @@ def worktree_delete(raw_id: str) -> int:
     return 0
 
 
-def clean_worktree(path: Path, label: str) -> None:
-    result = git(path, "status", "--porcelain")
+def changed_paths(path: Path) -> set[str]:
+    result = git(path, "status", "--porcelain=v1", "-z", "--untracked-files=all")
     if result.returncode:
-        raise WorktreeError(result.stderr.strip() or f"cannot inspect {label}")
-    if result.stdout.strip():
-        raise WorktreeError(f"{label} has uncommitted changes; no operation was started")
+        raise WorktreeError(result.stderr.strip() or "cannot inspect worktree changes")
+    records = iter(result.stdout.split("\0"))
+    paths: set[str] = set()
+    for record in records:
+        if not record:
+            continue
+        paths.add(record[3:])
+        if "R" in record[:2] or "C" in record[:2]:
+            paths.add(next(records))
+    return paths
+
+
+def overlapping(left: str, right: str) -> bool:
+    return left == right or left.startswith(right + "/") or right.startswith(left + "/")
+
+
+def no_operation(path: Path, label: str) -> None:
+    unresolved = git(path, "ls-files", "--unmerged")
+    if unresolved.returncode or unresolved.stdout:
+        raise WorktreeError(f"{label} has unresolved index entries or cannot be inspected")
     for marker, operation in (("MERGE_HEAD", "merge"), ("CHERRY_PICK_HEAD", "cherry-pick"),
                               ("REVERT_HEAD", "revert"), ("REBASE_HEAD", "rebase")):
         if git(path, "rev-parse", "--verify", "-q", marker).returncode == 0:
             raise WorktreeError(f"{label} already has a {operation} in progress")
+    for name in ("rebase-merge", "rebase-apply", "sequencer"):
+        result = git(path, "rev-parse", "--git-path", name)
+        if result.returncode:
+            raise WorktreeError(f"cannot inspect {label} operation metadata")
+        location = Path(result.stdout.strip())
+        if (location if location.is_absolute() else path / location).exists():
+            raise WorktreeError(f"{label} has an operation in progress")
+
+
+def clean_worktree(path: Path, label: str) -> None:
+    no_operation(path, label)
+    if changed_paths(path):
+        raise WorktreeError(f"{label} has uncommitted changes; no operation was started")
+
+
+def deliver_with_parent_edits(parent: Path, source_oid: str, parent_oid: str,
+                              fd_id: str, branch: str) -> tuple[int, str | None]:
+    """Keep the real index out of the squash, and preserve disjoint local edits."""
+    merged = git(parent, "merge-tree", "--write-tree", parent_oid, source_oid)
+    if merged.returncode:
+        raise WorktreeError("parent has local edits and the branch merge conflicts or could not be "
+                            "computed; make the parent clean before conflict recovery. No parent files changed")
+    tree_oid = merged.stdout.splitlines()[0]
+    changes = git(parent, "diff", "--name-only", "--no-renames", "-z", parent_oid, tree_oid)
+    if changes.returncode:
+        raise WorktreeError("cannot determine squash paths; parent preserved")
+    paths = [value for value in changes.stdout.split("\0") if value]
+    collisions = sorted(local for local in changed_paths(parent)
+                        if any(overlapping(local, delivered) for delivered in paths))
+    if collisions:
+        raise WorktreeError("delivery would touch parent edits: " + ", ".join(collisions) +
+                            "; commit or move those edits before merging; no parent files changed")
+    for value in paths:
+        existed = git(parent, "cat-file", "-e", f"{parent_oid}:{value}")
+        target = parent / value
+        if existed.returncode and (target.exists() or target.is_symlink()):
+            raise WorktreeError(f"delivery would replace an existing untracked/ignored path: {value}")
+    if not paths:
+        raise WorktreeError("FD has no new changes to deliver; parent preserved")
+    # An alternate index prevents a pre-existing staged change entering this commit.
+    descriptor, filename = tempfile.mkstemp(prefix="aiw-wt-index-")
+    os.close(descriptor)
+    Path(filename).unlink()
+    environment = os.environ.copy()
+    environment["GIT_INDEX_FILE"] = filename
+
+    def isolated(*args: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(["git", *args], cwd=parent, env=environment,
+                              text=True, capture_output=True, check=False)
+
+    for arguments in (("read-tree", parent_oid), ("read-tree", "-m", "-u", parent_oid, tree_oid),
+                      ("commit", "-m", f"Squash {fd_id} from {branch}", "-m", f"FD-Source: {source_oid}")):
+        result = isolated(*arguments)
+        command_output(result)
+        if result.returncode:
+            print(f"Delivery stopped; original parent index retained. Alternate index: {filename}. "
+                  "Inspect before recovery; no automatic reset/stash.", file=sys.stderr)
+            return result.returncode, None
+    delivered = git(parent, "rev-parse", "--verify", "HEAD")
+    if delivered.returncode:
+        print(f"Commit may exist; preserve alternate index {filename} and inspect HEAD.", file=sys.stderr)
+        return 2, None
+    # Only paths clean at entry are updated in the real index. All user staging stays intact.
+    refreshed = subprocess.run(["git", "--literal-pathspecs", "reset", "-q", "HEAD",
+                                "--pathspec-from-file=-", "--pathspec-file-nul"], cwd=parent,
+                               input="\0".join(paths) + "\0", text=True, capture_output=True, check=False)
+    command_output(refreshed)
+    if refreshed.returncode:
+        print(f"Delivery committed, but index refresh failed. Preserve {filename}; do not repeat squash.",
+              file=sys.stderr)
+        return refreshed.returncode, None
+    Path(filename).unlink(missing_ok=True)
+    return 0, delivered.stdout.strip()
 
 
 def content_conflict(path: Path) -> bool:
@@ -449,8 +555,16 @@ def cleanup_delivered_worktree(
         expected_parent_before_oid: str | None) -> int:
     """Remove the exact FD worktree and branch only after validating its squash delivery."""
     try:
-        clean_worktree(parent_path, "parent worktree after squash delivery")
+        no_operation(parent_path, "parent worktree after squash delivery")
         clean_worktree(worktree_path, "FD worktree before cleanup")
+        delivered_paths = git(parent_path, "diff-tree", "--no-commit-id", "--name-only",
+                              "--no-renames", "-r", "-z", delivered_oid)
+        if delivered_paths.returncode:
+            raise WorktreeError("cannot inspect delivered paths before cleanup")
+        touched = {value for value in delivered_paths.stdout.split("\0") if value}
+        if any(overlapping(local, value) for local in changed_paths(parent_path) for value in touched):
+            raise WorktreeError("parent index/worktree still has edits on delivered paths; "
+                                "verify index refresh before cleanup; do not repeat squash")
         current_source = git(worktree_path, "rev-parse", "--verify", "HEAD")
         if current_source.returncode or current_source.stdout.strip() != source_oid:
             raise WorktreeError("FD HEAD changed after squash delivery; worktree and branch were preserved")
@@ -527,7 +641,7 @@ def local_merge(raw_id: str) -> int:
         raise WorktreeError(f"parent worktree is not on recorded branch {expected_parent}")
     if fd_branch.returncode or fd_branch.stdout.strip() != data["branch"]:
         raise WorktreeError(f"FD worktree is not on recorded branch {data['branch']}")
-    clean_worktree(parent_path, "parent worktree")
+    no_operation(parent_path, "parent worktree")
     clean_worktree(worktree_path, "FD worktree")
 
     source = git(worktree_path, "rev-parse", "--verify", "HEAD")
@@ -547,6 +661,15 @@ def local_merge(raw_id: str) -> int:
         return cleanup_delivered_worktree(root, fd_id, data, worktree_path,
                                           parent_path, source_oid,
                                           prior_delivery_oid, None)
+
+    if changed_paths(parent_path):
+        code, delivered_oid = deliver_with_parent_edits(parent_path, source_oid, parent_before.stdout.strip(),
+                                                       fd_id, data["branch"])
+        if code or delivered_oid is None:
+            return code or 2
+        print(f"delivery: squashed {data['branch']} into {expected_parent}; unrelated parent edits retained")
+        return cleanup_delivered_worktree(root, fd_id, data, worktree_path, parent_path,
+                                          source_oid, delivered_oid, parent_before.stdout.strip())
 
     print(f"Squashing {data['branch']} into {expected_parent}.")
     delivery = git(parent_path, "merge", "--squash", data["branch"])
@@ -622,7 +745,7 @@ def list_worktrees() -> int:
 def usage() -> None:
     print("Usage: aiw git wt <command> [args...]")
     print("Commands:")
-    print("  add <fd-id> [--prepare]             Create an FD worktree; prepare allows planning a new FD inside it.")
+    print("  add <fd-id> [--prepare] [--from-head] [--related-path PATH]  Create from HEAD; preserve parent edits.")
     print("  status <fd-id>                      Show parent and FD worktree status.")
     print('  commit <fd-id> "message"             Commit changes in the FD worktree.')
     print("  sync <fd-id> [branch]               Merge a primary-worktree branch into the FD worktree.")
@@ -639,10 +762,15 @@ def main(args: list[str] | None = None) -> int:
         return 0
     command, rest = values[0], values[1:]
     try:
-        if command == "add" and len(rest) == 1:
-            return worktree_add(rest[0])
-        if command == "add" and len(rest) == 2 and rest[1] == "--prepare":
-            return worktree_add(rest[0], prepare=True)
+        if command == "add" and rest:
+            import argparse
+            parser = argparse.ArgumentParser(prog="aiw git wt add")
+            parser.add_argument("fd_id")
+            parser.add_argument("--prepare", action="store_true")
+            parser.add_argument("--from-head", action="store_true")
+            parser.add_argument("--related-path", action="append", default=[])
+            options = parser.parse_args(rest)
+            return worktree_add(options.fd_id, options.prepare, options.from_head, tuple(options.related_path))
         if command == "status" and len(rest) == 1:
             return worktree_status(rest[0])
         if command == "commit" and len(rest) == 2:

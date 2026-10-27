@@ -174,9 +174,16 @@ metadata blocks the affected recovery rather than silently selecting the parent.
 For a new isolated FD, aiw fd new "title" --worktree allocates its ID, prepares
 feature/<fd-id> at .wt/<fd-id> through aiw git wt add <id> --prepare, and writes
 the FD there. No authored plan is written or committed on the parent first.
-Existing committed FDs use the ordinary add command. Require a clean parent
-before creation and delivery; do not commit unrelated edits. Both .wt/ and
-.ai/ must be ignored. Verify fd_id, parent_branch, branch and worktree in the
+Existing committed FDs use the ordinary add command. Inspect parent edits only
+for relevance to this FD, including its design/evidence and implementation paths.
+Unrelated edits do not block creation and remain in the parent. If relevant edits
+exist, ask whether to commit only those edits first or explicitly create from HEAD
+without carrying them (`wt add --from-head`). Explain that the latter leaves them
+in the parent; never silently omit them. Pass known related dirty paths with
+`--related-path PATH`; CLI automatically checks this FD's document directory and
+legacy filename. A new uncommitted FD plan still needs a committed base before
+ordinary add; new isolated plans use new --worktree. Never commit/stash/reset
+unrelated edits. Both .wt/ and .ai/ must be ignored. Verify fd_id, parent_branch, branch and worktree in the
 recorded workspace.json. Shared coordination receipts may remain in .ai,
 but authored FD artifacts and all roles stay in the selected worktree.
 
@@ -188,8 +195,13 @@ Close/archive the FD and commit its archive/index/evidence in the same worktree.
 Archive-only bookkeeping does not claim another implementation review.
 Then use aiw git wt local-merge for one final squash to the recorded parent;
 the parent receives the implementation and archive together. The tool checks
-clean workspaces, recorded coordinates, a single-parent squash and FD-Source
-matching clean FD HEAD before cleanup. Keep receipts and detach only a verified
+a clean FD workspace, recorded coordinates, a single-parent squash and FD-Source
+matching FD HEAD before cleanup. Parent edits may remain if they do not collide
+with delivered paths; preserve their content and staging and never include them
+in the squash. Use the tool's isolated-index delivery. Branch content conflicts
+with a dirty parent stop before parent mutation: require a clean parent before
+conflict recovery. Local edits that Git would overwrite must also be resolved
+first. Unrelated dirty parent state alone does not block verified cleanup. Keep receipts and detach only a verified
 .ai link, never its target. Ordinary direct Git execution commits/archives in
 the current workspace without a worktree or squash step.
 

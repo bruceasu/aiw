@@ -23,15 +23,19 @@ status table. State changes never rewrite a shared tracked status table, so
 independent FDs do not conflict merely because their statuses changed.
 Actual overlapping source changes still use normal Git conflict detection and
 FD recovery; no merge driver or automatic side selection is installed.
-Concurrent execution uses separate FD worktrees; local delivery still requires
-a clean parent and must be performed one FD at a time.
+Concurrent execution uses separate FD worktrees; deliver one FD at a time.
+Unrelated parent edits are allowed at creation and conflict-free delivery and
+must retain their content/staging. Related FD edits at creation require a user
+choice to commit them first or explicitly create from HEAD without them. Branch
+conflicts require a clean parent before recovery; never auto-stash/reset edits.
 
-Close archives the design, matching reports/reviews, and navigation under
-`docs/features/archive/FD-XXX/`. Reopen and re-review create the active folder;
-prior evidence remains archived. Existing non-generated index.md files and
-colliding evidence are never overwritten. Navigation rollback covers both
-active and archived folders. Empty untracked directories may remain after a
-failed operation.
+Close moves the complete active FD folder, including its design, local evidence,
+navigation, and other contents, to `docs/features/archive/FD-XXX/`. Shared
+reports/reviews are moved into that archive folder. Reopen and re-review create
+the active folder; prior evidence remains archived. Existing non-generated
+index.md files and colliding evidence are never overwritten. Navigation
+rollback covers both active and archived folders. Empty untracked parent
+directories may remain after a failed operation.
 
 Compatibility: flat `docs/features/FD-XXX_SLUG.md`, flat archived designs,
 and shared `docs/features/reports/` and `reviews/` remain readable. Evidence

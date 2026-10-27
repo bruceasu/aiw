@@ -25,11 +25,19 @@ aiw fd new "title" --worktree; it prepares the worktree before writing the plan.
 For an existing committed FD, use aiw git wt add <id> before further authored
 changes. Do not create a second worktree when valid coordinates already exist.
 
-Creation needs a clean parent and ignored .wt/ and .ai/ paths. Verify fd_id,
-parent_branch, branch and worktree in the recorded workspace.json. The recorded
+Creation needs ignored .wt/ and .ai/ paths, not a globally clean parent. Inspect
+whether parent edits belong to this FD (design/evidence and relevant code from
+the plan and diff). Unrelated edits stay untouched and do not block creation.
+For related edits, ask the user to choose a scoped commit before creation or
+explicit creation from committed HEAD without carrying the edits. Explain the
+latter choice and use `wt add --from-head`; never silently leave FD work behind.
+Pass additional known related dirty paths with `--related-path PATH`; the CLI
+recognizes FD document paths automatically. Existing ordinary add still needs
+a plan in HEAD; new isolated plans use new --worktree.
+Verify fd_id, parent_branch, branch and worktree in workspace.json. The recorded
 parent is the sole final delivery target. Do not write the new plan, Worker
-reports or archive on that parent. A dirty parent or unsupported CLI stops
-isolated setup; never silently execute auto in the current/parent workspace.
+reports or archive on that parent. An unsupported CLI or unresolved relevant-edit
+decision stops setup; never silently run auto in the parent.
 
 Direct execution creates no worktree or workspace metadata. Preserve unrelated
 edits and user Git limits. Workspace selection alone does not authorize

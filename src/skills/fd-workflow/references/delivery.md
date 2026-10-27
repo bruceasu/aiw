@@ -21,8 +21,10 @@ For selected worktrees, keep authored completion work there:
    Complete from the FD worktree, then commit its archive/index/evidence there.
    A close rejection stops delivery; do not hand-edit receipts or archive manually.
 2. Read workspace.json and verify the recorded parent, branch and worktree.
-   Require clean FD and parent workspaces, then invoke aiw git wt local-merge
-   <id> for one final squash that includes implementation and archive together.
+   Require a clean FD worktree. Parent edits are allowed when they do not collide
+   with delivery; `local-merge` must preserve both their content and staging and
+   exclude them from the squash. Invoke aiw git wt local-merge <id> for one final
+   squash that includes implementation and archive together.
    Only this tool-managed delivery writes to the parent.
 3. The tool verifies the single-parent squash, clean FD HEAD, FD-Source and
    coordinates before removing the worktree/branch. Preserve receipts. A cleanup
@@ -34,6 +36,12 @@ invalidate unchanged reviewed work. On actual conflicts, use the recovery
 section below and resolving-merge-conflicts for one bounded supported attempt.
 Preserve uncertain state and stop. Report actual archive, delivery and cleanup
 results; archive alone is not full delivery of an isolated FD.
+
+A dirty parent with branch content conflicts must be made clean before conflict
+recovery; the tool stops before modifying it. Local edits on paths Git would
+replace must be handled first as well. Never automatically stash or reset user
+edits. Cleanup accepts unrelated parent edits after verifying the delivered
+commit and index; an incomplete index refresh retains the FD worktree for recovery.
 
 ## Recover a failed local delivery
 

@@ -272,7 +272,12 @@ Task completion; it does not commit, push, merge, or publish code.
 
 ### Work in an isolated FD worktree
 
-Commit the ready FD plan on a clean parent. Ensure `.wt/` and `.ai/` are
+The existing FD plan must exist in HEAD. Unrelated parent edits are allowed.
+When this FD has parent edits, choose to commit only those edits first or use
+`wt add FD-027 --from-head` to create from HEAD without carrying them. Pass known
+related code paths with repeatable `--related-path PATH`; FD document paths are
+recognized automatically. Nothing is automatically stashed or committed.
+Ensure `.wt/` and `.ai/` are
 ignored by Git, then create the dedicated worktree. `wt add` checks both
 paths before changing Git state and explains which ignore rule is missing.
 
@@ -295,7 +300,11 @@ After review, deliver one squash commit to the recorded parent branch:
 aiw git wt local-merge FD-027
 ```
 
-If delivery conflicts in the parent, `local-merge` confirms the conflict,
+Unrelated staged, unstaged and untracked parent edits may remain during
+conflict-free delivery; an isolated index keeps them out of the squash. Changes
+on paths that Git would replace must be handled first. If the branches conflict
+and the parent is dirty, the command stops before changing parent files and
+requires a clean parent for recovery. With a clean parent, `local-merge` confirms the conflict,
 resets that squash, verifies that the parent is clean, and merges the parent
 branch into the FD worktree. Resolve and commit conflicts there, then rerun
 `local-merge` explicitly. If the reset or recovery checks fail, the command
@@ -310,7 +319,7 @@ Use explicit FD handoffs for planning, implementation, and independent review.
 Optional tests use the standalone `$fd-test` Skill when requested and do not
 gate the default FD lifecycle.
 Create the isolated worktree with `aiw git wt add` after committing the ready FD
-plan and cleaning the parent workspace. After review, deliver with
+plan, with any related parent edits handled by the explicit choice above. After review, deliver with
 `aiw git wt local-merge`; it creates one parent commit without retaining individual
 FD commits. Parent-side content conflicts are recovered in the FD worktree and
 require an explicit retry after resolution. The workflow does not rebase.
