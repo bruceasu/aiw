@@ -35,5 +35,5 @@ drafts/
 .cache
 /*.zip
 /patches/
-
+.agents/
 /dist/
