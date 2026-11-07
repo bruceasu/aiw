@@ -59,8 +59,8 @@ func loadConfig(path string) (Config, error) {
     if err = strictDecode(data, &c); err != nil { return c, errors.New("invalid gateway config schema") }
     if c.Mode!="development" && c.Mode!="shared" { return c, errors.New("invalid mode") }
 	if c.BackendMode=="" { c.BackendMode="codex" }
-	if c.BackendMode!="codex"&&c.BackendMode!="openai_proxy" { return c,errors.New("invalid backend_mode") }
-	if c.BackendMode=="codex"&&(c.ProxyBaseURL!=""||c.ProxyAPIKeyEnv!="") { return c,errors.New("proxy settings require openai_proxy backend_mode") }
+	if c.BackendMode!="codex"&&c.BackendMode!="openai_proxy"&&c.BackendMode!="openai_codex" { return c,errors.New("invalid backend_mode") }
+	if c.BackendMode!="openai_proxy"&&(c.ProxyBaseURL!=""||c.ProxyAPIKeyEnv!="") { return c,errors.New("proxy settings require openai_proxy backend_mode") }
     var raw map[string]json.RawMessage
     _ = json.Unmarshal(data,&raw)
     if c.Mode=="shared" && raw["listen"]==nil { return c, errors.New("shared mode requires explicit listen") }
@@ -88,26 +88,30 @@ func loadConfig(path string) (Config, error) {
 		if err=validateExecutable(c); err!=nil { return c,err }
 		if len(c.Models)==0 { return c, errors.New("models are required in codex mode") }
 		for id,backend:=range c.Models { if strings.TrimSpace(id)==""||strings.TrimSpace(backend)==""||strings.ContainsAny(id,"\r\n") { return c,errors.New("invalid model mapping") } }
-	} else {
+	} else if c.BackendMode=="openai_proxy" {
 		parsed,e:=url.Parse(c.ProxyBaseURL)
 		if e!=nil||parsed==nil||(parsed.Scheme!="http"&&parsed.Scheme!="https")||parsed.Host==""||parsed.Hostname()==""||parsed.User!=nil||parsed.RawQuery!=""||parsed.Fragment!=""||parsed.Opaque!=""||strings.ContainsAny(c.ProxyBaseURL,"\r\n") { return c,errors.New("invalid proxy_base_url") }
 		c.proxyURL=parsed
 		if c.ProxyAPIKeyEnv!=""&&!validEnvName(c.ProxyAPIKeyEnv) { return c,errors.New("invalid proxy_api_key_env") }
+	} else {
+		if !filepath.IsAbs(c.StateDir) { return c, errors.New("state_dir must be absolute") }
+		if len(c.Models)==0 { return c, errors.New("models are required in openai_codex mode") }
+		for id,backend:=range c.Models { if strings.TrimSpace(id)==""||strings.TrimSpace(backend)==""||strings.ContainsAny(id,"\r\n") { return c,errors.New("invalid model mapping") } }
 	}
 	if len(c.Principals)==0 { return c, errors.New("principals are required") }
     ids,keys:=map[string]bool{},map[string]bool{}
     enabled:=false
     for _,p:=range c.Principals {
 		if p.UpstreamAPIKeyEnv!=""&&(c.BackendMode!="openai_proxy"||!validEnvName(p.UpstreamAPIKeyEnv)) { return c,errors.New("principal upstream credential reference requires openai_proxy mode") }
-		if p.ID==""||ids[p.ID]||p.RPM<1||p.RPM>100000||p.Concurrency<1||p.Concurrency>c.GlobalConcurrency||(c.BackendMode=="codex"&&(p.DailyLimit<1||p.DailyLimit>10000000)) { return c,errors.New("invalid principal or limits") }
+		if p.ID==""||ids[p.ID]||p.RPM<1||p.RPM>100000||p.Concurrency<1||p.Concurrency>c.GlobalConcurrency||(c.BackendMode!="openai_proxy"&&(p.DailyLimit<1||p.DailyLimit>10000000)) { return c,errors.New("invalid principal or limits") }
         ids[p.ID]=true
-		if len(p.Keys)==0||(c.BackendMode=="codex"&&len(p.AllowedModels)==0) { return c,errors.New("principal requires keys and models") }
+		if len(p.Keys)==0||(c.BackendMode!="openai_proxy"&&len(p.AllowedModels)==0) { return c,errors.New("principal requires keys and models") }
         for _,key:=range p.Keys {
             if !validKey(key) { return c,errors.New("invalid gateway key") }
             if keys[key] { return c,errors.New("duplicate gateway credential") }
             keys[key]=true
         }
-		if c.BackendMode=="codex" { for _,model:=range p.AllowedModels { if _,ok:=c.Models[model];!ok { return c,errors.New("unknown principal model") } } }
+		if c.BackendMode!="openai_proxy" { for _,model:=range p.AllowedModels { if _,ok:=c.Models[model];!ok { return c,errors.New("unknown principal model") } } }
         enabled=enabled||p.Enabled
     }
     if !enabled { return c,errors.New("at least one enabled principal is required") }

@@ -61,8 +61,8 @@ func stopGateway(path string) error {
     address,err:=shutdownAddress(c.Listen)
     if err!=nil { return err }
 	if c.BackendMode=="" { c.BackendMode="codex" }
-	if c.BackendMode!="codex"&&c.BackendMode!="openai_proxy" { return errors.New("invalid backend_mode") }
-	if c.BackendMode=="codex"&&!filepath.IsAbs(c.StateDir) { return errors.New("gateway state_dir must be absolute") }
+	if c.BackendMode!="codex"&&c.BackendMode!="openai_proxy"&&c.BackendMode!="openai_codex" { return errors.New("invalid backend_mode") }
+	if c.BackendMode!="openai_proxy"&&!filepath.IsAbs(c.StateDir) { return errors.New("gateway state_dir must be absolute") }
     key:=""
     for _,p:=range c.Principals {
         if p.Enabled { for _,candidate:=range p.Keys { if validKey(candidate) { key=candidate;break } } }
@@ -70,7 +70,7 @@ func stopGateway(path string) error {
     }
     if key=="" { return errors.New("no enabled gateway credential configured") }
 	lockPath:=""
-	if c.BackendMode=="codex" { lockPath=filepath.Join(c.StateDir,"gateway.lock") }
+	if c.BackendMode!="openai_proxy" { lockPath=filepath.Join(c.StateDir,"gateway.lock") }
     transport:=&http.Transport{DialContext:(&net.Dialer{Timeout:3*time.Second}).DialContext}
     defer transport.CloseIdleConnections()
     client:=&http.Client{Transport:transport,Timeout:5*time.Second,CheckRedirect:func(*http.Request,[]*http.Request) error { return errors.New("redirect rejected") }}

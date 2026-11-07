@@ -93,3 +93,10 @@ Node 依赖；首次构建前须在源码目录准备好 `node_modules`。
 监听；远程监听时任何能访问端口的人都可提交请求。结果暂存目录默认位于
 系统临时目录，结果在 ACK 后删除，未确认结果一小时后过期。不要将状态目录
 放在同步或共享文件夹中。
+
+To route through `agent-gateway` with `backend_mode: "openai_codex"`, set
+`HTTP_OPENAI_PROXY_BASE_URL` to the Gateway `/v1` URL, set
+`HTTP_OPENAI_PROXY_API_KEY` to a Gateway client key, and set
+`HTTP_OPENAI_PROXY_API_PROFILE=aiw_gateway`. The Gateway owns the Codex login
+and upstream credential refresh; this Node.js proxy stores only its configured
+Gateway client key and does not implement Codex OAuth.

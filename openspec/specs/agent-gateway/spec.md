@@ -237,3 +237,17 @@ HTTP 请求结果 MUST 区分 succeeded、rejected、failed、timed_out、cancel
 ### Requirement: Explicit legacy retirement
 
 旧 /v1/requests、WebSocket /v1/events、ACK 暂存、TypeScript 入口与多 Provider 直连可以移除；MUST 同步迁移 ai 客户端。旧状态不自动迁移或删除；历史批准来源/证据保留。容器部署与测试不属于本应用 FD 的交付条件，不能声称未运行行为已经通过验证。
+
+### Requirement: Direct OpenAI Codex Responses backend
+
+`openai_codex` MUST be a separate `backend_mode` that does not require a Codex executable, App Server, workspace directory or local sandbox. It MUST reuse AIW-managed Codex authentication and the Responses transport used by AIW Go LLM callers. Gateway-issued Bearer keys, logical model allowlists and mappings, RPM/concurrency limits, daily reservations, usage records, request observability and shutdown control MUST remain enforced. The mode MUST require an absolute state directory and model mappings. It MUST NOT follow redirects or retry an ambiguous upstream request, log credentials, or execute returned function calls. The local Codex-compatible endpoint is a compatibility target and MUST NOT be represented as a stable public API.
+
+#### Scenario: Use the direct backend without Codex installed
+
+- WHEN the Gateway starts with `backend_mode` set to `openai_codex` and a valid AIW-managed login
+- THEN it MUST serve the supported Responses and Chat Completions routes without checking for or starting a Codex executable, while preserving Gateway authentication, model authorization, configured limits and durable usage accounting
+
+#### Scenario: Keep App Server sandbox semantics scoped to its backend
+
+- WHEN the Gateway runs in `openai_codex` mode
+- THEN documentation MUST state that requests do not receive the App Server's local read-only sandbox, and returned function calls MUST remain caller-managed

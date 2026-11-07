@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	authcmd "aiw/internal/commands/auth"
 	askcmd "aiw/internal/commands/ask"
 	assistcmd "aiw/internal/commands/assist"
 	completioncmd "aiw/internal/commands/completion"
@@ -47,6 +48,8 @@ func main() {
 		err = help.Dispatch(os.Args[2:])
 	case "init":
 		err = initcmd.Dispatch(os.Args[2:])
+	case "auth":
+		err = authcmd.Dispatch(os.Args[2:])
 	// FD worktree commands are provided by the aiw-git subcommand dispatcher
 	// as `aiw git wt`; do not dispatch standalone `wt` as a built-in command.
 	case "completion":

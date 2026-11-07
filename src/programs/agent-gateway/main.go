@@ -32,7 +32,7 @@ func run() error {
     if action=="stop" { return stopGateway(*path) }
     c,err:=loadConfig(*path);if err!=nil { return configError(err) }
 	var s *Store
-	if c.BackendMode=="codex" { s,err=openStore(c.StateDir);if err!=nil { return errors.New("cannot open gateway state: "+err.Error()) } }
+	if c.BackendMode!="openai_proxy" { s,err=openStore(c.StateDir);if err!=nil { return errors.New("cannot open gateway state: "+err.Error()) } }
     closeStore:=true
 	defer func(){if closeStore&&s!=nil { s.Close() }}()
 	if c.BackendMode=="codex" { if err=os.MkdirAll(c.WorkspaceDir,0700);err!=nil { return errors.New("cannot create workspace root") } }

@@ -240,7 +240,8 @@ func (g *Gateway) inference(w http.ResponseWriter,httpRequest *http.Request,p Pr
         if err!=nil { if observed,ok:=w.(*observedWriter);ok { observed.deliveryFailed=true } }
     }
     if request.Stream { emit=func(text string)error { err:=stream.text(text);deliveryError(err);return err } }
-    result:=executeApp(ctx,g.config,g.store,g.appPool,p,request,id,created,emit)
+	var result RunResult
+	if g.config.BackendMode=="openai_codex" { result=executeOpenAICodex(ctx,g.config,g.store,p,request,id,created) } else { result=executeApp(ctx,g.config,g.store,g.appPool,p,request,id,created,emit) }
     if observed,ok:=w.(*observedWriter);ok {
         observed.record.State=result.State;observed.record.ErrorCode=result.Code;observed.record.ExecutionStarted=result.Started
         if !result.Started { observed.record.State="rejected" }

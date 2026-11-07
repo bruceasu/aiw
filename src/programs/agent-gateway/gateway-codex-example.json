@@ -1,0 +1,19 @@
+{
+  "mode": "development",
+  "backend_mode": "openai_codex",
+  "listen": "127.0.0.1:43127",
+  "state_dir": "C:/green/aiw/gateway-state",
+  "timezone": "UTC",
+  "timeout_seconds": 600,
+  "global_concurrency": 4,
+  "models": {"gateway-default": "gpt-5.3-codex"},
+  "principals": [{
+    "id": "local-client",
+    "enabled": true,
+    "keys": ["REPLACE_WITH_A_RANDOM_GATEWAY_KEY_OF_AT_LEAST_43_CHARACTERS"],
+    "allowed_models": ["gateway-default"],
+    "rpm": 10,
+    "daily_limit": 100,
+    "concurrency": 2
+  }]
+}

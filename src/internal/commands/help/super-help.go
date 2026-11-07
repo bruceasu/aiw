@@ -133,6 +133,7 @@ func listAll() error {
 
 	fmt.Print("Other tools:\n" +
 		"  ask <prompt>                 Ask the built-in LLM for AIW guidance.\n" +
+		"  auth <command>               Login, import, check, or remove AIW provider credentials.\n" +
 		"  completion <shell>           Generate shell completion scripts.\n" +
 		"  version                      Print the AIW version.\n\n")
 
@@ -213,7 +214,7 @@ func getPluginShort(path string) string {
 }
 
 func staticBuiltinCommands() []string {
-	return []string{"init", "ask", "research", "prototype", "edit-article", "teach", "completion", "help", "version", "issue", "update"}
+	return []string{"init", "ask", "auth", "research", "prototype", "edit-article", "teach", "completion", "help", "version", "issue", "update"}
 }
 
 func listPlugins() ([]plug.PluginInfo, error) {
@@ -303,6 +304,8 @@ func builtinHelpShort(name string) string {
 		return "initialize project instructions and prompt templates"
 	case "ask":
 		return "ask the built-in LLM for AIW guidance"
+	case "auth":
+		return "manage AIW OpenAI Codex credentials"
 	case "completion":
 		return "generate shell completion scripts"
 	case "help":
@@ -322,6 +325,8 @@ func builtinUsageText(name string) (string, bool) {
 		return assist.Usage(name), true
 	case "init":
 		return "usage: aiw init [--no-setup] [--prompts] [--merge] [--force] [--template <name>]\n  --no-setup skips creating base AGENTS.md and Copilot instructions.\n  With --merge, --force refreshes .agents prompt files while instruction files are merged.\n", true
+	case "auth":
+		return "usage: aiw auth login openai-codex | import-codex [--from PATH] | status | logout\n", true
 	case "help":
 		return "usage: aiw help [--json|command|topic]\n", true
 	case "version":

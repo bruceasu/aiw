@@ -317,6 +317,8 @@ func configFromValues(values map[string]string) Config {
 		model = firstValue(values, "ai.openai_model", "cz.openai_model", "ai.model", "cz.model")
 		baseURL = firstValue(values, "ai.openai_base_url", "cz.openai_base_url", "ai.base_url", "cz.base_url")
 		apiKey = firstValue(values, "ai.openai_api_key", "cz.openai_api_key", "ai.api_key", "cz.api_key")
+	case "openai-codex", "openai_codex", "codex-oauth":
+		model = firstValue(values, "ai.openai_codex_model", "cz.openai_codex_model", "ai.codex_model", "ai.model", "cz.model")
 	case "gemini":
 		model = firstValue(values, "ai.gemini_model", "cz.gemini_model", "ai.model", "cz.model")
 		baseURL = firstValue(values, "ai.gemini_base_url", "cz.gemini_base_url", "ai.base_url", "cz.base_url")
@@ -376,6 +378,8 @@ func applyProviderDefaults(cfg *Config) {
 	case "openai":
 		if cfg.Model == "" { cfg.Model = "gpt-4o-mini" }
 		if cfg.BaseURL == "" { cfg.BaseURL = "https://api.openai.com/v1" }
+	case "openai-codex", "openai_codex", "codex-oauth":
+		if cfg.Model == "" { cfg.Model = "gpt-5.3-codex" }
 	case "gemini":
 		if cfg.Model == "" { cfg.Model = "gemini-1.5-flash" }
 		if cfg.BaseURL == "" { cfg.BaseURL = "https://generativelanguage.googleapis.com" }
@@ -391,6 +395,7 @@ func applyProviderDefaults(cfg *Config) {
 func providerEnvNames(name string) (string, string, string) {
 	switch normalize(name) {
 	case "openai": return "OPENAI_MODEL", "OPENAI_BASE_URL", "OPENAI_API_KEY"
+	case "openai-codex", "openai_codex", "codex-oauth": return "AIW_CODEX_MODEL", "", ""
 	case "gemini": return "GEMINI_MODEL", "GEMINI_BASE_URL", "GEMINI_API_KEY"
 	case "ollama": return "OLLAMA_MODEL", "OLLAMA_BASE_URL", "OLLAMA_API_KEY"
 	case "llama.cpp", "llamacpp", "llama-cpp": return "LLAMACPP_MODEL", "LLAMACPP_BASE_URL", "LLAMACPP_API_KEY"
@@ -414,6 +419,7 @@ func isAIConfigKey(key string) bool {
 		"command": true, "codex_command": true, "copilot_command": true,
 		"input_tokens": true, "output_tokens": true,
 		"openai_model": true, "openai_base_url": true, "openai_api_key": true,
+		"openai_codex_model": true, "codex_model": true,
 		"gemini_model": true, "gemini_base_url": true, "gemini_api_key": true,
 		"ollama_model": true, "ollama_base_url": true, "ollama_api_key": true,
 		"llamacpp_model": true, "llamacpp_base_url": true, "llamacpp_api_key": true,

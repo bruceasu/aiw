@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	codex "aiw/pkg/openai-codex"
 	"aiw/internal/util"
 	"aiw/internal/util/env"
 )
@@ -48,7 +49,7 @@ func RunLLMWithSystemPrompt(prompt string, cfg LLMConfig, outputSchema map[strin
 		return "", err
 	}
 	if len(providers) == 0 {
-		return "", errors.New("no available LLM provider detected; configure provider=openai|gemini|ollama|codex-cli|copilot-cli or set corresponding credentials/CLI")
+		return "", errors.New("no available LLM provider detected; configure provider=openai|openai-codex|gemini|ollama|codex-cli|copilot-cli or set corresponding credentials/CLI")
 	}
 
 	var errs []string
@@ -71,10 +72,11 @@ func normalizeProviderName(provider string) string {
 	switch p {
 	case "", "auto":
 		return ""
-	case "openai", "gemini", "ollama", "codex", "copilot", "llama.cpp", "llamacpp", "llama-cpp":
+	case "openai", "openai-codex", "openai_codex", "codex-oauth", "gemini", "ollama", "codex", "copilot", "llama.cpp", "llamacpp", "llama-cpp":
 		if p == "llama-cpp" {
 			return "llama.cpp"
 		}
+		if p == "openai_codex" || p == "codex-oauth" { return "openai-codex" }
 		return p
 	case "codex-cli", "codex_cli", "codexcli":
 		return "codex"
@@ -134,6 +136,8 @@ func providerModelEnv(provider string) (string, string) {
 	switch provider {
 	case "openai":
 		return "OPENAI_MODEL", "gpt-4o-mini"
+	case "openai-codex":
+		return "AIW_CODEX_MODEL", "gpt-5.3-codex"
 	case "gemini":
 		return "GEMINI_MODEL", "gemini-1.5-flash"
 	case "ollama":
@@ -149,6 +153,8 @@ func providerBaseEnv(provider string) string {
 	switch provider {
 	case "openai":
 		return "OPENAI_BASE_URL"
+	case "openai-codex":
+		return ""
 	case "gemini":
 		return "GEMINI_BASE_URL"
 	case "ollama":
@@ -164,6 +170,8 @@ func providerKeyEnv(provider string) string {
 	switch provider {
 	case "gemini":
 		return "GEMINI_API_KEY"
+	case "openai-codex":
+		return ""
 	case "ollama", "llama.cpp":
 		return ""
 	default:
@@ -207,6 +215,9 @@ func detectAvailableProviders(cfg LLMConfig) ([]string, error) {
 	}
 	if copilotCLIAvailable(cfg) {
 		add("copilot")
+	}
+	if codex.OpenAICodexCredentialAvailable() {
+		add("openai-codex")
 	}
 	if openAIConfigured(cfg, cwdEnv, aiwEnv, exeEnv) {
 		add("openai")
@@ -257,7 +268,7 @@ func copilotCLIAvailable(cfg LLMConfig) bool {
 }
 
 func supportedProviderNames() string {
-	providers := []string{"openai", "gemini", "ollama", "llama.cpp", "codex-cli", "copilot-cli"}
+	providers := []string{"openai", "openai-codex", "gemini", "ollama", "llama.cpp", "codex-cli", "copilot-cli"}
 	sort.Strings(providers)
 	return strings.Join(providers, ", ")
 }

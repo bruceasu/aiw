@@ -78,3 +78,29 @@ Windows npm 安装须使用 `node.exe` + `codex_script`，不能指定 `codex.cm
 代理模式将本地 `/v1` 下的 HTTP 请求和 Realtime WebSocket 透传至固定上游，`/internal/*` 保留为本地控制接口。网关用服务端上游 Key 替换入站 Authorization/api-key，并移除调用方组织、项目身份头。上游 3xx 原样返回，不自动跟随或重试。统计和计费尚未实现；代理模式不解析 usage，也不持久化请求记录。
 
 可从 `gateway-proxy-example.json` 创建独立代理配置。为所有启用主体设置 `upstream_api_key_env`，或使用全局 `proxy_api_key_env`；环境变量必须在启动进程时已设置。不要把上游 Key 写入配置文件或日志。共享上游 Key 的主体共用该 Key 的权限。
+
+## Direct OpenAI Codex mode
+
+Set `backend_mode` to `openai_codex` to send Responses requests through AIW's
+user-managed OpenAI Codex login. This mode does not start or require the Codex
+executable. It still requires an absolute `state_dir`, model mappings, enabled
+principals, Gateway client keys, allowed models, RPM/concurrency limits and a
+daily limit. It does not use `workspace_dir`, `codex_path` or `codex_script`.
+
+The first login is managed by the AIW command line. Run `aiw auth import-codex
+--from <path>` when an existing Codex credential file is available, or run
+`aiw auth login openai-codex` to sign in through a browser. Use `aiw auth
+status` to inspect login expiry and `aiw auth logout` to remove the AIW copy.
+Import reads but does not change the source file. A request refreshes an expired
+access token when possible; it never starts an interactive login.
+
+Use `gateway-codex-example.json` as a configuration template. Replace its
+placeholder Gateway key and paths before starting the service. Clients continue
+to use a Gateway key; the Codex OAuth credential stays in AIW's protected user
+credential store. `aiw say`, `aiw-cz` and `http-openai-proxy` can use this
+Gateway through their existing OpenAI-compatible URL and key settings.
+
+Direct mode uses a local PI-compatible Codex Responses endpoint. That endpoint
+is not documented as a stable public API, can change independently, and does
+not provide the App Server's local read-only sandbox. The Gateway does not
+execute returned function calls; callers remain responsible for handling them.

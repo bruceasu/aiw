@@ -228,6 +228,8 @@ func NewProvider(cfg Config) (Provider, error) {
 		return NewCLIProvider("copilot", cfg), nil
 	case "openai":
 		return NewOpenAIResponsesProvider(cfg), nil
+	case "openai-codex", "openai_codex", "codex-oauth":
+		return NewOpenAICodexResponsesProvider(cfg), nil
 	case "openai-compatible", "ollama", "llama.cpp", "llamacpp":
 		return NewOpenAICompatibleProvider(normalize(cfg.Name), cfg), nil
 	case "gemini":
