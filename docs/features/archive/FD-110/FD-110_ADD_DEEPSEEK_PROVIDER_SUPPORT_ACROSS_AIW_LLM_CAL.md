@@ -1,7 +1,7 @@
 # FD-110: Add DeepSeek provider support across AIW LLM callers
 
-**Status:** In Progress
-**Revision:** 3
+**Status:** Complete
+**Revision:** 7
 **Priority:** Medium
 **Review policy:** Independent
 **Evidence policy:** Markdown
@@ -98,13 +98,25 @@ key from its configured environment variable.
   `FD-110-000002-review-requested`). The CLI provider choices have now been
   extended with `deepseek`; `--model` already writes to the selected provider's
   model slot, so `aiw-cz --provider deepseek --model <id>` uses the DeepSeek
-  model setting. This correction awaits focused independent re-review.
+  model setting. The correction passed focused independent re-review.
+- Focused independent re-review passed: see
+  `docs/features/FD-110/reviews/reviewer-b9d67c5-followup.md` (source event
+  `FD-110-000004-review-requested`, reviewed commit `b9d67c5`).
+- The follow-up Reviewer added its report link after emitting the pass event;
+  that receipt no longer matched the final FD content and was superseded by
+  the final evidence consistency review below.
+- Final evidence consistency re-review: see
+  `docs/features/FD-110/reviews/reviewer-fd110-final-consistency.md` (source
+  event `FD-110-000006-review-requested`). The `b9d67c5` CLI fix remains present,
+  no implementation code changed afterward, and the two preceding reports
+  consistently record the finding and its resolution. Final consistency review
+  passed.
 - Test support needs an explicit request and its command/revision authorization.
 
 ## TODO
 
-- Address the first review finding and obtain focused independent re-review;
-  then archive this FD.
+- Implementation, focused re-review and final evidence consistency review are
+  complete; archive this FD.
 
 ## Sources
 
@@ -119,3 +131,5 @@ key from its configured environment variable.
 - `src/programs/aiw-say/README.md`
 
 Link relevant specs and evidence used for decisions.
+
+**Completed:** 2026-11-08
