@@ -1,0 +1,45 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-104",
+  "source_event": "FD-104-000011-work-requested",
+  "human_report": "FD-104-implementation-r2.md",
+  "data": {
+    "summary": "Recovered the stopped FD-104 Worker handoff and restored the Python sequential-call setting. The focused config test passes; endpoint acceptance remains failed because the backend repeatedly returned function_call after tool outputs.",
+    "changed_paths": [
+      "docs/features/FD-104/FD-104_PYTHON_FUNCTION_CALLS_THROUGH_AGENT_GATEWAY.md",
+      "docs/features/archive/FD-104-pre-recovery-20261108/",
+      "docs/features/FD-104/reports/FD-104-implementation-r2.md",
+      "docs/features/FD-104/reports/FD-104-implementation-r2.json",
+      "workers/process-python/openai_api_runtime.py",
+      "workers/process-python/README.md",
+      "workers/process-python/test_parallel_tool_call_setting.py",
+      "workers/demo-python-with-openai-agents/fd104_test_tool_call.py"
+    ],
+    "commands": [
+      "aiw fd recover-worker FD-104 --expected-event FD-104-000009-work-requested --expected-session fd104-worker-20261023-b --reason <user-confirmed stopped session>",
+      "aiw fd claim FD-104 FD-104-000011-work-requested --session fd104-worker-20261108-recovery",
+      "python -c <in-memory compile of openai_api_runtime.py, test_parallel_tool_call_setting.py, and fd104_test_tool_call.py>",
+      "git diff --check (AIW and aiw-de repositories, before commit)",
+      "git commit -m 'FD-104: restore sequential tool-call configuration' (aiw-de, cd5d632)",
+      "temporary Python 3.12 venv: pip install -r workers/process-python/requirements.txt",
+      "temporary Python 3.12 venv: pip install httpx==0.28.1",
+      "python -m unittest test_parallel_tool_call_setting (fixture failure, then corrected fixture and one rerun)",
+      "fd104_test_tool_call.py against installed gateway (HTTP 400 invalid_request; execution_started=false)",
+      "GOTOOLCHAIN=local GOPROXY=off go run . start --config C:\\green\\aiw\\gateway.json; run fd104_test_tool_call.py against source gateway; agent-gateway.exe stop --config C:\\green\\aiw\\gateway.json"
+    ],
+    "results": [
+      "Worker recovery was recorded through the CLI after the user confirmed the prior session had stopped; the new handoff was claimed by the current Worker session.",
+      "Python compile-only check passed for the three changed Python files.",
+      "aiw-de production changes were committed as cd5d632; the field default preserves existing positional ApiRuntimeConfig construction.",
+      "Dependencies were installed only into %TEMP%\\aiw-fd104-20261108: openai-agents==0.24.0, openai==3.46.0, httpx==0.28.1. No repository dependency manifest changed.",
+      "The focused configuration unit test passed all 4 tests after the test fixture was corrected to include service_tier. The scoped correction was committed to aiw-de develop as 857c280.",
+      "Against the installed gateway, the endpoint returned HTTP 400 invalid_request before execution; audit recorded execution_started=false. The installed binary is older than FD source.",
+      "Against the current source gateway, turn 1 returned a valid function_call with parallel_tool_calls=false. After tool output 42 was submitted, turns 2 and 3 returned additional function_call outputs. The SDK executed the function three times and raised MaxTurnsExceeded; TOOL_CALL_OK:42 was not observed.",
+      "Static diagnosis: decodeRequest matches function_call/function_call_output IDs and flattens them into the next prompt; appInstructions includes caller instructions and tool-result policy; executeApp maps the backend's next decision to a new Responses function_call. The trace shows this path returned 200 and tool output 42 was submitted before the backend repeated the call. Evidence supports a model/backend response or model-dependent acceptance-oracle hypothesis, but does not confirm a gateway schema/sequential-setting defect or establish why the backend ignored the instruction. Both gateway instances were stopped gracefully.",
+      "Endpoint acceptance remains failed. No Go tests, broad Python suite, or further endpoint retries were run; the focused runtime budget is exhausted.",
+      "Updated Worker evidence is linked by FD-104-000017-needs-decision (source event FD-104-000015-needs-decision, target human); the CLI dispatched no agent."
+    ],
+    "residual_risk": "The one-call acceptance remains unresolved because the configured backend returned repeated function_call outputs over three turns despite receiving output 42. The prior independent review remains changes-requested. A fresh explicit test cycle or a decision on the model-dependent acceptance approach is required before review and archive."
+  }
+}
