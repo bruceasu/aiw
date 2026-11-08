@@ -105,7 +105,7 @@ to a different model.
   receipt-bound review is requested to resolve this evidence mismatch.
 - Receipt refresh review for FD revision 7 passed with no implementation drift;
   report: [FD-113-review-r6.md](reviews/FD-113-review-r6.md). The matching
-  `verification-passed` receipt is being emitted for
+  `verification-passed` receipt was emitted and acknowledged for
   `FD-113-000007-review-requested`.
 - Tests, Python SDK calls, provider API requests, and final builds were not run;
   runtime provider compatibility remains unverified.
@@ -116,7 +116,7 @@ to a different model.
   `2075cb4` before creating this FD.
 - [x] Obtain implementation review r5; no blocking findings.
 - [x] Complete the receipt-bound r6 verification review and report.
-- [ ] Archive after the delivery gate.
+- [x] Archive after the delivery gate; archive commit `3672e32`.
 
 ## Sources
 
