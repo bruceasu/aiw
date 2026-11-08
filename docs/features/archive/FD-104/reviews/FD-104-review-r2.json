@@ -1,0 +1,39 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-104",
+  "source_event": "FD-104-000021-review-requested",
+  "human_report": "FD-104-review-r2.md",
+  "data": {
+    "outcome": "verification-passed",
+    "reviewer_session": "fd104-review-deepseek-20261108",
+    "reviewed_base": "FD revision 21; AIW HEAD 56a0d21d161ec72cb99bf0e4cf0215089ed53765; gateway schema change 271df81d6395b329e4a9175f40c0e4664877cb8c compared with first parent; aiw-de HEAD 82c29888bdb6d8195e492982bf33eb4e0e26f3d9, including commits cd5d632, 857c280, and 82c2988",
+    "findings": [],
+    "results": [
+      "The current user-adjusted DeepSeek proxy acceptance is recorded as passing in Worker r3: two HTTP 200 turns, one add_numbers(19,23) call, submitted output 42, final TOOL_CALL_OK:42, status ok, exit code 0.",
+      "The DeepSeek run used backend_mode=openai_proxy. The ReverseProxy branch returns before Codex responses/decodeRequest/schema/app_runner, so the run is not runtime evidence for those code paths.",
+      "Worker r2 records the separate Codex-backed run: initial function_call succeeded, matching tool output was accepted, but further calls led to MaxTurnsExceeded without TOOL_CALL_OK:42. This remains unresolved and is not hidden by the adjusted DeepSeek result.",
+      "The schema title implementation and process-python boolean-setting call chain were statically consistent with the FD and stable spec. Worker r2 records four focused config tests passing; this reviewer did not rerun them.",
+      "The acceptance script prints a model-source label rather than the model name and summarizes requests without model or authorization fields. No .env content or value was read or exposed.",
+      "DeepSeek documentation is reported to say parallel_tool_calls is ignored; the review does not treat this setting as a provider guarantee."
+    ],
+    "commands": [
+      "aiw fd show FD-104",
+      "aiw fd --help",
+      "aiw fd emit --help",
+      "Get-Content and rg targeted reads of FD, Issue, stable spec, reports, gateway source, and worker source",
+      "git status, git log, git show, and git rev-parse (read-only, both repositories)",
+      "One PowerShell command with brace-expanded source paths failed to parse; the read-only inspection was rerun with explicit file arguments."
+    ],
+    "checks_not_run": [
+      "Python tests",
+      "Go tests",
+      "compile checks",
+      "builds, linters, formatters, and static analyzers",
+      "network requests and external API calls",
+      "runtime validation or temporary launcher inspection",
+      ".env or .env.* reads"
+    ],
+    "residual_risk": "The historical Codex-backed run did not complete the one-call final-output acceptance: after a successful initial function_call and accepted matching tool output, the backend repeated calls until MaxTurnsExceeded. The user-directed DeepSeek acceptance passed only in openai_proxy mode and does not validate schema.go or app_runner at runtime. DeepSeek ignores parallel_tool_calls, so the run does not prove provider-side sequential enforcement."
+  }
+}

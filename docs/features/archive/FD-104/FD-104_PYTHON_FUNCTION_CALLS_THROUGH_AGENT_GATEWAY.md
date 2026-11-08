@@ -1,7 +1,7 @@
 # FD-104：Python 经 agent-gateway 调用函数
 
-**Status:** In Progress
-**Revision:** 20
+**Status:** Complete
+**Revision:** 25
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -76,20 +76,20 @@ OpenAI Agents SDK 为函数参数生成的 strict JSON Schema 含有 `title` 注
 - Retried once against the current gateway source using `GOTOOLCHAIN=local GOPROXY=off go run . start --config C:\green\aiw\gateway.json`. The SDK sent `parallel_tool_calls=false`; the source gateway returned HTTP 200 and a valid `add_numbers(19, 23)` function call. After receiving the submitted output `42`, the backend returned another `function_call` on each of turns 2 and 3. The SDK executed the function three times and ended with `MaxTurnsExceeded` (exit code 1); no `TOOL_CALL_OK:42` was produced.
 - Static diagnosis: `decodeRequest` validates matching `function_call`/`function_call_output` IDs and flattens both into the next prompt; `appInstructions` includes the caller's instructions and the tool-result policy; `executeApp` returns the backend's next decision as a new Responses `function_call`. The trace confirms this path returned 200, the SDK submitted output `42`, and the backend then emitted another call. This supports a model/backend response or model-dependent acceptance-oracle hypothesis; it does not confirm a gateway schema/sequential-setting defect or establish why the backend ignored the instruction. Do not mark endpoint acceptance as passed.
 - Both gateway processes were stopped gracefully. No Go tests, broad Python suite, or additional endpoint retries were run during the prior test cycle. That cycle's budget was exhausted; the user later authorized a separate DeepSeek cycle, whose result appears below.
-- Reviewer report `docs/features/archive/FD-104-pre-recovery-20261108/reviews/FD-104-review-r1.md` remains changes-requested. The DeepSeek acceptance now passes; a fresh independent review is the next gate before Complete archive.
+- Historical Reviewer report `docs/features/archive/FD-104-pre-recovery-20261108/reviews/FD-104-review-r1.md` remains changes-requested. Current review `docs/features/FD-104/reviews/FD-104-review-r2.md` has no blocking findings and emitted `FD-104-000022-verification-passed`.
 - 新周期验收通过：临时 launcher 用 `python-dotenv==1.2.4` 加载 `C:\green\aiw\.env`，没有展示或保存其中的变量值。aiw-de 验收脚本提交为 `82c2988`；临时 runner SHA-256 为 `38f88a1941726af79256f35819f7c38ab9d3e0c70132f0e464130e84bf56fadf`。测试命令与 cwd 使用上方记录值，依赖版本为 `openai-agents==0.24.0`、`openai==3.46.0`、`httpx==0.28.1`。
 - 当前 gateway 源码以 `GOTOOLCHAIN=local GOPROXY=off go run . start --config <temporary-config>` 在 `openai_proxy` 模式转发至 `https://api.deepseek.com`。两轮 `/v1/responses` 请求均 HTTP 200；第 1 轮返回唯一 `add_numbers(19, 23)` 调用；SDK 提交 `42` 后，第 2 轮返回 `TOOL_CALL_OK:42`。脚本结果：`model_source=DEEPSEEK_MODEL`、`title_annotations=true`、`tool_calls=[[19, 23]]`、`status=ok`、exit code 0。
 - DeepSeek 文档说明 `parallel_tool_calls` 会被忽略；本结果验证 schema 和一次工具往返，不证明 DeepSeek 服务端执行了该开关。旧 gpt-6-luna 重复调用失败记录继续保留。gateway 优雅停止，临时代理配置随 launcher 退出清理。
-- 用户现已授权开始独立复审；复审仍需覆盖当前代码提交、验收报告和历史 changes-requested finding。
+- Reviewer r2 reviewed the adjusted acceptance and current code, found no blocking issues, and preserved the Codex-backed residual risk in the report.
 - 本轮后续验收报告：`docs/features/FD-104/reports/FD-104-implementation-r3.md`，其 Dual sidecar 绑定本轮来源事件 `FD-104-000017-needs-decision`。
 
 用户于 2026-11-08 决定改用 `.env` 中的 `DEEPSEEK_MODEL` 验收；新的 DeepSeek 测试周期已获明确授权。旧周期的运行预算不延续到本次新授权周期。
 
+%% RISK: The prior Codex-backed `gpt-6-luna` run accepted the first function call and matching output but repeated calls until `MaxTurnsExceeded`. The user-directed DeepSeek proxy acceptance passed, but `openai_proxy` bypasses the Codex-backed schema/parser/app_runner path; this risk remains unresolved and is not hidden by the adjusted acceptance.
+
 ## TODO
 
-- Run one bounded DeepSeek Responses acceptance using the user's `DEEPSEEK_MODEL` and `DEEPSEEK_API_KEY` loaded programmatically; never inspect or print `.env` values.
-- Classify the result without treating the provider's ignored `parallel_tool_calls` field as a sequential guarantee; preserve the prior failed run and the new trace.
-- Request the required independent review against the current implementation and DeepSeek evidence.
+- No required implementation or verification items remain. Preserve the residual risk above for any future Codex-backed follow-up.
 
 ## Sources
 
@@ -100,3 +100,7 @@ OpenAI Agents SDK 为函数参数生成的 strict JSON Schema 含有 `title` 注
 - Acceptance script: `workers/demo-python-with-openai-agents/fd104_test_tool_call.py` in aiw-de `develop`.
 - DeepSeek Responses API and compatibility docs: [Responses API guide](https://api-docs.deepseek.com/guides/responses_api/) and [create response](https://api-docs.deepseek.com/api/create-response/).
 - Prior independent review and blocker evidence: `docs/features/archive/FD-104-pre-recovery-20261108/`.
+
+**Review policy:** Independent
+
+**Completed:** 2026-11-08

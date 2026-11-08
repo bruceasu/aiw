@@ -1,0 +1,36 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-104",
+  "source_event": "FD-104-000024-review-requested",
+  "human_report": "FD-104-review-r3.md",
+  "data": {
+    "outcome": "verification-passed",
+    "reviewer_session": "fd104-review-current-r23-20261108",
+    "reviewed_base": "FD current revision 24; event FD-104-000024-review-requested; AIW worktree with documentation-only pending changes; aiw-de clean at 82c29888bdb6d8195e492982bf33eb4e0e26f3d9",
+    "findings": [],
+    "results": [
+      "The FD revision, current handoff and review source event are all revision/event 24, despite the task description mentioning revision 23.",
+      "The FD Verification link points to the existing r2 report and accurately records event FD-104-000022-verification-passed, whose source was review request event 21.",
+      "Worker r3 report metadata identifies source event 17 and the tested gateway/script revisions; its recorded two-turn DeepSeek result matches the FD summary.",
+      "The new %% RISK accurately distinguishes the successful openai_proxy round-trip from the unresolved Codex-backed schema/parser/app_runner path and preserves the gpt-6-luna MaxTurnsExceeded result.",
+      "The index Reviews link exists; TODO indicates no required implementation or verification remains while preserving the Codex-backed follow-up risk.",
+      "No implementation files changed in the inspected worktrees."
+    ],
+    "commands": [
+      "aiw fd show FD-104",
+      "aiw fd claim FD-104 FD-104-000024-review-requested --session fd104-review-current-r23-20261108",
+      "aiw fd show-review FD-104 (read-only command returned an interactive-selection usage message)",
+      "Get-Content, Select-String, and ConvertFrom-Json for targeted FD, index, r2 report/sidecar, and r3 report/sidecar inspection",
+      "git status, git log, git diff, git diff --name-only, and git diff --numstat (read-only)"
+    ],
+    "checks_not_run": [
+      "Tests",
+      "Builds and compile checks",
+      "Network requests and external API calls",
+      "Runtime validation",
+      ".env or .env.* reads"
+    ],
+    "residual_risk": "The historical Codex-backed gpt-6-luna run did not produce TOOL_CALL_OK:42 and remains unresolved. The DeepSeek result was through openai_proxy and does not validate the Codex-backed schema/parser/app_runner path. This limitation is retained explicitly in the FD %% RISK."
+  }
+}
