@@ -1,7 +1,7 @@
 # FD-113: Unify shared LLM provider configuration across commands
 
 **Status:** Complete
-**Revision:** 6
+**Revision:** 8
 **Priority:** Medium  
 **Review policy:** Independent
 **Evidence policy:** Markdown
@@ -99,6 +99,14 @@ to a different model.
   resolution path, affected Go/Say paths, provider dispatch, examples and specs.
 - Independent review passed for revision 5; report:
   [FD-113-review-r5.md](reviews/FD-113-review-r5.md).
+- Archive gate check: `aiw fd close FD-113 Complete --reason ...` rejected the
+  Reviewer receipt because its `fd_sha256` predates the Verification text added
+  after that event. No implementation changes were made after review r5; a new
+  receipt-bound review is requested to resolve this evidence mismatch.
+- Receipt refresh review for FD revision 7 passed with no implementation drift;
+  report: [FD-113-review-r6.md](reviews/FD-113-review-r6.md). The matching
+  `verification-passed` receipt is being emitted for
+  `FD-113-000007-review-requested`.
 - Tests, Python SDK calls, provider API requests, and final builds were not run;
   runtime provider compatibility remains unverified.
 
@@ -106,7 +114,8 @@ to a different model.
 
 - [x] Commit the previously authorized CZ configuration examples and guidance as
   `2075cb4` before creating this FD.
-- [x] Obtain current independent review; no blocking findings.
+- [x] Obtain implementation review r5; no blocking findings.
+- [x] Complete the receipt-bound r6 verification review and report.
 - [ ] Archive after the delivery gate.
 
 ## Sources
@@ -119,3 +128,6 @@ to a different model.
 - [Say configuration and provider](../../../src/internal/say/config.go)
 - [Python Git guide](../../../src/plugins/aiw-git/git-guide.py)
 - [Python CZ configuration](../../../src/plugins/aiw-cz/cz_config.py)
+
+**Completed:** 2026-11-08
+**Disposition reason:** Revision 8 has a current matching independent verification pass; implementation commit bb430e8 is delivered, and runtime provider checks remain explicitly unrun.
