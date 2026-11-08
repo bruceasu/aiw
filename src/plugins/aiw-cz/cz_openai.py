@@ -28,19 +28,26 @@ SCHEMA = {
 def _text(response: object, label: str = "OpenAI") -> str:
     if not isinstance(response, dict):
         raise OpenAIUnavailable(f"{label} response is not a JSON object")
-    if isinstance(response.get("output_text"), str):
+    if isinstance(response.get("output_text"), str) and response["output_text"].strip():
         return response["output_text"]
     output = response.get("output", [])
     if not isinstance(output, list):
         raise OpenAIUnavailable(f"{label} response has invalid output")
+    texts: list[str] = []
     for item in output:
-        content_items = item.get("content", []) if isinstance(item, dict) else []
+        if not isinstance(item, dict) or item.get("type") != "message":
+            continue
+        content_items = item.get("content", [])
         if not isinstance(content_items, list):
             continue
         for content in content_items:
-            if isinstance(content, dict) and isinstance(content.get("text"), str):
-                return content["text"]
-    raise OpenAIUnavailable(f"{label} response contains no text")
+            if (isinstance(content, dict)
+                    and content.get("type") == "output_text"
+                    and isinstance(content.get("text"), str)):
+                texts.append(content["text"])
+    if texts:
+        return "".join(texts)
+    raise OpenAIUnavailable(f"{label} response contains no final message text")
 
 
 def _generate(prompt: str, config: ProviderConfig, timeout: float, structured: bool, provider: str = "openai") -> str:
