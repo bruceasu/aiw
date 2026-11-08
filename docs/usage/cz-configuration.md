@@ -5,6 +5,33 @@
 `AIW_ROOT` 的 `aiw.toml`、当前工作目录的 `aiw.toml`。每处若主文件不存在，
 则读取对应的 `.cz.toml` 或 `.aiw.toml`；同一处的两个文件不会合并。
 
+`aiw` 启动时会把与 `aiw` 可执行文件放在同一目录的 `.env` 当作环境变量默认值加载，
+已有的进程环境变量优先。它不会自动读取当前项目目录的 `.env`；通过 `aiw cz` 启动的
+Python 插件会继承 `aiw` 已加载的环境变量。若直接运行插件脚本，则需先在进程环境中
+设置变量。建议把 API key 放在 provider 或其 SDK 已约定的通用环境变量中，而不是写入
+TOML；本机使用 `.env` 时，请放在 `aiw` 可执行文件旁，并避免提交该文件。Codex CLI 和
+Copilot CLI 使用本机登录状态；模型、地址等非敏感设置优先写在 `[cz.<provider>]`
+配置段。仅在需要 cz 独立覆盖时使用 `CZ_*` 环境变量。
+
+例如，使用 OpenAI 或 DeepSeek 时，密钥分别使用已有的 `OPENAI_API_KEY` 或
+`DEEPSEEK_API_KEY`。使用 DeepSeek 时，也可用已有的 `DEEPSEEK_MODEL` 和
+`DEEPSEEK_BASE_URL` 设置模型与地址：
+
+```dotenv
+# OpenAI API（如使用）
+# OPENAI_API_KEY=your-api-key
+# DeepSeek API（如使用）
+DEEPSEEK_API_KEY=your-api-key
+DEEPSEEK_MODEL=deepseek-flash
+# 可选：仅在使用兼容代理或自定义端点时设置
+# DEEPSEEK_BASE_URL=https://api.deepseek.com
+```
+
+provider 可在配置文件的 `[cz]` 段中设为 `provider = "deepseek"`，或在调用时使用
+`--provider deepseek`。`CZ_<PROVIDER>_*` 是 cz 专用覆盖项，仅当需要让 cz 使用
+不同于其他工具的凭据、模型或地址时才需要；对 OpenAI 和 DeepSeek，专用变量优先于
+各自已有的通用环境变量。自动选择时也可通过 `CZ_LLM_PROVIDER=deepseek` 指定 provider。
+
 ```toml
 [cz]
 llm = false
@@ -19,12 +46,12 @@ model = "your-codex-model"
 
 [cz.openai]
 model = "your-openai-model"
-# api_key = "..." # 推荐使用 CZ_OPENAI_API_KEY 或 OPENAI_API_KEY
+# api_key = "..." # 不建议把密钥写入配置；优先使用 OPENAI_API_KEY
 # base_url = "https://api.openai.com/v1"
 
 [cz.deepseek]
 model = "deepseek-flash"
-# api_key = "..." # 推荐使用 CZ_DEEPSEEK_API_KEY 或 DEEPSEEK_API_KEY
+# api_key = "..." # 不建议把密钥写入配置；优先使用 DEEPSEEK_API_KEY
 # base_url = "https://api.deepseek.com"
 ```
 
