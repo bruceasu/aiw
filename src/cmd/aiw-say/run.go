@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"aiw/internal/ai"
 	"aiw/internal/say"
 	"aiw/internal/version"
 )
@@ -70,6 +71,18 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 		return err
 	}
 	applyOptions(&cfg, opts)
+	llmConfig, err := ai.ResolveConfig("", "", cfg.Provider, cfg.Model)
+	if err != nil {
+		return err
+	}
+	if llmConfig.Name == "" {
+		llmConfig.Name = "openai"
+		if cfg.Model != "" {
+			llmConfig.Model = cfg.Model
+		}
+	}
+	cfg.Provider = llmConfig.Name
+	cfg.Model = llmConfig.Model
 	duration, err := say.Validate(cfg)
 	if err != nil {
 		return err
@@ -97,7 +110,11 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 	}
 	requestCtx, cancel := context.WithTimeout(context.Background(), duration)
 	defer cancel()
-	translation, err := say.NewOpenAIProvider().Translate(requestCtx, request)
+	translation, err := ai.RunLLMWithContext(requestCtx, request.Text, ai.LLMConfig{
+		Provider: llmConfig.Name, Model: llmConfig.Model, APIBaseURL: llmConfig.BaseURL,
+		APIKey: llmConfig.APIKey, CodexCommand: llmConfig.CodexCommand,
+		CopilotCommand: llmConfig.CopilotCommand, ReadOnly: true,
+	}, nil, say.SystemPrompt(request))
 	if err != nil {
 		return err
 	}

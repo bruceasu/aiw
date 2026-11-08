@@ -64,7 +64,7 @@ Options:
       --simple            Simplify the translation
       --profanity MODE    mask, soften, or preserve
       --profile NAME      Read a user profile
-      --provider NAME     Translation provider (openai)
+      --provider NAME     Translation provider (defaults to [ai].provider)
       --model NAME        Explicit configured model
       --timeout DURATION  Request timeout (default 30s)
       --config PATH       Base TOML configuration

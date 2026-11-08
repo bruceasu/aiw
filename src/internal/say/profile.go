@@ -76,9 +76,6 @@ func Validate(cfg Config) (time.Duration, error) {
 	if !oneOf(cfg.Profanity, "mask", "soften", "preserve") {
 		return 0, fmt.Errorf("invalid profanity mode %q", cfg.Profanity)
 	}
-	if cfg.Provider != "openai" {
-		return 0, fmt.Errorf("unsupported provider %q", cfg.Provider)
-	}
 	if !validTimeout(cfg.Timeout) {
 		return 0, errors.New("timeout must be a duration greater than zero and at most 10m")
 	}

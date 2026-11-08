@@ -1,5 +1,15 @@
 # AI 路由
 
+## Shared command configuration
+
+In-scope AIW commands MUST use `[ai]` and the standard provider environment
+variables as their shared provider defaults. Explicit CLI options and
+command-specific configuration MUST take precedence over shared values.
+Commands MUST preserve their existing fallback behavior when no shared
+provider is selected. A command that cannot use an explicitly selected
+provider MUST return a clear error and MUST NOT silently route the request to
+another provider.
+
 ## Purpose
 
 固定当前 provider 解析、角色 Profile 和监督请求使用模型的规则，区分默认配置、单次覆盖与请求快照，说明配置了角色名称之后实际会执行哪些路由行为。

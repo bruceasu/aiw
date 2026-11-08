@@ -28,7 +28,7 @@ type Config struct {
 }
 
 func DefaultConfig() Config {
-	return Config{Source: "auto", Target: "ja", Mode: "realtime", Style: "spoken", Polite: "polite", Profanity: "mask", Provider: "openai", Timeout: "30s"}
+	return Config{Source: "auto", Target: "ja", Mode: "realtime", Style: "spoken", Polite: "polite", Profanity: "mask", Timeout: "30s"}
 }
 
 // LoadBase reads the executable-directory aiw.toml, or the explicit override.
@@ -180,7 +180,7 @@ func applyConfigValue(cfg *Config, key, value string) bool {
 		}
 		cfg.Profanity = value
 	case "say.llm.provider", "profile.provider":
-		if value != "openai" {
+		if strings.TrimSpace(value) == "" {
 			return false
 		}
 		cfg.Provider = value

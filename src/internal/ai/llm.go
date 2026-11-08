@@ -39,9 +39,15 @@ func RunLLM(prompt string, cfg LLMConfig, outputSchema map[string]any) (string, 
 }
 
 func RunLLMWithSystemPrompt(prompt string, cfg LLMConfig, outputSchema map[string]any, systemPrompt string) (string, error) {
+	return RunLLMWithContext(context.Background(), prompt, cfg, outputSchema, systemPrompt)
+}
+
+// RunLLMWithContext runs one provider selection while honoring caller
+// cancellation and deadlines for both explicit and auto-detected providers.
+func RunLLMWithContext(ctx context.Context, prompt string, cfg LLMConfig, outputSchema map[string]any, systemPrompt string) (string, error) {
 	provider := normalizeProviderName(cfg.Provider)
 	if provider != "" {
-		return runProvider(provider, prompt, cfg, outputSchema, systemPrompt)
+		return runProvider(ctx, provider, prompt, cfg, outputSchema, systemPrompt)
 	}
 
 	providers, err := detectAvailableProviders(cfg)
@@ -54,7 +60,7 @@ func RunLLMWithSystemPrompt(prompt string, cfg LLMConfig, outputSchema map[strin
 
 	var errs []string
 	for _, p := range providers {
-		out, runErr := runProvider(p, prompt, cfg, outputSchema, systemPrompt)
+		out, runErr := runProvider(ctx, p, prompt, cfg, outputSchema, systemPrompt)
 		if runErr == nil {
 			return out, nil
 		}
@@ -87,7 +93,7 @@ func normalizeProviderName(provider string) string {
 	}
 }
 
-func runProvider(provider, prompt string, cfg LLMConfig, outputSchema map[string]any, systemPrompt string) (string, error) {
+func runProvider(ctx context.Context, provider, prompt string, cfg LLMConfig, outputSchema map[string]any, systemPrompt string) (string, error) {
 	if cfg.DryRun {
 		return `{"candidates":[{"type":"chore","scope":"","subject":"dry run preview","body":"","breaking":"","footer":""}]}`, nil
 	}
@@ -124,7 +130,7 @@ func runProvider(provider, prompt string, cfg LLMConfig, outputSchema map[string
 	if err != nil {
 		return "", err
 	}
-	result, err := p.Generate(context.Background(), Request{
+	result, err := p.Generate(ctx, Request{
 		Prompt:       prompt,
 		Model:        model,
 		SystemPrompt: systemPrompt,

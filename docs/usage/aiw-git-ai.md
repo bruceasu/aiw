@@ -1,6 +1,7 @@
 # AI-assisted `aiw git` commands
 
-AI commands use the provider settings and fallback order configured for `aiw cz`.
+AI commands use the shared `[ai]` provider by default. Explicit `[cz]` settings
+remain command-specific overrides for `aiw cz`, `aic`, `air`, and `aib`.
 
 ```text
 aiw git aic                 # stage all changes, generate a Conventional Commit message, and commit
@@ -20,6 +21,13 @@ content is marked, and the model is told not to infer omitted changes. The
 default base is `main`.
 
 The configured provider receives the staged diff for `aic`/`air` or the
-bounded branch context described above for `aib`. Provider setup follows the `[cz]`,
-`[cz.codex]`, `[cz.copilot]`, and `[cz.openai]` configuration documented for
-`aiw cz`.
+bounded branch context described above for `aib`. These commands use shared
+`[ai]` settings by default. Explicit `[cz]` settings and CZ environment values
+override them. DeepSeek and OpenAI credentials use `DEEPSEEK_API_KEY` and
+`OPENAI_API_KEY`.
+
+`aiw git guide` uses Codex CLI by default when no shared provider is configured.
+It supports Codex CLI, OpenAI Responses, and DeepSeek Responses. Install its
+optional SDK dependency with `python -m pip install -r <AIW_ROOT>/plugins/aiw-git/requirements.txt`
+to use OpenAI or DeepSeek. The selected provider must be supported by this
+command; it does not silently switch providers.

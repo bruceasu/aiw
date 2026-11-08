@@ -2,19 +2,28 @@
 
 ## Requirements
 
-### Requirement: CZ owns its LLM configuration
+### Requirement: CZ overrides shared LLM configuration
 
-`cz` MUST resolve its LLM settings from `[cz]`, provider-specific `[cz.copilot]`,
-`[cz.codex]`, and `[cz.openai]`, plus explicit CZ CLI and environment overrides.
-It MUST NOT inherit the global `[ai]` provider, model, or fast profile.
+`cz` MUST resolve explicit CLI and CZ environment settings before `[cz]` and
+provider-specific `[cz.<provider>]` settings. When no CZ-specific provider is
+selected, it MUST inherit the global `[ai]` provider and that provider's shared
+model, base URL, and API key settings. CZ-specific settings MUST override the
+corresponding shared values. It MUST NOT inherit `[ai.profiles.*]` role profiles.
 At each configuration location, `cz.toml` MUST take precedence over `.cz.toml`,
 and `aiw.toml` MUST take precedence over `.aiw.toml`; the pair MUST NOT be
 merged when both files exist.
 
-#### Scenario: independent provider models
+#### Scenario: CZ overrides shared provider values
 
 - **WHEN** each CZ provider has its own model configured
-- **THEN** each provider invocation uses only the selected provider's model and credentials
+- **THEN** the selected provider uses CZ-specific values where configured and
+  otherwise uses the matching shared `[ai]` values
+
+#### Scenario: inherit shared provider
+
+- **WHEN** no CLI, CZ environment, or `[cz]` setting selects a provider and
+  `[ai].provider` is configured
+- **THEN** CZ uses that shared provider and its shared provider configuration
 
 #### Scenario: CLI override
 
@@ -23,8 +32,8 @@ merged when both files exist.
 
 ### Requirement: provider fallback order
 
-Without an explicit provider, `cz --llm` MUST use Codex CLI, then Copilot CLI,
-then the OpenAI Responses HTTP API. A missing executable, unsupported mode,
+Without an explicit provider or shared `[ai].provider`, `cz --llm` MUST use
+Codex CLI, then Copilot CLI, then the OpenAI Responses HTTP API. A missing executable, unsupported mode,
 non-zero exit, timeout, HTTP error, or invalid candidate MUST advance to the
 next provider. After all providers fail, `cz` MUST explain the failure briefly
 and enter the interactive flow. Copilot MUST only be invoked when

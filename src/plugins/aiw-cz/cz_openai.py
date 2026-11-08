@@ -54,7 +54,7 @@ def _generate(prompt: str, config: ProviderConfig, timeout: float, structured: b
     if deepseek:
         default_base, env_base = "https://api.deepseek.com", ""
     else:
-        default_base, env_base = "https://api.openai.com/v1", "CZ_OPENAI_BASE_URL"
+        default_base, env_base = "https://api.openai.com/v1", "OPENAI_BASE_URL"
     base_url = (config.base_url or (os.environ.get(env_base) if env_base else "") or default_base).rstrip("/")
     payload = {"model": config.model, "input": prompt}
     if structured:

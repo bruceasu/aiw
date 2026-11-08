@@ -174,14 +174,23 @@ func ResolveConfig(sessionName, sessionModel, providerOverride, modelOverride st
 	if err != nil {
 		return Config{}, err
 	}
+	selectedProvider := cfg.Name
 	if strings.TrimSpace(sessionName) != "" {
-		cfg.Name = normalize(sessionName)
+		selectedProvider = normalize(sessionName)
+	}
+	if strings.TrimSpace(providerOverride) != "" {
+		selectedProvider = normalize(providerOverride)
+	}
+	if selectedProvider != "" && selectedProvider != normalize(cfg.Name) {
+		cfg, err = LoadConfigForProvider(selectedProvider)
+		if err != nil {
+			return Config{}, err
+		}
+	} else if selectedProvider != "" {
+		cfg.Name = selectedProvider
 	}
 	if strings.TrimSpace(sessionModel) != "" {
 		cfg.Model = sessionModel
-	}
-	if strings.TrimSpace(providerOverride) != "" {
-		cfg.Name = normalize(providerOverride)
 	}
 	if strings.TrimSpace(modelOverride) != "" {
 		cfg.Model = modelOverride

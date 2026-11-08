@@ -186,8 +186,11 @@ Windows/Linux amd64 binaries and includes both with samples in aiw-plugins.
 and place it in a directory searched by AIW plugin discovery, such as `PATH`.
 The configuration sample is
 [src/programs/aiw-say/aiw.toml.example](../../src/programs/aiw-say/aiw.toml.example).
-Set `OPENAI_API_KEY` in the environment and select a model available to your
-API account with `[say.llm].model` or `--model` before translating.
+Say uses the shared `[ai]` provider and its standard environment variables by
+default. Use `[say.llm].provider` / `[say.llm].model` or `--provider` / `--model`
+for command-specific overrides. With no shared provider, Say keeps its OpenAI
+default; set the matching provider credential such as `OPENAI_API_KEY` or
+`DEEPSEEK_API_KEY` in the environment.
 The default `aiw.toml` belongs beside the Say executable, normally in
 `C:\green\aiw\plugins\aiw-say\`; use `--config` for another location.
 

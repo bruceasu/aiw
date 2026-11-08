@@ -10,8 +10,10 @@
 `C:\green\aiw\plugins\aiw-say\`，`python build.py all` 也包含此流程。
 安装不会复制或覆盖实际 `aiw.toml`，也不会修改用户 profile 目录。
 
-首次使用时，将安装目录的 `aiw.toml.example` 复制为同目录的 `aiw.toml`，
-设置 `[say.llm].model`，并在环境中设置 `OPENAI_API_KEY`。
+首次使用时，将安装目录的 `aiw.toml.example` 复制为同目录的 `aiw.toml`。
+Say 默认使用全局 `[ai]` provider 及其标准环境变量（例如 `OPENAI_API_KEY`
+或 `DEEPSEEK_API_KEY`）；可用 `[say.llm].provider`、`[say.llm].model` 或 CLI
+参数覆盖 provider 和模型。未配置共享 provider 时，Say 保留 OpenAI 默认行为。
 默认配置从 Say 可执行文件所在目录读取；其他位置使用 `--config`。
 profile 样例需要按需手动复制到用户配置目录。
 

@@ -40,7 +40,8 @@
 [i18n]
 # default_language = "en"
 
-# Shared AI provider configuration. CZ uses its own [cz] settings below.
+# Shared AI provider default used by AIW commands. Command-specific settings
+# such as [say.llm] or [cz] override it where supported.
 [ai]
 # OpenAI
 # provider = "openai"
@@ -48,6 +49,12 @@
 # base_url = "https://api.openai.com/v1"
 # Keep API keys in environment variables, for example OPENAI_API_KEY.
 # api_key = ""
+
+# DeepSeek (also supported by aiw say, aiw cz and aiw git guide)
+# provider = "deepseek"
+# model = "deepseek-flash"
+# base_url = "https://api.deepseek.com"
+# Keep the key in DEEPSEEK_API_KEY.
 
 # Gemini
 # provider = "gemini"
@@ -94,7 +101,7 @@
 # llm_model = "your-model"
 # llm_base_url = "https://api.openai.com/v1"
 # llm_api_key = ""
-# Environment overrides: OPENAI_*, GEMINI_*, OLLAMA_*, LLAMACPP_* with
+# Environment overrides: OPENAI_*, DEEPSEEK_*, GEMINI_*, OLLAMA_*, LLAMACPP_* with
 # MODEL, BASE_URL and API_KEY suffixes; then AIW_LLM_PROVIDER, AIW_LLM_MODEL,
 # AIW_LLM_BASE_URL and AIW_LLM_API_KEY override the resolved values.
 
@@ -156,10 +163,9 @@ debug_source = false
 # editor = "notepad"
 editor = ""
 
-# Each provider has an independent model. Leave a model commented to use its
-# default. Keep API keys in the provider's standard environment variable when
-# available (for example OPENAI_API_KEY or DEEPSEEK_API_KEY); use CZ_* only
-# when CZ needs settings different from other tools.
+# CZ-specific settings override shared [ai] values. Leave a field unset to
+# inherit the matching shared value. Keep keys in standard provider variables;
+# use CZ_* only when CZ needs a value different from other tools.
 [cz.copilot]
 # model = "your-copilot-model"
 # api_key = "" # Optional GitHub user token; normally use the CLI login.

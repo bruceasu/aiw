@@ -5,11 +5,11 @@ Provide Git HOW-TO guidance from:
 
 1. Built-in Python handlers.
 2. Files stored under the local ``how-to`` directory.
-3. Codex-generated answers.
+3. Answers from the configured AI provider.
 
 Unknown questions are searched against the local HOW-TO knowledge base.
-When no suitable local answer exists, Codex generates a new Markdown
-HOW-TO and the result is saved for future use.
+When no suitable local answer exists, the configured provider generates a new
+Markdown HOW-TO and the result is saved for future use.
 """
 
 from __future__ import annotations
@@ -41,10 +41,7 @@ HERE: Final[Path] = Path(__file__).resolve().parent
 CORE_PATH: Final[Path] = HERE / "aiw-git-core.py"
 HOW_TO_DIR: Final[Path] = HERE / "how-to"
 
-CODEX_MODEL: Final[str] = os.environ.get(
-    "AIW_GIT_GUIDE_MODEL",
-    "gpt-6-luna",
-)
+LEGACY_CODEX_MODEL: Final[str] = os.environ.get("AIW_GIT_GUIDE_MODEL", "gpt-6-luna")
 
 MAX_DIRECT_MATCHES: Final[int] = 3
 MAX_CODEX_CANDIDATES: Final[int] = 12
@@ -147,13 +144,13 @@ META = {
     "name": "aiw git guide",
     "short": (
         "Search built-in and local Git HOW-TO guides, "
-        "or ask Codex."
+        "or ask the configured AI provider."
     ),
     "long": (
         "Displays built-in Git guidance and searches the local "
         "'how-to' directory. If no suitable guide exists, the "
-        f"question is delegated to Codex model {CODEX_MODEL}. "
-        "New Codex answers are saved as Markdown for future use."
+        "question is delegated to the configured AI provider. "
+        "New answers are saved as Markdown for future use."
     ),
     "usage": (
         "aiw git guide "
@@ -1104,6 +1101,7 @@ def write_codex_schema(directory: Path) -> Path:
 
 def run_codex_structured(
     prompt: str,
+    model: str,
 ) -> tuple[int, CodexAnswer | None, str]:
     """Run Codex and parse its structured final response."""
 
@@ -1127,7 +1125,7 @@ def run_codex_structured(
             codex,
             "exec",
             "--model",
-            CODEX_MODEL,
+            model,
             "--sandbox",
             "read-only",
             "--output-schema",
@@ -1181,12 +1179,7 @@ def run_codex_structured(
             )
 
         try:
-            answer = CodexAnswer(
-                title=str(raw["title"]).strip(),
-                slug=safe_slug(str(raw["slug"])),
-                content=str(raw["content"]).strip(),
-                save=bool(raw["save"]),
-            )
+            answer = parse_structured_answer(raw)
         except (
             KeyError,
             TypeError,
@@ -1199,6 +1192,70 @@ def run_codex_structured(
             )
 
         return 0, answer, ""
+
+
+def parse_structured_answer(raw: object) -> CodexAnswer:
+    if not isinstance(raw, dict):
+        raise ValueError("answer is not a JSON object")
+    title = raw["title"]
+    slug = raw["slug"]
+    content = raw["content"]
+    save = raw["save"]
+    if not all(isinstance(value, str) for value in (title, slug, content)) or not isinstance(save, bool):
+        raise ValueError("answer fields have invalid types")
+    title, content = title.strip(), content.strip()
+    slug = safe_slug(slug)
+    if not 3 <= len(title) <= 120 or not 1 <= len(slug) <= 80 or len(content) < 20:
+        raise ValueError("answer fields do not satisfy the structured output contract")
+    return CodexAnswer(title=title, slug=slug, content=content, save=save)
+
+
+def run_openai_structured(
+    prompt: str,
+    provider: str,
+    provider_config: object,
+    model: str,
+) -> tuple[int, CodexAnswer | None, str]:
+    """Call an OpenAI-compatible Responses provider with the guide schema."""
+    try:
+        from openai import OpenAI
+    except ImportError:
+        return 1, None, "OpenAI SDK is missing; install aiw-git/requirements.txt."
+
+    config = provider_config
+    api_key = getattr(config, "api_key", "")
+    model = model or getattr(config, "model", "")
+    base_url = getattr(config, "base_url", "")
+    if provider == "deepseek":
+        api_key = api_key or os.environ.get("DEEPSEEK_API_KEY", "")
+        model = model or os.environ.get("DEEPSEEK_MODEL", "deepseek-flash")
+        base_url = base_url or os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+    else:
+        api_key = api_key or os.environ.get("OPENAI_API_KEY", "")
+        model = model or os.environ.get("OPENAI_MODEL", "")
+        base_url = base_url or os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
+    if not api_key:
+        return 1, None, f"{provider} API key is not configured."
+    if not model:
+        return 1, None, f"{provider} model is not configured."
+
+    schema = {key: value for key, value in CODEX_OUTPUT_SCHEMA.items() if key != "$schema"}
+    try:
+        client = OpenAI(api_key=api_key, base_url=base_url, timeout=60.0)
+        response = client.responses.create(
+            model=model,
+            input=prompt,
+            text={"format": {
+                "type": "json_schema", "name": "git_guide_answer",
+                "strict": True, "schema": schema,
+            }},
+        )
+        raw = json.loads(response.output_text)
+        return 0, parse_structured_answer(raw), ""
+    except KeyboardInterrupt:
+        return 130, None, f"{provider} request cancelled."
+    except Exception as exc:
+        return 1, None, f"{provider} Responses request failed ({type(exc).__name__})."
 
 
 def build_new_answer_prompt(question: str) -> str:
@@ -1330,6 +1387,8 @@ def build_candidate_answer_prompt(
 def save_generated_answer(
     answer: CodexAnswer,
     question: str,
+    provider: str,
+    model: str,
 ) -> Path:
     output_path = unique_output_path(answer.slug)
 
@@ -1342,7 +1401,8 @@ def save_generated_answer(
         f"""
         <!--
         Generated by: aiw git guide
-        Model: {CODEX_MODEL}
+        Provider: {provider}
+        Model: {model}
         Original question: {question.replace("--", "—")}
         -->
 
@@ -1358,11 +1418,11 @@ def save_generated_answer(
     return output_path
 
 
-def answer_with_codex(
+def answer_with_provider(
     question: str,
     matches: list[SearchMatch],
 ) -> int:
-    """Use Codex for ambiguity resolution or new content generation."""
+    """Use the selected provider for ambiguity resolution or new content."""
 
     if matches:
         prompt = build_candidate_answer_prompt(
@@ -1372,7 +1432,36 @@ def answer_with_codex(
     else:
         prompt = build_new_answer_prompt(question)
 
-    rc, answer, error = run_codex_structured(prompt)
+    try:
+        ai_core_path = HERE / "aiw-git-ai.py"
+        spec = importlib.util.spec_from_file_location("aiw_git_ai", ai_core_path)
+        if spec is None or spec.loader is None:
+            raise RuntimeError("Git AI provider module is unavailable")
+        ai_core = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ai_core)
+        config, _ = ai_core.load_cz()
+        provider = config.provider or "codex"
+    except (OSError, RuntimeError, ValueError) as exc:
+        print(f"Error: cannot resolve AI provider: {exc}", file=sys.stderr)
+        return 1
+
+    if provider == "codex":
+        model = os.environ.get("AIW_GIT_GUIDE_MODEL", "").strip() or config.providers["codex"].model or LEGACY_CODEX_MODEL
+        rc, answer, error = run_codex_structured(prompt, model)
+    elif provider in ("openai", "deepseek"):
+        target = config.providers[provider]
+        model_env = "DEEPSEEK_MODEL" if provider == "deepseek" else "OPENAI_MODEL"
+        default_model = "deepseek-flash" if provider == "deepseek" else ""
+        model = target.model or os.environ.get(model_env, "") or default_model
+        rc, answer, error = run_openai_structured(prompt, provider, target, model)
+    else:
+        supported = "codex, openai, deepseek"
+        print(
+            f"Error: provider {provider!r} is not supported by aiw git guide "
+            f"(supported: {supported}).",
+            file=sys.stderr,
+        )
+        return 1
 
     if rc != 0 or answer is None:
         print(
@@ -1387,6 +1476,8 @@ def answer_with_codex(
         path = save_generated_answer(
             answer,
             question,
+            provider,
+            model,
         )
 
         print()
@@ -1494,12 +1585,12 @@ def handle_query(question: str) -> int:
         return display_local_match(matches[0])
 
     if matches:
-        return answer_with_codex(
+        return answer_with_provider(
             question,
             matches,
         )
 
-    return answer_with_codex(
+    return answer_with_provider(
         question,
         [],
     )

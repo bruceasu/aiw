@@ -49,6 +49,9 @@ func LoadConfigForProvider(name string) (Config, error) {
 		}
 	}
 	globalProvider := normalize(firstValue(values, "ai.provider", "ai.llm_provider"))
+	if value := strings.TrimSpace(os.Getenv("AIW_LLM_PROVIDER")); value != "" {
+		globalProvider = normalize(value)
+	}
 	selectedProvider := normalize(name)
 	if globalProvider != selectedProvider {
 		delete(values, "ai.model")
@@ -60,7 +63,8 @@ func LoadConfigForProvider(name string) (Config, error) {
 		delete(values, "ai.command")
 	}
 	values["ai.provider"] = selectedProvider
-	cfg := configFromValues(values)
+	cfg := configFromValuesWithGlobalOverrides(values, globalProvider == selectedProvider)
+	cfg.Name = selectedProvider
 	if cfg.Name != "" && cfg.Name != "auto" {
 		applyProviderDefaults(&cfg)
 	}
@@ -308,35 +312,19 @@ func isAIConfigSection(section string) bool {
 }
 
 func configFromValues(values map[string]string) Config {
-	name := firstValue(values, "ai.provider", "ai.llm_provider", "cz.provider", "cz.llm_provider")
-	name = normalize(name)
-	model := firstValue(values, "ai.model", "ai.llm_model", "cz.model", "cz.llm_model")
-	baseURL := firstValue(values, "ai.base_url", "ai.llm_base_url", "cz.base_url", "cz.llm_base_url")
-	apiKey := firstValue(values, "ai.api_key", "ai.llm_api_key", "cz.api_key", "cz.llm_api_key")
-	switch name {
-	case "openai":
-		model = firstValue(values, "ai.openai_model", "cz.openai_model", "ai.model", "cz.model")
-		baseURL = firstValue(values, "ai.openai_base_url", "cz.openai_base_url", "ai.base_url", "cz.base_url")
-		apiKey = firstValue(values, "ai.openai_api_key", "cz.openai_api_key", "ai.api_key", "cz.api_key")
-	case "openai-codex", "openai_codex", "codex-oauth":
-		model = firstValue(values, "ai.openai_codex_model", "cz.openai_codex_model", "ai.codex_model", "ai.model", "cz.model")
-	case "deepseek":
-		model = firstValue(values, "ai.deepseek_model", "cz.deepseek_model", "ai.model", "cz.model")
-		baseURL = firstValue(values, "ai.deepseek_base_url", "cz.deepseek_base_url", "ai.base_url", "cz.base_url")
-		apiKey = firstValue(values, "ai.deepseek_api_key", "cz.deepseek_api_key", "ai.api_key", "cz.api_key")
-	case "gemini":
-		model = firstValue(values, "ai.gemini_model", "cz.gemini_model", "ai.model", "cz.model")
-		baseURL = firstValue(values, "ai.gemini_base_url", "cz.gemini_base_url", "ai.base_url", "cz.base_url")
-		apiKey = firstValue(values, "ai.gemini_api_key", "cz.gemini_api_key", "ai.api_key", "cz.api_key")
-	case "ollama":
-		model = firstValue(values, "ai.ollama_model", "cz.ollama_model", "ai.model", "cz.model")
-		baseURL = firstValue(values, "ai.ollama_base_url", "cz.ollama_base_url", "ai.base_url", "cz.base_url")
-		apiKey = firstValue(values, "ai.ollama_api_key", "cz.ollama_api_key", "ai.api_key", "cz.api_key")
-	case "llama.cpp", "llamacpp", "llama-cpp":
-		model = firstValue(values, "ai.llamacpp_model", "cz.llamacpp_model", "ai.model", "cz.model")
-		baseURL = firstValue(values, "ai.llamacpp_base_url", "cz.llamacpp_base_url", "ai.base_url", "cz.base_url")
-		apiKey = firstValue(values, "ai.llamacpp_api_key", "cz.llamacpp_api_key", "ai.api_key", "cz.api_key")
+	return configFromValuesWithGlobalOverrides(values, true)
+}
+
+func configFromValuesWithGlobalOverrides(values map[string]string, applyGlobalOverrides bool) Config {
+	configuredProvider := normalize(firstValue(values, "ai.provider", "ai.llm_provider", "cz.provider", "cz.llm_provider"))
+	name := configuredProvider
+	if applyGlobalOverrides {
+		if value := strings.TrimSpace(os.Getenv("AIW_LLM_PROVIDER")); value != "" {
+			name = normalize(value)
+		}
 	}
+	useGeneric := configuredProvider == "" || configuredProvider == name
+	model, baseURL, apiKey := providerConfigValues(values, name, useGeneric)
 	command := firstValue(values, "ai.command", "cz.command")
 	codexCommand := firstValue(values, "ai.codex_command", "cz.codex_command", "ai.command", "cz.command")
 	copilotCommand := firstValue(values, "ai.copilot_command", "cz.copilot_command", "ai.command", "cz.command")
@@ -357,17 +345,16 @@ func configFromValues(values map[string]string) Config {
 			apiKey = v
 		}
 	}
-	if v := strings.TrimSpace(os.Getenv("AIW_LLM_PROVIDER")); v != "" {
-		name = normalize(v)
-	}
-	if v := strings.TrimSpace(os.Getenv("AIW_LLM_MODEL")); v != "" {
-		model = v
-	}
-	if v := strings.TrimSpace(os.Getenv("AIW_LLM_BASE_URL")); v != "" {
-		baseURL = v
-	}
-	if v := strings.TrimSpace(os.Getenv("AIW_LLM_API_KEY")); v != "" {
-		apiKey = v
+	if applyGlobalOverrides {
+		if v := strings.TrimSpace(os.Getenv("AIW_LLM_MODEL")); v != "" {
+			model = v
+		}
+		if v := strings.TrimSpace(os.Getenv("AIW_LLM_BASE_URL")); v != "" {
+			baseURL = v
+		}
+		if v := strings.TrimSpace(os.Getenv("AIW_LLM_API_KEY")); v != "" {
+			apiKey = v
+		}
 	}
 
 	cfg := Config{Name: name, Model: model, APIKey: apiKey, BaseURL: baseURL, Command: command, CodexCommand: codexCommand, CopilotCommand: copilotCommand}
@@ -376,6 +363,30 @@ func configFromValues(values map[string]string) Config {
 		applyProviderDefaults(&cfg)
 	}
 	return cfg
+}
+
+func providerConfigValues(values map[string]string, name string, useGeneric bool) (model, baseURL, apiKey string) {
+	modelKeys, baseKeys, keyKeys := []string{}, []string{}, []string{}
+	switch normalize(name) {
+	case "openai":
+		modelKeys, baseKeys, keyKeys = []string{"ai.openai_model", "cz.openai_model"}, []string{"ai.openai_base_url", "cz.openai_base_url"}, []string{"ai.openai_api_key", "cz.openai_api_key"}
+	case "openai-codex", "openai_codex", "codex-oauth":
+		modelKeys = []string{"ai.openai_codex_model", "cz.openai_codex_model", "ai.codex_model", "cz.codex_model"}
+	case "deepseek":
+		modelKeys, baseKeys, keyKeys = []string{"ai.deepseek_model", "cz.deepseek_model"}, []string{"ai.deepseek_base_url", "cz.deepseek_base_url"}, []string{"ai.deepseek_api_key", "cz.deepseek_api_key"}
+	case "gemini":
+		modelKeys, baseKeys, keyKeys = []string{"ai.gemini_model", "cz.gemini_model"}, []string{"ai.gemini_base_url", "cz.gemini_base_url"}, []string{"ai.gemini_api_key", "cz.gemini_api_key"}
+	case "ollama":
+		modelKeys, baseKeys, keyKeys = []string{"ai.ollama_model", "cz.ollama_model"}, []string{"ai.ollama_base_url", "cz.ollama_base_url"}, []string{"ai.ollama_api_key", "cz.ollama_api_key"}
+	case "llama.cpp", "llamacpp", "llama-cpp":
+		modelKeys, baseKeys, keyKeys = []string{"ai.llamacpp_model", "cz.llamacpp_model"}, []string{"ai.llamacpp_base_url", "cz.llamacpp_base_url"}, []string{"ai.llamacpp_api_key", "cz.llamacpp_api_key"}
+	}
+	if useGeneric {
+		modelKeys = append(modelKeys, "ai.model", "ai.llm_model", "cz.model", "cz.llm_model")
+		baseKeys = append(baseKeys, "ai.base_url", "ai.llm_base_url", "cz.base_url", "cz.llm_base_url")
+		keyKeys = append(keyKeys, "ai.api_key", "ai.llm_api_key", "cz.api_key", "cz.llm_api_key")
+	}
+	return firstValue(values, modelKeys...), firstValue(values, baseKeys...), firstValue(values, keyKeys...)
 }
 
 func applyProviderDefaults(cfg *Config) {
