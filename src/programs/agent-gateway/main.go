@@ -35,7 +35,6 @@ func run() error {
 	if c.BackendMode!="openai_proxy" { s,err=openStore(c.StateDir);if err!=nil { return errors.New("cannot open gateway state: "+err.Error()) } }
     closeStore:=true
 	defer func(){if closeStore&&s!=nil { s.Close() }}()
-	if c.BackendMode=="codex" { if err=os.MkdirAll(c.WorkspaceDir,0700);err!=nil { return errors.New("cannot create workspace root") } }
     ctx,cancel:=signal.NotifyContext(context.Background(),os.Interrupt,syscall.SIGTERM)
     defer cancel()
     gateway:=newGateway(ctx,c,s)
@@ -49,7 +48,6 @@ func run() error {
         shutdown,done:=context.WithTimeout(context.Background(),10*time.Second);defer done()
 		err:=server.Shutdown(shutdown)
 		gateway.closeProxyConnections()
-		if gateway.appPool!=nil { if cleanupErr:=gateway.appPool.close();cleanupErr!=nil&&err==nil { err=cleanupErr } }
         if err==nil {
             select { case <-cleanupDone:case <-shutdown.Done():err=shutdown.Err() }
         }

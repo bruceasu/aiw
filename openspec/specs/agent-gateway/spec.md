@@ -2,15 +2,14 @@
 
 ## Purpose
 
-提供基于 Codex CLI 的 Go 共享 AI 网关。FD-017 与 REQ00006 的后续确认替代旧 TypeScript 多 Provider/ACK 接口；历史 Issue 与归档 FD 保留。
-
-明文网关 Key、调用主体跟踪及 HTTP 请求统计采用 [FD-020](../../../docs/features/FD-020_AGENT_GATEWAY_REQUEST_OBSERVABILITY.md) 中已确认的范围。此规格描述能力契约，实施进度和验证结果由 FD 及其证据记录。
+Provides the Go shared AI Gateway with an AIW-managed OpenAI Codex Responses backend and an OpenAI-compatible proxy. FD-017 and REQ00006 supersede the legacy TypeScript multi-provider/ACK interface; historical Issues and archived FDs remain preserved. The active capability contract is maintained here; implementation progress and verification are recorded in numbered FDs.
 
 ## Requirements
 
-### Requirement: Mutually exclusive Codex and OpenAI proxy backends
+### Requirement: Explicit OpenAI Codex and OpenAI proxy backends
 
-The gateway MUST select one backend per process using `backend_mode`. An omitted field MUST select `codex` for existing configuration compatibility. `openai_proxy` MUST NOT require a Codex executable, model mapping, workspace directory, or durable usage store. Deployment `mode` MUST continue to control development/shared listening and peer policy independently.
+The Gateway MUST require an explicit `backend_mode` and accept only `openai_codex` or `openai_proxy`. An omitted value or legacy `codex` value MUST fail startup with an error directing the operator to set `backend_mode` to `openai_codex`. The Gateway MUST NOT silently change the selected execution backend.
+
 
 In `openai_proxy` mode, the gateway MUST authenticate the inbound gateway Bearer key and enforce the existing per-principal RPM and global/principal concurrency limits. It MUST route every `/v1` HTTP method and path, including `/v1/models` and `/v1/usage`, to one configured HTTP(S) `proxy_base_url`; `/internal/*` MUST remain local. It MUST NOT apply Codex model authorization, daily quotas, or usage parsing. It MUST NOT fall back to another backend after an error.
 
@@ -20,10 +19,15 @@ The gateway MUST resolve the upstream credential from `proxy_api_key_env`, with 
 
 Proxy requests MUST retain gateway RPM and concurrency limits. Client disconnect and service shutdown MUST cancel HTTP/SSE requests, close upgraded WebSocket connections, and finish within the configured shutdown bound. Proxy mode MUST NOT require or write the Codex usage store; optional metadata audit failure MUST NOT block forwarding.
 
-#### Scenario: Keep old configuration on Codex
+#### Scenario: Reject a missing backend mode
 
-- WHEN `backend_mode` is omitted from an existing valid Codex configuration
-- THEN the gateway MUST continue to select `codex` and preserve the existing deployment `mode` semantics
+- WHEN startup configuration omits `backend_mode`
+- THEN startup MUST fail with guidance to set `backend_mode` to `openai_codex`
+
+#### Scenario: Reject the legacy codex backend
+
+- WHEN startup configuration sets `backend_mode` to `codex`
+- THEN startup MUST fail with guidance to set `backend_mode` to `openai_codex`
 
 #### Scenario: Forward an unknown API path to the fixed base URL
 
@@ -44,6 +48,20 @@ Proxy requests MUST retain gateway RPM and concurrency limits. Client disconnect
 
 - WHEN proxy-mode service shutdown begins with active HTTP, SSE, or WebSocket requests
 - THEN the gateway MUST cancel or close them and finish within its bounded shutdown interval without opening a Codex state store
+
+### Requirement: Deployment listener and peer boundaries
+
+In `development` mode, the Gateway MUST bind to a loopback address and MUST reject non-loopback peers. In `shared` mode, the configuration MUST explicitly set `listen`. Both modes MUST preserve Gateway authentication and configured request limits.
+
+#### Scenario: Restrict development listeners and peers
+
+- WHEN a development configuration uses a non-loopback listen address, or a non-loopback peer contacts the Gateway
+- THEN startup MUST reject the address or the request MUST be rejected
+
+#### Scenario: Require an explicit shared listener
+
+- WHEN a shared configuration omits `listen`
+- THEN startup MUST fail
 
 ### Requirement: Authenticated OpenAI text subset
 
@@ -88,15 +106,9 @@ POST /v1/responses MUST 支持 model、文本 input（字符串/user/assistant �
 - WHEN 运营者为同一主体替换 Key 并重启网关
 - THEN 新配置生效，已移除的 Key 不再认证；该主体的历史请求统计、执行用量和每日额度不因换 Key 清零
 
-### Requirement: Controlled process lifecycle
-
-每请求 MUST 使用独立空临时工作区和固定服务端配置/环境白名单。Linux MUST 使用独立进程组终止树，Windows MUST 使用独立 Job Object 并在加入 Job 后恢复 suspended 子进程。取消、超时、正常根退出和服务关停 MUST 收敛树后清理目录；清理失败 MUST 可观测且不能返回成功。输出文本 256 KiB、原始 stdout/stderr 各 4 MiB，默认请求 600 秒，`timeout_seconds` 保持 1–3600 秒配置范围且重启生效，流写入 5 秒 deadline。客户端期限独立于服务端执行上限。
-
-development MUST 限 loopback 监听与 peer；shared MUST 显式配置认证/限额/监听。应用不操作 Docker、挂载或登录供给；Proxy/Codex 可共容器，部署/宿主隔离由用户负责。独立 cwd 不提供请求间访问隔离，Linux 恶意脱组及共容器跨读为残余风险。
-
 ### Requirement: Codex Chat Completions text subset
 
-POST `/v1/chat/completions` MUST 复用 Responses 的 Gateway Key/主体认证、模型授权、RPM/并发/日额度、App Server 执行、超时/取消及清理逻辑；每个请求 MUST 仅执行和扣额一次。
+POST `/v1/chat/completions` MUST 复用 Responses 的 Gateway Key/主体认证、模型授权、RPM/并发/日额度、selected backend 执行、超时/取消及清理逻辑；每个请求 MUST 仅执行和扣额一次。
 
 请求 MUST 只接受 `model`、`messages`、`stream`、`n`。`messages` MUST 为非空数组，消息仅包含 `role` 和非空白字符串 `content`；支持开头的 system/developer 指令以及有序 user/assistant 文本对话，MUST 至少包含一条 user 消息，MUST 拒绝对话开始后的 system/developer。`stream` 仅允许省略或 false，`n` 仅允许省略或 1。未知/重复字段、null、尾随 JSON、非法 UTF-8、超过 1 MiB 主体、映射后超过 64 KiB UTF-8 的指令/对话及其他角色/内容类型 MUST 在启动后端前拒绝。函数工具、流式、content 数组和生成参数控制不属于此子集。
 
@@ -116,34 +128,11 @@ Chat 请求的顶层和消息对象字段名 MUST 精确匹配上述白名单，
 - WHEN 请求包含 stream:true、n 大于 1、tools、图片/音频内容或其他不支持字段
 - THEN Gateway MUST 返回 400，且 MUST NOT 启动模型执行
 
-### Requirement: Bounded Codex App Server backend
-
-Codex execution MUST use the versioned App Server stdio JSON-RPC protocol and a process pool bounded by `global_concurrency`. A pool process MUST serve at most one HTTP request at a time; each request MUST start a new ephemeral thread with a separate temporary cwd and MUST NOT accept caller-supplied thread IDs. Healthy App Server processes MAY be reused after a terminal turn. A process with an unknown protocol or execution state MUST be discarded and MUST NOT be retried automatically.
-
-The gateway MUST bound JSONL line length, total stdout, stderr, and notification buffering. It MUST negotiate experimental API support during `initialize`, send `initialized`, and verify effective configuration and MCP server status before every turn. Any enabled or unknown MCP server state MUST reject the turn. The child MUST reuse the configured `CODEX_HOME` authentication and MUST NOT copy credentials or edit user configuration. Local shell, unified exec, image viewing, sleep, apps, plugins, hooks, web search, browser/computer use, image generation, and multi-agent features MUST be explicitly disabled through process configuration; an unexpected server request MUST receive an error and invalidate the process.
-
-Each turn MUST explicitly use the configured logical model, a request-specific cwd, `approvalPolicy=never`, and a read-only sandbox with network access disabled. The gateway MUST mark quota usage started only after a successful `turn/start` response; an ambiguous start MUST retain its conservative reservation and MUST NOT be retried. Usage MUST come from the current turn only and remain unknown when absent or invalid.
-
-#### Scenario: Refuse an enabled or unknown MCP configuration
-
-- WHEN effective configuration or `mcpServerStatus/list` reports an enabled MCP server, an unknown server state, or an unreadable safety configuration
-- THEN the gateway MUST refuse the turn, discard that process slot, and MUST NOT start a model turn
-
-#### Scenario: Discard a process after an ambiguous turn start
-
-- WHEN `turn/start` may have been submitted but its successful response cannot be confirmed
-- THEN the gateway MUST keep the reservation conservative, discard the process, return an error, and MUST NOT retry the request
-
-#### Scenario: Reuse a healthy process with a fresh thread
-
-- WHEN a turn reaches a known terminal state
-- THEN the pool MAY reuse the process for another request, but MUST start a fresh ephemeral thread and cwd
-
 ### Requirement: Local graceful shutdown control
 
 Gateway MUST 保留 Ctrl+C/SIGTERM 关停，并提供 `stop --config <file>` 和 `POST /internal/shutdown` 本地控制入口。该入口 MUST 要求 loopback peer 和现有 enabled 主体 Bearer Key，拒绝非 POST、非空 body 和 query；不得触发模型执行或新增远程管理权限。所有 enabled 主体 Key 可用于本机控制。审计存储不可写时仍可执行经过认证的本地关停并记录脱敏错误，不以此放开其他 AI 请求的存储门禁。
 
-关停 MUST 复用全局取消和现有进程树清理，等待 HTTP 处理及定期内容清理退出后才释放状态锁。停止命令 MUST 有有限等待，无重定向、无自动重试、不暴露凭据或原始错误；监听结束且状态锁释放才能报告完成。失败不得强杀或自动删除锁。仅绑定具体非 loopback 地址的实例仍使用控制台信号。
+Shutdown MUST cancel active backend requests, gracefully stop HTTP handling, close active proxy connections, wait for periodic content cleanup to exit, and release the state lock. The stop command MUST have a bounded wait, follow no redirects, retry nothing, and reveal neither credentials nor raw internal errors. It may report success only after the listener stops and the state lock is released. Failure MUST NOT force-kill a process or remove the lock. Instances bound to a specific non-loopback address continue to use a console signal.
 
 #### Scenario: Stop a running local gateway
 
@@ -240,14 +229,14 @@ HTTP 请求结果 MUST 区分 succeeded、rejected、failed、timed_out、cancel
 
 ### Requirement: Direct OpenAI Codex Responses backend
 
-`openai_codex` MUST be a separate `backend_mode` that does not require a Codex executable, App Server, workspace directory or local sandbox. It MUST reuse AIW-managed Codex authentication and the Responses transport used by AIW Go LLM callers. Gateway-issued Bearer keys, logical model allowlists and mappings, RPM/concurrency limits, daily reservations, usage records, request observability and shutdown control MUST remain enforced. The mode MUST require an absolute state directory and model mappings. It MUST NOT follow redirects or retry an ambiguous upstream request, log credentials, or execute returned function calls. The local Codex-compatible endpoint is a compatibility target and MUST NOT be represented as a stable public API.
+`openai_codex` MUST be a separate `backend_mode` that does not require a Codex executable, workspace directory or local sandbox. It MUST reuse AIW-managed Codex authentication and the Responses transport used by AIW Go LLM callers. Gateway-issued Bearer keys, logical model allowlists and mappings, RPM/concurrency limits, daily reservations, usage records, request observability and shutdown control MUST remain enforced. The mode MUST require an absolute state directory and model mappings. It MUST NOT follow redirects or retry an ambiguous upstream request, log credentials, or execute returned function calls. The local Codex-compatible endpoint is a compatibility target and MUST NOT be represented as a stable public API.
 
 #### Scenario: Use the direct backend without Codex installed
 
 - WHEN the Gateway starts with `backend_mode` set to `openai_codex` and a valid AIW-managed login
 - THEN it MUST serve the supported Responses and Chat Completions routes without checking for or starting a Codex executable, while preserving Gateway authentication, model authorization, configured limits and durable usage accounting
 
-#### Scenario: Keep App Server sandbox semantics scoped to its backend
+#### Scenario: Keep direct backend function calls caller-managed
 
 - WHEN the Gateway runs in `openai_codex` mode
-- THEN documentation MUST state that requests do not receive the App Server's local read-only sandbox, and returned function calls MUST remain caller-managed
+- THEN documentation MUST state that the Gateway does not provide a local sandbox and returned function calls remain caller-managed

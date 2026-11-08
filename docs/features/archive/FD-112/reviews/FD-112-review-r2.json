@@ -1,0 +1,43 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-112",
+  "source_event": "FD-112-000008-implementation-ready",
+  "human_report": "FD-112-review-r2.md",
+  "data": {
+    "outcome": "changes-requested",
+    "reviewer_session": "fd112-review-doc-fixes-20261108",
+    "reviewed_base": "FD revision 8; implementation diff previously reviewed against AIW HEAD 2e9d0c1; this follow-up reviewed the README and stable-spec documentation changes",
+    "findings": [
+      {
+        "severity": "spec-contract",
+        "file": "openspec/specs/agent-gateway/spec.md",
+        "requirement": "Local graceful shutdown control",
+        "location": "shutdown semantics paragraph, approximately line 135",
+        "finding": "The stable spec still says shutdown MUST reuse existing process-tree cleanup. FD-112 removed App Server process launch/pool and the Linux/Windows process-tree management files. Current shutdown performs HTTP graceful shutdown, closes proxy connections, and waits for content cleanup; no App Server process tree remains to clean.",
+        "impact": "The stable spec retains a lifecycle guarantee for a removed execution path and overstates current shutdown behavior.",
+        "minimal_action": "Remove the obsolete process-tree cleanup phrase while preserving global cancellation, active HTTP/proxy connection shutdown, content cleanup completion, and state-lock release requirements."
+      }
+    ],
+    "resolved_prior_findings": [
+      "README now scopes state_dir/requests persistence and local usage statistics to openai_codex, and explicitly says openai_proxy does not persist request metadata or provide local usage statistics.",
+      "Stable spec now has a separate development/shared deployment listener and peer requirement: development uses loopback listener/peer; shared requires explicit listen. The added requirement does not restore App Server lifecycle rules."
+    ],
+    "commands": [
+      "aiw fd show FD-112",
+      "aiw fd claim FD-112 FD-112-000008-implementation-ready --session fd112-review-doc-fixes-20261108",
+      "git status --short",
+      "git diff --stat",
+      "git diff of README, stable spec, and current FD",
+      "rg, Select-String, and Get-Content targeted static reads"
+    ],
+    "checks_not_run": [
+      "Go tests",
+      "Compile-only check (Worker records Windows/Linux success; not rerun)",
+      "Builds",
+      "Network requests",
+      "Runtime validation"
+    ],
+    "residual_risk": "The remaining stable-spec process-tree cleanup requirement does not match the removed App Server execution path. No runtime behavior was exercised in this follow-up."
+  }
+}

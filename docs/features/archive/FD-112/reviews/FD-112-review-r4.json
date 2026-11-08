@@ -1,0 +1,38 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-112",
+  "source_event": "FD-112-000016-review-requested",
+  "human_report": "FD-112-review-r4.md",
+  "data": {
+    "outcome": "verification-passed",
+    "reviewer_session": "fd112-review-final-20261108",
+    "reviewed_base": "FD revision 16 and the full uncommitted implementation/documentation diff at AIW HEAD 2e9d0c1; final FD evidence document updated to revision 17 after this report was written",
+    "findings": [],
+    "results": [
+      "Startup explicitly requires backend_mode, rejects missing/null and legacy codex with openai_codex migration guidance, rejects unsupported values and removed App Server fields.",
+      "stopGateway retains legacy config fields and old backend-mode interpretation solely to stop old instances; it does not invoke new startup validation or launch the removed backend.",
+      "The active request chain retains openai_proxy forwarding and directs non-proxy inference to executeOpenAICodex. App Server pool, JSON-RPC runner, and platform process files are absent from the current diff.",
+      "The r1 README persistence finding is resolved: persistence and local usage reporting are scoped to openai_codex; openai_proxy is documented as non-persistent for request metadata and without local usage statistics.",
+      "The r1 deployment-spec finding is resolved: development loopback listener/peer and shared explicit-listen rules remain as a separate requirement.",
+      "The r2 shutdown-spec finding is resolved: current spec retains active request cancellation, graceful HTTP shutdown, proxy connection closure, content cleanup completion, and state lock release without App Server process-tree cleanup.",
+      "Gateway examples explicitly select openai_codex or openai_proxy, consistent with the README migration guidance.",
+      "Historical r1/r2/r3 report outcomes, compile-only evidence, skipped-check record, and the PM status-reset audit were inspected."
+    ],
+    "commands": [
+      "aiw fd show FD-112",
+      "aiw fd claim FD-112 FD-112-000016-review-requested --session fd112-review-final-20261108",
+      "git status, git diff --stat, git diff --name-status, and targeted git diff inspection (read-only)",
+      "Get-Content, Select-String, and rg targeted static reads",
+      "Read prior reviewer reports/sidecars and the recorded status-operation audit JSON"
+    ],
+    "checks_not_run": [
+      "Go tests",
+      "Compile-only check (Windows/Linux success is recorded in the FD; not rerun)",
+      "Builds",
+      "Network requests",
+      "Runtime validation"
+    ],
+    "residual_risk": "Configuration migration, stopping an old running instance, and graceful shutdown were not run. The compile-only result does not establish those runtime behaviors."
+  }
+}

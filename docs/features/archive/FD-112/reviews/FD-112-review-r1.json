@@ -1,0 +1,54 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "reviewer-report",
+  "fd_id": "FD-112",
+  "source_event": "FD-112-000005-review-requested",
+  "human_report": "FD-112-review-r1.md",
+  "data": {
+    "outcome": "changes-requested",
+    "reviewer_session": "fd112-review-20261108",
+    "reviewed_base": "AIW HEAD 2e9d0c1 plus the full uncommitted diff at FD-112 revision 5",
+    "findings": [
+      {
+        "severity": "documentation",
+        "file": "src/programs/agent-gateway/README.md",
+        "locations": [51, 60],
+        "requirement": "Document persistent request metadata accurately for each supported backend mode.",
+        "finding": "The README says all HTTP request metadata is persisted under state_dir/requests, but later says openai_proxy does not persist request records. In code, proxy mode skips openStore and the handler only persists when g.store is non-nil.",
+        "impact": "Proxy operators may incorrectly rely on durable request metadata that the mode does not write.",
+        "minimal_action": "Scope the state_dir/requests statement to openai_codex and explicitly state that openai_proxy logs but does not persist request metadata, preserving current behavior."
+      },
+      {
+        "severity": "spec-contract",
+        "file": "openspec/specs/agent-gateway/spec.md",
+        "requirement": "Retain active deployment/listener requirements while removing App Server-specific process lifecycle requirements.",
+        "finding": "Deleting Controlled process lifecycle also removed the still-implemented development loopback listener/peer restrictions and shared-mode explicit listen requirement. Config and server source still enforce them, and no other active spec requirement covers these mode rules.",
+        "impact": "The stable spec no longer records current deployment security behavior, making later accidental behavior changes harder to detect.",
+        "minimal_action": "Restore the development/shared listener and peer requirements/scenarios without restoring App Server process, sandbox, or workspace rules."
+      }
+    ],
+    "results": [
+      "Startup explicitly rejects a missing backend_mode, legacy codex, unsupported modes, and legacy workspace_dir/codex_path/codex_script fields; migration messages direct operators to openai_codex.",
+      "The dedicated stop parser retains legacy fields and old missing-backend interpretation without routing them through startup validation or launching an App Server.",
+      "The active execution path keeps openai_proxy forwarding and sends non-proxy inference through executeOpenAICodex; App Server runtime/process files are deleted with no remaining runtime references found.",
+      "Default and backend-specific sample configurations explicitly choose openai_codex or openai_proxy, consistent with the README migration statement.",
+      "FD records successful compile-only checks for Windows/Linux and git diff --check; this reviewer did not rerun them."
+    ],
+    "commands": [
+      "aiw fd show FD-112",
+      "aiw fd claim FD-112 FD-112-000005-review-requested --session fd112-review-20261108",
+      "git status --short",
+      "git diff --stat and git diff --name-status",
+      "git diff of config.go, main.go, server.go, shutdown.go, README, example config, and stable spec",
+      "git log -1 --oneline",
+      "Get-Content, Get-ChildItem, rg, and Select-String targeted static reads"
+    ],
+    "checks_not_run": [
+      "Go tests (prohibited by Go subtree instructions)",
+      "Compile-only check (reported successful by Worker; not rerun)",
+      "Builds, formatters, and static analyzers",
+      "Network requests and runtime validation"
+    ],
+    "residual_risk": "No runtime behavior was exercised. The documented compile-only check does not establish startup migration errors, stop compatibility with an old running process, or backend runtime behavior."
+  }
+}

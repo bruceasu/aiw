@@ -55,7 +55,12 @@ func stopGateway(path string) error {
     // Stopping must not depend on an available backend executable or open the store.
     data,err:=os.ReadFile(path)
     if err!=nil||len(data)>maxBody { return errors.New("cannot read gateway stop configuration") }
-    var c Config
+	var c struct {
+		Config
+		WorkspaceDir string `json:"workspace_dir"`
+		CodexPath string `json:"codex_path"`
+		CodexScript string `json:"codex_script,omitempty"`
+	}
     if strictDecode(data,&c)!=nil { return errors.New("invalid gateway stop configuration") }
     if c.Listen==""&&c.Mode!="shared" { c.Listen="127.0.0.1:43127" }
     address,err:=shutdownAddress(c.Listen)

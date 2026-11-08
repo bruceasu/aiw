@@ -21,7 +21,6 @@ func intString(value int) string { return strconv.Itoa(value) }
 type Gateway struct {
     config Config
     store *Store
-    appPool *appPool
 	proxy http.Handler
     ctx context.Context
     mu sync.Mutex
@@ -40,9 +39,7 @@ type proxyRequestIdentity struct {
 type proxyIdentityContextKey struct{}
 
 func newGateway(ctx context.Context,c Config,s *Store) *Gateway {
-	var pool *appPool
-	if c.BackendMode=="codex" { pool=newAppPool(c) }
-	g:=&Gateway{config:c,store:s,ctx:ctx,appPool:pool,principalActive:map[string]int{},rpm:map[string][]time.Time{},proxyConns:map[net.Conn]struct{}{}}
+	g:=&Gateway{config:c,store:s,ctx:ctx,principalActive:map[string]int{},rpm:map[string][]time.Time{},proxyConns:map[net.Conn]struct{}{}}
 	if c.BackendMode=="openai_proxy" { g.proxy=g.newProxyHandler() }
 	return g
 }
@@ -235,13 +232,11 @@ func (g *Gateway) inference(w http.ResponseWriter,httpRequest *http.Request,p Pr
     stop:=context.AfterFunc(g.ctx,cancel);defer stop()
     created:=time.Now().UTC()
     stream:=&eventStream{writer:w,request:request,id:id,created:created,texts:[]string{}}
-    var emit func(string)error
     deliveryError:=func(err error) {
         if err!=nil { if observed,ok:=w.(*observedWriter);ok { observed.deliveryFailed=true } }
     }
-    if request.Stream { emit=func(text string)error { err:=stream.text(text);deliveryError(err);return err } }
 	var result RunResult
-	if g.config.BackendMode=="openai_codex" { result=executeOpenAICodex(ctx,g.config,g.store,p,request,id,created) } else { result=executeApp(ctx,g.config,g.store,g.appPool,p,request,id,created,emit) }
+	result=executeOpenAICodex(ctx,g.config,g.store,p,request,id,created)
     if observed,ok:=w.(*observedWriter);ok {
         observed.record.State=result.State;observed.record.ErrorCode=result.Code;observed.record.ExecutionStarted=result.Started
         if !result.Started { observed.record.State="rejected" }
