@@ -1,7 +1,7 @@
 # FD-104：Python 经 agent-gateway 调用函数
 
 **Status:** In Progress
-**Revision:** 19
+**Revision:** 20
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -81,6 +81,7 @@ OpenAI Agents SDK 为函数参数生成的 strict JSON Schema 含有 `title` 注
 - 当前 gateway 源码以 `GOTOOLCHAIN=local GOPROXY=off go run . start --config <temporary-config>` 在 `openai_proxy` 模式转发至 `https://api.deepseek.com`。两轮 `/v1/responses` 请求均 HTTP 200；第 1 轮返回唯一 `add_numbers(19, 23)` 调用；SDK 提交 `42` 后，第 2 轮返回 `TOOL_CALL_OK:42`。脚本结果：`model_source=DEEPSEEK_MODEL`、`title_annotations=true`、`tool_calls=[[19, 23]]`、`status=ok`、exit code 0。
 - DeepSeek 文档说明 `parallel_tool_calls` 会被忽略；本结果验证 schema 和一次工具往返，不证明 DeepSeek 服务端执行了该开关。旧 gpt-6-luna 重复调用失败记录继续保留。gateway 优雅停止，临时代理配置随 launcher 退出清理。
 - 用户现已授权开始独立复审；复审仍需覆盖当前代码提交、验收报告和历史 changes-requested finding。
+- 本轮后续验收报告：`docs/features/FD-104/reports/FD-104-implementation-r3.md`，其 Dual sidecar 绑定本轮来源事件 `FD-104-000017-needs-decision`。
 
 用户于 2026-11-08 决定改用 `.env` 中的 `DEEPSEEK_MODEL` 验收；新的 DeepSeek 测试周期已获明确授权。旧周期的运行预算不延续到本次新授权周期。
 

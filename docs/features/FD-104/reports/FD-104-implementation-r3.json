@@ -1,0 +1,31 @@
+{
+  "schema": "aiw.fd.evidence.v1",
+  "kind": "worker-report",
+  "fd_id": "FD-104",
+  "source_event": "FD-104-000017-needs-decision",
+  "human_report": "FD-104-implementation-r3.md",
+  "data": {
+    "summary": "The user-directed DeepSeek Responses acceptance passed: the SDK executed one local function call, submitted 42, and received TOOL_CALL_OK:42. .env values were loaded programmatically and were not printed or stored.",
+    "commands": [
+      "temporary Python 3.12 venv: pip install python-dotenv==1.2.4",
+      "& (Join-Path $env:TEMP 'aiw-fd104-20261108\\Scripts\\python.exe') (Join-Path $env:TEMP 'aiw-fd104-20261108\\fd104_deepseek_runner.py') (cwd: AIW root)",
+      "launcher used GOTOOLCHAIN=local GOPROXY=off go run . start --config <temporary-config>; it ran fd104_test_tool_call.py once and stopped the gateway gracefully"
+    ],
+    "results": [
+      "Model source label was DEEPSEEK_MODEL; the model name and all .env values were not emitted.",
+      "Turn 1 returned HTTP 200 and the sole add_numbers(19, 23) function_call with title_annotations=true.",
+      "Turn 2 included the submitted function output 42 and returned HTTP 200 with TOOL_CALL_OK:42.",
+      "Observed assertions: tool_calls=[[19, 23]], output=TOOL_CALL_OK:42, status=ok, exit code 0.",
+      "The gateway ran in temporary openai_proxy mode against the DeepSeek Responses API. The generated local gateway credential was passed only to the test client; the upstream DeepSeek credential was passed only to the gateway.",
+      "DeepSeek documents that parallel_tool_calls is ignored; this run does not prove provider-side enforcement of that parameter.",
+      "Temporary config was removed and the gateway stopped gracefully. No Go tests or broad Python suite were run."
+    ],
+    "tested_revisions": {
+      "aiw": "8e73956d3fe1ed12e97906d4959aad11be8b1aee",
+      "aiw_de_acceptance_script": "82c2988",
+      "test_script_diff_sha256": "9525fdd8183d9c0f3525fb48fbcd345844dffb3a612eb390e4bcab1ef85b98d0",
+      "temporary_runner_sha256": "38f88a1941726af79256f35819f7c38ab9d3e0c70132f0e464130e84bf56fadf"
+    },
+    "residual_risk": "DeepSeek ignores parallel_tool_calls, so the test covers schema acceptance and the SDK tool round-trip but does not establish provider-side sequential enforcement. The earlier gpt-6-luna repeated-call failure remains unexplained. Independent review is still required."
+  }
+}
