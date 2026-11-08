@@ -29,8 +29,9 @@ Do not load the whole prompt library.
   or root `compile*`, otherwise use the narrowest language-level compiler
   command. The command must not retain a final distributable artifact.
 - Implementation does not imply authorization to run the restricted commands.
-- Use no more than three targeted discovery batches before editing unless a
-  concrete blocker remains.
+- Use up to four targeted discovery batches for ordinary tasks. Continue one
+  focused batch at a time only to resolve a concrete uncertainty; stop when
+  enough evidence exists to make the scoped change.
 - After editing, use at most one static/read-only validation command by default.
 - Do not repeat unchanged failed commands; a compile-only check may be retried
   once after a relevant source fix.
@@ -47,8 +48,7 @@ authorization and retry rules.
 - Preserve current contracts unless explicitly changed.
 - Keep diffs small, local, and reviewable.
 - Update nearby docs when behavior or workflow changes.
-- For numbered AIW FDs, follow default completion and explicit stage limits in
-  the supplied work-management contract.
+- Follow the project's documented workflow and explicit stage limits.
 
 ## Stop And Ask
 

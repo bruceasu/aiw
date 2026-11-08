@@ -98,10 +98,11 @@ New routine FDs use Markdown evidence. Write authored reports in Chinese; add
 a same-name JSON sidecar when Dual policy or a machine consumer requires it.
 Keep historical reports unchanged.
 
-Before the first edit, use no more than three targeted discovery batches unless
-the task is genuinely blocked. Batch related reads and searches. Read relevant
-symbols or excerpts instead of dumping large files, logs, generated output, or
-lockfiles.
+Before the first edit, use up to four targeted discovery batches for ordinary
+tasks. Continue one focused batch at a time only to resolve a concrete
+uncertainty; stop when enough evidence exists to make the scoped change. Batch
+related reads and searches. Read relevant symbols or excerpts instead of
+dumping large files, logs, generated output, or lockfiles.
 
 Do not rerun an unchanged failed command. After fixing the source of a
 compile-only failure, rerun the same compile-only command once to verify the

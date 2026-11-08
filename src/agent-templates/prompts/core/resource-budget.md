@@ -18,25 +18,14 @@ For an ordinary implementation request:
 - post-edit command validation: at most `1` static/read-only command
 
 Implementation does not imply authorization for tests, final-artifact builds,
-or other runtime validation. A standalone `$fd-test` invocation may execute a
-focused command only when the user explicitly requested execution or the exact
-command has the authorization required by repository instructions. A request
-to generate cases alone does not authorize execution. Legacy CLI Tester rounds
-may continue using their existing revision-bound Planner authorization; a
-handoff is not approval.
-
-An explicit FD test-support request in any wording may select TDD and fd-test
-orchestration; it does not bypass exact command/revision approval, local
-language prohibitions or finite budgets. Predeclared authorized TDD Red/Green
-phases are distinct from unexpected-failure retries. After one failed focused
-run and at most one rerun after a relevant correction (or stricter local limit),
-stop affected test repair/execution, diagnose statically and continue independent
-work. Preserve this state across resume/review; do not reset it with new commands.
+or other runtime validation. Follow the repository's instructions for any
+project-specific test workflow.
 
 ## Discovery Budget
 
-- Use at most three targeted discovery batches before the first edit unless a
-  concrete blocker remains.
+- Use up to four targeted discovery batches for ordinary tasks. Continue one
+  focused batch at a time only to resolve a concrete uncertainty; stop when
+  enough evidence exists to make the scoped change.
 - Batch related reads and searches.
 - Read relevant symbols or excerpts instead of entire large files.
 - Do not dump full logs, generated output, vendor trees, or lockfiles.
