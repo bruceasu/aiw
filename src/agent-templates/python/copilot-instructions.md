@@ -18,6 +18,8 @@ Read `AGENTS.md` first, then `python/AGENTS.md`.
 - keep framework glue thin
 - use static review by default
 - do not run formatters, linters, type checks, tests, builds, verification
-  scripts, network calls, or permission probes without resource-budget
+  scripts, external runtime network calls, or permission probes without resource-budget
   authorization
+- public web research and project library dependency downloads follow
+  `.agents/prompts/core/resource-budget.md`
 - when authorized, run one path-focused command and ask before widening

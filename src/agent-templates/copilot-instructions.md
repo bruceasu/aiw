@@ -17,8 +17,11 @@ Read `AGENTS.md` first.
 - after implementation, run one compile-only check using a `compile*` script or
     the narrowest language-level compiler command; do not retain a final artifact
 - do not run tests, `build*` scripts, final-artifact builds, formatters,
-    linters, type checks, vet, verification scripts, network calls, permission
-    probes, escalation, `codex-auto-review`, or sub-agents without authorization
+    linters, type checks, vet, verification scripts, external runtime network
+    calls, permission probes, escalation, `codex-auto-review`, or sub-agents
+    without authorization
+- read-only public web research and project library dependency downloads follow
+  `.agents/prompts/core/resource-budget.md`
 - use at most one static/read-only post-edit command by default
 - do not repeat equivalent commands
 

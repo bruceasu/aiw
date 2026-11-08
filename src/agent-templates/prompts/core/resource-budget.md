@@ -10,7 +10,7 @@ For an ordinary implementation request:
   `scripts/compile*` or root `compile*` script, otherwise the narrowest
   language-level compiler command. The command must not retain a final
   distributable artifact.
-- network calls and dependency downloads: `0`
+- unrelated external network calls and standalone executable downloads: `0` by default
 - permission probes and privilege escalation requests: `0`
 - `codex-auto-review` and repeated review passes: `0`
 - sub-agents: allowed for bounded delegated work; each follows this same
@@ -44,7 +44,20 @@ project-specific test workflow.
 
 ## Network And Permissions
 
-- Keep network access off by default.
+- Read-only searches of public web pages and documentation are allowed when
+  relevant to the task. Keep queries limited to the question and non-sensitive
+  context; do not send local file contents or secrets unless the user explicitly
+  asks to share them.
+- When needed for the task, use the project's package manager to resolve or
+  download project library dependencies, including normal dependency install
+  and build hooks. Examples include Maven, pip, uv, and npm. Keep installation
+  scoped to the project and respect its declared versions and lockfiles.
+- Installing or downloading a standalone executable, CLI, compiler, browser,
+  or other tool remains gated on explicit user authorization, even if a package
+  manager or install hook would fetch it.
+- Network access by the program or test being run, including requests to
+  external APIs/services, transmitting local or user data, and remote side
+  effects, remains off by default and follows Runtime Authorization.
 - Do not probe permissions with a command expected to fail.
 - Ask for permission only when it is essential to the requested outcome.
 - Explain the exact action, scope, expected cost, and risk before asking.

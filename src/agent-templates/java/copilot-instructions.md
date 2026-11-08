@@ -14,6 +14,9 @@ Read `AGENTS.md` first, then `java/AGENTS.md`.
 - respect controller, service, and repository boundaries
 - treat DTO, schema, and transaction changes as risk-sensitive
 - use static review by default
-- do not run Maven, Gradle, tests, builds, verification scripts, network calls,
+- do not run Maven/Gradle test or build goals, tests, builds, verification
+  scripts, external runtime network calls,
   or permission probes without resource-budget authorization
+- use Maven or Gradle for project library dependency resolution under
+  `.agents/prompts/core/resource-budget.md`
 - when authorized, run one module-focused command and ask before widening

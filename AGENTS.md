@@ -62,7 +62,9 @@ For a delivery conflict in the full FD lifecycle, first load
 resolutions. If any conflict remains uncertain or unsafe, preserve the merge
 state without abort/reset or partial commit. Follow the shared recovery and
 fresh-review requirements before retrying delivery.
-This scope excludes push, release, deployment, tests, builds, and network.
+This scope excludes push, release, deployment, tests, builds, and network
+requests made by programs. Read-only public research and project library
+dependency resolution follow the Resource Budget below.
 
 New FDs use `**Review policy:** Self`. Require `Independent` for material public
 interface, permission/auth, persistence/migration, concurrency or cross-module
@@ -82,13 +84,16 @@ Default budget for an ordinary implementation request:
 - compile-only checks: allowed after implementation; prefer `scripts/compile*`
   or root `compile*`, otherwise use the narrowest language-level compile
   command. The command must not retain a final distributable artifact.
-- network calls and dependency downloads: `0`
+- unrelated external network calls and standalone executable downloads: `0` by default
 - permission probes or privilege escalation requests: `0`
 - `codex-auto-review` and repeated review passes: `0`
 - post-edit validation commands: at most `1`, and static/read-only
 
 Implementation does not imply authorization to test or create final build
 artifacts.
+Read-only public web research and project-scoped library dependency downloads
+are allowed under `.agents/prompts/core/resource-budget.md`. This does not
+authorize runtime requests to external services or downloading standalone tools.
 For an independent FD Tester, a Planner may approve one focused low-risk test
 command after inspecting its invoked code and recording the exact scope and
 revision-bound decision. This is an explicit exception to the zero-test
@@ -126,9 +131,10 @@ expected duration, scope, and any network or permission risk. Wait for approval.
 For the Planner case, inspect the invoked test code and side effects first.
 Approve without human review only when the command is focused, offline,
 inspectable, and confined to its assigned workspace or temporary files.
-Escalate commands involving unrelated writes/deletes, secrets, network or
-external services, downloads, privilege changes, release artifacts, or unknown
-effects to the human before recording approval. A Tester handoff alone does
+Escalate commands involving unrelated writes/deletes, secrets, external-service
+requests, standalone executable downloads, privilege changes, release artifacts,
+or unknown effects to the human before recording approval. Project library
+dependency resolution follows the Resource Budget. A Tester handoff alone does
 not authorize execution.
 
 Even when runtime validation is authorized:
@@ -209,8 +215,10 @@ Do not load the whole prompt library.
 
 - Static analysis and editing are the default.
 - Tests, final-artifact builds, formatters, linters, type checks, verification
-  scripts, network calls, permission probes, privilege escalation,
+  scripts, external runtime network calls, permission probes, privilege escalation,
   `codex-auto-review` has a default budget of zero.
+- Read-only public web research and project library dependency downloads follow
+  `.agents/prompts/core/resource-budget.md`; they are not in the zero budget.
 - An independent FD Tester may execute one exact, revision-bound command after
   recorded Planner approval under the Runtime Authorization rule above.
 - After implementation, run one compile-only check: prefer `scripts/compile*`

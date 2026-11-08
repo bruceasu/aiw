@@ -23,8 +23,10 @@ Do not load the whole prompt library.
 
 - Static analysis and editing are the default.
 - Tests, final-artifact builds, formatters, linters, type checks, verification
-  scripts, network calls, permission probes, privilege escalation,
+  scripts, external runtime network calls, permission probes, privilege escalation,
   `codex-auto-review` has a default budget of zero.
+- Read-only public web research and project library dependency downloads follow
+  `.agents/prompts/core/resource-budget.md`; they are not in the zero budget.
 - After implementation, run one compile-only check: prefer `scripts/compile*`
   or root `compile*`, otherwise use the narrowest language-level compiler
   command. The command must not retain a final distributable artifact.

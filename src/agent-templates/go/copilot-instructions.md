@@ -17,6 +17,9 @@ Read `AGENTS.md` first, then `go/AGENTS.md`.
 - respect package boundaries
 - keep exported APIs and context flow stable unless the task requires change
 - use static review by default
-- do not run tests, vet, builds, verification scripts, network calls, or
+- do not run tests, vet, builds, verification scripts, external runtime network
+  calls, or
   permission probes without resource-budget authorization
+- public web research and project library dependency downloads follow
+  `.agents/prompts/core/resource-budget.md`
 - when authorized, run one package-focused command and ask before widening
