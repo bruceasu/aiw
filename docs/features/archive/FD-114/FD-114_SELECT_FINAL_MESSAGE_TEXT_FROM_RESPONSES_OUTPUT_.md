@@ -1,7 +1,7 @@
 # FD-114: Select final message text from Responses output in CZ
 
-**Status:** In Progress
-**Revision:** 1  
+**Status:** Complete
+**Revision:** 2
 **Priority:** Medium
 **Review policy:** Self
 **Evidence policy:** Markdown
@@ -72,3 +72,6 @@ prompt changes, and unrelated provider behavior.
 - [CZ Responses extraction](../../../src/plugins/aiw-cz/cz_openai.py)
 - [Candidate parser](../../../src/plugins/aiw-cz/cz_core.py)
 - [DeepSeek Responses API](https://api-docs.deepseek.com/guides/responses_api/)
+
+**Completed:** 2026-11-08
+**Disposition reason:** The Responses text extractor now selects final message output; syntax-only compile and static diff check passed. Runtime response capture remains unverified.
