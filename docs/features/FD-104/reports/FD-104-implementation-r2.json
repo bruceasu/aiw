@@ -5,7 +5,7 @@
   "source_event": "FD-104-000011-work-requested",
   "human_report": "FD-104-implementation-r2.md",
   "data": {
-    "summary": "Recovered the stopped FD-104 Worker handoff and restored the Python sequential-call setting. The focused config test passes; endpoint acceptance remains failed because the backend repeatedly returned function_call after tool outputs.",
+    "summary": "Recovered the stopped FD-104 Worker handoff and restored the Python sequential-call setting. The focused config test passes; after the user-directed acceptance adjustment, the DeepSeek Responses round-trip passed with one local tool call and the expected final text. The prior gpt-6-luna failure is retained as historical evidence.",
     "changed_paths": [
       "docs/features/FD-104/FD-104_PYTHON_FUNCTION_CALLS_THROUGH_AGENT_GATEWAY.md",
       "docs/features/archive/FD-104-pre-recovery-20261108/",
@@ -24,9 +24,11 @@
       "git commit -m 'FD-104: restore sequential tool-call configuration' (aiw-de, cd5d632)",
       "temporary Python 3.12 venv: pip install -r workers/process-python/requirements.txt",
       "temporary Python 3.12 venv: pip install httpx==0.28.1",
+      "temporary Python 3.12 venv: pip install python-dotenv==1.2.4",
       "python -m unittest test_parallel_tool_call_setting (fixture failure, then corrected fixture and one rerun)",
       "fd104_test_tool_call.py against installed gateway (HTTP 400 invalid_request; execution_started=false)",
-      "GOTOOLCHAIN=local GOPROXY=off go run . start --config C:\\green\\aiw\\gateway.json; run fd104_test_tool_call.py against source gateway; agent-gateway.exe stop --config C:\\green\\aiw\\gateway.json"
+      "GOTOOLCHAIN=local GOPROXY=off go run . start --config C:\\green\\aiw\\gateway.json; run fd104_test_tool_call.py against source gateway; agent-gateway.exe stop --config C:\\green\\aiw\\gateway.json",
+      "& (Join-Path $env:TEMP 'aiw-fd104-20261108\\Scripts\\python.exe') (Join-Path $env:TEMP 'aiw-fd104-20261108\\fd104_deepseek_runner.py') (cwd: AIW root; temporary launcher loads .env in-process, starts proxy gateway and runs the acceptance script once)"
     ],
     "results": [
       "Worker recovery was recorded through the CLI after the user confirmed the prior session had stopped; the new handoff was claimed by the current Worker session.",
@@ -37,9 +39,13 @@
       "Against the installed gateway, the endpoint returned HTTP 400 invalid_request before execution; audit recorded execution_started=false. The installed binary is older than FD source.",
       "Against the current source gateway, turn 1 returned a valid function_call with parallel_tool_calls=false. After tool output 42 was submitted, turns 2 and 3 returned additional function_call outputs. The SDK executed the function three times and raised MaxTurnsExceeded; TOOL_CALL_OK:42 was not observed.",
       "Static diagnosis: decodeRequest matches function_call/function_call_output IDs and flattens them into the next prompt; appInstructions includes caller instructions and tool-result policy; executeApp maps the backend's next decision to a new Responses function_call. The trace shows this path returned 200 and tool output 42 was submitted before the backend repeated the call. Evidence supports a model/backend response or model-dependent acceptance-oracle hypothesis, but does not confirm a gateway schema/sequential-setting defect or establish why the backend ignored the instruction. Both gateway instances were stopped gracefully.",
-      "Endpoint acceptance remains failed. No Go tests, broad Python suite, or further endpoint retries were run; the focused runtime budget is exhausted.",
+      "The earlier gpt-6-luna acceptance failed after repeated backend function_call responses; that result remains preserved.",
+      "The user authorized a new DeepSeek acceptance cycle and prohibited reading .env values. The temporary launcher loaded C:\\green\\aiw\\.env in-process without printing or persisting any values; the client process received only a generated local gateway key.",
+      "Against the current source gateway in openai_proxy mode, two DeepSeek /v1/responses requests returned HTTP 200. Turn 1 returned the sole add_numbers(19, 23) function call; after the SDK submitted output 42, turn 2 returned TOOL_CALL_OK:42. The script reported model_source=DEEPSEEK_MODEL, title_annotations=true, tool_calls=[[19, 23]], status=ok, exit code 0.",
+      "DeepSeek's official documentation says parallel_tool_calls is ignored; this run validates schema acceptance and the one-call round-trip, not provider enforcement of that flag. The gateway stopped gracefully and the temporary proxy config was removed.",
+      "No Go tests or broad Python suite were run. The independent review gate remains changes-requested until a fresh Reviewer report covers the current implementation and evidence.",
       "Updated Worker evidence is linked by FD-104-000017-needs-decision (source event FD-104-000015-needs-decision, target human); the CLI dispatched no agent."
     ],
-    "residual_risk": "The one-call acceptance remains unresolved because the configured backend returned repeated function_call outputs over three turns despite receiving output 42. The prior independent review remains changes-requested. A fresh explicit test cycle or a decision on the model-dependent acceptance approach is required before review and archive."
+    "residual_risk": "The DeepSeek one-call round-trip passed, but DeepSeek ignores the parallel_tool_calls parameter and thus does not prove provider-side sequential enforcement. The earlier gpt-6-luna repeated-call failure remains unexplained. The prior independent review remains changes-requested; a fresh review is required before Complete archive."
   }
 }

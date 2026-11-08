@@ -1,7 +1,7 @@
 # FD-104：Python 经 agent-gateway 调用函数
 
 **Status:** In Progress
-**Revision:** 17
+**Revision:** 19
 **Priority:** Medium
 **Evidence policy:** Dual
 
@@ -17,6 +17,8 @@ OpenAI Agents SDK 为函数参数生成的 strict JSON Schema 含有 `title` 注
 2. 只接受 `title` 这类不改变参数语义的 SDK 注解，并继续拒绝不支持的 schema 关键字；对连接该网关的 Python 调用使用顺序工具调用。采用此方案。`title` 仅作为字符串注解忽略，不进入参数校验语义。
 
 `process-python` 使用显式配置 `AIW_OPENAI_PARALLEL_TOOL_CALLS` 控制并行请求，缺省为 `true` 以保留现有行为。连接只支持顺序调用的 agent-gateway 时，部署配置必须设为 `false`。这是 Issue 用户确认的配置决策。
+
+2026-11-08 用户调整验收方式：端到端验收使用 `.env` 中的 `DEEPSEEK_MODEL`，通过 agent-gateway 的 DeepSeek Responses 代理执行。运行程序可加载 `.env`，不得直接展示、记录或提交其中的值。DeepSeek 官方文档说明 `parallel_tool_calls` 会被忽略，因此本轮只用它验证 schema 接受、一次函数调用/结果往返和最终文本；不据此声称 DeepSeek 服务端遵守了该并行开关。
 
 ## Solution
 
@@ -39,7 +41,7 @@ OpenAI Agents SDK 为函数参数生成的 strict JSON Schema 含有 `title` 注
 - [x] 1.3 将顺序往返验收脚本交付到 aiw-de `develop`，加入不记录凭据和原始请求体的逐轮请求/响应摘要。原 `test_tool_call.py` 位于仓库本地忽略目录，未覆盖或修改。
 - [x] 1.4 更新 agent-gateway 稳定规格，记录允许的字符串 `title` 注解、拒绝非法/未知关键字，以及顺序调用边界。
 - [x] 1.5 恢复异常归档的 FD-104 状态，保留旧归档快照，并通过 `recover-worker` 记录已停止的旧 Worker 会话。
-- [ ] 1.6 根据新增调用轨迹修复已证实的问题，并完成顺序函数调用验收。
+- [x] 1.6 使用用户指定的 DeepSeek 模型完成顺序函数调用往返验收；根据脱敏轨迹确认单次工具调用和最终文本。
 
 工作项编号在实现开始后保持不变。
 
@@ -47,11 +49,13 @@ OpenAI Agents SDK 为函数参数生成的 strict JSON Schema 含有 `title` 注
 
 - Agents SDK 生成的 `add_numbers(a: int, b: int)` strict schema 在根节点及属性节点含字符串 `title` 时，gateway 接受工具定义；非字符串 `title`、未知关键字、非整数参数、缺少必填参数和额外参数仍拒绝。
 - 顺序函数调用返回有效 `function_call`；SDK 恰好执行本地工具一次，提交结果后得到 `TOOL_CALL_OK:42`。
+- 本轮在线验收从 `DEEPSEEK_MODEL` 读取模型配置，经本地代理转发至 DeepSeek Responses API；只记录来源标签和脱敏调用轨迹，不打印模型名或密钥。`parallel_tool_calls=false` 仅作为请求字段观察，不作为 DeepSeek 服务端顺序保证的验收依据。
 - `process-python` 使用 `AIW_OPENAI_PARALLEL_TOOL_CALLS=false` 连接 gateway 时不要求并行工具调用；未设置时默认 `true`，保持其他后端的当前行为；无效配置 fail-fast。
 - 普通文本 Responses 请求行为不变。
 
 ## Verification
 
+- 新测试周期（用户明确授权）：精确命令为 `& (Join-Path $env:TEMP 'aiw-fd104-20261108\\Scripts\\python.exe') (Join-Path $env:TEMP 'aiw-fd104-20261108\\fd104_deepseek_runner.py')`，cwd 为 AIW 仓库根目录。临时 runner 用 `python-dotenv==1.2.4` 程序化加载 `C:\green\aiw\.env`，启动当前源码 gateway 的 DeepSeek proxy 并运行 `fd104_test_tool_call.py` 一次；最长 7 分钟、最多三轮外部 API 请求，结果不输出模型名或 `.env` 值。依赖版本：`openai-agents==0.24.0`、`openai==3.46.0`、`httpx==0.28.1`。测试基线：AIW `8e73956d3fe1ed12e97906d4959aad11be8b1aee`，aiw-de `82c2988`（验收脚本已提交，无 dirty diff）；临时 runner SHA-256 `38f88a1941726af79256f35819f7c38ab9d3e0c70132f0e464130e84bf56fadf`。若失败，需先有相关修正，最多允许一次重跑。
 - Static review covered the Python worker setting, gateway schema parser, stable spec, and the acceptance script. The focused Go compile-only check and Python syntax compilation passed earlier in this FD cycle.
 - The installed gateway binary used for the first configured run was revision `4ddd993`, older than this FD. It returned HTTP 400 `invalid_request` before execution; that result does not validate the FD source.
 - The gateway was then started from this FD worktree using `C:\green\aiw\gateway.json`, and stopped gracefully after the attempt. The existing demo virtualenv ran `fd104_test_tool_call.py` against `gpt-6-luna`.
@@ -71,16 +75,20 @@ OpenAI Agents SDK 为函数参数生成的 strict JSON Schema 含有 `title` 注
 - The diagnostic script first failed at import because the requirements file does not provide the directly imported `httpx` module. After installing `httpx` in the temporary environment, one attempt against the installed gateway returned HTTP 400 `invalid_request` before execution. Audit recorded `execution_started=false`; the installed executable is older than the FD source.
 - Retried once against the current gateway source using `GOTOOLCHAIN=local GOPROXY=off go run . start --config C:\green\aiw\gateway.json`. The SDK sent `parallel_tool_calls=false`; the source gateway returned HTTP 200 and a valid `add_numbers(19, 23)` function call. After receiving the submitted output `42`, the backend returned another `function_call` on each of turns 2 and 3. The SDK executed the function three times and ended with `MaxTurnsExceeded` (exit code 1); no `TOOL_CALL_OK:42` was produced.
 - Static diagnosis: `decodeRequest` validates matching `function_call`/`function_call_output` IDs and flattens both into the next prompt; `appInstructions` includes the caller's instructions and the tool-result policy; `executeApp` returns the backend's next decision as a new Responses `function_call`. The trace confirms this path returned 200, the SDK submitted output `42`, and the backend then emitted another call. This supports a model/backend response or model-dependent acceptance-oracle hypothesis; it does not confirm a gateway schema/sequential-setting defect or establish why the backend ignored the instruction. Do not mark endpoint acceptance as passed.
-- Both gateway processes were stopped gracefully. No Go tests, broad Python suite, or additional endpoint retries were run. The focused diagnostic run budget is exhausted; stop test-related repair/execution and retain the result for diagnosis.
-- Reviewer report `docs/features/archive/FD-104-pre-recovery-20261108/reviews/FD-104-review-r1.md` remains changes-requested. Independent review and Complete archive remain blocked by the failed acceptance.
+- Both gateway processes were stopped gracefully. No Go tests, broad Python suite, or additional endpoint retries were run during the prior test cycle. That cycle's budget was exhausted; the user later authorized a separate DeepSeek cycle, whose result appears below.
+- Reviewer report `docs/features/archive/FD-104-pre-recovery-20261108/reviews/FD-104-review-r1.md` remains changes-requested. The DeepSeek acceptance now passes; a fresh independent review is the next gate before Complete archive.
+- 新周期验收通过：临时 launcher 用 `python-dotenv==1.2.4` 加载 `C:\green\aiw\.env`，没有展示或保存其中的变量值。aiw-de 验收脚本提交为 `82c2988`；临时 runner SHA-256 为 `38f88a1941726af79256f35819f7c38ab9d3e0c70132f0e464130e84bf56fadf`。测试命令与 cwd 使用上方记录值，依赖版本为 `openai-agents==0.24.0`、`openai==3.46.0`、`httpx==0.28.1`。
+- 当前 gateway 源码以 `GOTOOLCHAIN=local GOPROXY=off go run . start --config <temporary-config>` 在 `openai_proxy` 模式转发至 `https://api.deepseek.com`。两轮 `/v1/responses` 请求均 HTTP 200；第 1 轮返回唯一 `add_numbers(19, 23)` 调用；SDK 提交 `42` 后，第 2 轮返回 `TOOL_CALL_OK:42`。脚本结果：`model_source=DEEPSEEK_MODEL`、`title_annotations=true`、`tool_calls=[[19, 23]]`、`status=ok`、exit code 0。
+- DeepSeek 文档说明 `parallel_tool_calls` 会被忽略；本结果验证 schema 和一次工具往返，不证明 DeepSeek 服务端执行了该开关。旧 gpt-6-luna 重复调用失败记录继续保留。gateway 优雅停止，临时代理配置随 launcher 退出清理。
+- 用户现已授权开始独立复审；复审仍需覆盖当前代码提交、验收报告和历史 changes-requested finding。
 
-%% NEEDS_INPUT: Decide whether to keep the exact one-call model acceptance as a gate and investigate the backend/model behavior in a separately authorized test cycle, or revise the acceptance approach. The current trace shows three backend function_call responses despite the submitted result; no further runtime attempt is authorized by the exhausted run budget.
+用户于 2026-11-08 决定改用 `.env` 中的 `DEEPSEEK_MODEL` 验收；新的 DeepSeek 测试周期已获明确授权。旧周期的运行预算不延续到本次新授权周期。
 
 ## TODO
 
-- Diagnose statically whether the repeated calls indicate a product defect, a backend/model behavior, or an unsuitable model-dependent acceptance oracle; preserve this failed run.
-- Do not rerun or repair the affected endpoint acceptance until a new explicit direction authorizes a fresh test cycle.
-- After the acceptance gate is resolved and passes, request the required independent review.
+- Run one bounded DeepSeek Responses acceptance using the user's `DEEPSEEK_MODEL` and `DEEPSEEK_API_KEY` loaded programmatically; never inspect or print `.env` values.
+- Classify the result without treating the provider's ignored `parallel_tool_calls` field as a sequential guarantee; preserve the prior failed run and the new trace.
+- Request the required independent review against the current implementation and DeepSeek evidence.
 
 ## Sources
 
@@ -89,4 +97,5 @@ OpenAI Agents SDK 为函数参数生成的 strict JSON Schema 含有 `title` 注
 - Gateway implementation: `src/programs/agent-gateway/schema.go` and `protocol.go` in AIW `develop` (FD-104 squash `271df81`).
 - Python worker implementation and configuration coverage: aiw-de `develop`, commits `cd5d632` and `857c280`.
 - Acceptance script: `workers/demo-python-with-openai-agents/fd104_test_tool_call.py` in aiw-de `develop`.
+- DeepSeek Responses API and compatibility docs: [Responses API guide](https://api-docs.deepseek.com/guides/responses_api/) and [create response](https://api-docs.deepseek.com/api/create-response/).
 - Prior independent review and blocker evidence: `docs/features/archive/FD-104-pre-recovery-20261108/`.
