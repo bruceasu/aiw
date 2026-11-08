@@ -1,0 +1,19 @@
+{
+  "mode": "development",
+  "backend_mode": "openai_proxy",
+  "listen": "127.0.0.1:43127",
+  "timezone": "UTC",
+  "timeout_seconds": 600,
+  "global_concurrency": 4,
+  "proxy_base_url": "https://api.deepseek.com/v1",
+  "proxy_api_key_env": "DEEPSEEK_API_KEY",
+  "principals": [
+    {
+      "id": "local-client",
+      "enabled": true,
+      "keys": ["REPLACE_WITH_A_RANDOM_GATEWAY_KEY_OF_AT_LEAST_43_CHARACTERS"],
+      "rpm": 10,
+      "concurrency": 2
+    }
+  ]
+}

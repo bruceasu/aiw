@@ -104,3 +104,12 @@ Direct mode uses a local PI-compatible Codex Responses endpoint. That endpoint
 is not documented as a stable public API, can change independently, and does
 not provide the App Server's local read-only sandbox. The Gateway does not
 execute returned function calls; callers remain responsible for handling them.
+
+## DeepSeek through the OpenAI proxy mode
+
+The Gateway's existing `openai_proxy` backend can forward compatible requests
+to DeepSeek without a DeepSeek-specific backend. Set `proxy_base_url` to
+`https://api.deepseek.com/v1` and `proxy_api_key_env` to `DEEPSEEK_API_KEY`, then
+provide that environment variable to the Gateway process. Gateway clients still
+authenticate with their Gateway key; the Gateway replaces it with the
+DeepSeek key upstream. See `gateway-deepseek-example.json`.

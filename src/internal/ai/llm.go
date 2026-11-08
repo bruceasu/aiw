@@ -49,7 +49,7 @@ func RunLLMWithSystemPrompt(prompt string, cfg LLMConfig, outputSchema map[strin
 		return "", err
 	}
 	if len(providers) == 0 {
-		return "", errors.New("no available LLM provider detected; configure provider=openai|openai-codex|gemini|ollama|codex-cli|copilot-cli or set corresponding credentials/CLI")
+		return "", errors.New("no available LLM provider detected; configure provider=openai|deepseek|openai-codex|gemini|ollama|codex-cli|copilot-cli or set corresponding credentials/CLI")
 	}
 
 	var errs []string
@@ -72,7 +72,7 @@ func normalizeProviderName(provider string) string {
 	switch p {
 	case "", "auto":
 		return ""
-	case "openai", "openai-codex", "openai_codex", "codex-oauth", "gemini", "ollama", "codex", "copilot", "llama.cpp", "llamacpp", "llama-cpp":
+	case "openai", "deepseek", "openai-codex", "openai_codex", "codex-oauth", "gemini", "ollama", "codex", "copilot", "llama.cpp", "llamacpp", "llama-cpp":
 		if p == "llama-cpp" {
 			return "llama.cpp"
 		}
@@ -96,9 +96,16 @@ func runProvider(provider, prompt string, cfg LLMConfig, outputSchema map[string
 		return "", err
 	}
 	modelKey, defaultModel := providerModelEnv(provider)
-	model, _ := resolveLLMValue(cfg.Model, modelKey, cwdEnv, aiwEnv, exeEnv, defaultModel)
-	baseURL, _ := resolveLLMValue(cfg.APIBaseURL, providerBaseEnv(provider), cwdEnv, aiwEnv, exeEnv, providerDefaultBase(provider))
+	configuredModel, configuredBaseURL := cfg.Model, cfg.APIBaseURL
+	if provider == "deepseek" && normalizeProviderName(cfg.Provider) != "deepseek" {
+		configuredModel, configuredBaseURL = "", ""
+	}
+	model, _ := resolveLLMValue(configuredModel, modelKey, cwdEnv, aiwEnv, exeEnv, defaultModel)
+	baseURL, _ := resolveLLMValue(configuredBaseURL, providerBaseEnv(provider), cwdEnv, aiwEnv, exeEnv, providerDefaultBase(provider))
 	configuredKey := cfg.APIKey
+	if provider == "deepseek" && normalizeProviderName(cfg.Provider) != "deepseek" {
+		configuredKey = ""
+	}
 	if provider == "openai" && cfg.OpenAIKey != "" {
 		configuredKey = cfg.OpenAIKey
 	}
@@ -136,6 +143,8 @@ func providerModelEnv(provider string) (string, string) {
 	switch provider {
 	case "openai":
 		return "OPENAI_MODEL", "gpt-4o-mini"
+	case "deepseek":
+		return "DEEPSEEK_MODEL", "deepseek-flash"
 	case "openai-codex":
 		return "AIW_CODEX_MODEL", "gpt-5.3-codex"
 	case "gemini":
@@ -153,6 +162,8 @@ func providerBaseEnv(provider string) string {
 	switch provider {
 	case "openai":
 		return "OPENAI_BASE_URL"
+	case "deepseek":
+		return "DEEPSEEK_BASE_URL"
 	case "openai-codex":
 		return ""
 	case "gemini":
@@ -170,6 +181,8 @@ func providerKeyEnv(provider string) string {
 	switch provider {
 	case "gemini":
 		return "GEMINI_API_KEY"
+	case "deepseek":
+		return "DEEPSEEK_API_KEY"
 	case "openai-codex":
 		return ""
 	case "ollama", "llama.cpp":
@@ -183,6 +196,8 @@ func providerDefaultBase(provider string) string {
 	switch provider {
 	case "openai":
 		return "https://api.openai.com/v1"
+	case "deepseek":
+		return "https://api.deepseek.com"
 	case "gemini":
 		return "https://generativelanguage.googleapis.com"
 	case "ollama":
@@ -222,6 +237,9 @@ func detectAvailableProviders(cfg LLMConfig) ([]string, error) {
 	if openAIConfigured(cfg, cwdEnv, aiwEnv, exeEnv) {
 		add("openai")
 	}
+	if deepSeekConfigured(cfg, cwdEnv, aiwEnv, exeEnv) {
+		add("deepseek")
+	}
 	if geminiConfigured(cfg, cwdEnv, aiwEnv, exeEnv) {
 		add("gemini")
 	}
@@ -237,6 +255,11 @@ func openAIConfigured(cfg LLMConfig, cwdEnv, aiwEnv, exeEnv map[string]string) b
 		return true
 	}
 	v, _ = resolveLLMValue(cfg.APIKey, "OPENAI_API_KEY", cwdEnv, aiwEnv, exeEnv, "")
+	return strings.TrimSpace(v) != ""
+}
+
+func deepSeekConfigured(cfg LLMConfig, cwdEnv, aiwEnv, exeEnv map[string]string) bool {
+	v, _ := resolveLLMValue("", "DEEPSEEK_API_KEY", cwdEnv, aiwEnv, exeEnv, "")
 	return strings.TrimSpace(v) != ""
 }
 
@@ -268,7 +291,7 @@ func copilotCLIAvailable(cfg LLMConfig) bool {
 }
 
 func supportedProviderNames() string {
-	providers := []string{"openai", "openai-codex", "gemini", "ollama", "llama.cpp", "codex-cli", "copilot-cli"}
+	providers := []string{"openai", "deepseek", "openai-codex", "gemini", "ollama", "llama.cpp", "codex-cli", "copilot-cli"}
 	sort.Strings(providers)
 	return strings.Join(providers, ", ")
 }

@@ -207,6 +207,9 @@ func commandForProvider(cfg Config) string {
 func ConfigFromEnv(name, model string) Config {
 	cfg := Config{Name: name, Model: model, APIKey: os.Getenv("OPENAI_API_KEY"), BaseURL: os.Getenv("OPENAI_BASE_URL")}
 	switch normalize(name) {
+	case "deepseek":
+		cfg.APIKey = os.Getenv("DEEPSEEK_API_KEY")
+		cfg.BaseURL = os.Getenv("DEEPSEEK_BASE_URL")
 	case "gemini":
 		cfg.APIKey = os.Getenv("GEMINI_API_KEY")
 		cfg.BaseURL = os.Getenv("GEMINI_BASE_URL")
@@ -228,6 +231,8 @@ func NewProvider(cfg Config) (Provider, error) {
 		return NewCLIProvider("copilot", cfg), nil
 	case "openai":
 		return NewOpenAIResponsesProvider(cfg), nil
+	case "deepseek":
+		return NewDeepSeekResponsesProvider(cfg), nil
 	case "openai-codex", "openai_codex", "codex-oauth":
 		return NewOpenAICodexResponsesProvider(cfg), nil
 	case "openai-compatible", "ollama", "llama.cpp", "llamacpp":

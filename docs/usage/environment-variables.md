@@ -52,6 +52,9 @@
 | `OPENAI_MODEL` | OpenAI 模型 | `gpt-4o-mini` | provider 环境高于 TOML；旧 RunLLM 则低于调用配置 |
 | `OPENAI_BASE_URL` | OpenAI API 根地址 | `https://api.openai.com/v1` | 同上；say 与独立 proxy 另见后文 |
 | `OPENAI_API_KEY` | OpenAI 凭据 | 空 | 同上；其他入口也会读取，不能假定通用于所有 AI 命令 |
+| `DEEPSEEK_MODEL` | Go DeepSeek 模型 | `deepseek-flash` | 仅在选择 `provider=deepseek` 时读取；可用官方支持的模型 ID 覆盖 |
+| `DEEPSEEK_BASE_URL` | Go DeepSeek Responses API 根地址 | `https://api.deepseek.com` | 仅在选择 `provider=deepseek` 时读取 |
+| `DEEPSEEK_API_KEY` | Go DeepSeek 凭据 | 空 | 仅在选择 `provider=deepseek` 时读取；自动检测也会将其作为 DeepSeek 配置凭据 |
 | `GEMINI_MODEL` | Gemini 模型 | `gemini-1.5-flash` | 同上 |
 | `GEMINI_BASE_URL` | Gemini API 根地址 | `https://generativelanguage.googleapis.com` | 同上 |
 | `GEMINI_API_KEY` | Gemini 凭据 | 空 | 同上 |
@@ -71,15 +74,18 @@
 
 ## 4. Python cz 的独立环境
 
-这一组不等同于 Go 的全局 AI 配置。provider 集合为 `codex`、`copilot`、`openai`；`CZ_<PROVIDER>_*` 是按这个集合动态拼接的真实变量名。[配置加载](../../src/plugins/aiw-cz/cz_config.py#L172)、[CLI 解析](../../src/plugins/aiw-cz/cz_providers.py#L27)、[OpenAI](../../src/plugins/aiw-cz/cz_openai.py#L46)
+这一组不等同于 Go 的全局 AI 配置。provider 集合为 `codex`、`copilot`、`openai`、`deepseek`；`CZ_<PROVIDER>_*` 是按这个集合动态拼接的真实变量名。[配置加载](../../src/plugins/aiw-cz/cz_config.py#L172)、[CLI 解析](../../src/plugins/aiw-cz/cz_providers.py#L27)、[OpenAI/DeepSeek Responses](../../src/plugins/aiw-cz/cz_openai.py#L46)
 
 | 变量 | 含义 | 未设置的默认或回退 | 优先级/空值 |
 | --- | --- | --- | --- |
 | `CZ_LLM_PROVIDER` | cz provider | 合并后的 `[cz].provider/llm_provider`，否则空 | 环境覆盖配置；空字符串也覆盖 |
-| `CZ_CODEX_MODEL`、`CZ_COPILOT_MODEL`、`CZ_OPENAI_MODEL` | provider 模型 | 对应 TOML `[cz.<provider>].model`，否则空 | 环境覆盖配置，包括空字符串；OpenAI 最终无模型则报错 |
-| `CZ_CODEX_API_KEY`、`CZ_COPILOT_API_KEY`、`CZ_OPENAI_API_KEY` | 对应配置槽的凭据 | 对应 TOML 值，否则空 | 环境覆盖配置；Codex/Copilot CLI 路径不把这些配置槽直接转换成 CLI 参数 |
-| `CZ_CODEX_BASE_URL`、`CZ_COPILOT_BASE_URL`、`CZ_OPENAI_BASE_URL` | 对应配置槽的地址 | 对应 TOML 值，否则空；OpenAI 最终回退 `https://api.openai.com/v1` | 环境覆盖配置；CLI 路径不直接使用其 base_url 配置槽 |
+| `CZ_CODEX_MODEL`、`CZ_COPILOT_MODEL`、`CZ_OPENAI_MODEL`、`CZ_DEEPSEEK_MODEL` | provider 模型 | 对应 TOML `[cz.<provider>].model`，否则空；DeepSeek 回退 `deepseek-flash` | 环境覆盖配置，包括空字符串 |
+| `CZ_CODEX_API_KEY`、`CZ_COPILOT_API_KEY`、`CZ_OPENAI_API_KEY`、`CZ_DEEPSEEK_API_KEY` | 对应配置槽的凭据 | 对应 TOML 值，否则空 | 环境覆盖配置；DeepSeek 另可回退 `DEEPSEEK_API_KEY`，不会复用 OpenAI key |
+| `CZ_CODEX_BASE_URL`、`CZ_COPILOT_BASE_URL`、`CZ_OPENAI_BASE_URL`、`CZ_DEEPSEEK_BASE_URL` | 对应配置槽的地址 | 对应 TOML 值，否则空；OpenAI/DeepSeek 使用各自 API 根地址 | 环境覆盖配置；CLI 路径不直接使用其 base_url 配置槽 |
 | `OPENAI_API_KEY` | Python cz OpenAI 的后备密钥 | 空，缺少密钥则不可用 | 已解析 `CZ_OPENAI_API_KEY`/TOML 非空值优先，再取此变量；Python cz 不用 `OPENAI_MODEL` 和 `OPENAI_BASE_URL` 作同类后备 |
+| `DEEPSEEK_API_KEY`、`DEEPSEEK_MODEL`、`DEEPSEEK_BASE_URL` | Python cz DeepSeek 的后备密钥、模型和地址 | 空密钥、`deepseek-flash`、`https://api.deepseek.com` | 仅作为 DeepSeek provider 的回退；不会影响 OpenAI 配置 |
+| `DEEPSEEK_MODEL`、`DEEPSEEK_BASE_URL`、`DEEPSEEK_API_KEY` | Go `deepseek` provider 默认模型、Responses API 根地址和密钥；Python cz 也使用这些值作为后备 | `deepseek-flash`、`https://api.deepseek.com`、空 | Go 的具名 `deepseek` provider 使用独立变量；Python cz 专用 `CZ_DEEPSEEK_*` / TOML 配置优先 |
+| `CZ_DEEPSEEK_MODEL`、`CZ_DEEPSEEK_API_KEY`、`CZ_DEEPSEEK_BASE_URL` | Python cz DeepSeek provider 设置 | 对应 `[cz.deepseek]` 值，否则使用 `DEEPSEEK_*` 回退 | 环境覆盖 TOML；DeepSeek key 不回退到 `OPENAI_API_KEY` |
 | `CZ_CODEX_COMMAND` | Codex 命令及参数 | PATH 中 `codex` | 非空环境优先，按 shell 单词规则拆分 |
 | `CZ_COPILOT_COMMAND` | Copilot 命令及参数 | 无；必须显式配置 | 未配置不自动使用 PATH 中 copilot |
 | `CZ_CODEX_ARGS`、`CZ_COPILOT_ARGS` | 旧参数覆盖接口 | 未设置/空白则忽略 | **非空值直接拒绝**，不能覆盖只读 CLI 契约 |

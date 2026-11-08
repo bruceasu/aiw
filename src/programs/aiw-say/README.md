@@ -47,6 +47,15 @@ The Gateway's `openai_proxy` backend also accepts this request through the same
 upstream; model and API access are controlled by the upstream credential rather
 than a local Codex model mapping.
 
+To call DeepSeek directly, set `OPENAI_BASE_URL` to
+`https://api.deepseek.com/v1`, `OPENAI_API_KEY` to a DeepSeek API key, and the
+model to `deepseek-flash` or another supported DeepSeek model. Say sends
+Chat Completions requests; DeepSeek's `/v1/chat/completions` endpoint accepts
+this OpenAI-compatible request shape. For Gateway use, configure
+`backend_mode: "openai_proxy"`, point `proxy_base_url` to
+`https://api.deepseek.com/v1`, and set `proxy_api_key_env` to an environment
+variable containing the DeepSeek API key.
+
 ## Profiles
 
 Copy any desired sample from `profiles/` to the user's profile directory. Copy only when the destination does not already exist; AIW Say does not create or overwrite user profile files.

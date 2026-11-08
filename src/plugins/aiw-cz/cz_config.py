@@ -39,7 +39,7 @@ class Config:
     types: list[Choice] = field(default_factory=list)
     scopes: list[Choice] = field(default_factory=list)
     providers: dict[str, ProviderConfig] = field(
-        default_factory=lambda: {name: ProviderConfig() for name in ("codex", "copilot", "openai")}
+        default_factory=lambda: {name: ProviderConfig() for name in ("codex", "copilot", "openai", "deepseek")}
     )
 
 
@@ -208,6 +208,13 @@ def load_config(plugin_dir: Path, requested_language: str = "") -> Config:
         target.model = os.environ.get(prefix + "MODEL", target.model)
         target.api_key = os.environ.get(prefix + "API_KEY", target.api_key)
         target.base_url = os.environ.get(prefix + "BASE_URL", target.base_url)
+    deepseek = config.providers["deepseek"]
+    if not deepseek.model and "CZ_DEEPSEEK_MODEL" not in os.environ:
+        deepseek.model = os.environ.get("DEEPSEEK_MODEL", "deepseek-flash")
+    if not deepseek.api_key and "CZ_DEEPSEEK_API_KEY" not in os.environ:
+        deepseek.api_key = os.environ.get("DEEPSEEK_API_KEY", "")
+    if not deepseek.base_url and "CZ_DEEPSEEK_BASE_URL" not in os.environ:
+        deepseek.base_url = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
     config.provider = os.environ.get("CZ_LLM_PROVIDER", config.provider)
     if not config.types:
         raise ValueError("cz requires at least one commit type")

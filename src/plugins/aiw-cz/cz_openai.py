@@ -25,14 +25,14 @@ SCHEMA = {
 }
 
 
-def _text(response: object) -> str:
+def _text(response: object, label: str = "OpenAI") -> str:
     if not isinstance(response, dict):
-        raise OpenAIUnavailable("OpenAI response is not a JSON object")
+        raise OpenAIUnavailable(f"{label} response is not a JSON object")
     if isinstance(response.get("output_text"), str):
         return response["output_text"]
     output = response.get("output", [])
     if not isinstance(output, list):
-        raise OpenAIUnavailable("OpenAI response has invalid output")
+        raise OpenAIUnavailable(f"{label} response has invalid output")
     for item in output:
         content_items = item.get("content", []) if isinstance(item, dict) else []
         if not isinstance(content_items, list):
@@ -40,16 +40,22 @@ def _text(response: object) -> str:
         for content in content_items:
             if isinstance(content, dict) and isinstance(content.get("text"), str):
                 return content["text"]
-    raise OpenAIUnavailable("OpenAI response contains no text")
+    raise OpenAIUnavailable(f"{label} response contains no text")
 
 
-def _generate(prompt: str, config: ProviderConfig, timeout: float, structured: bool) -> str:
-    api_key = config.api_key or os.environ.get("OPENAI_API_KEY", "")
+def _generate(prompt: str, config: ProviderConfig, timeout: float, structured: bool, provider: str = "openai") -> str:
+    deepseek = provider == "deepseek"
+    label = "DeepSeek" if deepseek else "OpenAI"
+    api_key = config.api_key if deepseek else config.api_key or os.environ.get("OPENAI_API_KEY", "")
     if not api_key:
-        raise OpenAIUnavailable("OpenAI API key is not configured")
+        raise OpenAIUnavailable(f"{label} API key is not configured")
     if not config.model:
-        raise OpenAIUnavailable("OpenAI model is not configured")
-    base_url = (config.base_url or os.environ.get("CZ_OPENAI_BASE_URL") or "https://api.openai.com/v1").rstrip("/")
+        raise OpenAIUnavailable(f"{label} model is not configured")
+    if deepseek:
+        default_base, env_base = "https://api.deepseek.com", ""
+    else:
+        default_base, env_base = "https://api.openai.com/v1", "CZ_OPENAI_BASE_URL"
+    base_url = (config.base_url or (os.environ.get(env_base) if env_base else "") or default_base).rstrip("/")
     payload = {"model": config.model, "input": prompt}
     if structured:
         payload["text"] = {"format": {
@@ -63,10 +69,10 @@ def _generate(prompt: str, config: ProviderConfig, timeout: float, structured: b
         with urlopen(request, timeout=timeout) as response:
             body = json.loads(response.read().decode("utf-8"))
     except HTTPError as exc:
-        raise OpenAIUnavailable(f"OpenAI HTTP {exc.code}") from exc
+        raise OpenAIUnavailable(f"{label} HTTP {exc.code}") from exc
     except (URLError, TimeoutError, json.JSONDecodeError) as exc:
-        raise OpenAIUnavailable(f"OpenAI request failed: {exc}") from exc
-    return _text(body)
+        raise OpenAIUnavailable(f"{label} request failed: {exc}") from exc
+    return _text(body, label)
 
 
 def generate(prompt: str, config: ProviderConfig, timeout: float = 60.0) -> str:
@@ -75,3 +81,11 @@ def generate(prompt: str, config: ProviderConfig, timeout: float = 60.0) -> str:
 
 def generate_text(prompt: str, config: ProviderConfig, timeout: float = 60.0) -> str:
     return _generate(prompt, config, timeout, structured=False)
+
+
+def generate_deepseek(prompt: str, config: ProviderConfig, timeout: float = 60.0) -> str:
+    return _generate(prompt, config, timeout, structured=True, provider="deepseek")
+
+
+def generate_text_deepseek(prompt: str, config: ProviderConfig, timeout: float = 60.0) -> str:
+    return _generate(prompt, config, timeout, structured=False, provider="deepseek")

@@ -100,3 +100,9 @@ To route through `agent-gateway` with `backend_mode: "openai_codex"`, set
 `HTTP_OPENAI_PROXY_API_PROFILE=aiw_gateway`. The Gateway owns the Codex login
 and upstream credential refresh; this Node.js proxy stores only its configured
 Gateway client key and does not implement Codex OAuth.
+
+For direct DeepSeek Responses API access, set `HTTP_OPENAI_PROXY_BASE_URL` to
+`https://api.deepseek.com`, `HTTP_OPENAI_PROXY_API_KEY` to a DeepSeek API key,
+and `HTTP_OPENAI_PROXY_API_PROFILE=openai`. DeepSeek currently documents
+`deepseek-flash` and `deepseek-v4-pro` for Responses. The service continues to
+send a single stateless Responses request; it does not reuse response IDs.
