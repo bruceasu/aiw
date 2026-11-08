@@ -19,7 +19,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--llm", action="store_true", help="generate candidates with an LLM")
     parser.add_argument("--no-llm", action="store_true", help="use the interactive wizard")
     parser.add_argument("-N", "--candidates", type=int, default=None)
-    parser.add_argument("--provider", choices=("codex", "copilot", "openai"))
+    parser.add_argument("--provider", choices=("codex", "copilot", "openai", "deepseek"))
     parser.add_argument("--model")
     parser.add_argument("--lang")
     parser.add_argument("-r", "--retry", action="store_true")

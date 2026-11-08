@@ -1,7 +1,7 @@
 # FD-110: Add DeepSeek provider support across AIW LLM callers
 
 **Status:** In Progress
-**Revision:** 1  
+**Revision:** 3
 **Priority:** Medium
 **Review policy:** Independent
 **Evidence policy:** Markdown
@@ -93,12 +93,18 @@ key from its configured environment variable.
   stable spec change was needed.
 - Independent review is required because this adds a public provider/config
   option across Go and Python and must preserve existing provider behavior.
+- Independent review requested changes: see
+  `docs/features/FD-110/reviews/reviewer-12b3920.md` (source event
+  `FD-110-000002-review-requested`). The CLI provider choices have now been
+  extended with `deepseek`; `--model` already writes to the selected provider's
+  model slot, so `aiw-cz --provider deepseek --model <id>` uses the DeepSeek
+  model setting. This correction awaits focused independent re-review.
 - Test support needs an explicit request and its command/revision authorization.
 
 ## TODO
 
-- Implementation and self-check complete; request independent review before
-  archiving this FD.
+- Address the first review finding and obtain focused independent re-review;
+  then archive this FD.
 
 ## Sources
 
