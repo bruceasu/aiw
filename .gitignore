@@ -33,7 +33,7 @@ fd-workflow-codex-copilot.zip
 drafts/
 .tmp-go-cache/
 .cache
-/*.zip
+*.zip
 /patches/
 .agents/
 /dist/
