@@ -1,0 +1,32 @@
+id = "ISSUE-00013"
+title = "aiw ai provider selection and file input"
+parent_id = ""
+status = "APPROVED"
+created = "2026-11-10"
+updated = "2026-11-10"
+revision = 5
+
+[approval]
+status = "APPROVED"
+by = "user"
+at = "2026-11-10T23:38:32+09:00"
+reason = "User confirmed the current Issue Plan, including the AIW Provider default, selectable Gateway route, UTF-8 default with selectable file encoding, and combining file content with positional prompt text."
+source_digest = "0e3d601c4add37edd0be2f42773d061b7c6a1c98d9022fa5bed025caabb86faf"
+
+[promotion]
+status = "NOT_STARTED"
+task_id = ""
+
+[conversation]
+session_id = ""
+
+[terminal]
+by = ""
+at = ""
+reason = ""
+
+[artifact]
+requirement-plan = "docs/issues/ISSUE-00013/issue-plan.md"
+
+[digest]
+requirement-plan = "5722ac9cefe553a68875cb4e0a10f23bab65a7465b78197d67605e9624123582"
