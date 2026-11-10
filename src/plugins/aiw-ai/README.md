@@ -1,23 +1,23 @@
-# ai 客户端
+# aiw ai 客户端
 
-Node 22.12+，入口 `aiw-ai.mjs`（npm bin 为 ai）。调用 Go Agent Proxy 的 Responses 支持子集，不直接调用 Provider。
+Node 22.12+。`aiw ai` 每次发送一个请求，默认使用 AIW `[ai]` 配置的 Provider；可用 `--backend gateway` 选择 Go Agent Gateway。命令不会因一路由失败而改走另一路由。独立的 `aiw ask` 用于 AIW 使用指导，行为不变。
 
-## 最少配置
+## 路由
 
-1. 配置并启动网关：`aiw gw start`。默认读取程序同目录的 `gateway.json`。
-2. 设置 `AIW_AI_API_KEY` 为网关 Key，至少 43 字符、无空白。服务端 `principals[].keys` 保存相同字符串，直接比较，不计算哈希；此 Key 不是上游 OpenAI API Key。
-3. 网关必须配置并授权所选逻辑模型。客户端默认 **`gpt-6-luna`**，无需设置 `AIW_AI_MODEL`。
+| 路由 | 选择方式 | 配置 |
+| --- | --- | --- |
+| AIW Provider | 默认；也可用 `--backend aiw` | `aiw.toml` / `.aiw.toml` 的 `[ai]` 和标准 `AIW_LLM_*` 环境变量 |
+| Go Agent Gateway | `--backend gateway` | Gateway Key、逻辑模型和本机/远程 Gateway 地址 |
 
-### 网关 Key 配置
+AIW 路由调用 AIW 共享 Provider 层，支持其当前配置的 Provider。命令不保存请求；CLI Provider 使用共享 AI 层的只读请求选项。`--timeout-seconds` 对本次调用设定客户端期限。Provider 配置错误或调用失败会直接报错，不会回退到 Gateway。
 
-`key_hashes` 已废除，网关拒绝包含该字段的配置，认证无需运行哈希脚本。服务端 `keys` 与客户端
-`AIW_AI_API_KEY` 必须使用相同字符串。已有摘要字符串可作为不透明 Key，但此时两端
-都使用该摘要字符串，不能让客户端继续发送摘要计算前的原始 Key。真实 Key 不应进入版本库或日志。
+### Gateway 设置
 
-历史 `scripts/hash-gateway-key.bat` 不再用于当前网关的认证配置。
-由运营者维护完整配置的 `principals[].keys`，客户端填写同一个 Key，配置修改后重启网关生效。
+Gateway 仅在所选路由时需要配置并启动：
 
-网关配置中需合入下列模型映射，并在对应主体的 `allowed_models` 中包含该名字：
+1. 启动网关：`aiw gw start`。默认读取程序同目录的 `gateway.json`。
+2. 设置 `AIW_AI_API_KEY` 为网关 Key，至少 43 字符、无空白。服务端 `principals[].keys` 保存相同字符串；这不是上游 Provider API Key。
+3. Gateway 的 `models` 和当前主体 `allowed_models` 必须包含所选逻辑模型。
 
 ```json
 "models": { "gpt-6-luna": "gpt-6-luna" }
@@ -27,68 +27,53 @@ Node 22.12+，入口 `aiw-ai.mjs`（npm bin 为 ai）。调用 Go Agent Proxy �
 "allowed_models": ["gpt-6-luna"]
 ```
 
-保留其它需要的映射和权限；配置变更后重启网关。后端模型可用性由所用 Codex 环境决定。
-若网关只提供 `gateway-default`，可设置 `AIW_AI_MODEL=gateway-default` 使用既有逻辑模型。
+`key_hashes` 已废除；服务端和客户端必须使用相同 Key 字符串。真实 Key 不应放入版本库或日志。Gateway 配置变更后重启生效。
 
-PowerShell（当前终端）：
+Gateway 相关设置：
 
-```powershell
-$env:AIW_AI_API_KEY = '<你的网关 Key>'
+| 设置 | 默认值 / 含义 |
+| --- | --- |
+| `AIW_AI_API_KEY` | Gateway 路由必填；至少 43 字符、无空白 |
+| `AIW_AI_MODEL` | Gateway 逻辑模型，默认 `gpt-6-luna` |
+| `AIW_AGENT_PROXY_PORT` | 默认 `43127`，范围 1–65535 |
+| `--url` | Gateway HTTP(S) origin；默认 `http://127.0.0.1:43127` |
+
+只提供 `--url` 而省略 `--backend` 时，命令仍将其视为显式 Gateway 选择以兼容旧调用。`--backend aiw` 与 `--url` 同时使用时报参数错误。`--url` 拒绝凭证、路径、query 和 fragment；远程网关须显式传入。
+
+## 输入
+
+```sh
 aiw ai "How to learn English"
-# 可选，覆盖默认模型：
-$env:AIW_AI_MODEL = 'gateway-default'
+aiw ai --backend gateway "Explain this text"
+aiw ai --file report.txt "Summarize this report"
+aiw ai --file legacy.txt --encoding gb18030 "Summarize this report"
+aiw ai --backend gateway --url https://gateway.example --json "Return one JSON object"
 ```
 
-Linux shell：
+位置参数按空格组成提示词。指定 `--file PATH` 后，文件内容追加在位置提示词之后，以一个空行分隔；没有位置提示词时直接使用文件内容。每次只能指定一个文件。文件在本机解码；仅组合后的文本发送给所选 Provider，文件路径不会传给模型。
 
-```sh
-export AIW_AI_API_KEY='<你的网关 Key>'
-aiw ai "How to learn English"
-```
+文件默认严格按 UTF-8 解码，也可用 `--encoding LABEL` 指定 Node `TextDecoder` 支持的编码标签。文件原始大小上限为 256 KiB，组合后的提示词上限为 65536 个 Unicode 码点。无效字节、不支持的编码、不可读文件和超限输入均在请求前报错。`--encoding` 只与 `--file` 一起使用；`--file` 不能与 stdin 的 `-` 组合。`--system @FILE` 仍使用 UTF-8，不受 `--encoding` 影响。
 
-## 设置与帮助
+单独的 `-` 读取完整 stdin，不与其它位置提示词组合。没有位置提示词和文件时读取一行终端输入；Ctrl+E 用 `EDITOR` 编辑当前文字并支持多行，Ctrl+C 取消。空白/EOF 不发送请求。非终端 stdin 如需读取，须显式使用 `-`。
 
-| 设置 | 是否必填 | 默认值 / 含义 |
-| --- | --- | --- |
-| `AIW_AI_API_KEY` | 是 | 网关认证 Key，至少 43 字符、无空白 |
-| `AIW_AI_MODEL` | 否 | `gpt-6-luna`；非空设置覆盖默认值 |
-| `AIW_AGENT_PROXY_PORT` | 否 | `43127`，范围 1–65535 |
-| `--url` | 否 | `http://127.0.0.1:43127`，端口可由上述变量覆盖 |
-| `--timeout-seconds` | 否 | 客户端请求总期限默认 660 秒；仅接受 1–3660 的十进制整数秒 |
+`--system TEXT` 设置系统提示词；`--system @FILE` 在本机读取 UTF-8 文件。文件缺失、空、无效 UTF-8 或超限时不发送请求。
 
-移除旧 `AIW_AI_PROVIDER`。`--url` 仅接受 HTTP(S) origin，追加 `/v1/responses`，拒绝凭证、路径、query、fragment。远程网关须显式传入 `--url`。
+## 输出和选项
 
-```sh
-aiw ai --help
-aiw ai -h
-aiw help ai
-```
+- `--backend aiw|gateway` 选择后端，默认 `aiw`。`--url` 单独出现时兼容旧调用并选择 Gateway。
+- `--timeout-seconds N` 设定请求总期限，默认 660 秒，只接受 1–3660 的十进制整数。超时取消当前调用，不自动重试。
+- `--json` 要求 JSON object 并校验结果；无效 JSON 或非 object 报错，不输出伪成功结果。
+- `--verbose` 仅向 stderr 写可得的 Provider/model/响应 ID/用量信息；缺失字段标为 unknown/unavailable。
+- `-h` / `--help` 不需要凭据，也不调用模型。
 
-这些帮助入口无需认证或服务启动，不调用模型。缺失或不合法的 Key 会提示最少要求和帮助入口。
+stdout 仅包含回答，诊断写入 stderr。Gateway 路由使用 `text.format.json_object`；AIW Provider 路由要求 JSON object 并在客户端校验。AIW Provider 如未报告 token/费用等信息，verbose 不会推算或编造。
 
-## 使用方式
-
-```sh
-aiw ai "Explain this text"
-aiw ai --timeout-seconds 300 "Explain this text"
-printf 'Summarize this text' | aiw ai -
-aiw ai --url https://gateway.example --system @instructions.txt --json --verbose "Return a JSON object"
-```
-
-所有非选项参数按顺序用空格组成 Prompt，可直接运行 `aiw ai How to learn English`。
-选项及其值不加入 Prompt；以 `-` 开头的文字需放在 `--` 后。
-单独的 `-` 读取完整 stdin，不能与其它提示词参数混用。空白/EOF 不请求。
-`--system` 单独映射 instructions，@ 文件为本机 UTF-8 文件内容，不把本机路径发送给服务端。文件缺失、空、无效 UTF-8、超限在请求前失败且不曝光内容。
-
-### 交互输入与外部编辑器
-
-无参数运行 `aiw ai`，输入一行后按 Enter 提交，Ctrl+C 取消。
-也可按 **Ctrl+E** 用 `EDITOR` 编辑当前输入，支持多行；保存并关闭编辑器后立即提交。
+## 交互编辑器
 
 ```powershell
 $env:EDITOR = 'notepad.exe'
 aiw ai
-# VS Code 使用真实 exe，并等待窗口关闭（按本机路径修改）：
+# VS Code 使用真实 exe，并等待窗口关闭：
 $env:EDITOR = '"C:\Program Files\Microsoft VS Code\Code.exe" --wait'
 ```
 
@@ -98,11 +83,4 @@ aiw ai
 # Linux VS Code：export EDITOR='code --wait'
 ```
 
-`EDITOR` 支持程序、参数及单/双引号包围的路径；不支持 shell 展开、管道或重定向。
-Windows 使用真实 `.exe`，不使用 `.cmd`/`.ps1` 启动脚本。GUI 编辑器必须配置等待行为。
-未设置 EDITOR、启动失败、异常退出、非 UTF-8 或内容超限均不请求。
-临时文件在提交前清理；空内容不请求。强制结束进程可能留下临时文件，编辑器自己的备份不由客户端管理。
-
-`--json` 请求 text.format.json_object，stdout 为单个 JSON object；非 JSON 或非 object 报错。普通模式输出 Responses assistant output_text。`--verbose` 仅 stderr 输出模型、响应 ID、可得 token，缺失费用为 unknown、推理摘要 unavailable；不展示隐藏推理。一次有界请求，客户端默认总期限 660 秒，包含完整响应读取，无自动重试，不持久保存输入。`--timeout-seconds` 只改变客户端期限，不发送到 Prompt 或 Responses JSON，也不改变网关 `timeout_seconds` 的执行上限；缺值、重复或非法值在发请求前以退出码 2 报错。网关配置修改后需重启生效。客户端超时取消请求后不能恢复该次执行。Key 不写日志，诊断与 stdout 分开。
-
-旧 /v1/requests/result/system_prompt 及多 Provider 客户端契约已经退役；必须同时升级服务与客户端。测试和容器部署由用户另行安排，SDK/CLI 运行兼容尚未验证。
+`EDITOR` 支持程序、参数及单/双引号包围的路径；不解释 shell 展开、管道或重定向。Windows 使用真实 `.exe`，不使用 `.cmd`/`.ps1` 启动脚本。GUI 编辑器须配置等待行为。编辑内容短暂写入本机临时文件，提交前清理；强制结束进程或编辑器自建备份不由客户端管理。

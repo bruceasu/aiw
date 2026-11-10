@@ -10,6 +10,10 @@ provider is selected. A command that cannot use an explicitly selected
 provider MUST return a clear error and MUST NOT silently route the request to
 another provider.
 
+This includes `aiw ai` when its backend is `aiw` (the default). Its separate
+`gateway` backend is not resolved through `[ai]`; a failure in either selected
+backend MUST NOT switch to the other backend.
+
 ## Purpose
 
 固定当前 provider 解析、角色 Profile 和监督请求使用模型的规则，区分默认配置、单次覆盖与请求快照，说明配置了角色名称之后实际会执行哪些路由行为。
@@ -43,6 +47,12 @@ uniform CLI tool/network isolation across providers.
 
 - **WHEN** NewProvider 收到未识别的后端名称
 - **THEN** 返回未知 provider 错误。
+
+#### Scenario: aiw ai 默认使用共享 Provider
+
+- **WHEN** 调用者运行 `aiw ai` 且没有选择 Gateway
+- **THEN** 命令使用共享 `[ai]` 配置和标准 `AIW_LLM_*` 环境覆盖
+- **AND** Provider 配置或调用失败时不改走 Go Agent Gateway
 
 ### Requirement: 命名 Profile 与默认映射
 

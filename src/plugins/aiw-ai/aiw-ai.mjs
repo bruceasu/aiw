@@ -1,63 +1,71 @@
 #!/usr/bin/env node
 import { open } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { createInterface } from "node:readline";
 import { editPrompt } from "./editor.mjs";
 
-const MAX_PROMPT_CHARS = 64 * 1024;
-const MAX_STDIN_BYTES = 4 * MAX_PROMPT_CHARS;
+const MAX_PROMPT_CODE_POINTS = 64 * 1024;
+const MAX_STDIN_BYTES = 4 * MAX_PROMPT_CODE_POINTS;
+const MAX_PROMPT_FILE_BYTES = 4 * MAX_PROMPT_CODE_POINTS;
 const MAX_SYSTEM_FILE_BYTES = 64 * 1024;
 const MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
+// Keep synchronized with maxBridgeOutputBytes in the Go AIW Provider bridge.
+const MAX_BRIDGE_OUTPUT_BYTES = 25 * 1024 * 1024;
 const DEFAULT_TIMEOUT_SECONDS = 660;
 const DEFAULT_MODEL = "gpt-6-luna";
-const HELP = `用法：aiw ai [选项] ["提示词"|-]
+const HELP = `用法：aiw ai [--backend aiw|gateway] [选项] ["提示词"|-]
 
-通过 Agent Gateway 发送一次请求。需要 Node.js 22.12+。
+发送一次请求。默认使用 AIW [ai] 配置的 Provider；可显式选择 Agent Gateway。需要 Node.js 22.12+。
 
-最少配置：
-  1. 启动网关：aiw gw start
-  2. 设置 AIW_AI_API_KEY 为网关 Key（至少 43 字符，无空白）。
-     服务端 principals[].keys 保存相同的网关 Key，直接比较，不计算哈希。
-     key_hashes 已废除；旧摘要仅可作为双方使用相同字符串的不透明 Key。
-  3. 网关 models 和当前主体 allowed_models 必须包含所选逻辑模型。
-
-默认值与可选设置：
-  AIW_AI_MODEL           逻辑模型，默认 ${DEFAULT_MODEL}；设置后覆盖默认值。
-  AIW_AGENT_PROXY_PORT   本机网关端口，默认 43127。
-  默认网关地址          http://127.0.0.1:43127；远程网关用 --url 指定。
-  AIW_AI_PROVIDER       已移除，请取消此环境变量。
-  EDITOR                交互输入时 Ctrl+E 启动的编辑器，如 notepad.exe 或 vi。
+路由：
+  --backend aiw|gateway  后端选择，默认 aiw。仅提供 --url 时兼容旧用法并选择 gateway。
+  AIW 路由             使用 aiw.toml [ai] 与 AIW_LLM_* 配置。
+  Gateway 路由         需要网关 Key，且模型须由 Gateway 配置并授权。
 
 选项：
-  -h, --help            显示帮助，不需要 Key，不调用模型。
-  --url <地址>          HTTP(S) origin，如 https://gateway.example；不要附加 /v1。
+  -h, --help            显示帮助，不调用模型。
+  --url <地址>          Gateway HTTP(S) origin；未附 --backend 时也会选择 Gateway。
   --system <文本|@文件> 系统提示词；@文件在本机以 UTF-8 读取。
-  --timeout-seconds <秒> 客户端请求总期限，1–3660 的十进制整数；默认 660。
-  --json                请求并输出单个 JSON 对象。
-  --verbose             向 stderr 显示模型、响应 ID 和可得用量。
+  --file <路径>         将文件内容作为请求输入，可与位置提示词组合。
+  --encoding <标签>     文件编码，默认 utf-8；仅用于 --file。
+  --timeout-seconds <秒> 请求总期限，1–3660 的十进制整数；默认 660。
+  --json                要求并输出单个 JSON 对象。
+  --verbose             向 stderr 显示可得的路由、模型和用量信息。
   --                    后续内容按提示词处理。
 
-输入：非选项参数按空格组成提示词；单独的 - 读取完整 stdin。
-无参数时读取一行终端输入；Ctrl+E 用 EDITOR 编辑当前文字，支持多行。
-编辑器保存并退出后立即提交；GUI 编辑器需配置等待参数，如 --wait。
-EDITOR 支持带引号的路径及参数，不执行 shell 表达式；Windows 使用真实 .exe。
-空白/EOF 不发送请求。stdout 输出结果，stderr 输出错误和诊断，无自动重试。
+Gateway 设置：
+  AIW_AI_API_KEY        网关 Key（至少 43 字符，无空白）。
+  AIW_AI_MODEL          网关逻辑模型，默认 ${DEFAULT_MODEL}。
+  AIW_AGENT_PROXY_PORT  本机网关端口，默认 43127；默认地址为 http://127.0.0.1:43127。
+  网关须启动，服务端 principals[].keys 与客户端使用相同 Key，模型须已映射并获授权。
 
-PowerShell 最少客户端设置（假设网关已配置并启动）：
-  $env:AIW_AI_API_KEY = '<你的网关 Key>'
+输入：非选项参数按空格组成提示词；单独的 - 读取完整 stdin。--file 与 - 不能组合。
+文件默认严格按 UTF-8 解码，可用 Node TextDecoder 支持的编码标签覆盖；最多 256 KiB。
+文件内容追加在位置提示词之后，以空行分隔；总提示词最多 65536 个 Unicode 码点。
+无参数且未指定文件时读取一行终端输入；Ctrl+E 用 EDITOR 编辑当前文字，支持多行。
+空白/EOF 不发送请求。文件路径不会发送给 Provider；只发送解码后的请求文本。
+stdout 输出结果，stderr 输出错误和诊断，不自动切换路由或重试。
+
+示例：
   aiw ai "How to learn English"
-
-Linux shell：
-  export AIW_AI_API_KEY='<你的网关 Key>'
-  aiw ai "How to learn English"
-
-更多示例：
-  aiw ai --url https://gateway.example "Explain this text"
+  aiw ai --backend aiw "Use the configured AIW Provider"
+  aiw ai --file report.txt "Summarize this report"
+  aiw ai --file legacy.txt --encoding gb18030 "Summarize this report"
+  aiw ai --backend gateway "Explain this text"
+  aiw ai --backend gateway --url https://gateway.example "Explain this text"
   aiw ai --system @instructions.txt --json --verbose "Return a JSON object"
   Get-Content input.txt -Raw | aiw ai -
-  printf 'Summarize this text' | aiw ai -
+
+PowerShell Gateway setup:
+  $env:AIW_AI_API_KEY = '<Gateway Key>'
+  aiw ai --backend gateway "How to learn English"
+
+Linux Gateway setup:
+  export AIW_AI_API_KEY='<Gateway Key>'
+  aiw ai --backend gateway "How to learn English"
 `;
 
 class CliError extends Error {
@@ -70,6 +78,9 @@ class CliError extends Error {
 function parseArgs(args) {
   let systemValue;
   let urlValue;
+  let backendValue;
+  let filePath;
+  let encodingValue;
   let json = false;
   let verbose = false;
   let timeoutSeconds;
@@ -81,6 +92,29 @@ function parseArgs(args) {
     if (!optionsEnded && (arg === "--help" || arg === "-h")) return { help: true };
     if (!optionsEnded && arg === "--json") { json = true; continue; }
     if (!optionsEnded && arg === "--verbose") { verbose = true; continue; }
+    if (!optionsEnded && arg === "--backend") {
+      const value = args[++index];
+      if (value === undefined || !["aiw", "gateway"].includes(value.toLowerCase())) {
+        throw new CliError("--backend requires aiw or gateway", 2);
+      }
+      if (backendValue !== undefined) throw new CliError("--backend may be specified only once", 2);
+      backendValue = value.toLowerCase();
+      continue;
+    }
+    if (!optionsEnded && arg === "--file") {
+      const value = args[++index];
+      if (value === undefined || value === "" || value === "--") throw new CliError("--file requires a filename", 2);
+      if (filePath !== undefined) throw new CliError("--file may be specified only once", 2);
+      filePath = value;
+      continue;
+    }
+    if (!optionsEnded && arg === "--encoding") {
+      const value = args[++index];
+      if (value === undefined || value === "" || value.startsWith("--")) throw new CliError("--encoding requires a TextDecoder encoding label", 2);
+      if (encodingValue !== undefined) throw new CliError("--encoding may be specified only once", 2);
+      encodingValue = value;
+      continue;
+    }
     if (!optionsEnded && arg === "--timeout-seconds") {
       const value = args[++index];
       if (value === undefined || !/^[0-9]+$/.test(value) || !Number.isSafeInteger(Number(value)) ||
@@ -109,8 +143,15 @@ function parseArgs(args) {
     inputs.push(arg);
   }
   if (inputs.length > 1 && inputs.includes("-")) throw new CliError("- must be the only prompt argument", 2);
+  if (inputs.includes("-") && filePath !== undefined) throw new CliError("--file cannot be combined with stdin input '-'", 2);
+  if (encodingValue !== undefined && filePath === undefined) throw new CliError("--encoding requires --file", 2);
+  const backend = backendValue ?? (urlValue !== undefined ? "gateway" : "aiw");
+  if (backend === "aiw" && urlValue !== undefined) throw new CliError("--url is available only with --backend gateway", 2);
   const input = inputs.length ? inputs.join(" ") : undefined;
-  return { help: false, systemValue, urlValue, json, verbose, timeoutSeconds: timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS, input };
+  return {
+    help: false, backend, systemValue, urlValue, filePath, encodingValue,
+    json, verbose, timeoutSeconds: timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS, input,
+  };
 }
 
 function proxyEndpoint(value) {
@@ -132,10 +173,16 @@ function decodeUtf8(bytes, label) {
   catch { throw new CliError(`${label} is not valid UTF-8`, 2); }
 }
 
+function unicodeCodePointLength(value) {
+  let count = 0;
+  for (const _ of value) count++;
+  return count;
+}
+
 async function readSystem(value) {
   if (value === undefined) return undefined;
   if (!value.startsWith("@")) {
-    if (!value.trim() || value.length > MAX_PROMPT_CHARS) throw new CliError("system prompt must contain 1-65536 characters", 2);
+    if (!value.trim() || unicodeCodePointLength(value) > MAX_PROMPT_CODE_POINTS) throw new CliError("system prompt must contain 1-65536 Unicode code points", 2);
     return value;
   }
   if (value.length === 1) throw new CliError("--system @ requires a filename", 2);
@@ -158,8 +205,35 @@ async function readSystem(value) {
   }
   if (bytes.length > MAX_SYSTEM_FILE_BYTES) throw new CliError("system prompt file exceeds 64 KiB", 2);
   const content = decodeUtf8(bytes, "system prompt file");
-  if (!content.trim() || content.length > MAX_PROMPT_CHARS) throw new CliError("system prompt file is empty or too long", 2);
+  if (!content.trim() || unicodeCodePointLength(content) > MAX_PROMPT_CODE_POINTS) throw new CliError("system prompt file is empty or too long", 2);
   return content;
+}
+
+async function readPromptFile(filename, encodingValue) {
+  let handle;
+  let bytes;
+  try {
+    handle = await open(resolve(process.cwd(), filename), "r");
+    const buffer = Buffer.alloc(MAX_PROMPT_FILE_BYTES + 1);
+    let size = 0;
+    while (size < buffer.length) {
+      const result = await handle.read(buffer, size, buffer.length - size, size);
+      if (!result.bytesRead) break;
+      size += result.bytesRead;
+    }
+    bytes = buffer.subarray(0, size);
+  } catch {
+    throw new CliError("cannot read prompt input file", 2);
+  } finally {
+    await handle?.close();
+  }
+  if (bytes.length > MAX_PROMPT_FILE_BYTES) throw new CliError("prompt input file exceeds 256 KiB", 2);
+  const label = encodingValue ?? "utf-8";
+  let decoder;
+  try { decoder = new TextDecoder(label, { fatal: true }); }
+  catch { throw new CliError(`unsupported file encoding: ${label}`, 2); }
+  try { return decoder.decode(bytes); }
+  catch { throw new CliError(`prompt input file is not valid ${label}`, 2); }
 }
 
 async function readStdin() {
@@ -267,18 +341,100 @@ function printVerbose(response, request) {
   process.stderr.write(`${lines.join("\n")}\n`);
 }
 
+function invokeAiwProvider(options, prompt, system) {
+  const executableName = process.platform === "win32" ? "aiw.exe" : "aiw";
+  const executable = process.env.AIW_ROOT
+    ? resolve(process.env.AIW_ROOT, executableName)
+    : executableName;
+  const request = JSON.stringify({
+    prompt,
+    system_prompt: system ?? "",
+    json: options.json,
+    timeout_seconds: options.timeoutSeconds,
+  });
+  const result = spawnSync(executable, ["__aiw_ai_provider"], {
+    input: request,
+    encoding: "utf8",
+    timeout: options.timeoutSeconds * 1000 + 5000,
+    maxBuffer: MAX_BRIDGE_OUTPUT_BYTES,
+    windowsHide: true,
+  });
+  if (result.error) {
+    if (result.error.code === "ETIMEDOUT") throw new CliError("AIW Provider request timed out");
+    if (result.error.code === "ENOENT") throw new CliError("AIW CLI is unavailable for the configured Provider route");
+    if (result.error.code === "ENOBUFS") throw new CliError("AIW Provider response is too large");
+    throw new CliError("could not invoke the AIW configured Provider");
+  }
+  if (result.status !== 0) {
+    const diagnostic = String(result.stderr ?? "").trim().slice(0, 240);
+    throw new CliError(diagnostic ? `AIW Provider failed: ${diagnostic}` : "AIW Provider request failed");
+  }
+  let response;
+  try { response = JSON.parse(result.stdout); }
+  catch { throw new CliError("AIW Provider bridge returned invalid JSON"); }
+  if (!response || typeof response.text !== "string" ||
+      typeof response.provider !== "string" ||
+      (response.model !== undefined && typeof response.model !== "string")) {
+    throw new CliError("AIW Provider bridge returned an invalid response");
+  }
+  return response;
+}
+
+function printProviderVerbose(response) {
+  const lines = [
+    "--- Request details ---",
+    "Route: AIW configured Provider",
+    `Configured provider: ${shown(response.provider)}`,
+    `Configured model: ${shown(response.model)}`,
+    "Request ID: unavailable",
+    "Input tokens: unknown",
+    "Output tokens: unknown",
+    "Total tokens: unknown",
+    "Cost: unknown",
+    "Reasoning summary: unavailable",
+  ];
+  process.stderr.write(`${lines.join("\n")}\n`);
+}
+
+function writeResult(result, json) {
+  if (json) {
+    let value;
+    try { value = JSON.parse(result); }
+    catch { throw new CliError("AI provider returned invalid result JSON"); }
+    if (value === null || Array.isArray(value) || typeof value !== "object") {
+      throw new CliError("AI provider JSON result must be an object");
+    }
+    process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
+  } else {
+    process.stdout.write(result.endsWith("\n") ? result : `${result}\n`);
+  }
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) {
     process.stdout.write(HELP);
     return;
   }
-  const prompt = options.input === "-" ? await readStdin()
-    : options.input === undefined ? await readInteractive() : options.input;
+  if (process.env.AIW_AI_PROVIDER) throw new CliError("AIW_AI_PROVIDER was removed; use --backend and AIW_LLM_PROVIDER instead", 2);
+  let prompt = options.input === "-" ? await readStdin()
+    : options.input === undefined && options.filePath === undefined ? await readInteractive()
+      : options.input ?? "";
+  if (options.filePath !== undefined) {
+    const content = await readPromptFile(options.filePath, options.encodingValue);
+    prompt = prompt ? `${prompt}\n\n${content}` : content;
+  }
   if (!prompt.trim()) return;
-  if (prompt.length > MAX_PROMPT_CHARS) throw new CliError("input exceeds 65536 characters", 2);
-  const { model, apiKey, endpoint } = config(options.urlValue);
+  if (unicodeCodePointLength(prompt) > MAX_PROMPT_CODE_POINTS) throw new CliError("input exceeds 65536 Unicode code points", 2);
   const system = await readSystem(options.systemValue);
+  if (options.backend === "aiw") {
+    const providerResponse = invokeAiwProvider(options, prompt, system);
+    writeResult(providerResponse.text, options.json);
+    if (options.verbose) printProviderVerbose(providerResponse);
+    return;
+  }
+
+  const { model, apiKey, endpoint } = config(options.urlValue);
   const request = {
     model, input: prompt, store: false,
     text: { format: { type: options.json ? "json_object" : "text" } },
@@ -306,15 +462,7 @@ async function main() {
     .map((part) => part.text);
   if (!texts.length) throw new CliError("Agent Proxy returned no result text");
   const result = texts.join("\n");
-  if (options.json) {
-    let value;
-    try { value = JSON.parse(result); }
-    catch { throw new CliError("Agent Proxy returned invalid result JSON"); }
-    if (value === null || Array.isArray(value) || typeof value !== "object") throw new CliError("Agent Proxy JSON result must be an object");
-    process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
-  } else {
-    process.stdout.write(result.endsWith("\n") ? result : `${result}\n`);
-  }
+  writeResult(result, options.json);
   if (options.verbose) printVerbose(body, request);
 }
 

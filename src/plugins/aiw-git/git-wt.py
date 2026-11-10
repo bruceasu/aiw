@@ -478,7 +478,10 @@ def deliver_with_parent_edits(parent: Path, source_oid: str, parent_oid: str,
         return subprocess.run(["git", *args], cwd=parent, env=environment,
                               text=True, capture_output=True, check=False)
 
-    for arguments in (("read-tree", parent_oid), ("read-tree", "-m", "-u", parent_oid, tree_oid),
+    # Populate file stats in the fresh index before read-tree checks the worktree.
+    # Quiet refresh leaves unrelated local edits untouched and does not stage them.
+    for arguments in (("read-tree", parent_oid), ("update-index", "-q", "--refresh"),
+                      ("read-tree", "-m", "-u", parent_oid, tree_oid),
                       ("commit", "-m", f"Squash {fd_id} from {branch}", "-m", f"FD-Source: {source_oid}")):
         result = isolated(*arguments)
         command_output(result)

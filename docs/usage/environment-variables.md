@@ -89,14 +89,14 @@ Python cz 探测/执行 CLI 时自动注入 `CI=1`、`GIT_TERMINAL_PROMPT=0`，�
 
 ## 5. `aiw ai`、HTTP OpenAI Proxy 与 Gateway
 
-`aiw ai` 是访问 Agent Gateway 的 Node 客户端，与 Go 全局 AI 配置分离。[配置](../../src/plugins/aiw-ai/aiw-ai.mjs#L201)
+`aiw ai` 默认使用 AIW `[ai]` 配置及标准 `AIW_LLM_*` 环境变量；`--backend gateway` 选择 Agent Gateway。只提供 `--url` 也会兼容性地选择 Gateway。[路由与配置](../../src/plugins/aiw-ai/README.md)
 
 | 变量 | 含义 | 未设置的默认或回退 | 优先级/限制 |
 | --- | --- | --- | --- |
-| `AIW_AI_MODEL` | 网关逻辑模型名 | `gpt-6-luna` | 非空环境覆盖默认；需在服务端映射并授权 |
-| `AIW_AI_API_KEY` | 客户端网关 Key | 无，必填 | 至少 43 字符且不能含空白；不回退到 `OPENAI_API_KEY` |
-| `AIW_AI_PROVIDER` | 已移除的旧 provider 接口 | 无 | **设置为非空即报错**，应使用网关逻辑模型 |
-| `AIW_AGENT_PROXY_PORT` | 客户端默认服务端口 | `43127` | 本次显式 URL 优先；默认目标为 `http://127.0.0.1:<port>/v1/responses`；端口须为 1–65535 整数 |
+| `AIW_AI_MODEL` | Gateway 逻辑模型名 | Gateway 路由为 `gpt-6-luna` | 仅 Gateway 路由读取；需在服务端映射并授权 |
+| `AIW_AI_API_KEY` | 客户端 Gateway Key | Gateway 路由无默认，必填 | 仅 Gateway 路由读取；至少 43 字符且不能含空白；不回退到 `OPENAI_API_KEY` |
+| `AIW_AI_PROVIDER` | 已移除的旧 Provider 接口 | 无 | **设置为非空即报错**；用 `--backend` 选择路由、用 `AIW_LLM_PROVIDER` 选择 AIW Provider |
+| `AIW_AGENT_PROXY_PORT` | Gateway 客户端默认服务端口 | `43127` | 仅 Gateway 路由读取；`--url` 优先；默认目标为 `http://127.0.0.1:<port>/v1/responses`；端口须为 1–65535 整数 |
 | `EDITOR` | `aiw ai` 编辑提示词所用程序 | 无 | 启用编辑流程时要求非空；不回退 `GIT_EDITOR`/`VISUAL`。[实现](../../src/plugins/aiw-ai/editor.mjs#L6) |
 
 独立 `src/programs/http-openai-proxy` 使用以下变量。JavaScript `||` 意味着空字符串会继续回退。[监听配置](../../src/programs/http-openai-proxy/src/config.ts#L5)、[provider 配置](../../src/programs/http-openai-proxy/src/providers.ts#L23)
@@ -104,7 +104,7 @@ Python cz 探测/执行 CLI 时自动注入 `CI=1`、`GIT_TERMINAL_PROMPT=0`，�
 | 变量 | 含义 | 未设置的默认或回退 | 优先级/限制 |
 | --- | --- | --- | --- |
 | `HTTP_OPENAI_PROXY_HOST` | HTTP 监听 IPv4 | `AIW_AGENT_PROXY_HOST` → `127.0.0.1` | 规范名优先；必须 IPv4 |
-| `AIW_AGENT_PROXY_HOST` | 上述监听地址的兼容变量 | `127.0.0.1` | 仅 proxy 读取；`aiw ai` 默认客户端固定 loopback，不读取此 host |
+| `AIW_AGENT_PROXY_HOST` | 上述监听地址的兼容变量 | `127.0.0.1` | 仅 proxy 读取；`aiw ai` 的 Gateway 默认客户端固定 loopback，不读取此 host |
 | `HTTP_OPENAI_PROXY_PORT` | HTTP 监听端口 | `AIW_AGENT_PROXY_PORT` → `43127` | 规范名优先；1–65535 整数 |
 | `HTTP_OPENAI_PROXY_STATE_DIR` | 结果与审计状态目录 | `AIW_AGENT_PROXY_STATE_DIR` → OS 临时目录下 `http-openai-proxy` | 规范名优先；结果在 `results/`，审计在 `audit.jsonl` |
 | `AIW_AGENT_PROXY_STATE_DIR` | 状态目录兼容变量 | 同上 | 低于规范名 |

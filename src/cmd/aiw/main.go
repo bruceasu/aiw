@@ -5,9 +5,10 @@ import (
 	"os"
 	"strings"
 
-	authcmd "aiw/internal/commands/auth"
+	aiprovidercmd "aiw/internal/commands/aiprovider"
 	askcmd "aiw/internal/commands/ask"
 	assistcmd "aiw/internal/commands/assist"
+	authcmd "aiw/internal/commands/auth"
 	completioncmd "aiw/internal/commands/completion"
 	help "aiw/internal/commands/help"
 	initcmd "aiw/internal/commands/initcmd"
@@ -56,6 +57,12 @@ func main() {
 		err = completioncmd.Dispatch(os.Args[2:])
 	case "ask":
 		err = askcmd.Dispatch(os.Args[2:])
+	case "__aiw_ai_provider":
+		if len(os.Args) != 2 {
+			err = fmt.Errorf("internal AIW Provider bridge does not accept arguments")
+		} else {
+			err = aiprovidercmd.Dispatch()
+		}
 	case "research", "prototype", "edit-article", "teach":
 		err = assistcmd.Dispatch(os.Args[1], os.Args[2:])
 	case "issue":
