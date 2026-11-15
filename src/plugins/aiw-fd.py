@@ -2168,8 +2168,12 @@ def claim(base: Path, name: str, event_id: str, session_ref: str) -> None:
         if not item or item[1]["event_id"] != event_id:
             raise FDError("claim requires the latest event ID")
         event_path, event = item
-        if event["target_role"] in {"human", "pm"}:
-            raise FDError("human and PM handoffs cannot be claimed by an agent session")
+        if event["target_role"] == "human":
+            raise FDError("Human handoffs require the user's decision and cannot be claimed by an agent session")
+        if event["target_role"] == "pm":
+            raise FDError(
+                f"PM handoffs cannot be claimed by an agent session. Continue as the host PM with "
+                f"`aiw fd close {name} Complete`; involve the user only for an explicit human decision")
         if event["target_role"] == "tester" and session_ref == event.get("worker_session_ref"):
             raise FDError("Tester must use a separate session from Worker")
         if event["target_role"] == "reviewer":
@@ -2266,7 +2270,10 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
     if outcome == "Complete" and not force:
         ensure_ready(content, "implementation-ready")
     if outcome == "Complete" and not force and needs_review and current != "Complete":
-        raise FDError("Complete requires a verification-passed event")
+        if not latest or latest[1]["event_type"] != "verification-passed":
+            raise FDError(
+                "Complete is blocked: no Reviewer verification-passed event exists for the current FD. "
+                "Complete the Reviewer flow for this FD, then retry the archive")
     if outcome == "Complete" and not force and not needs_review:
         if current not in {"Open", "In Progress", "Complete"}:
             raise FDError("Self completion requires an Open, In Progress or Complete FD")
@@ -2282,12 +2289,26 @@ def close_locked(base: Path, name: str, outcome: str, reason: str,
         raise FDError("FD is already closed or deferred")
     if not force and outcome != "Complete" and (not reason.strip() or any(char in reason for char in "\r\n")):
         raise FDError("Deferred and Closed require a one-line --reason")
-    if outcome == "Complete" and not force and needs_review and (not latest or latest[1]["event_type"] != "verification-passed"
-                                  or latest[1]["producer"] != "reviewer"
-                                  or latest[1].get("forced")
-                                  or latest[1]["fd_revision"] != revision(content)
-                                  or latest[1]["fd_sha256"] != fd_digest(content)):
-        raise FDError("Complete requires the current Reviewer's verification-passed event")
+    if outcome == "Complete" and not force and needs_review:
+        if not latest or latest[1]["event_type"] != "verification-passed":
+            raise FDError(
+                "Complete is blocked: no Reviewer verification-passed event exists for the current FD. "
+                "Complete the Reviewer flow for this FD, then retry the archive")
+        event = latest[1]
+        if event["producer"] != "reviewer" or event.get("forced"):
+            raise FDError(
+                "Complete is blocked: the latest verification-passed event is not a valid Reviewer pass. "
+                "Obtain a current independent Reviewer result, then retry the archive")
+        current_revision = revision(content)
+        if event["fd_revision"] != current_revision:
+            raise FDError(
+                f"Complete is blocked: Reviewer pass is for FD revision {event['fd_revision']}, "
+                f"but the current FD is revision {current_revision}. Re-review the current FD, then retry")
+        current_digest = fd_digest(content)
+        if event["fd_sha256"] != current_digest:
+            raise FDError(
+                "Complete is blocked: the FD content changed after the Reviewer pass "
+                "(content digest mismatch). Re-review the current FD, then retry")
     if latest and latest[1]["dispatch_state"] in {"launching", "dispatched"}:
         raise FDError("cannot archive while a role execution has an unknown result")
     archive_dir = feature_dir(base) / "archive" / name
