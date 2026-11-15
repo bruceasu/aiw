@@ -33,7 +33,13 @@ def main(argv):
     if not argv:
         print(f'usage: {META["usage"]}', file=sys.stderr)
         return 2
-    return core.run_cmd(['git', 'rm', '--cached', '--'] + argv)
+
+    cmd = ['git', 'rm', '--cached']
+    # git rm 默认不会递归删除目录，目录必须显式加 -r。
+    if any(os.path.isdir(p) for p in argv):
+        cmd.append('-r')
+    cmd += ['--'] + argv
+    return core.run_cmd(cmd)
 
 
 if __name__ == '__main__':
