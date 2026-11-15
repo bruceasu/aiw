@@ -1,0 +1,32 @@
+id = "ISSUE-00014"
+title = "明确 FD Reviewer 通过后的 PM 继续步骤"
+parent_id = ""
+status = "APPROVED"
+created = "2026-11-15"
+updated = "2026-11-15"
+revision = 4
+
+[approval]
+status = "APPROVED"
+by = "LAPTOP-P8VM6T16\\suk"
+at = "2026-11-15T23:08:59+09:00"
+reason = "用户已明确批准。当前 Plan 已复核：目标、范围、验收示例与源码/工作流证据一致；将由 linked FD 处理实现。"
+source_digest = "14bf5eb4b615dcaa7f74da07d528d70a14dc210387043718caf524930753be07"
+
+[promotion]
+status = "NOT_STARTED"
+task_id = ""
+
+[conversation]
+session_id = ""
+
+[terminal]
+by = ""
+at = ""
+reason = ""
+
+[artifact]
+requirement-plan = "docs/issues/ISSUE-00014/issue-plan.md"
+
+[digest]
+requirement-plan = "ed94feb518970ade8267a85dcd684a9fa104e3cdb2af1d21e5c627f85fa0edd8"
