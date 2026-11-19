@@ -11,6 +11,8 @@ Node 22.12+。`aiw ai` 每次发送一个请求，默认使用 AIW `[ai]` 配置
 
 AIW 路由调用 AIW 共享 Provider 层，支持其当前配置的 Provider。命令不保存请求；CLI Provider 使用共享 AI 层的只读请求选项。`--timeout-seconds` 对本次调用设定客户端期限。Provider 配置错误或调用失败会直接报错，不会回退到 Gateway。
 
+`aiw ai` 通过启动插件的 AIW 可执行文件调用内置的 `__aiw_ai_provider` 入口。请配套安装支持该入口的 AIW 主程序和插件。直接运行 Node 客户端时，客户端使用 `AIW_EXECUTABLE` 指定的路径，其次查找 `AIW_ROOT` 下的标准可执行文件名，最后使用 `PATH`。
+
 ### Gateway 设置
 
 Gateway 仅在所选路由时需要配置并启动：

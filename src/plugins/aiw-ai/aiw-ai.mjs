@@ -343,9 +343,9 @@ function printVerbose(response, request) {
 
 function invokeAiwProvider(options, prompt, system) {
   const executableName = process.platform === "win32" ? "aiw.exe" : "aiw";
-  const executable = process.env.AIW_ROOT
+  const executable = process.env.AIW_EXECUTABLE || (process.env.AIW_ROOT
     ? resolve(process.env.AIW_ROOT, executableName)
-    : executableName;
+    : executableName);
   const request = JSON.stringify({
     prompt,
     system_prompt: system ?? "",
@@ -361,7 +361,7 @@ function invokeAiwProvider(options, prompt, system) {
   });
   if (result.error) {
     if (result.error.code === "ETIMEDOUT") throw new CliError("AIW Provider request timed out");
-    if (result.error.code === "ENOENT") throw new CliError("AIW CLI is unavailable for the configured Provider route");
+    if (result.error.code === "ENOENT") throw new CliError("could not find the AIW executable for the Provider route; run this plugin with a compatible aiw CLI");
     if (result.error.code === "ENOBUFS") throw new CliError("AIW Provider response is too large");
     throw new CliError("could not invoke the AIW configured Provider");
   }

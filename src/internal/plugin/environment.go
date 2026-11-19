@@ -23,6 +23,7 @@ func InvocationEnvironment(name, path, commandLine string) map[string]string {
 		env["AIW_HOME"] = home
 	}
 	if exe, err := os.Executable(); err == nil {
+		env["AIW_EXECUTABLE"] = exe
 		env["AIW_ROOT"] = filepath.Dir(exe)
 	}
 	if workspace, err := os.Getwd(); err == nil {

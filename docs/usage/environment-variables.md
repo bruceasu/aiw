@@ -184,6 +184,7 @@ Gateway Codex 子进程只透传白名单：`PATH`、`HOME`、`USERPROFILE`、`S
 | `AIW_CMDLINE` | 本次命令行描述 | 调用参数决定 |
 | `AIW_HOME` | 非空 `HOME`，否则非空 `USERPROFILE` | 两者缺少则不覆盖原环境 |
 | `AIW_ROOT` | 当前 AIW 可执行文件目录；同时用于 AI 配置、包仓库配置和 Issue/FD 辅助程序查找 | 取可执行路径失败则不覆盖；独立运行时不应假定它已设置 |
+| `AIW_EXECUTABLE` | 当前 AIW 可执行文件的完整路径；`aiw ai` 原生后端用它调用共享 Provider 入口 | 宿主成功取得可执行路径时设置；由宿主启动插件时以宿主提供的路径为准 |
 | `AIW_WORKSPACE` | 当前工作目录 | 获取失败则不覆盖 |
 | `AIW_PKG_STAGE` | 安装 hook 的 stage/data 目录 | 仅 hook 注入，无用户配置默认 |
 | `AIW_PKG_ACTION` | 安装 hook 的当前 action | 仅 hook 注入，无用户配置默认 |
